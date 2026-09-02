@@ -777,10 +777,13 @@ repositories. A sensible order is:
    acceptance workspace.
 9. Only then consider historical release assembly or another ecosystem.
 
-Rust is a natural implementation language for the Polydoc core because it
-provides a convenient single binary and fits well with parsing, static-site
-generation, and concurrent builds. Extractors may invoke Python or R tooling
-when required, subject to the declared execution contract.
+Polydoc's CLI, core, renderer, and built-in extractors will be implemented in
+Rust. This provides a convenient single binary and fits well with parsing,
+static-site generation, and concurrent builds. A built-in extractor may invoke
+external Python or R tooling when native semantic infrastructure is required,
+subject to the declared execution contract. Such tools are declared extractor
+dependencies; they do not replace the Rust implementation of the extractor
+itself.
 
 Rust, Julia, and TypeScript are the next natural public-API extractors for a
 core-with-bindings ecosystem. A C extractor is optional: a C ABI may instead be
