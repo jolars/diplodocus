@@ -10,8 +10,9 @@ R packages. It is not a general documentation platform.
 - Complete the milestones in order. A milestone is complete only when its exit
   gate passes.
 - Add a failing test or fixture before implementing each observable behavior.
-- Keep the acceptance workspace as the source of truth for end-to-end behavior;
-  use smaller fixtures only for focused error cases.
+- Keep the acceptance workspace as the source of truth for polyglot behavior
+  and Polydoc's own site as the source of truth for authored-documentation
+  behavior; use smaller fixtures only for focused error cases.
 - Treat diagnostic text, generated HTML, and serialized IR as snapshot-tested
   output. Review intentional changes rather than updating snapshots blindly.
 - Keep output deterministic by sorting filesystem discoveries and map-like data
@@ -39,6 +40,8 @@ The MVP is complete when all of the following are true:
   network.
 - [ ] The acceptance corpus passes formatting, linting, unit, golden,
   integration, link, and end-to-end tests.
+- [ ] Polydoc builds, checks, previews, and publishes its own project
+  documentation without another site generator.
 - [ ] A new user can build and preview the acceptance site by following the
   checked-in documentation.
 
@@ -73,7 +76,87 @@ and print the new diagnostics. Browser live reload is not part of the MVP.
 - Portable IR and rendered output use repository-relative source locations,
   never absolute checkout paths.
 
-## Milestone 0: Establish the acceptance corpus
+## Milestone 0: Establish project infrastructure
+
+Create a reproducible place to implement and test Polydoc before adding the
+acceptance corpus. Follow the patterns in the sibling Basin project while
+keeping Polydoc as one Cargo package with a library and a thin binary. Preserve
+the conceptual boundaries in modules; do not introduce an external plugin
+interface or a multi-crate workspace for the MVP.
+
+### Rust project
+
+- [ ] Create the root Cargo package at version `0.1.0`, commit `Cargo.lock`, and
+  set complete package metadata for the `polydoc` library and binary.
+- [ ] Choose the initial minimum supported Rust version and use the same pin in
+  Cargo's `rust-version` and `rust-toolchain.toml`; include the `rustfmt` and
+  Clippy components required by local checks and CI.
+- [ ] Add library modules for configuration, diagnostics, IR, documents,
+  extractors, validation, the site model, rendering, and commands.
+- [ ] Keep argument parsing and process exit handling in the binary; expose
+  testable command operations from the library.
+- [ ] Write CLI smoke tests, then add placeholder `build`, `check`, and `serve`
+  parsers with the agreed flags, defaults, and help text.
+- [ ] Establish one structured error boundary at the CLI and avoid panics for
+  malformed user input.
+- [ ] Add shared temporary-workspace, fixture-loading, golden-file, and output
+  tree comparison helpers.
+- [ ] Ignore local build, devenv, generated-site, coverage, and editor artifacts
+  without ignoring lockfiles or test fixtures.
+
+### Devenv
+
+- [ ] Add `devenv.yaml` with pinned `nixpkgs`, `rust-overlay`, and
+  `git-hooks` inputs, following Basin's input structure.
+- [ ] Add `devenv.nix` that enables Rust through `rust-toolchain.toml` and makes
+  Python and R available for extractor development and acceptance tests.
+- [ ] Enable pre-commit hooks for rustfmt and all-target Clippy with warnings
+  denied.
+- [ ] Include the project-wide development tools used by local and CI checks,
+  such as coverage, dependency auditing, and workflow linting; add
+  extractor-specific tools only after Milestone 2 confirms they are required.
+- [ ] Commit `devenv.lock` so a fresh checkout resolves the same development
+  environment.
+- [ ] Document entering the shell and running formatting, linting, tests, and
+  the CLI in the project README.
+
+### Versioning and releases
+
+- [ ] Add `versionary.jsonc` using Versionary's Rust release type, commit-author
+  attribution, stable-major support, and best-effort issue-reference comments,
+  matching Basin's release policy.
+- [ ] Make conventional commits and Versionary-managed release pull requests
+  the source of version and changelog updates after the initial `0.1.0` version.
+- [ ] Add a tag-triggered, manually dispatchable crate publishing workflow that
+  publishes with `cargo publish --locked` and crates.io trusted publishing,
+  following Basin's OIDC setup.
+- [ ] Document the required `RELEASE_TOKEN` repository secret and protected
+  release environment; do not place credentials in repository files.
+
+### GitHub Actions
+
+- [ ] Add `.github/workflows/ci.yml` for pushes and pull requests targeting
+  `main`.
+- [ ] Add separate required jobs for rustfmt, all-target Clippy with warnings
+  denied, tests, and rustdoc with warnings denied; cache Cargo artifacts without
+  caching generated test results.
+- [ ] Add a Versionary job that runs only after all required jobs succeed on a
+  push to `main`, checks out full history, and grants only the contents,
+  pull-request, and issue permissions used by Versionary.
+- [ ] Add Dependabot configuration for Cargo and GitHub Actions dependencies.
+- [ ] Validate workflow syntax locally and pin action releases consistently
+  with Basin.
+- [ ] Expand the test job with the Python, R, and external-tool versions selected
+  in Milestone 2 before extractor code lands.
+
+**Exit gate:** A fresh `devenv shell` supplies the pinned Rust toolchain, Python,
+and R; pre-commit checks pass; all three commands expose stable help output; and
+the rustfmt, Clippy, test, and rustdoc jobs pass in GitHub Actions. Versionary is
+configured to run only after those jobs on `main`, and publishing can occur only
+from an explicit `v*` tag or manual dispatch through the protected release
+environment.
+
+## Milestone 1: Establish the acceptance corpus
 
 Build the representative workspace before choosing parser libraries or fixing
 the IR. Keep it small enough to understand and broad enough to exercise the
@@ -108,39 +191,13 @@ MVP's differentiating behavior.
   incompatible, and external package relationships in focused fixture variants.
 - [ ] Write an acceptance matrix that maps every fixture construct to its
   expected IR, diagnostic, URL, navigation, link, concept, and search behavior.
-- [ ] Add test helpers that copy fixture workspaces into temporary directories
-  so tests never modify checked-in inputs.
+- [ ] Use the Milestone 0 helpers to copy fixture workspaces into temporary
+  directories so tests never modify checked-in inputs.
 
 **Exit gate:** The corpus and acceptance matrix cover every MVP completion
-criterion, and each deliberately invalid variant has one documented expected
-failure rather than several accidental failures.
-
-## Milestone 1: Bootstrap the Rust project
-
-Use one Cargo package with a library and a thin binary. Preserve the conceptual
-boundaries in modules; do not introduce an external plugin interface or a
-multi-crate workspace for the MVP.
-
-- [ ] Create the Cargo package, commit `Cargo.lock`, and choose the minimum
-  supported Rust version.
-- [ ] Add library modules for configuration, diagnostics, IR, documents,
-  extractors, validation, the site model, rendering, and commands.
-- [ ] Keep argument parsing and process exit handling in the binary; expose
-  testable command operations from the library.
-- [ ] Add `build`, `check`, and `serve` command-line parsers with the agreed
-  flags, defaults, and help text.
-- [ ] Establish one structured error boundary at the CLI and avoid panics for
-  malformed user input.
-- [ ] Add shared temporary-workspace, fixture-loading, golden-file, and output
-  tree comparison helpers.
-- [ ] Configure `cargo fmt --check`, Clippy with warnings denied, and the full
-  test suite in continuous integration.
-- [ ] Declare the development and test toolchains needed for Rust, Python, and R
-  after the extractor spike confirms them.
-
-**Exit gate:** The three commands expose stable help output, the library and
-binary compile, an integration test can invoke each command, and formatting,
-Clippy, and tests pass in continuous integration.
+criterion, each deliberately invalid variant has one documented expected
+failure rather than several accidental failures, and all fixture tests run in
+the devenv shell and GitHub Actions.
 
 ## Milestone 2: Spike static extraction
 
@@ -327,6 +384,8 @@ and produces the same ordered diagnostics on repeated runs.
   items.
 - [ ] Bundle search behavior and all styling locally with usable keyboard,
   focus, contrast, narrow-screen, and no-JavaScript fallbacks.
+- [ ] Generate site-local links independently of the hosting prefix so the same
+  output works at an apex domain or beneath a GitHub Pages repository path.
 
 **Exit gate:** Reviewed snapshots cover both ecosystems and authored content;
 all generated internal links resolve; search returns the expected cross-package
@@ -360,7 +419,54 @@ results; and no rendered page requires a network resource.
 multi-repository workspaces; `serve` observes a source edit and exposes the new
 page without a restart while preserving the last good site after an error.
 
-## Milestone 9: Harden and release the MVP
+## Milestone 9: Dogfood Polydoc for its own documentation
+
+Use Polydoc—not another static-site generator—to build the documentation users
+read about Polydoc. This self-documentation workspace exercises authored
+content and project navigation; documenting the Rust API remains deferred until
+a Rust extractor exists.
+
+- [ ] Add a root `polydoc.toml` that declares this checkout as a repository and
+  mounts project-owned content from `docs/`.
+- [ ] Support and test a content-only workspace with no API extraction targets
+  so the self-documentation configuration does not pretend that Polydoc has a
+  Python or R public API.
+- [ ] Make `docs/` the canonical source for the project overview, installation,
+  quick start, workspace configuration, CLI, Polydoc Markdown, Python and R
+  support, diagnostics, reproducibility, and the static-execution security
+  model.
+- [ ] Link design and contributor material where useful instead of copying
+  internal rationale into user documentation.
+- [ ] Use the supported Markdown features, navigation, checked-in assets,
+  source links, and search in the real site so regressions affect the project
+  before they affect downstream users.
+- [ ] Add tests that run the in-tree binary against the root `polydoc.toml`,
+  snapshot representative pages and the search index, and validate every local
+  link and asset.
+- [ ] Ensure the configured output directory is ignored and excluded from
+  declared inputs so self-documentation builds cannot recurse into themselves.
+- [ ] Use `polydoc serve` as the documented local preview workflow for changes
+  under `docs/`.
+- [ ] Add `.github/workflows/docs.yml`, modeled on Basin's website workflow, to
+  build and validate the Polydoc site on pull requests, `main`, version tags,
+  and manual dispatches.
+- [ ] Upload and deploy only the Polydoc-generated output through GitHub Pages;
+  use the `github-pages` environment and the minimal `pages: write` and
+  `id-token: write` permissions in the deployment job.
+- [ ] Build the site for pull requests and `main`, but deploy only from `v*`
+  version tags or an explicit manual dispatch, following Basin's separation of
+  build verification from publication.
+- [ ] Add `.nojekyll` as a deployment artifact without placing generated files
+  in source control.
+- [ ] Test assets, navigation, and search beneath the repository Pages path
+  `/polydoc/`; do not hard-code a deployment origin or assume an apex domain.
+
+**Exit gate:** A clean checkout builds the complete project site with the
+in-tree `polydoc` binary, the result passes link and asset checks, local preview
+uses `polydoc serve`, and the GitHub Pages workflow deploys exactly that
+generated tree without invoking another documentation generator.
+
+## Milestone 10: Harden and release the MVP
 
 - [ ] Run the complete acceptance workspace through `check`, `build`, and
   `serve` in end-to-end tests.
@@ -379,21 +485,28 @@ page without a restart while preserving the last good site after an error.
   keyboard access, focus indication, heading order, labels, and color contrast.
 - [ ] Document installation, workspace configuration, command behavior,
   diagnostics, the supported Python/R surface, the Markdown subset, and the
-  static-execution security model.
+  static-execution security model in the dogfooded project site.
 - [ ] Add a quick start that builds and previews the acceptance site from a
   clean checkout with declared tools already installed.
+- [ ] Build the dogfooded project site twice in different absolute checkout
+  paths and compare every output path and byte.
+- [ ] Complete the MVP's Versionary release pull request and verify that its
+  `v*` tag triggers the protected crate-publishing and documentation workflows;
+  ordinary branch builds must never publish.
 - [ ] Run the release gate:
-  - [ ] `cargo fmt --check`;
+  - [ ] `cargo fmt --all -- --check`;
   - [ ] `cargo clippy --all-targets --all-features -- -D warnings`;
   - [ ] `cargo test --all-features`;
+  - [ ] `cargo doc --no-deps` with `RUSTDOCFLAGS=-D warnings`;
+  - [ ] `cargo publish --locked --dry-run`;
   - [ ] `polydoc check` on the acceptance workspace;
   - [ ] two byte-identical acceptance builds; and
-  - [ ] the generated-site link and asset checker.
+  - [ ] a byte-identical dogfood build plus its link and asset checker.
 
 **Exit gate:** Every MVP completion criterion at the top of this file is
 checked, the release gate passes from a clean checkout, and the documented
-quick start reproduces the acceptance site without network access during
-Polydoc execution.
+quick start reproduces both the acceptance site and Polydoc's project site
+without network access during Polydoc execution.
 
 ## Explicitly deferred until after the MVP
 
@@ -402,7 +515,9 @@ Polydoc execution.
   current snapshot.
 - Browser live reload.
 - Historical snapshot assembly and version switching.
-- Rust, Julia, TypeScript, C, or other public-API extractors.
+- Rust, Julia, TypeScript, C, or other public-API extractors; until a Rust
+  extractor exists, Polydoc's dogfooded site documents its authored project and
+  CLI material rather than generating Rust API reference pages.
 - Automatic repository, package, or ecosystem discovery.
 - A stable external extractor or renderer plugin API.
 - Executed examples, notebooks, or authored code cells.
@@ -410,5 +525,6 @@ Polydoc execution.
   compatibility.
 - Additional content adapters and trusted raw HTML.
 - The `polydoc init` and `polydoc extract` commands.
-- Hosted documentation, repository management, package installation, dependency
-  resolution, or implicit version-control operations.
+- A hosted documentation service operated by Polydoc, repository management,
+  package installation, dependency resolution, or implicit version-control
+  operations.
