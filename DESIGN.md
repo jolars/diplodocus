@@ -91,27 +91,46 @@ Cloudflare Pages, Netlify, or any ordinary HTTP server.
 The same source repositories and configuration should produce the same
 documentation output, apart from explicitly non-reproducible metadata.
 
-Polydoc should not perform implicit network access during normal builds.
+Polydoc itself should not perform implicit network access during normal builds.
+
+Executable authored content weakens this guarantee in a visible, controlled
+way. Polydoc records the selected execution engine, kernel, toolchain,
+normalized cell options, declared environment inputs, and source fingerprint in
+provenance and execution-cache keys. It cannot make code deterministic when the
+code reads undeclared state, uses randomness or time, or accesses the network.
+
+### Explicit authored execution
+
+Authored code cells execute arbitrary code with the user's privileges. Execution
+is therefore disabled by default and may be enabled only by workspace
+configuration; document metadata alone cannot grant permission to execute.
+Polydoc does not sandbox cells, install their dependencies, or make network
+requests on their behalf. Because execution is unsandboxed, however, a cell may
+access the network unless the surrounding environment prevents it.
+
+`polydoc check` parses and validates code cells without executing them. `build`
+and `serve` execute cells only for content collections whose configuration
+explicitly enables execution.
 
 --------------------------------------------------------------------------------
 
 ## Architecture
 
-The system consists of four major layers:
+The main data flow is:
 
 ```text
 checked-out source repositories
       │
       ▼
-packages and extraction targets
+packages, extraction targets, and authored content
       │
-      ▼
-API extractors
+      ├── API extractors
+      └── Panache content adapters
       │
       ▼
 documentation IR
       │
-      ├── guides / authored content
+      ├── optional authored-cell execution
       ├── cross-package concepts
       └── package version metadata
       │
@@ -174,19 +193,35 @@ introspection may be enabled when an ecosystem cannot otherwise expose the
 required semantics, but it must be explicit because importing a Python package
 or loading an R package can execute arbitrary code.
 
-A normal build must use tools already available in the build environment and
-must not install dependencies or access the network. The generated IR records
-the extractor version, relevant toolchain versions, extraction mode, and
-diagnostics. These inputs also form part of any extraction cache key.
+An extractor must use tools already available in the build environment. Polydoc
+must not install dependencies or request network access on an extractor's behalf.
+The generated IR records the extractor version, relevant toolchain versions,
+extraction mode, and diagnostics. These inputs also form part of any extraction
+cache key.
 
 Reproducibility means that the same source repository contents, configuration,
 extractor versions, toolchains, and declared environment inputs produce the same
 output. Polydoc cannot make an introspected package deterministic when the
 package itself is not deterministic.
 
+### Authored content parsing
+
+Polydoc uses the `panache-parser` Rust crate in-process for authored Markdown. It
+does not invoke Panache's command-line interface, Pandoc, or Quarto. The content
+adapter selects Panache's GFM or Quarto flavor, consumes its typed syntax views
+and embedded-language diagnostics, and translates supported constructs directly
+into Polydoc's document IR.
+
+The Panache CST is a source-facing representation, not Polydoc's portable IR.
+Polydoc does not use Panache's Pandoc-native or Pandoc-JSON projectors as an
+interchange format. Unsupported and newly introduced syntax must remain visible
+to the adapter with its source range so that Polydoc can diagnose it rather than
+silently flattening or discarding it.
+
 ### Documentation IR
 
-All extractors produce a common, schema-versioned IR.
+All API extractors and authored-content adapters produce a common,
+schema-versioned IR.
 
 A simplified model is:
 
@@ -233,7 +268,13 @@ ContentCollection
   path
   mount
   format
-  execution
+  execution: ExecutionConfiguration
+
+ExecutionConfiguration
+  mode
+  engine
+  kernel
+  declared_environment_inputs[]
 
 PackageRelationship
   from
@@ -252,6 +293,29 @@ Item
   source_location
   children[]
   language_data
+
+Document
+  metadata
+  blocks[]
+  source_format
+  source_location
+
+CodeCell
+  language
+  source
+  options[]
+  outputs[]
+  source_location
+
+CellOutput
+  stream | display | error
+  representations[]
+  provenance
+
+OutputRepresentation
+  plain_text | markdown_blocks | asset | sanitized_html
+  media_type
+  content_or_asset
 ```
 
 A repository represents one caller-supplied source root. Its local root is a
@@ -278,10 +342,19 @@ language-specific syntax. This allows the renderer and search index to use the
 same semantic information without reparsing formatted text.
 
 Documentation is also structured. A document contains blocks and inline nodes
-for prose, code, parameter and return sections, admonitions, examples, and
-semantic references. Extractors should retain source-format provenance and raw
-source where it is useful for diagnostics, but the renderer consumes the
-structured form.
+for prose, display code, executable code cells, cell outputs, parameter and
+return sections, admonitions, examples, and semantic references. Extractors and
+content adapters should retain source-format provenance and raw source where it
+is useful for diagnostics, but the renderer consumes the structured form.
+
+Cell output is never an untyped HTML or Markdown string passed to the renderer.
+Ordinary stdout and stderr become escaped, preformatted stream output. A
+`text/markdown` representation, or stdout explicitly marked as `output: asis`,
+is parsed as a Markdown fragment with execution disabled and stored as document
+blocks. Binary figures become content-addressed local assets. HTML output must
+be sanitized into a distinct representation before reaching the renderer; when
+safe sanitization would lose the result's meaning, Polydoc emits a diagnostic
+and falls back to another supported MIME representation.
 
 Common item kinds might include:
 
@@ -326,9 +399,8 @@ references.
 
 ### Authored documentation
 
-API reference documentation is only one part of the site.
-
-A workspace should also support any number of authored content collections:
+API reference documentation is only one part of the site. A workspace should
+also support any number of authored content collections:
 
 ```text
 core-repository/
@@ -347,18 +419,44 @@ mount point. Ownership controls navigation and reference context; it is
 independent of the repository in which the files happen to live. This permits,
 for example, a project-level Python quickstart to live beside the core library.
 
-The initial implementation supports Polydoc Markdown as its authored format.
-Content adapters may later translate other formats into the same structured
-document IR, but they must not supply HTML or bypass the common renderer.
-Compatibility with arbitrary Sphinx, pkgdown, Documenter.jl, R Markdown, MyST,
-or mdsvex extensions is not implied. Unsupported directives and embedded
-components produce visible diagnostics.
+The initial implementation supports two named input profiles:
 
-Normal builds do not execute authored examples or notebook cells. The initial
-implementation consumes code blocks, checked-in outputs, and checked-in assets.
-A later explicit execution mode may use declared tools and environments, but
-its execution mode, toolchain, and inputs must be recorded in provenance and
-cache keys just like runtime API introspection.
+- `gfm` reads `.md` files as a safe GitHub-Flavored Markdown subset. Fenced
+  code is display-only.
+- `qmd` reads `.qmd` files as a documented subset of Quarto Markdown. It adds
+  Quarto executable fences with braced language names, hashpipe cell options,
+  and the supported Quarto callout syntax.
+
+These are compatibility profiles, not a new Polydoc Markdown dialect. Polydoc
+does not promise every Quarto, Pandoc, R Markdown, MyST, or GFM extension.
+Polydoc semantic references are its only domain-specific inline extension.
+Unsupported directives, metadata, cell options, and embedded components produce
+visible diagnostics.
+
+Only `qmd` collections may contain executable cells. Each executable page uses
+one configured Jupyter kernel, and its cells run sequentially in source order in
+one page-scoped session. Code blocks for other languages remain display-only;
+multiple executable kernels within one page are outside the initial scope.
+Kernel-backed execution provides a language-neutral protocol for Python, R, and
+other installed kernels without making Quarto, Pandoc, or a Jupyter server a
+Polydoc dependency.
+
+The first execution implementation consumes Jupyter streams, errors, display
+data, and result MIME bundles through an in-process Rust client. Kernel
+executables and language packages remain declared external toolchain
+requirements. Polydoc never installs a kernel or its dependencies.
+
+Execution transforms `CodeCell` nodes in the document IR by attaching structured
+outputs. It does not generate an intermediate Markdown file or reparse the
+complete authored page. Markdown-valued results are parsed only as isolated,
+non-executable fragments. This preserves original source locations and prevents
+generated output from introducing another executable cell.
+
+An execution cache stores a complete page's structured cell results rather than
+generated Markdown. Its key includes the authored source, normalized options,
+engine and kernel identities, relevant toolchain versions, and declared
+environment inputs. Page-level caching preserves stateful cell semantics; fine-
+grained dependency analysis and cell-level caching are later concerns.
 
 Authored pages and generated API pages participate in the same navigation, link
 resolution, and search index.
@@ -425,8 +523,24 @@ owner = "project"
 repository = "core"
 path = "docs"
 mount = "guide"
-format = "markdown"
-execution = "never"
+format = "gfm"
+
+[content.execution]
+mode = "never"
+
+[[content]]
+id = "python-tutorials"
+owner = "pyfoo"
+repository = "python"
+path = "docs/tutorials"
+mount = "tutorials"
+format = "qmd"
+
+[content.execution]
+mode = "execute"
+engine = "jupyter"
+kernel = "python3"
+declared_environment_inputs = ["uv.lock"]
 ```
 
 Repository paths may point outside the directory containing `polydoc.toml`.
@@ -452,6 +566,20 @@ Python or R packages, and packages in different ecosystems may share the same
 published name. `kind` defaults to `package`, and `visibility` defaults to
 `public`. The reserved content owner `project` denotes project-level material;
 any other owner is a package ID.
+
+The content `format` is explicit: `gfm` collections discover `.md` files, and
+`qmd` collections discover `.qmd` files. Execution defaults to `mode = "never"`.
+The initial execution modes are `never` and `execute`; `execute` is valid only
+for `qmd` and requires the `jupyter` engine and an explicit kernel name.
+Document frontmatter may configure supported presentation and cell behavior but
+cannot select an execution mode, engine, or kernel that the collection did not
+authorize.
+
+Declared environment inputs are paths relative to the content collection's
+repository and obey the same traversal and symlink restrictions as other
+declared inputs. They commonly include lockfiles or environment manifests.
+Their contents participate in provenance and execution-cache keys, but Polydoc
+does not interpret them or install the environment they describe.
 
 Configuration should be explicit and small.
 
@@ -485,10 +613,13 @@ A generated snapshot might look like:
 
 The snapshot provenance records each repository's canonical URL, revision,
 declared-input fingerprint, and dirty state when available, together with each
-package's extracted version and declared relationships. A multi-repository
-snapshot is coherent only when its binding and dependency constraints match the
-versions represented by the supplied sources. `polydoc check` should diagnose
-known mismatches but must not resolve, install, or update dependencies.
+package's extracted version and declared relationships. For executed content it
+also records the engine, kernel, kernel-reported language and version, cell
+options, declared environment fingerprints, and whether an output came from a
+fresh execution or the page-level cache. A multi-repository snapshot is
+coherent only when its binding and dependency constraints match the versions
+represented by the supplied sources. `polydoc check` should diagnose known
+mismatches but must not resolve, install, or update dependencies.
 
 Historical documentation requires assembling snapshots built from different
 sets of source revisions. That operation is outside the initial `build`
@@ -633,7 +764,7 @@ This enables:
 - automatic source links;
 - link validation.
 
-Authored Markdown should support package-qualified semantic references:
+Authored content should support package-qualified semantic references:
 
 ```text
 [`pyfoo::foo.FooModel.fit`]
@@ -679,6 +810,7 @@ It is responsible for:
 - layout;
 - navigation;
 - syntax highlighting;
+- code-cell inputs and structured outputs;
 - API signatures;
 - source links;
 - breadcrumbs;
@@ -687,6 +819,12 @@ It is responsible for:
 
 Language-specific presentation should be implemented through structured renderer
 components rather than separate themes.
+
+The renderer chooses among the safe representations retained for a display
+result. It escapes text, renders parsed Markdown blocks through the ordinary
+document path, emits local content-addressed assets, and accepts HTML only from
+the sanitizer boundary. Raw source HTML and unsanitized kernel HTML never enter
+the renderer as trusted markup.
 
 For example, a Python class page and an R generic-function page may use different
 layouts while clearly belonging to the same visual system.
@@ -710,12 +848,14 @@ polydoc init
 polydoc extract
 ```
 
-`build` should perform extraction, validation, site construction, and rendering.
+`build` should perform extraction, authored-content parsing, configured cell
+execution, validation, site construction, and rendering.
 
 `check` should validate configuration, source roots, unresolved references,
 duplicate identifiers, missing package metadata, incompatible package
-relationships, unsupported content constructs, and similar documentation
-problems without producing a site.
+relationships, unsupported content constructs and cell options, execution
+configuration, and similar documentation problems without executing cells or
+producing a site.
 
 --------------------------------------------------------------------------------
 
@@ -749,6 +889,28 @@ rendering internals.
 Initially, extractors can live in the main repository. A stable external plugin
 API is unnecessary until the internal IR and extractor API have matured.
 
+Authored execution is modular through a separate internal interface:
+
+```text
+ExecutionEngine
+  name()
+  requirements() -> ToolchainRequirement[]
+  capabilities() -> ExecutionCapabilities
+  execute(context, document) -> ExecutionResult
+
+ExecutionResult
+  document_with_outputs
+  supporting_assets[]
+  diagnostics[]
+  provenance
+```
+
+The initial engine is `jupyter`. It consumes the document IR, executes its cells
+in one page-scoped kernel session, and returns structured outputs. Engines do not
+emit page HTML, mutate the source document, install dependencies, or bypass the
+renderer. This internal interface does not imply a stable external execution-
+engine plugin API.
+
 --------------------------------------------------------------------------------
 
 ## Implementation strategy
@@ -759,31 +921,37 @@ repositories. A sensible order is:
 
 1. Define a small multi-repository acceptance corpus containing Python functions
    and classes, public re-exports and type stubs, a native-extension stub, R
-   functions and S3 methods, authored Markdown, unsupported content directives,
-   and several equivalent and analogous APIs.
-2. Spike both extractors against that corpus to discover what their native tools
-   expose and where information is lost.
+   functions and S3 methods, authored GFM and executable QMD, unsupported
+   content directives, and several equivalent and analogous APIs.
+2. Spike both API extractors, the Panache content adapter, and Jupyter execution
+   against that corpus to discover what their native tools expose and where
+   information is lost.
 3. Define the repository, package, extraction-target, content-collection, and
    relationship models, together with the structured IR, stable item IDs, and
-   conceptual API groups, from the observed data.
+   conceptual API groups, code cells, output representations, and execution
+   provenance from the observed data.
 4. Implement the Python and R extractors test-first against golden IR fixtures.
-5. Implement semantic reference resolution and `polydoc check`, including
+5. Implement the GFM and QMD adapters, followed by page-scoped Jupyter execution
+   and its structured output conversion.
+6. Implement semantic reference resolution and `polydoc check`, including
    diagnostics for ambiguity, unsupported constructs, incoherent package
    relationships, and unresolved concepts.
-6. Render authored pages and both API references in one site.
-7. Add package navigation, static workspace search, and the appropriate concept
+7. Render authored pages, code-cell outputs, and both API references in one
+   site.
+8. Add package navigation, static workspace search, and the appropriate concept
    switchers.
-8. Add end-to-end snapshot tests that verify deterministic output from the
-   acceptance workspace.
-9. Only then consider historical release assembly or another ecosystem.
+9. Add end-to-end snapshot tests that verify deterministic output from the
+   acceptance workspace, including deterministic executable cells.
+10. Only then consider historical release assembly or another ecosystem.
 
-Polydoc's CLI, core, renderer, and built-in extractors will be implemented in
-Rust. This provides a convenient single binary and fits well with parsing,
-static-site generation, and concurrent builds. A built-in extractor may invoke
-external Python or R tooling when native semantic infrastructure is required,
-subject to the declared execution contract. Such tools are declared extractor
-dependencies; they do not replace the Rust implementation of the extractor
-itself.
+Polydoc's CLI, core, renderer, built-in extractors, Panache adapter, and Jupyter
+client will be implemented in Rust. This provides a convenient single binary
+and fits well with parsing, static-site generation, and concurrent builds. A
+built-in extractor may invoke external Python or R tooling when native semantic
+infrastructure is required, subject to the declared extraction contract. The
+execution engine may start an explicitly configured external Jupyter kernel,
+subject to the authored-execution contract. Such tools are declared toolchain
+requirements; they do not replace Polydoc's Rust implementation or renderer.
 
 Rust, Julia, and TypeScript are the next natural public-API extractors for a
 core-with-bindings ecosystem. A C extractor is optional: a C ABI may instead be
@@ -805,7 +973,11 @@ At least initially, Polydoc is not:
 - an IDE documentation engine;
 - a universal source-code parser;
 - a compatibility layer for existing Sphinx/pkgdown/Documenter themes or
-  extensions.
+  extensions;
+- a complete Quarto, Pandoc, R Markdown, or Jupyter implementation;
+- a package or kernel installer;
+- a sandbox for authored code;
+- a host for interactive widgets or arbitrary trusted notebook HTML.
 
 The focus is deliberately narrow:
 

@@ -25,19 +25,27 @@ packages. It is not a general documentation platform.
 The MVP is complete when all of the following are true:
 
 - [ ] One `polydoc.toml` can describe local repositories, Python and R packages,
-  extraction targets, authored content, package relationships, and
-  conceptual API groups.
+  extraction targets, authored content profiles and execution, package
+  relationships, and conceptual API groups.
 - [ ] Static extraction documents Python and R public APIs without importing a
   Python package or loading an R package.
+- [ ] Polydoc parses authored `.md` through its supported GFM profile and
+  authored `.qmd` through its supported Quarto profile using `panache-parser`
+  in-process, with visible diagnostics for unsupported syntax.
+- [ ] Explicitly configured QMD collections execute Python and R code cells
+  through installed Jupyter kernels and retain streams, errors, Markdown, and
+  figure output as structured document IR.
 - [ ] Polydoc renders authored pages and both API ecosystems through one HTML
-  renderer with shared navigation, source links, semantic references,
-  concept switchers, and workspace-wide search.
+  renderer with safe code-cell output, shared navigation, source links,
+  semantic references, concept switchers, and workspace-wide search.
 - [ ] `polydoc check`, `polydoc build`, and `polydoc serve` satisfy the command
   contract below.
-- [ ] Repeated builds from identical declared inputs are byte-for-byte identical
-  and contain no machine-specific checkout paths.
-- [ ] Normal Polydoc operation neither installs dependencies nor accesses the
-  network.
+- [ ] Repeated builds of the deterministic acceptance cells from identical
+  declared sources, environments, kernels, and toolchains are byte-for-byte
+  identical and contain no machine-specific checkout paths.
+- [ ] Polydoc neither installs dependencies nor performs implicit network
+  access; authored execution is configuration-authorized and documented as
+  arbitrary, unsandboxed code execution.
 - [ ] The acceptance corpus passes formatting, linting, unit, golden,
   integration, link, and end-to-end tests.
 - [ ] Polydoc builds, checks, previews, and publishes its own project
@@ -49,11 +57,11 @@ The MVP is complete when all of the following are true:
 
 ### Commands
 
-  | Command         | MVP behavior                                              |
-  | --------------- | --------------------------------------------------------- |
-  | `polydoc check` | Load, extract, and validate without producing a site.     |
-  | `polydoc build` | Run the complete pipeline and render the static site.     |
-  | `polydoc serve` | Build, serve locally, watch declared inputs, and rebuild. |
+  | Command         | MVP behavior                                               |
+  | --------------- | ---------------------------------------------------------- |
+  | `polydoc check` | Load, parse, extract, and validate without executing cells. |
+  | `polydoc build` | Run configured execution and render the static site.       |
+  | `polydoc serve` | Build, serve, watch declared inputs, and rebuild safely.    |
 
 All commands accept `--config`; its default is `./polydoc.toml`. `build` and
 `serve` accept `--output`, whose default is `./site`. `serve` also accepts
@@ -65,8 +73,15 @@ and print the new diagnostics. Browser live reload is not part of the MVP.
 
 ### Content and output
 
-- Polydoc Markdown is a safe GitHub-Flavored Markdown subset with fenced code,
-  tables, admonitions, and Polydoc semantic references. Raw HTML is escaped.
+- `.md` content uses Polydoc's safe GFM profile; `.qmd` content uses its
+  documented Quarto profile with executable fences, hashpipe options, callouts,
+  and Polydoc semantic references. Raw source HTML is escaped.
+- Authored execution is disabled by default. An executing QMD collection names
+  one installed Jupyter kernel, and each page uses one session with cells run in
+  source order.
+- Stream output is escaped; Markdown-valued output is parsed with execution
+  disabled; figures become local content-addressed assets; and kernel HTML must
+  cross an explicit sanitizer boundary before rendering.
 - Python documentation consists of PEP 257 prose and NumPy-style structured
   sections.
 - Project content is mounted at its configured path. Package documentation is
@@ -87,6 +102,9 @@ MVP's differentiating behavior.
 - [x] Add a `polydoc.toml` that uses repository paths outside the configuration
   directory and package, target, content, relationship, and concept entries
   from `DESIGN.md`.
+- [ ] Update the acceptance configuration with explicit GFM and QMD collections,
+  `never` and `execute` modes, Python and R kernel names, and declared
+  environment inputs.
 - [x] Add a Python distribution with:
   - [x] package metadata and a version;
   - [x] public functions, classes, methods, properties, and constants;
@@ -102,17 +120,25 @@ MVP's differentiating behavior.
   - [x] parsed `Rd` aliases, usage, arguments, value, references, and examples;
     and
   - [x] an unsupported or incomplete construct that must produce a diagnostic.
-- [ ] Add project- and package-owned Markdown collections with nested pages,
-  fenced code, a table, an admonition, a checked-in asset, package-qualified
+- [ ] Add project- and package-owned GFM and QMD collections with nested pages,
+  display code, a table, a callout, a checked-in asset, package-qualified
   references, an unqualified reference, and an unsupported directive.
+- [ ] Add executable Python and R QMD pages with sequential stateful cells,
+  hashpipe options, labels, stdout and stderr, Markdown-valued output, a figure,
+  and a controlled error.
+- [ ] Add focused variants proving that GFM fences are display-only, QMD
+  execution defaults to `never`, document metadata cannot authorize execution,
+  and generated Markdown cannot introduce an executable cell.
+- [ ] Add output-safety variants containing Markdown-looking stdout, unsafe
+  kernel HTML, and an asset path that attempts to escape its declared boundary.
 - [ ] Declare at least one equivalent concept and one analogous concept joining
   Python and R callable families.
 - [ ] Represent public, internal, and hidden units, plus compatible,
   incompatible, and external package relationships in focused fixture
   variants.
 - [ ] Write an acceptance matrix that maps every fixture construct to its
-  expected IR, diagnostic, URL, navigation, link, concept, and search
-  behavior.
+  expected IR, diagnostic, execution behavior, provenance, URL, navigation,
+  link, concept, and search behavior.
 - [ ] Use the Milestone 0 helpers to copy fixture workspaces into temporary
   directories so tests never modify checked-in inputs.
 
@@ -121,11 +147,11 @@ criterion, each deliberately invalid variant has one documented expected failure
 rather than several accidental failures, and all fixture tests run in the devenv
 shell and GitHub Actions.
 
-## Milestone 2: Spike static extraction
+## Milestone 2: Spike extraction, parsing, and execution
 
 Use the acceptance corpus to discover what can be represented reliably. The
-spikes choose implementation tools; they do not weaken the static-execution
-contract.
+spikes choose implementation tools and establish the boundary between static
+API extraction and explicitly authorized authored execution.
 
 - [ ] Compare viable Rust parsing and metadata libraries against every Python
   construct in the acceptance matrix.
@@ -141,14 +167,37 @@ contract.
   dynamic exports, incomplete source locations, and information loss.
 - [ ] Define each extractor's static mode, tool requirements, capabilities, and
   provenance fields.
+- [ ] Pin `panache-parser` as the in-process reader and verify its GFM and Quarto
+  flavors against every authored-content construct in the acceptance matrix.
+- [ ] Verify that Panache's typed syntax API exposes semantic block and inline
+  traversal, unsupported nodes, embedded-YAML errors, source ranges, and QMD
+  cell source and options without using its Pandoc projectors. Land the required
+  consumer-facing API changes in Panache where the current surface is
+  insufficient.
+- [ ] Compare the current `jupyter-zmq-client` and `jupyter-protocol` crates
+  against the execution corpus: kernel discovery and startup, ordered cell
+  execution, stream and error messages, MIME bundles, display updates, timeout,
+  interruption, and shutdown.
+- [ ] Verify Python and R kernels in the declared devenv and CI environments
+  without starting a Jupyter server or installing anything during the test.
+- [ ] Define the supported QMD metadata and cell-option subset, MIME preference
+  order, HTML sanitization boundary, execution failure policy, toolchain
+  requirements, and execution provenance fields.
+- [ ] Define a deterministic page-level execution-cache key and artifact format
+  covering source, normalized options, engine and kernel identity, relevant
+  toolchain versions, and declared environment inputs.
 - [ ] Record the selected approaches and rejected alternatives in
   `docs/decisions/0001-static-extraction.md`.
+- [ ] Record the authored-format and execution decisions, including rejected
+  Q2, Pandoc-projector, temporary-Markdown, and direct-HTML boundaries, in
+  `docs/decisions/0002-authored-content.md`.
 - [ ] Capture exploratory output as golden fixtures before replacing spike code
   with production extractors.
 
-**Exit gate:** Every required Python and R construct has a selected extraction
-path or an explicit diagnostic, and no selected path imports or loads documented
-package code.
+**Exit gate:** Every required Python and R API construct has a selected static
+extraction path or an explicit diagnostic; every authored construct has a
+Panache-to-IR path; Python and R kernels produce the required structured outputs;
+and no static extractor imports or loads documented package code.
 
 ## Milestone 3: Implement configuration, diagnostics, and IR
 
@@ -157,11 +206,16 @@ before implementing the model.
 
 - [ ] Parse the `project`, `repository`, `package`, `content`, `concept`, and
   relationship configuration described in `DESIGN.md`.
+- [ ] Require each content collection to select `gfm` or `qmd`; default
+  execution to `mode = "never"`; and validate the `execute` mode, Jupyter
+  engine, kernel, and declared environment inputs as one coherent unit.
+- [ ] Reject execution for GFM collections and reject any document metadata
+  that attempts to broaden the collection's configured execution authority.
 - [ ] Apply documented defaults for package kind and visibility while requiring
   explicit repositories, packages, and extraction targets.
 - [ ] Resolve repository paths relative to the configuration file, package paths
   relative to repositories, target and metadata paths relative to packages,
-  and content paths relative to repositories.
+  and content and declared-environment paths relative to repositories.
 - [ ] Reject missing roots, path traversal, and symlink escapes from each
   declared repository or package boundary.
 - [ ] Diagnose duplicate repository, package, target, content, and concept IDs;
@@ -170,8 +224,9 @@ before implementing the model.
 - [ ] Define deterministic diagnostics with a stable code, severity, message,
   related entity, source path, and source span when available.
 - [ ] Define a schema-versioned IR for repositories, packages, extraction
-  targets, content collections, pages, items, signatures, documents,
-  concepts, relationships, diagnostics, and provenance.
+  targets, content collections, pages, items, signatures, documents, code
+  cells, cell outputs, output representations, concepts, relationships,
+  diagnostics, and provenance.
 - [ ] Add typed Python and R item extensions instead of flattening
   language-specific semantics into generic fields.
 - [ ] Represent signatures and documents as structured nodes rather than display
@@ -182,16 +237,24 @@ before implementing the model.
 - [ ] Normalize source locations to repository IDs and forward-slash-separated,
   repository-relative paths.
 - [ ] Collect repository revisions, dirty states, declared-input fingerprints,
-  extractor versions, toolchain versions, and extraction modes without
-  writing machine-specific paths into portable data.
-- [ ] Parse the MVP Polydoc Markdown subset into document IR, including semantic
-  references and visible placeholders for unsupported directives.
+  extractor and Panache versions, toolchain and kernel versions, extraction and
+  execution modes, and declared environment fingerprints without writing
+  machine-specific paths into portable data.
+- [ ] Translate the supported GFM and QMD profiles from Panache's typed syntax
+  views into document IR, including semantic references, code cells, source
+  ranges, and visible placeholders for unsupported constructs.
+- [ ] Represent stream, error, display, Markdown-fragment, sanitized-HTML, and
+  asset outputs as typed nodes; never place extractor-, parser-, or
+  engine-produced HTML directly in a document.
+- [ ] Parse Markdown-valued cell output as an isolated fragment with execution
+  disabled and provenance pointing to the producing cell.
 - [ ] Use ordered collections or explicit sorting wherever filesystem or hash
   iteration could affect serialized IR, diagnostics, or output.
 
-**Exit gate:** Configuration and document fixtures have stable golden IR;
-invalid path and identity cases yield stable diagnostics; serializing the same
-model twice produces identical bytes and no absolute paths.
+**Exit gate:** Configuration and GFM/QMD document fixtures have stable golden
+IR; execution authority, unsupported syntax, invalid paths, and identity cases
+yield stable diagnostics; serializing the same model twice produces identical
+bytes and no absolute paths.
 
 ## Milestone 4: Implement the Python extractor
 
@@ -250,7 +313,56 @@ reports every unsupported case without silently dropping public information.
 case, works without attaching the package, and makes unsupported or incomplete
 semantic information visible through diagnostics.
 
-## Milestone 6: Merge, resolve, validate, and build the site model
+## Milestone 6: Implement authored code execution
+
+Keep execution separate from parsing and rendering. Tests should use the
+smallest deterministic kernels and cells that exercise the Jupyter protocol and
+Polydoc's document transformation.
+
+- [ ] Define the internal `ExecutionEngine` interface, execution context,
+  capabilities, requirements, result, diagnostics, assets, and provenance.
+- [ ] Implement the Jupyter engine with `jupyter-zmq-client` and
+  `jupyter-protocol`; discover and start only the explicitly configured kernel
+  without requiring a Jupyter server.
+- [ ] Execute the `CodeCell` nodes of one page sequentially in one page-scoped
+  kernel session so definitions and imports persist between cells.
+- [ ] Enforce the supported QMD option subset, including non-executing cells and
+  the selected echo, output, and error behavior; retain option-source ranges in
+  diagnostics.
+- [ ] Collect stdout, stderr, execution errors, display data, display updates,
+  and result MIME bundles into typed `CellOutput` nodes in protocol order.
+- [ ] Treat ordinary streams as escaped preformatted text. Parse
+  `text/markdown`, and explicitly as-is stream output, as isolated document
+  fragments with execution disabled.
+- [ ] Store binary figures as content-addressed assets beneath an execution-
+  output boundary; reject unsupported media, path traversal, and asset
+  collisions deterministically.
+- [ ] Sanitize supported `text/html` into a distinct IR representation before
+  rendering, prefer a safe alternative MIME representation when available, and
+  diagnose output that has no faithful safe representation.
+- [ ] Add deterministic startup, idle, cell, and shutdown timeouts; interrupt
+  failed execution, reap the kernel process, and preserve the last successful
+  site during a watched-build failure.
+- [ ] Implement a page-level execution cache keyed by authored source,
+  normalized options, engine and kernel identity, relevant toolchain versions,
+  and declared environment fingerprints. Validate cached assets before reuse.
+- [ ] Record whether each page was executed or restored from cache without
+  leaking connection files, ports, temporary paths, process IDs, timestamps, or
+  absolute checkout paths into portable provenance.
+- [ ] Prove that `execution.mode = "never"` and every `polydoc check` path avoid
+  kernel discovery, startup, source execution, cache mutation, and execution-
+  asset writes.
+- [ ] Add unit tests with a controllable protocol fixture and end-to-end tests
+  with the declared Python and R kernels for success, state retention, rich
+  output, timeout, interruption, missing kernels, unsupported MIME types, and
+  deterministic cleanup.
+
+**Exit gate:** Explicitly enabled Python and R QMD pages execute in source order
+and produce reviewed structured-output snapshots; disabled and check-only paths
+execute nothing; failure leaves no kernel or partial assets behind; and a cache
+hit produces the same portable IR and assets as its originating execution.
+
+## Milestone 7: Merge, resolve, validate, and build the site model
 
 - [ ] Add failing tests for fragment conflicts, references, relationships,
   concepts, routes, and visibility before implementing each behavior.
@@ -275,15 +387,17 @@ semantic information visible through diagnostics.
   in the project switcher; keep hidden items linkable but absent from
   navigation and search.
 - [ ] Construct renderer-ready page, breadcrumb, source-link, navigation,
-  concept-switcher, and search-entry models without embedding parser logic.
-- [ ] Wire `polydoc check` through configuration, extraction, merging, reference
-  resolution, and validation without creating the output directory.
+  concept-switcher, code-cell-output, and search-entry models without embedding
+  parser or execution logic.
+- [ ] Wire `polydoc check` through configuration, authored-content parsing,
+  extraction, merging, reference resolution, and validation without executing a
+  cell or creating the output directory.
 
 **Exit gate:** `polydoc check` succeeds for the valid acceptance workspace,
 fails with the expected diagnostics for every invalid variant, writes no site,
 and produces the same ordered diagnostics on repeated runs.
 
-## Milestone 7: Render the coherent site and search index
+## Milestone 8: Render the coherent site and search index
 
 - [ ] Snapshot the intended HTML for representative project, content, package,
   category, item, and concept pages before completing their templates.
@@ -299,7 +413,12 @@ and produces the same ordered diagnostics on repeated runs.
 - [ ] Show "Same API in" for equivalent concepts and "Related API" for analogous
   or related concepts on both member and concept pages.
 - [ ] Render supported document blocks, semantic links, checked-in assets,
-  syntax-highlighted code, and visible placeholders for unsupported content.
+  syntax-highlighted display code and cell input, stream and error output,
+  Markdown-valued output, sanitized HTML output, generated figures, and visible
+  placeholders for unsupported content.
+- [ ] Choose the renderer's safe MIME representation deterministically and
+  prove that raw source HTML and unsanitized kernel HTML remain escaped or
+  visibly unsupported.
 - [ ] Generate a deterministic browser-side search index covering authored
   pages, packages, modules, types, functions, methods, signatures, and
   documentation text.
@@ -314,37 +433,42 @@ and produces the same ordered diagnostics on repeated runs.
 all generated internal links resolve; search returns the expected cross-package
 results; and no rendered page requires a network resource.
 
-## Milestone 8: Complete `build` and `serve`
+## Milestone 9: Complete `build` and `serve`
 
 - [ ] Wire `polydoc build` through the same checked pipeline and render only
-  after error-free validation.
+  after error-free validation and successful configured execution.
 - [ ] Render into a temporary sibling directory and replace the configured
   output only after a successful build so failures cannot leave a partial
   site.
 - [ ] Reject an output path that overlaps the configuration file or any declared
   repository input.
 - [ ] Write schema-versioned snapshot provenance into the output without
-  timestamps or absolute local paths.
+  timestamps or absolute local paths, including stable execution and cache
+  provenance for QMD pages.
 - [ ] Make CLI diagnostics concise by default and sufficiently detailed to find
   the responsible configuration or source location.
 - [ ] Make `polydoc serve` perform an initial build, bind only to its configured
   local address, and serve the successful output tree.
 - [ ] Watch the configuration file and declared extraction, metadata, content,
-  and asset inputs; ignore the output directory and unrelated repository
-  files.
+  environment, and asset inputs; ignore the output and execution-cache
+  directories and unrelated repository files.
 - [ ] Debounce related filesystem events into one rebuild and keep the previous
-  successful output available when validation or rendering fails.
+  successful output available when parsing, execution, validation, or rendering
+  fails.
 - [ ] Handle address conflicts, deleted inputs, changed workspace configuration,
-  missing tools, and graceful process termination with stable diagnostics.
+  missing tools or kernels, execution failure, and graceful process termination
+  with stable diagnostics.
 - [ ] Add integration tests for flag precedence, exit status, output
   replacement, HTTP serving, watched rebuilds, ignored changes, and recovery
   after a failed rebuild.
 
 **Exit gate:** All three commands satisfy the interface contract in temporary
-multi-repository workspaces; `serve` observes a source edit and exposes the new
-page without a restart while preserving the last good site after an error.
+multi-repository workspaces; `check` executes nothing; `build` runs only
+authorized cells; and `serve` observes a source or declared-environment edit and
+exposes the new page without a restart while preserving the last good site after
+an error.
 
-## Milestone 9: Dogfood Polydoc for its own documentation
+## Milestone 10: Dogfood Polydoc for its own documentation
 
 Use Polydoc---not another static-site generator---to build the documentation
 users read about Polydoc. This self-documentation workspace exercises authored
@@ -357,14 +481,15 @@ a Rust extractor exists.
   so the self-documentation configuration does not pretend that Polydoc has
   a Python or R public API.
 - [ ] Make `docs/` the canonical source for the project overview, installation,
-  quick start, workspace configuration, CLI, Polydoc Markdown, Python and R
-  support, diagnostics, reproducibility, and the static-execution security
+  quick start, workspace configuration, CLI, GFM and QMD profiles, Python and R
+  support, diagnostics, reproducibility, and the authored-execution security
   model.
 - [ ] Link design and contributor material where useful instead of copying
   internal rationale into user documentation.
-- [ ] Use the supported Markdown features, navigation, checked-in assets, source
-  links, and search in the real site so regressions affect the project
-  before they affect downstream users.
+- [ ] Use the supported GFM and QMD features, one small deterministic executable
+  page, navigation, checked-in and generated assets, source links, and search in
+  the real site so regressions affect the project before they affect downstream
+  users.
 - [ ] Add tests that run the in-tree binary against the root `polydoc.toml`,
   snapshot representative pages and the search index, and validate every
   local link and asset.
@@ -393,27 +518,29 @@ in-tree `polydoc` binary, the result passes link and asset checks, local preview
 uses `polydoc serve`, and the GitHub Pages workflow deploys exactly that
 generated tree without invoking another documentation generator.
 
-## Milestone 10: Harden and release the MVP
+## Milestone 11: Harden and release the MVP
 
 - [ ] Run the complete acceptance workspace through `check`, `build`, and
   `serve` in end-to-end tests.
 - [ ] Build the same declared inputs twice in different absolute directories and
-  compare every output path and byte.
+  with fresh execution caches, then compare every output path and byte.
 - [ ] Scan portable IR, provenance, HTML, search data, and diagnostics for
   leaked absolute paths and nondeterministic metadata.
-- [ ] Run normal command tests with network access disabled and fixtures whose
-  package imports or load hooks would fail if executed.
+- [ ] Run normal command tests with network access disabled, fixtures whose API
+  package imports or load hooks would fail if executed, and deterministic
+  authored cells that require no network.
 - [ ] Validate every internal HTML link, fragment, source-link shape, asset URL,
   navigation target, concept target, and indexed result.
-- [ ] Exercise missing tools, malformed configuration, malformed sources,
-  unsupported constructs, version mismatches, ambiguous references, and
-  output write failures.
+- [ ] Exercise missing tools and kernels, malformed configuration and sources,
+  unsupported constructs, cell timeouts and failures, unsafe and unsupported
+  output, version mismatches, ambiguous references, and output write failures.
 - [ ] Review generated pages at narrow and wide viewport sizes and verify
   keyboard access, focus indication, heading order, labels, and color
   contrast.
 - [ ] Document installation, workspace configuration, command behavior,
-  diagnostics, the supported Python/R surface, the Markdown subset, and the
-  static-execution security model in the dogfooded project site.
+  diagnostics, the supported Python/R surface, the GFM/QMD profiles, supported
+  cell options and MIME output, and the authored-execution security model in the
+  dogfooded project site.
 - [ ] Add a quick start that builds and previews the acceptance site from a
   clean checkout with declared tools already installed.
 - [ ] Build the dogfooded project site twice in different absolute checkout
@@ -428,13 +555,13 @@ generated tree without invoking another documentation generator.
   - [ ] `cargo doc --no-deps` with `RUSTDOCFLAGS=-D warnings`;
   - [ ] `cargo publish --locked --dry-run`;
   - [ ] `polydoc check` on the acceptance workspace;
-  - [ ] two byte-identical acceptance builds; and
+  - [ ] two byte-identical acceptance builds from fresh execution caches; and
   - [ ] a byte-identical dogfood build plus its link and asset checker.
 
 **Exit gate:** Every MVP completion criterion at the top of this file is
 checked, the release gate passes from a clean checkout, and the documented quick
-start reproduces both the acceptance site and Polydoc's project site without
-network access during Polydoc execution.
+start reproduces both the acceptance site and Polydoc's project site with no
+network access required by Polydoc or its deterministic authored cells.
 
 ## Explicitly deferred until after the MVP
 
@@ -448,9 +575,12 @@ network access during Polydoc execution.
   CLI material rather than generating Rust API reference pages.
 - Automatic repository, package, or ecosystem discovery.
 - A stable external extractor or renderer plugin API.
-- Executed examples, notebooks, or authored code cells.
-- Sphinx, MyST, pkgdown, Documenter.jl, R Markdown, or arbitrary theme
-  compatibility.
+- A stable external execution-engine plugin API.
+- Whole-document `.ipynb` input, mixed-kernel pages, knitr, interactive widgets,
+  browser-side execution, and cell-level dependency analysis or caching.
+- Checked-in frozen execution captures and trusted, unsanitized notebook HTML.
+- Full Quarto, Pandoc, Sphinx, MyST, pkgdown, Documenter.jl, R Markdown, or
+  arbitrary theme compatibility.
 - Additional content adapters and trusted raw HTML.
 - The `polydoc init` and `polydoc extract` commands.
 - A hosted documentation service operated by Polydoc, repository management,
