@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "foo-python"
+version = "1.9.0"
+description = "Python bindings for the Foo statistical library."
+requires-python = ">=3.11"
+dependencies = [
+  "foo-core>=1.9,<2",
+]
+
+[[project.authors]]
+name = "Foo contributors"
+
+[tool.setuptools]
+package-dir = { "" = "python" }
+
+[tool.setuptools.packages.find]
+where = ["python"]
+
+[tool.setuptools.package-data]
+foo = ["*.pyi", "py.typed"]
+
+[tool.ruff.lint.per-file-ignores]
+# This deliberately exercises Polydoc's diagnostic for dynamic exports.
+"python/foo/experimental.py" = ["PLE0605"]

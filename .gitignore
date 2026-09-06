@@ -3,6 +3,10 @@
 **/*.rs.bk
 *.pdb
 
+# Python bytecode caches.
+__pycache__/
+*.py[cod]
+
 # Generated sites and coverage reports.
 /site/
 /coverage/

@@ -87,15 +87,15 @@ MVP's differentiating behavior.
 - [x] Add a `polydoc.toml` that uses repository paths outside the configuration
   directory and package, target, content, relationship, and concept entries
   from `DESIGN.md`.
-- [ ] Add a Python distribution with:
-  - [ ] package metadata and a version;
-  - [ ] public functions, classes, methods, properties, and constants;
-  - [ ] an explicit `__all__`, package re-exports, and a dynamic export that
+- [x] Add a Python distribution with:
+  - [x] package metadata and a version;
+  - [x] public functions, classes, methods, properties, and constants;
+  - [x] an explicit `__all__`, package re-exports, and a dynamic export that
     must produce a diagnostic;
-  - [ ] overloads and a corresponding callable family;
-  - [ ] implementation files, maintained `.pyi` files, and a stub-only native
+  - [x] overloads and a corresponding callable family;
+  - [x] implementation files, maintained `.pyi` files, and a stub-only native
     extension module; and
-  - [ ] NumPy-style parameters, returns, notes, references, and examples.
+  - [x] NumPy-style parameters, returns, notes, references, and examples.
 - [ ] Add an R package with:
   - [ ] `DESCRIPTION`, `NAMESPACE`, source files, a version, and dependencies;
   - [ ] exported functions, an S3 generic, and S3 methods;
