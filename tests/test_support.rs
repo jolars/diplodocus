@@ -527,6 +527,95 @@ fn acceptance_r_package_has_structured_rd_and_an_unsupported_construct() {
 }
 
 #[test]
+fn acceptance_matrix_maps_every_fixture_to_each_behavior_dimension() {
+    let matrix = load_fixture("acceptance/MATRIX.md");
+
+    for heading in [
+        "Fixture construct",
+        "Expected IR",
+        "Diagnostic",
+        "Execution",
+        "Provenance",
+        "URL",
+        "Navigation",
+        "Link",
+        "Concept",
+        "Search",
+    ] {
+        assert!(
+            matrix.contains(&format!("| {heading} ")),
+            "acceptance matrix should have a `{heading}` column"
+        );
+    }
+
+    let behavior_tables = matrix
+        .split("## MVP completion coverage")
+        .next()
+        .expect("acceptance matrix should contain behavior tables");
+    for (line_number, row) in behavior_tables
+        .lines()
+        .enumerate()
+        .filter(|(_, line)| line.starts_with("| "))
+    {
+        assert_eq!(
+            row.trim_matches('|').split('|').count(),
+            10,
+            "acceptance matrix row {} should map all behavior dimensions",
+            line_number + 1
+        );
+    }
+
+    let acceptance = fixture_path("acceptance");
+    let mut pending = vec![acceptance.clone()];
+    let mut fixture_files = Vec::new();
+    while let Some(directory) = pending.pop() {
+        for entry in fs::read_dir(directory).expect("acceptance fixture should be readable") {
+            let path = entry.expect("fixture entry should be readable").path();
+            if path.is_dir() {
+                pending.push(path);
+            } else {
+                fixture_files.push(path);
+            }
+        }
+    }
+    fixture_files.sort();
+
+    for path in fixture_files {
+        let relative = path
+            .strip_prefix(&acceptance)
+            .expect("fixture path should be under the acceptance root")
+            .to_string_lossy()
+            .replace('\\', "/");
+        if relative == "MATRIX.md"
+            || relative
+                .split('/')
+                .any(|component| component.starts_with('.'))
+        {
+            continue;
+        }
+        assert!(
+            matrix.contains(&format!("`{relative}`")),
+            "acceptance matrix should map fixture `{relative}`"
+        );
+    }
+
+    for expected_diagnostic in [
+        "python-dynamic-export",
+        "unsupported-rd",
+        "unsupported-authored-syntax",
+        "document-execution-not-authorized",
+        "unsafe-kernel-html",
+        "generated-asset-outside-boundary",
+        "incompatible-package-relationship",
+    ] {
+        assert!(
+            matrix.contains(&format!("`{expected_diagnostic}`")),
+            "acceptance matrix should name the `{expected_diagnostic}` diagnostic"
+        );
+    }
+}
+
+#[test]
 fn temporary_workspaces_can_be_seeded_from_fixtures() {
     let workspace = TestWorkspace::from_fixture("support");
     assert_eq!(workspace.read("input.txt"), "fixture input\n");

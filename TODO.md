@@ -136,7 +136,7 @@ MVP's differentiating behavior.
 - [x] Represent public, internal, and hidden units, plus compatible,
   incompatible, and external package relationships in focused fixture
   variants.
-- [ ] Write an acceptance matrix that maps every fixture construct to its
+- [x] Write an acceptance matrix that maps every fixture construct to its
   expected IR, diagnostic, execution behavior, provenance, URL, navigation,
   link, concept, and search behavior.
 - [ ] Use the Milestone 0 helpers to copy fixture workspaces into temporary
