@@ -1,6 +1,7 @@
 # Foo documentation
 
-See [`pyfoo::foo.fit`] or the [Python guide](../../python/docs/guide.qmd).
+See [`pyfoo::foo.fit`], the [workspace layout](getting-started/workspace.md), or
+the [Python guide](../../python/docs/guide.qmd).
 
 | Package | Version |
 |:--------|--------:|

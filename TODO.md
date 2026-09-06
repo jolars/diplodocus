@@ -120,7 +120,7 @@ MVP's differentiating behavior.
   - [x] parsed `Rd` aliases, usage, arguments, value, references, and examples;
     and
   - [x] an unsupported or incomplete construct that must produce a diagnostic.
-- [ ] Add project- and package-owned GFM and QMD collections with nested pages,
+- [x] Add project- and package-owned GFM and QMD collections with nested pages,
   display code, a table, a callout, a checked-in asset, package-qualified
   references, an unqualified reference, and an unsupported directive.
 - [ ] Add executable Python and R QMD pages with sequential stateful cells,

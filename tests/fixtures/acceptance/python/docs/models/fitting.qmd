@@ -1,0 +1,16 @@
+---
+title: Model fitting
+---
+
+# Fit with a model object
+
+Within the Python package, [`foo.FooModel.fit`] resolves without a package
+qualifier.
+
+```python
+from foo import FooModel
+
+model = FooModel()
+```
+
+Return to the [Python guide](../guide.qmd).

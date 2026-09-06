@@ -25,16 +25,44 @@ fn acceptance_fixture_has_sibling_workspace_roots() {
 
 #[test]
 fn acceptance_fixture_has_gfm_and_qmd_authored_content() {
-    for source in ["core/docs/index.md", "python/docs/guide.qmd"] {
+    for source in [
+        "core/docs/index.md",
+        "core/docs/getting-started/workspace.md",
+        "python/docs/guide.qmd",
+        "python/docs/models/fitting.qmd",
+    ] {
         assert!(
             fixture_path(format!("acceptance/{source}")).is_file(),
             "authored fixture should exist: {source}"
         );
     }
 
+    assert!(fixture_path("acceptance/core/docs/assets/workspace.svg").is_file());
+
     let configuration = load_fixture("acceptance/workspace/polydoc.toml");
-    assert!(configuration.contains("format = \"gfm\""));
-    assert!(configuration.contains("format = \"qmd\""));
+    assert!(configuration.contains(
+        "id = \"guide\"\nowner = \"project\"\nrepository = \"core\"\npath = \"docs\"\nmount = \"guide\"\nformat = \"gfm\""
+    ));
+    assert!(configuration.contains(
+        "id = \"python-guide\"\nowner = \"pyfoo\"\nrepository = \"python\"\npath = \"docs\"\nmount = \"guide\"\nformat = \"qmd\""
+    ));
+
+    let project_index = load_fixture("acceptance/core/docs/index.md");
+    assert!(project_index.contains("[`pyfoo::foo.fit`]"));
+    assert!(project_index.contains("| Package | Version |"));
+    assert!(project_index.contains("> [!NOTE]"));
+    assert!(project_index.contains("```python"));
+    assert!(project_index.contains("<component name=\"unsupported\" />"));
+
+    let nested_project_page = load_fixture("acceptance/core/docs/getting-started/workspace.md");
+    assert!(nested_project_page.contains("![Workspace layout](../assets/workspace.svg)"));
+
+    let package_guide = load_fixture("acceptance/python/docs/guide.qmd");
+    assert!(package_guide.contains("::: {.callout-tip #stateful}"));
+    assert!(package_guide.contains("::: {.unsupported-directive}"));
+
+    let nested_package_page = load_fixture("acceptance/python/docs/models/fitting.qmd");
+    assert!(nested_package_page.contains("[`foo.FooModel.fit`]"));
 }
 
 #[test]

@@ -121,9 +121,13 @@ fn serialized_document_ir_is_deterministic() {
 #[test]
 fn acceptance_authored_pages_parse_through_the_production_adapter() {
     let gfm = support::load_fixture("acceptance/core/docs/index.md");
+    let nested_gfm = support::load_fixture("acceptance/core/docs/getting-started/workspace.md");
     let qmd = support::load_fixture("acceptance/python/docs/guide.qmd");
+    let nested_qmd = support::load_fixture("acceptance/python/docs/models/fitting.qmd");
     let parsed_gfm = parse_authored_document(&gfm, AuthoredFormat::Gfm);
+    let parsed_nested_gfm = parse_authored_document(&nested_gfm, AuthoredFormat::Gfm);
     let parsed_qmd = parse_authored_document(&qmd, AuthoredFormat::Qmd);
+    let parsed_nested_qmd = parse_authored_document(&nested_qmd, AuthoredFormat::Qmd);
 
     assert!(parsed_gfm.document.blocks.iter().any(|block| matches!(
         block,
@@ -136,6 +140,24 @@ fn acceptance_authored_pages_parse_through_the_production_adapter() {
         block,
         Block::CodeBlock { language, .. } if language.as_deref() == Some("python")
     )));
+    assert!(
+        parsed_gfm
+            .document
+            .blocks
+            .iter()
+            .any(|block| matches!(block, Block::Table { .. }))
+    );
+    assert!(parsed_gfm.document.blocks.iter().any(|block| {
+        matches!(
+            block,
+            Block::Paragraph { inlines, .. }
+                if inlines.iter().any(|inline| matches!(
+                    inline,
+                    Inline::SemanticReference { target, .. }
+                        if target == "pyfoo::foo.fit"
+                ))
+        )
+    }));
     assert!(
         !parsed_gfm
             .document
@@ -154,4 +176,35 @@ fn acceptance_authored_pages_parse_through_the_production_adapter() {
         block,
         Block::Unsupported { source_kind, .. } if source_kind == "FENCED_DIV"
     )));
+    assert!(parsed_nested_gfm.document.blocks.iter().any(|block| {
+        matches!(
+            block,
+            Block::Paragraph { inlines, .. }
+                if inlines.iter().any(|inline| matches!(
+                    inline,
+                    Inline::Image { target, .. } if target == "../assets/workspace.svg"
+                ))
+        )
+    }));
+    assert!(parsed_nested_qmd.document.blocks.iter().any(|block| {
+        matches!(
+            block,
+            Block::Paragraph { inlines, .. }
+                if inlines.iter().any(|inline| matches!(
+                    inline,
+                    Inline::SemanticReference { target, .. }
+                        if target == "foo.FooModel.fit"
+                ))
+        )
+    }));
+    assert!(
+        parsed_nested_qmd
+            .document
+            .blocks
+            .iter()
+            .any(|block| matches!(
+                block,
+                Block::CodeBlock { language, .. } if language.as_deref() == Some("python")
+            ))
+    );
 }
