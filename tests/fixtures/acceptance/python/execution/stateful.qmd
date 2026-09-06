@@ -1,0 +1,49 @@
+---
+title: Stateful Python execution
+---
+
+# Stateful Python execution
+
+The cells on this page share one page-scoped Python session.
+
+```{python}
+#| label: python-setup
+#| echo: true
+values = [2, 4, 6]
+total = sum(values)
+```
+
+```{python}
+#| label: python-streams
+import sys
+
+print(f"Python total: {total}")
+print("Intentional Python stderr", file=sys.stderr)
+```
+
+```{python}
+#| label: python-markdown
+from IPython.display import Markdown
+
+Markdown(f"**Python total:** `{total}`")
+```
+
+```{python}
+#| label: python-figure
+#| fig-alt: A bar labeled with the Python total
+from IPython.display import SVG
+
+SVG(
+    f"""<svg xmlns="http://www.w3.org/2000/svg" width="160" height="80"
+    viewBox="0 0 160 80" role="img">
+    <rect x="10" y="10" width="{total * 10}" height="40" fill="#3366cc" />
+    <text x="10" y="70">total = {total}</text>
+    </svg>"""
+)
+```
+
+```{python}
+#| label: python-error
+#| error: true
+raise RuntimeError("intentional Python fixture error")
+```

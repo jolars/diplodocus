@@ -102,7 +102,7 @@ MVP's differentiating behavior.
 - [x] Add a `polydoc.toml` that uses repository paths outside the configuration
   directory and package, target, content, relationship, and concept entries
   from `DESIGN.md`.
-- [ ] Update the acceptance configuration with explicit GFM and QMD collections,
+- [x] Update the acceptance configuration with explicit GFM and QMD collections,
   `never` and `execute` modes, Python and R kernel names, and declared
   environment inputs.
 - [x] Add a Python distribution with:
@@ -123,7 +123,7 @@ MVP's differentiating behavior.
 - [x] Add project- and package-owned GFM and QMD collections with nested pages,
   display code, a table, a callout, a checked-in asset, package-qualified
   references, an unqualified reference, and an unsupported directive.
-- [ ] Add executable Python and R QMD pages with sequential stateful cells,
+- [x] Add executable Python and R QMD pages with sequential stateful cells,
   hashpipe options, labels, stdout and stderr, Markdown-valued output, a figure,
   and a controlled error.
 - [ ] Add focused variants proving that GFM fences are display-only, QMD

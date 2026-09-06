@@ -46,6 +46,7 @@ fn acceptance_fixture_has_gfm_and_qmd_authored_content() {
     assert!(configuration.contains(
         "id = \"python-guide\"\nowner = \"pyfoo\"\nrepository = \"python\"\npath = \"docs\"\nmount = \"guide\"\nformat = \"qmd\""
     ));
+    assert_eq!(configuration.matches("mode = \"never\"").count(), 2);
 
     let project_index = load_fixture("acceptance/core/docs/index.md");
     assert!(project_index.contains("[`pyfoo::foo.fit`]"));
@@ -63,6 +64,67 @@ fn acceptance_fixture_has_gfm_and_qmd_authored_content() {
 
     let nested_package_page = load_fixture("acceptance/python/docs/models/fitting.qmd");
     assert!(nested_package_page.contains("[`foo.FooModel.fit`]"));
+}
+
+#[test]
+fn acceptance_fixture_has_executable_python_and_r_qmd_pages() {
+    let cases = [
+        (
+            "python/execution/stateful.qmd",
+            "python",
+            "python3",
+            "pyproject.toml",
+            [
+                "values = [2, 4, 6]",
+                "print(f\"Python total: {total}\")",
+                "file=sys.stderr",
+                "Markdown(",
+                "SVG(",
+            ],
+        ),
+        (
+            "r/execution/stateful.qmd",
+            "r",
+            "ir",
+            "DESCRIPTION",
+            [
+                "values <- c(2, 4, 6)",
+                "cat(sprintf(",
+                "message(",
+                "display_markdown(",
+                "display_svg(",
+            ],
+        ),
+    ];
+
+    let configuration = load_fixture("acceptance/workspace/polydoc.toml");
+    for (source, language, kernel, environment_input, constructs) in cases {
+        assert!(
+            fixture_path(format!("acceptance/{source}")).is_file(),
+            "executable fixture should exist: {source}"
+        );
+        assert!(configuration.contains(&format!(
+            "repository = \"{language}\"\npath = \"execution\"\nmount = \"execution\"\nformat = \"qmd\"\n\n[content.execution]\nmode = \"execute\"\nengine = \"jupyter\"\nkernel = \"{kernel}\"\ndeclared_environment_inputs = [\"{environment_input}\"]"
+        )));
+
+        let page = load_fixture(format!("acceptance/{source}"));
+        assert_eq!(page.matches("```{").count(), 5);
+        assert_eq!(page.matches("#| label:").count(), 5);
+        assert!(page.contains("#| echo:"));
+        assert!(page.contains("#| fig-alt:"));
+        assert!(page.contains("#| error: true"));
+        assert!(page.contains(if language == "python" {
+            "raise RuntimeError("
+        } else {
+            "stop("
+        }));
+        for construct in constructs {
+            assert!(
+                page.contains(construct),
+                "missing `{construct}` in {source}"
+            );
+        }
+    }
 }
 
 #[test]

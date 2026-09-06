@@ -208,3 +208,60 @@ fn acceptance_authored_pages_parse_through_the_production_adapter() {
             ))
     );
 }
+
+#[test]
+fn acceptance_execution_pages_retain_ordered_cells_labels_and_options() {
+    let cases = [
+        (
+            "acceptance/python/execution/stateful.qmd",
+            "python",
+            [
+                "python-setup",
+                "python-streams",
+                "python-markdown",
+                "python-figure",
+                "python-error",
+            ],
+        ),
+        (
+            "acceptance/r/execution/stateful.qmd",
+            "r",
+            ["r-setup", "r-streams", "r-markdown", "r-figure", "r-error"],
+        ),
+    ];
+
+    for (source, language, labels) in cases {
+        let source = support::load_fixture(source);
+        let parsed = parse_authored_document(&source, AuthoredFormat::Qmd);
+        let cells = parsed
+            .document
+            .blocks
+            .iter()
+            .filter_map(|block| match block {
+                Block::CodeCell(cell) => Some(cell),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+
+        assert_eq!(cells.len(), 5);
+        assert!(
+            cells
+                .iter()
+                .all(|cell| cell.language.as_deref() == Some(language))
+        );
+        assert_eq!(
+            cells
+                .iter()
+                .map(|cell| cell.labels[0].value.as_str())
+                .collect::<Vec<_>>(),
+            labels
+        );
+        assert!(cells[1].source.contains("total"));
+        assert!(cells[2].source.contains("total"));
+        assert!(cells[3].source.contains("total"));
+        assert!(cells[4].resolved_options.iter().any(|option| {
+            option.key == "error"
+                && matches!(option.resolution, CellOptionResolution::Resolved { .. })
+        }));
+    }
+}

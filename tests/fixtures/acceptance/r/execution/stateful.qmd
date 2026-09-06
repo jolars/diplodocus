@@ -1,0 +1,47 @@
+---
+title: Stateful R execution
+---
+
+# Stateful R execution
+
+The cells on this page share one page-scoped R session.
+
+```{r}
+#| label: r-setup
+#| echo: true
+values <- c(2, 4, 6)
+total <- sum(values)
+```
+
+```{r}
+#| label: r-streams
+cat(sprintf("R total: %d\n", total))
+message("Intentional R stderr")
+```
+
+```{r}
+#| label: r-markdown
+IRdisplay::display_markdown(sprintf("**R total:** `%d`", total))
+```
+
+```{r}
+#| label: r-figure
+#| fig-alt: A bar labeled with the R total
+svg <- sprintf(
+  paste0(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="160" height="80" ',
+    'viewBox="0 0 160 80" role="img">',
+    '<rect x="10" y="10" width="%d" height="40" fill="#3366cc" />',
+    '<text x="10" y="70">total = %d</text></svg>'
+  ),
+  total * 10,
+  total
+)
+IRdisplay::display_svg(svg)
+```
+
+```{r}
+#| label: r-error
+#| error: true
+stop("intentional R fixture error")
+```

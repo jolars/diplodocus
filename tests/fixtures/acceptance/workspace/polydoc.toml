@@ -47,7 +47,9 @@ repository = "core"
 path = "docs"
 mount = "guide"
 format = "gfm"
-execution = "never"
+
+[content.execution]
+mode = "never"
 
 [[content]]
 id = "python-guide"
@@ -56,7 +58,37 @@ repository = "python"
 path = "docs"
 mount = "guide"
 format = "qmd"
-execution = "never"
+
+[content.execution]
+mode = "never"
+
+[[content]]
+id = "python-execution"
+owner = "pyfoo"
+repository = "python"
+path = "execution"
+mount = "execution"
+format = "qmd"
+
+[content.execution]
+mode = "execute"
+engine = "jupyter"
+kernel = "python3"
+declared_environment_inputs = ["pyproject.toml"]
+
+[[content]]
+id = "r-execution"
+owner = "rfoo"
+repository = "r"
+path = "execution"
+mount = "execution"
+format = "qmd"
+
+[content.execution]
+mode = "execute"
+engine = "jupyter"
+kernel = "ir"
+declared_environment_inputs = ["DESCRIPTION"]
 
 [[relationship]]
 from = "pyfoo"
