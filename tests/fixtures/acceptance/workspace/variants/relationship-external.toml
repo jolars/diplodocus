@@ -1,0 +1,26 @@
+[project]
+name = "External relationship variant"
+
+[[repository]]
+id = "python"
+path = "../../python"
+url = "https://github.com/example/foo-python"
+
+[[package]]
+id = "pyfoo"
+name = "Foo for Python"
+slug = "python"
+ecosystem = "python"
+repository = "python"
+path = "."
+metadata_path = "pyproject.toml"
+targets = [
+  { id = "api", extractor = "python", path = "python/foo", role = "public-api" },
+]
+
+[[relationship]]
+from = "pyfoo"
+to = "cargo:foo-core"
+kind = "binds"
+version_constraint = "^1.9"
+provenance = "explicit"

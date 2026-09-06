@@ -1,0 +1,14 @@
+---
+title: Generated assets stay within their boundary
+---
+
+# Generated assets stay within their boundary
+
+A Markdown-valued result must not read an asset from a sibling repository.
+
+```{python}
+#| label: asset-boundary-escape
+from IPython.display import Markdown
+
+Markdown("![Escaped asset](../../core/docs/assets/workspace.svg)")
+```

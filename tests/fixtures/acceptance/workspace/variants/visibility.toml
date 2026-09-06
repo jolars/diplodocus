@@ -1,0 +1,49 @@
+[project]
+name = "Visibility variants"
+
+[[repository]]
+id = "python"
+path = "../../python"
+url = "https://github.com/example/foo-python"
+
+[[package]]
+id = "pyfoo-public"
+name = "Foo public API"
+slug = "python"
+ecosystem = "python"
+repository = "python"
+path = "."
+metadata_path = "pyproject.toml"
+kind = "package"
+visibility = "public"
+targets = [
+  { id = "api", extractor = "python", path = "python/foo", role = "public-api" },
+]
+
+[[package]]
+id = "pyfoo-internals"
+name = "Foo internal interfaces"
+slug = "python-internals"
+ecosystem = "python"
+repository = "python"
+path = "."
+metadata_path = "pyproject.toml"
+kind = "component"
+visibility = "internal"
+targets = [
+  { id = "api", extractor = "python", path = "python/foo", role = "internal-api" },
+]
+
+[[package]]
+id = "pyfoo-native"
+name = "Foo hidden native interface"
+slug = "python-native"
+ecosystem = "python"
+repository = "python"
+path = "."
+metadata_path = "pyproject.toml"
+kind = "component"
+visibility = "hidden"
+targets = [
+  { id = "api", extractor = "python", path = "python/foo", role = "internal-api" },
+]

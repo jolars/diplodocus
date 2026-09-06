@@ -1,0 +1,14 @@
+---
+title: Unsafe kernel HTML crosses the sanitizer boundary
+---
+
+# Unsafe kernel HTML crosses the sanitizer boundary
+
+Kernel-produced HTML must never reach the renderer as trusted markup.
+
+```{python}
+#| label: unsafe-html
+from IPython.display import HTML
+
+HTML("<script>document.body.dataset.kernelHtml = 'unsafe'</script>")
+```

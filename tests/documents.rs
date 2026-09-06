@@ -321,3 +321,43 @@ fn acceptance_execution_authority_variants_have_the_expected_authored_cells() {
             .contains("Generated Markdown must stay inert")
     );
 }
+
+#[test]
+fn acceptance_output_safety_variants_are_single_cell_documents() {
+    let cases = [
+        (
+            "acceptance/python/execution/markdown-looking-stdout.qmd",
+            "markdown-looking-stdout",
+            "# Not a heading",
+        ),
+        (
+            "acceptance/python/execution/unsafe-html.qmd",
+            "unsafe-html",
+            "<script>",
+        ),
+        (
+            "acceptance/python/execution/asset-boundary-escape.qmd",
+            "asset-boundary-escape",
+            "../../core/docs/assets/workspace.svg",
+        ),
+    ];
+
+    for (source, label, construct) in cases {
+        let source = support::load_fixture(source);
+        let parsed = parse_authored_document(&source, AuthoredFormat::Qmd);
+        let cells = parsed
+            .document
+            .blocks
+            .iter()
+            .filter_map(|block| match block {
+                Block::CodeCell(cell) => Some(cell),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+
+        assert_eq!(cells.len(), 1);
+        assert_eq!(cells[0].language.as_deref(), Some("python"));
+        assert_eq!(cells[0].labels[0].value, label);
+        assert!(cells[0].source.contains(construct));
+    }
+}

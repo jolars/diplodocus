@@ -129,11 +129,11 @@ MVP's differentiating behavior.
 - [x] Add focused variants proving that GFM fences are display-only, QMD
   execution defaults to `never`, document metadata cannot authorize execution,
   and generated Markdown cannot introduce an executable cell.
-- [ ] Add output-safety variants containing Markdown-looking stdout, unsafe
+- [x] Add output-safety variants containing Markdown-looking stdout, unsafe
   kernel HTML, and an asset path that attempts to escape its declared boundary.
-- [ ] Declare at least one equivalent concept and one analogous concept joining
+- [x] Declare at least one equivalent concept and one analogous concept joining
   Python and R callable families.
-- [ ] Represent public, internal, and hidden units, plus compatible,
+- [x] Represent public, internal, and hidden units, plus compatible,
   incompatible, and external package relationships in focused fixture
   variants.
 - [ ] Write an acceptance matrix that maps every fixture construct to its

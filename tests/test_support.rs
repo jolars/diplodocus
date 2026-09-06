@@ -177,6 +177,115 @@ fn acceptance_fixture_has_execution_authority_variants() {
 }
 
 #[test]
+fn acceptance_fixture_has_output_safety_variants() {
+    let cases = [
+        (
+            "python/execution/markdown-looking-stdout.qmd",
+            [
+                "#| label: markdown-looking-stdout",
+                "print(",
+                "# Not a heading",
+            ],
+        ),
+        (
+            "python/execution/unsafe-html.qmd",
+            ["#| label: unsafe-html", "HTML(", "<script>"],
+        ),
+        (
+            "python/execution/asset-boundary-escape.qmd",
+            [
+                "#| label: asset-boundary-escape",
+                "Markdown(",
+                "../../core/docs/assets/workspace.svg",
+            ],
+        ),
+    ];
+
+    for (source, constructs) in cases {
+        assert!(
+            fixture_path(format!("acceptance/{source}")).is_file(),
+            "output-safety fixture should exist: {source}"
+        );
+        let page = load_fixture(format!("acceptance/{source}"));
+        assert_eq!(
+            page.lines().filter(|line| *line == "```{python}").count(),
+            1
+        );
+        for construct in constructs {
+            assert!(
+                page.contains(construct),
+                "missing `{construct}` in {source}"
+            );
+        }
+    }
+}
+
+#[test]
+fn acceptance_configuration_declares_cross_language_callable_concepts() {
+    let configuration = load_fixture("acceptance/workspace/polydoc.toml");
+
+    for concept in [
+        "id = \"fit\"\nkind = \"equivalent\"\nmembers = [\n  { package = \"pyfoo\", item = \"foo.fit\" },\n  { package = \"rfoo\", item = \"fit\" },\n]",
+        "id = \"foo-model.fit\"\nkind = \"analogous\"\nmembers = [\n  { package = \"pyfoo\", item = \"foo.FooModel.fit\" },\n  { package = \"rfoo\", item = \"fit.foo_model\" },\n]",
+    ] {
+        assert!(configuration.contains(concept));
+    }
+
+    let python_stubs = load_fixture("acceptance/python/python/foo/model.pyi");
+    assert!(python_stubs.contains("def fit("));
+    assert!(python_stubs.matches("@overload").count() >= 4);
+    assert!(python_stubs.contains("class FooModel:"));
+
+    let r_source = load_fixture("acceptance/r/R/fit.R");
+    assert!(r_source.contains("UseMethod(\"fit\")"));
+    assert!(r_source.contains("fit.foo_model <- function("));
+}
+
+#[test]
+fn acceptance_fixture_has_visibility_and_relationship_variants() {
+    let visibility = load_fixture("acceptance/workspace/variants/visibility.toml");
+    assert_eq!(visibility.matches("[[package]]").count(), 3);
+    assert_eq!(visibility.matches("visibility = \"public\"").count(), 1);
+    assert_eq!(visibility.matches("visibility = \"internal\"").count(), 1);
+    assert_eq!(visibility.matches("visibility = \"hidden\"").count(), 1);
+    assert!(visibility.contains("kind = \"package\""));
+    assert_eq!(visibility.matches("kind = \"component\"").count(), 2);
+    assert!(!visibility.contains("[[relationship]]"));
+
+    let cases = [
+        (
+            "relationship-compatible.toml",
+            "to = \"rfoo\"",
+            "version_constraint = \"^1.8\"",
+        ),
+        (
+            "relationship-incompatible.toml",
+            "to = \"rfoo\"",
+            "version_constraint = \"^2.0\"",
+        ),
+        (
+            "relationship-external.toml",
+            "to = \"cargo:foo-core\"",
+            "version_constraint = \"^1.9\"",
+        ),
+    ];
+
+    for (variant, endpoint, constraint) in cases {
+        let configuration = load_fixture(format!("acceptance/workspace/variants/{variant}"));
+        assert_eq!(configuration.matches("[[relationship]]").count(), 1);
+        assert!(configuration.contains(endpoint));
+        assert!(configuration.contains(constraint));
+        assert!(configuration.contains("provenance = \"explicit\""));
+    }
+
+    let incompatible = load_fixture("acceptance/workspace/variants/relationship-incompatible.toml");
+    assert!(incompatible.contains("Expected diagnostic: incompatible-package-relationship"));
+
+    let external = load_fixture("acceptance/workspace/variants/relationship-external.toml");
+    assert!(!external.contains("id = \"cargo:foo-core\""));
+}
+
+#[test]
 fn acceptance_configuration_covers_the_design_model() {
     let configuration_path = fixture_path("acceptance/workspace/polydoc.toml");
     let configuration = fs::read_to_string(&configuration_path)
