@@ -2,7 +2,24 @@ mod support;
 
 use std::panic::catch_unwind;
 
-use support::{TestWorkspace, assert_matches_golden, assert_output_tree, load_fixture};
+use support::{
+    TestWorkspace, assert_matches_golden, assert_output_tree, fixture_path, load_fixture,
+};
+
+#[test]
+fn acceptance_fixture_has_sibling_workspace_roots() {
+    let acceptance = fixture_path("acceptance");
+
+    for root in ["workspace", "core", "python", "r"] {
+        let path = acceptance.join(root);
+        assert!(
+            path.is_dir(),
+            "fixture root should exist: {}",
+            path.display()
+        );
+        assert_eq!(path.parent(), Some(acceptance.as_path()));
+    }
+}
 
 #[test]
 fn temporary_workspaces_can_be_seeded_from_fixtures() {

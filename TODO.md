@@ -82,7 +82,7 @@ Build the representative workspace before choosing parser libraries or fixing
 the IR. Keep it small enough to understand and broad enough to exercise the
 MVP's differentiating behavior.
 
-- [ ] Create `tests/fixtures/acceptance/` with a documentation workspace and
+- [x] Create `tests/fixtures/acceptance/` with a documentation workspace and
   sibling `core`, `python`, and `r` repository roots.
 - [ ] Add a `polydoc.toml` that uses repository paths outside the configuration
   directory and package, target, content, relationship, and concept entries
