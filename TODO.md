@@ -84,7 +84,7 @@ MVP's differentiating behavior.
 
 - [x] Create `tests/fixtures/acceptance/` with a documentation workspace and
   sibling `core`, `python`, and `r` repository roots.
-- [ ] Add a `polydoc.toml` that uses repository paths outside the configuration
+- [x] Add a `polydoc.toml` that uses repository paths outside the configuration
   directory and package, target, content, relationship, and concept entries
   from `DESIGN.md`.
 - [ ] Add a Python distribution with:

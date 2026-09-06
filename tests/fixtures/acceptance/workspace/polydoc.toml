@@ -1,0 +1,82 @@
+[project]
+name = "Foo"
+
+[[repository]]
+id = "core"
+path = "../core"
+url = "https://github.com/example/foo-core"
+
+[[repository]]
+id = "python"
+path = "../python"
+url = "https://github.com/example/foo-python"
+
+[[repository]]
+id = "r"
+path = "../r"
+url = "https://github.com/example/foo-r"
+
+[[package]]
+id = "pyfoo"
+name = "Foo for Python"
+slug = "python"
+ecosystem = "python"
+repository = "python"
+path = "."
+metadata_path = "pyproject.toml"
+targets = [
+  { id = "api", extractor = "python", path = "python/foo", role = "public-api" },
+]
+
+[[package]]
+id = "rfoo"
+name = "Foo for R"
+slug = "r"
+ecosystem = "r"
+repository = "r"
+path = "."
+metadata_path = "DESCRIPTION"
+targets = [
+  { id = "api", extractor = "r", path = ".", role = "public-api" },
+]
+
+[[content]]
+id = "guide"
+owner = "project"
+repository = "core"
+path = "docs"
+mount = "guide"
+format = "markdown"
+execution = "never"
+
+[[content]]
+id = "python-guide"
+owner = "pyfoo"
+repository = "python"
+path = "docs"
+mount = "guide"
+format = "markdown"
+execution = "never"
+
+[[relationship]]
+from = "pyfoo"
+to = "cargo:foo-core"
+kind = "binds"
+version_constraint = "^1.9"
+provenance = "explicit"
+
+[[concept]]
+id = "fit"
+kind = "equivalent"
+members = [
+  { package = "pyfoo", item = "foo.fit" },
+  { package = "rfoo", item = "fit" },
+]
+
+[[concept]]
+id = "foo-model.fit"
+kind = "analogous"
+members = [
+  { package = "pyfoo", item = "foo.FooModel.fit" },
+  { package = "rfoo", item = "fit.foo_model" },
+]

@@ -1,6 +1,8 @@
 mod support;
 
+use std::fs;
 use std::panic::catch_unwind;
+use std::path::Path;
 
 use support::{
     TestWorkspace, assert_matches_golden, assert_output_tree, fixture_path, load_fixture,
@@ -18,6 +20,36 @@ fn acceptance_fixture_has_sibling_workspace_roots() {
             path.display()
         );
         assert_eq!(path.parent(), Some(acceptance.as_path()));
+    }
+}
+
+#[test]
+fn acceptance_configuration_covers_the_design_model() {
+    let configuration_path = fixture_path("acceptance/workspace/polydoc.toml");
+    let configuration = fs::read_to_string(&configuration_path)
+        .expect("acceptance configuration should be readable");
+
+    for table in [
+        "[project]",
+        "[[repository]]",
+        "[[package]]",
+        "[[content]]",
+        "[[relationship]]",
+        "[[concept]]",
+    ] {
+        assert!(configuration.contains(table), "missing {table} entry");
+    }
+    assert!(configuration.contains("targets = ["));
+
+    let workspace = configuration_path
+        .parent()
+        .expect("acceptance configuration should have a parent");
+    let workspace = fs::canonicalize(workspace).expect("workspace should be canonicalizable");
+    for repository in ["../core", "../python", "../r"] {
+        assert!(configuration.contains(&format!("path = \"{repository}\"")));
+        let root = fs::canonicalize(workspace.join(Path::new(repository)))
+            .expect("repository root should be canonicalizable");
+        assert_eq!(root.parent(), workspace.parent());
     }
 }
 
