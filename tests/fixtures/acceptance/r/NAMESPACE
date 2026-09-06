@@ -1,0 +1,8 @@
+export(experimental_summary)
+export(fit)
+export(foo_model)
+export(mean_squared_error)
+S3method(fit,default)
+S3method(fit,foo_model)
+S3method(predict,foo_model)
+importFrom(stats,predict)

@@ -1,0 +1,21 @@
+Package: foo
+Type: Package
+Title: Statistical Models with Foo
+Version: 1.8.0
+Authors@R:
+    person("Foo", "Contributors", role = c("aut", "cre"),
+           email = "maintainers@example.com")
+Author: Foo Contributors [aut, cre]
+Maintainer: Foo Contributors <maintainers@example.com>
+Description: R bindings for the Foo statistical library. The package exposes a
+    small model-fitting API used by Polydoc's acceptance workspace.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Depends:
+    R (>= 4.3)
+Imports:
+    stats
+Suggests:
+    testthat (>= 3.2.0)
+Config/testthat/edition: 3
+NeedsCompilation: no

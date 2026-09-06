@@ -162,6 +162,109 @@ fn acceptance_python_distribution_has_overloads_and_numpy_docstrings() {
 }
 
 #[test]
+fn acceptance_r_package_has_metadata_namespace_and_sources() {
+    let package = fixture_path("acceptance/r");
+
+    for source in [
+        "DESCRIPTION",
+        "LICENSE",
+        "NAMESPACE",
+        "R/fit.R",
+        "R/metrics.R",
+        "R/experimental.R",
+        "man/fit.Rd",
+        "man/foo_model.Rd",
+        "man/mean_squared_error.Rd",
+        "man/experimental_summary.Rd",
+    ] {
+        assert!(
+            package.join(source).is_file(),
+            "R fixture source should exist: {source}"
+        );
+    }
+
+    let description = load_fixture("acceptance/r/DESCRIPTION");
+    for field in [
+        "Package: foo",
+        "Version: 1.8.0",
+        "Depends:",
+        "R (>= 4.3)",
+        "Imports:",
+        "stats",
+        "Suggests:",
+        "testthat (>= 3.2.0)",
+    ] {
+        assert!(description.contains(field), "missing R metadata: {field}");
+    }
+}
+
+#[test]
+fn acceptance_r_package_declares_exports_and_s3_dispatch() {
+    let namespace = load_fixture("acceptance/r/NAMESPACE");
+    for directive in [
+        "export(fit)",
+        "export(foo_model)",
+        "export(mean_squared_error)",
+        "export(experimental_summary)",
+        "S3method(fit,default)",
+        "S3method(fit,foo_model)",
+        "S3method(predict,foo_model)",
+        "importFrom(stats,predict)",
+    ] {
+        assert!(
+            namespace.contains(directive),
+            "missing R namespace directive: {directive}"
+        );
+    }
+
+    let implementation = load_fixture("acceptance/r/R/fit.R");
+    for construct in [
+        "fit <- function(x, ...)",
+        "UseMethod(\"fit\")",
+        "fit.default <- function(",
+        "fit.foo_model <- function(",
+        "predict.foo_model <- function(",
+        "foo_model <- function(",
+    ] {
+        assert!(
+            implementation.contains(construct),
+            "missing public R construct: {construct}"
+        );
+    }
+
+    let metrics = load_fixture("acceptance/r/R/metrics.R");
+    assert!(metrics.contains("mean_squared_error <- function("));
+}
+
+#[test]
+fn acceptance_r_package_has_structured_rd_and_an_unsupported_construct() {
+    let fit_documentation = load_fixture("acceptance/r/man/fit.Rd");
+    for construct in [
+        r"\alias{fit}",
+        r"\alias{fit.default}",
+        r"\alias{fit.foo_model}",
+        r"\usage{",
+        r"\arguments{",
+        r"\value{",
+        r"\references{",
+        r"\examples{",
+    ] {
+        assert!(
+            fit_documentation.contains(construct),
+            "missing Rd construct: {construct}"
+        );
+    }
+
+    let model_documentation = load_fixture("acceptance/r/man/foo_model.Rd");
+    assert!(model_documentation.contains(r"\alias{predict.foo_model}"));
+    assert!(model_documentation.contains(r"\method{predict}{foo_model}"));
+
+    let dynamic_documentation = load_fixture("acceptance/r/man/experimental_summary.Rd");
+    assert!(dynamic_documentation.contains(r"\Sexpr[stage=render,results=text]"));
+    assert!(dynamic_documentation.contains("must produce an unsupported-Rd diagnostic"));
+}
+
+#[test]
 fn temporary_workspaces_can_be_seeded_from_fixtures() {
     let workspace = TestWorkspace::from_fixture("support");
     assert_eq!(workspace.read("input.txt"), "fixture input\n");

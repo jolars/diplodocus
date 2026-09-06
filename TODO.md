@@ -96,12 +96,12 @@ MVP's differentiating behavior.
   - [x] implementation files, maintained `.pyi` files, and a stub-only native
     extension module; and
   - [x] NumPy-style parameters, returns, notes, references, and examples.
-- [ ] Add an R package with:
-  - [ ] `DESCRIPTION`, `NAMESPACE`, source files, a version, and dependencies;
-  - [ ] exported functions, an S3 generic, and S3 methods;
-  - [ ] parsed `Rd` aliases, usage, arguments, value, references, and examples;
+- [x] Add an R package with:
+  - [x] `DESCRIPTION`, `NAMESPACE`, source files, a version, and dependencies;
+  - [x] exported functions, an S3 generic, and S3 methods;
+  - [x] parsed `Rd` aliases, usage, arguments, value, references, and examples;
     and
-  - [ ] an unsupported or incomplete construct that must produce a diagnostic.
+  - [x] an unsupported or incomplete construct that must produce a diagnostic.
 - [ ] Add project- and package-owned Markdown collections with nested pages,
   fenced code, a table, an admonition, a checked-in asset, package-qualified
   references, an unqualified reference, and an unsupported directive.
