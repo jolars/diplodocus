@@ -167,7 +167,7 @@ API extraction and explicitly authorized authored execution.
   dynamic exports, incomplete source locations, and information loss.
 - [ ] Define each extractor's static mode, tool requirements, capabilities, and
   provenance fields.
-- [ ] Pin `panache-parser` as the in-process reader and verify its GFM and Quarto
+- [x] Pin `panache-parser` as the in-process reader and verify its GFM and Quarto
   flavors against every authored-content construct in the acceptance matrix.
 - [x] Verify that Panache's typed syntax API exposes semantic block and inline
   traversal, unsupported nodes, embedded-YAML errors, source ranges, and QMD

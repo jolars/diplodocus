@@ -266,7 +266,9 @@ dependencies = [
 
 [[package]]
 name = "panache-parser"
-version = "0.28.1"
+version = "0.29.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "86c3821235627a5f68a84d18b4e89950c4a569839101d6411d3b0234505e3cde"
 dependencies = [
  "entities",
  "log",
