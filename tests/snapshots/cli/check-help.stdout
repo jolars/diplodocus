@@ -1,0 +1,7 @@
+Check documentation without writing a site
+
+Usage: polydoc check [OPTIONS]
+
+Options:
+      --config <PATH>  Path to the workspace configuration file [default: ./polydoc.toml]
+  -h, --help           Print help

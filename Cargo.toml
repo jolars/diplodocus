@@ -1,0 +1,30 @@
+[package]
+name = "polydoc"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.98.0"
+authors = ["Johan Larsson <johan@jolars.co>"]
+description = "Build coherent documentation websites for polyglot software projects."
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/jolars/polydoc"
+homepage = "https://github.com/jolars/polydoc"
+documentation = "https://docs.rs/polydoc"
+readme = "README.md"
+keywords = ["documentation", "generator", "python", "r", "static-site"]
+categories = ["command-line-utilities", "development-tools"]
+default-run = "polydoc"
+
+[lib]
+name = "polydoc"
+path = "src/lib.rs"
+
+[[bin]]
+name = "polydoc"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4.5", features = ["derive"] }
+thiserror = "2.0"
+
+[dev-dependencies]
+snapbox = { version = "1.2", features = ["cmd", "dir"] }

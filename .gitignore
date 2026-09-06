@@ -1,0 +1,29 @@
+# Cargo build output.
+/target/
+**/*.rs.bk
+*.pdb
+
+# Generated sites and coverage reports.
+/site/
+/coverage/
+/lcov.info
+/cobertura.xml
+
+# Devenv, direnv, and generated pre-commit configuration.
+/.devenv*
+/.direnv/
+/.pre-commit-config.yaml
+/devenv.local.nix
+/devenv.local.yaml
+
+# Nix build results.
+/result
+/result-*
+
+# Editors and operating systems.
+/.idea/
+/.vscode/
+*.swp
+*.swo
+*~
+.DS_Store

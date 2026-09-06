@@ -1,0 +1,10 @@
+Build and serve a site, rebuilding when declared inputs change
+
+Usage: polydoc serve [OPTIONS]
+
+Options:
+      --config <PATH>   Path to the workspace configuration file [default: ./polydoc.toml]
+      --output <PATH>   Directory in which to write the generated site [default: ./site]
+      --host <ADDRESS>  Address on which to serve the generated site [default: 127.0.0.1]
+      --port <PORT>     Port on which to serve the generated site [default: 8000]
+  -h, --help            Print help

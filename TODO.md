@@ -86,65 +86,65 @@ interface or a multi-crate workspace for the MVP.
 
 ### Rust project
 
-- [ ] Create the root Cargo package at version `0.1.0`, commit `Cargo.lock`, and
+- [x] Create the root Cargo package at version `0.1.0`, commit `Cargo.lock`, and
   set complete package metadata for the `polydoc` library and binary.
-- [ ] Choose the initial minimum supported Rust version and use the same pin in
+- [x] Choose the initial minimum supported Rust version and use the same pin in
   Cargo's `rust-version` and `rust-toolchain.toml`; include the `rustfmt` and
   Clippy components required by local checks and CI.
-- [ ] Add library modules for configuration, diagnostics, IR, documents,
+- [x] Add library modules for configuration, diagnostics, IR, documents,
   extractors, validation, the site model, rendering, and commands.
-- [ ] Keep argument parsing and process exit handling in the binary; expose
+- [x] Keep argument parsing and process exit handling in the binary; expose
   testable command operations from the library.
-- [ ] Write CLI smoke tests, then add placeholder `build`, `check`, and `serve`
+- [x] Write CLI smoke tests, then add placeholder `build`, `check`, and `serve`
   parsers with the agreed flags, defaults, and help text.
-- [ ] Establish one structured error boundary at the CLI and avoid panics for
+- [x] Establish one structured error boundary at the CLI and avoid panics for
   malformed user input.
-- [ ] Add shared temporary-workspace, fixture-loading, golden-file, and output
+- [x] Add shared temporary-workspace, fixture-loading, golden-file, and output
   tree comparison helpers.
-- [ ] Ignore local build, devenv, generated-site, coverage, and editor artifacts
+- [x] Ignore local build, devenv, generated-site, coverage, and editor artifacts
   without ignoring lockfiles or test fixtures.
 
 ### Devenv
 
-- [ ] Add `devenv.yaml` with pinned `nixpkgs`, `rust-overlay`, and
+- [x] Add `devenv.yaml` with pinned `nixpkgs`, `rust-overlay`, and
   `git-hooks` inputs, following Basin's input structure.
-- [ ] Add `devenv.nix` that enables Rust through `rust-toolchain.toml` and makes
+- [x] Add `devenv.nix` that enables Rust through `rust-toolchain.toml` and makes
   Python and R available for extractor development and acceptance tests.
-- [ ] Enable pre-commit hooks for rustfmt and all-target Clippy with warnings
+- [x] Enable pre-commit hooks for rustfmt and all-target Clippy with warnings
   denied.
-- [ ] Include the project-wide development tools used by local and CI checks,
+- [x] Include the project-wide development tools used by local and CI checks,
   such as coverage, dependency auditing, and workflow linting; add
   extractor-specific tools only after Milestone 2 confirms they are required.
-- [ ] Commit `devenv.lock` so a fresh checkout resolves the same development
+- [x] Commit `devenv.lock` so a fresh checkout resolves the same development
   environment.
-- [ ] Document entering the shell and running formatting, linting, tests, and
+- [x] Document entering the shell and running formatting, linting, tests, and
   the CLI in the project README.
 
 ### Versioning and releases
 
-- [ ] Add `versionary.jsonc` using Versionary's Rust release type, commit-author
+- [x] Add `versionary.jsonc` using Versionary's Rust release type, commit-author
   attribution, stable-major support, and best-effort issue-reference comments,
   matching Basin's release policy.
-- [ ] Make conventional commits and Versionary-managed release pull requests
+- [x] Make conventional commits and Versionary-managed release pull requests
   the source of version and changelog updates after the initial `0.1.0` version.
-- [ ] Add a tag-triggered, manually dispatchable crate publishing workflow that
+- [x] Add a tag-triggered, manually dispatchable crate publishing workflow that
   publishes with `cargo publish --locked` and crates.io trusted publishing,
   following Basin's OIDC setup.
-- [ ] Document the required `RELEASE_TOKEN` repository secret and protected
+- [x] Document the required `RELEASE_TOKEN` repository secret and protected
   release environment; do not place credentials in repository files.
 
 ### GitHub Actions
 
-- [ ] Add `.github/workflows/ci.yml` for pushes and pull requests targeting
+- [x] Add `.github/workflows/ci.yml` for pushes and pull requests targeting
   `main`.
-- [ ] Add separate required jobs for rustfmt, all-target Clippy with warnings
+- [x] Add separate required jobs for rustfmt, all-target Clippy with warnings
   denied, tests, and rustdoc with warnings denied; cache Cargo artifacts without
   caching generated test results.
-- [ ] Add a Versionary job that runs only after all required jobs succeed on a
+- [x] Add a Versionary job that runs only after all required jobs succeed on a
   push to `main`, checks out full history, and grants only the contents,
   pull-request, and issue permissions used by Versionary.
-- [ ] Add Dependabot configuration for Cargo and GitHub Actions dependencies.
-- [ ] Validate workflow syntax locally and pin action releases consistently
+- [x] Add Dependabot configuration for Cargo and GitHub Actions dependencies.
+- [x] Validate workflow syntax locally and pin action releases consistently
   with Basin.
 - [ ] Expand the test job with the Python, R, and external-tool versions selected
   in Milestone 2 before extractor code lands.
