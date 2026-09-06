@@ -24,6 +24,20 @@ fn acceptance_fixture_has_sibling_workspace_roots() {
 }
 
 #[test]
+fn acceptance_fixture_has_gfm_and_qmd_authored_content() {
+    for source in ["core/docs/index.md", "python/docs/guide.qmd"] {
+        assert!(
+            fixture_path(format!("acceptance/{source}")).is_file(),
+            "authored fixture should exist: {source}"
+        );
+    }
+
+    let configuration = load_fixture("acceptance/workspace/polydoc.toml");
+    assert!(configuration.contains("format = \"gfm\""));
+    assert!(configuration.contains("format = \"qmd\""));
+}
+
+#[test]
 fn acceptance_configuration_covers_the_design_model() {
     let configuration_path = fixture_path("acceptance/workspace/polydoc.toml");
     let configuration = fs::read_to_string(&configuration_path)

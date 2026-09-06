@@ -46,7 +46,7 @@ owner = "project"
 repository = "core"
 path = "docs"
 mount = "guide"
-format = "markdown"
+format = "gfm"
 execution = "never"
 
 [[content]]
@@ -55,7 +55,7 @@ owner = "pyfoo"
 repository = "python"
 path = "docs"
 mount = "guide"
-format = "markdown"
+format = "qmd"
 execution = "never"
 
 [[relationship]]

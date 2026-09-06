@@ -169,7 +169,7 @@ API extraction and explicitly authorized authored execution.
   provenance fields.
 - [ ] Pin `panache-parser` as the in-process reader and verify its GFM and Quarto
   flavors against every authored-content construct in the acceptance matrix.
-- [ ] Verify that Panache's typed syntax API exposes semantic block and inline
+- [x] Verify that Panache's typed syntax API exposes semantic block and inline
   traversal, unsupported nodes, embedded-YAML errors, source ranges, and QMD
   cell source and options without using its Pandoc projectors. Land the required
   consumer-facing API changes in Panache where the current surface is

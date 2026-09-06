@@ -1,0 +1,371 @@
+{
+  "document": {
+    "span": {
+      "start": 0,
+      "end": 364
+    },
+    "frontmatter": {
+      "type": "mapping",
+      "entries": [
+        {
+          "key": {
+            "value": "title",
+            "span": {
+              "start": 4,
+              "end": 9
+            }
+          },
+          "value": {
+            "type": "scalar",
+            "raw": "Python guide",
+            "value": "Python guide",
+            "span": {
+              "start": 11,
+              "end": 23
+            }
+          },
+          "span": {
+            "start": 4,
+            "end": 24
+          }
+        },
+        {
+          "key": {
+            "value": "audience",
+            "span": {
+              "start": 24,
+              "end": 32
+            }
+          },
+          "value": {
+            "type": "sequence",
+            "items": [
+              {
+                "type": "scalar",
+                "raw": "Python",
+                "value": "Python",
+                "span": {
+                  "start": 38,
+                  "end": 44
+                }
+              },
+              {
+                "type": "scalar",
+                "raw": "R",
+                "value": "R",
+                "span": {
+                  "start": 49,
+                  "end": 50
+                }
+              }
+            ],
+            "span": {
+              "start": 36,
+              "end": 51
+            }
+          },
+          "span": {
+            "start": 24,
+            "end": 51
+          }
+        }
+      ],
+      "span": {
+        "start": 4,
+        "end": 51
+      }
+    },
+    "blocks": [
+      {
+        "type": "heading",
+        "level": 1,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Fit a model",
+            "span": {
+              "start": 58,
+              "end": 69
+            }
+          }
+        ],
+        "span": {
+          "start": 56,
+          "end": 70
+        }
+      },
+      {
+        "type": "callout",
+        "kind": "tip",
+        "attributes": {
+          "identifier": {
+            "value": "stateful",
+            "span": {
+              "start": 90,
+              "end": 98
+            }
+          },
+          "classes": [
+            {
+              "value": "callout-tip",
+              "span": {
+                "start": 77,
+                "end": 88
+              }
+            }
+          ],
+          "key_values": []
+        },
+        "blocks": [
+          {
+            "type": "paragraph",
+            "inlines": [
+              {
+                "type": "text",
+                "value": "Cells are extracted in source order.",
+                "span": {
+                  "start": 100,
+                  "end": 136
+                }
+              },
+              {
+                "type": "soft-break",
+                "span": {
+                  "start": 136,
+                  "end": 137
+                }
+              }
+            ],
+            "span": {
+              "start": 100,
+              "end": 137
+            }
+          }
+        ],
+        "span": {
+          "start": 71,
+          "end": 141
+        }
+      },
+      {
+        "type": "code-cell",
+        "language": "python",
+        "identifier": {
+          "value": "setup",
+          "span": {
+            "start": 154,
+            "end": 159
+          }
+        },
+        "classes": [],
+        "labels": [],
+        "source": "from foo import fit\n",
+        "source_segments": [
+          {
+            "text": "from foo import fit",
+            "span": {
+              "start": 236,
+              "end": 255
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 255,
+              "end": 256
+            }
+          }
+        ],
+        "options": [
+          {
+            "key": "echo",
+            "canonical_key": "echo",
+            "raw_value": "true",
+            "cooked_value": "true",
+            "value": null,
+            "source": "inline-info",
+            "key_span": {
+              "start": 161,
+              "end": 165
+            },
+            "value_span": {
+              "start": 166,
+              "end": 170
+            },
+            "span": {
+              "start": 161,
+              "end": 170
+            }
+          },
+          {
+            "key": "echo",
+            "canonical_key": "echo",
+            "raw_value": "false",
+            "cooked_value": "false",
+            "value": {
+              "type": "scalar",
+              "raw": "false",
+              "value": "false",
+              "span": {
+                "start": 181,
+                "end": 186
+              }
+            },
+            "source": "hashpipe-yaml",
+            "key_span": {
+              "start": 175,
+              "end": 179
+            },
+            "value_span": {
+              "start": 181,
+              "end": 186
+            },
+            "span": {
+              "start": 175,
+              "end": 190
+            }
+          },
+          {
+            "key": "fig-subcap",
+            "canonical_key": "fig-subcap",
+            "raw_value": "- Training\n#|   - Validation\n",
+            "cooked_value": null,
+            "value": {
+              "type": "sequence",
+              "items": [
+                {
+                  "type": "scalar",
+                  "raw": "Training",
+                  "value": "Training",
+                  "span": {
+                    "start": 209,
+                    "end": 217
+                  }
+                },
+                {
+                  "type": "scalar",
+                  "raw": "Validation",
+                  "value": "Validation",
+                  "span": {
+                    "start": 225,
+                    "end": 235
+                  }
+                }
+              ],
+              "span": {
+                "start": 207,
+                "end": 236
+              }
+            },
+            "source": "hashpipe-yaml",
+            "key_span": {
+              "start": 190,
+              "end": 200
+            },
+            "value_span": {
+              "start": 207,
+              "end": 236
+            },
+            "span": {
+              "start": 190,
+              "end": 236
+            }
+          }
+        ],
+        "resolved_options": [
+          {
+            "key": "echo",
+            "resolution": {
+              "type": "resolved",
+              "declaration": 0
+            }
+          },
+          {
+            "key": "fig-subcap",
+            "resolution": {
+              "type": "resolved",
+              "declaration": 2
+            }
+          }
+        ],
+        "code_span": {
+          "start": 236,
+          "end": 256
+        },
+        "span": {
+          "start": 142,
+          "end": 260
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "See ",
+            "span": {
+              "start": 261,
+              "end": 265
+            }
+          },
+          {
+            "type": "semantic-reference",
+            "target": "pyfoo::foo.FooModel.fit",
+            "span": {
+              "start": 265,
+              "end": 292
+            },
+            "target_span": {
+              "start": 267,
+              "end": 290
+            }
+          },
+          {
+            "type": "text",
+            "value": ".",
+            "span": {
+              "start": 292,
+              "end": 293
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 293,
+              "end": 294
+            }
+          }
+        ],
+        "span": {
+          "start": 261,
+          "end": 294
+        }
+      },
+      {
+        "type": "unsupported",
+        "source_kind": "FENCED_DIV",
+        "raw": "::: {.unsupported-directive}\nThis directive must remain visible.\n:::\n",
+        "span": {
+          "start": 295,
+          "end": 364
+        }
+      }
+    ]
+  },
+  "diagnostics": [
+    {
+      "code": "unsupported-authored-syntax",
+      "severity": "warning",
+      "message": "unsupported authored syntax: FENCED_DIV",
+      "span": {
+        "start": 295,
+        "end": 364
+      }
+    }
+  ]
+}

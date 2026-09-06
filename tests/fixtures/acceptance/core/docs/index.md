@@ -1,0 +1,17 @@
+# Foo documentation
+
+See [`pyfoo::foo.fit`] or the [Python guide](../../python/docs/guide.qmd).
+
+| Package | Version |
+|:--------|--------:|
+| Python  | 1.9.0   |
+| R       | 1.8.0   |
+
+> [!NOTE]
+> Polydoc renders this project and both packages together.
+
+```python
+from foo import fit
+```
+
+<component name="unsupported" />

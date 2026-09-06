@@ -11,6 +11,21 @@ Polydoc is under active development. The command-line surface is present, but
 the build pipeline will arrive in the later milestones described in
 [`TODO.md`](TODO.md).
 
+## Authored documents
+
+The library parses authored `.md` and `.qmd` content in-process through
+`panache-parser`. Use `documents::parse_authored_document` with the `Gfm` or
+`Qmd` profile to obtain Polydoc's serializable document IR and source-ordered
+diagnostics. The current QMD adapter extracts executable cells and their
+options, but does not execute them.
+
+The supported authored subset covers prose, headings, lists, links and images,
+pipe tables, GFM alerts, QMD frontmatter, QMD callouts, and executable fences
+with hashpipe YAML. A code-only unresolved reference such as
+`` [`package::item`] `` becomes a semantic reference. Other unsupported syntax
+is retained as an explicit IR node and produces a warning rather than being
+silently discarded.
+
 ## Development
 
 Enter the reproducible development shell:
