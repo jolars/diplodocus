@@ -126,7 +126,7 @@ MVP's differentiating behavior.
 - [x] Add executable Python and R QMD pages with sequential stateful cells,
   hashpipe options, labels, stdout and stderr, Markdown-valued output, a figure,
   and a controlled error.
-- [ ] Add focused variants proving that GFM fences are display-only, QMD
+- [x] Add focused variants proving that GFM fences are display-only, QMD
   execution defaults to `never`, document metadata cannot authorize execution,
   and generated Markdown cannot introduce an executable cell.
 - [ ] Add output-safety variants containing Markdown-looking stdout, unsafe

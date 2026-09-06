@@ -1,0 +1,12 @@
+---
+title: Default execution mode
+---
+
+# QMD execution defaults to never
+
+The collection deliberately omits an execution table.
+
+```{python}
+#| label: default-never
+raise RuntimeError("QMD execution must default to never")
+```

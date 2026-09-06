@@ -1,0 +1,15 @@
+---
+title: Document metadata cannot authorize execution
+execute: true
+jupyter: python3
+---
+
+# Document metadata cannot authorize execution
+
+The frontmatter requests execution, but collection configuration remains
+authoritative.
+
+```{python}
+#| label: metadata-cannot-authorize
+raise RuntimeError("Document metadata must not authorize execution")
+```

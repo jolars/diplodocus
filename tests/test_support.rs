@@ -128,6 +128,55 @@ fn acceptance_fixture_has_executable_python_and_r_qmd_pages() {
 }
 
 #[test]
+fn acceptance_fixture_has_execution_authority_variants() {
+    for source in [
+        "core/docs/execution/display-only.md",
+        "python/safety/default-never.qmd",
+        "python/safety/metadata-cannot-authorize.qmd",
+        "python/execution/generated-markdown.qmd",
+    ] {
+        assert!(
+            fixture_path(format!("acceptance/{source}")).is_file(),
+            "execution-authority fixture should exist: {source}"
+        );
+    }
+
+    let configuration = load_fixture("acceptance/workspace/polydoc.toml");
+    let collection_start = configuration
+        .find("id = \"python-default-never\"")
+        .expect("default-never QMD collection should be configured");
+    let collection_tail = &configuration[collection_start..];
+    let collection_end = collection_tail
+        .find("\n[[content]]")
+        .unwrap_or(collection_tail.len());
+    let defaulted_collection = &collection_tail[..collection_end];
+    assert!(defaulted_collection.contains("format = \"qmd\""));
+    assert!(
+        !defaulted_collection.contains("[content.execution]"),
+        "the focused QMD collection must exercise the default execution mode"
+    );
+
+    let gfm = load_fixture("acceptance/core/docs/execution/display-only.md");
+    assert!(gfm.contains("```python"));
+    assert!(gfm.contains("GFM fences must stay display-only"));
+
+    let default_never = load_fixture("acceptance/python/safety/default-never.qmd");
+    assert!(default_never.contains("#| label: default-never"));
+    assert!(default_never.contains("QMD execution must default to never"));
+
+    let metadata = load_fixture("acceptance/python/safety/metadata-cannot-authorize.qmd");
+    assert!(metadata.contains("execute: true"));
+    assert!(metadata.contains("jupyter: python3"));
+    assert!(metadata.contains("Document metadata must not authorize execution"));
+
+    let generated = load_fixture("acceptance/python/execution/generated-markdown.qmd");
+    assert!(generated.contains("#| label: generated-markdown"));
+    assert!(generated.contains("Markdown("));
+    assert!(generated.contains("\"```{python}\\n\""));
+    assert!(generated.contains("Generated Markdown must stay inert"));
+}
+
+#[test]
 fn acceptance_configuration_covers_the_design_model() {
     let configuration_path = fixture_path("acceptance/workspace/polydoc.toml");
     let configuration = fs::read_to_string(&configuration_path)

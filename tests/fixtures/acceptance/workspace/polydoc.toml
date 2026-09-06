@@ -63,6 +63,14 @@ format = "qmd"
 mode = "never"
 
 [[content]]
+id = "python-default-never"
+owner = "pyfoo"
+repository = "python"
+path = "safety"
+mount = "safety"
+format = "qmd"
+
+[[content]]
 id = "python-execution"
 owner = "pyfoo"
 repository = "python"

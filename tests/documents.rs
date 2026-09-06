@@ -265,3 +265,59 @@ fn acceptance_execution_pages_retain_ordered_cells_labels_and_options() {
         }));
     }
 }
+
+#[test]
+fn acceptance_execution_authority_variants_have_the_expected_authored_cells() {
+    let gfm = support::load_fixture("acceptance/core/docs/execution/display-only.md");
+    let parsed_gfm = parse_authored_document(&gfm, AuthoredFormat::Gfm);
+    assert!(
+        parsed_gfm
+            .document
+            .blocks
+            .iter()
+            .any(|block| matches!(block, Block::CodeBlock { source, .. }
+                if source.contains("GFM fences must stay display-only")))
+    );
+    assert!(
+        !parsed_gfm
+            .document
+            .blocks
+            .iter()
+            .any(|block| matches!(block, Block::CodeCell(_)))
+    );
+
+    for source in [
+        "acceptance/python/safety/default-never.qmd",
+        "acceptance/python/safety/metadata-cannot-authorize.qmd",
+    ] {
+        let source = support::load_fixture(source);
+        let parsed = parse_authored_document(&source, AuthoredFormat::Qmd);
+        assert_eq!(
+            parsed
+                .document
+                .blocks
+                .iter()
+                .filter(|block| matches!(block, Block::CodeCell(_)))
+                .count(),
+            1
+        );
+    }
+
+    let generated = support::load_fixture("acceptance/python/execution/generated-markdown.qmd");
+    let parsed_generated = parse_authored_document(&generated, AuthoredFormat::Qmd);
+    let generated_cells = parsed_generated
+        .document
+        .blocks
+        .iter()
+        .filter_map(|block| match block {
+            Block::CodeCell(cell) => Some(cell),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(generated_cells.len(), 1);
+    assert!(
+        generated_cells[0]
+            .source
+            .contains("Generated Markdown must stay inert")
+    );
+}
