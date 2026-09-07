@@ -31,11 +31,12 @@ The MVP is complete when all of the following are true:
   starting a language runtime, importing a Python package, or loading an R
   package.
 - [ ] Polydoc parses authored `.md` through its supported GFM profile and
-  authored `.qmd` through its supported Quarto profile using `panache-parser`
-  in-process, with visible diagnostics for unsupported syntax.
+  authored `.qmd` through its supported Quarto profile using
+  `panache-parser` in-process, with visible diagnostics for unsupported
+  syntax.
 - [ ] Explicitly configured QMD collections execute Python and R code cells
-  through installed Jupyter kernels and retain streams, errors, Markdown, and
-  figure output as structured document IR.
+  through installed Jupyter kernels and retain streams, errors, Markdown,
+  and figure output as structured document IR.
 - [ ] Polydoc renders authored pages and both API ecosystems through one HTML
   renderer with safe code-cell output, shared navigation, source links,
   semantic references, concept switchers, and workspace-wide search.
@@ -58,10 +59,10 @@ The MVP is complete when all of the following are true:
 
 ### Commands
 
-  | Command         | MVP behavior                                               |
-  | --------------- | ---------------------------------------------------------- |
+  | Command         | MVP behavior                                                |
+  | --------------- | ----------------------------------------------------------- |
   | `polydoc check` | Load, parse, extract, and validate without executing cells. |
-  | `polydoc build` | Run configured execution and render the static site.       |
+  | `polydoc build` | Run configured execution and render the static site.        |
   | `polydoc serve` | Build, serve, watch declared inputs, and rebuild safely.    |
 
 All commands accept `--config`; its default is `./polydoc.toml`. `build` and
@@ -125,13 +126,14 @@ MVP's differentiating behavior.
   display code, a table, a callout, a checked-in asset, package-qualified
   references, an unqualified reference, and an unsupported directive.
 - [x] Add executable Python and R QMD pages with sequential stateful cells,
-  hashpipe options, labels, stdout and stderr, Markdown-valued output, a figure,
-  and a controlled error.
+  hashpipe options, labels, stdout and stderr, Markdown-valued output, a
+  figure, and a controlled error.
 - [x] Add focused variants proving that GFM fences are display-only, QMD
-  execution defaults to `never`, document metadata cannot authorize execution,
-  and generated Markdown cannot introduce an executable cell.
+  execution defaults to `never`, document metadata cannot authorize
+  execution, and generated Markdown cannot introduce an executable cell.
 - [x] Add output-safety variants containing Markdown-looking stdout, unsafe
-  kernel HTML, and an asset path that attempts to escape its declared boundary.
+  kernel HTML, and an asset path that attempts to escape its declared
+  boundary.
 - [x] Declare at least one equivalent concept and one analogous concept joining
   Python and R callable families.
 - [x] Represent public, internal, and hidden units, plus compatible,
@@ -151,33 +153,35 @@ shell and GitHub Actions.
 ## Milestone 2: Spike extraction, parsing, and execution
 
 Use the acceptance corpus to discover what can be represented reliably. The
-spikes choose implementation tools and establish the boundary between static
-API extraction and explicitly authorized authored execution.
+spikes choose implementation tools and establish the boundary between static API
+extraction and explicitly authorized authored execution.
 
 - [x] Compare viable Rust-native parsing and metadata libraries against every
   Python construct in the acceptance matrix.
 - [x] Verify that Python exports, re-exports, annotations, decorators,
   overloads, source spans, `.pyi` precedence, and docstrings can be obtained
   without importing the package.
-- [ ] Compare viable Rust-native R metadata, namespace, source, and `Rd` parsing
+- [x] Compare viable Rust-native R metadata, namespace, source, and `Rd` parsing
   approaches against every R construct in the matrix.
-- [ ] Verify that `DESCRIPTION`, `NAMESPACE`, maintained R source, and checked-in
-  `Rd` can be parsed in-process without `Rscript` or package loading.
+- [ ] Verify that `DESCRIPTION`, `NAMESPACE`, maintained R source, and
+  checked-in `Rd` can be parsed in-process without `Rscript` or package
+  loading.
 - [ ] Record how each extractor reports malformed metadata, unsupported syntax,
   dynamic constructs, incomplete source locations, and information loss.
 - [ ] Define each extractor's parser versions, static mode, capabilities, and
   provenance fields.
-- [x] Pin `panache-parser` as the in-process reader and verify its GFM and Quarto
-  flavors against every authored-content construct in the acceptance matrix.
+- [x] Pin `panache-parser` as the in-process reader and verify its GFM and
+  Quarto flavors against every authored-content construct in the acceptance
+  matrix.
 - [x] Verify that Panache's typed syntax API exposes semantic block and inline
   traversal, unsupported nodes, embedded-YAML errors, source ranges, and QMD
-  cell source and options without using its Pandoc projectors. Land the required
-  consumer-facing API changes in Panache where the current surface is
-  insufficient.
+  cell source and options without using its Pandoc projectors. Land the
+  required consumer-facing API changes in Panache where the current surface
+  is insufficient.
 - [ ] Compare the current `jupyter-zmq-client` and `jupyter-protocol` crates
   against the execution corpus: kernel discovery and startup, ordered cell
-  execution, stream and error messages, MIME bundles, display updates, timeout,
-  interruption, and shutdown.
+  execution, stream and error messages, MIME bundles, display updates,
+  timeout, interruption, and shutdown.
 - [ ] Verify Python and R kernels in the declared devenv and CI environments
   without starting a Jupyter server or installing anything during the test.
 - [ ] Define the supported QMD metadata and cell-option subset, MIME preference
@@ -188,8 +192,8 @@ API extraction and explicitly authorized authored execution.
   toolchain versions, and declared environment inputs.
 - [ ] Record the selected approaches and rejected alternatives in
   `docs/decisions/0001-static-extraction.md`.
-- [ ] Record the authored-format and execution decisions, including rejected
-  Q2, Pandoc-projector, temporary-Markdown, and direct-HTML boundaries, in
+- [ ] Record the authored-format and execution decisions, including rejected Q2,
+  Pandoc-projector, temporary-Markdown, and direct-HTML boundaries, in
   `docs/decisions/0002-authored-content.md`.
 - [ ] Capture exploratory output as golden fixtures before replacing spike code
   with production extractors.
@@ -197,8 +201,8 @@ API extraction and explicitly authorized authored execution.
 **Exit gate:** Every required Python and R API construct has a selected
 Rust-native static extraction path or an explicit diagnostic; every authored
 construct has a Panache-to-IR path; Python and R kernels produce the required
-structured outputs; and no static extractor starts a language runtime, imports
-a package, or loads documented package code.
+structured outputs; and no static extractor starts a language runtime, imports a
+package, or loads documented package code.
 
 ## Milestone 3: Implement configuration, diagnostics, and IR
 
@@ -210,8 +214,8 @@ before implementing the model.
 - [ ] Require each content collection to select `gfm` or `qmd`; default
   execution to `mode = "never"`; and validate the `execute` mode, Jupyter
   engine, kernel, and declared environment inputs as one coherent unit.
-- [ ] Reject execution for GFM collections and reject any document metadata
-  that attempts to broaden the collection's configured execution authority.
+- [ ] Reject execution for GFM collections and reject any document metadata that
+  attempts to broaden the collection's configured execution authority.
 - [ ] Apply documented defaults for package kind and visibility while requiring
   explicit repositories, packages, and extraction targets.
 - [ ] Resolve repository paths relative to the configuration file, package paths
@@ -323,13 +327,13 @@ Polydoc's document transformation.
 - [ ] Define the internal `ExecutionEngine` interface, execution context,
   capabilities, requirements, result, diagnostics, assets, and provenance.
 - [ ] Implement the Jupyter engine with `jupyter-zmq-client` and
-  `jupyter-protocol`; discover and start only the explicitly configured kernel
-  without requiring a Jupyter server.
+  `jupyter-protocol`; discover and start only the explicitly configured
+  kernel without requiring a Jupyter server.
 - [ ] Execute the `CodeCell` nodes of one page sequentially in one page-scoped
   kernel session so definitions and imports persist between cells.
 - [ ] Enforce the supported QMD option subset, including non-executing cells and
-  the selected echo, output, and error behavior; retain option-source ranges in
-  diagnostics.
+  the selected echo, output, and error behavior; retain option-source ranges
+  in diagnostics.
 - [ ] Collect stdout, stderr, execution errors, display data, display updates,
   and result MIME bundles into typed `CellOutput` nodes in protocol order.
 - [ ] Treat ordinary streams as escaped preformatted text. Parse
@@ -339,24 +343,25 @@ Polydoc's document transformation.
   output boundary; reject unsupported media, path traversal, and asset
   collisions deterministically.
 - [ ] Sanitize supported `text/html` into a distinct IR representation before
-  rendering, prefer a safe alternative MIME representation when available, and
-  diagnose output that has no faithful safe representation.
+  rendering, prefer a safe alternative MIME representation when available,
+  and diagnose output that has no faithful safe representation.
 - [ ] Add deterministic startup, idle, cell, and shutdown timeouts; interrupt
-  failed execution, reap the kernel process, and preserve the last successful
-  site during a watched-build failure.
+  failed execution, reap the kernel process, and preserve the last
+  successful site during a watched-build failure.
 - [ ] Implement a page-level execution cache keyed by authored source,
-  normalized options, engine and kernel identity, relevant toolchain versions,
-  and declared environment fingerprints. Validate cached assets before reuse.
+  normalized options, engine and kernel identity, relevant toolchain
+  versions, and declared environment fingerprints. Validate cached assets
+  before reuse.
 - [ ] Record whether each page was executed or restored from cache without
-  leaking connection files, ports, temporary paths, process IDs, timestamps, or
-  absolute checkout paths into portable provenance.
+  leaking connection files, ports, temporary paths, process IDs, timestamps,
+  or absolute checkout paths into portable provenance.
 - [ ] Prove that `execution.mode = "never"` and every `polydoc check` path avoid
-  kernel discovery, startup, source execution, cache mutation, and execution-
-  asset writes.
+  kernel discovery, startup, source execution, cache mutation, and
+  execution- asset writes.
 - [ ] Add unit tests with a controllable protocol fixture and end-to-end tests
   with the declared Python and R kernels for success, state retention, rich
-  output, timeout, interruption, missing kernels, unsupported MIME types, and
-  deterministic cleanup.
+  output, timeout, interruption, missing kernels, unsupported MIME types,
+  and deterministic cleanup.
 
 **Exit gate:** Explicitly enabled Python and R QMD pages execute in source order
 and produce reviewed structured-output snapshots; disabled and check-only paths
@@ -388,11 +393,11 @@ hit produces the same portable IR and assets as its originating execution.
   in the project switcher; keep hidden items linkable but absent from
   navigation and search.
 - [ ] Construct renderer-ready page, breadcrumb, source-link, navigation,
-  concept-switcher, code-cell-output, and search-entry models without embedding
-  parser or execution logic.
+  concept-switcher, code-cell-output, and search-entry models without
+  embedding parser or execution logic.
 - [ ] Wire `polydoc check` through configuration, authored-content parsing,
-  extraction, merging, reference resolution, and validation without executing a
-  cell or creating the output directory.
+  extraction, merging, reference resolution, and validation without
+  executing a cell or creating the output directory.
 
 **Exit gate:** `polydoc check` succeeds for the valid acceptance workspace,
 fails with the expected diagnostics for every invalid variant, writes no site,
@@ -415,11 +420,11 @@ and produces the same ordered diagnostics on repeated runs.
   or related concepts on both member and concept pages.
 - [ ] Render supported document blocks, semantic links, checked-in assets,
   syntax-highlighted display code and cell input, stream and error output,
-  Markdown-valued output, sanitized HTML output, generated figures, and visible
-  placeholders for unsupported content.
-- [ ] Choose the renderer's safe MIME representation deterministically and
-  prove that raw source HTML and unsanitized kernel HTML remain escaped or
-  visibly unsupported.
+  Markdown-valued output, sanitized HTML output, generated figures, and
+  visible placeholders for unsupported content.
+- [ ] Choose the renderer's safe MIME representation deterministically and prove
+  that raw source HTML and unsanitized kernel HTML remain escaped or visibly
+  unsupported.
 - [ ] Generate a deterministic browser-side search index covering authored
   pages, packages, modules, types, functions, methods, signatures, and
   documentation text.
@@ -454,11 +459,11 @@ results; and no rendered page requires a network resource.
   environment, and asset inputs; ignore the output and execution-cache
   directories and unrelated repository files.
 - [ ] Debounce related filesystem events into one rebuild and keep the previous
-  successful output available when parsing, execution, validation, or rendering
-  fails.
+  successful output available when parsing, execution, validation, or
+  rendering fails.
 - [ ] Handle address conflicts, deleted inputs, changed workspace configuration,
-  missing tools or kernels, execution failure, and graceful process termination
-  with stable diagnostics.
+  missing tools or kernels, execution failure, and graceful process
+  termination with stable diagnostics.
 - [ ] Add integration tests for flag precedence, exit status, output
   replacement, HTTP serving, watched rebuilds, ignored changes, and recovery
   after a failed rebuild.
@@ -482,15 +487,15 @@ a Rust extractor exists.
   so the self-documentation configuration does not pretend that Polydoc has
   a Python or R public API.
 - [ ] Make `docs/` the canonical source for the project overview, installation,
-  quick start, workspace configuration, CLI, GFM and QMD profiles, Python and R
-  support, diagnostics, reproducibility, and the authored-execution security
-  model.
+  quick start, workspace configuration, CLI, GFM and QMD profiles, Python
+  and R support, diagnostics, reproducibility, and the authored-execution
+  security model.
 - [ ] Link design and contributor material where useful instead of copying
   internal rationale into user documentation.
 - [ ] Use the supported GFM and QMD features, one small deterministic executable
-  page, navigation, checked-in and generated assets, source links, and search in
-  the real site so regressions affect the project before they affect downstream
-  users.
+  page, navigation, checked-in and generated assets, source links, and
+  search in the real site so regressions affect the project before they
+  affect downstream users.
 - [ ] Add tests that run the in-tree binary against the root `polydoc.toml`,
   snapshot representative pages and the search index, and validate every
   local link and asset.
@@ -534,14 +539,15 @@ generated tree without invoking another documentation generator.
   navigation target, concept target, and indexed result.
 - [ ] Exercise missing tools and kernels, malformed configuration and sources,
   unsupported constructs, cell timeouts and failures, unsafe and unsupported
-  output, version mismatches, ambiguous references, and output write failures.
+  output, version mismatches, ambiguous references, and output write
+  failures.
 - [ ] Review generated pages at narrow and wide viewport sizes and verify
   keyboard access, focus indication, heading order, labels, and color
   contrast.
 - [ ] Document installation, workspace configuration, command behavior,
-  diagnostics, the supported Python/R surface, the GFM/QMD profiles, supported
-  cell options and MIME output, and the authored-execution security model in the
-  dogfooded project site.
+  diagnostics, the supported Python/R surface, the GFM/QMD profiles,
+  supported cell options and MIME output, and the authored-execution
+  security model in the dogfooded project site.
 - [ ] Add a quick start that builds and previews the acceptance site from a
   clean checkout with declared tools already installed.
 - [ ] Build the dogfooded project site twice in different absolute checkout
