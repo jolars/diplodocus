@@ -72,7 +72,9 @@ dependencies = [
 
 [[package]]
 name = "arity-parser"
-version = "0.5.3"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f198aa1c369836b9affa5d0b9b0da5070acc20023d75307b2fd7626583dfb4a9"
 dependencies = [
  "rowan",
  "serde",
