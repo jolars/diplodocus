@@ -178,7 +178,7 @@ extraction and explicitly authorized authored execution.
   cell source and options without using its Pandoc projectors. Land the
   required consumer-facing API changes in Panache where the current surface
   is insufficient.
-- [ ] Compare the current `jupyter-zmq-client` and `jupyter-protocol` crates
+- [x] Compare the current `jupyter-zmq-client` and `jupyter-protocol` crates
   against the execution corpus: kernel discovery and startup, ordered cell
   execution, stream and error messages, MIME bundles, display updates,
   timeout, interruption, and shutdown.

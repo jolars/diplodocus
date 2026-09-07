@@ -30,6 +30,8 @@ thiserror = "2.0"
 
 [dev-dependencies]
 arity-parser = "=0.6.0"
+jupyter-protocol = "=2.0.2"
+jupyter-zmq-client = { version = "=1.0.1", features = ["test-kernel"] }
 pydocstring = "=0.4.1"
 pyproject-toml = "=0.13.7"
 rd-ast = { version = "=0.4.0", default-features = false }
@@ -39,3 +41,4 @@ ruff_python_parser = "=0.0.12"
 ruff_text_size = "=0.0.12"
 serde_json = "1.0"
 snapbox = { version = "1.2", features = ["cmd", "dir"] }
+tokio = { version = "1.36", features = ["macros", "rt-multi-thread", "time"] }
