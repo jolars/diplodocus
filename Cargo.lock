@@ -858,6 +858,8 @@ dependencies = [
  "panache-parser",
  "pydocstring",
  "pyproject-toml",
+ "rd-ast",
+ "rd-source",
  "ruff_python_ast",
  "ruff_python_parser",
  "ruff_text_size",
@@ -994,6 +996,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
 dependencies = [
  "getrandom",
+]
+
+[[package]]
+name = "rd-ast"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "32fe90dac6ea0a31cbb9800064377727ad5a9a2314fdf2574fc3faae31b0ca8f"
+
+[[package]]
+name = "rd-source"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ec2dddcad3095505c388f73e0d5020c3af72d08b0ece47a409250b5b99917e88"
+dependencies = [
+ "rd-ast",
 ]
 
 [[package]]

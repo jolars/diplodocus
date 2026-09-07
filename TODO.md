@@ -163,7 +163,7 @@ extraction and explicitly authorized authored execution.
   without importing the package.
 - [x] Compare viable Rust-native R metadata, namespace, source, and `Rd` parsing
   approaches against every R construct in the matrix.
-- [ ] Verify that `DESCRIPTION`, `NAMESPACE`, maintained R source, and
+- [x] Verify that `DESCRIPTION`, `NAMESPACE`, maintained R source, and
   checked-in `Rd` can be parsed in-process without `Rscript` or package
   loading.
 - [ ] Record how each extractor reports malformed metadata, unsupported syntax,
