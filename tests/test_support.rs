@@ -5,12 +5,38 @@ use std::panic::catch_unwind;
 use std::path::Path;
 
 use support::{
-    TestWorkspace, assert_matches_golden, assert_output_tree, fixture_path, load_fixture,
+    TestWorkspace, acceptance_workspace, assert_matches_golden, assert_output_tree, fixture_path,
+    load_fixture,
 };
 
 #[test]
+fn acceptance_workspaces_are_isolated_from_checked_in_fixtures() {
+    let checked_in = fs::canonicalize(fixture_path("acceptance"))
+        .expect("checked-in acceptance fixture should be canonicalizable");
+    let workspace = acceptance_workspace();
+    let temporary = fs::canonicalize(workspace.path())
+        .expect("temporary acceptance workspace should be canonicalizable");
+    assert_ne!(temporary, checked_in);
+
+    let checked_in_configuration =
+        fs::read(checked_in.join("workspace/polydoc.toml")).expect("fixture should be readable");
+    workspace.write("workspace/polydoc.toml", "temporary mutation\n");
+
+    assert_eq!(
+        fs::read(checked_in.join("workspace/polydoc.toml"))
+            .expect("checked-in fixture should remain readable"),
+        checked_in_configuration
+    );
+    assert_eq!(
+        workspace.read("workspace/polydoc.toml"),
+        "temporary mutation\n"
+    );
+}
+
+#[test]
 fn acceptance_fixture_has_sibling_workspace_roots() {
-    let acceptance = fixture_path("acceptance");
+    let workspace = acceptance_workspace();
+    let acceptance = workspace.path().to_path_buf();
 
     for root in ["workspace", "core", "python", "r"] {
         let path = acceptance.join(root);
@@ -25,6 +51,8 @@ fn acceptance_fixture_has_sibling_workspace_roots() {
 
 #[test]
 fn acceptance_fixture_has_gfm_and_qmd_authored_content() {
+    let workspace = acceptance_workspace();
+
     for source in [
         "core/docs/index.md",
         "core/docs/getting-started/workspace.md",
@@ -32,14 +60,19 @@ fn acceptance_fixture_has_gfm_and_qmd_authored_content() {
         "python/docs/models/fitting.qmd",
     ] {
         assert!(
-            fixture_path(format!("acceptance/{source}")).is_file(),
+            workspace.path().join(source).is_file(),
             "authored fixture should exist: {source}"
         );
     }
 
-    assert!(fixture_path("acceptance/core/docs/assets/workspace.svg").is_file());
+    assert!(
+        workspace
+            .path()
+            .join("core/docs/assets/workspace.svg")
+            .is_file()
+    );
 
-    let configuration = load_fixture("acceptance/workspace/polydoc.toml");
+    let configuration = workspace.read("workspace/polydoc.toml");
     assert!(configuration.contains(
         "id = \"guide\"\nowner = \"project\"\nrepository = \"core\"\npath = \"docs\"\nmount = \"guide\"\nformat = \"gfm\""
     ));
@@ -48,26 +81,27 @@ fn acceptance_fixture_has_gfm_and_qmd_authored_content() {
     ));
     assert_eq!(configuration.matches("mode = \"never\"").count(), 2);
 
-    let project_index = load_fixture("acceptance/core/docs/index.md");
+    let project_index = workspace.read("core/docs/index.md");
     assert!(project_index.contains("[`pyfoo::foo.fit`]"));
     assert!(project_index.contains("| Package | Version |"));
     assert!(project_index.contains("> [!NOTE]"));
     assert!(project_index.contains("```python"));
     assert!(project_index.contains("<component name=\"unsupported\" />"));
 
-    let nested_project_page = load_fixture("acceptance/core/docs/getting-started/workspace.md");
+    let nested_project_page = workspace.read("core/docs/getting-started/workspace.md");
     assert!(nested_project_page.contains("![Workspace layout](../assets/workspace.svg)"));
 
-    let package_guide = load_fixture("acceptance/python/docs/guide.qmd");
+    let package_guide = workspace.read("python/docs/guide.qmd");
     assert!(package_guide.contains("::: {.callout-tip #stateful}"));
     assert!(package_guide.contains("::: {.unsupported-directive}"));
 
-    let nested_package_page = load_fixture("acceptance/python/docs/models/fitting.qmd");
+    let nested_package_page = workspace.read("python/docs/models/fitting.qmd");
     assert!(nested_package_page.contains("[`foo.FooModel.fit`]"));
 }
 
 #[test]
 fn acceptance_fixture_has_executable_python_and_r_qmd_pages() {
+    let workspace = acceptance_workspace();
     let cases = [
         (
             "python/execution/stateful.qmd",
@@ -97,17 +131,17 @@ fn acceptance_fixture_has_executable_python_and_r_qmd_pages() {
         ),
     ];
 
-    let configuration = load_fixture("acceptance/workspace/polydoc.toml");
+    let configuration = workspace.read("workspace/polydoc.toml");
     for (source, language, kernel, environment_input, constructs) in cases {
         assert!(
-            fixture_path(format!("acceptance/{source}")).is_file(),
+            workspace.path().join(source).is_file(),
             "executable fixture should exist: {source}"
         );
         assert!(configuration.contains(&format!(
             "repository = \"{language}\"\npath = \"execution\"\nmount = \"execution\"\nformat = \"qmd\"\n\n[content.execution]\nmode = \"execute\"\nengine = \"jupyter\"\nkernel = \"{kernel}\"\ndeclared_environment_inputs = [\"{environment_input}\"]"
         )));
 
-        let page = load_fixture(format!("acceptance/{source}"));
+        let page = workspace.read(source);
         assert_eq!(page.matches("```{").count(), 5);
         assert_eq!(page.matches("#| label:").count(), 5);
         assert!(page.contains("#| echo:"));
@@ -129,6 +163,8 @@ fn acceptance_fixture_has_executable_python_and_r_qmd_pages() {
 
 #[test]
 fn acceptance_fixture_has_execution_authority_variants() {
+    let workspace = acceptance_workspace();
+
     for source in [
         "core/docs/execution/display-only.md",
         "python/safety/default-never.qmd",
@@ -136,12 +172,12 @@ fn acceptance_fixture_has_execution_authority_variants() {
         "python/execution/generated-markdown.qmd",
     ] {
         assert!(
-            fixture_path(format!("acceptance/{source}")).is_file(),
+            workspace.path().join(source).is_file(),
             "execution-authority fixture should exist: {source}"
         );
     }
 
-    let configuration = load_fixture("acceptance/workspace/polydoc.toml");
+    let configuration = workspace.read("workspace/polydoc.toml");
     let collection_start = configuration
         .find("id = \"python-default-never\"")
         .expect("default-never QMD collection should be configured");
@@ -156,20 +192,20 @@ fn acceptance_fixture_has_execution_authority_variants() {
         "the focused QMD collection must exercise the default execution mode"
     );
 
-    let gfm = load_fixture("acceptance/core/docs/execution/display-only.md");
+    let gfm = workspace.read("core/docs/execution/display-only.md");
     assert!(gfm.contains("```python"));
     assert!(gfm.contains("GFM fences must stay display-only"));
 
-    let default_never = load_fixture("acceptance/python/safety/default-never.qmd");
+    let default_never = workspace.read("python/safety/default-never.qmd");
     assert!(default_never.contains("#| label: default-never"));
     assert!(default_never.contains("QMD execution must default to never"));
 
-    let metadata = load_fixture("acceptance/python/safety/metadata-cannot-authorize.qmd");
+    let metadata = workspace.read("python/safety/metadata-cannot-authorize.qmd");
     assert!(metadata.contains("execute: true"));
     assert!(metadata.contains("jupyter: python3"));
     assert!(metadata.contains("Document metadata must not authorize execution"));
 
-    let generated = load_fixture("acceptance/python/execution/generated-markdown.qmd");
+    let generated = workspace.read("python/execution/generated-markdown.qmd");
     assert!(generated.contains("#| label: generated-markdown"));
     assert!(generated.contains("Markdown("));
     assert!(generated.contains("\"```{python}\\n\""));
@@ -178,6 +214,7 @@ fn acceptance_fixture_has_execution_authority_variants() {
 
 #[test]
 fn acceptance_fixture_has_output_safety_variants() {
+    let workspace = acceptance_workspace();
     let cases = [
         (
             "python/execution/markdown-looking-stdout.qmd",
@@ -203,10 +240,10 @@ fn acceptance_fixture_has_output_safety_variants() {
 
     for (source, constructs) in cases {
         assert!(
-            fixture_path(format!("acceptance/{source}")).is_file(),
+            workspace.path().join(source).is_file(),
             "output-safety fixture should exist: {source}"
         );
-        let page = load_fixture(format!("acceptance/{source}"));
+        let page = workspace.read(source);
         assert_eq!(
             page.lines().filter(|line| *line == "```{python}").count(),
             1
@@ -222,7 +259,8 @@ fn acceptance_fixture_has_output_safety_variants() {
 
 #[test]
 fn acceptance_configuration_declares_cross_language_callable_concepts() {
-    let configuration = load_fixture("acceptance/workspace/polydoc.toml");
+    let workspace = acceptance_workspace();
+    let configuration = workspace.read("workspace/polydoc.toml");
 
     for concept in [
         "id = \"fit\"\nkind = \"equivalent\"\nmembers = [\n  { package = \"pyfoo\", item = \"foo.fit\" },\n  { package = \"rfoo\", item = \"fit\" },\n]",
@@ -231,19 +269,20 @@ fn acceptance_configuration_declares_cross_language_callable_concepts() {
         assert!(configuration.contains(concept));
     }
 
-    let python_stubs = load_fixture("acceptance/python/python/foo/model.pyi");
+    let python_stubs = workspace.read("python/python/foo/model.pyi");
     assert!(python_stubs.contains("def fit("));
     assert!(python_stubs.matches("@overload").count() >= 4);
     assert!(python_stubs.contains("class FooModel:"));
 
-    let r_source = load_fixture("acceptance/r/R/fit.R");
+    let r_source = workspace.read("r/R/fit.R");
     assert!(r_source.contains("UseMethod(\"fit\")"));
     assert!(r_source.contains("fit.foo_model <- function("));
 }
 
 #[test]
 fn acceptance_fixture_has_visibility_and_relationship_variants() {
-    let visibility = load_fixture("acceptance/workspace/variants/visibility.toml");
+    let workspace = acceptance_workspace();
+    let visibility = workspace.read("workspace/variants/visibility.toml");
     assert_eq!(visibility.matches("[[package]]").count(), 3);
     assert_eq!(visibility.matches("visibility = \"public\"").count(), 1);
     assert_eq!(visibility.matches("visibility = \"internal\"").count(), 1);
@@ -271,23 +310,24 @@ fn acceptance_fixture_has_visibility_and_relationship_variants() {
     ];
 
     for (variant, endpoint, constraint) in cases {
-        let configuration = load_fixture(format!("acceptance/workspace/variants/{variant}"));
+        let configuration = workspace.read(format!("workspace/variants/{variant}"));
         assert_eq!(configuration.matches("[[relationship]]").count(), 1);
         assert!(configuration.contains(endpoint));
         assert!(configuration.contains(constraint));
         assert!(configuration.contains("provenance = \"explicit\""));
     }
 
-    let incompatible = load_fixture("acceptance/workspace/variants/relationship-incompatible.toml");
+    let incompatible = workspace.read("workspace/variants/relationship-incompatible.toml");
     assert!(incompatible.contains("Expected diagnostic: incompatible-package-relationship"));
 
-    let external = load_fixture("acceptance/workspace/variants/relationship-external.toml");
+    let external = workspace.read("workspace/variants/relationship-external.toml");
     assert!(!external.contains("id = \"cargo:foo-core\""));
 }
 
 #[test]
 fn acceptance_configuration_covers_the_design_model() {
-    let configuration_path = fixture_path("acceptance/workspace/polydoc.toml");
+    let acceptance = acceptance_workspace();
+    let configuration_path = acceptance.path().join("workspace/polydoc.toml");
     let configuration = fs::read_to_string(&configuration_path)
         .expect("acceptance configuration should be readable");
 
@@ -317,7 +357,8 @@ fn acceptance_configuration_covers_the_design_model() {
 
 #[test]
 fn acceptance_python_distribution_has_metadata_and_static_source_variants() {
-    let python = fixture_path("acceptance/python");
+    let workspace = acceptance_workspace();
+    let python = workspace.path().join("python");
 
     for source in [
         "pyproject.toml",
@@ -339,7 +380,7 @@ fn acceptance_python_distribution_has_metadata_and_static_source_variants() {
         "the native extension should be represented only by its stub"
     );
 
-    let metadata = load_fixture("acceptance/python/pyproject.toml");
+    let metadata = workspace.read("python/pyproject.toml");
     for field in [
         "[project]",
         "name = \"foo-python\"",
@@ -352,7 +393,8 @@ fn acceptance_python_distribution_has_metadata_and_static_source_variants() {
 
 #[test]
 fn acceptance_python_distribution_declares_its_public_surface() {
-    let package = load_fixture("acceptance/python/python/foo/__init__.py");
+    let workspace = acceptance_workspace();
+    let package = workspace.read("python/python/foo/__init__.py");
 
     for public_name in [
         "DEFAULT_TOLERANCE",
@@ -373,7 +415,7 @@ fn acceptance_python_distribution_declares_its_public_surface() {
     assert!(package.contains("from ._native import"));
     assert!(package.contains("__all__ = ["));
 
-    let implementation = load_fixture("acceptance/python/python/foo/model.py");
+    let implementation = workspace.read("python/python/foo/model.py");
     for construct in [
         "class FitDiagnostics:",
         "class FooModel:",
@@ -390,24 +432,25 @@ fn acceptance_python_distribution_declares_its_public_surface() {
         );
     }
 
-    let dynamic_exports = load_fixture("acceptance/python/python/foo/experimental.py");
+    let dynamic_exports = workspace.read("python/python/foo/experimental.py");
     assert!(dynamic_exports.contains("def experimental_rank("));
     assert!(dynamic_exports.contains("__all__ = _exported_names()"));
 
-    let native_stub = load_fixture("acceptance/python/python/foo/_native.pyi");
+    let native_stub = workspace.read("python/python/foo/_native.pyi");
     assert!(native_stub.contains("class NativeWorkspace:"));
     assert!(native_stub.contains("def native_mean("));
 }
 
 #[test]
 fn acceptance_python_distribution_has_overloads_and_numpy_docstrings() {
-    let stubs = load_fixture("acceptance/python/python/foo/model.pyi");
+    let workspace = acceptance_workspace();
+    let stubs = workspace.read("python/python/foo/model.pyi");
     assert!(stubs.matches("@overload").count() >= 4);
     assert!(stubs.contains("class FooModel:"));
     assert!(stubs.contains("def fit("));
     assert!(stubs.contains("def predict("));
 
-    let implementation = load_fixture("acceptance/python/python/foo/model.py");
+    let implementation = workspace.read("python/python/foo/model.py");
     for section in [
         "Parameters\n    ----------",
         "Returns\n    -------",
@@ -425,7 +468,8 @@ fn acceptance_python_distribution_has_overloads_and_numpy_docstrings() {
 
 #[test]
 fn acceptance_r_package_has_metadata_namespace_and_sources() {
-    let package = fixture_path("acceptance/r");
+    let workspace = acceptance_workspace();
+    let package = workspace.path().join("r");
 
     for source in [
         "DESCRIPTION",
@@ -445,7 +489,7 @@ fn acceptance_r_package_has_metadata_namespace_and_sources() {
         );
     }
 
-    let description = load_fixture("acceptance/r/DESCRIPTION");
+    let description = workspace.read("r/DESCRIPTION");
     for field in [
         "Package: foo",
         "Version: 1.8.0",
@@ -462,7 +506,8 @@ fn acceptance_r_package_has_metadata_namespace_and_sources() {
 
 #[test]
 fn acceptance_r_package_declares_exports_and_s3_dispatch() {
-    let namespace = load_fixture("acceptance/r/NAMESPACE");
+    let workspace = acceptance_workspace();
+    let namespace = workspace.read("r/NAMESPACE");
     for directive in [
         "export(fit)",
         "export(foo_model)",
@@ -479,7 +524,7 @@ fn acceptance_r_package_declares_exports_and_s3_dispatch() {
         );
     }
 
-    let implementation = load_fixture("acceptance/r/R/fit.R");
+    let implementation = workspace.read("r/R/fit.R");
     for construct in [
         "fit <- function(x, ...)",
         "UseMethod(\"fit\")",
@@ -494,13 +539,14 @@ fn acceptance_r_package_declares_exports_and_s3_dispatch() {
         );
     }
 
-    let metrics = load_fixture("acceptance/r/R/metrics.R");
+    let metrics = workspace.read("r/R/metrics.R");
     assert!(metrics.contains("mean_squared_error <- function("));
 }
 
 #[test]
 fn acceptance_r_package_has_structured_rd_and_an_unsupported_construct() {
-    let fit_documentation = load_fixture("acceptance/r/man/fit.Rd");
+    let workspace = acceptance_workspace();
+    let fit_documentation = workspace.read("r/man/fit.Rd");
     for construct in [
         r"\alias{fit}",
         r"\alias{fit.default}",
@@ -517,18 +563,19 @@ fn acceptance_r_package_has_structured_rd_and_an_unsupported_construct() {
         );
     }
 
-    let model_documentation = load_fixture("acceptance/r/man/foo_model.Rd");
+    let model_documentation = workspace.read("r/man/foo_model.Rd");
     assert!(model_documentation.contains(r"\alias{predict.foo_model}"));
     assert!(model_documentation.contains(r"\method{predict}{foo_model}"));
 
-    let dynamic_documentation = load_fixture("acceptance/r/man/experimental_summary.Rd");
+    let dynamic_documentation = workspace.read("r/man/experimental_summary.Rd");
     assert!(dynamic_documentation.contains(r"\Sexpr[stage=render,results=text]"));
     assert!(dynamic_documentation.contains("must produce an unsupported-Rd diagnostic"));
 }
 
 #[test]
 fn acceptance_matrix_maps_every_fixture_to_each_behavior_dimension() {
-    let matrix = load_fixture("acceptance/MATRIX.md");
+    let workspace = acceptance_workspace();
+    let matrix = workspace.read("MATRIX.md");
 
     for heading in [
         "Fixture construct",
@@ -565,7 +612,7 @@ fn acceptance_matrix_maps_every_fixture_to_each_behavior_dimension() {
         );
     }
 
-    let acceptance = fixture_path("acceptance");
+    let acceptance = workspace.path().to_path_buf();
     let mut pending = vec![acceptance.clone()];
     let mut fixture_files = Vec::new();
     while let Some(directory) = pending.pop() {

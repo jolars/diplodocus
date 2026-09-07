@@ -139,7 +139,7 @@ MVP's differentiating behavior.
 - [x] Write an acceptance matrix that maps every fixture construct to its
   expected IR, diagnostic, execution behavior, provenance, URL, navigation,
   link, concept, and search behavior.
-- [ ] Use the Milestone 0 helpers to copy fixture workspaces into temporary
+- [x] Use the Milestone 0 helpers to copy fixture workspaces into temporary
   directories so tests never modify checked-in inputs.
 
 **Exit gate:** The corpus and acceptance matrix cover every MVP completion

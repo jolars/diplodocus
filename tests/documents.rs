@@ -109,7 +109,8 @@ fn malformed_yaml_and_ambiguous_options_produce_stable_diagnostics() {
 
 #[test]
 fn serialized_document_ir_is_deterministic() {
-    let source = support::load_fixture("acceptance/python/docs/guide.qmd");
+    let workspace = support::acceptance_workspace();
+    let source = workspace.read("python/docs/guide.qmd");
     let parsed = parse_authored_document(&source, AuthoredFormat::Qmd);
     let first = serde_json::to_string_pretty(&parsed).expect("serialize document parse");
     let second = serde_json::to_string_pretty(&parsed).expect("serialize document parse again");
@@ -120,10 +121,11 @@ fn serialized_document_ir_is_deterministic() {
 
 #[test]
 fn acceptance_authored_pages_parse_through_the_production_adapter() {
-    let gfm = support::load_fixture("acceptance/core/docs/index.md");
-    let nested_gfm = support::load_fixture("acceptance/core/docs/getting-started/workspace.md");
-    let qmd = support::load_fixture("acceptance/python/docs/guide.qmd");
-    let nested_qmd = support::load_fixture("acceptance/python/docs/models/fitting.qmd");
+    let workspace = support::acceptance_workspace();
+    let gfm = workspace.read("core/docs/index.md");
+    let nested_gfm = workspace.read("core/docs/getting-started/workspace.md");
+    let qmd = workspace.read("python/docs/guide.qmd");
+    let nested_qmd = workspace.read("python/docs/models/fitting.qmd");
     let parsed_gfm = parse_authored_document(&gfm, AuthoredFormat::Gfm);
     let parsed_nested_gfm = parse_authored_document(&nested_gfm, AuthoredFormat::Gfm);
     let parsed_qmd = parse_authored_document(&qmd, AuthoredFormat::Qmd);
@@ -211,9 +213,10 @@ fn acceptance_authored_pages_parse_through_the_production_adapter() {
 
 #[test]
 fn acceptance_execution_pages_retain_ordered_cells_labels_and_options() {
+    let workspace = support::acceptance_workspace();
     let cases = [
         (
-            "acceptance/python/execution/stateful.qmd",
+            "python/execution/stateful.qmd",
             "python",
             [
                 "python-setup",
@@ -224,14 +227,14 @@ fn acceptance_execution_pages_retain_ordered_cells_labels_and_options() {
             ],
         ),
         (
-            "acceptance/r/execution/stateful.qmd",
+            "r/execution/stateful.qmd",
             "r",
             ["r-setup", "r-streams", "r-markdown", "r-figure", "r-error"],
         ),
     ];
 
     for (source, language, labels) in cases {
-        let source = support::load_fixture(source);
+        let source = workspace.read(source);
         let parsed = parse_authored_document(&source, AuthoredFormat::Qmd);
         let cells = parsed
             .document
@@ -268,7 +271,8 @@ fn acceptance_execution_pages_retain_ordered_cells_labels_and_options() {
 
 #[test]
 fn acceptance_execution_authority_variants_have_the_expected_authored_cells() {
-    let gfm = support::load_fixture("acceptance/core/docs/execution/display-only.md");
+    let workspace = support::acceptance_workspace();
+    let gfm = workspace.read("core/docs/execution/display-only.md");
     let parsed_gfm = parse_authored_document(&gfm, AuthoredFormat::Gfm);
     assert!(
         parsed_gfm
@@ -287,10 +291,10 @@ fn acceptance_execution_authority_variants_have_the_expected_authored_cells() {
     );
 
     for source in [
-        "acceptance/python/safety/default-never.qmd",
-        "acceptance/python/safety/metadata-cannot-authorize.qmd",
+        "python/safety/default-never.qmd",
+        "python/safety/metadata-cannot-authorize.qmd",
     ] {
-        let source = support::load_fixture(source);
+        let source = workspace.read(source);
         let parsed = parse_authored_document(&source, AuthoredFormat::Qmd);
         assert_eq!(
             parsed
@@ -303,7 +307,7 @@ fn acceptance_execution_authority_variants_have_the_expected_authored_cells() {
         );
     }
 
-    let generated = support::load_fixture("acceptance/python/execution/generated-markdown.qmd");
+    let generated = workspace.read("python/execution/generated-markdown.qmd");
     let parsed_generated = parse_authored_document(&generated, AuthoredFormat::Qmd);
     let generated_cells = parsed_generated
         .document
@@ -324,26 +328,27 @@ fn acceptance_execution_authority_variants_have_the_expected_authored_cells() {
 
 #[test]
 fn acceptance_output_safety_variants_are_single_cell_documents() {
+    let workspace = support::acceptance_workspace();
     let cases = [
         (
-            "acceptance/python/execution/markdown-looking-stdout.qmd",
+            "python/execution/markdown-looking-stdout.qmd",
             "markdown-looking-stdout",
             "# Not a heading",
         ),
         (
-            "acceptance/python/execution/unsafe-html.qmd",
+            "python/execution/unsafe-html.qmd",
             "unsafe-html",
             "<script>",
         ),
         (
-            "acceptance/python/execution/asset-boundary-escape.qmd",
+            "python/execution/asset-boundary-escape.qmd",
             "asset-boundary-escape",
             "../../core/docs/assets/workspace.svg",
         ),
     ];
 
     for (source, label, construct) in cases {
-        let source = support::load_fixture(source);
+        let source = workspace.read(source);
         let parsed = parse_authored_document(&source, AuthoredFormat::Qmd);
         let cells = parsed
             .document

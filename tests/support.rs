@@ -55,6 +55,12 @@ impl TestWorkspace {
     }
 }
 
+pub fn acceptance_workspace() -> TestWorkspace {
+    // Acceptance commands may write caches and output, so every test receives
+    // a disposable copy rather than a path into the checked-in corpus.
+    TestWorkspace::from_fixture("acceptance")
+}
+
 pub fn fixture_path(relative: impl AsRef<Path>) -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("tests/fixtures")
