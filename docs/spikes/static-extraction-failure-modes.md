@@ -18,6 +18,10 @@ fixes two public outcomes:
 - an unevaluated `\Sexpr` emits warning `unsupported-rd` and a visible
   placeholder.
 
+The corresponding version, mode, capability, and provenance declarations are
+defined in
+[`static-extractor-contract.md`](static-extractor-contract.md).
+
 The diagnostics milestone will assign stable codes to the other classes. This
 spike fixes their detection, severity rule, location quality, recovery policy,
 and information-preservation requirements.

@@ -168,7 +168,7 @@ extraction and explicitly authorized authored execution.
   loading.
 - [x] Record how each extractor reports malformed metadata, unsupported syntax,
   dynamic constructs, incomplete source locations, and information loss.
-- [ ] Define each extractor's parser versions, static mode, capabilities, and
+- [x] Define each extractor's parser versions, static mode, capabilities, and
   provenance fields.
 - [x] Pin `panache-parser` as the in-process reader and verify its GFM and
   Quarto flavors against every authored-content construct in the acceptance
