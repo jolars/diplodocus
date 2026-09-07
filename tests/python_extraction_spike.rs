@@ -257,6 +257,153 @@ fn ruff_ast_exposes_the_acceptance_surface_with_byte_ranges() {
 }
 
 #[test]
+fn package_surface_is_reconciled_statically_without_importing() {
+    assert!(
+        !support::fixture_path(format!("{PYTHON_FIXTURE}/python/foo/_native.py")).exists(),
+        "the native module must remain unavailable to import"
+    );
+
+    let init_source = python_source("__init__.py");
+    let init = parse_module(&init_source, PySourceType::Python);
+    let init_stub_source = python_source("__init__.pyi");
+    let init_stub = parse_module(&init_stub_source, PySourceType::Stub);
+
+    let exports = static_exports(&init).expect("literal implementation exports");
+    assert_eq!(exports, EXPECTED_EXPORTS);
+    assert_eq!(
+        static_exports(&init_stub).expect("literal stub exports"),
+        exports
+    );
+
+    let implementation_reexports = resolved_reexports("foo", &init, &init_source);
+    let reexports = resolved_reexports("foo", &init_stub, &init_stub_source);
+    assert_eq!(
+        implementation_reexports
+            .iter()
+            .map(|reexport| (
+                reexport.public_name.as_str(),
+                reexport.canonical_name.as_str()
+            ))
+            .collect::<Vec<_>>(),
+        reexports
+            .iter()
+            .map(|reexport| (
+                reexport.public_name.as_str(),
+                reexport.canonical_name.as_str()
+            ))
+            .collect::<Vec<_>>()
+    );
+    assert_eq!(
+        reexports
+            .iter()
+            .map(|reexport| (
+                reexport.public_name.as_str(),
+                reexport.canonical_name.as_str()
+            ))
+            .collect::<Vec<_>>(),
+        [
+            ("experimental", "foo.experimental"),
+            ("NativeWorkspace", "foo._native.NativeWorkspace"),
+            ("native_mean", "foo._native.native_mean"),
+            ("DEFAULT_TOLERANCE", "foo.model.DEFAULT_TOLERANCE"),
+            ("SUPPORTED_SOLVERS", "foo.model.SUPPORTED_SOLVERS"),
+            ("FitDiagnostics", "foo.model.FitDiagnostics"),
+            ("FooModel", "foo.model.FooModel"),
+            ("fit", "foo.model.fit"),
+            ("mean_squared_error", "foo.model.mean_squared_error"),
+        ]
+    );
+    assert!(reexports.iter().all(|reexport| {
+        source_text(&init_stub_source, reexport.range) == reexport.declaration
+    }));
+    assert!(
+        implementation_reexports
+            .iter()
+            .all(|reexport| { source_text(&init_source, reexport.range) == reexport.declaration })
+    );
+
+    let implementation_source = python_source("model.py");
+    let implementation = parse_module(&implementation_source, PySourceType::Python);
+    let stub_source = python_source("model.pyi");
+    let stub = parse_module(&stub_source, PySourceType::Stub);
+
+    let tolerance = preferred_annotation(
+        "DEFAULT_TOLERANCE",
+        &implementation,
+        &implementation_source,
+        "model.py",
+        &stub,
+        &stub_source,
+        "model.pyi",
+    );
+    assert_eq!(tolerance.text, "Final[float]");
+    assert_eq!(tolerance.source, "model.pyi");
+    assert_eq!(source_text(&stub_source, tolerance.range), tolerance.text);
+
+    let fit = reconciled_callable(
+        "fit",
+        &implementation.body,
+        &implementation_source,
+        "model.py",
+        &stub.body,
+        &stub_source,
+        "model.pyi",
+    );
+    assert_eq!(fit.signature_source, "model.pyi");
+    assert_eq!(fit.documentation_source, "model.py");
+    assert_eq!(fit.documentation, "Fit a linear model.");
+    assert_eq!(fit.signatures.len(), 2);
+    assert_eq!(
+        fit.signatures
+            .iter()
+            .map(|signature| signature.return_annotation.as_str())
+            .collect::<Vec<_>>(),
+        ["FooModel", "tuple[FooModel, FitDiagnostics]"]
+    );
+    assert!(fit.signatures.iter().all(|signature| {
+        signature.decorators == ["overload"]
+            && source_text(&stub_source, signature.range) == signature.declaration
+    }));
+    assert_eq!(
+        source_text(&implementation_source, fit.documentation_range),
+        fit.documentation_text
+    );
+
+    let implementation_model = class_named(&implementation.body, "FooModel");
+    let stub_model = class_named(&stub.body, "FooModel");
+    let predict = reconciled_callable(
+        "predict",
+        &implementation_model.body,
+        &implementation_source,
+        "model.py",
+        &stub_model.body,
+        &stub_source,
+        "model.pyi",
+    );
+    assert_eq!(predict.signatures.len(), 2);
+    assert_eq!(
+        predict
+            .signatures
+            .iter()
+            .map(|signature| signature.return_annotation.as_str())
+            .collect::<Vec<_>>(),
+        ["float", "list[float]"]
+    );
+    assert!(
+        predict
+            .signatures
+            .iter()
+            .all(|signature| signature.positional_only == ["self", "features"])
+    );
+
+    let diagnostics = class_named(&implementation.body, "FitDiagnostics");
+    assert_eq!(
+        decorators(&implementation_source, &diagnostics.decorator_list),
+        ["dataclass(frozen=True)"]
+    );
+}
+
+#[test]
 fn numpy_docstrings_are_structured_without_losing_ranges() {
     let source = python_source("model.py");
     let module = parse_module(&source, PySourceType::Python);
@@ -478,36 +625,213 @@ fn annotated_names(body: &[Stmt]) -> Vec<&str> {
         .collect()
 }
 
-fn literal_exports(module: &ModModule) -> Vec<&str> {
-    match all_expression(module) {
+#[derive(Debug, PartialEq, Eq)]
+struct ResolvedReexport {
+    public_name: String,
+    canonical_name: String,
+    declaration: String,
+    range: TextRange,
+}
+
+fn resolved_reexports(package: &str, module: &ModModule, source: &str) -> Vec<ResolvedReexport> {
+    module
+        .body
+        .iter()
+        .filter_map(|statement| match statement {
+            Stmt::ImportFrom(import) if import.level > 0 => Some(import),
+            _ => None,
+        })
+        .flat_map(|import| {
+            let imported_module = match &import.module {
+                Some(module) => format!("{package}.{module}"),
+                None => package.to_owned(),
+            };
+            import.names.iter().map(move |alias| ResolvedReexport {
+                public_name: alias.asname.as_ref().unwrap_or(&alias.name).to_string(),
+                canonical_name: format!("{imported_module}.{}", alias.name),
+                declaration: source_text(source, alias.range).to_owned(),
+                range: alias.range,
+            })
+        })
+        .collect()
+}
+
+#[derive(Debug, PartialEq, Eq)]
+struct SourceValue {
+    text: String,
+    source: &'static str,
+    range: TextRange,
+}
+
+fn preferred_annotation(
+    name: &str,
+    implementation: &ModModule,
+    implementation_source: &str,
+    implementation_path: &'static str,
+    stub: &ModModule,
+    stub_source: &str,
+    stub_path: &'static str,
+) -> SourceValue {
+    let (assignment, source, path) = stub
+        .body
+        .iter()
+        .find_map(|statement| match statement {
+            Stmt::AnnAssign(assignment)
+                if matches!(assignment.target.as_ref(), Expr::Name(target) if target.id == name) =>
+            {
+                Some(assignment)
+            }
+            _ => None,
+        })
+        .map_or_else(
+            || {
+                (
+                    annotated_assignment_named(&implementation.body, name),
+                    implementation_source,
+                    implementation_path,
+                )
+            },
+            |assignment| (assignment, stub_source, stub_path),
+        );
+    let range = assignment.annotation.range();
+
+    SourceValue {
+        text: source_text(source, range).to_owned(),
+        source: path,
+        range,
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+struct ReconciledCallable {
+    signatures: Vec<Signature>,
+    signature_source: &'static str,
+    documentation: String,
+    documentation_text: String,
+    documentation_source: &'static str,
+    documentation_range: TextRange,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+struct Signature {
+    declaration: String,
+    decorators: Vec<String>,
+    positional_only: Vec<String>,
+    return_annotation: String,
+    range: TextRange,
+}
+
+fn reconciled_callable(
+    name: &str,
+    implementation_body: &[Stmt],
+    implementation_source: &str,
+    implementation_path: &'static str,
+    stub_body: &[Stmt],
+    stub_source: &str,
+    stub_path: &'static str,
+) -> ReconciledCallable {
+    let implementation = function_named(implementation_body, name);
+    let stub_declarations = functions_named(stub_body, name);
+    let overloads = stub_declarations
+        .iter()
+        .copied()
+        .filter(|function| decorators(stub_source, &function.decorator_list).contains(&"overload"))
+        .collect::<Vec<_>>();
+    let (declarations, signature_source, signature_path) = if overloads.is_empty() {
+        if stub_declarations.is_empty() {
+            (
+                vec![implementation],
+                implementation_source,
+                implementation_path,
+            )
+        } else {
+            (stub_declarations, stub_source, stub_path)
+        }
+    } else {
+        (overloads, stub_source, stub_path)
+    };
+
+    let documentation = docstring(&implementation.body).expect("implementation docstring");
+    let documentation_text = documentation.value.to_str().to_owned();
+    let parsed = parse_numpy(&documentation_text);
+    let summary = Document::new(&parsed)
+        .summary()
+        .expect("docstring summary")
+        .logical_text();
+    let documentation_range = documentation
+        .as_single_part_string()
+        .expect("one string literal")
+        .content_range();
+
+    ReconciledCallable {
+        signatures: declarations
+            .into_iter()
+            .map(|function| Signature {
+                declaration: source_text(signature_source, function.range).to_owned(),
+                decorators: decorators(signature_source, &function.decorator_list)
+                    .into_iter()
+                    .map(str::to_owned)
+                    .collect(),
+                positional_only: function
+                    .parameters
+                    .posonlyargs
+                    .iter()
+                    .map(|parameter| parameter.name().to_string())
+                    .collect(),
+                return_annotation: source_text(
+                    signature_source,
+                    function
+                        .returns
+                        .as_ref()
+                        .expect("return annotation")
+                        .range(),
+                )
+                .to_owned(),
+                range: function.range,
+            })
+            .collect(),
+        signature_source: signature_path,
+        documentation: summary,
+        documentation_text,
+        documentation_source: implementation_path,
+        documentation_range,
+    }
+}
+
+fn static_exports(module: &ModModule) -> Option<Vec<&str>> {
+    match find_all_expression(module)? {
         Expr::List(list) => list
             .elts
             .iter()
             .map(|expression| match expression {
-                Expr::StringLiteral(literal) => literal.value.to_str(),
-                _ => panic!("literal `__all__` should contain only strings"),
+                Expr::StringLiteral(literal) => Some(literal.value.to_str()),
+                _ => None,
             })
             .collect(),
-        _ => panic!("fixture should use a literal `__all__`"),
+        _ => None,
     }
 }
 
+fn literal_exports(module: &ModModule) -> Vec<&str> {
+    static_exports(module).expect("fixture should use a literal string `__all__`")
+}
+
 fn all_expression(module: &ModModule) -> &Expr {
-    module
-        .body
-        .iter()
-        .find_map(|statement| match statement {
-            Stmt::Assign(assignment)
-                if assignment
-                    .targets
-                    .iter()
-                    .any(|target| matches!(target, Expr::Name(name) if name.id == "__all__")) =>
-            {
-                Some(assignment.value.as_ref())
-            }
-            _ => None,
-        })
-        .expect("module should assign `__all__`")
+    find_all_expression(module).expect("module should assign `__all__`")
+}
+
+fn find_all_expression(module: &ModModule) -> Option<&Expr> {
+    module.body.iter().find_map(|statement| match statement {
+        Stmt::Assign(assignment)
+            if assignment
+                .targets
+                .iter()
+                .any(|target| matches!(target, Expr::Name(name) if name.id == "__all__")) =>
+        {
+            Some(assignment.value.as_ref())
+        }
+        _ => None,
+    })
 }
 
 fn reexported_names(module: &ModModule) -> Vec<&str> {

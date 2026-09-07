@@ -134,6 +134,36 @@ It runs entirely in the Rust test process.
 | Stub-only extension module | Normal Ruff stub module; no binary or import is needed | Include it in the configured module graph |
 | Computed `__all__` | Ruff exposes a call expression rather than a literal collection | Emit `python-dynamic-export` without evaluating the call |
 
+## Static semantic verification
+
+The `package_surface_is_reconciled_statically_without_importing` probe goes
+beyond checking for isolated AST nodes. It constructs the acceptance package's
+public surface directly from source text and verifies these rules:
+
+- the literal `__all__` values in `__init__.py` and `__init__.pyi` agree and are
+  available as the authoritative export set;
+- relative imports in both files resolve to identical package-qualified targets,
+  including aliases into the stub-only `foo._native` module;
+- a matching `.pyi` declaration supplies annotations and callable signatures,
+  while the implementation continues to supply its docstring;
+- repeated `@overload` declarations form the selected signatures for the `fit`
+  and `FooModel.predict` families instead of the broader implementation
+  signature;
+- positional-only parameters, return annotations, property, overload, and
+  dataclass decorators remain available as typed syntax; and
+- re-export declarations, annotations, signatures, and docstrings retain byte
+  ranges that select the original source exactly.
+
+The fixture deliberately has no `_native.py` or compiled extension. Importing
+`foo` would therefore fail when `__init__.py` reaches its `_native` re-export,
+yet the Rust-only probe obtains `NativeWorkspace`, `native_mean`, and their
+canonical targets from `_native.pyi`. The test calls no Python executable,
+import machinery, build backend, or package code.
+
+This is a proof of representability, not the production extractor. The compact
+semantic helpers remain test-local; Milestone 4 will replace them with
+Polydoc-owned adapters, diagnostics, IR, and golden tests.
+
 ## Consequences for implementation
 
 The production extractor should introduce one internal adapter per selected

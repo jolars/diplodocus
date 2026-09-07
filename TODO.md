@@ -156,7 +156,7 @@ API extraction and explicitly authorized authored execution.
 
 - [x] Compare viable Rust-native parsing and metadata libraries against every
   Python construct in the acceptance matrix.
-- [ ] Verify that Python exports, re-exports, annotations, decorators,
+- [x] Verify that Python exports, re-exports, annotations, decorators,
   overloads, source spans, `.pyi` precedence, and docstrings can be obtained
   without importing the package.
 - [ ] Compare viable Rust-native R metadata, namespace, source, and `Rd` parsing
