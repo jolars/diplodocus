@@ -182,7 +182,7 @@ extraction and explicitly authorized authored execution.
   against the execution corpus: kernel discovery and startup, ordered cell
   execution, stream and error messages, MIME bundles, display updates,
   timeout, interruption, and shutdown.
-- [ ] Verify Python and R kernels in the declared devenv and CI environments
+- [x] Verify Python and R kernels in the declared devenv and CI environments
   without starting a Jupyter server or installing anything during the test.
 - [ ] Define the supported QMD metadata and cell-option subset, MIME preference
   order, HTML sanitization boundary, execution failure policy, toolchain

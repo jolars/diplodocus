@@ -24,9 +24,10 @@ adapter because neither exposes the page-execution abstraction required by
 Diplodocus.
 
 This spike selects the client stack; it does not move the Milestone 6 execution
-engine into test code. The executable probe uses the ZMQ client's in-process
-test kernel and never starts a Jupyter server. Testing the declared `python3`
-and `ir` kernel processes belongs to the following Milestone 2 task.
+engine into test code. The deterministic executable probe uses the ZMQ client's
+in-process test kernel. A separate environment probe launches the declared
+`python3` and `ir` kernel processes directly. Neither test starts a Jupyter
+server.
 
 ## Boundary
 
@@ -94,6 +95,43 @@ reply. Real-kernel tests must require the kernel's actual reply status as well a
 its IOPub error and must verify that later execution follows Diplodocus's
 allowed-error policy.
 
+## Real-kernel environment probe
+
+[`devenv.nix`](../../devenv.nix) builds the Python interpreter with `ipykernel`
+and wraps R with `IRkernel` and its propagated dependencies. It also writes the
+two kernelspecs into one immutable Jupyter data directory and exposes only that
+directory through `JUPYTER_PATH`. Each kernelspec invokes its Nix-store runtime
+directly and accepts `{connection_file}`; no global or user kernelspec
+registration is needed.
+
+[`tests/jupyter_real_kernels.rs`](../../tests/jupyter_real_kernels.rs) uses the
+client's static kernelspec search, so it does not invoke the `jupyter` command.
+For each declared kernel, it reserves local ports, writes a disposable
+connection file, starts the kernelspec command as a child process, and connects
+straight to the shell, IOPub, and control ZeroMQ channels. It checks the
+kernel-info language and implementation versions, executes all five cells from
+the matching acceptance page in source order, and requires:
+
+- the setup cell to complete without output;
+- later cells to observe the setup cell's `total = 12` state;
+- typed stdout and stderr streams;
+- a `text/markdown` result and an `image/svg+xml` result;
+- both an IOPub error and an error-status shell reply for the allowed error; and
+- an acknowledged shutdown followed by a successful child-process exit.
+
+The pinned environment currently provides Python 3.14.7 with ipykernel 7.1.0
+and R 4.6.1 with IRkernel 1.3.2. The probe records the kernels' own runtime
+reports rather than relying on those package versions as constants. It also
+captures a real difference hidden by the canned kernel: IRkernel 1.3.2 uses
+`ERROR` as the error name and emits an extra line ending for `message()`.
+
+The GitHub Actions test job installs Nix and the devenv CLI as setup, realizes
+the locked environment, and runs the complete Rust test suite through
+`devenv shell`. Kernel packages are therefore present before the test binary
+starts.
+The test itself neither runs an installer nor calls a package manager, and the
+direct subprocess launch never starts a notebook or Jupyter server.
+
 ## Findings by acceptance construct
 
 | Acceptance construct | Available from the selected crates | Diplodocus-owned work |
@@ -148,17 +186,15 @@ bounded shutdown path even when startup, execution, or output conversion fails.
 
 Implementation should proceed in this order:
 
-1. Verify real `python3` and `ir` kernels in the declared devenv and CI
-   environments without a server or runtime installation during the test.
-2. Define normalized execution options, MIME preference, sanitization, failure
+1. Define normalized execution options, MIME preference, sanitization, failure
    policy, toolchain requirements, and provenance before adding production
    transport code.
-3. Specify the page-session state machine, including parent-ID filtering,
+2. Specify the page-session state machine, including parent-ID filtering,
    allowed errors, display replacement, stdin rejection, deadlines, interrupt
    escalation, and unconditional shutdown.
-4. Convert protocol messages into portable output IR before rendering or cache
+3. Convert protocol messages into portable output IR before rendering or cache
    design makes crate-specific types persistent.
-5. Add real-kernel golden output for Python and R, then keep the in-process
+4. Add real-kernel golden output for Python and R, then keep the in-process
    transport probe as the deterministic lower layer.
 
 If the real-kernel tests expose an incompatibility, add a focused protocol

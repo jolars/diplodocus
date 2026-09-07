@@ -33,10 +33,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - uses: cachix/install-nix-action@v31
+      - uses: cachix/cachix-action@v16
+        with:
+          name: devenv
+      - name: Install devenv
+        run: nix profile add nixpkgs#devenv
+      - name: Build devenv shell
+        run: devenv shell -- true
       - uses: Swatinem/rust-cache@v2
         with:
           key: test
-      - run: cargo test --locked --all-targets
+      - name: Run tests
+        run: devenv shell -- cargo test --locked --all-targets
 
   docs:
     name: rustdoc
