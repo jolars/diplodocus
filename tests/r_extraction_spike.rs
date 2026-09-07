@@ -1,4 +1,7 @@
+use arity_parser::ast::{AssignmentExpr, AstNode, FunctionExpr};
 use arity_parser::namespace::{self, DirectiveKind};
+use arity_parser::parser;
+use arity_parser::syntax::SyntaxNode;
 
 mod support;
 
@@ -109,4 +112,73 @@ fn arity_namespace_surface_exposes_the_acceptance_contract() {
             .collect::<Vec<_>>(),
         ["stats", "predict"]
     );
+}
+
+#[test]
+fn arity_function_formals_expose_the_acceptance_contract() {
+    let source = support::load_fixture(format!("{R_FIXTURE}/R/fit.R"));
+    let output = parser::parse(&source);
+
+    assert!(output.diagnostics.is_empty(), "{:?}", output.diagnostics);
+    let function = named_function(&output.cst, "fit.default");
+    let formals = function.formals();
+
+    assert_eq!(
+        formals
+            .iter()
+            .map(|formal| formal.name())
+            .collect::<Vec<_>>(),
+        ["x", "y", "solver", "tolerance", "..."]
+    );
+    assert_eq!(
+        formals
+            .iter()
+            .map(|formal| range_text!(&source, formal.text_range()))
+            .collect::<Vec<_>>(),
+        [
+            "x",
+            "y",
+            "solver = c(\"normal\", \"qr\")",
+            "tolerance = 1e-8",
+            "...",
+        ]
+    );
+    assert_eq!(
+        formals
+            .iter()
+            .map(|formal| {
+                formal
+                    .default_range()
+                    .map(|range| range_text!(&source, range))
+            })
+            .collect::<Vec<_>>(),
+        [
+            None,
+            None,
+            Some("c(\"normal\", \"qr\")"),
+            Some("1e-8"),
+            None
+        ]
+    );
+    assert_eq!(
+        formals
+            .iter()
+            .filter_map(|formal| formal.default())
+            .map(|default| default.to_string())
+            .collect::<Vec<_>>(),
+        ["c(\"normal\", \"qr\")", "1e-8"]
+    );
+}
+
+fn named_function(root: &SyntaxNode, name: &str) -> FunctionExpr {
+    root.descendants()
+        .filter_map(AssignmentExpr::cast)
+        .find_map(|assignment| {
+            (assignment.target_name().as_deref() == Some(name))
+                .then(|| assignment.value_element())
+                .flatten()
+                .and_then(|value| value.into_node())
+                .and_then(FunctionExpr::cast)
+        })
+        .unwrap_or_else(|| panic!("expected function `{name}`"))
 }
