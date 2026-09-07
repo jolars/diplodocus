@@ -23,9 +23,9 @@ use crate::ir::{
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum AuthoredFormat {
-    /// Polydoc's safe GitHub Flavored Markdown profile.
+    /// Diplodocus's safe GitHub Flavored Markdown profile.
     Gfm,
-    /// Polydoc's documented Quarto Markdown profile.
+    /// Diplodocus's documented Quarto Markdown profile.
     Qmd,
 }
 
@@ -38,7 +38,7 @@ pub struct DocumentParse {
     pub diagnostics: Vec<Diagnostic>,
 }
 
-/// Parse authored Markdown in-process and translate it into Polydoc's IR.
+/// Parse authored Markdown in-process and translate it into Diplodocus's IR.
 pub fn parse_authored_document(source: &str, format: AuthoredFormat) -> DocumentParse {
     let flavor = match format {
         AuthoredFormat::Gfm => Flavor::Gfm,

@@ -34,18 +34,18 @@ pub struct ServeOptions {
     pub port: u16,
 }
 
-/// An error returned by a Polydoc command operation.
+/// An error returned by a Diplodocus command operation.
 #[derive(Debug, Error, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum CommandError {
     /// Building is not available in the infrastructure milestone.
-    #[error("`polydoc build` is not implemented yet")]
+    #[error("`diplodocus build` is not implemented yet")]
     BuildNotImplemented,
     /// Checking is not available in the infrastructure milestone.
-    #[error("`polydoc check` is not implemented yet")]
+    #[error("`diplodocus check` is not implemented yet")]
     CheckNotImplemented,
     /// Serving is not available in the infrastructure milestone.
-    #[error("`polydoc serve` is not implemented yet")]
+    #[error("`diplodocus serve` is not implemented yet")]
     ServeNotImplemented,
 }
 

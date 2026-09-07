@@ -1,6 +1,6 @@
 Build coherent documentation websites for polyglot software projects.
 
-Usage: polydoc <COMMAND>
+Usage: diplodocus <COMMAND>
 
 Commands:
   build  Build a static documentation site

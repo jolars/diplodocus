@@ -4,13 +4,13 @@ use snapbox::cmd::{Command, cargo_bin};
 
 use support::golden;
 
-fn polydoc() -> Command {
-    Command::new(cargo_bin("polydoc"))
+fn diplodocus() -> Command {
+    Command::new(cargo_bin("diplodocus"))
 }
 
 #[test]
 fn root_help_is_stable() {
-    polydoc()
+    diplodocus()
         .arg("--help")
         .assert()
         .success()
@@ -25,7 +25,7 @@ fn subcommand_help_is_stable() {
         ("check", "cli/check-help.stdout"),
         ("serve", "cli/serve-help.stdout"),
     ] {
-        polydoc()
+        diplodocus()
             .args([command, "--help"])
             .assert()
             .success()
@@ -36,7 +36,7 @@ fn subcommand_help_is_stable() {
 
 #[test]
 fn version_is_stable() {
-    polydoc()
+    diplodocus()
         .arg("--version")
         .assert()
         .success()
@@ -70,7 +70,7 @@ fn commands_accept_their_explicit_options_and_reach_the_library() {
             "cli/serve-not-implemented.stderr",
         ),
     ] {
-        polydoc()
+        diplodocus()
             .args(arguments)
             .assert()
             .code(1)
@@ -89,7 +89,7 @@ fn malformed_input_has_a_usage_exit_without_panicking() {
         (vec!["unknown"], "cli/unknown-command.stderr"),
         (Vec::new(), "cli/missing-command.stderr"),
     ] {
-        polydoc()
+        diplodocus()
             .args(arguments)
             .assert()
             .code(2)

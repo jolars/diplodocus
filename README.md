@@ -1,13 +1,13 @@
-# Polydoc
+# Diplodocus
 
-[![CI](https://github.com/jolars/polydoc/actions/workflows/ci.yml/badge.svg)](https://github.com/jolars/polydoc/actions/workflows/ci.yml)
+[![CI](https://github.com/jolars/diplodocus/actions/workflows/ci.yml/badge.svg)](https://github.com/jolars/diplodocus/actions/workflows/ci.yml)
 
-Polydoc builds one coherent documentation website for software projects that
+Diplodocus builds one coherent documentation website for software projects that
 span multiple programming languages and repositories. The first release will
 support Python and R packages, authored Markdown, shared navigation, semantic
 cross-references, and workspace-wide search.
 
-Polydoc is under active development. The command-line surface is present, but
+Diplodocus is under active development. The command-line surface is present, but
 the build pipeline will arrive in the later milestones described in
 [`TODO.md`](TODO.md).
 
@@ -15,7 +15,7 @@ the build pipeline will arrive in the later milestones described in
 
 The library parses authored `.md` and `.qmd` content in-process through
 `panache-parser`. Use `documents::parse_authored_document` with the `Gfm` or
-`Qmd` profile to obtain Polydoc's serializable document IR and source-ordered
+`Qmd` profile to obtain Diplodocus's serializable document IR and source-ordered
 diagnostics. The current QMD adapter extracts executable cells and their
 options, but does not execute them.
 
@@ -80,7 +80,7 @@ Repository administrators must configure:
   required so Versionary-created tags trigger the publishing workflow.
 - A protected GitHub Actions environment named `release`, with the desired
   deployment reviewers and branch or tag restrictions.
-- A crates.io trusted publisher for `jolars/polydoc`, the
+- A crates.io trusted publisher for `jolars/diplodocus`, the
   `.github/workflows/publish-crates.yml` workflow, and the `release`
   environment.
 

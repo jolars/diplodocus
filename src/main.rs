@@ -3,10 +3,10 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 
 use clap::{Args, Parser, Subcommand};
-use polydoc::commands::{self, BuildOptions, CheckOptions, CommandError, ServeOptions};
+use diplodocus::commands::{self, BuildOptions, CheckOptions, CommandError, ServeOptions};
 
 #[derive(Debug, Parser)]
-#[command(name = "polydoc", version, about = env!("CARGO_PKG_DESCRIPTION"))]
+#[command(name = "diplodocus", version, about = env!("CARGO_PKG_DESCRIPTION"))]
 struct Cli {
     #[command(subcommand)]
     command: Command,
@@ -25,7 +25,7 @@ enum Command {
 #[derive(Debug, Args)]
 struct BuildArgs {
     /// Path to the workspace configuration file.
-    #[arg(long, value_name = "PATH", default_value = "./polydoc.toml")]
+    #[arg(long, value_name = "PATH", default_value = "./diplodocus.toml")]
     config: PathBuf,
     /// Directory in which to write the generated site.
     #[arg(long, value_name = "PATH", default_value = "./site")]
@@ -35,14 +35,14 @@ struct BuildArgs {
 #[derive(Debug, Args)]
 struct CheckArgs {
     /// Path to the workspace configuration file.
-    #[arg(long, value_name = "PATH", default_value = "./polydoc.toml")]
+    #[arg(long, value_name = "PATH", default_value = "./diplodocus.toml")]
     config: PathBuf,
 }
 
 #[derive(Debug, Args)]
 struct ServeArgs {
     /// Path to the workspace configuration file.
-    #[arg(long, value_name = "PATH", default_value = "./polydoc.toml")]
+    #[arg(long, value_name = "PATH", default_value = "./diplodocus.toml")]
     config: PathBuf,
     /// Directory in which to write the generated site.
     #[arg(long, value_name = "PATH", default_value = "./site")]
@@ -89,30 +89,30 @@ mod tests {
 
     #[test]
     fn build_defaults_match_the_command_contract() {
-        let cli = Cli::try_parse_from(["polydoc", "build"]).unwrap();
+        let cli = Cli::try_parse_from(["diplodocus", "build"]).unwrap();
         let Command::Build(args) = cli.command else {
             panic!("expected the build command");
         };
-        assert_eq!(args.config, PathBuf::from("./polydoc.toml"));
+        assert_eq!(args.config, PathBuf::from("./diplodocus.toml"));
         assert_eq!(args.output, PathBuf::from("./site"));
     }
 
     #[test]
     fn check_defaults_match_the_command_contract() {
-        let cli = Cli::try_parse_from(["polydoc", "check"]).unwrap();
+        let cli = Cli::try_parse_from(["diplodocus", "check"]).unwrap();
         let Command::Check(args) = cli.command else {
             panic!("expected the check command");
         };
-        assert_eq!(args.config, PathBuf::from("./polydoc.toml"));
+        assert_eq!(args.config, PathBuf::from("./diplodocus.toml"));
     }
 
     #[test]
     fn serve_defaults_match_the_command_contract() {
-        let cli = Cli::try_parse_from(["polydoc", "serve"]).unwrap();
+        let cli = Cli::try_parse_from(["diplodocus", "serve"]).unwrap();
         let Command::Serve(args) = cli.command else {
             panic!("expected the serve command");
         };
-        assert_eq!(args.config, PathBuf::from("./polydoc.toml"));
+        assert_eq!(args.config, PathBuf::from("./diplodocus.toml"));
         assert_eq!(args.output, PathBuf::from("./site"));
         assert_eq!(args.host, IpAddr::from([127, 0, 0, 1]));
         assert_eq!(args.port, 8000);

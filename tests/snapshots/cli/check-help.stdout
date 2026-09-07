@@ -1,7 +1,7 @@
 Check documentation without writing a site
 
-Usage: polydoc check [OPTIONS]
+Usage: diplodocus check [OPTIONS]
 
 Options:
-      --config <PATH>  Path to the workspace configuration file [default: ./polydoc.toml]
+      --config <PATH>  Path to the workspace configuration file [default: ./diplodocus.toml]
   -h, --help           Print help

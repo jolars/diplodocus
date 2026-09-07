@@ -1,4 +1,4 @@
-# Polydoc MVP Roadmap
+# Diplodocus MVP Roadmap
 
 This roadmap turns the initial product described in [DESIGN.md](DESIGN.md) into
 an ordered implementation plan. The MVP is one reproducible documentation
@@ -11,7 +11,7 @@ packages. It is not a general documentation platform.
   gate passes.
 - Add a failing test or fixture before implementing each observable behavior.
 - Keep the acceptance workspace as the source of truth for polyglot behavior and
-  Polydoc's own site as the source of truth for authored-documentation behavior;
+  Diplodocus's own site as the source of truth for authored-documentation behavior;
   use smaller fixtures only for focused error cases.
 - Treat diagnostic text, generated HTML, and serialized IR as snapshot-tested
   output. Review intentional changes rather than updating snapshots blindly.
@@ -24,33 +24,33 @@ packages. It is not a general documentation platform.
 
 The MVP is complete when all of the following are true:
 
-- [ ] One `polydoc.toml` can describe local repositories, Python and R packages,
+- [ ] One `diplodocus.toml` can describe local repositories, Python and R packages,
   extraction targets, authored content profiles and execution, package
   relationships, and conceptual API groups.
 - [ ] Rust-native static extraction documents Python and R public APIs without
   starting a language runtime, importing a Python package, or loading an R
   package.
-- [ ] Polydoc parses authored `.md` through its supported GFM profile and
+- [ ] Diplodocus parses authored `.md` through its supported GFM profile and
   authored `.qmd` through its supported Quarto profile using
   `panache-parser` in-process, with visible diagnostics for unsupported
   syntax.
 - [ ] Explicitly configured QMD collections execute Python and R code cells
   through installed Jupyter kernels and retain streams, errors, Markdown,
   and figure output as structured document IR.
-- [ ] Polydoc renders authored pages and both API ecosystems through one HTML
+- [ ] Diplodocus renders authored pages and both API ecosystems through one HTML
   renderer with safe code-cell output, shared navigation, source links,
   semantic references, concept switchers, and workspace-wide search.
-- [ ] `polydoc check`, `polydoc build`, and `polydoc serve` satisfy the command
+- [ ] `diplodocus check`, `diplodocus build`, and `diplodocus serve` satisfy the command
   contract below.
 - [ ] Repeated builds of the deterministic acceptance cells from identical
   declared sources, environments, kernels, and toolchains are byte-for-byte
   identical and contain no machine-specific checkout paths.
-- [ ] Polydoc neither installs dependencies nor performs implicit network
+- [ ] Diplodocus neither installs dependencies nor performs implicit network
   access; authored execution is configuration-authorized and documented as
   arbitrary, unsandboxed code execution.
 - [ ] The acceptance corpus passes formatting, linting, unit, golden,
   integration, link, and end-to-end tests.
-- [ ] Polydoc builds, checks, previews, and publishes its own project
+- [ ] Diplodocus builds, checks, previews, and publishes its own project
   documentation without another site generator.
 - [ ] A new user can build and preview the acceptance site by following the
   checked-in documentation.
@@ -61,11 +61,11 @@ The MVP is complete when all of the following are true:
 
   | Command         | MVP behavior                                                |
   | --------------- | ----------------------------------------------------------- |
-  | `polydoc check` | Load, parse, extract, and validate without executing cells. |
-  | `polydoc build` | Run configured execution and render the static site.        |
-  | `polydoc serve` | Build, serve, watch declared inputs, and rebuild safely.    |
+  | `diplodocus check` | Load, parse, extract, and validate without executing cells. |
+  | `diplodocus build` | Run configured execution and render the static site.        |
+  | `diplodocus serve` | Build, serve, watch declared inputs, and rebuild safely.    |
 
-All commands accept `--config`; its default is `./polydoc.toml`. `build` and
+All commands accept `--config`; its default is `./diplodocus.toml`. `build` and
 `serve` accept `--output`, whose default is `./site`. `serve` also accepts
 `--host` and `--port`, defaulting to `127.0.0.1` and `8000`.
 
@@ -75,9 +75,9 @@ and print the new diagnostics. Browser live reload is not part of the MVP.
 
 ### Content and output
 
-- `.md` content uses Polydoc's safe GFM profile; `.qmd` content uses its
+- `.md` content uses Diplodocus's safe GFM profile; `.qmd` content uses its
   documented Quarto profile with executable fences, hashpipe options, callouts,
-  and Polydoc semantic references. Raw source HTML is escaped.
+  and Diplodocus semantic references. Raw source HTML is escaped.
 - Authored execution is disabled by default. An executing QMD collection names
   one installed Jupyter kernel, and each page uses one session with cells run in
   source order.
@@ -101,7 +101,7 @@ MVP's differentiating behavior.
 
 - [x] Create `tests/fixtures/acceptance/` with a documentation workspace and
   sibling `core`, `python`, and `r` repository roots.
-- [x] Add a `polydoc.toml` that uses repository paths outside the configuration
+- [x] Add a `diplodocus.toml` that uses repository paths outside the configuration
   directory and package, target, content, relationship, and concept entries
   from `DESIGN.md`.
 - [x] Update the acceptance configuration with explicit GFM and QMD collections,
@@ -322,7 +322,7 @@ unsupported or incomplete semantic information visible through diagnostics.
 
 Keep execution separate from parsing and rendering. Tests should use the
 smallest deterministic kernels and cells that exercise the Jupyter protocol and
-Polydoc's document transformation.
+Diplodocus's document transformation.
 
 - [ ] Define the internal `ExecutionEngine` interface, execution context,
   capabilities, requirements, result, diagnostics, assets, and provenance.
@@ -355,7 +355,7 @@ Polydoc's document transformation.
 - [ ] Record whether each page was executed or restored from cache without
   leaking connection files, ports, temporary paths, process IDs, timestamps,
   or absolute checkout paths into portable provenance.
-- [ ] Prove that `execution.mode = "never"` and every `polydoc check` path avoid
+- [ ] Prove that `execution.mode = "never"` and every `diplodocus check` path avoid
   kernel discovery, startup, source execution, cache mutation, and
   execution- asset writes.
 - [ ] Add unit tests with a controllable protocol fixture and end-to-end tests
@@ -395,11 +395,11 @@ hit produces the same portable IR and assets as its originating execution.
 - [ ] Construct renderer-ready page, breadcrumb, source-link, navigation,
   concept-switcher, code-cell-output, and search-entry models without
   embedding parser or execution logic.
-- [ ] Wire `polydoc check` through configuration, authored-content parsing,
+- [ ] Wire `diplodocus check` through configuration, authored-content parsing,
   extraction, merging, reference resolution, and validation without
   executing a cell or creating the output directory.
 
-**Exit gate:** `polydoc check` succeeds for the valid acceptance workspace,
+**Exit gate:** `diplodocus check` succeeds for the valid acceptance workspace,
 fails with the expected diagnostics for every invalid variant, writes no site,
 and produces the same ordered diagnostics on repeated runs.
 
@@ -441,7 +441,7 @@ results; and no rendered page requires a network resource.
 
 ## Milestone 9: Complete `build` and `serve`
 
-- [ ] Wire `polydoc build` through the same checked pipeline and render only
+- [ ] Wire `diplodocus build` through the same checked pipeline and render only
   after error-free validation and successful configured execution.
 - [ ] Render into a temporary sibling directory and replace the configured
   output only after a successful build so failures cannot leave a partial
@@ -453,7 +453,7 @@ results; and no rendered page requires a network resource.
   provenance for QMD pages.
 - [ ] Make CLI diagnostics concise by default and sufficiently detailed to find
   the responsible configuration or source location.
-- [ ] Make `polydoc serve` perform an initial build, bind only to its configured
+- [ ] Make `diplodocus serve` perform an initial build, bind only to its configured
   local address, and serve the successful output tree.
 - [ ] Watch the configuration file and declared extraction, metadata, content,
   environment, and asset inputs; ignore the output and execution-cache
@@ -474,17 +474,17 @@ authorized cells; and `serve` observes a source or declared-environment edit and
 exposes the new page without a restart while preserving the last good site after
 an error.
 
-## Milestone 10: Dogfood Polydoc for its own documentation
+## Milestone 10: Dogfood Diplodocus for its own documentation
 
-Use Polydoc---not another static-site generator---to build the documentation
-users read about Polydoc. This self-documentation workspace exercises authored
+Use Diplodocus---not another static-site generator---to build the documentation
+users read about Diplodocus. This self-documentation workspace exercises authored
 content and project navigation; documenting the Rust API remains deferred until
 a Rust extractor exists.
 
-- [ ] Add a root `polydoc.toml` that declares this checkout as a repository and
+- [ ] Add a root `diplodocus.toml` that declares this checkout as a repository and
   mounts project-owned content from `docs/`.
 - [ ] Support and test a content-only workspace with no API extraction targets
-  so the self-documentation configuration does not pretend that Polydoc has
+  so the self-documentation configuration does not pretend that Diplodocus has
   a Python or R public API.
 - [ ] Make `docs/` the canonical source for the project overview, installation,
   quick start, workspace configuration, CLI, GFM and QMD profiles, Python
@@ -496,18 +496,18 @@ a Rust extractor exists.
   page, navigation, checked-in and generated assets, source links, and
   search in the real site so regressions affect the project before they
   affect downstream users.
-- [ ] Add tests that run the in-tree binary against the root `polydoc.toml`,
+- [ ] Add tests that run the in-tree binary against the root `diplodocus.toml`,
   snapshot representative pages and the search index, and validate every
   local link and asset.
 - [ ] Ensure the configured output directory is ignored and excluded from
   declared inputs so self-documentation builds cannot recurse into
   themselves.
-- [ ] Use `polydoc serve` as the documented local preview workflow for changes
+- [ ] Use `diplodocus serve` as the documented local preview workflow for changes
   under `docs/`.
 - [ ] Add `.github/workflows/docs.yml`, modeled on Basin's website workflow, to
-  build and validate the Polydoc site on pull requests, `main`, version
+  build and validate the Diplodocus site on pull requests, `main`, version
   tags, and manual dispatches.
-- [ ] Upload and deploy only the Polydoc-generated output through GitHub Pages;
+- [ ] Upload and deploy only the Diplodocus-generated output through GitHub Pages;
   use the `github-pages` environment and the minimal `pages: write` and
   `id-token: write` permissions in the deployment job.
 - [ ] Build the site for pull requests and `main`, but deploy only from `v*`
@@ -516,12 +516,12 @@ a Rust extractor exists.
 - [ ] Add `.nojekyll` as a deployment artifact without placing generated files
   in source control.
 - [ ] Test assets, navigation, and search beneath the repository Pages path
-  `/polydoc/`; do not hard-code a deployment origin or assume an apex
+  `/diplodocus/`; do not hard-code a deployment origin or assume an apex
   domain.
 
 **Exit gate:** A clean checkout builds the complete project site with the
-in-tree `polydoc` binary, the result passes link and asset checks, local preview
-uses `polydoc serve`, and the GitHub Pages workflow deploys exactly that
+in-tree `diplodocus` binary, the result passes link and asset checks, local preview
+uses `diplodocus serve`, and the GitHub Pages workflow deploys exactly that
 generated tree without invoking another documentation generator.
 
 ## Milestone 11: Harden and release the MVP
@@ -561,14 +561,14 @@ generated tree without invoking another documentation generator.
   - [ ] `cargo test --all-features`;
   - [ ] `cargo doc --no-deps` with `RUSTDOCFLAGS=-D warnings`;
   - [ ] `cargo publish --locked --dry-run`;
-  - [ ] `polydoc check` on the acceptance workspace;
+  - [ ] `diplodocus check` on the acceptance workspace;
   - [ ] two byte-identical acceptance builds from fresh execution caches; and
   - [ ] a byte-identical dogfood build plus its link and asset checker.
 
 **Exit gate:** Every MVP completion criterion at the top of this file is
 checked, the release gate passes from a clean checkout, and the documented quick
-start reproduces both the acceptance site and Polydoc's project site with no
-network access required by Polydoc or its deterministic authored cells.
+start reproduces both the acceptance site and Diplodocus's project site with no
+network access required by Diplodocus or its deterministic authored cells.
 
 ## Architectural exclusions
 
@@ -583,7 +583,7 @@ network access required by Polydoc or its deterministic authored cells.
 - Browser live reload.
 - Historical snapshot assembly and version switching.
 - Rust, Julia, TypeScript, C, or other public-API extractors; until a Rust
-  extractor exists, Polydoc's dogfooded site documents its authored project and
+  extractor exists, Diplodocus's dogfooded site documents its authored project and
   CLI material rather than generating Rust API reference pages.
 - Automatic repository, package, or ecosystem discovery.
 - A stable external extractor or renderer plugin API.
@@ -594,7 +594,7 @@ network access required by Polydoc or its deterministic authored cells.
 - Full Quarto, Pandoc, Sphinx, MyST, pkgdown, Documenter.jl, R Markdown, or
   arbitrary theme compatibility.
 - Additional content adapters and trusted raw HTML.
-- The `polydoc init` and `polydoc extract` commands.
-- A hosted documentation service operated by Polydoc, repository management,
+- The `diplodocus init` and `diplodocus extract` commands.
+- A hosted documentation service operated by Diplodocus, repository management,
   package installation, dependency resolution, or implicit version-control
   operations.

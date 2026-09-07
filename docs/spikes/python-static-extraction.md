@@ -5,7 +5,7 @@
 The MVP Python extractor will use a Rust-native stack. API extraction does not
 use a Python interpreter, a Python helper process, or package imports.
 
-Use these components behind a small Polydoc-owned adapter:
+Use these components behind a small Diplodocus-owned adapter:
 
 - [`pyproject-toml` 0.13.7](https://docs.rs/pyproject-toml/0.13.7/) for PEP 621
   project metadata and its typed PEP 440 and PEP 508 values;
@@ -18,7 +18,7 @@ Use these components behind a small Polydoc-owned adapter:
 
 The exact versions are intentional. Ruff describes these crates as internal
 components with unstable Rust APIs. `pydocstring` is also young. An adapter
-keeps either dependency from shaping Polydoc's extractor interface or portable
+keeps either dependency from shaping Diplodocus's extractor interface or portable
 IR.
 
 This report selects parsing infrastructure; it does not move the Milestone 4
@@ -30,12 +30,12 @@ the semantic passes that turn syntax into a public API.
 ```text
 pyproject.toml ── pyproject-toml ───────────────┐
                                                 │
-.py/.pyi ─────── Ruff AST ── Polydoc semantics ├── portable API IR
+.py/.pyi ─────── Ruff AST ── Diplodocus semantics ├── portable API IR
                       │                         │
                       └── pydocstring ──────────┘
 ```
 
-The Polydoc semantic layer must:
+The Diplodocus semantic layer must:
 
 - build the configured module graph;
 - evaluate only the supported static subset of `__all__`;
@@ -62,12 +62,12 @@ extractor must never start a kernel or import the documented package.
 | --- | --- | --- |
 | Ruff parser and AST | Select | Typed current-Python AST, distinct Python and stub source types, tokens, recoverable errors, unsupported-version errors, and byte ranges. All acceptance sources parse successfully. |
 | `rustpython-parser` 0.4.0 | Reject | It provides a typed AST and optional ranges, but its maintained repository says that Ruff's parser supersedes it. |
-| `tree-sitter-python` 0.25.0 | Reject | Its concrete syntax tree and error recovery are useful for editor tooling, but Polydoc would need a larger typed-AST adapter and more validation to distinguish malformed or unsupported syntax. It offers no API semantics. |
+| `tree-sitter-python` 0.25.0 | Reject | Its concrete syntax tree and error recovery are useful for editor tooling, but Diplodocus would need a larger typed-AST adapter and more validation to distinguish malformed or unsupported syntax. It offers no API semantics. |
 | `python-parser` 0.2.0 | Reject | Its documented grammar stops at Python 3.8-era syntax and is unsuitable for the declared Python 3.11 package. |
 
 Ruff's existing semantic-analysis crates are implementation details of Ruff and
 its type checker; they do not expose a stable, package-documentation model.
-Depending on them would not remove Polydoc's need to define export, identity,
+Depending on them would not remove Diplodocus's need to define export, identity,
 and stub-merging rules.
 
 ### Package metadata
@@ -75,7 +75,7 @@ and stub-merging rules.
 | Candidate | Result | Reason |
 | --- | --- | --- |
 | `pyproject-toml` | Select | Models PEP 621, distinguishes dynamic fields, and parses versions, Python requirements, and dependencies into packaging-aware types without invoking the configured build backend. |
-| Generic TOML deserialization | Reject | It would leave Polydoc responsible for PEP 440, PEP 508, normalized package names, and the evolving `pyproject.toml` schema. |
+| Generic TOML deserialization | Reject | It would leave Diplodocus responsible for PEP 440, PEP 508, normalized package names, and the evolving `pyproject.toml` schema. |
 | Build-backend metadata hooks | Reject | They may execute backend code and violate the static-extraction contract. Dynamic required metadata must instead produce a diagnostic. |
 
 `pyproject-toml` reports TOML parse spans but does not retain a source range for
@@ -89,7 +89,7 @@ provenance, not a field-level span, so this is sufficient for the MVP.
 | `pydocstring` | Select | Zero dependencies, explicit NumPy parsing, a typed unified view, a source-backed concrete tree, and byte ranges. It recognizes all required fixture sections and entries. |
 | Ruff docstring utilities | Reject as the section parser | Ruff provides useful lexical helpers but no NumPy-section model. |
 | `docstring` 0.2.4 | Reject | Normalizes indentation only; it does not model Python or NumPy docstring sections. |
-| Polydoc-specific parser | Defer | The selected crate already supplies the required section grammar and ranges. Polydoc still needs a narrow adapter for inline markup and document IR. |
+| Diplodocus-specific parser | Defer | The selected crate already supplies the required section grammar and ranges. Diplodocus still needs a narrow adapter for inline markup and document IR. |
 
 `pydocstring` ranges address the decoded string passed to it. For the acceptance
 corpus, the decoded bytes equal the bytes inside each triple-quoted literal, and
@@ -107,7 +107,7 @@ the result as JSON while inspection is disabled.
 
 Do not use Griffe as an extractor dependency or fallback. The Rust spike exposes
 all syntax and documentation information needed by the acceptance matrix, and
-the remaining work encodes Polydoc-specific identity and provenance rules that
+the remaining work encodes Diplodocus-specific identity and provenance rules that
 would still need an adapter around Griffe. Griffe may serve as a behavioral
 reference while developing fixtures, but it is not a supported extraction mode.
 
@@ -117,7 +117,7 @@ The executable probe is
 [`tests/python_extraction_spike.rs`](../../tests/python_extraction_spike.rs).
 It runs entirely in the Rust test process.
 
-| Acceptance construct | Available from the selected stack | Polydoc-owned work |
+| Acceptance construct | Available from the selected stack | Diplodocus-owned work |
 | --- | --- | --- |
 | PEP 621 name, version, description, Python requirement, and dependency | Typed values from `pyproject-toml` | Provenance and diagnostics for dynamic required fields |
 | Module docstring, literal `__version__`, and literal `__all__` | Ruff string and collection expressions with ranges | Supported constant-expression evaluator |
@@ -162,17 +162,17 @@ import machinery, build backend, or package code.
 
 This is a proof of representability, not the production extractor. The compact
 semantic helpers remain test-local; Milestone 4 will replace them with
-Polydoc-owned adapters, diagnostics, IR, and golden tests.
+Diplodocus-owned adapters, diagnostics, IR, and golden tests.
 
 ## Consequences for implementation
 
 The production extractor should introduce one internal adapter per selected
-crate and convert immediately into Polydoc-owned types. Tests should never match
+crate and convert immediately into Diplodocus-owned types. Tests should never match
 large Ruff debug representations or expose Ruff types through public APIs.
 
 The next Python extractor work should proceed in this order:
 
-1. Define golden Polydoc IR for the fixture before implementing extraction.
+1. Define golden Diplodocus IR for the fixture before implementing extraction.
 2. Implement metadata conversion and the configured module graph.
 3. Implement a deliberately small static-expression evaluator for exports and
    literal values.

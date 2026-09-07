@@ -1,8 +1,8 @@
-# Polydoc: Design
+# Diplodocus: Design
 
 ## Purpose
 
-Polydoc is a documentation generator for polyglot software projects, including
+Diplodocus is a documentation generator for polyglot software projects, including
 both monorepos and product families spread across several repositories.
 
 Its central goal is to provide **one coherent documentation website** for
@@ -19,7 +19,7 @@ Typical projects include:
 - packages written in different languages but belonging to the same software
   project.
 
-Polydoc should make these appear as parts of one documentation system, with
+Diplodocus should make these appear as parts of one documentation system, with
 common navigation, styling, search, URLs, and page structure.
 
 ### Initial scope
@@ -37,22 +37,22 @@ later concern.
 
 ### One renderer
 
-Polydoc owns the generated HTML.
+Diplodocus owns the generated HTML.
 
 Package metadata, source code, stubs, namespaces, and documentation formats are
-parsed in-process with Rust libraries or Polydoc-owned Rust parsers. Language
+parsed in-process with Rust libraries or Diplodocus-owned Rust parsers. Language
 runtimes are reserved for explicitly authorized execution of code examples and
 authored documentation chunks; they are not part of parsing or API extraction.
-Polydoc must not delegate HTML generation to rustdoc, pkgdown, Sphinx,
+Diplodocus must not delegate HTML generation to rustdoc, pkgdown, Sphinx,
 Documenter.jl, or equivalent systems.
 
-When an extractor encounters a construct that Polydoc cannot faithfully
+When an extractor encounters a construct that Diplodocus cannot faithfully
 represent, it should emit a visible diagnostic rather than silently discarding
 information.
 
 ### Language-aware, not lowest-common-denominator
 
-Polydoc should have a common documentation model for concepts shared across
+Diplodocus should have a common documentation model for concepts shared across
 languages while retaining language-specific concepts where necessary.
 
 For example:
@@ -72,7 +72,7 @@ configuration or supplied as sibling checkouts:
 
 ```text
 docs-workspace/
-└── polydoc.toml
+└── diplodocus.toml
 
 checkouts/
 ├── foo-core/
@@ -80,7 +80,7 @@ checkouts/
 └── foo-r/
 ```
 
-Packages need not share a repository, language, or release cycle. Polydoc does
+Packages need not share a repository, language, or release cycle. Diplodocus does
 not clone, fetch, or update repositories; the caller is responsible for
 supplying the local source roots.
 
@@ -94,10 +94,10 @@ Cloudflare Pages, Netlify, or any ordinary HTTP server.
 The same source repositories and configuration should produce the same
 documentation output, apart from explicitly non-reproducible metadata.
 
-Polydoc itself should not perform implicit network access during normal builds.
+Diplodocus itself should not perform implicit network access during normal builds.
 
 Executable authored content weakens this guarantee in a visible, controlled
-way. Polydoc records the selected execution engine, kernel, toolchain,
+way. Diplodocus records the selected execution engine, kernel, toolchain,
 normalized cell options, declared environment inputs, and source fingerprint in
 provenance and execution-cache keys. It cannot make code deterministic when the
 code reads undeclared state, uses randomness or time, or accesses the network.
@@ -113,11 +113,11 @@ and never depends on runtime results.
 Authored code cells execute arbitrary code with the user's privileges. Execution
 is therefore disabled by default and may be enabled only by workspace
 configuration; document metadata alone cannot grant permission to execute.
-Polydoc does not sandbox cells, install their dependencies, or make network
+Diplodocus does not sandbox cells, install their dependencies, or make network
 requests on their behalf. Because execution is unsandboxed, however, a cell may
 access the network unless the surrounding environment prevents it.
 
-`polydoc check` parses and validates code cells without executing them. `build`
+`diplodocus check` parses and validates code cells without executing them. `build`
 and `serve` execute cells only for content collections whose configuration
 explicitly enables execution.
 
@@ -153,7 +153,7 @@ HTML renderer
 ### API extractors
 
 Each supported API ecosystem has an extractor that translates package metadata,
-public APIs, and documentation into Polydoc's intermediate representation. An
+public APIs, and documentation into Diplodocus's intermediate representation. An
 extractor operates on an explicit extraction target, not recursively on every
 language found beneath a package root.
 
@@ -194,7 +194,7 @@ The extractor boundary should remain independent from the renderer.
 Conceptually:
 
 ```text
-polydoc extract python ./python/package
+diplodocus extract python ./python/package
          │
          ▼
    package fragment
@@ -202,7 +202,7 @@ polydoc extract python ./python/package
 
 ### Static extractor boundary
 
-Built-in extractors run in the Polydoc process. They may read only declared
+Built-in extractors run in the Diplodocus process. They may read only declared
 inputs and do not start a language runtime, execute package code, invoke a build
 backend, import a Python package, or source, attach, or load an R package.
 Dynamic metadata and semantics outside a supported static subset produce
@@ -220,16 +220,16 @@ executed.
 
 ### Authored content parsing
 
-Polydoc uses the `panache-parser` Rust crate in-process for authored Markdown. It
+Diplodocus uses the `panache-parser` Rust crate in-process for authored Markdown. It
 does not invoke Panache's command-line interface, Pandoc, or Quarto. The content
 adapter selects Panache's GFM or Quarto flavor, consumes its typed syntax views
 and embedded-language diagnostics, and translates supported constructs directly
-into Polydoc's document IR.
+into Diplodocus's document IR.
 
-The Panache CST is a source-facing representation, not Polydoc's portable IR.
-Polydoc does not use Panache's Pandoc-native or Pandoc-JSON projectors as an
+The Panache CST is a source-facing representation, not Diplodocus's portable IR.
+Diplodocus does not use Panache's Pandoc-native or Pandoc-JSON projectors as an
 interchange format. Unsupported and newly introduced syntax must remain visible
-to the adapter with its source range so that Polydoc can diagnose it rather than
+to the adapter with its source range so that Diplodocus can diagnose it rather than
 silently flattening or discarding it.
 
 ### Documentation IR
@@ -367,7 +367,7 @@ Ordinary stdout and stderr become escaped, preformatted stream output. A
 is parsed as a Markdown fragment with execution disabled and stored as document
 blocks. Binary figures become content-addressed local assets. HTML output must
 be sanitized into a distinct representation before reaching the renderer; when
-safe sanitization would lose the result's meaning, Polydoc emits a diagnostic
+safe sanitization would lose the result's meaning, Diplodocus emits a diagnostic
 and falls back to another supported MIME representation.
 
 Common item kinds might include:
@@ -441,9 +441,9 @@ The initial implementation supports two named input profiles:
   Quarto executable fences with braced language names, hashpipe cell options,
   and the supported Quarto callout syntax.
 
-These are compatibility profiles, not a new Polydoc Markdown dialect. Polydoc
+These are compatibility profiles, not a new Diplodocus Markdown dialect. Diplodocus
 does not promise every Quarto, Pandoc, R Markdown, MyST, or GFM extension.
-Polydoc semantic references are its only domain-specific inline extension.
+Diplodocus semantic references are its only domain-specific inline extension.
 Unsupported directives, metadata, cell options, and embedded components produce
 visible diagnostics.
 
@@ -453,12 +453,12 @@ one page-scoped session. Code blocks for other languages remain display-only;
 multiple executable kernels within one page are outside the initial scope.
 Kernel-backed execution provides a language-neutral protocol for Python, R, and
 other installed kernels without making Quarto, Pandoc, or a Jupyter server a
-Polydoc dependency.
+Diplodocus dependency.
 
 The first execution implementation consumes Jupyter streams, errors, display
 data, and result MIME bundles through an in-process Rust client. Kernel
 executables and language packages remain declared external toolchain
-requirements. Polydoc never installs a kernel or its dependencies.
+requirements. Diplodocus never installs a kernel or its dependencies.
 
 Execution transforms `CodeCell` nodes in the document IR by attaching structured
 outputs. It does not generate an intermediate Markdown file or reparse the
@@ -483,7 +483,7 @@ A workspace has one root configuration file. It may live in a dedicated
 documentation repository or in any one of the source repositories:
 
 ```text
-polydoc.toml
+diplodocus.toml
 ```
 
 For example:
@@ -557,7 +557,7 @@ kernel = "python3"
 declared_environment_inputs = ["uv.lock"]
 ```
 
-Repository paths may point outside the directory containing `polydoc.toml`.
+Repository paths may point outside the directory containing `diplodocus.toml`.
 Package paths are relative to their repository roots; metadata and
 extraction-target paths are relative to their package roots; content paths are
 relative to their repository roots. All must remain within their declared
@@ -565,8 +565,8 @@ repository after normalization. This allows explicit sibling checkouts without
 making an arbitrary relative path an undeclared source root.
 
 The repository URL identifies the canonical source origin. An optional source
-link template controls forge-specific revision, path, and line URLs; Polydoc may
-infer standard templates for known forges. Polydoc records a revision and a
+link template controls forge-specific revision, path, and line URLs; Diplodocus may
+infer standard templates for known forges. Diplodocus records a revision and a
 fingerprint of the declared extraction and content inputs for every repository
 in the generated provenance. It may inspect local version-control metadata
 without modifying the checkout, but it never fetches or changes revisions.
@@ -592,7 +592,7 @@ authorize.
 Declared environment inputs are paths relative to the content collection's
 repository and obey the same traversal and symlink restrictions as other
 declared inputs. They commonly include lockfiles or environment manifests.
-Their contents participate in provenance and execution-cache keys, but Polydoc
+Their contents participate in provenance and execution-cache keys, but Diplodocus
 does not interpret them or install the environment they describe.
 
 Configuration should be explicit and small.
@@ -632,7 +632,7 @@ also records the engine, kernel, kernel-reported language and version, cell
 options, declared environment fingerprints, and whether an output came from a
 fresh execution or the page-level cache. A multi-repository snapshot is
 coherent only when its binding and dependency constraints match the versions
-represented by the supplied sources. `polydoc check` should diagnose known
+represented by the supplied sources. `diplodocus check` should diagnose known
 mismatches but must not resolve, install, or update dependencies.
 
 Historical documentation requires assembling snapshots built from different
@@ -708,7 +708,7 @@ release. Recording both relationships lets validation distinguish the source
 version currently being documented from the dependency version actually used
 by each binding.
 
-Polydoc does not attempt dependency resolution. It reports inconsistent or
+Diplodocus does not attempt dependency resolution. It reports inconsistent or
 unknown relationships when enough information is available and otherwise
 retains them as snapshot metadata.
 
@@ -716,7 +716,7 @@ retains them as snapshot metadata.
 
 ## Cross-package relationships
 
-Polydoc should support relationships between equivalent or related APIs across
+Diplodocus should support relationships between equivalent or related APIs across
 packages in its first useful release.
 
 For example:
@@ -786,7 +786,7 @@ Authored content should support package-qualified semantic references:
 
 An unqualified shorthand such as ``[`FooModel.fit`]`` may be accepted when it
 resolves unambiguously in the current package or workspace. Ambiguous
-references are errors reported by `polydoc check`.
+references are errors reported by `diplodocus check`.
 
 --------------------------------------------------------------------------------
 
@@ -850,16 +850,16 @@ layouts while clearly belonging to the same visual system.
 The initial CLI should remain small:
 
 ```text
-polydoc build
-polydoc serve
-polydoc check
+diplodocus build
+diplodocus serve
+diplodocus check
 ```
 
 Potential additional commands:
 
 ```text
-polydoc init
-polydoc extract
+diplodocus init
+diplodocus extract
 ```
 
 `build` should perform extraction, authored-content parsing, configured cell
@@ -946,7 +946,7 @@ repositories. A sensible order is:
 4. Implement the Python and R extractors test-first against golden IR fixtures.
 5. Implement the GFM and QMD adapters, followed by page-scoped Jupyter execution
    and its structured output conversion.
-6. Implement semantic reference resolution and `polydoc check`, including
+6. Implement semantic reference resolution and `diplodocus check`, including
    diagnostics for ambiguity, unsupported constructs, incoherent package
    relationships, and unresolved concepts.
 7. Render authored pages, code-cell outputs, and both API references in one
@@ -957,14 +957,14 @@ repositories. A sensible order is:
    acceptance workspace, including deterministic executable cells.
 10. Only then consider historical release assembly or another ecosystem.
 
-Polydoc's CLI, core, renderer, built-in extractors, Panache adapter, and Jupyter
+Diplodocus's CLI, core, renderer, built-in extractors, Panache adapter, and Jupyter
 client will be implemented in Rust. This provides a convenient single binary
 and fits well with parsing, static-site generation, and concurrent builds. All
 built-in extractors parse their inputs in-process with Rust-native
 infrastructure. An execution engine alone may start an explicitly configured
 external Jupyter kernel, subject to the code-execution contract. Kernel
 executables and language packages are execution toolchain requirements; they
-are not extractor dependencies and do not replace Polydoc's Rust implementation
+are not extractor dependencies and do not replace Diplodocus's Rust implementation
 or renderer.
 
 Rust, Julia, and TypeScript are the next natural public-API extractors for a
@@ -975,7 +975,7 @@ represented initially by authored reference content and an internal component.
 
 ## Non-goals
 
-At least initially, Polydoc is not:
+At least initially, Diplodocus is not:
 
 - a general-purpose static site generator;
 - a replacement for Markdown authoring;

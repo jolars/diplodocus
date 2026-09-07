@@ -1,8 +1,8 @@
 Build a static documentation site
 
-Usage: polydoc build [OPTIONS]
+Usage: diplodocus build [OPTIONS]
 
 Options:
-      --config <PATH>  Path to the workspace configuration file [default: ./polydoc.toml]
+      --config <PATH>  Path to the workspace configuration file [default: ./diplodocus.toml]
       --output <PATH>  Directory in which to write the generated site [default: ./site]
   -h, --help           Print help

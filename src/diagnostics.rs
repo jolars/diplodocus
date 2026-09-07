@@ -8,7 +8,7 @@ use crate::ir::SourceSpan;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum DiagnosticCode {
-    /// Authored syntax is outside Polydoc's supported profile.
+    /// Authored syntax is outside Diplodocus's supported profile.
     UnsupportedAuthoredSyntax,
     /// Panache reported malformed embedded YAML.
     InvalidEmbeddedYaml,

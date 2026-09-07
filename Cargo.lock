@@ -297,6 +297,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "diplodocus"
+version = "0.1.0"
+dependencies = [
+ "arity-parser",
+ "clap",
+ "panache-parser",
+ "pydocstring",
+ "pyproject-toml",
+ "rd-ast",
+ "rd-source",
+ "ruff_python_ast",
+ "ruff_python_parser",
+ "ruff_text_size",
+ "serde",
+ "serde_json",
+ "snapbox",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "displaydoc"
 version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -847,26 +867,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c6fd9027e2d9319be6349febd1db4e8d02aa544921200c9b777720ac34a3aa89"
 dependencies = [
  "siphasher",
-]
-
-[[package]]
-name = "polydoc"
-version = "0.1.0"
-dependencies = [
- "arity-parser",
- "clap",
- "panache-parser",
- "pydocstring",
- "pyproject-toml",
- "rd-ast",
- "rd-source",
- "ruff_python_ast",
- "ruff_python_parser",
- "ruff_text_size",
- "serde",
- "serde_json",
- "snapbox",
- "thiserror 2.0.20",
 ]
 
 [[package]]

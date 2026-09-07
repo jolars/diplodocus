@@ -1,4 +1,4 @@
-% This dynamic fragment must produce an unsupported-Rd diagnostic in Polydoc.
+% This dynamic fragment must produce an unsupported-Rd diagnostic in Diplodocus.
 \name{experimental_summary}
 \alias{experimental_summary}
 \title{Experimental Numeric Summary}

@@ -9,7 +9,7 @@ the [Python guide](../../python/docs/guide.qmd).
 | R       | 1.8.0   |
 
 > [!NOTE]
-> Polydoc renders this project and both packages together.
+> Diplodocus renders this project and both packages together.
 
 ```python
 from foo import fit

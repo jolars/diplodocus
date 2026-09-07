@@ -8,7 +8,7 @@ Authors@R:
 Author: Foo Contributors [aut, cre]
 Maintainer: Foo Contributors <maintainers@example.com>
 Description: R bindings for the Foo statistical library. The package exposes a
-    small model-fitting API used by Polydoc's acceptance workspace.
+    small model-fitting API used by Diplodocus's acceptance workspace.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Depends:

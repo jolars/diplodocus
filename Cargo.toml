@@ -1,25 +1,25 @@
 [package]
-name = "polydoc"
+name = "diplodocus"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.98.0"
 authors = ["Johan Larsson <johan@jolars.co>"]
 description = "Build coherent documentation websites for polyglot software projects."
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/jolars/polydoc"
-homepage = "https://github.com/jolars/polydoc"
-documentation = "https://docs.rs/polydoc"
+repository = "https://github.com/jolars/diplodocus"
+homepage = "https://github.com/jolars/diplodocus"
+documentation = "https://docs.rs/diplodocus"
 readme = "README.md"
 keywords = ["documentation", "generator", "python", "r", "static-site"]
 categories = ["command-line-utilities", "development-tools"]
-default-run = "polydoc"
+default-run = "diplodocus"
 
 [lib]
-name = "polydoc"
+name = "diplodocus"
 path = "src/lib.rs"
 
 [[bin]]
-name = "polydoc"
+name = "diplodocus"
 path = "src/main.rs"
 
 [dependencies]

@@ -19,16 +19,16 @@ fn acceptance_workspaces_are_isolated_from_checked_in_fixtures() {
     assert_ne!(temporary, checked_in);
 
     let checked_in_configuration =
-        fs::read(checked_in.join("workspace/polydoc.toml")).expect("fixture should be readable");
-    workspace.write("workspace/polydoc.toml", "temporary mutation\n");
+        fs::read(checked_in.join("workspace/diplodocus.toml")).expect("fixture should be readable");
+    workspace.write("workspace/diplodocus.toml", "temporary mutation\n");
 
     assert_eq!(
-        fs::read(checked_in.join("workspace/polydoc.toml"))
+        fs::read(checked_in.join("workspace/diplodocus.toml"))
             .expect("checked-in fixture should remain readable"),
         checked_in_configuration
     );
     assert_eq!(
-        workspace.read("workspace/polydoc.toml"),
+        workspace.read("workspace/diplodocus.toml"),
         "temporary mutation\n"
     );
 }
@@ -72,7 +72,7 @@ fn acceptance_fixture_has_gfm_and_qmd_authored_content() {
             .is_file()
     );
 
-    let configuration = workspace.read("workspace/polydoc.toml");
+    let configuration = workspace.read("workspace/diplodocus.toml");
     assert!(configuration.contains(
         "id = \"guide\"\nowner = \"project\"\nrepository = \"core\"\npath = \"docs\"\nmount = \"guide\"\nformat = \"gfm\""
     ));
@@ -131,7 +131,7 @@ fn acceptance_fixture_has_executable_python_and_r_qmd_pages() {
         ),
     ];
 
-    let configuration = workspace.read("workspace/polydoc.toml");
+    let configuration = workspace.read("workspace/diplodocus.toml");
     for (source, language, kernel, environment_input, constructs) in cases {
         assert!(
             workspace.path().join(source).is_file(),
@@ -177,7 +177,7 @@ fn acceptance_fixture_has_execution_authority_variants() {
         );
     }
 
-    let configuration = workspace.read("workspace/polydoc.toml");
+    let configuration = workspace.read("workspace/diplodocus.toml");
     let collection_start = configuration
         .find("id = \"python-default-never\"")
         .expect("default-never QMD collection should be configured");
@@ -260,7 +260,7 @@ fn acceptance_fixture_has_output_safety_variants() {
 #[test]
 fn acceptance_configuration_declares_cross_language_callable_concepts() {
     let workspace = acceptance_workspace();
-    let configuration = workspace.read("workspace/polydoc.toml");
+    let configuration = workspace.read("workspace/diplodocus.toml");
 
     for concept in [
         "id = \"fit\"\nkind = \"equivalent\"\nmembers = [\n  { package = \"pyfoo\", item = \"foo.fit\" },\n  { package = \"rfoo\", item = \"fit\" },\n]",
@@ -327,7 +327,7 @@ fn acceptance_fixture_has_visibility_and_relationship_variants() {
 #[test]
 fn acceptance_configuration_covers_the_design_model() {
     let acceptance = acceptance_workspace();
-    let configuration_path = acceptance.path().join("workspace/polydoc.toml");
+    let configuration_path = acceptance.path().join("workspace/diplodocus.toml");
     let configuration = fs::read_to_string(&configuration_path)
         .expect("acceptance configuration should be readable");
 

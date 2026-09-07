@@ -181,7 +181,7 @@ pub enum Block {
         /// Full source range.
         span: SourceSpan,
     },
-    /// Retained syntax outside Polydoc's supported authored profile.
+    /// Retained syntax outside Diplodocus's supported authored profile.
     Unsupported {
         /// Panache syntax-kind name.
         source_kind: String,
@@ -437,7 +437,7 @@ pub enum Inline {
         /// Full source range.
         span: SourceSpan,
     },
-    /// Polydoc's code-only unresolved-reference extension.
+    /// Diplodocus's code-only unresolved-reference extension.
     SemanticReference {
         /// Package-qualified or unqualified semantic target.
         target: String,

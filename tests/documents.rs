@@ -1,6 +1,6 @@
-use polydoc::diagnostics::{DiagnosticCode, Severity};
-use polydoc::documents::{AuthoredFormat, parse_authored_document};
-use polydoc::ir::{Block, CalloutKind, CellOptionResolution, Inline, TableAlignment};
+use diplodocus::diagnostics::{DiagnosticCode, Severity};
+use diplodocus::documents::{AuthoredFormat, parse_authored_document};
+use diplodocus::ir::{Block, CalloutKind, CellOptionResolution, Inline, TableAlignment};
 
 mod support;
 
