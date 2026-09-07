@@ -27,8 +27,9 @@ The MVP is complete when all of the following are true:
 - [ ] One `polydoc.toml` can describe local repositories, Python and R packages,
   extraction targets, authored content profiles and execution, package
   relationships, and conceptual API groups.
-- [ ] Static extraction documents Python and R public APIs without importing a
-  Python package or loading an R package.
+- [ ] Rust-native static extraction documents Python and R public APIs without
+  starting a language runtime, importing a Python package, or loading an R
+  package.
 - [ ] Polydoc parses authored `.md` through its supported GFM profile and
   authored `.qmd` through its supported Quarto profile using `panache-parser`
   in-process, with visible diagnostics for unsupported syntax.
@@ -153,19 +154,18 @@ Use the acceptance corpus to discover what can be represented reliably. The
 spikes choose implementation tools and establish the boundary between static
 API extraction and explicitly authorized authored execution.
 
-- [ ] Compare viable Rust parsing and metadata libraries against every Python
-  construct in the acceptance matrix.
+- [x] Compare viable Rust-native parsing and metadata libraries against every
+  Python construct in the acceptance matrix.
 - [ ] Verify that Python exports, re-exports, annotations, decorators,
   overloads, source spans, `.pyi` precedence, and docstrings can be obtained
   without importing the package.
-- [ ] Compare viable R metadata, namespace, source, and `Rd` parsing approaches
-  against every R construct in the matrix.
-- [ ] If `Rscript` is required to parse `Rd`, define a checked-in, versioned,
-  machine-readable helper protocol that calls parsing tools but never
-  attaches, installs, or loads the documented package.
-- [ ] Record how each extractor reports missing tools, unsupported syntax,
-  dynamic exports, incomplete source locations, and information loss.
-- [ ] Define each extractor's static mode, tool requirements, capabilities, and
+- [ ] Compare viable Rust-native R metadata, namespace, source, and `Rd` parsing
+  approaches against every R construct in the matrix.
+- [ ] Verify that `DESCRIPTION`, `NAMESPACE`, maintained R source, and checked-in
+  `Rd` can be parsed in-process without `Rscript` or package loading.
+- [ ] Record how each extractor reports malformed metadata, unsupported syntax,
+  dynamic constructs, incomplete source locations, and information loss.
+- [ ] Define each extractor's parser versions, static mode, capabilities, and
   provenance fields.
 - [x] Pin `panache-parser` as the in-process reader and verify its GFM and Quarto
   flavors against every authored-content construct in the acceptance matrix.
@@ -194,10 +194,11 @@ API extraction and explicitly authorized authored execution.
 - [ ] Capture exploratory output as golden fixtures before replacing spike code
   with production extractors.
 
-**Exit gate:** Every required Python and R API construct has a selected static
-extraction path or an explicit diagnostic; every authored construct has a
-Panache-to-IR path; Python and R kernels produce the required structured outputs;
-and no static extractor imports or loads documented package code.
+**Exit gate:** Every required Python and R API construct has a selected
+Rust-native static extraction path or an explicit diagnostic; every authored
+construct has a Panache-to-IR path; Python and R kernels produce the required
+structured outputs; and no static extractor starts a language runtime, imports
+a package, or loads documented package code.
 
 ## Milestone 3: Implement configuration, diagnostics, and IR
 
@@ -237,9 +238,9 @@ before implementing the model.
 - [ ] Normalize source locations to repository IDs and forward-slash-separated,
   repository-relative paths.
 - [ ] Collect repository revisions, dirty states, declared-input fingerprints,
-  extractor and Panache versions, toolchain and kernel versions, extraction and
-  execution modes, and declared environment fingerprints without writing
-  machine-specific paths into portable data.
+  extractor, parser, and Panache versions, execution toolchain and kernel
+  versions, extraction and execution modes, and declared environment
+  fingerprints without writing machine-specific paths into portable data.
 - [ ] Translate the supported GFM and QMD profiles from Panache's typed syntax
   views into document IR, including semantic references, code cells, source
   ranges, and visible placeholders for unsupported constructs.
@@ -280,8 +281,8 @@ bytes and no absolute paths.
 - [ ] Emit stable diagnostics for syntax errors, unresolved re-exports,
   conflicting stubs, unsupported decorators, and incomplete docstring
   syntax.
-- [ ] Record extractor capabilities, version, static mode, and required tools in
-  provenance.
+- [ ] Record extractor capabilities, extractor and parser versions, and static
+  mode in provenance.
 
 **Exit gate:** Python extraction matches the reviewed golden IR for every
 acceptance case, remains unchanged when imports would have side effects, and
@@ -304,14 +305,14 @@ reports every unsupported case without silently dropping public information.
 - [ ] Reconcile namespace exports, source definitions, and `Rd` aliases without
   duplicating one public entity.
 - [ ] Emit stable diagnostics for malformed metadata, missing documented
-  aliases, unsupported namespace directives, unsupported `Rd`, and missing
-  external tools.
-- [ ] Record extractor capabilities, version, static mode, R version, and helper
-  protocol version in provenance.
+  aliases, unsupported namespace directives, unsupported `Rd`, incomplete
+  source locations, and information loss.
+- [ ] Record extractor capabilities, extractor and parser versions, and static
+  mode in provenance.
 
 **Exit gate:** R extraction matches the reviewed golden IR for every acceptance
-case, works without attaching the package, and makes unsupported or incomplete
-semantic information visible through diagnostics.
+case, works without starting R or attaching or loading the package, and makes
+unsupported or incomplete semantic information visible through diagnostics.
 
 ## Milestone 6: Implement authored code execution
 
@@ -563,9 +564,14 @@ checked, the release gate passes from a clean checkout, and the documented quick
 start reproduces both the acceptance site and Polydoc's project site with no
 network access required by Polydoc or its deterministic authored cells.
 
+## Architectural exclusions
+
+- Runtime-based API introspection and external language-runtime parser helpers.
+  Python, R, Julia, and other language runtimes are reserved for explicitly
+  authorized execution of code examples and authored documentation chunks.
+
 ## Explicitly deferred until after the MVP
 
-- Import-based Python introspection and load-based R introspection.
 - Extraction caches and incremental extraction beyond `serve` rebuilding the
   current snapshot.
 - Browser live reload.

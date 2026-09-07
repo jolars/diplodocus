@@ -39,7 +39,10 @@ later concern.
 
 Polydoc owns the generated HTML.
 
-Language-specific tooling may be used to obtain semantic information, but
+Package metadata, source code, stubs, namespaces, and documentation formats are
+parsed in-process with Rust libraries or Polydoc-owned Rust parsers. Language
+runtimes are reserved for explicitly authorized execution of code examples and
+authored documentation chunks; they are not part of parsing or API extraction.
 Polydoc must not delegate HTML generation to rustdoc, pkgdown, Sphinx,
 Documenter.jl, or equivalent systems.
 
@@ -100,6 +103,12 @@ provenance and execution-cache keys. It cannot make code deterministic when the
 code reads undeclared state, uses randomness or time, or accesses the network.
 
 ### Explicit authored execution
+
+Language runtimes may be invoked only by execution engines, and only to run
+explicitly authorized examples or authored documentation code chunks. The MVP
+authorizes executable QMD cells; extracted API examples remain display-only
+until they have a separate execution policy. Parsing completes before execution
+and never depends on runtime results.
 
 Authored code cells execute arbitrary code with the user's privileges. Execution
 is therefore disabled by default and may be enabled only by workspace
@@ -163,16 +172,22 @@ R
 
 Possible later extractors include Rust, Julia, and TypeScript.
 
-Extractors should use native semantic infrastructure where useful.
+Extractors use Rust-native parsing infrastructure. They may preserve and model
+ecosystem-specific semantics, but they do not invoke the documented language's
+runtime to discover those semantics.
 
 For the initial extractors:
 
-- Python should use static source analysis and package metadata by default.
-  Public exports, re-exports, type stubs, and extension-module stubs form part of
-  that static surface. Import-based introspection is an explicit optional mode.
-- R should read `DESCRIPTION` and `NAMESPACE` metadata and consume parsed `Rd`
-  documentation without loading the package by default. Runtime introspection
-  is an explicit optional mode.
+- Python uses static source analysis and package metadata. Public exports,
+  re-exports, type stubs, and extension-module stubs form part of that static
+  surface. Extraction never imports the documented package.
+- R parses `DESCRIPTION`, `NAMESPACE`, maintained R source, and checked-in `Rd`
+  documentation without starting R or loading the documented package.
+
+The same boundary applies to later ecosystems. When Rust-native extraction
+cannot represent a required dynamic construct, the extractor emits a visible
+diagnostic rather than falling back to runtime introspection or an external
+parser helper.
 
 The extractor boundary should remain independent from the renderer.
 
@@ -185,24 +200,23 @@ polydoc extract python ./python/package
    package fragment
 ```
 
-### Extractor execution
+### Static extractor boundary
 
-Extractors must declare their toolchain requirements and whether they operate
-statically or execute package code. Static extraction is preferred. Runtime
-introspection may be enabled when an ecosystem cannot otherwise expose the
-required semantics, but it must be explicit because importing a Python package
-or loading an R package can execute arbitrary code.
+Built-in extractors run in the Polydoc process. They may read only declared
+inputs and do not start a language runtime, execute package code, invoke a build
+backend, import a Python package, or source, attach, or load an R package.
+Dynamic metadata and semantics outside a supported static subset produce
+diagnostics.
 
-An extractor must use tools already available in the build environment. Polydoc
-must not install dependencies or request network access on an extractor's behalf.
-The generated IR records the extractor version, relevant toolchain versions,
-extraction mode, and diagnostics. These inputs also form part of any extraction
-cache key.
+The generated IR records the extractor and parser versions, declared
+capabilities, static extraction mode, and diagnostics. These inputs also form
+part of any extraction cache key.
 
 Reproducibility means that the same source repository contents, configuration,
-extractor versions, toolchains, and declared environment inputs produce the same
-output. Polydoc cannot make an introspected package deterministic when the
-package itself is not deterministic.
+extractor and parser versions, capabilities, and declared environment inputs
+produce the same output. External runtimes and toolchains affect this contract
+only when explicitly authorized code examples or authored code chunks are
+executed.
 
 ### Authored content parsing
 
@@ -868,7 +882,6 @@ The core should define an extractor interface conceptually similar to:
 ```text
 Extractor
   ecosystem()
-  requirements() -> ToolchainRequirement[]
   capabilities() -> ExtractionCapabilities
   extract(context, package, target) -> ExtractionResult
 
@@ -924,8 +937,8 @@ repositories. A sensible order is:
    functions and S3 methods, authored GFM and executable QMD, unsupported
    content directives, and several equivalent and analogous APIs.
 2. Spike both API extractors, the Panache content adapter, and Jupyter execution
-   against that corpus to discover what their native tools expose and where
-   information is lost.
+   against that corpus to discover what their Rust-native libraries expose and
+   where information is lost.
 3. Define the repository, package, extraction-target, content-collection, and
    relationship models, together with the structured IR, stable item IDs, and
    conceptual API groups, code cells, output representations, and execution
@@ -946,12 +959,13 @@ repositories. A sensible order is:
 
 Polydoc's CLI, core, renderer, built-in extractors, Panache adapter, and Jupyter
 client will be implemented in Rust. This provides a convenient single binary
-and fits well with parsing, static-site generation, and concurrent builds. A
-built-in extractor may invoke external Python or R tooling when native semantic
-infrastructure is required, subject to the declared extraction contract. The
-execution engine may start an explicitly configured external Jupyter kernel,
-subject to the authored-execution contract. Such tools are declared toolchain
-requirements; they do not replace Polydoc's Rust implementation or renderer.
+and fits well with parsing, static-site generation, and concurrent builds. All
+built-in extractors parse their inputs in-process with Rust-native
+infrastructure. An execution engine alone may start an explicitly configured
+external Jupyter kernel, subject to the code-execution contract. Kernel
+executables and language packages are execution toolchain requirements; they
+are not extractor dependencies and do not replace Polydoc's Rust implementation
+or renderer.
 
 Rust, Julia, and TypeScript are the next natural public-API extractors for a
 core-with-bindings ecosystem. A C extractor is optional: a C ABI may instead be
