@@ -29,6 +29,9 @@ serde = { version = "1.0", features = ["derive"] }
 thiserror = "2.0"
 
 [dev-dependencies]
+# Coordinated local extraction spike. Replace this path with a versioned
+# dependency before Polydoc is expected to build without its sibling checkout.
+arity-parser = { path = "../arity/crates/arity-parser" }
 pydocstring = "=0.4.1"
 pyproject-toml = "=0.13.7"
 ruff_python_ast = "=0.0.12"
