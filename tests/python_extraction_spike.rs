@@ -1,11 +1,14 @@
 use pydocstring::model::{FreeSectionKind, SectionKind};
 use pydocstring::parse::{Document, Style, parse_numpy};
+use pydocstring::syntax::SyntaxKind as DocstringSyntaxKind;
 use pyproject_toml::PyProjectToml;
 use ruff_python_ast::{
-    Expr, ExprStringLiteral, ModModule, PySourceType, Stmt, StmtAnnAssign, StmtAssign,
-    StmtClassDef, StmtFunctionDef,
+    Expr, ExprStringLiteral, ModModule, PySourceType, PythonVersion, Stmt, StmtAnnAssign,
+    StmtAssign, StmtClassDef, StmtFunctionDef,
 };
-use ruff_python_parser::parse_unchecked_source;
+use ruff_python_parser::{
+    ParseOptions, UnsupportedSyntaxErrorKind, parse_unchecked, parse_unchecked_source,
+};
 use ruff_text_size::{Ranged, TextRange};
 
 mod support;
@@ -38,6 +41,56 @@ fn pyproject_metadata_is_available_without_a_build_backend() {
     assert_eq!(dependencies.len(), 1);
     assert_eq!(dependencies[0].name.as_ref(), "foo-core");
     assert_eq!(dependencies[0].to_string(), "foo-core>=1.9,<2");
+}
+
+#[test]
+fn pyproject_metadata_distinguishes_malformed_and_dynamic_values() {
+    let malformed = "[project]\nname = \"foo\"\nversion = \"not a version\"\n";
+    let error = PyProjectToml::new(malformed).expect_err("invalid PEP 440 version");
+    let span = error.span().expect("TOML diagnostic span");
+    assert!(
+        malformed[span].contains("not a version"),
+        "unexpected metadata diagnostic: {error}"
+    );
+
+    let dynamic = "[project]\nname = \"foo\"\ndynamic = [\"version\"]\n";
+    let project = PyProjectToml::new(dynamic)
+        .expect("valid dynamic metadata declaration")
+        .project
+        .expect("project table");
+    assert!(project.version.is_none());
+    assert_eq!(project.dynamic.expect("dynamic fields"), ["version"]);
+}
+
+#[test]
+fn ruff_separates_malformed_syntax_from_unsupported_python_versions() {
+    let malformed = "def broken(:\n    pass\n";
+    let parsed = parse_unchecked_source(malformed, PySourceType::Python);
+    assert!(!parsed.errors().is_empty());
+    assert!(parsed.unsupported_syntax_errors().is_empty());
+    assert!(parsed.errors().iter().all(|error| {
+        usize::from(error.location.start()) <= malformed.len()
+            && usize::from(error.location.end()) <= malformed.len()
+    }));
+
+    let versioned = "type Alias = int\n";
+    let parsed = parse_unchecked(
+        versioned,
+        ParseOptions::from(PySourceType::Python).with_target_version(PythonVersion::PY311),
+    );
+    assert!(parsed.errors().is_empty());
+    let [unsupported] = parsed.unsupported_syntax_errors() else {
+        panic!(
+            "expected one unsupported-version diagnostic, got {:?}",
+            parsed.unsupported_syntax_errors()
+        );
+    };
+    assert_eq!(
+        unsupported.kind,
+        UnsupportedSyntaxErrorKind::TypeAliasStatement
+    );
+    assert_eq!(unsupported.target_version, PythonVersion::PY311);
+    assert_eq!(source_text(versioned, unsupported.range), "type");
 }
 
 #[test]
@@ -480,6 +533,37 @@ fn numpy_docstrings_are_structured_without_losing_ranges() {
         &source[absolute_solver_start..absolute_solver_end],
         docstring_source_text(docstring_source, solver.range())
     );
+}
+
+#[test]
+fn docstring_recovery_and_decoding_require_adapter_diagnostics() {
+    let incomplete = "Summary.\n\nParameters\n----------\nvalue :\n";
+    let parsed = parse_numpy(incomplete);
+    let section = parsed
+        .root()
+        .nodes(DocstringSyntaxKind::SECTION)
+        .next()
+        .expect("parameters section");
+    let entry = section
+        .nodes(DocstringSyntaxKind::ENTRY)
+        .next()
+        .expect("parameter entry");
+    let missing_type = entry
+        .find_missing(DocstringSyntaxKind::TYPE)
+        .expect("missing type placeholder");
+    assert!(missing_type.range().is_empty());
+
+    let source = "def example():\n    \"\"\"first\\nsecond\"\"\"\n";
+    let module = parse_module(source, PySourceType::Python);
+    let literal =
+        docstring(&function_named(&module.body, "example").body).expect("example docstring");
+    let content_range = literal
+        .as_single_part_string()
+        .expect("one string literal")
+        .content_range();
+    assert_eq!(source_text(source, content_range), r"first\nsecond");
+    assert_eq!(literal.value.to_str(), "first\nsecond");
+    assert_ne!(source_text(source, content_range), literal.value.to_str());
 }
 
 fn python_source(file: &str) -> String {

@@ -1,11 +1,13 @@
 use arity_parser::ast::{AssignmentExpr, AstNode, FunctionExpr};
+use arity_parser::dcf::{self, VersionOp, dependency_entries};
 use arity_parser::namespace::{self, DirectiveKind};
 use arity_parser::parser;
 use arity_parser::syntax::SyntaxNode;
 use rd_ast::{
     RdDynamicMarkupEvent, RdDynamicMarkupState, RdInlineSpanKind, RdNode, RdPath, RdPathSegment,
-    RdSexprResults, RdSexprStage, text_contents,
+    RdSexprResults, RdSexprStage, RdShapeErrorKind, RdTag, text_contents,
 };
+use rd_source::{DiagnosticCode, Severity};
 
 mod support;
 
@@ -16,6 +18,66 @@ macro_rules! range_text {
         let range = $range;
         &$source[usize::from(range.start())..usize::from(range.end())]
     }};
+}
+
+#[test]
+fn dcf_description_surface_exposes_the_acceptance_contract() {
+    let source = support::load_fixture(format!("{R_FIXTURE}/DESCRIPTION"));
+    let output = dcf::parse(&source);
+
+    assert!(output.diagnostics.is_empty(), "{:?}", output.diagnostics);
+    assert_eq!(dcf::reconstruct(&source), source);
+
+    let document = output.document();
+    assert_eq!(document.field("Package").unwrap().folded_value(), "foo");
+    assert_eq!(document.field("Version").unwrap().folded_value(), "1.8.0");
+    assert_eq!(
+        document.field("Title").unwrap().folded_value(),
+        "Statistical Models with Foo"
+    );
+
+    let depends = dependency_entries(&document.field("Depends").unwrap());
+    assert_eq!(depends.len(), 1);
+    assert_eq!(depends[0].name.as_str(), "R");
+    assert_eq!(depends[0].constraints[0].op, VersionOp::Ge);
+    assert_eq!(depends[0].constraints[0].version.as_str(), "4.3");
+}
+
+#[test]
+fn dcf_reports_malformed_lines_but_preserves_metadata_bytes() {
+    let malformed = "Package foo\nVersion: 1.0.0\n";
+    let output = dcf::parse(malformed);
+    let [diagnostic] = output.diagnostics.as_slice() else {
+        panic!("expected one DCF diagnostic, got {:?}", output.diagnostics);
+    };
+    assert_eq!(
+        diagnostic.message,
+        "malformed line: expected 'Field: value' or an indented continuation line"
+    );
+    assert_eq!(&malformed[diagnostic.start..diagnostic.end], "Package foo");
+    assert_eq!(dcf::reconstruct(malformed), malformed);
+    assert_eq!(
+        output.document().field("Version").unwrap().folded_value(),
+        "1.0.0"
+    );
+
+    let semantic = dcf::parse("Imports: stats (=> 4.0)\n");
+    assert!(semantic.diagnostics.is_empty());
+    let imports = dependency_entries(&semantic.document().field("Imports").unwrap());
+    assert_eq!(imports.len(), 1);
+    assert!(imports[0].malformed_constraint());
+}
+
+#[test]
+fn arity_reports_malformed_r_syntax_with_a_lossless_tree() {
+    let source = "fit <-\n";
+    let output = parser::parse(source);
+    let [diagnostic] = output.diagnostics.as_slice() else {
+        panic!("expected one R diagnostic, got {:?}", output.diagnostics);
+    };
+    assert_eq!(diagnostic.message, "expected assignment right-hand side");
+    assert_eq!(&source[diagnostic.start..diagnostic.end], "<-");
+    assert_eq!(parser::reconstruct(source), source);
 }
 
 #[test]
@@ -116,6 +178,49 @@ fn arity_namespace_surface_exposes_the_acceptance_contract() {
             .collect::<Vec<_>>(),
         ["stats", "predict"]
     );
+}
+
+#[test]
+fn namespace_reports_unsupported_directives_without_hiding_them() {
+    let source = "futureDirective(foo)\n";
+    let output = namespace::parse(source);
+    let [diagnostic] = output.diagnostics.as_slice() else {
+        panic!(
+            "expected one NAMESPACE diagnostic, got {:?}",
+            output.diagnostics
+        );
+    };
+    assert_eq!(diagnostic.message, "unsupported NAMESPACE directive");
+    assert_eq!(&source[diagnostic.start..diagnostic.end], "futureDirective");
+
+    let directive = output.document().directives().next().unwrap();
+    assert_eq!(directive.kind(), DirectiveKind::Unsupported);
+    assert_eq!(
+        range_text!(source, directive.text_range()),
+        "futureDirective(foo)"
+    );
+    assert_eq!(namespace::reconstruct(source), source);
+}
+
+#[test]
+fn namespace_retains_but_does_not_evaluate_dynamic_conditions() {
+    let source = "if (getRversion() >= \"4.0\") export(foo) else export(bar)\n";
+    let output = namespace::parse(source);
+    assert!(output.diagnostics.is_empty(), "{:?}", output.diagnostics);
+
+    let exported = output
+        .document()
+        .directives()
+        .map(|directive| {
+            let argument = directive.arguments().next().expect("export argument");
+            range_text!(
+                source,
+                argument.value_range().expect("export argument value")
+            )
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(exported, ["foo", "bar"]);
+    assert_eq!(namespace::reconstruct(source), source);
 }
 
 #[test]
@@ -278,6 +383,46 @@ fn rd_ast_exposes_the_acceptance_semantics_without_evaluation() {
             stage: RdSexprStage::Render
         }
     ));
+}
+
+#[test]
+fn rd_source_reports_unknown_markup_and_preserves_an_opaque_node() {
+    let source = r"\name{topic}\unknown{payload}";
+    let parsed = rd_source::parse(source.as_bytes()).expect("recoverable Rd source");
+    let [diagnostic] = parsed.diagnostics() else {
+        panic!("expected one Rd diagnostic, got {:?}", parsed.diagnostics());
+    };
+    assert_eq!(diagnostic.severity(), &Severity::Error);
+    assert_eq!(diagnostic.code(), &DiagnosticCode::UnknownTag);
+    assert_eq!(&source[diagnostic.span().bytes()], r"\unknown");
+
+    let unknown = rd_nodes(parsed.document().nodes())
+        .into_iter()
+        .find_map(|(node, _)| {
+            node.as_tagged()
+                .filter(|tagged| matches!(tagged.tag(), RdTag::Unknown(_)))
+        })
+        .expect("unknown Rd node");
+    assert_eq!(unknown.tag(), &RdTag::Unknown(r"\unknown".into()));
+    assert_eq!(text_contents(unknown.children()), "payload");
+}
+
+#[test]
+fn rd_strict_views_report_information_loss_with_structural_paths() {
+    let source = r"\description{first}\description{second}";
+    let parsed = rd_source::parse(source.as_bytes()).expect("recoverable Rd source");
+    assert!(parsed.diagnostics().is_empty());
+
+    let error = parsed
+        .document()
+        .inspect_description()
+        .expect_err("duplicate description should not use first-wins projection");
+    assert!(matches!(error.kind(), RdShapeErrorKind::Duplicate { .. }));
+    assert_eq!(error.path().to_string(), "top-level[1]");
+    assert_eq!(
+        error.to_string(),
+        "duplicate \\description for \\description at top-level[1]"
+    );
 }
 
 fn parse_rd_fixture(file: &str) -> rd_source::Parsed {

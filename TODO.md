@@ -166,7 +166,7 @@ extraction and explicitly authorized authored execution.
 - [x] Verify that `DESCRIPTION`, `NAMESPACE`, maintained R source, and
   checked-in `Rd` can be parsed in-process without `Rscript` or package
   loading.
-- [ ] Record how each extractor reports malformed metadata, unsupported syntax,
+- [x] Record how each extractor reports malformed metadata, unsupported syntax,
   dynamic constructs, incomplete source locations, and information loss.
 - [ ] Define each extractor's parser versions, static mode, capabilities, and
   provenance fields.

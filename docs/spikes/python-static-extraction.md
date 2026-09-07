@@ -25,6 +25,10 @@ This report selects parsing infrastructure; it does not move the Milestone 4
 extractor implementation into the spike. The production extractor still owns
 the semantic passes that turn syntax into a public API.
 
+Native error channels, dynamic cases, source-location gaps, and adapter recovery
+rules are recorded in
+[`static-extraction-failure-modes.md`](static-extraction-failure-modes.md).
+
 ## Boundary
 
 ```text
