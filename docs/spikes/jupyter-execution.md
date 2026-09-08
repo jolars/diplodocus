@@ -179,6 +179,10 @@ renderer never accepts a protocol value as trusted HTML.
 
 ## Consequences for implementation
 
+The [authored-execution contract](authored-execution-contract.md) now selects
+the QMD option subset, MIME and sanitization policies, failure behavior,
+toolchain requirements, and portable provenance fields described below.
+
 The production adapter should depend directly on both selected crates and
 convert immediately into Diplodocus-owned execution types. It should use Tokio,
 keep the child handle and every channel in one page-session owner, and run a

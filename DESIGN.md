@@ -447,6 +447,10 @@ Diplodocus semantic references are its only domain-specific inline extension.
 Unsupported directives, metadata, cell options, and embedded components produce
 visible diagnostics.
 
+The [authored-execution contract](docs/spikes/authored-execution-contract.md)
+defines the MVP metadata and cell-option subset, MIME preference, sanitization
+boundary, failure policy, toolchain requirements, and execution provenance.
+
 Only `qmd` collections may contain executable cells. Each executable page uses
 one configured Jupyter kernel, and its cells run sequentially in source order in
 one page-scoped session. Code blocks for other languages remain display-only;

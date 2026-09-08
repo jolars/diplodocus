@@ -184,9 +184,10 @@ extraction and explicitly authorized authored execution.
   timeout, interruption, and shutdown.
 - [x] Verify Python and R kernels in the declared devenv and CI environments
   without starting a Jupyter server or installing anything during the test.
-- [ ] Define the supported QMD metadata and cell-option subset, MIME preference
+- [x] Define the supported QMD metadata and cell-option subset, MIME preference
   order, HTML sanitization boundary, execution failure policy, toolchain
   requirements, and execution provenance fields.
+  See [the authored-execution contract](docs/spikes/authored-execution-contract.md).
 - [ ] Define a deterministic page-level execution-cache key and artifact format
   covering source, normalized options, engine and kernel identity, relevant
   toolchain versions, and declared environment inputs.
