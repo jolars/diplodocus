@@ -11,8 +11,8 @@ packages. It is not a general documentation platform.
   gate passes.
 - Add a failing test or fixture before implementing each observable behavior.
 - Keep the acceptance workspace as the source of truth for polyglot behavior and
-  Diplodocus's own site as the source of truth for authored-documentation behavior;
-  use smaller fixtures only for focused error cases.
+  Diplodocus's own site as the source of truth for authored-documentation
+  behavior; use smaller fixtures only for focused error cases.
 - Treat diagnostic text, generated HTML, and serialized IR as snapshot-tested
   output. Review intentional changes rather than updating snapshots blindly.
 - Keep output deterministic by sorting filesystem discoveries and map-like data
@@ -24,9 +24,9 @@ packages. It is not a general documentation platform.
 
 The MVP is complete when all of the following are true:
 
-- [ ] One `diplodocus.toml` can describe local repositories, Python and R packages,
-  extraction targets, authored content profiles and execution, package
-  relationships, and conceptual API groups.
+- [ ] One `diplodocus.toml` can describe local repositories, Python and R
+  packages, extraction targets, authored content profiles and execution,
+  package relationships, and conceptual API groups.
 - [ ] Rust-native static extraction documents Python and R public APIs without
   starting a language runtime, importing a Python package, or loading an R
   package.
@@ -40,8 +40,8 @@ The MVP is complete when all of the following are true:
 - [ ] Diplodocus renders authored pages and both API ecosystems through one HTML
   renderer with safe code-cell output, shared navigation, source links,
   semantic references, concept switchers, and workspace-wide search.
-- [ ] `diplodocus check`, `diplodocus build`, and `diplodocus serve` satisfy the command
-  contract below.
+- [ ] `diplodocus check`, `diplodocus build`, and `diplodocus serve` satisfy the
+  command contract below.
 - [ ] Repeated builds of the deterministic acceptance cells from identical
   declared sources, environments, kernels, and toolchains are byte-for-byte
   identical and contain no machine-specific checkout paths.
@@ -59,8 +59,8 @@ The MVP is complete when all of the following are true:
 
 ### Commands
 
-  | Command         | MVP behavior                                                |
-  | --------------- | ----------------------------------------------------------- |
+  | Command            | MVP behavior                                                |
+  | ------------------ | ----------------------------------------------------------- |
   | `diplodocus check` | Load, parse, extract, and validate without executing cells. |
   | `diplodocus build` | Run configured execution and render the static site.        |
   | `diplodocus serve` | Build, serve, watch declared inputs, and rebuild safely.    |
@@ -101,9 +101,9 @@ MVP's differentiating behavior.
 
 - [x] Create `tests/fixtures/acceptance/` with a documentation workspace and
   sibling `core`, `python`, and `r` repository roots.
-- [x] Add a `diplodocus.toml` that uses repository paths outside the configuration
-  directory and package, target, content, relationship, and concept entries
-  from `DESIGN.md`.
+- [x] Add a `diplodocus.toml` that uses repository paths outside the
+  configuration directory and package, target, content, relationship, and
+  concept entries from `DESIGN.md`.
 - [x] Update the acceptance configuration with explicit GFM and QMD collections,
   `never` and `execute` modes, Python and R kernel names, and declared
   environment inputs.
@@ -186,12 +186,12 @@ extraction and explicitly authorized authored execution.
   without starting a Jupyter server or installing anything during the test.
 - [x] Define the supported QMD metadata and cell-option subset, MIME preference
   order, HTML sanitization boundary, execution failure policy, toolchain
-  requirements, and execution provenance fields.
-  See [the authored-execution contract](docs/spikes/authored-execution-contract.md).
+  requirements, and execution provenance fields. See [the authored-execution
+  contract](docs/spikes/authored-execution-contract.md).
 - [x] Define a deterministic page-level execution-cache key and artifact format
   covering source, normalized options, engine and kernel identity, relevant
-  toolchain versions, and declared environment inputs.
-  See [the page execution-cache contract](docs/spikes/page-execution-cache.md).
+  toolchain versions, and declared environment inputs. See [the page
+  execution-cache contract](docs/spikes/page-execution-cache.md).
 - [ ] Record the selected approaches and rejected alternatives in
   `docs/decisions/0001-static-extraction.md`.
 - [ ] Record the authored-format and execution decisions, including rejected Q2,
@@ -357,8 +357,8 @@ Diplodocus's document transformation.
 - [ ] Record whether each page was executed or restored from cache without
   leaking connection files, ports, temporary paths, process IDs, timestamps,
   or absolute checkout paths into portable provenance.
-- [ ] Prove that `execution.mode = "never"` and every `diplodocus check` path avoid
-  kernel discovery, startup, source execution, cache mutation, and
+- [ ] Prove that `execution.mode = "never"` and every `diplodocus check` path
+  avoid kernel discovery, startup, source execution, cache mutation, and
   execution- asset writes.
 - [ ] Add unit tests with a controllable protocol fixture and end-to-end tests
   with the declared Python and R kernels for success, state retention, rich
@@ -455,8 +455,8 @@ results; and no rendered page requires a network resource.
   provenance for QMD pages.
 - [ ] Make CLI diagnostics concise by default and sufficiently detailed to find
   the responsible configuration or source location.
-- [ ] Make `diplodocus serve` perform an initial build, bind only to its configured
-  local address, and serve the successful output tree.
+- [ ] Make `diplodocus serve` perform an initial build, bind only to its
+  configured local address, and serve the successful output tree.
 - [ ] Watch the configuration file and declared extraction, metadata, content,
   environment, and asset inputs; ignore the output and execution-cache
   directories and unrelated repository files.
@@ -479,15 +479,15 @@ an error.
 ## Milestone 10: Dogfood Diplodocus for its own documentation
 
 Use Diplodocus---not another static-site generator---to build the documentation
-users read about Diplodocus. This self-documentation workspace exercises authored
-content and project navigation; documenting the Rust API remains deferred until
-a Rust extractor exists.
+users read about Diplodocus. This self-documentation workspace exercises
+authored content and project navigation; documenting the Rust API remains
+deferred until a Rust extractor exists.
 
-- [ ] Add a root `diplodocus.toml` that declares this checkout as a repository and
-  mounts project-owned content from `docs/`.
+- [ ] Add a root `diplodocus.toml` that declares this checkout as a repository
+  and mounts project-owned content from `docs/`.
 - [ ] Support and test a content-only workspace with no API extraction targets
-  so the self-documentation configuration does not pretend that Diplodocus has
-  a Python or R public API.
+  so the self-documentation configuration does not pretend that Diplodocus
+  has a Python or R public API.
 - [ ] Make `docs/` the canonical source for the project overview, installation,
   quick start, workspace configuration, CLI, GFM and QMD profiles, Python
   and R support, diagnostics, reproducibility, and the authored-execution
@@ -504,14 +504,14 @@ a Rust extractor exists.
 - [ ] Ensure the configured output directory is ignored and excluded from
   declared inputs so self-documentation builds cannot recurse into
   themselves.
-- [ ] Use `diplodocus serve` as the documented local preview workflow for changes
-  under `docs/`.
+- [ ] Use `diplodocus serve` as the documented local preview workflow for
+  changes under `docs/`.
 - [ ] Add `.github/workflows/docs.yml`, modeled on Basin's website workflow, to
   build and validate the Diplodocus site on pull requests, `main`, version
   tags, and manual dispatches.
-- [ ] Upload and deploy only the Diplodocus-generated output through GitHub Pages;
-  use the `github-pages` environment and the minimal `pages: write` and
-  `id-token: write` permissions in the deployment job.
+- [ ] Upload and deploy only the Diplodocus-generated output through GitHub
+  Pages; use the `github-pages` environment and the minimal `pages: write`
+  and `id-token: write` permissions in the deployment job.
 - [ ] Build the site for pull requests and `main`, but deploy only from `v*`
   version tags or an explicit manual dispatch, following Basin's separation
   of build verification from publication.
@@ -522,9 +522,9 @@ a Rust extractor exists.
   domain.
 
 **Exit gate:** A clean checkout builds the complete project site with the
-in-tree `diplodocus` binary, the result passes link and asset checks, local preview
-uses `diplodocus serve`, and the GitHub Pages workflow deploys exactly that
-generated tree without invoking another documentation generator.
+in-tree `diplodocus` binary, the result passes link and asset checks, local
+preview uses `diplodocus serve`, and the GitHub Pages workflow deploys exactly
+that generated tree without invoking another documentation generator.
 
 ## Milestone 11: Harden and release the MVP
 
@@ -585,8 +585,8 @@ network access required by Diplodocus or its deterministic authored cells.
 - Browser live reload.
 - Historical snapshot assembly and version switching.
 - Rust, Julia, TypeScript, C, or other public-API extractors; until a Rust
-  extractor exists, Diplodocus's dogfooded site documents its authored project and
-  CLI material rather than generating Rust API reference pages.
+  extractor exists, Diplodocus's dogfooded site documents its authored project
+  and CLI material rather than generating Rust API reference pages.
 - Automatic repository, package, or ecosystem discovery.
 - A stable external extractor or renderer plugin API.
 - A stable external execution-engine plugin API.
