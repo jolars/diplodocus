@@ -24,36 +24,36 @@ packages. It is not a general documentation platform.
 
 The MVP is complete when all of the following are true:
 
-- [ ] One `diplodocus.toml` can describe local repositories, Python and R
-  packages, extraction targets, authored content profiles and execution,
-  package relationships, and conceptual API groups.
-- [ ] Rust-native static extraction documents Python and R public APIs without
-  starting a language runtime, importing a Python package, or loading an R
-  package.
-- [ ] Diplodocus parses authored `.md` through its supported GFM profile and
-  authored `.qmd` through its supported Quarto profile using
+- [ ] **MVP-01:** One `diplodocus.toml` can describe local repositories,
+  Python and R packages, extraction targets, authored content profiles and
+  execution, package relationships, and conceptual API groups.
+- [ ] **MVP-02:** Rust-native static extraction documents Python and R public
+  APIs without starting a language runtime, importing a Python package, or
+  loading an R package.
+- [ ] **MVP-03:** Diplodocus parses authored `.md` through its supported GFM
+  profile and authored `.qmd` through its supported Quarto profile using
   `panache-parser` in-process, with visible diagnostics for unsupported
   syntax.
-- [ ] Explicitly configured QMD collections execute Python and R code cells
-  through installed Jupyter kernels and retain streams, errors, Markdown,
-  and figure output as structured document IR.
-- [ ] Diplodocus renders authored pages and both API ecosystems through one HTML
-  renderer with safe code-cell output, shared navigation, source links,
-  semantic references, concept switchers, and workspace-wide search.
-- [ ] `diplodocus check`, `diplodocus build`, and `diplodocus serve` satisfy the
-  command contract below.
-- [ ] Repeated builds of the deterministic acceptance cells from identical
-  declared sources, environments, kernels, and toolchains are byte-for-byte
-  identical and contain no machine-specific checkout paths.
-- [ ] Diplodocus neither installs dependencies nor performs implicit network
-  access; authored execution is configuration-authorized and documented as
-  arbitrary, unsandboxed code execution.
-- [ ] The acceptance corpus passes formatting, linting, unit, golden,
-  integration, link, and end-to-end tests.
-- [ ] Diplodocus builds, checks, previews, and publishes its own project
-  documentation without another site generator.
-- [ ] A new user can build and preview the acceptance site by following the
-  checked-in documentation.
+- [ ] **MVP-04:** Explicitly configured QMD collections execute Python and R
+  code cells through installed Jupyter kernels and retain streams, errors,
+  Markdown, and figure output as structured document IR.
+- [ ] **MVP-05:** Diplodocus renders authored pages and both API ecosystems
+  through one HTML renderer with safe code-cell output, shared navigation,
+  source links, semantic references, concept switchers, and workspace-wide
+  search.
+- [ ] **MVP-06:** `diplodocus check`, `diplodocus build`, and `diplodocus serve` satisfy the command contract below.
+- [ ] **MVP-07:** Repeated builds of the deterministic acceptance cells from
+  identical declared sources, environments, kernels, and toolchains are
+  byte-for-byte identical and contain no machine-specific checkout paths.
+- [ ] **MVP-08:** Diplodocus neither installs dependencies nor performs
+  implicit network access; authored execution is configuration-authorized and
+  documented as arbitrary, unsandboxed code execution.
+- [ ] **MVP-09:** The acceptance corpus passes formatting, linting, unit,
+  golden, integration, link, and end-to-end tests.
+- [ ] **MVP-10:** Diplodocus builds, checks, previews, and publishes its own
+  project documentation without another site generator.
+- [ ] **MVP-11:** A new user can build and preview the acceptance site by
+  following the checked-in documentation.
 
 ## MVP interface contract
 
@@ -149,6 +149,14 @@ MVP's differentiating behavior.
 criterion, each deliberately invalid variant has one documented expected failure
 rather than several accidental failures, and all fixture tests run in the devenv
 shell and GitHub Actions.
+
+Corpus evidence is tracked in the
+[case and scenario registry](tests/fixtures/acceptance/CASES.json) and
+[acceptance matrix](tests/fixtures/acceptance/MATRIX.md). At this gate,
+coverage means concrete inputs and expected outcomes for every criterion;
+fixture isolation and available parser/kernel checks run now. Full command
+behavior remains assigned to its implementation milestone. The project-site
+seed is part of the corpus, not a claim that Milestone 10 is complete.
 
 ## Milestone 2: Spike extraction, parsing, and execution
 
@@ -484,7 +492,7 @@ users read about Diplodocus. This self-documentation workspace exercises
 authored content and project navigation; documenting the Rust API remains
 deferred until a Rust extractor exists.
 
-- [ ] Add a root `diplodocus.toml` that declares this checkout as a repository
+- [x] Add a root `diplodocus.toml` that declares this checkout as a repository
   and mounts project-owned content from `docs/`.
 - [ ] Support and test a content-only workspace with no API extraction targets
   so the self-documentation configuration does not pretend that Diplodocus

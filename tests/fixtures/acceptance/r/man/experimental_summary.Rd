@@ -1,4 +1,3 @@
-% This dynamic fragment must produce an unsupported-Rd diagnostic in Diplodocus.
 \name{experimental_summary}
 \alias{experimental_summary}
 \title{Experimental Numeric Summary}
@@ -15,9 +14,7 @@ A named numeric vector containing the minimum, median, and maximum.
 Compute three summary statistics for a numeric vector.
 }
 \details{
-This page deliberately includes dynamic documentation that static extraction
-must not evaluate:
-\Sexpr[stage=render,results=text]{paste("computed", "documentation")}
+The summary uses the minimum, median, and maximum of the supplied values.
 }
 \examples{
 experimental_summary(c(3, 1, 2))

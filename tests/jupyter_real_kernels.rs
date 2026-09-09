@@ -34,8 +34,10 @@ async fn declared_python_and_r_kernels_execute_the_acceptance_corpus() {
             stdout: "Python total: 12",
             stderr: "Intentional Python stderr",
             markdown: "**Python total:** `12`",
-            error_name: "RuntimeError",
-            error_value: "intentional Python fixture error",
+            error: Some(("RuntimeError", "intentional Python fixture error")),
+            svg_text: "total = 12",
+            workspace: support::acceptance_workspace,
+            snapshot: "spikes/execution/real-python3.json",
         },
         RealKernelCase {
             kernel: "ir",
@@ -45,12 +47,32 @@ async fn declared_python_and_r_kernels_execute_the_acceptance_corpus() {
             stdout: "R total: 12",
             stderr: "Intentional R stderr",
             markdown: "**R total:** `12`",
-            error_name: "ERROR",
-            error_value: "intentional R fixture error",
+            error: Some(("ERROR", "intentional R fixture error")),
+            svg_text: "total = 12",
+            workspace: support::acceptance_workspace,
+            snapshot: "spikes/execution/real-ir.json",
         },
     ] {
         exercise_real_kernel(case).await;
     }
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn declared_python_kernel_executes_the_real_documentation_example() {
+    exercise_real_kernel(RealKernelCase {
+        kernel: "python3",
+        path: "docs/examples/stateful.qmd",
+        language: "python",
+        implementation: "ipython",
+        stdout: "Total: 12",
+        stderr: "Example stderr",
+        markdown: "**Total:** `12`",
+        error: None,
+        svg_text: "Total: 12",
+        workspace: support::own_documentation_workspace,
+        snapshot: "dogfood/execution.json",
+    })
+    .await;
 }
 
 struct RealKernelCase {
@@ -61,12 +83,15 @@ struct RealKernelCase {
     stdout: &'static str,
     stderr: &'static str,
     markdown: &'static str,
-    error_name: &'static str,
-    error_value: &'static str,
+    error: Option<(&'static str, &'static str)>,
+    svg_text: &'static str,
+    workspace: fn() -> support::TestWorkspace,
+    snapshot: &'static str,
 }
 
 async fn exercise_real_kernel(case: RealKernelCase) {
-    let source = support::load_fixture(format!("acceptance/{}", case.path));
+    let source_workspace = (case.workspace)();
+    let source = source_workspace.read(case.path);
     let parsed = parse_authored_document(&source, AuthoredFormat::Qmd);
     let cells = parsed
         .document
@@ -77,7 +102,13 @@ async fn exercise_real_kernel(case: RealKernelCase) {
             _ => None,
         })
         .collect::<Vec<_>>();
-    assert_eq!(cells.len(), 5, "unexpected corpus shape for {}", case.path);
+    assert!(parsed.diagnostics.is_empty());
+    assert_eq!(
+        cells.len(),
+        4 + usize::from(case.error.is_some()),
+        "unexpected corpus shape for {}",
+        case.path
+    );
 
     let kernelspec = find_kernelspec(case.kernel).await.unwrap_or_else(|error| {
         panic!("declared `{}` kernel is unavailable: {error}", case.kernel)
@@ -186,25 +217,27 @@ async fn exercise_real_kernel(case: RealKernelCase) {
     }));
     assert_eq!(outputs[3].0.status, ReplyStatus::Ok);
     assert!(has_media(&outputs[3].1, |media| {
-        matches!(media, MediaType::Svg(value) if value.contains("total = 12"))
+        matches!(media, MediaType::Svg(value) if value.contains(case.svg_text))
     }));
-    assert_eq!(outputs[4].0.status, ReplyStatus::Error);
-    assert!(
-        outputs[4].1.iter().any(|output| {
-            matches!(output, JupyterMessageContent::ErrorOutput(error)
-                if error.ename == case.error_name && error.evalue.contains(case.error_value))
-        }),
-        "missing error output for `{}` in {:?}",
-        case.kernel,
-        outputs[4].1
-    );
-    let reply_error = outputs[4]
-        .0
-        .error
-        .as_ref()
-        .expect("error reply should retain the kernel error");
-    assert_eq!(reply_error.ename, case.error_name);
-    assert!(reply_error.evalue.contains(case.error_value));
+    if let Some((error_name, error_value)) = case.error {
+        assert_eq!(outputs[4].0.status, ReplyStatus::Error);
+        assert!(
+            outputs[4].1.iter().any(|output| {
+                matches!(output, JupyterMessageContent::ErrorOutput(error)
+                if error.ename == error_name && error.evalue.contains(error_value))
+            }),
+            "missing error output for `{}` in {:?}",
+            case.kernel,
+            outputs[4].1
+        );
+        let reply_error = outputs[4]
+            .0
+            .error
+            .as_ref()
+            .expect("error reply should retain the kernel error");
+        assert_eq!(reply_error.ename, error_name);
+        assert!(reply_error.evalue.contains(error_value));
+    }
 
     let mut control = create_client_control_connection(&connection_info, &session_id)
         .await
@@ -246,7 +279,7 @@ async fn exercise_real_kernel(case: RealKernelCase) {
                 observation.cell(ordinal, cell, reply, outputs)
             }).collect::<Vec<_>>(),
         }),
-        format!("spikes/execution/real-{}.json", case.kernel),
+        case.snapshot,
     );
 }
 

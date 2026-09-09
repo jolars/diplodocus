@@ -1,0 +1,26 @@
+---
+title: Python guide
+audience:
+  - Python
+  - R
+---
+
+# Fit a model
+
+::: {.callout-tip #stateful}
+Cells are extracted in source order.
+:::
+
+```{python #setup, echo=true}
+#| echo: false
+#| fig-subcap:
+#|   - Training
+#|   - Validation
+from foo import fit
+```
+
+See [`pyfoo::foo.FooModel.fit`].
+
+::: {.unsupported-directive}
+This directive must remain visible.
+:::

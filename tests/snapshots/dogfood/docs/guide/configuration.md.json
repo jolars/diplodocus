@@ -1,0 +1,1220 @@
+{
+  "document": {
+    "span": {
+      "start": 0,
+      "end": 2097
+    },
+    "frontmatter": null,
+    "blocks": [
+      {
+        "type": "heading",
+        "level": 1,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Workspace configuration",
+            "span": {
+              "start": 2,
+              "end": 25
+            }
+          }
+        ],
+        "span": {
+          "start": 0,
+          "end": 26
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "The root ",
+            "span": {
+              "start": 27,
+              "end": 36
+            }
+          },
+          {
+            "type": "code",
+            "value": "diplodocus.toml",
+            "span": {
+              "start": 36,
+              "end": 53
+            }
+          },
+          {
+            "type": "text",
+            "value": " is an authored-only example of the intended MVP",
+            "span": {
+              "start": 53,
+              "end": 101
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 101,
+              "end": 102
+            }
+          },
+          {
+            "type": "text",
+            "value": "configuration. Configuration loading and command execution remain under",
+            "span": {
+              "start": 102,
+              "end": 173
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 173,
+              "end": 174
+            }
+          },
+          {
+            "type": "text",
+            "value": "development.",
+            "span": {
+              "start": 174,
+              "end": 186
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 186,
+              "end": 187
+            }
+          }
+        ],
+        "span": {
+          "start": 27,
+          "end": 187
+        }
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Repositories and ownership",
+            "span": {
+              "start": 191,
+              "end": 217
+            }
+          }
+        ],
+        "span": {
+          "start": 188,
+          "end": 218
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Repository paths are relative to the configuration directory and may identify",
+            "span": {
+              "start": 219,
+              "end": 296
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 296,
+              "end": 297
+            }
+          },
+          {
+            "type": "text",
+            "value": "sibling checkouts. Package paths are relative to their repository, and API",
+            "span": {
+              "start": 297,
+              "end": 371
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 371,
+              "end": 372
+            }
+          },
+          {
+            "type": "text",
+            "value": "target paths are relative to their package. Authored content and declared",
+            "span": {
+              "start": 372,
+              "end": 445
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 445,
+              "end": 446
+            }
+          },
+          {
+            "type": "text",
+            "value": "environment inputs are relative to the named repository.",
+            "span": {
+              "start": 446,
+              "end": 502
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 502,
+              "end": 503
+            }
+          }
+        ],
+        "span": {
+          "start": 219,
+          "end": 503
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "The ",
+            "span": {
+              "start": 504,
+              "end": 508
+            }
+          },
+          {
+            "type": "code",
+            "value": "project",
+            "span": {
+              "start": 508,
+              "end": 517
+            }
+          },
+          {
+            "type": "text",
+            "value": " owner places content in project navigation. A package ID gives a",
+            "span": {
+              "start": 517,
+              "end": 582
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 582,
+              "end": 583
+            }
+          },
+          {
+            "type": "text",
+            "value": "collection package ownership and that package's reference-resolution context.",
+            "span": {
+              "start": 583,
+              "end": 660
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 660,
+              "end": 661
+            }
+          },
+          {
+            "type": "text",
+            "value": "Package documentation lives under ",
+            "span": {
+              "start": 661,
+              "end": 695
+            }
+          },
+          {
+            "type": "code",
+            "value": "/packages/<slug>/",
+            "span": {
+              "start": 695,
+              "end": 714
+            }
+          },
+          {
+            "type": "text",
+            "value": ".",
+            "span": {
+              "start": 714,
+              "end": 715
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 715,
+              "end": 716
+            }
+          }
+        ],
+        "span": {
+          "start": 504,
+          "end": 716
+        }
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "text",
+            "value": "The project site",
+            "span": {
+              "start": 720,
+              "end": 736
+            }
+          }
+        ],
+        "span": {
+          "start": 717,
+          "end": 737
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "This configuration declares one repository and two project-owned collections:",
+            "span": {
+              "start": 738,
+              "end": 815
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 815,
+              "end": 816
+            }
+          }
+        ],
+        "span": {
+          "start": 738,
+          "end": 816
+        }
+      },
+      {
+        "type": "table",
+        "caption": [],
+        "alignments": [
+          "left",
+          "left",
+          "left",
+          "left",
+          "left"
+        ],
+        "rows": [
+          {
+            "header": true,
+            "cells": [
+              {
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "value": "Collection",
+                        "span": {
+                          "start": 819,
+                          "end": 829
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 819,
+                      "end": 829
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 819,
+                  "end": 829
+                }
+              },
+              {
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "value": "Source",
+                        "span": {
+                          "start": 832,
+                          "end": 838
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 832,
+                      "end": 838
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 832,
+                  "end": 838
+                }
+              },
+              {
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "value": "Mount",
+                        "span": {
+                          "start": 841,
+                          "end": 846
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 841,
+                      "end": 846
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 841,
+                  "end": 846
+                }
+              },
+              {
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "value": "Profile",
+                        "span": {
+                          "start": 849,
+                          "end": 856
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 849,
+                      "end": 856
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 849,
+                  "end": 856
+                }
+              },
+              {
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "value": "Execution",
+                        "span": {
+                          "start": 859,
+                          "end": 868
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 859,
+                      "end": 868
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 859,
+                  "end": 868
+                }
+              }
+            ],
+            "span": {
+              "start": 817,
+              "end": 871
+            }
+          },
+          {
+            "header": false,
+            "cells": [
+              {
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "value": "Guide",
+                        "span": {
+                          "start": 927,
+                          "end": 932
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 927,
+                      "end": 932
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 927,
+                  "end": 932
+                }
+              },
+              {
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "inlines": [
+                      {
+                        "type": "code",
+                        "value": "docs/guide",
+                        "span": {
+                          "start": 935,
+                          "end": 947
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 935,
+                      "end": 947
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 935,
+                  "end": 947
+                }
+              },
+              {
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "inlines": [
+                      {
+                        "type": "code",
+                        "value": "guide",
+                        "span": {
+                          "start": 950,
+                          "end": 957
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 950,
+                      "end": 957
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 950,
+                  "end": 957
+                }
+              },
+              {
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "value": "GFM",
+                        "span": {
+                          "start": 960,
+                          "end": 963
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 960,
+                      "end": 963
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 960,
+                  "end": 963
+                }
+              },
+              {
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "value": "Never",
+                        "span": {
+                          "start": 966,
+                          "end": 971
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 966,
+                      "end": 971
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 966,
+                  "end": 971
+                }
+              }
+            ],
+            "span": {
+              "start": 925,
+              "end": 974
+            }
+          },
+          {
+            "header": false,
+            "cells": [
+              {
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "value": "Examples",
+                        "span": {
+                          "start": 976,
+                          "end": 984
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 976,
+                      "end": 984
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 976,
+                  "end": 984
+                }
+              },
+              {
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "inlines": [
+                      {
+                        "type": "code",
+                        "value": "docs/examples",
+                        "span": {
+                          "start": 987,
+                          "end": 1002
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 987,
+                      "end": 1002
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 987,
+                  "end": 1002
+                }
+              },
+              {
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "inlines": [
+                      {
+                        "type": "code",
+                        "value": "examples",
+                        "span": {
+                          "start": 1005,
+                          "end": 1015
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 1005,
+                      "end": 1015
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1005,
+                  "end": 1015
+                }
+              },
+              {
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "value": "QMD",
+                        "span": {
+                          "start": 1018,
+                          "end": 1021
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 1018,
+                      "end": 1021
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1018,
+                  "end": 1021
+                }
+              },
+              {
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "value": "Python",
+                        "span": {
+                          "start": 1024,
+                          "end": 1030
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 1024,
+                      "end": 1030
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1024,
+                  "end": 1030
+                }
+              }
+            ],
+            "span": {
+              "start": 974,
+              "end": 1033
+            }
+          }
+        ],
+        "span": {
+          "start": 817,
+          "end": 1033
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "The guide's omitted execution settings default to ",
+            "span": {
+              "start": 1034,
+              "end": 1084
+            }
+          },
+          {
+            "type": "code",
+            "value": "never",
+            "span": {
+              "start": 1084,
+              "end": 1091
+            }
+          },
+          {
+            "type": "text",
+            "value": ". The examples",
+            "span": {
+              "start": 1091,
+              "end": 1105
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1105,
+              "end": 1106
+            }
+          },
+          {
+            "type": "text",
+            "value": "collection explicitly declares:",
+            "span": {
+              "start": 1106,
+              "end": 1137
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1137,
+              "end": 1138
+            }
+          }
+        ],
+        "span": {
+          "start": 1034,
+          "end": 1138
+        }
+      },
+      {
+        "type": "code-block",
+        "language": "toml",
+        "source": "[content.execution]\nmode = \"execute\"\nengine = \"jupyter\"\nkernel = \"python3\"\ndeclared_environment_inputs = [\"devenv.lock\"]\n",
+        "source_segments": [
+          {
+            "text": "[content.execution]",
+            "span": {
+              "start": 1147,
+              "end": 1166
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 1166,
+              "end": 1167
+            }
+          },
+          {
+            "text": "mode = \"execute\"",
+            "span": {
+              "start": 1167,
+              "end": 1183
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 1183,
+              "end": 1184
+            }
+          },
+          {
+            "text": "engine = \"jupyter\"",
+            "span": {
+              "start": 1184,
+              "end": 1202
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 1202,
+              "end": 1203
+            }
+          },
+          {
+            "text": "kernel = \"python3\"",
+            "span": {
+              "start": 1203,
+              "end": 1221
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 1221,
+              "end": 1222
+            }
+          },
+          {
+            "text": "declared_environment_inputs = [\"devenv.lock\"]",
+            "span": {
+              "start": 1222,
+              "end": 1267
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 1267,
+              "end": 1268
+            }
+          }
+        ],
+        "span": {
+          "start": 1139,
+          "end": 1272
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "The declared lockfile contributes to provenance and execution-cache keys.",
+            "span": {
+              "start": 1273,
+              "end": 1346
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1346,
+              "end": 1347
+            }
+          },
+          {
+            "type": "text",
+            "value": "Diplodocus does not interpret it as an installation instruction. One page uses",
+            "span": {
+              "start": 1347,
+              "end": 1425
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1425,
+              "end": 1426
+            }
+          },
+          {
+            "type": "text",
+            "value": "one kernel session, with its cells run in source order.",
+            "span": {
+              "start": 1426,
+              "end": 1481
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1481,
+              "end": 1482
+            }
+          }
+        ],
+        "span": {
+          "start": 1273,
+          "end": 1482
+        }
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Profiles and assets",
+            "span": {
+              "start": 1486,
+              "end": 1505
+            }
+          }
+        ],
+        "span": {
+          "start": 1483,
+          "end": 1506
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "GFM collections discover ",
+            "span": {
+              "start": 1507,
+              "end": 1532
+            }
+          },
+          {
+            "type": "code",
+            "value": ".md",
+            "span": {
+              "start": 1532,
+              "end": 1537
+            }
+          },
+          {
+            "type": "text",
+            "value": " files. QMD collections discover ",
+            "span": {
+              "start": 1537,
+              "end": 1570
+            }
+          },
+          {
+            "type": "code",
+            "value": ".qmd",
+            "span": {
+              "start": 1570,
+              "end": 1576
+            }
+          },
+          {
+            "type": "text",
+            "value": " files and",
+            "span": {
+              "start": 1576,
+              "end": 1586
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1586,
+              "end": 1587
+            }
+          },
+          {
+            "type": "text",
+            "value": "support executable fences, hashpipe options, and callouts. Unsupported syntax",
+            "span": {
+              "start": 1587,
+              "end": 1664
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1664,
+              "end": 1665
+            }
+          },
+          {
+            "type": "text",
+            "value": "produces a visible diagnostic. Raw authored HTML is escaped or represented by",
+            "span": {
+              "start": 1665,
+              "end": 1742
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1742,
+              "end": 1743
+            }
+          },
+          {
+            "type": "text",
+            "value": "an unsupported node.",
+            "span": {
+              "start": 1743,
+              "end": 1763
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1763,
+              "end": 1764
+            }
+          }
+        ],
+        "span": {
+          "start": 1507,
+          "end": 1764
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Keep checked-in assets beside their owning content. Generated figures become",
+            "span": {
+              "start": 1765,
+              "end": 1841
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1841,
+              "end": 1842
+            }
+          },
+          {
+            "type": "text",
+            "value": "local content-addressed assets, and generated output cannot read assets outside",
+            "span": {
+              "start": 1842,
+              "end": 1921
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1921,
+              "end": 1922
+            }
+          },
+          {
+            "type": "text",
+            "value": "its declared boundary. Output directories and execution caches are not inputs",
+            "span": {
+              "start": 1922,
+              "end": 1999
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1999,
+              "end": 2000
+            }
+          },
+          {
+            "type": "text",
+            "value": "to watched builds.",
+            "span": {
+              "start": 2000,
+              "end": 2018
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2018,
+              "end": 2019
+            }
+          }
+        ],
+        "span": {
+          "start": 1765,
+          "end": 2019
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Return to the ",
+            "span": {
+              "start": 2020,
+              "end": 2034
+            }
+          },
+          {
+            "type": "link",
+            "inlines": [
+              {
+                "type": "text",
+                "value": "overview",
+                "span": {
+                  "start": 2035,
+                  "end": 2043
+                }
+              }
+            ],
+            "target": "index.md",
+            "title": null,
+            "attributes": {
+              "identifier": null,
+              "classes": [],
+              "key_values": []
+            },
+            "span": {
+              "start": 2034,
+              "end": 2054
+            }
+          },
+          {
+            "type": "text",
+            "value": " or try the ",
+            "span": {
+              "start": 2054,
+              "end": 2066
+            }
+          },
+          {
+            "type": "link",
+            "inlines": [
+              {
+                "type": "text",
+                "value": "quick start",
+                "span": {
+                  "start": 2067,
+                  "end": 2078
+                }
+              }
+            ],
+            "target": "quick-start.md",
+            "title": null,
+            "attributes": {
+              "identifier": null,
+              "classes": [],
+              "key_values": []
+            },
+            "span": {
+              "start": 2066,
+              "end": 2095
+            }
+          },
+          {
+            "type": "text",
+            "value": ".",
+            "span": {
+              "start": 2095,
+              "end": 2096
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2096,
+              "end": 2097
+            }
+          }
+        ],
+        "span": {
+          "start": 2020,
+          "end": 2097
+        }
+      }
+    ]
+  },
+  "diagnostics": []
+}

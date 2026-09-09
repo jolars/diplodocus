@@ -1,0 +1,432 @@
+{
+  "document": {
+    "span": {
+      "start": 0,
+      "end": 382
+    },
+    "frontmatter": null,
+    "blocks": [
+      {
+        "type": "heading",
+        "level": 1,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Foo documentation",
+            "span": {
+              "start": 2,
+              "end": 19
+            }
+          }
+        ],
+        "span": {
+          "start": 0,
+          "end": 20
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "See ",
+            "span": {
+              "start": 21,
+              "end": 25
+            }
+          },
+          {
+            "type": "semantic-reference",
+            "target": "pyfoo::foo.fit",
+            "span": {
+              "start": 25,
+              "end": 43
+            },
+            "target_span": {
+              "start": 27,
+              "end": 41
+            }
+          },
+          {
+            "type": "text",
+            "value": ", the ",
+            "span": {
+              "start": 43,
+              "end": 49
+            }
+          },
+          {
+            "type": "link",
+            "inlines": [
+              {
+                "type": "text",
+                "value": "workspace layout",
+                "span": {
+                  "start": 50,
+                  "end": 66
+                }
+              }
+            ],
+            "target": "getting-started/workspace.md",
+            "title": null,
+            "attributes": {
+              "identifier": null,
+              "classes": [],
+              "key_values": []
+            },
+            "span": {
+              "start": 49,
+              "end": 97
+            }
+          },
+          {
+            "type": "text",
+            "value": ", or",
+            "span": {
+              "start": 97,
+              "end": 101
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 101,
+              "end": 102
+            }
+          },
+          {
+            "type": "text",
+            "value": "the ",
+            "span": {
+              "start": 102,
+              "end": 106
+            }
+          },
+          {
+            "type": "link",
+            "inlines": [
+              {
+                "type": "text",
+                "value": "Python guide",
+                "span": {
+                  "start": 107,
+                  "end": 119
+                }
+              }
+            ],
+            "target": "../../python/docs/guide.qmd",
+            "title": null,
+            "attributes": {
+              "identifier": null,
+              "classes": [],
+              "key_values": []
+            },
+            "span": {
+              "start": 106,
+              "end": 149
+            }
+          },
+          {
+            "type": "text",
+            "value": ".",
+            "span": {
+              "start": 149,
+              "end": 150
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 150,
+              "end": 151
+            }
+          }
+        ],
+        "span": {
+          "start": 21,
+          "end": 151
+        }
+      },
+      {
+        "type": "table",
+        "caption": [],
+        "alignments": [
+          "left",
+          "right"
+        ],
+        "rows": [
+          {
+            "header": true,
+            "cells": [
+              {
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "value": "Package",
+                        "span": {
+                          "start": 154,
+                          "end": 161
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 154,
+                      "end": 161
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 154,
+                  "end": 161
+                }
+              },
+              {
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "value": "Version",
+                        "span": {
+                          "start": 164,
+                          "end": 171
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 164,
+                      "end": 171
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 164,
+                  "end": 171
+                }
+              }
+            ],
+            "span": {
+              "start": 152,
+              "end": 174
+            }
+          },
+          {
+            "header": false,
+            "cells": [
+              {
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "value": "Python",
+                        "span": {
+                          "start": 198,
+                          "end": 204
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 198,
+                      "end": 204
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 198,
+                  "end": 204
+                }
+              },
+              {
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "value": "1.9.0",
+                        "span": {
+                          "start": 208,
+                          "end": 213
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 208,
+                      "end": 213
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 208,
+                  "end": 213
+                }
+              }
+            ],
+            "span": {
+              "start": 196,
+              "end": 218
+            }
+          },
+          {
+            "header": false,
+            "cells": [
+              {
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "value": "R",
+                        "span": {
+                          "start": 220,
+                          "end": 221
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 220,
+                      "end": 221
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 220,
+                  "end": 221
+                }
+              },
+              {
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "value": "1.8.0",
+                        "span": {
+                          "start": 230,
+                          "end": 235
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 230,
+                      "end": 235
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 230,
+                  "end": 235
+                }
+              }
+            ],
+            "span": {
+              "start": 218,
+              "end": 240
+            }
+          }
+        ],
+        "span": {
+          "start": 152,
+          "end": 240
+        }
+      },
+      {
+        "type": "callout",
+        "kind": "note",
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "blocks": [
+          {
+            "type": "paragraph",
+            "inlines": [
+              {
+                "type": "text",
+                "value": "Diplodocus renders this project and both packages together.",
+                "span": {
+                  "start": 253,
+                  "end": 312
+                }
+              },
+              {
+                "type": "soft-break",
+                "span": {
+                  "start": 312,
+                  "end": 313
+                }
+              }
+            ],
+            "span": {
+              "start": 253,
+              "end": 313
+            }
+          }
+        ],
+        "span": {
+          "start": 243,
+          "end": 313
+        }
+      },
+      {
+        "type": "code-block",
+        "language": "python",
+        "source": "from foo import fit\n",
+        "source_segments": [
+          {
+            "text": "from foo import fit",
+            "span": {
+              "start": 324,
+              "end": 343
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 343,
+              "end": 344
+            }
+          }
+        ],
+        "span": {
+          "start": 314,
+          "end": 348
+        }
+      },
+      {
+        "type": "unsupported",
+        "source_kind": "HTML_BLOCK",
+        "raw": "<component name=\"unsupported\" />\n",
+        "span": {
+          "start": 349,
+          "end": 382
+        }
+      }
+    ]
+  },
+  "diagnostics": [
+    {
+      "code": "unsupported-authored-syntax",
+      "severity": "warning",
+      "message": "unsupported authored syntax: HTML_BLOCK",
+      "span": {
+        "start": 349,
+        "end": 382
+      }
+    }
+  ]
+}

@@ -8,6 +8,11 @@ use std::path::{Path, PathBuf};
 use snapbox::dir::DirRoot;
 use snapbox::{Assert, Data, IntoData};
 
+#[path = "support/acceptance.rs"]
+mod acceptance;
+#[allow(unused_imports)]
+pub use acceptance::*;
+
 pub struct TestWorkspace {
     root: DirRoot,
 }
@@ -72,7 +77,11 @@ pub fn load_fixture(relative: impl AsRef<Path>) -> String {
 }
 
 pub fn fixture_files(relative: impl AsRef<Path>) -> Vec<PathBuf> {
-    tree_entries(&fixture_path(relative))
+    files_under(&fixture_path(relative))
+}
+
+pub fn files_under(root: &Path) -> Vec<PathBuf> {
+    tree_entries(root)
         .into_iter()
         .filter(|entry| entry.kind == EntryKind::File)
         .map(|entry| entry.path)

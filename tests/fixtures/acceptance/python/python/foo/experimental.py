@@ -1,4 +1,4 @@
-"""Experimental APIs with exports that require runtime evaluation."""
+"""Experimental APIs with an explicit static export list."""
 
 from collections.abc import Sequence
 
@@ -13,8 +13,4 @@ def experimental_rank(values: Sequence[float]) -> list[int]:
     return ranks
 
 
-def _exported_names() -> list[str]:
-    return [name for name in globals() if name.startswith("experimental_")]
-
-
-__all__ = _exported_names()
+__all__ = ["experimental_rank"]

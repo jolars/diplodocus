@@ -1,0 +1,29 @@
+[project]
+name = "Diplodocus"
+
+[[repository]]
+id = "diplodocus"
+path = "."
+url = "https://github.com/jolars/diplodocus"
+
+[[content]]
+id = "guide"
+owner = "project"
+repository = "diplodocus"
+path = "docs/guide"
+mount = "guide"
+format = "gfm"
+
+[[content]]
+id = "examples"
+owner = "project"
+repository = "diplodocus"
+path = "docs/examples"
+mount = "examples"
+format = "qmd"
+
+[content.execution]
+mode = "execute"
+engine = "jupyter"
+kernel = "python3"
+declared_environment_inputs = ["devenv.lock"]

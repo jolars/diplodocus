@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="200" viewBox="0 0 640 200" role="img" aria-labelledby="title description">
+  <title id="title">Foo documentation workspace</title>
+  <desc id="description">Core, Python, and R repositories feed one Diplodocus site.</desc>
+  <g fill="none" stroke="#334155" stroke-width="2">
+    <rect x="20" y="25" width="150" height="55" rx="8" />
+    <rect x="20" y="120" width="150" height="55" rx="8" />
+    <rect x="245" y="72" width="150" height="55" rx="8" />
+    <rect x="470" y="72" width="150" height="55" rx="8" />
+    <path d="M170 52.5 H210 Q225 52.5 225 87.5 V92 H245" />
+    <path d="M170 147.5 H210 Q225 147.5 225 112.5 V107 H245" />
+    <path d="M395 99.5 H470" />
+  </g>
+  <g fill="#0f172a" font-family="sans-serif" font-size="16" text-anchor="middle">
+    <text x="95" y="59">Core repository</text>
+    <text x="95" y="154">Binding repositories</text>
+    <text x="320" y="106">Diplodocus</text>
+    <text x="545" y="106">One static site</text>
+  </g>
+</svg>

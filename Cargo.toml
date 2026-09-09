@@ -42,3 +42,4 @@ ruff_text_size = "=0.0.12"
 serde_json = "1.0"
 snapbox = { version = "1.2", features = ["cmd", "dir"] }
 tokio = { version = "1.36", features = ["macros", "rt-multi-thread", "time"] }
+toml = "=0.9.12"

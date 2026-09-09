@@ -1,0 +1,46 @@
+---
+title: A deterministic Python page
+---
+
+# A deterministic Python page
+
+This example supplies executable content for the project's own documentation.
+The configured Python kernel shares state across all four cells.
+
+::: {.callout-note}
+Execution requires the collection's explicit permission. These cells use only
+local values and the IPython display helpers provided by the declared kernel.
+:::
+
+```{python}
+#| label: setup
+#| echo: true
+values = [2, 4, 6]
+total = sum(values)
+```
+
+```{python}
+#| label: streams
+import sys
+
+print(f"Total: {total}")
+print("Example stderr", file=sys.stderr)
+```
+
+```{python}
+#| label: markdown
+from IPython.display import Markdown
+
+Markdown(f"**Total:** `{total}`")
+```
+
+```{python}
+#| label: figure
+#| fig-alt: The total is twelve.
+from IPython.display import SVG
+
+SVG(f'<svg xmlns="http://www.w3.org/2000/svg" width="160" height="60" viewBox="0 0 160 60"><rect width="160" height="60" fill="#edf2f7"/><text x="16" y="38" fill="#1a202c">Total: {total}</text></svg>')
+```
+
+Return to the [overview](../guide/index.md) or read the
+[execution explanation](../guide/quick-start.md).

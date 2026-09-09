@@ -1,0 +1,738 @@
+{
+  "document": {
+    "span": {
+      "start": 0,
+      "end": 1115
+    },
+    "frontmatter": {
+      "type": "mapping",
+      "entries": [
+        {
+          "key": {
+            "value": "title",
+            "span": {
+              "start": 4,
+              "end": 9
+            }
+          },
+          "value": {
+            "type": "scalar",
+            "raw": "A deterministic Python page",
+            "value": "A deterministic Python page",
+            "span": {
+              "start": 11,
+              "end": 38
+            }
+          },
+          "span": {
+            "start": 4,
+            "end": 39
+          }
+        }
+      ],
+      "span": {
+        "start": 4,
+        "end": 39
+      }
+    },
+    "blocks": [
+      {
+        "type": "heading",
+        "level": 1,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "text",
+            "value": "A deterministic Python page",
+            "span": {
+              "start": 46,
+              "end": 73
+            }
+          }
+        ],
+        "span": {
+          "start": 44,
+          "end": 74
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "This example supplies executable content for the project's own documentation.",
+            "span": {
+              "start": 75,
+              "end": 152
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 152,
+              "end": 153
+            }
+          },
+          {
+            "type": "text",
+            "value": "The configured Python kernel shares state across all four cells.",
+            "span": {
+              "start": 153,
+              "end": 217
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 217,
+              "end": 218
+            }
+          }
+        ],
+        "span": {
+          "start": 75,
+          "end": 218
+        }
+      },
+      {
+        "type": "callout",
+        "kind": "note",
+        "attributes": {
+          "identifier": null,
+          "classes": [
+            {
+              "value": "callout-note",
+              "span": {
+                "start": 225,
+                "end": 237
+              }
+            }
+          ],
+          "key_values": []
+        },
+        "blocks": [
+          {
+            "type": "paragraph",
+            "inlines": [
+              {
+                "type": "text",
+                "value": "Execution requires the collection's explicit permission. These cells use only",
+                "span": {
+                  "start": 239,
+                  "end": 316
+                }
+              },
+              {
+                "type": "soft-break",
+                "span": {
+                  "start": 316,
+                  "end": 317
+                }
+              },
+              {
+                "type": "text",
+                "value": "local values and the IPython display helpers provided by the declared kernel.",
+                "span": {
+                  "start": 317,
+                  "end": 394
+                }
+              },
+              {
+                "type": "soft-break",
+                "span": {
+                  "start": 394,
+                  "end": 395
+                }
+              }
+            ],
+            "span": {
+              "start": 239,
+              "end": 395
+            }
+          }
+        ],
+        "span": {
+          "start": 219,
+          "end": 399
+        }
+      },
+      {
+        "type": "code-cell",
+        "language": "python",
+        "identifier": null,
+        "classes": [],
+        "labels": [
+          {
+            "value": "setup",
+            "span": {
+              "start": 422,
+              "end": 427
+            }
+          }
+        ],
+        "source": "values = [2, 4, 6]\ntotal = sum(values)\n",
+        "source_segments": [
+          {
+            "text": "values = [2, 4, 6]",
+            "span": {
+              "start": 442,
+              "end": 460
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 460,
+              "end": 461
+            }
+          },
+          {
+            "text": "total = sum(values)",
+            "span": {
+              "start": 461,
+              "end": 480
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 480,
+              "end": 481
+            }
+          }
+        ],
+        "options": [
+          {
+            "key": "label",
+            "canonical_key": "label",
+            "raw_value": "setup",
+            "cooked_value": "setup",
+            "value": {
+              "type": "scalar",
+              "raw": "setup",
+              "value": "setup",
+              "span": {
+                "start": 422,
+                "end": 427
+              }
+            },
+            "source": "hashpipe-yaml",
+            "key_span": {
+              "start": 415,
+              "end": 420
+            },
+            "value_span": {
+              "start": 422,
+              "end": 427
+            },
+            "span": {
+              "start": 415,
+              "end": 431
+            }
+          },
+          {
+            "key": "echo",
+            "canonical_key": "echo",
+            "raw_value": "true",
+            "cooked_value": "true",
+            "value": {
+              "type": "scalar",
+              "raw": "true",
+              "value": "true",
+              "span": {
+                "start": 437,
+                "end": 441
+              }
+            },
+            "source": "hashpipe-yaml",
+            "key_span": {
+              "start": 431,
+              "end": 435
+            },
+            "value_span": {
+              "start": 437,
+              "end": 441
+            },
+            "span": {
+              "start": 431,
+              "end": 442
+            }
+          }
+        ],
+        "resolved_options": [
+          {
+            "key": "echo",
+            "resolution": {
+              "type": "resolved",
+              "declaration": 1
+            }
+          },
+          {
+            "key": "label",
+            "resolution": {
+              "type": "resolved",
+              "declaration": 0
+            }
+          }
+        ],
+        "code_span": {
+          "start": 442,
+          "end": 481
+        },
+        "span": {
+          "start": 400,
+          "end": 485
+        }
+      },
+      {
+        "type": "code-cell",
+        "language": "python",
+        "identifier": null,
+        "classes": [],
+        "labels": [
+          {
+            "value": "streams",
+            "span": {
+              "start": 508,
+              "end": 515
+            }
+          }
+        ],
+        "source": "import sys\n\nprint(f\"Total: {total}\")\nprint(\"Example stderr\", file=sys.stderr)\n",
+        "source_segments": [
+          {
+            "text": "import sys",
+            "span": {
+              "start": 516,
+              "end": 526
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 526,
+              "end": 527
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 527,
+              "end": 528
+            }
+          },
+          {
+            "text": "print(f\"Total: {total}\")",
+            "span": {
+              "start": 528,
+              "end": 552
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 552,
+              "end": 553
+            }
+          },
+          {
+            "text": "print(\"Example stderr\", file=sys.stderr)",
+            "span": {
+              "start": 553,
+              "end": 593
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 593,
+              "end": 594
+            }
+          }
+        ],
+        "options": [
+          {
+            "key": "label",
+            "canonical_key": "label",
+            "raw_value": "streams",
+            "cooked_value": "streams",
+            "value": {
+              "type": "scalar",
+              "raw": "streams",
+              "value": "streams",
+              "span": {
+                "start": 508,
+                "end": 515
+              }
+            },
+            "source": "hashpipe-yaml",
+            "key_span": {
+              "start": 501,
+              "end": 506
+            },
+            "value_span": {
+              "start": 508,
+              "end": 515
+            },
+            "span": {
+              "start": 501,
+              "end": 516
+            }
+          }
+        ],
+        "resolved_options": [
+          {
+            "key": "label",
+            "resolution": {
+              "type": "resolved",
+              "declaration": 0
+            }
+          }
+        ],
+        "code_span": {
+          "start": 516,
+          "end": 594
+        },
+        "span": {
+          "start": 486,
+          "end": 598
+        }
+      },
+      {
+        "type": "code-cell",
+        "language": "python",
+        "identifier": null,
+        "classes": [],
+        "labels": [
+          {
+            "value": "markdown",
+            "span": {
+              "start": 621,
+              "end": 629
+            }
+          }
+        ],
+        "source": "from IPython.display import Markdown\n\nMarkdown(f\"**Total:** `{total}`\")\n",
+        "source_segments": [
+          {
+            "text": "from IPython.display import Markdown",
+            "span": {
+              "start": 630,
+              "end": 666
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 666,
+              "end": 667
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 667,
+              "end": 668
+            }
+          },
+          {
+            "text": "Markdown(f\"**Total:** `{total}`\")",
+            "span": {
+              "start": 668,
+              "end": 701
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 701,
+              "end": 702
+            }
+          }
+        ],
+        "options": [
+          {
+            "key": "label",
+            "canonical_key": "label",
+            "raw_value": "markdown",
+            "cooked_value": "markdown",
+            "value": {
+              "type": "scalar",
+              "raw": "markdown",
+              "value": "markdown",
+              "span": {
+                "start": 621,
+                "end": 629
+              }
+            },
+            "source": "hashpipe-yaml",
+            "key_span": {
+              "start": 614,
+              "end": 619
+            },
+            "value_span": {
+              "start": 621,
+              "end": 629
+            },
+            "span": {
+              "start": 614,
+              "end": 630
+            }
+          }
+        ],
+        "resolved_options": [
+          {
+            "key": "label",
+            "resolution": {
+              "type": "resolved",
+              "declaration": 0
+            }
+          }
+        ],
+        "code_span": {
+          "start": 630,
+          "end": 702
+        },
+        "span": {
+          "start": 599,
+          "end": 706
+        }
+      },
+      {
+        "type": "code-cell",
+        "language": "python",
+        "identifier": null,
+        "classes": [],
+        "labels": [
+          {
+            "value": "figure",
+            "span": {
+              "start": 729,
+              "end": 735
+            }
+          }
+        ],
+        "source": "from IPython.display import SVG\n\nSVG(f'<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"160\" height=\"60\" viewBox=\"0 0 160 60\"><rect width=\"160\" height=\"60\" fill=\"#edf2f7\"/><text x=\"16\" y=\"38\" fill=\"#1a202c\">Total: {total}</text></svg>')\n",
+        "source_segments": [
+          {
+            "text": "from IPython.display import SVG",
+            "span": {
+              "start": 769,
+              "end": 800
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 800,
+              "end": 801
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 801,
+              "end": 802
+            }
+          },
+          {
+            "text": "SVG(f'<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"160\" height=\"60\" viewBox=\"0 0 160 60\"><rect width=\"160\" height=\"60\" fill=\"#edf2f7\"/><text x=\"16\" y=\"38\" fill=\"#1a202c\">Total: {total}</text></svg>')",
+            "span": {
+              "start": 802,
+              "end": 1003
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 1003,
+              "end": 1004
+            }
+          }
+        ],
+        "options": [
+          {
+            "key": "label",
+            "canonical_key": "label",
+            "raw_value": "figure",
+            "cooked_value": "figure",
+            "value": {
+              "type": "scalar",
+              "raw": "figure",
+              "value": "figure",
+              "span": {
+                "start": 729,
+                "end": 735
+              }
+            },
+            "source": "hashpipe-yaml",
+            "key_span": {
+              "start": 722,
+              "end": 727
+            },
+            "value_span": {
+              "start": 729,
+              "end": 735
+            },
+            "span": {
+              "start": 722,
+              "end": 739
+            }
+          },
+          {
+            "key": "fig-alt",
+            "canonical_key": "fig-alt",
+            "raw_value": "The total is twelve.",
+            "cooked_value": "The total is twelve.",
+            "value": {
+              "type": "scalar",
+              "raw": "The total is twelve.",
+              "value": "The total is twelve.",
+              "span": {
+                "start": 748,
+                "end": 768
+              }
+            },
+            "source": "hashpipe-yaml",
+            "key_span": {
+              "start": 739,
+              "end": 746
+            },
+            "value_span": {
+              "start": 748,
+              "end": 768
+            },
+            "span": {
+              "start": 739,
+              "end": 769
+            }
+          }
+        ],
+        "resolved_options": [
+          {
+            "key": "fig-alt",
+            "resolution": {
+              "type": "resolved",
+              "declaration": 1
+            }
+          },
+          {
+            "key": "label",
+            "resolution": {
+              "type": "resolved",
+              "declaration": 0
+            }
+          }
+        ],
+        "code_span": {
+          "start": 769,
+          "end": 1004
+        },
+        "span": {
+          "start": 707,
+          "end": 1008
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Return to the ",
+            "span": {
+              "start": 1009,
+              "end": 1023
+            }
+          },
+          {
+            "type": "link",
+            "inlines": [
+              {
+                "type": "text",
+                "value": "overview",
+                "span": {
+                  "start": 1024,
+                  "end": 1032
+                }
+              }
+            ],
+            "target": "../guide/index.md",
+            "title": null,
+            "attributes": {
+              "identifier": null,
+              "classes": [],
+              "key_values": []
+            },
+            "span": {
+              "start": 1023,
+              "end": 1052
+            }
+          },
+          {
+            "type": "text",
+            "value": " or read the",
+            "span": {
+              "start": 1052,
+              "end": 1064
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1064,
+              "end": 1065
+            }
+          },
+          {
+            "type": "link",
+            "inlines": [
+              {
+                "type": "text",
+                "value": "execution explanation",
+                "span": {
+                  "start": 1066,
+                  "end": 1087
+                }
+              }
+            ],
+            "target": "../guide/quick-start.md",
+            "title": null,
+            "attributes": {
+              "identifier": null,
+              "classes": [],
+              "key_values": []
+            },
+            "span": {
+              "start": 1065,
+              "end": 1113
+            }
+          },
+          {
+            "type": "text",
+            "value": ".",
+            "span": {
+              "start": 1113,
+              "end": 1114
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1114,
+              "end": 1115
+            }
+          }
+        ],
+        "span": {
+          "start": 1009,
+          "end": 1115
+        }
+      }
+    ]
+  },
+  "diagnostics": []
+}

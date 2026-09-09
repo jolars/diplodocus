@@ -1,0 +1,762 @@
+{
+  "document": {
+    "span": {
+      "start": 0,
+      "end": 1409
+    },
+    "frontmatter": null,
+    "blocks": [
+      {
+        "type": "heading",
+        "level": 1,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Commands",
+            "span": {
+              "start": 2,
+              "end": 10
+            }
+          }
+        ],
+        "span": {
+          "start": 0,
+          "end": 11
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "The command-line options are available today. The operations below describe",
+            "span": {
+              "start": 12,
+              "end": 87
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 87,
+              "end": 88
+            }
+          },
+          {
+            "type": "text",
+            "value": "their MVP behavior; the current binary reports that each operation is not yet",
+            "span": {
+              "start": 88,
+              "end": 165
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 165,
+              "end": 166
+            }
+          },
+          {
+            "type": "text",
+            "value": "implemented.",
+            "span": {
+              "start": 166,
+              "end": 178
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 178,
+              "end": 179
+            }
+          }
+        ],
+        "span": {
+          "start": 12,
+          "end": 179
+        }
+      },
+      {
+        "type": "table",
+        "caption": [],
+        "alignments": [
+          "left",
+          "left"
+        ],
+        "rows": [
+          {
+            "header": true,
+            "cells": [
+              {
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "value": "Command",
+                        "span": {
+                          "start": 182,
+                          "end": 189
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 182,
+                      "end": 189
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 182,
+                  "end": 189
+                }
+              },
+              {
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "value": "Expected operation",
+                        "span": {
+                          "start": 192,
+                          "end": 210
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 192,
+                      "end": 210
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 192,
+                  "end": 210
+                }
+              }
+            ],
+            "span": {
+              "start": 180,
+              "end": 213
+            }
+          },
+          {
+            "header": false,
+            "cells": [
+              {
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "inlines": [
+                      {
+                        "type": "code",
+                        "value": "check",
+                        "span": {
+                          "start": 248,
+                          "end": 255
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 248,
+                      "end": 255
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 248,
+                  "end": 255
+                }
+              },
+              {
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "value": "Load, parse, extract, and validate without executing cells or writing a site.",
+                        "span": {
+                          "start": 258,
+                          "end": 335
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 258,
+                      "end": 335
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 258,
+                  "end": 335
+                }
+              }
+            ],
+            "span": {
+              "start": 246,
+              "end": 338
+            }
+          },
+          {
+            "header": false,
+            "cells": [
+              {
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "inlines": [
+                      {
+                        "type": "code",
+                        "value": "build",
+                        "span": {
+                          "start": 340,
+                          "end": 347
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 340,
+                      "end": 347
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 340,
+                  "end": 347
+                }
+              },
+              {
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "value": "Validate, run configured execution, and render a static site.",
+                        "span": {
+                          "start": 350,
+                          "end": 411
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 350,
+                      "end": 411
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 350,
+                  "end": 411
+                }
+              }
+            ],
+            "span": {
+              "start": 338,
+              "end": 414
+            }
+          },
+          {
+            "header": false,
+            "cells": [
+              {
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "inlines": [
+                      {
+                        "type": "code",
+                        "value": "serve",
+                        "span": {
+                          "start": 416,
+                          "end": 423
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 416,
+                      "end": 423
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 416,
+                  "end": 423
+                }
+              },
+              {
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "value": "Build, serve over HTTP, watch declared inputs, and rebuild safely.",
+                        "span": {
+                          "start": 426,
+                          "end": 492
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 426,
+                      "end": 492
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 426,
+                  "end": 492
+                }
+              }
+            ],
+            "span": {
+              "start": 414,
+              "end": 495
+            }
+          }
+        ],
+        "span": {
+          "start": 180,
+          "end": 495
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "All three commands accept ",
+            "span": {
+              "start": 496,
+              "end": 522
+            }
+          },
+          {
+            "type": "code",
+            "value": "--config",
+            "span": {
+              "start": 522,
+              "end": 532
+            }
+          },
+          {
+            "type": "text",
+            "value": ", defaulting to ",
+            "span": {
+              "start": 532,
+              "end": 548
+            }
+          },
+          {
+            "type": "code",
+            "value": "./diplodocus.toml",
+            "span": {
+              "start": 548,
+              "end": 567
+            }
+          },
+          {
+            "type": "text",
+            "value": ".",
+            "span": {
+              "start": 567,
+              "end": 568
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 568,
+              "end": 569
+            }
+          },
+          {
+            "type": "code",
+            "value": "build",
+            "span": {
+              "start": 569,
+              "end": 576
+            }
+          },
+          {
+            "type": "text",
+            "value": " and ",
+            "span": {
+              "start": 576,
+              "end": 581
+            }
+          },
+          {
+            "type": "code",
+            "value": "serve",
+            "span": {
+              "start": 581,
+              "end": 588
+            }
+          },
+          {
+            "type": "text",
+            "value": " accept ",
+            "span": {
+              "start": 588,
+              "end": 596
+            }
+          },
+          {
+            "type": "code",
+            "value": "--output",
+            "span": {
+              "start": 596,
+              "end": 606
+            }
+          },
+          {
+            "type": "text",
+            "value": ", defaulting to ",
+            "span": {
+              "start": 606,
+              "end": 622
+            }
+          },
+          {
+            "type": "code",
+            "value": "./site",
+            "span": {
+              "start": 622,
+              "end": 630
+            }
+          },
+          {
+            "type": "text",
+            "value": ".",
+            "span": {
+              "start": 630,
+              "end": 631
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 631,
+              "end": 632
+            }
+          },
+          {
+            "type": "code",
+            "value": "serve",
+            "span": {
+              "start": 632,
+              "end": 639
+            }
+          },
+          {
+            "type": "text",
+            "value": " also accepts ",
+            "span": {
+              "start": 639,
+              "end": 653
+            }
+          },
+          {
+            "type": "code",
+            "value": "--host",
+            "span": {
+              "start": 653,
+              "end": 661
+            }
+          },
+          {
+            "type": "text",
+            "value": " and ",
+            "span": {
+              "start": 661,
+              "end": 666
+            }
+          },
+          {
+            "type": "code",
+            "value": "--port",
+            "span": {
+              "start": 666,
+              "end": 674
+            }
+          },
+          {
+            "type": "text",
+            "value": ", defaulting to ",
+            "span": {
+              "start": 674,
+              "end": 690
+            }
+          },
+          {
+            "type": "code",
+            "value": "127.0.0.1",
+            "span": {
+              "start": 690,
+              "end": 701
+            }
+          },
+          {
+            "type": "text",
+            "value": " and ",
+            "span": {
+              "start": 701,
+              "end": 706
+            }
+          },
+          {
+            "type": "code",
+            "value": "8000",
+            "span": {
+              "start": 706,
+              "end": 712
+            }
+          },
+          {
+            "type": "text",
+            "value": ".",
+            "span": {
+              "start": 712,
+              "end": 713
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 713,
+              "end": 714
+            }
+          },
+          {
+            "type": "text",
+            "value": "Relative command-line paths are resolved from the working directory.",
+            "span": {
+              "start": 714,
+              "end": 782
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 782,
+              "end": 783
+            }
+          }
+        ],
+        "span": {
+          "start": 496,
+          "end": 783
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Warnings remain visible and permit a successful exit. Errors cause a nonzero",
+            "span": {
+              "start": 784,
+              "end": 860
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 860,
+              "end": 861
+            }
+          },
+          {
+            "type": "text",
+            "value": "exit status. Failed builds do not replace a successful output tree. During",
+            "span": {
+              "start": 861,
+              "end": 935
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 935,
+              "end": 936
+            }
+          },
+          {
+            "type": "text",
+            "value": "preview, a failed rebuild prints its diagnostics while serving the last",
+            "span": {
+              "start": 936,
+              "end": 1007
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1007,
+              "end": 1008
+            }
+          },
+          {
+            "type": "text",
+            "value": "successful site. Correcting the input allows the next rebuild to succeed.",
+            "span": {
+              "start": 1008,
+              "end": 1081
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1081,
+              "end": 1082
+            }
+          }
+        ],
+        "span": {
+          "start": 784,
+          "end": 1082
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "The watcher observes configuration, API and metadata sources, authored pages,",
+            "span": {
+              "start": 1083,
+              "end": 1160
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1160,
+              "end": 1161
+            }
+          },
+          {
+            "type": "text",
+            "value": "assets, and declared environment inputs. Output, execution-cache, and unrelated",
+            "span": {
+              "start": 1161,
+              "end": 1240
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1240,
+              "end": 1241
+            }
+          },
+          {
+            "type": "text",
+            "value": "file changes do not trigger rebuilds. Browser live reload is outside the MVP.",
+            "span": {
+              "start": 1241,
+              "end": 1318
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1318,
+              "end": 1319
+            }
+          }
+        ],
+        "span": {
+          "start": 1083,
+          "end": 1319
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "See the ",
+            "span": {
+              "start": 1320,
+              "end": 1328
+            }
+          },
+          {
+            "type": "link",
+            "inlines": [
+              {
+                "type": "text",
+                "value": "quick start",
+                "span": {
+                  "start": 1329,
+                  "end": 1340
+                }
+              }
+            ],
+            "target": "quick-start.md",
+            "title": null,
+            "attributes": {
+              "identifier": null,
+              "classes": [],
+              "key_values": []
+            },
+            "span": {
+              "start": 1328,
+              "end": 1357
+            }
+          },
+          {
+            "type": "text",
+            "value": " for complete acceptance and project-site",
+            "span": {
+              "start": 1357,
+              "end": 1398
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1398,
+              "end": 1399
+            }
+          },
+          {
+            "type": "text",
+            "value": "commands.",
+            "span": {
+              "start": 1399,
+              "end": 1408
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1408,
+              "end": 1409
+            }
+          }
+        ],
+        "span": {
+          "start": 1320,
+          "end": 1409
+        }
+      }
+    ]
+  },
+  "diagnostics": []
+}

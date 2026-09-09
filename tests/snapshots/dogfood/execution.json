@@ -1,0 +1,138 @@
+{
+  "cells": [
+    {
+      "options": [
+        {
+          "key": "echo",
+          "resolution": {
+            "declaration": 1,
+            "type": "resolved"
+          }
+        },
+        {
+          "key": "label",
+          "resolution": {
+            "declaration": 0,
+            "type": "resolved"
+          }
+        }
+      ],
+      "ordinal": 0,
+      "outputs": [],
+      "reply_error": null,
+      "reply_status": "ok",
+      "source": "values = [2, 4, 6]\ntotal = sum(values)\n",
+      "span": {
+        "end": 485,
+        "start": 400
+      }
+    },
+    {
+      "options": [
+        {
+          "key": "label",
+          "resolution": {
+            "declaration": 0,
+            "type": "resolved"
+          }
+        }
+      ],
+      "ordinal": 1,
+      "outputs": [
+        {
+          "kind": "stream",
+          "name": "stdout",
+          "text": "Total: 12\n"
+        },
+        {
+          "kind": "stream",
+          "name": "stderr",
+          "text": "Example stderr\n"
+        }
+      ],
+      "reply_error": null,
+      "reply_status": "ok",
+      "source": "import sys\n\nprint(f\"Total: {total}\")\nprint(\"Example stderr\", file=sys.stderr)\n",
+      "span": {
+        "end": 598,
+        "start": 486
+      }
+    },
+    {
+      "options": [
+        {
+          "key": "label",
+          "resolution": {
+            "declaration": 0,
+            "type": "resolved"
+          }
+        }
+      ],
+      "ordinal": 2,
+      "outputs": [
+        {
+          "data": {
+            "text/markdown": "**Total:** `12`",
+            "text/plain": "<IPython.core.display.Markdown object>"
+          },
+          "kind": "result",
+          "metadata": {}
+        }
+      ],
+      "reply_error": null,
+      "reply_status": "ok",
+      "source": "from IPython.display import Markdown\n\nMarkdown(f\"**Total:** `{total}`\")\n",
+      "span": {
+        "end": 706,
+        "start": 599
+      }
+    },
+    {
+      "options": [
+        {
+          "key": "fig-alt",
+          "resolution": {
+            "declaration": 1,
+            "type": "resolved"
+          }
+        },
+        {
+          "key": "label",
+          "resolution": {
+            "declaration": 0,
+            "type": "resolved"
+          }
+        }
+      ],
+      "ordinal": 3,
+      "outputs": [
+        {
+          "data": {
+            "image/svg+xml": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"160\" height=\"60\" viewBox=\"0 0 160 60\"><rect width=\"160\" height=\"60\" fill=\"#edf2f7\"/><text x=\"16\" y=\"38\" fill=\"#1a202c\">Total: 12</text></svg>",
+            "text/plain": "<IPython.core.display.SVG object>"
+          },
+          "kind": "result",
+          "metadata": {}
+        }
+      ],
+      "reply_error": null,
+      "reply_status": "ok",
+      "source": "from IPython.display import SVG\n\nSVG(f'<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"160\" height=\"60\" viewBox=\"0 0 160 60\"><rect width=\"160\" height=\"60\" fill=\"#edf2f7\"/><text x=\"16\" y=\"38\" fill=\"#1a202c\">Total: {total}</text></svg>')\n",
+      "span": {
+        "end": 1008,
+        "start": 707
+      }
+    }
+  ],
+  "kernel": {
+    "implementation": "ipython",
+    "implementation_version": "9.14.0",
+    "language": "python",
+    "language_version": "3.14.7",
+    "name": "python3",
+    "protocol_version": "5.3"
+  },
+  "path": "docs/examples/stateful.qmd",
+  "producer": "real-kernel",
+  "schema": "execution-spike-observation-v1"
+}

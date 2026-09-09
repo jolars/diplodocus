@@ -1,0 +1,564 @@
+{
+  "criteria": {
+    "MVP-01": [
+      "workspace-model"
+    ],
+    "MVP-02": [
+      "static-apis",
+      "offline-static-boundary"
+    ],
+    "MVP-03": [
+      "authored-profiles",
+      "own-docs-parse"
+    ],
+    "MVP-04": [
+      "structured-execution"
+    ],
+    "MVP-05": [
+      "site-navigation-search",
+      "authority-and-output"
+    ],
+    "MVP-06": [
+      "command-options",
+      "check-without-effects",
+      "build-outcomes",
+      "serve-http",
+      "serve-source-edit",
+      "serve-environment-edit",
+      "serve-ignored-edits",
+      "serve-failure-recovery"
+    ],
+    "MVP-07": [
+      "portable-repeat-builds",
+      "own-docs-portability"
+    ],
+    "MVP-08": [
+      "offline-static-boundary",
+      "authority-and-output",
+      "new-user-quick-start"
+    ],
+    "MVP-09": [
+      "acceptance-test-stack"
+    ],
+    "MVP-10": [
+      "own-docs-parse",
+      "own-docs-build-preview",
+      "own-docs-portability",
+      "own-docs-publication"
+    ],
+    "MVP-11": [
+      "new-user-quick-start"
+    ]
+  },
+  "cases": [
+    {
+      "id": "baseline",
+      "config": "workspace/diplodocus.toml",
+      "overlay": null,
+      "changes": [],
+      "check": [],
+      "build": []
+    },
+    {
+      "id": "visibility",
+      "config": "workspace/variants/visibility.toml",
+      "overlay": null,
+      "changes": [],
+      "check": [],
+      "build": []
+    },
+    {
+      "id": "relationship-compatible",
+      "config": "workspace/variants/relationship-compatible.toml",
+      "overlay": null,
+      "changes": [],
+      "check": [],
+      "build": []
+    },
+    {
+      "id": "relationship-external",
+      "config": "workspace/variants/relationship-external.toml",
+      "overlay": null,
+      "changes": [],
+      "check": [],
+      "build": []
+    },
+    {
+      "id": "python-dynamic-export",
+      "config": "workspace/diplodocus.toml",
+      "overlay": "python-dynamic-export",
+      "changes": [
+        "python/python/foo/experimental.py"
+      ],
+      "check": [
+        {
+          "code": "python-dynamic-export",
+          "severity": "warning",
+          "source": "python/python/foo/experimental.py"
+        }
+      ],
+      "build": [
+        {
+          "code": "python-dynamic-export",
+          "severity": "warning",
+          "source": "python/python/foo/experimental.py"
+        }
+      ]
+    },
+    {
+      "id": "unsupported-rd",
+      "config": "workspace/diplodocus.toml",
+      "overlay": "unsupported-rd",
+      "changes": [
+        "r/man/experimental_summary.Rd"
+      ],
+      "check": [
+        {
+          "code": "unsupported-rd",
+          "severity": "warning",
+          "source": "r/man/experimental_summary.Rd"
+        }
+      ],
+      "build": [
+        {
+          "code": "unsupported-rd",
+          "severity": "warning",
+          "source": "r/man/experimental_summary.Rd"
+        }
+      ]
+    },
+    {
+      "id": "gfm-raw-html",
+      "config": "workspace/diplodocus.toml",
+      "overlay": "gfm-raw-html",
+      "changes": [
+        "core/docs/index.md"
+      ],
+      "check": [
+        {
+          "code": "unsupported-authored-syntax",
+          "severity": "warning",
+          "source": "core/docs/index.md"
+        }
+      ],
+      "build": [
+        {
+          "code": "unsupported-authored-syntax",
+          "severity": "warning",
+          "source": "core/docs/index.md"
+        }
+      ]
+    },
+    {
+      "id": "qmd-unsupported-directive",
+      "config": "workspace/diplodocus.toml",
+      "overlay": "qmd-unsupported-directive",
+      "changes": [
+        "python/docs/guide.qmd"
+      ],
+      "check": [
+        {
+          "code": "unsupported-authored-syntax",
+          "severity": "warning",
+          "source": "python/docs/guide.qmd"
+        }
+      ],
+      "build": [
+        {
+          "code": "unsupported-authored-syntax",
+          "severity": "warning",
+          "source": "python/docs/guide.qmd"
+        }
+      ]
+    },
+    {
+      "id": "document-execution-not-authorized",
+      "config": "workspace/diplodocus.toml",
+      "overlay": "document-execution-not-authorized",
+      "changes": [
+        "python/safety/metadata-cannot-authorize.qmd"
+      ],
+      "check": [
+        {
+          "code": "document-execution-not-authorized",
+          "severity": "error",
+          "source": "python/safety/metadata-cannot-authorize.qmd"
+        }
+      ],
+      "build": [
+        {
+          "code": "document-execution-not-authorized",
+          "severity": "error",
+          "source": "python/safety/metadata-cannot-authorize.qmd"
+        }
+      ]
+    },
+    {
+      "id": "unsafe-kernel-html",
+      "config": "workspace/diplodocus.toml",
+      "overlay": "unsafe-kernel-html",
+      "changes": [
+        "python/execution/unsafe-html.qmd"
+      ],
+      "check": [],
+      "build": [
+        {
+          "code": "unsafe-kernel-html",
+          "severity": "warning",
+          "source": "python/execution/unsafe-html.qmd"
+        }
+      ]
+    },
+    {
+      "id": "generated-asset-outside-boundary",
+      "config": "workspace/diplodocus.toml",
+      "overlay": "generated-asset-outside-boundary",
+      "changes": [
+        "python/execution/asset-boundary-escape.qmd"
+      ],
+      "check": [],
+      "build": [
+        {
+          "code": "generated-asset-outside-boundary",
+          "severity": "error",
+          "source": "python/execution/asset-boundary-escape.qmd"
+        }
+      ]
+    },
+    {
+      "id": "relationship-incompatible",
+      "config": "workspace/variants/relationship-incompatible.toml",
+      "overlay": null,
+      "changes": [],
+      "check": [
+        {
+          "code": "incompatible-package-relationship",
+          "severity": "error",
+          "source": "workspace/variants/relationship-incompatible.toml"
+        }
+      ],
+      "build": [
+        {
+          "code": "incompatible-package-relationship",
+          "severity": "error",
+          "source": "workspace/variants/relationship-incompatible.toml"
+        }
+      ]
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "workspace-model",
+      "cases": [
+        "baseline",
+        "visibility",
+        "relationship-compatible",
+        "relationship-external"
+      ],
+      "inputs": [
+        "tests/fixtures/acceptance/workspace/diplodocus.toml"
+      ],
+      "action": "Load each configured workspace, normalize execution defaults, and extract metadata.",
+      "expected": "Resolve repository roots, owners, targets, environments, versions, visibility, external relationships, and both concepts as specified by the behavior tables.",
+      "milestone": 3
+    },
+    {
+      "id": "static-apis",
+      "cases": [
+        "baseline",
+        "python-dynamic-export",
+        "unsupported-rd"
+      ],
+      "inputs": [
+        "tests/fixtures/acceptance/python/python/foo/model.pyi",
+        "tests/fixtures/acceptance/r/NAMESPACE"
+      ],
+      "action": "Extract each configured Python and R API using the pinned static parsers.",
+      "expected": "Preserve the complete API rows and provenance; the baseline is diagnostic-free and each warning case has exactly its registered diagnostic.",
+      "milestone": 4
+    },
+    {
+      "id": "authored-profiles",
+      "cases": [
+        "baseline",
+        "gfm-raw-html",
+        "qmd-unsupported-directive"
+      ],
+      "inputs": [
+        "tests/fixtures/acceptance/core/docs/index.md",
+        "tests/fixtures/acceptance/python/docs/guide.qmd"
+      ],
+      "action": "Parse all declared authored pages with their configured Panache profiles.",
+      "expected": "Match reviewed IR snapshots; the baseline has no parser diagnostics and each unsupported authored case has exactly one warning and a visible placeholder.",
+      "milestone": 5
+    },
+    {
+      "id": "structured-execution",
+      "cases": [
+        "baseline"
+      ],
+      "inputs": [
+        "tests/fixtures/acceptance/python/execution/stateful.qmd",
+        "tests/fixtures/acceptance/r/execution/stateful.qmd"
+      ],
+      "action": "Build both stateful pages with the declared Python and R kernels.",
+      "expected": "Preserve sequential state, ordered stdout/stderr, structured Markdown, local figures, and the allowed final error, matching the execution rows.",
+      "milestone": 6
+    },
+    {
+      "id": "authority-and-output",
+      "cases": [
+        "baseline",
+        "document-execution-not-authorized",
+        "unsafe-kernel-html",
+        "generated-asset-outside-boundary"
+      ],
+      "inputs": [
+        "tests/fixtures/acceptance/core/docs/execution/display-only.md",
+        "tests/fixtures/acceptance/python/safety/default-never.qmd",
+        "tests/fixtures/acceptance/python/execution/generated-markdown.qmd",
+        "tests/fixtures/acceptance/python/execution/markdown-looking-stdout.qmd"
+      ],
+      "action": "Check and build each case separately; inspect outputs and attempted asset access.",
+      "expected": "Default-never and GFM source stay inert; generated Markdown cannot add executable cells; streams remain text; diagnostic codes, severities, and sources match the registry by command.",
+      "milestone": 6
+    },
+    {
+      "id": "site-navigation-search",
+      "cases": [
+        "baseline",
+        "visibility"
+      ],
+      "inputs": [
+        "tests/fixtures/acceptance/core/docs/getting-started/workspace.md",
+        "tests/fixtures/acceptance/core/docs/assets/workspace.svg"
+      ],
+      "action": "Build both workspaces and inspect pages, links, source locations, concepts, navigation, and search.",
+      "expected": "All behavior-table URLs and targets resolve, search respects visibility and ecosystem ownership, concept labels distinguish equivalence from analogy, and all runtime assets are local.",
+      "milestone": 8
+    },
+    {
+      "id": "command-options",
+      "cases": [
+        "baseline"
+      ],
+      "inputs": [
+        "tests/fixtures/acceptance/workspace/diplodocus.toml"
+      ],
+      "action": "Run check, build, and serve from the configuration directory with defaults, then from another directory with explicit --config, --output, --host, and --port where supported.",
+      "expected": "Defaults use ./diplodocus.toml, ./site, and 127.0.0.1:8000; explicit options take precedence and all commands address the same declared workspace.",
+      "milestone": 9
+    },
+    {
+      "id": "check-without-effects",
+      "cases": [
+        "baseline",
+        "visibility",
+        "relationship-compatible",
+        "relationship-external",
+        "python-dynamic-export",
+        "unsupported-rd",
+        "gfm-raw-html",
+        "qmd-unsupported-directive",
+        "document-execution-not-authorized",
+        "unsafe-kernel-html",
+        "generated-asset-outside-boundary",
+        "relationship-incompatible"
+      ],
+      "inputs": [
+        "tests/fixtures/acceptance/workspace/diplodocus.toml"
+      ],
+      "action": "Run check for every case with kernels unavailable and no site or cache directory, then repeat with a preexisting cache.",
+      "expected": "Diagnostics match each check array; warnings exit zero and errors nonzero; no kernel discovery, runtime launch, network request, cache access/mutation, execution assets, or site writes occur.",
+      "milestone": 7
+    },
+    {
+      "id": "build-outcomes",
+      "cases": [
+        "baseline",
+        "visibility",
+        "relationship-compatible",
+        "relationship-external",
+        "python-dynamic-export",
+        "unsupported-rd",
+        "gfm-raw-html",
+        "qmd-unsupported-directive",
+        "document-execution-not-authorized",
+        "unsafe-kernel-html",
+        "generated-asset-outside-boundary",
+        "relationship-incompatible"
+      ],
+      "inputs": [
+        "tests/fixtures/acceptance/workspace/diplodocus.toml"
+      ],
+      "action": "Build each case in a fresh temporary workspace, then repeat error cases with an existing successful output tree.",
+      "expected": "Diagnostics match each build array; warnings succeed and remain visible, errors exit nonzero without a partial site or escaped asset, and a previous successful output is byte-identical after failure.",
+      "milestone": 9
+    },
+    {
+      "id": "serve-http",
+      "cases": [
+        "baseline"
+      ],
+      "inputs": [
+        "tests/fixtures/acceptance/workspace/diplodocus.toml"
+      ],
+      "action": "Start serve with an available loopback port and fetch the project landing page, one authored page, both API ecosystems, and an asset.",
+      "expected": "The initial build completes before serving; each expected route returns the generated bytes and shutdown releases the port and any kernel processes.",
+      "milestone": 9
+    },
+    {
+      "id": "serve-source-edit",
+      "cases": [
+        "baseline"
+      ],
+      "inputs": [
+        "tests/fixtures/acceptance/core/docs/getting-started/workspace.md"
+      ],
+      "action": "Start serve, replace the page title with a unique marker in the temporary copy, and poll the page and search index with a bounded deadline.",
+      "expected": "The same server exposes the new title, navigation, and search entry without a restart.",
+      "milestone": 9
+    },
+    {
+      "id": "serve-environment-edit",
+      "cases": [
+        "baseline"
+      ],
+      "inputs": [
+        "tests/fixtures/acceptance/python/pyproject.toml",
+        "tests/fixtures/acceptance/r/DESCRIPTION"
+      ],
+      "action": "Start serve, add a TOML comment to pyproject.toml, then change DESCRIPTION Title; wait for each rebuild.",
+      "expected": "Each declared-environment change invalidates the corresponding execution cache and updates provenance while deterministic cell results remain stable.",
+      "milestone": 9
+    },
+    {
+      "id": "serve-ignored-edits",
+      "cases": [
+        "baseline"
+      ],
+      "inputs": [
+        "tests/fixtures/acceptance/workspace/diplodocus.toml"
+      ],
+      "action": "Start serve; change files in its output, execution cache, and an unrelated scratch directory while counting build events.",
+      "expected": "These changes do not schedule a rebuild; declared-input changes still do.",
+      "milestone": 9
+    },
+    {
+      "id": "serve-failure-recovery",
+      "cases": [
+        "baseline",
+        "document-execution-not-authorized"
+      ],
+      "inputs": [
+        "tests/fixtures/acceptance/core/docs/getting-started/workspace.md",
+        "tests/fixtures/acceptance-cases/document-execution-not-authorized/python/safety/metadata-cannot-authorize.qmd"
+      ],
+      "action": "Start from baseline, apply the unauthorized-execution overlay, wait for its diagnostic, remove it, and change a guide title.",
+      "expected": "The failed rebuild reports exactly the registered error and leaves every last-good output byte available; the subsequent valid change succeeds on the same server.",
+      "milestone": 9
+    },
+    {
+      "id": "portable-repeat-builds",
+      "cases": [
+        "baseline"
+      ],
+      "inputs": [
+        "tests/fixtures/acceptance/workspace/diplodocus.toml"
+      ],
+      "action": "Copy the workspace to two different absolute directories; build each with fresh caches, then rebuild from cache.",
+      "expected": "Compare every output path and byte and portable IR; no checkout paths, temporary paths, timestamps, ports, or process IDs leak. Fresh and cached outputs have equal portable content under the cache contract.",
+      "milestone": 11
+    },
+    {
+      "id": "offline-static-boundary",
+      "cases": [
+        "baseline"
+      ],
+      "inputs": [
+        "tests/fixtures/acceptance/python/python/foo/__init__.py",
+        "tests/fixtures/acceptance/r/R/fit.R",
+        "tests/fixtures/acceptance/r/DESCRIPTION"
+      ],
+      "action": "In disposable copies, add import-time Python and R load-hook traps; disable network access and run static checks and configured deterministic builds with tools preinstalled.",
+      "expected": "Documented package code is never imported, sourced, or loaded; no installer, fetch, or implicit network access occurs. Only authorized authored kernels run.",
+      "milestone": 11
+    },
+    {
+      "id": "acceptance-test-stack",
+      "cases": [
+        "baseline"
+      ],
+      "inputs": [
+        ".github/workflows/ci.yml",
+        "devenv.nix"
+      ],
+      "action": "Run formatting, linting, unit, golden, integration, link, and end-to-end checks in devenv and CI as their milestones land.",
+      "expected": "Every implemented fixture check passes without modifying checked-in inputs; all future behavior scenarios have a named milestone and none is counted as implemented by its specification alone.",
+      "milestone": 11
+    },
+    {
+      "id": "own-docs-parse",
+      "cases": [],
+      "inputs": [
+        "diplodocus.toml",
+        "docs/guide/index.md",
+        "docs/guide/quick-start.md",
+        "docs/guide/configuration.md",
+        "docs/guide/cli.md",
+        "docs/guide/assets/workspace.svg",
+        "docs/examples/stateful.qmd"
+      ],
+      "action": "Copy the real configuration, its declared content, and environment input into a temporary workspace; parse every declared page.",
+      "expected": "The workspace has no API packages or targets; both profiles have reviewed IR, no parser diagnostics, and resolvable local source links and assets.",
+      "milestone": 1
+    },
+    {
+      "id": "own-docs-build-preview",
+      "cases": [],
+      "inputs": [
+        "diplodocus.toml",
+        "docs/examples/stateful.qmd"
+      ],
+      "action": "Build and check the real project site, then preview with serve and edit a guide page.",
+      "expected": "Use the in-tree binary and the shared renderer; navigation, source links, search, local assets, and deterministic Python outputs are present, and the preview updates without another site generator.",
+      "milestone": 10
+    },
+    {
+      "id": "own-docs-portability",
+      "cases": [],
+      "inputs": [
+        "diplodocus.toml",
+        "devenv.lock"
+      ],
+      "action": "Build the real project docs in two distinct checkout directories with fresh caches; inspect both at / and /diplodocus/.",
+      "expected": "Output paths and bytes match; all internal links, fragments, assets, navigation, and search work at either hosting prefix without absolute local paths.",
+      "milestone": 11
+    },
+    {
+      "id": "own-docs-publication",
+      "cases": [],
+      "inputs": [
+        "diplodocus.toml"
+      ],
+      "action": "In Milestone 10, exercise the docs workflow on a PR, main, a v* tag, and a manual dispatch.",
+      "expected": "PR and main builds validate only; tags/manual dispatch deploy exactly the validated Diplodocus output plus .nojekyll via github-pages with minimal Pages permissions. No other generator runs.",
+      "milestone": 10
+    },
+    {
+      "id": "new-user-quick-start",
+      "cases": [
+        "baseline"
+      ],
+      "inputs": [
+        "README.md",
+        "docs/guide/quick-start.md",
+        "diplodocus.toml",
+        "tests/fixtures/acceptance/workspace/diplodocus.toml"
+      ],
+      "action": "From a clean checkout with declared tools installed, follow the checked-in instructions to check, build, and preview the acceptance site and the real project site.",
+      "expected": "Commands reproduce both sites using the declared configuration and kernels; the guide explains explicit unsandboxed execution and requires no dependency installation or network access by Diplodocus.",
+      "milestone": 11
+    }
+  ]
+}

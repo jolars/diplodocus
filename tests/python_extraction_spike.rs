@@ -24,6 +24,7 @@ fn python_exploratory_output_matches_golden() {
         .unwrap()
         .project
         .unwrap();
+    let dynamic_workspace = support::acceptance_case("python-dynamic-export");
     let modules = support::fixture_files(format!("{PYTHON_FIXTURE}/python/foo"))
         .into_iter()
         .filter_map(|path| {
@@ -33,7 +34,11 @@ fn python_exploratory_output_matches_golden() {
                 _ => return None,
             };
             let name = path.to_str().unwrap();
-            let source = python_source(name);
+            let source = if name == "experimental.py" {
+                dynamic_workspace.read("python/python/foo/experimental.py")
+            } else {
+                python_source(name)
+            };
             let module = parse_module(&source, source_type);
             Some(json!({
                 "path": format!("python/foo/{name}"),
@@ -482,7 +487,10 @@ fn ruff_ast_exposes_the_acceptance_surface_with_byte_ranges() {
         ["dimension"]
     );
 
-    let experimental_source = python_source("experimental.py");
+    let baseline = parse_module(&python_source("experimental.py"), PySourceType::Python);
+    assert_eq!(literal_exports(&baseline), ["experimental_rank"]);
+    let experimental_source =
+        support::acceptance_case("python-dynamic-export").read("python/python/foo/experimental.py");
     let experimental = parse_module(&experimental_source, PySourceType::Python);
     assert!(matches!(all_expression(&experimental), Expr::Call(_)));
     assert_eq!(

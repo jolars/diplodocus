@@ -6,23 +6,38 @@ mod support;
 
 #[test]
 fn acceptance_authored_output_matches_goldens() {
-    for path in support::fixture_files("acceptance") {
-        if path == std::path::Path::new("MATRIX.md") {
-            continue;
-        }
-        let format = match path.extension().and_then(|extension| extension.to_str()) {
-            Some("md") => AuthoredFormat::Gfm,
-            Some("qmd") => AuthoredFormat::Qmd,
-            _ => continue,
+    let workspace = support::acceptance_workspace();
+    for (path, profile) in support::authored_sources(&workspace, "workspace/diplodocus.toml") {
+        let format = if profile == "gfm" {
+            AuthoredFormat::Gfm
+        } else {
+            AuthoredFormat::Qmd
         };
-        let source = support::load_fixture(std::path::Path::new("acceptance").join(&path));
-        let parsed = parse_authored_document(&source, format);
+        let parsed = parse_authored_document(&workspace.read(&path), format);
         let snapshot = if path == std::path::Path::new("python/docs/guide.qmd") {
             "documents/qmd.json".to_owned()
         } else {
             format!("spikes/authored/{}.json", path.display())
         };
         support::assert_json_golden(&parsed, snapshot);
+    }
+    for case in support::acceptance_registry().cases {
+        let workspace = support::materialize_case(&case);
+        for path in &case.changes {
+            let format = match std::path::Path::new(path)
+                .extension()
+                .and_then(|extension| extension.to_str())
+            {
+                Some("md") => AuthoredFormat::Gfm,
+                Some("qmd") => AuthoredFormat::Qmd,
+                _ => continue,
+            };
+            let parsed = parse_authored_document(&workspace.read(path), format);
+            support::assert_json_golden(
+                &parsed,
+                format!("spikes/authored/cases/{}/{path}.json", case.id),
+            );
+        }
     }
 }
 
@@ -196,10 +211,7 @@ fn acceptance_authored_pages_parse_through_the_production_adapter() {
             .iter()
             .any(|block| matches!(block, Block::CodeCell(_)))
     );
-    assert!(parsed_qmd.document.blocks.iter().any(|block| matches!(
-        block,
-        Block::Unsupported { source_kind, .. } if source_kind == "FENCED_DIV"
-    )));
+    assert!(parsed_qmd.diagnostics.is_empty());
     assert!(parsed_nested_gfm.document.blocks.iter().any(|block| {
         matches!(
             block,
@@ -312,11 +324,14 @@ fn acceptance_execution_authority_variants_have_the_expected_authored_cells() {
             .any(|block| matches!(block, Block::CodeCell(_)))
     );
 
-    for source in [
-        "python/safety/default-never.qmd",
-        "python/safety/metadata-cannot-authorize.qmd",
+    for (case, source) in [
+        ("baseline", "python/safety/default-never.qmd"),
+        (
+            "document-execution-not-authorized",
+            "python/safety/metadata-cannot-authorize.qmd",
+        ),
     ] {
-        let source = workspace.read(source);
+        let source = support::acceptance_case(case).read(source);
         let parsed = parse_authored_document(&source, AuthoredFormat::Qmd);
         assert_eq!(
             parsed
@@ -370,7 +385,14 @@ fn acceptance_output_safety_variants_are_single_cell_documents() {
     ];
 
     for (source, label, construct) in cases {
-        let source = workspace.read(source);
+        let case_workspace = match label {
+            "unsafe-html" => Some(support::acceptance_case("unsafe-kernel-html")),
+            "asset-boundary-escape" => {
+                Some(support::acceptance_case("generated-asset-outside-boundary"))
+            }
+            _ => None,
+        };
+        let source = case_workspace.as_ref().unwrap_or(&workspace).read(source);
         let parsed = parse_authored_document(&source, AuthoredFormat::Qmd);
         let cells = parsed
             .document

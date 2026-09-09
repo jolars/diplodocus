@@ -2,7 +2,7 @@
   "document": {
     "span": {
       "start": 0,
-      "end": 382
+      "end": 348
     },
     "frontmatter": null,
     "blocks": [
@@ -406,27 +406,8 @@
           "start": 314,
           "end": 348
         }
-      },
-      {
-        "type": "unsupported",
-        "source_kind": "HTML_BLOCK",
-        "raw": "<component name=\"unsupported\" />\n",
-        "span": {
-          "start": 349,
-          "end": 382
-        }
       }
     ]
   },
-  "diagnostics": [
-    {
-      "code": "unsupported-authored-syntax",
-      "severity": "warning",
-      "message": "unsupported authored syntax: HTML_BLOCK",
-      "span": {
-        "start": 349,
-        "end": 382
-      }
-    }
-  ]
+  "diagnostics": []
 }

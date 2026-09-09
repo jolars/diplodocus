@@ -102,8 +102,13 @@ fn r_exploratory_output_matches_golden() {
         json!({"path": format!("R/{}", path.display()), "functions": functions})
     }).collect::<Vec<_>>();
 
+    let dynamic_workspace = support::acceptance_case("unsupported-rd");
     let topics = support::fixture_files(format!("{R_FIXTURE}/man")).into_iter().map(|path| {
-        let parsed = parse_rd_fixture(path.to_str().unwrap());
+        let parsed = if path == std::path::Path::new("experimental_summary.Rd") {
+            rd_source::parse(dynamic_workspace.read("r/man/experimental_summary.Rd").as_bytes()).unwrap()
+        } else {
+            parse_rd_fixture(path.to_str().unwrap())
+        };
         assert!(parsed.diagnostics().is_empty());
         let document = parsed.document();
         let dynamic = document.inspect_dynamic_markup().map(|event| {
@@ -527,7 +532,10 @@ fn rd_ast_exposes_the_acceptance_semantics_without_evaluation() {
     assert!(inline_kinds.contains(&RdInlineSpanKind::Code));
     assert!(inline_kinds.contains(&RdInlineSpanKind::Emph));
 
-    let dynamic = parse_rd_fixture("experimental_summary.Rd");
+    let baseline = parse_rd_fixture("experimental_summary.Rd");
+    assert_eq!(baseline.document().inspect_dynamic_markup().count(), 0);
+    let source = support::acceptance_case("unsupported-rd").read("r/man/experimental_summary.Rd");
+    let dynamic = rd_source::parse(source.as_bytes()).unwrap();
     let dynamic_document = dynamic.document();
     assert!(dynamic_document.inspect_description().unwrap().is_some());
     assert!(dynamic_document.inspect_details().unwrap().is_some());

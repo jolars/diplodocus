@@ -11,6 +11,11 @@ Diplodocus is under active development. The command-line surface is present, but
 the build pipeline will arrive in the later milestones described in
 [`TODO.md`](TODO.md).
 
+The starter [project guide](docs/guide/index.md) and root `diplodocus.toml`
+form the project's own documentation corpus. The [quick start](docs/guide/quick-start.md)
+records the intended build and preview workflow while those commands are
+implemented.
+
 ## Authored documents
 
 The library parses authored `.md` and `.qmd` content in-process through

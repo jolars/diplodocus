@@ -2,7 +2,7 @@
   "document": {
     "span": {
       "start": 0,
-      "end": 364
+      "end": 294
     },
     "frontmatter": {
       "type": "mapping",
@@ -345,27 +345,8 @@
           "start": 261,
           "end": 294
         }
-      },
-      {
-        "type": "unsupported",
-        "source_kind": "FENCED_DIV",
-        "raw": "::: {.unsupported-directive}\nThis directive must remain visible.\n:::\n",
-        "span": {
-          "start": 295,
-          "end": 364
-        }
       }
     ]
   },
-  "diagnostics": [
-    {
-      "code": "unsupported-authored-syntax",
-      "severity": "warning",
-      "message": "unsupported authored syntax: FENCED_DIV",
-      "span": {
-        "start": 295,
-        "end": 364
-      }
-    }
-  ]
+  "diagnostics": []
 }

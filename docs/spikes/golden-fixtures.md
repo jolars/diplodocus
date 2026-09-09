@@ -18,22 +18,40 @@ relative to `tests/snapshots`.
 
   | Golden                                                                             | Producer                                                                                                 | Preserved evidence                                                                                                                                                                                                                                                                                    |
   | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-  | `spikes/python.json`                                                               | `python_exploratory_output_matches_golden` in [the Python spike](../../tests/python_extraction_spike.rs) | Static PEP 621 metadata, all six source/stub modules, exports and computed export expressions, re-export targets, dataclass/property/overload decorators, parameters/annotations, docstring text and sections, source ranges, typed-marker presence, and selected stub/implementation reconciliation. |
-  | `spikes/r.json`                                                                    | `r_exploratory_output_matches_golden` in [the R spike](../../tests/r_extraction_spike.rs)                | DESCRIPTION values and dependency constraints, all namespace directives, every maintained function/formal/default in the three R sources, and all four Rd topics with aliases, structured markup, positional groups, options, and unresolved dynamic expressions.                                     |
+  | `spikes/python.json`                                                               | `python_exploratory_output_matches_golden` in [the Python spike](../../tests/python_extraction_spike.rs) | Static PEP 621 metadata, all six source/stub modules (using the isolated `python-dynamic-export` case for the experimental module), exports and computed export expressions, re-export targets, dataclass/property/overload decorators, parameters/annotations, docstring text and sections, source ranges, typed-marker presence, and selected stub/implementation reconciliation. |
+  | `spikes/r.json`                                                                    | `r_exploratory_output_matches_golden` in [the R spike](../../tests/r_extraction_spike.rs)                | DESCRIPTION values and dependency constraints, all namespace directives, every maintained function/formal/default in the three R sources, and all four Rd topics (using the isolated `unsupported-rd` case for the experimental topic) with aliases, structured markup, positional groups, options, and unresolved dynamic expressions.                                     |
   | `spikes/failures/python-{metadata,syntax,docstring}.json`                          | The existing focused Python failure probes                                                               | Malformed metadata with its native range/message, dynamic version declarations, malformed versus version-unsupported syntax, missing docstring types, and raw-to-decoded source mismatch.                                                                                                             |
   | `spikes/failures/r-{metadata,syntax,namespace-unknown,namespace-conditional}.json` | The existing focused R failure probes                                                                    | Lossless parser recovery, malformed dependency constraints, unknown directives, and the conditional context lost by the flattened namespace iterator.                                                                                                                                                 |
   | `spikes/failures/rd-{unknown,shape}.json`                                          | The existing focused Rd failure probes                                                                   | Unknown markup with a ranged diagnostic and retained payload, plus duplicate-section shape errors whose location is structural rather than a byte range.                                                                                                                                              |
-  | `spikes/authored/<acceptance-path>.json`, plus existing `documents/qmd.json`       | `acceptance_authored_output_matches_goldens` in [document tests](../../tests/documents.rs)               | Complete document parse output and diagnostics for every authored `.md`/`.qmd` acceptance file. The corpus index `MATRIX.md` is excluded. `python/docs/guide.qmd` reuses its existing golden instead of duplicating it.                                                                               |
+  | `spikes/authored/<acceptance-path>.json`, `spikes/authored/cases/<case>/<path>.json`, and `documents/qmd.json`       | `acceptance_authored_output_matches_goldens` in [document tests](../../tests/documents.rs)               | Complete document parse output and diagnostics for every declared baseline page and every authored overlay. `python/docs/guide.qmd` uses `documents/qmd.json`; the unsupported variant retains the former golden under its case ID.                                                                               |
   | `spikes/execution/mime-bundle.json`                                                | The protocol representation probe in [the Jupyter spike](../../tests/jupyter_execution_spike.rs)         | Supported and unknown MIME alternatives, an update to the same display, and interrupt/shutdown message types before output validation.                                                                                                                                                                |
   | `spikes/execution/canned-{python,r}.json`                                          | The corpus transport probe in the Jupyter spike                                                          | Exact submitted cells/options, shell status, ordered streams, result bundles, display/update correlation, and errors over local ZMQ connections to the deterministic test kernel.                                                                                                                     |
   | `spikes/execution/real-{python3,ir}.json`                                          | [The real-kernel probe](../../tests/jupyter_real_kernels.rs)                                             | Actual kernel-info identity/versions and five stateful cells' shell status, streams, rich representations, and error records, captured only after shutdown and successful process exit.                                                                                                               |
 
-The authored inventory contains 13 pages: three GFM pages in `core`, two Python
-guides, two Python safety pages, five Python execution pages, and one R
-execution page. The test discovers these files in sorted order. Adding a new
-authored acceptance page therefore requires a reviewed golden automatically. The
-execution safety pages are parsed here, not executed; production output
-sanitization and authority tests remain separate implementation gates.
+The authored acceptance inventory contains ten baseline pages and five authored
+case overlays. Discovery follows declared collections in sorted order; corpus
+metadata is not parsed as site content. Diagnostic-free GFM and QMD baseline
+snapshots replace the former combined pages. The original unsupported pages and
+all three execution-policy documents retain byte-identical snapshots under
+`spikes/authored/cases/`. The Python and R exploratory golden contents are
+unchanged because their producing tests explicitly select the corresponding
+isolated dynamic cases.
+
+The project's real documentation adds five authored snapshots under
+`dogfood/docs/`, produced by `real_documentation_matches_authored_goldens` in
+[the corpus gate tests](../../tests/acceptance_gate.rs). Its four-cell Python
+example also has a real-kernel output snapshot at `dogfood/execution.json`,
+produced by `declared_python_kernel_executes_the_real_documentation_example`.
+The same declared environment and observation normalization apply to both
+execution corpora.
+
+The [case registry](../../tests/fixtures/acceptance/CASES.json) records the
+complete expected check/build diagnostics, while the [acceptance
+matrix](../../tests/fixtures/acceptance/MATRIX.md) maps all eleven MVP criteria
+to concrete inputs, actions, outcomes, and verification milestones. Fixture
+checks establish composition and parser behavior now. Semantic API diagnostics,
+execution authorization, and output sanitization remain production
+implementation gates; a registry entry is not proof of those behaviors.
 
 ## Representation and normalization
 

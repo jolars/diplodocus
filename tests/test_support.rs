@@ -86,14 +86,14 @@ fn acceptance_fixture_has_gfm_and_qmd_authored_content() {
     assert!(project_index.contains("| Package | Version |"));
     assert!(project_index.contains("> [!NOTE]"));
     assert!(project_index.contains("```python"));
-    assert!(project_index.contains("<component name=\"unsupported\" />"));
+    assert!(!project_index.contains("<component"));
 
     let nested_project_page = workspace.read("core/docs/getting-started/workspace.md");
     assert!(nested_project_page.contains("![Workspace layout](../assets/workspace.svg)"));
 
     let package_guide = workspace.read("python/docs/guide.qmd");
     assert!(package_guide.contains("::: {.callout-tip #stateful}"));
-    assert!(package_guide.contains("::: {.unsupported-directive}"));
+    assert!(!package_guide.contains("::: {.unsupported-directive}"));
 
     let nested_package_page = workspace.read("python/docs/models/fitting.qmd");
     assert!(nested_package_page.contains("[`foo.FooModel.fit`]"));
@@ -168,7 +168,6 @@ fn acceptance_fixture_has_execution_authority_variants() {
     for source in [
         "core/docs/execution/display-only.md",
         "python/safety/default-never.qmd",
-        "python/safety/metadata-cannot-authorize.qmd",
         "python/execution/generated-markdown.qmd",
     ] {
         assert!(
@@ -200,7 +199,8 @@ fn acceptance_fixture_has_execution_authority_variants() {
     assert!(default_never.contains("#| label: default-never"));
     assert!(default_never.contains("QMD execution must default to never"));
 
-    let metadata = workspace.read("python/safety/metadata-cannot-authorize.qmd");
+    let metadata = support::acceptance_case("document-execution-not-authorized")
+        .read("python/safety/metadata-cannot-authorize.qmd");
     assert!(metadata.contains("execute: true"));
     assert!(metadata.contains("jupyter: python3"));
     assert!(metadata.contains("Document metadata must not authorize execution"));
@@ -239,10 +239,16 @@ fn acceptance_fixture_has_output_safety_variants() {
     ];
 
     for (source, constructs) in cases {
-        assert!(
-            workspace.path().join(source).is_file(),
-            "output-safety fixture should exist: {source}"
-        );
+        let case_workspace = match source {
+            "python/execution/unsafe-html.qmd" => {
+                Some(support::acceptance_case("unsafe-kernel-html"))
+            }
+            "python/execution/asset-boundary-escape.qmd" => {
+                Some(support::acceptance_case("generated-asset-outside-boundary"))
+            }
+            _ => None,
+        };
+        let workspace = case_workspace.as_ref().unwrap_or(&workspace);
         let page = workspace.read(source);
         assert_eq!(
             page.lines().filter(|line| *line == "```{python}").count(),
@@ -432,7 +438,8 @@ fn acceptance_python_distribution_declares_its_public_surface() {
         );
     }
 
-    let dynamic_exports = workspace.read("python/python/foo/experimental.py");
+    let dynamic_exports =
+        support::acceptance_case("python-dynamic-export").read("python/python/foo/experimental.py");
     assert!(dynamic_exports.contains("def experimental_rank("));
     assert!(dynamic_exports.contains("__all__ = _exported_names()"));
 
@@ -567,7 +574,8 @@ fn acceptance_r_package_has_structured_rd_and_an_unsupported_construct() {
     assert!(model_documentation.contains(r"\alias{predict.foo_model}"));
     assert!(model_documentation.contains(r"\method{predict}{foo_model}"));
 
-    let dynamic_documentation = workspace.read("r/man/experimental_summary.Rd");
+    let dynamic_documentation =
+        support::acceptance_case("unsupported-rd").read("r/man/experimental_summary.Rd");
     assert!(dynamic_documentation.contains(r"\Sexpr[stage=render,results=text]"));
     assert!(dynamic_documentation.contains("must produce an unsupported-Rd diagnostic"));
 }
@@ -634,6 +642,7 @@ fn acceptance_matrix_maps_every_fixture_to_each_behavior_dimension() {
             .to_string_lossy()
             .replace('\\', "/");
         if relative == "MATRIX.md"
+            || relative == "CASES.json"
             || relative
                 .split('/')
                 .any(|component| component.starts_with('.'))

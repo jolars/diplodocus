@@ -14,5 +14,3 @@ the [Python guide](../../python/docs/guide.qmd).
 ```python
 from foo import fit
 ```
-
-<component name="unsupported" />
