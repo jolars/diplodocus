@@ -476,6 +476,11 @@ engine and kernel identities, relevant toolchain versions, and declared
 environment inputs. Page-level caching preserves stateful cell semantics; fine-
 grained dependency analysis and cell-level caching are later concerns.
 
+The [page execution-cache contract](docs/spikes/page-execution-cache.md) defines
+canonical key encoding, runtime identity verification, the versioned artifact
+layout, validation on restore, and atomic publication. A hit verifies the
+current kernel through startup and kernel info, then skips authored cells.
+
 Authored pages and generated API pages participate in the same navigation, link
 resolution, and search index.
 

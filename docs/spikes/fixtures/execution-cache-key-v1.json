@@ -1,0 +1,266 @@
+{
+  "description": "Synthetic reference inputs, not an artifact or installed-toolchain manifest. Executable strings stand in for file bytes; private launch records are included only to make this vector reproducible.",
+  "source_utf8": "# Cache vector\n\n```{python}\nprint(\"hello\")\n```\n",
+  "submitted_source_utf8": "print(\"hello\")\n",
+  "environment_input_utf8": "[project]\nname = \"cache-vector\"\n",
+  "engine_executable_utf8": "synthetic Diplodocus executable\n",
+  "kernel_executable_utf8": "synthetic kernel executable\n",
+  "private_spec": {
+    "argv": [
+      [
+        {
+          "kind": "literal",
+          "value": "python"
+        }
+      ],
+      [
+        {
+          "kind": "literal",
+          "value": "-m"
+        }
+      ],
+      [
+        {
+          "kind": "literal",
+          "value": "ipykernel_launcher"
+        }
+      ],
+      [
+        {
+          "kind": "literal",
+          "value": "-f"
+        }
+      ],
+      [
+        {
+          "kind": "connection-file"
+        }
+      ]
+    ],
+    "language": "python",
+    "interrupt_mode": "signal",
+    "env": []
+  },
+  "private_launch": {
+    "spec_digest": "sha256:ebb0a8fe5c52966c47a6d5ff5efd7e8cac873e28473764adcb0ab947a460d160",
+    "executable": {
+      "location": {
+        "kind": "repository",
+        "repository": "python",
+        "path": ".venv/bin/python"
+      },
+      "digest": "sha256:6422e9a5693fb8461912e05f9022b888b9eff69acaa9037c2cacb6cb9b48d72c"
+    },
+    "argv": [
+      [
+        {
+          "kind": "repository",
+          "repository": "python",
+          "path": ".venv/bin/python"
+        }
+      ],
+      [
+        {
+          "kind": "literal",
+          "value": "-m"
+        }
+      ],
+      [
+        {
+          "kind": "literal",
+          "value": "ipykernel_launcher"
+        }
+      ],
+      [
+        {
+          "kind": "literal",
+          "value": "-f"
+        }
+      ],
+      [
+        {
+          "kind": "connection-file"
+        }
+      ]
+    ],
+    "env": [],
+    "working_directory": {
+      "repository": "python",
+      "path": "docs"
+    }
+  },
+  "key_input": {
+    "schema": "page-execution-key-v1",
+    "page": {
+      "repository": "python",
+      "collection": "guide",
+      "path": "docs/cache.qmd",
+      "working_directory": "docs",
+      "format": "qmd",
+      "source_digest": "sha256:5cf12fce2e4ba2e98baadd1d82b63d11bda828a340292cbd0fa7434a056f177b"
+    },
+    "options": {
+      "mode": "execute",
+      "page_veto": false,
+      "defaults": {
+        "eval": true,
+        "echo": true,
+        "output": true,
+        "include": true,
+        "error": false
+      },
+      "cells": [
+        {
+          "ordinal": 0,
+          "language": "python",
+          "eligible": true,
+          "submitted_source_digest": "sha256:b80792336156c7b0f7fe02eeef24610d2d52a10d1810397744471d1dc5738180",
+          "effective": {
+            "eval": true,
+            "echo": true,
+            "output": true,
+            "include": true,
+            "error": false,
+            "label": null,
+            "fig-alt": null,
+            "fig-cap": null,
+            "fig-subcap": []
+          }
+        }
+      ]
+    },
+    "engine": {
+      "id": "jupyter",
+      "version": "0.1.0",
+      "build_digest": "sha256:53743109a81e8a6a495af708cdc0d3f8dde2e1623a703a202663328a7f5d9d98"
+    },
+    "policies": {
+      "qmd": "qmd-mvp-v1",
+      "execution": "execution-mvp-v1",
+      "mime": "mime-mvp-v1",
+      "html": "html-mvp-v1",
+      "svg": "svg-mvp-v1"
+    },
+    "components": [
+      {
+        "role": "async-runtime",
+        "name": "tokio",
+        "version": "0.0.0-vector"
+      },
+      {
+        "role": "authored-parser",
+        "name": "panache-parser",
+        "version": "0.29.0"
+      },
+      {
+        "role": "fragment-parser",
+        "name": "panache-parser",
+        "version": "0.29.0"
+      },
+      {
+        "role": "html-parser",
+        "name": "example-html-parser",
+        "version": "0.0.0-vector"
+      },
+      {
+        "role": "html-sanitizer",
+        "name": "example-html-sanitizer",
+        "version": "0.0.0-vector"
+      },
+      {
+        "role": "jupyter-protocol",
+        "name": "jupyter-protocol",
+        "version": "2.0.2"
+      },
+      {
+        "role": "jupyter-transport",
+        "name": "jupyter-zmq-client",
+        "version": "1.0.1"
+      },
+      {
+        "role": "raster-decoder",
+        "name": "example-raster-decoder",
+        "version": "0.0.0-vector"
+      },
+      {
+        "role": "raster-validator",
+        "name": "example-raster-validator",
+        "version": "0.0.0-vector"
+      },
+      {
+        "role": "svg-parser",
+        "name": "example-svg-parser",
+        "version": "0.0.0-vector"
+      },
+      {
+        "role": "svg-validator",
+        "name": "example-svg-validator",
+        "version": "0.0.0-vector"
+      }
+    ],
+    "kernel": {
+      "name": "python3",
+      "spec_digest": "sha256:ebb0a8fe5c52966c47a6d5ff5efd7e8cac873e28473764adcb0ab947a460d160",
+      "launch_digest": "sha256:e44aca6a312b75c98c3990e57e1514506a6589eedaf6f1e2cfe5499599f8a04e",
+      "search": [
+        {
+          "class": "jupyter-path",
+          "ordinal": 0,
+          "selected": true
+        }
+      ],
+      "interrupt_mode": "signal",
+      "runtime": {
+        "implementation": "ipython",
+        "implementation_version": "7.1.0",
+        "language": "python",
+        "language_version": "3.14.7",
+        "protocol_version": "5.3"
+      }
+    },
+    "platform": {
+      "os": "linux",
+      "architecture": "x86_64",
+      "target": "x86_64-unknown-linux-gnu"
+    },
+    "deadlines_ms": {
+      "startup": 30000,
+      "cell": 60000,
+      "terminal_sync": 5000,
+      "interrupt": 5000,
+      "shutdown": 5000,
+      "termination": 5000,
+      "forced_exit": 5000
+    },
+    "environment_inputs": [
+      {
+        "repository": "python",
+        "path": "pyproject.toml",
+        "digest": "sha256:4c02342c35416139291aca196c4d256d7e9f33081e123269d1f639075ca6e684"
+      }
+    ],
+    "schemas": {
+      "encoding": "execution-json-v1",
+      "artifact": "page-execution-artifact-v1",
+      "ir": "execution-result-v1"
+    }
+  },
+  "canonical_utf8": "{\"components\":[{\"name\":\"tokio\",\"role\":\"async-runtime\",\"version\":\"0.0.0-vector\"},{\"name\":\"panache-parser\",\"role\":\"authored-parser\",\"version\":\"0.29.0\"},{\"name\":\"panache-parser\",\"role\":\"fragment-parser\",\"version\":\"0.29.0\"},{\"name\":\"example-html-parser\",\"role\":\"html-parser\",\"version\":\"0.0.0-vector\"},{\"name\":\"example-html-sanitizer\",\"role\":\"html-sanitizer\",\"version\":\"0.0.0-vector\"},{\"name\":\"jupyter-protocol\",\"role\":\"jupyter-protocol\",\"version\":\"2.0.2\"},{\"name\":\"jupyter-zmq-client\",\"role\":\"jupyter-transport\",\"version\":\"1.0.1\"},{\"name\":\"example-raster-decoder\",\"role\":\"raster-decoder\",\"version\":\"0.0.0-vector\"},{\"name\":\"example-raster-validator\",\"role\":\"raster-validator\",\"version\":\"0.0.0-vector\"},{\"name\":\"example-svg-parser\",\"role\":\"svg-parser\",\"version\":\"0.0.0-vector\"},{\"name\":\"example-svg-validator\",\"role\":\"svg-validator\",\"version\":\"0.0.0-vector\"}],\"deadlines_ms\":{\"cell\":60000,\"forced_exit\":5000,\"interrupt\":5000,\"shutdown\":5000,\"startup\":30000,\"terminal_sync\":5000,\"termination\":5000},\"engine\":{\"build_digest\":\"sha256:53743109a81e8a6a495af708cdc0d3f8dde2e1623a703a202663328a7f5d9d98\",\"id\":\"jupyter\",\"version\":\"0.1.0\"},\"environment_inputs\":[{\"digest\":\"sha256:4c02342c35416139291aca196c4d256d7e9f33081e123269d1f639075ca6e684\",\"path\":\"pyproject.toml\",\"repository\":\"python\"}],\"kernel\":{\"interrupt_mode\":\"signal\",\"launch_digest\":\"sha256:e44aca6a312b75c98c3990e57e1514506a6589eedaf6f1e2cfe5499599f8a04e\",\"name\":\"python3\",\"runtime\":{\"implementation\":\"ipython\",\"implementation_version\":\"7.1.0\",\"language\":\"python\",\"language_version\":\"3.14.7\",\"protocol_version\":\"5.3\"},\"search\":[{\"class\":\"jupyter-path\",\"ordinal\":0,\"selected\":true}],\"spec_digest\":\"sha256:ebb0a8fe5c52966c47a6d5ff5efd7e8cac873e28473764adcb0ab947a460d160\"},\"options\":{\"cells\":[{\"effective\":{\"echo\":true,\"error\":false,\"eval\":true,\"fig-alt\":null,\"fig-cap\":null,\"fig-subcap\":[],\"include\":true,\"label\":null,\"output\":true},\"eligible\":true,\"language\":\"python\",\"ordinal\":0,\"submitted_source_digest\":\"sha256:b80792336156c7b0f7fe02eeef24610d2d52a10d1810397744471d1dc5738180\"}],\"defaults\":{\"echo\":true,\"error\":false,\"eval\":true,\"include\":true,\"output\":true},\"mode\":\"execute\",\"page_veto\":false},\"page\":{\"collection\":\"guide\",\"format\":\"qmd\",\"path\":\"docs/cache.qmd\",\"repository\":\"python\",\"source_digest\":\"sha256:5cf12fce2e4ba2e98baadd1d82b63d11bda828a340292cbd0fa7434a056f177b\",\"working_directory\":\"docs\"},\"platform\":{\"architecture\":\"x86_64\",\"os\":\"linux\",\"target\":\"x86_64-unknown-linux-gnu\"},\"policies\":{\"execution\":\"execution-mvp-v1\",\"html\":\"html-mvp-v1\",\"mime\":\"mime-mvp-v1\",\"qmd\":\"qmd-mvp-v1\",\"svg\":\"svg-mvp-v1\"},\"schema\":\"page-execution-key-v1\",\"schemas\":{\"artifact\":\"page-execution-artifact-v1\",\"encoding\":\"execution-json-v1\",\"ir\":\"execution-result-v1\"}}",
+  "page_key": "sha256:ed75f554380080efb8e450edc1097f2eff05f1a74c9688536fc239e238e61dad",
+  "encoding_vector": {
+    "input": {
+      "z": "é\n\t\u0000\"\\/  ",
+      "a": [
+        true,
+        null,
+        0,
+        18446744073709551615,
+        false,
+        [],
+        {}
+      ]
+    },
+    "canonical_utf8": "{\"a\":[true,null,0,18446744073709551615,false,[],{}],\"z\":\"é\\u000a\\u0009\\u0000\\\"\\\\/  \"}",
+    "sha256": "sha256:5221163ff3045802d9b39f1ad462d49d2ad2b40a9aa100accdd26bd12aa5be81"
+  }
+}

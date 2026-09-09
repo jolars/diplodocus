@@ -12,9 +12,9 @@ This is the logical contract for the Milestone 2 policy decision. It extends the
 matrix](../../tests/fixtures/acceptance/MATRIX.md). Milestone 3 will define
 serialized execution types, and Milestone 6 will implement this policy. The
 existing parser retains declarations and ranges but does not yet enforce this
-entire contract. The separate page-cache decision will specify key encoding and
-artifact layout; this document defines the information that those artifacts must
-preserve.
+entire contract. The [page execution-cache contract](page-execution-cache.md)
+specifies key encoding and artifact layout; this document defines the
+information that those artifacts must preserve.
 
 Policy identifiers are `qmd-mvp-v1`, `mime-mvp-v1`, `html-mvp-v1`, `svg-mvp-v1`,
 and `execution-mvp-v1`. Changing a default, supported value, selection order, or
@@ -424,7 +424,7 @@ behavioral fields, resolved executable identity, and explicit environment
 overrides without publishing argument vectors or environment values. Normalize
 repository roots to repository IDs and session-specific paths to placeholders
 before fingerprinting launch data. Exact canonical encoding and page-cache key
-composition belong to the separate cache specification.
+composition follow the [cache specification](page-execution-cache.md).
 
 Declared environment files describe reproducibility inputs, not an installer or
 proof of every installed package version. Do not import documented packages or

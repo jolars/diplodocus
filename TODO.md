@@ -188,9 +188,10 @@ extraction and explicitly authorized authored execution.
   order, HTML sanitization boundary, execution failure policy, toolchain
   requirements, and execution provenance fields.
   See [the authored-execution contract](docs/spikes/authored-execution-contract.md).
-- [ ] Define a deterministic page-level execution-cache key and artifact format
+- [x] Define a deterministic page-level execution-cache key and artifact format
   covering source, normalized options, engine and kernel identity, relevant
   toolchain versions, and declared environment inputs.
+  See [the page execution-cache contract](docs/spikes/page-execution-cache.md).
 - [ ] Record the selected approaches and rejected alternatives in
   `docs/decisions/0001-static-extraction.md`.
 - [ ] Record the authored-format and execution decisions, including rejected Q2,
