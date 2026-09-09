@@ -1,0 +1,9 @@
+{
+  "flattened_exports": [
+    "foo",
+    "bar"
+  ],
+  "parse_diagnostics": 0,
+  "reconstructed": "if (getRversion() >= \"4.0\") export(foo) else export(bar)\n",
+  "source": "if (getRversion() >= \"4.0\") export(foo) else export(bar)\n"
+}

@@ -18,6 +18,8 @@ use jupyter_zmq_client::{
     wait_for_iopub_welcome,
 };
 
+#[path = "support/execution_observation.rs"]
+mod execution_observation;
 mod support;
 
 const IO_TIMEOUT: Duration = Duration::from_secs(5);
@@ -146,6 +148,18 @@ fn protocol_types_represent_the_required_mime_and_display_update_surface() {
     let shutdown: JupyterMessage = ShutdownRequest { restart: false }.into();
     assert_eq!(interrupt.content.message_type(), "interrupt_request");
     assert_eq!(shutdown.content.message_type(), "shutdown_request");
+
+    support::assert_json_golden(
+        &serde_json::json!({
+            "schema": "protocol-spike-observation-v1",
+            "display_data": display.data,
+            "update_data": update.data,
+            "same_display": display.transient.as_ref().unwrap().display_id == update.transient.display_id,
+            "interrupt_message": interrupt.content.message_type(),
+            "shutdown_message": shutdown.content.message_type(),
+        }),
+        "spikes/execution/mime-bundle.json",
+    );
 }
 
 #[tokio::test]
@@ -328,10 +342,12 @@ async fn exercise_corpus(case: CorpusCase) {
     );
 
     let mut outputs = Vec::new();
+    let mut replies = Vec::new();
     for (index, cell) in cells.iter().enumerate() {
         let (reply, cell_outputs) = execute_cell(&mut shell, &mut iopub, cell).await;
         assert_eq!(reply.status, ReplyStatus::Ok);
         assert_eq!(reply.execution_count.value(), index + 1);
+        replies.push(reply);
         outputs.push(cell_outputs);
     }
 
@@ -396,6 +412,22 @@ async fn exercise_corpus(case: CorpusCase) {
         .expect("kernel shutdown timeout")
         .expect("join test kernel")
         .expect("clean test-kernel shutdown");
+
+    let mut observation = execution_observation::ExecutionObservation::default();
+    support::assert_json_golden(
+        &serde_json::json!({
+            "schema": "execution-spike-observation-v1",
+            "producer": "canned-kernel",
+            "path": case.path,
+            "cells": cells.iter().zip(&replies).zip(&outputs).enumerate().map(|(ordinal, ((cell, reply), outputs))| {
+                observation.cell(ordinal, cell, reply, outputs)
+            }).collect::<Vec<_>>(),
+        }),
+        format!(
+            "spikes/execution/canned-{}.json",
+            cells[0].language.as_deref().unwrap()
+        ),
+    );
 }
 
 fn response(outputs: Vec<JupyterMessageContent>) -> CannedResponse {

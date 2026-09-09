@@ -1,0 +1,35 @@
+{
+  "diagnostic": {
+    "code": "UnknownTag",
+    "range": [
+      12,
+      20
+    ],
+    "severity": "Error"
+  },
+  "nodes": [
+    {
+      "children": [
+        {
+          "kind": "verbatim",
+          "text": "topic"
+        }
+      ],
+      "kind": "markup",
+      "option": null,
+      "tag": "\\name"
+    },
+    {
+      "children": [
+        {
+          "kind": "text",
+          "text": "payload"
+        }
+      ],
+      "kind": "markup",
+      "option": null,
+      "tag": "\\unknown"
+    }
+  ],
+  "source": "\\name{topic}\\unknown{payload}"
+}

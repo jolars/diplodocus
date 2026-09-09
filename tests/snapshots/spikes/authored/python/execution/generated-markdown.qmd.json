@@ -1,0 +1,245 @@
+{
+  "document": {
+    "span": {
+      "start": 0,
+      "end": 362
+    },
+    "frontmatter": {
+      "type": "mapping",
+      "entries": [
+        {
+          "key": {
+            "value": "title",
+            "span": {
+              "start": 4,
+              "end": 9
+            }
+          },
+          "value": {
+            "type": "scalar",
+            "raw": "Generated Markdown is non-executable",
+            "value": "Generated Markdown is non-executable",
+            "span": {
+              "start": 11,
+              "end": 47
+            }
+          },
+          "span": {
+            "start": 4,
+            "end": 48
+          }
+        }
+      ],
+      "span": {
+        "start": 4,
+        "end": 48
+      }
+    },
+    "blocks": [
+      {
+        "type": "heading",
+        "level": 1,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Generated Markdown cannot introduce a cell",
+            "span": {
+              "start": 55,
+              "end": 97
+            }
+          }
+        ],
+        "span": {
+          "start": 53,
+          "end": 98
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "The cell returns Markdown containing an executable-looking QMD fence.",
+            "span": {
+              "start": 99,
+              "end": 168
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 168,
+              "end": 169
+            }
+          }
+        ],
+        "span": {
+          "start": 99,
+          "end": 169
+        }
+      },
+      {
+        "type": "code-cell",
+        "language": "python",
+        "identifier": null,
+        "classes": [],
+        "labels": [
+          {
+            "value": "generated-markdown",
+            "span": {
+              "start": 192,
+              "end": 210
+            }
+          }
+        ],
+        "source": "from IPython.display import Markdown\n\nMarkdown(\n    \"```{python}\\n\"\n    \"raise RuntimeError('Generated Markdown must stay inert')\\n\"\n    \"```\\n\"\n)\n",
+        "source_segments": [
+          {
+            "text": "from IPython.display import Markdown",
+            "span": {
+              "start": 211,
+              "end": 247
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 247,
+              "end": 248
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 248,
+              "end": 249
+            }
+          },
+          {
+            "text": "Markdown(",
+            "span": {
+              "start": 249,
+              "end": 258
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 258,
+              "end": 259
+            }
+          },
+          {
+            "text": "    \"```{python}\\n\"",
+            "span": {
+              "start": 259,
+              "end": 278
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 278,
+              "end": 279
+            }
+          },
+          {
+            "text": "    \"raise RuntimeError('Generated Markdown must stay inert')\\n\"",
+            "span": {
+              "start": 279,
+              "end": 343
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 343,
+              "end": 344
+            }
+          },
+          {
+            "text": "    \"```\\n\"",
+            "span": {
+              "start": 344,
+              "end": 355
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 355,
+              "end": 356
+            }
+          },
+          {
+            "text": ")",
+            "span": {
+              "start": 356,
+              "end": 357
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 357,
+              "end": 358
+            }
+          }
+        ],
+        "options": [
+          {
+            "key": "label",
+            "canonical_key": "label",
+            "raw_value": "generated-markdown",
+            "cooked_value": "generated-markdown",
+            "value": {
+              "type": "scalar",
+              "raw": "generated-markdown",
+              "value": "generated-markdown",
+              "span": {
+                "start": 192,
+                "end": 210
+              }
+            },
+            "source": "hashpipe-yaml",
+            "key_span": {
+              "start": 185,
+              "end": 190
+            },
+            "value_span": {
+              "start": 192,
+              "end": 210
+            },
+            "span": {
+              "start": 185,
+              "end": 211
+            }
+          }
+        ],
+        "resolved_options": [
+          {
+            "key": "label",
+            "resolution": {
+              "type": "resolved",
+              "declaration": 0
+            }
+          }
+        ],
+        "code_span": {
+          "start": 211,
+          "end": 358
+        },
+        "span": {
+          "start": 170,
+          "end": 362
+        }
+      }
+    ]
+  },
+  "diagnostics": []
+}

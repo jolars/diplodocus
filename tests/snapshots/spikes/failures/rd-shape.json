@@ -1,0 +1,31 @@
+{
+  "nodes": [
+    {
+      "children": [
+        {
+          "kind": "text",
+          "text": "first"
+        }
+      ],
+      "kind": "markup",
+      "option": null,
+      "tag": "\\description"
+    },
+    {
+      "children": [
+        {
+          "kind": "text",
+          "text": "second"
+        }
+      ],
+      "kind": "markup",
+      "option": null,
+      "tag": "\\description"
+    }
+  ],
+  "parse_diagnostics": 0,
+  "shape_error": "duplicate \\description for \\description at top-level[1]",
+  "source": "\\description{first}\\description{second}",
+  "source_range": null,
+  "structural_path": "top-level[1]"
+}

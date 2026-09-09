@@ -1,0 +1,189 @@
+{
+  "document": {
+    "span": {
+      "start": 0,
+      "end": 336
+    },
+    "frontmatter": {
+      "type": "mapping",
+      "entries": [
+        {
+          "key": {
+            "value": "title",
+            "span": {
+              "start": 4,
+              "end": 9
+            }
+          },
+          "value": {
+            "type": "scalar",
+            "raw": "Generated assets stay within their boundary",
+            "value": "Generated assets stay within their boundary",
+            "span": {
+              "start": 11,
+              "end": 54
+            }
+          },
+          "span": {
+            "start": 4,
+            "end": 55
+          }
+        }
+      ],
+      "span": {
+        "start": 4,
+        "end": 55
+      }
+    },
+    "blocks": [
+      {
+        "type": "heading",
+        "level": 1,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Generated assets stay within their boundary",
+            "span": {
+              "start": 62,
+              "end": 105
+            }
+          }
+        ],
+        "span": {
+          "start": 60,
+          "end": 106
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "A Markdown-valued result must not read an asset from a sibling repository.",
+            "span": {
+              "start": 107,
+              "end": 181
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 181,
+              "end": 182
+            }
+          }
+        ],
+        "span": {
+          "start": 107,
+          "end": 182
+        }
+      },
+      {
+        "type": "code-cell",
+        "language": "python",
+        "identifier": null,
+        "classes": [],
+        "labels": [
+          {
+            "value": "asset-boundary-escape",
+            "span": {
+              "start": 205,
+              "end": 226
+            }
+          }
+        ],
+        "source": "from IPython.display import Markdown\n\nMarkdown(\"![Escaped asset](../../core/docs/assets/workspace.svg)\")\n",
+        "source_segments": [
+          {
+            "text": "from IPython.display import Markdown",
+            "span": {
+              "start": 227,
+              "end": 263
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 263,
+              "end": 264
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 264,
+              "end": 265
+            }
+          },
+          {
+            "text": "Markdown(\"![Escaped asset](../../core/docs/assets/workspace.svg)\")",
+            "span": {
+              "start": 265,
+              "end": 331
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 331,
+              "end": 332
+            }
+          }
+        ],
+        "options": [
+          {
+            "key": "label",
+            "canonical_key": "label",
+            "raw_value": "asset-boundary-escape",
+            "cooked_value": "asset-boundary-escape",
+            "value": {
+              "type": "scalar",
+              "raw": "asset-boundary-escape",
+              "value": "asset-boundary-escape",
+              "span": {
+                "start": 205,
+                "end": 226
+              }
+            },
+            "source": "hashpipe-yaml",
+            "key_span": {
+              "start": 198,
+              "end": 203
+            },
+            "value_span": {
+              "start": 205,
+              "end": 226
+            },
+            "span": {
+              "start": 198,
+              "end": 227
+            }
+          }
+        ],
+        "resolved_options": [
+          {
+            "key": "label",
+            "resolution": {
+              "type": "resolved",
+              "declaration": 0
+            }
+          }
+        ],
+        "code_span": {
+          "start": 227,
+          "end": 332
+        },
+        "span": {
+          "start": 183,
+          "end": 336
+        }
+      }
+    ]
+  },
+  "diagnostics": []
+}

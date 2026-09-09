@@ -71,6 +71,20 @@ pub fn load_fixture(relative: impl AsRef<Path>) -> String {
     fs::read_to_string(fixture_path(relative)).expect("fixture should be readable")
 }
 
+pub fn fixture_files(relative: impl AsRef<Path>) -> Vec<PathBuf> {
+    tree_entries(&fixture_path(relative))
+        .into_iter()
+        .filter(|entry| entry.kind == EntryKind::File)
+        .map(|entry| entry.path)
+        .collect()
+}
+
+pub fn assert_json_golden(actual: &impl serde::Serialize, relative: impl AsRef<Path>) {
+    let serialized = serde_json::to_string_pretty(actual).expect("serialize spike observation");
+    assert!(!serialized.contains(env!("CARGO_MANIFEST_DIR")));
+    assert_matches_golden(serialized, relative);
+}
+
 pub fn golden(relative: impl AsRef<Path>) -> Data {
     Data::read_from(&snapshot_path(relative), None).raw()
 }

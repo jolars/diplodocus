@@ -1,0 +1,9 @@
+{
+  "message": "unsupported NAMESPACE directive",
+  "range": [
+    0,
+    15
+  ],
+  "retained_directive": "futureDirective(foo)",
+  "source": "futureDirective(foo)\n"
+}

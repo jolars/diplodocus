@@ -1,0 +1,17 @@
+{
+  "dynamic": {
+    "fields": [
+      "version"
+    ],
+    "has_version": false,
+    "source": "[project]\nname = \"foo\"\ndynamic = [\"version\"]\n"
+  },
+  "malformed": {
+    "message": "TOML parse error at line 3, column 11\n  |\n3 | version = \"not a version\"\n  |           ^^^^^^^^^^^^^^^\nexpected version to start with a number, but no leading ASCII digits were found\n",
+    "range": [
+      33,
+      48
+    ],
+    "source": "[project]\nname = \"foo\"\nversion = \"not a version\"\n"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "decoded": {
+    "content_range": [
+      22,
+      35
+    ],
+    "raw": "first\\nsecond",
+    "source": "def example():\n    \"\"\"first\\nsecond\"\"\"\n",
+    "value": "first\nsecond"
+  },
+  "incomplete": {
+    "missing_type_range": [
+      39,
+      39
+    ],
+    "source": "Summary.\n\nParameters\n----------\nvalue :\n"
+  }
+}

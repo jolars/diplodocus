@@ -21,6 +21,146 @@ macro_rules! range_text {
 }
 
 #[test]
+fn r_exploratory_output_matches_golden() {
+    use serde_json::json;
+
+    let description_source = support::load_fixture(format!("{R_FIXTURE}/DESCRIPTION"));
+    let description = dcf::parse(&description_source);
+    assert!(description.diagnostics.is_empty());
+    let fields = [
+        "Package",
+        "Type",
+        "Title",
+        "Version",
+        "Authors@R",
+        "Author",
+        "Maintainer",
+        "Description",
+        "License",
+        "Encoding",
+        "Depends",
+        "Imports",
+        "Suggests",
+        "Config/testthat/edition",
+        "NeedsCompilation",
+    ]
+    .into_iter()
+    .map(|name| {
+        let field = description.document().field(name).unwrap();
+        json!({"name": name, "value": field.folded_value()})
+    })
+    .collect::<Vec<_>>();
+    let dependencies = ["Depends", "Imports", "Suggests"]
+        .into_iter()
+        .map(|name| {
+            let entries = dependency_entries(&description.document().field(name).unwrap());
+            json!({"field": name, "entries": entries.iter().map(|entry| json!({
+            "name": entry.name.as_str(),
+            "malformed": entry.malformed_constraint(),
+            "constraints": entry.constraints.iter().map(|constraint| json!({
+                "operator": format!("{:?}", constraint.op), "version": constraint.version.as_str(),
+            })).collect::<Vec<_>>(),
+        })).collect::<Vec<_>>()})
+        })
+        .collect::<Vec<_>>();
+
+    let namespace_source = support::load_fixture(format!("{R_FIXTURE}/NAMESPACE"));
+    let namespace = namespace::parse(&namespace_source);
+    assert!(namespace.diagnostics.is_empty());
+    let directives = namespace.document().directives().map(|directive| {
+        let range = directive.text_range();
+        json!({
+            "name": directive.name(), "range": [u32::from(range.start()), u32::from(range.end())],
+            "source": range_text!(&namespace_source, range),
+            "arguments": directive.arguments().map(|argument| {
+                range_text!(&namespace_source, argument.value_range().unwrap()).to_owned()
+            }).collect::<Vec<_>>(),
+        })
+    }).collect::<Vec<_>>();
+
+    let sources = support::fixture_files(format!("{R_FIXTURE}/R")).into_iter().map(|path| {
+        let source = support::load_fixture(format!("{R_FIXTURE}/R/{}", path.display()));
+        let parsed = parser::parse(&source);
+        assert!(parsed.diagnostics.is_empty());
+        let functions = parsed.cst.descendants().filter_map(AssignmentExpr::cast).filter_map(|assignment| {
+            let name = assignment.target_name()?;
+            let function = FunctionExpr::cast(assignment.value_element()?.into_node()?)?;
+            let range = assignment.syntax().text_range();
+            Some(json!({
+                "name": name, "range": [u32::from(range.start()), u32::from(range.end())],
+                "source": range_text!(&source, range),
+                "formals": function.formals().iter().map(|formal| {
+                    let range = formal.text_range();
+                    json!({
+                        "name": formal.name(), "source": range_text!(&source, range),
+                        "range": [u32::from(range.start()), u32::from(range.end())],
+                        "default": formal.default_range().map(|range| range_text!(&source, range)),
+                    })
+                }).collect::<Vec<_>>(),
+            }))
+        }).collect::<Vec<_>>();
+        json!({"path": format!("R/{}", path.display()), "functions": functions})
+    }).collect::<Vec<_>>();
+
+    let topics = support::fixture_files(format!("{R_FIXTURE}/man")).into_iter().map(|path| {
+        let parsed = parse_rd_fixture(path.to_str().unwrap());
+        assert!(parsed.diagnostics().is_empty());
+        let document = parsed.document();
+        let dynamic = document.inspect_dynamic_markup().map(|event| {
+            let RdDynamicMarkupEvent::Sexpr(sexpr) = event.unwrap() else { panic!("unexpected dynamic markup") };
+            json!({
+                "code": sexpr.view().code(),
+                "stage": format!("{:?}", sexpr.effective_options().stage),
+                "results": format!("{:?}", sexpr.effective_options().results),
+                "unresolved": matches!(sexpr.state(), RdDynamicMarkupState::Unresolved { .. }),
+            })
+        }).collect::<Vec<_>>();
+        json!({
+            "path": format!("man/{}", path.display()),
+            "range": null,
+            "name": text_contents(document.inspect_name().unwrap().unwrap()).trim(),
+            "aliases": document.aliases().collect::<Vec<_>>(),
+            "keywords": document.keywords().collect::<Vec<_>>(),
+            "nodes": rd_node_observations(document.nodes()),
+            "dynamic": dynamic,
+        })
+    }).collect::<Vec<_>>();
+
+    support::assert_json_golden(
+        &json!({
+            "schema": "r-spike-observation-v1", "mode": "static",
+            "description": {"path": "DESCRIPTION", "fields": fields, "dependencies": dependencies},
+            "namespace": {"path": "NAMESPACE", "directives": directives},
+            "sources": sources, "topics": topics,
+        }),
+        "spikes/r.json",
+    );
+}
+
+fn rd_node_observations(nodes: &[RdNode]) -> Vec<serde_json::Value> {
+    use serde_json::json;
+
+    nodes
+        .iter()
+        .map(|node| match node {
+            RdNode::Text(text) => json!({"kind": "text", "text": text}),
+            RdNode::RCode(text) => json!({"kind": "r-code", "text": text}),
+            RdNode::Verb(text) => json!({"kind": "verbatim", "text": text}),
+            RdNode::Comment(text) => json!({"kind": "comment", "text": text}),
+            RdNode::Group(group) => {
+                json!({"kind": "group", "children": rd_node_observations(group.children())})
+            }
+            RdNode::Tagged(tagged) => json!({
+                "kind": "markup", "tag": tagged.tag().as_rd_tag(),
+                "option": tagged.option().map(rd_node_observations),
+                "children": rd_node_observations(tagged.children()),
+            }),
+            other => panic!("unrepresented Rd spike node: {other:?}"),
+        })
+        .collect()
+}
+
+#[test]
 fn dcf_description_surface_exposes_the_acceptance_contract() {
     let source = support::load_fixture(format!("{R_FIXTURE}/DESCRIPTION"));
     let output = dcf::parse(&source);
@@ -66,6 +206,14 @@ fn dcf_reports_malformed_lines_but_preserves_metadata_bytes() {
     let imports = dependency_entries(&semantic.document().field("Imports").unwrap());
     assert_eq!(imports.len(), 1);
     assert!(imports[0].malformed_constraint());
+    support::assert_json_golden(
+        &serde_json::json!({
+            "malformed": {"source": malformed, "message": diagnostic.message, "range": [diagnostic.start, diagnostic.end]},
+            "recovered_version": output.document().field("Version").unwrap().folded_value(),
+            "dependency": {"source": "Imports: stats (=> 4.0)\n", "parse_diagnostics": semantic.diagnostics.len(), "malformed_constraint": imports[0].malformed_constraint()},
+        }),
+        "spikes/failures/r-metadata.json",
+    );
 }
 
 #[test]
@@ -78,6 +226,13 @@ fn arity_reports_malformed_r_syntax_with_a_lossless_tree() {
     assert_eq!(diagnostic.message, "expected assignment right-hand side");
     assert_eq!(&source[diagnostic.start..diagnostic.end], "<-");
     assert_eq!(parser::reconstruct(source), source);
+    support::assert_json_golden(
+        &serde_json::json!({
+            "source": source, "message": diagnostic.message, "range": [diagnostic.start, diagnostic.end],
+            "reconstructed": parser::reconstruct(source),
+        }),
+        "spikes/failures/r-syntax.json",
+    );
 }
 
 #[test]
@@ -200,6 +355,13 @@ fn namespace_reports_unsupported_directives_without_hiding_them() {
         "futureDirective(foo)"
     );
     assert_eq!(namespace::reconstruct(source), source);
+    support::assert_json_golden(
+        &serde_json::json!({
+            "source": source, "message": diagnostic.message, "range": [diagnostic.start, diagnostic.end],
+            "retained_directive": range_text!(source, directive.text_range()),
+        }),
+        "spikes/failures/r-namespace-unknown.json",
+    );
 }
 
 #[test]
@@ -221,6 +383,13 @@ fn namespace_retains_but_does_not_evaluate_dynamic_conditions() {
         .collect::<Vec<_>>();
     assert_eq!(exported, ["foo", "bar"]);
     assert_eq!(namespace::reconstruct(source), source);
+    support::assert_json_golden(
+        &serde_json::json!({
+            "source": source, "flattened_exports": exported,
+            "parse_diagnostics": output.diagnostics.len(), "reconstructed": namespace::reconstruct(source),
+        }),
+        "spikes/failures/r-namespace-conditional.json",
+    );
 }
 
 #[test]
@@ -405,6 +574,17 @@ fn rd_source_reports_unknown_markup_and_preserves_an_opaque_node() {
         .expect("unknown Rd node");
     assert_eq!(unknown.tag(), &RdTag::Unknown(r"\unknown".into()));
     assert_eq!(text_contents(unknown.children()), "payload");
+    support::assert_json_golden(
+        &serde_json::json!({
+            "source": source,
+            "diagnostic": {
+                "severity": format!("{:?}", diagnostic.severity()), "code": format!("{:?}", diagnostic.code()),
+                "range": [diagnostic.span().bytes().start, diagnostic.span().bytes().end],
+            },
+            "nodes": rd_node_observations(parsed.document().nodes()),
+        }),
+        "spikes/failures/rd-unknown.json",
+    );
 }
 
 #[test]
@@ -422,6 +602,15 @@ fn rd_strict_views_report_information_loss_with_structural_paths() {
     assert_eq!(
         error.to_string(),
         "duplicate \\description for \\description at top-level[1]"
+    );
+    support::assert_json_golden(
+        &serde_json::json!({
+            "source": source, "parse_diagnostics": parsed.diagnostics().len(),
+            "shape_error": error.to_string(), "structural_path": error.path().to_string(),
+            "source_range": null,
+            "nodes": rd_node_observations(parsed.document().nodes()),
+        }),
+        "spikes/failures/rd-shape.json",
     );
 }
 

@@ -5,6 +5,28 @@ use diplodocus::ir::{Block, CalloutKind, CellOptionResolution, Inline, TableAlig
 mod support;
 
 #[test]
+fn acceptance_authored_output_matches_goldens() {
+    for path in support::fixture_files("acceptance") {
+        if path == std::path::Path::new("MATRIX.md") {
+            continue;
+        }
+        let format = match path.extension().and_then(|extension| extension.to_str()) {
+            Some("md") => AuthoredFormat::Gfm,
+            Some("qmd") => AuthoredFormat::Qmd,
+            _ => continue,
+        };
+        let source = support::load_fixture(std::path::Path::new("acceptance").join(&path));
+        let parsed = parse_authored_document(&source, format);
+        let snapshot = if path == std::path::Path::new("python/docs/guide.qmd") {
+            "documents/qmd.json".to_owned()
+        } else {
+            format!("spikes/authored/{}.json", path.display())
+        };
+        support::assert_json_golden(&parsed, snapshot);
+    }
+}
+
+#[test]
 fn gfm_profile_builds_typed_ir_and_retains_unsupported_html() {
     let source = "# Guide\n\nSee [`pyfoo::foo.fit`], [ordinary], and [site](https://example.com \"Site\").\n\n| A | B |\n|:--|--:|\n| 1 | 2 |\n\n<div>unsafe</div>\n";
     let parsed = parse_authored_document(source, AuthoredFormat::Gfm);

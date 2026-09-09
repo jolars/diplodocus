@@ -16,6 +16,186 @@ mod support;
 const PYTHON_FIXTURE: &str = "acceptance/python";
 
 #[test]
+fn python_exploratory_output_matches_golden() {
+    use serde_json::json;
+
+    let metadata_source = support::load_fixture(format!("{PYTHON_FIXTURE}/pyproject.toml"));
+    let project = PyProjectToml::new(&metadata_source)
+        .unwrap()
+        .project
+        .unwrap();
+    let modules = support::fixture_files(format!("{PYTHON_FIXTURE}/python/foo"))
+        .into_iter()
+        .filter_map(|path| {
+            let source_type = match path.extension()?.to_str()? {
+                "py" => PySourceType::Python,
+                "pyi" => PySourceType::Stub,
+                _ => return None,
+            };
+            let name = path.to_str().unwrap();
+            let source = python_source(name);
+            let module = parse_module(&source, source_type);
+            Some(json!({
+                "path": format!("python/foo/{name}"),
+                "source_type": if source_type == PySourceType::Stub { "stub" } else { "python" },
+                "exports": static_exports(&module),
+                "export_expression": find_all_expression(&module).map(|value| json!({
+                    "text": source_text(&source, value.range()),
+                    "range": python_range(value.range()),
+                    "is_static": static_exports(&module).is_some(),
+                })),
+                "reexports": resolved_reexports("foo", &module, &source).iter().map(|value| json!({
+                    "public_name": value.public_name,
+                    "canonical_name": value.canonical_name,
+                    "declaration": value.declaration,
+                    "range": python_range(value.range),
+                })).collect::<Vec<_>>(),
+                "documentation": python_docstring_observation(&module.body),
+                "declarations": python_declaration_observations(&module.body, &source),
+                "attribute_documentation": attribute_docstrings(&module).iter().map(|name| json!({
+                    "name": name,
+                    "text": attribute_docstring(&module, name),
+                })).collect::<Vec<_>>(),
+            }))
+        })
+        .collect::<Vec<_>>();
+    let source = python_source("model.py");
+    let implementation = parse_module(&source, PySourceType::Python);
+    let stub_source = python_source("model.pyi");
+    let stub = parse_module(&stub_source, PySourceType::Stub);
+    let reconciled = [
+        ("fit", &implementation.body[..], &stub.body[..]),
+        (
+            "predict",
+            &class_named(&implementation.body, "FooModel").body[..],
+            &class_named(&stub.body, "FooModel").body[..],
+        ),
+    ]
+    .into_iter()
+    .map(|(name, implementation_body, stub_body)| {
+        let callable = reconciled_callable(
+            name,
+            implementation_body,
+            &source,
+            "model.py",
+            stub_body,
+            &stub_source,
+            "model.pyi",
+        );
+        json!({
+            "name": name,
+            "signature_source": callable.signature_source,
+            "documentation_source": callable.documentation_source,
+            "documentation_range": python_range(callable.documentation_range),
+            "summary": callable.documentation,
+            "signatures": callable.signatures.iter().map(|signature| json!({
+                "declaration": signature.declaration,
+                "decorators": signature.decorators,
+                "positional_only": signature.positional_only,
+                "return_annotation": signature.return_annotation,
+                "range": python_range(signature.range),
+            })).collect::<Vec<_>>(),
+        })
+    })
+    .collect::<Vec<_>>();
+    let annotation = preferred_annotation(
+        "DEFAULT_TOLERANCE",
+        &implementation,
+        &source,
+        "model.py",
+        &stub,
+        &stub_source,
+        "model.pyi",
+    );
+
+    support::assert_json_golden(
+        &json!({
+            "schema": "python-spike-observation-v1",
+            "mode": "static",
+            "metadata": {
+                "path": "pyproject.toml",
+                "name": project.name,
+                "version": project.version.unwrap().to_string(),
+                "description": project.description,
+                "requires_python": project.requires_python.unwrap().to_string(),
+                "dependencies": project.dependencies.unwrap().iter().map(ToString::to_string).collect::<Vec<_>>(),
+            },
+            "typed_marker": support::fixture_path(format!("{PYTHON_FIXTURE}/python/foo/py.typed")).is_file(),
+            "modules": modules,
+            "reconciled_callables": reconciled,
+            "preferred_annotation": {"text": annotation.text, "path": annotation.source, "range": python_range(annotation.range)},
+        }),
+        "spikes/python.json",
+    );
+}
+
+fn python_range(range: TextRange) -> [u32; 2] {
+    [range.start().into(), range.end().into()]
+}
+
+fn python_docstring_observation(body: &[Stmt]) -> serde_json::Value {
+    use serde_json::json;
+
+    let Some(literal) = docstring(body) else {
+        return serde_json::Value::Null;
+    };
+    let text = literal.value.to_str();
+    let parsed = parse_numpy(text);
+    let document = Document::new(&parsed);
+    json!({
+        "text": text,
+        "literal_range": python_range(literal.range()),
+        "summary": document.summary().map(|summary| summary.logical_text()),
+        "sections": document.sections().map(|section| json!({
+            "kind": format!("{:?}", section.kind()),
+            "entries": section.entries().map(|entry| json!({
+                "name": entry.name().map(|name| name.text().to_owned()),
+                "type": entry.type_annotation().map(|annotation| annotation.text().to_owned()),
+                "default": entry.default_value().map(|value| value.text().to_owned()),
+                "text": docstring_source_text(text, entry.range()),
+                "decoded_range": [u32::from(entry.range().start()), u32::from(entry.range().end())],
+            })).collect::<Vec<_>>(),
+        })).collect::<Vec<_>>(),
+    })
+}
+
+fn python_declaration_observations(body: &[Stmt], source: &str) -> Vec<serde_json::Value> {
+    use serde_json::json;
+
+    body.iter().filter_map(|statement| {
+        let mut value = match statement {
+            Stmt::FunctionDef(function) => json!({
+                "kind": "function", "name": function.name.as_str(),
+                "parameters": source_text(source, function.parameters.range()),
+                "returns": function.returns.as_ref().map(|value| source_text(source, value.range())),
+                "decorators": decorators(source, &function.decorator_list),
+                "documentation": python_docstring_observation(&function.body),
+            }),
+            Stmt::ClassDef(class) => json!({
+                "kind": "class", "name": class.name.as_str(),
+                "decorators": decorators(source, &class.decorator_list),
+                "documentation": python_docstring_observation(&class.body),
+                "members": python_declaration_observations(&class.body, source),
+            }),
+            Stmt::AnnAssign(assignment) => json!({
+                "kind": "annotated-assignment",
+                "name": source_text(source, assignment.target.range()),
+                "annotation": source_text(source, assignment.annotation.range()),
+                "value": assignment.value.as_ref().map(|value| source_text(source, value.range())),
+            }),
+            Stmt::Assign(assignment) => json!({
+                "kind": "assignment",
+                "targets": assignment.targets.iter().map(|value| source_text(source, value.range())).collect::<Vec<_>>(),
+                "value": source_text(source, assignment.value.range()),
+            }),
+            _ => return None,
+        };
+        value["range"] = json!(python_range(statement.range()));
+        Some(value)
+    }).collect()
+}
+
+#[test]
 fn pyproject_metadata_is_available_without_a_build_backend() {
     let source = support::load_fixture(format!("{PYTHON_FIXTURE}/pyproject.toml"));
     let metadata = PyProjectToml::new(&source).expect("valid pyproject metadata");
@@ -49,7 +229,7 @@ fn pyproject_metadata_distinguishes_malformed_and_dynamic_values() {
     let error = PyProjectToml::new(malformed).expect_err("invalid PEP 440 version");
     let span = error.span().expect("TOML diagnostic span");
     assert!(
-        malformed[span].contains("not a version"),
+        malformed[span.clone()].contains("not a version"),
         "unexpected metadata diagnostic: {error}"
     );
 
@@ -59,7 +239,17 @@ fn pyproject_metadata_distinguishes_malformed_and_dynamic_values() {
         .project
         .expect("project table");
     assert!(project.version.is_none());
-    assert_eq!(project.dynamic.expect("dynamic fields"), ["version"]);
+    assert_eq!(
+        project.dynamic.as_ref().expect("dynamic fields"),
+        &["version"]
+    );
+    support::assert_json_golden(
+        &serde_json::json!({
+            "malformed": {"source": malformed, "message": error.to_string(), "range": [span.start, span.end]},
+            "dynamic": {"source": dynamic, "fields": project.dynamic, "has_version": project.version.is_some()},
+        }),
+        "spikes/failures/python-metadata.json",
+    );
 }
 
 #[test]
@@ -72,6 +262,13 @@ fn ruff_separates_malformed_syntax_from_unsupported_python_versions() {
         usize::from(error.location.start()) <= malformed.len()
             && usize::from(error.location.end()) <= malformed.len()
     }));
+    let malformed_observation = serde_json::json!({
+        "source": malformed,
+        "errors": parsed.errors().iter().map(|error| serde_json::json!({
+            "message": error.to_string(), "range": python_range(error.location),
+        })).collect::<Vec<_>>(),
+        "unsupported_count": parsed.unsupported_syntax_errors().len(),
+    });
 
     let versioned = "type Alias = int\n";
     let parsed = parse_unchecked(
@@ -91,6 +288,16 @@ fn ruff_separates_malformed_syntax_from_unsupported_python_versions() {
     );
     assert_eq!(unsupported.target_version, PythonVersion::PY311);
     assert_eq!(source_text(versioned, unsupported.range), "type");
+    support::assert_json_golden(
+        &serde_json::json!({
+            "malformed": malformed_observation,
+            "versioned": {
+                "source": versioned, "target": "3.11", "error_count": parsed.errors().len(),
+                "kind": format!("{:?}", unsupported.kind), "range": python_range(unsupported.range),
+            },
+        }),
+        "spikes/failures/python-syntax.json",
+    );
 }
 
 #[test]
@@ -564,6 +771,19 @@ fn docstring_recovery_and_decoding_require_adapter_diagnostics() {
     assert_eq!(source_text(source, content_range), r"first\nsecond");
     assert_eq!(literal.value.to_str(), "first\nsecond");
     assert_ne!(source_text(source, content_range), literal.value.to_str());
+    support::assert_json_golden(
+        &serde_json::json!({
+            "incomplete": {
+                "source": incomplete,
+                "missing_type_range": [u32::from(missing_type.range().start()), u32::from(missing_type.range().end())],
+            },
+            "decoded": {
+                "source": source, "content_range": python_range(content_range),
+                "raw": source_text(source, content_range), "value": literal.value.to_str(),
+            },
+        }),
+        "spikes/failures/python-docstring.json",
+    );
 }
 
 fn python_source(file: &str) -> String {

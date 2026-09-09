@@ -1,0 +1,84 @@
+{
+  "document": {
+    "span": {
+      "start": 0,
+      "end": 167
+    },
+    "frontmatter": null,
+    "blocks": [
+      {
+        "type": "heading",
+        "level": 1,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Display-only GFM fence",
+            "span": {
+              "start": 2,
+              "end": 24
+            }
+          }
+        ],
+        "span": {
+          "start": 0,
+          "end": 25
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "This Python fence is source code for readers, not an executable cell.",
+            "span": {
+              "start": 26,
+              "end": 95
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 95,
+              "end": 96
+            }
+          }
+        ],
+        "span": {
+          "start": 26,
+          "end": 96
+        }
+      },
+      {
+        "type": "code-block",
+        "language": "python",
+        "source": "raise RuntimeError(\"GFM fences must stay display-only\")\n",
+        "source_segments": [
+          {
+            "text": "raise RuntimeError(\"GFM fences must stay display-only\")",
+            "span": {
+              "start": 107,
+              "end": 162
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 162,
+              "end": 163
+            }
+          }
+        ],
+        "span": {
+          "start": 97,
+          "end": 167
+        }
+      }
+    ]
+  },
+  "diagnostics": []
+}

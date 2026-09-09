@@ -1,0 +1,18 @@
+{
+  "display_data": {
+    "application/x-diplodocus-test": {
+      "total": 12
+    },
+    "image/svg+xml": "<svg xmlns=\"http://www.w3.org/2000/svg\" />",
+    "text/html": "<strong>total: 12</strong>",
+    "text/markdown": "**total:** `12`",
+    "text/plain": "total = 12"
+  },
+  "interrupt_message": "interrupt_request",
+  "same_display": true,
+  "schema": "protocol-spike-observation-v1",
+  "shutdown_message": "shutdown_request",
+  "update_data": {
+    "text/plain": "total = 13"
+  }
+}

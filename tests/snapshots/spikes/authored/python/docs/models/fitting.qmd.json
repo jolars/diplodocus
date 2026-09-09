@@ -1,0 +1,226 @@
+{
+  "document": {
+    "span": {
+      "start": 0,
+      "end": 248
+    },
+    "frontmatter": {
+      "type": "mapping",
+      "entries": [
+        {
+          "key": {
+            "value": "title",
+            "span": {
+              "start": 4,
+              "end": 9
+            }
+          },
+          "value": {
+            "type": "scalar",
+            "raw": "Model fitting",
+            "value": "Model fitting",
+            "span": {
+              "start": 11,
+              "end": 24
+            }
+          },
+          "span": {
+            "start": 4,
+            "end": 25
+          }
+        }
+      ],
+      "span": {
+        "start": 4,
+        "end": 25
+      }
+    },
+    "blocks": [
+      {
+        "type": "heading",
+        "level": 1,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Fit with a model object",
+            "span": {
+              "start": 32,
+              "end": 55
+            }
+          }
+        ],
+        "span": {
+          "start": 30,
+          "end": 56
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Within the Python package, ",
+            "span": {
+              "start": 57,
+              "end": 84
+            }
+          },
+          {
+            "type": "semantic-reference",
+            "target": "foo.FooModel.fit",
+            "span": {
+              "start": 84,
+              "end": 104
+            },
+            "target_span": {
+              "start": 86,
+              "end": 102
+            }
+          },
+          {
+            "type": "text",
+            "value": " resolves without a package",
+            "span": {
+              "start": 104,
+              "end": 131
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 131,
+              "end": 132
+            }
+          },
+          {
+            "type": "text",
+            "value": "qualifier.",
+            "span": {
+              "start": 132,
+              "end": 142
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 142,
+              "end": 143
+            }
+          }
+        ],
+        "span": {
+          "start": 57,
+          "end": 143
+        }
+      },
+      {
+        "type": "code-block",
+        "language": "python",
+        "source": "from foo import FooModel\n\nmodel = FooModel()\n",
+        "source_segments": [
+          {
+            "text": "from foo import FooModel",
+            "span": {
+              "start": 154,
+              "end": 178
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 178,
+              "end": 179
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 179,
+              "end": 180
+            }
+          },
+          {
+            "text": "model = FooModel()",
+            "span": {
+              "start": 180,
+              "end": 198
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 198,
+              "end": 199
+            }
+          }
+        ],
+        "span": {
+          "start": 144,
+          "end": 203
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Return to the ",
+            "span": {
+              "start": 204,
+              "end": 218
+            }
+          },
+          {
+            "type": "link",
+            "inlines": [
+              {
+                "type": "text",
+                "value": "Python guide",
+                "span": {
+                  "start": 219,
+                  "end": 231
+                }
+              }
+            ],
+            "target": "../guide.qmd",
+            "title": null,
+            "attributes": {
+              "identifier": null,
+              "classes": [],
+              "key_values": []
+            },
+            "span": {
+              "start": 218,
+              "end": 246
+            }
+          },
+          {
+            "type": "text",
+            "value": ".",
+            "span": {
+              "start": 246,
+              "end": 247
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 247,
+              "end": 248
+            }
+          }
+        ],
+        "span": {
+          "start": 204,
+          "end": 248
+        }
+      }
+    ]
+  },
+  "diagnostics": []
+}

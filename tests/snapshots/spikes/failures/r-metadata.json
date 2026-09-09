@@ -1,0 +1,16 @@
+{
+  "dependency": {
+    "malformed_constraint": true,
+    "parse_diagnostics": 0,
+    "source": "Imports: stats (=> 4.0)\n"
+  },
+  "malformed": {
+    "message": "malformed line: expected 'Field: value' or an indented continuation line",
+    "range": [
+      0,
+      11
+    ],
+    "source": "Package foo\nVersion: 1.0.0\n"
+  },
+  "recovered_version": "1.0.0"
+}

@@ -1,0 +1,174 @@
+{
+  "cells": [
+    {
+      "options": [
+        {
+          "key": "echo",
+          "resolution": {
+            "declaration": 1,
+            "type": "resolved"
+          }
+        },
+        {
+          "key": "label",
+          "resolution": {
+            "declaration": 0,
+            "type": "resolved"
+          }
+        }
+      ],
+      "ordinal": 0,
+      "outputs": [],
+      "reply_error": null,
+      "reply_status": "ok",
+      "source": "values = [2, 4, 6]\ntotal = sum(values)\n",
+      "span": {
+        "end": 225,
+        "start": 133
+      }
+    },
+    {
+      "options": [
+        {
+          "key": "label",
+          "resolution": {
+            "declaration": 0,
+            "type": "resolved"
+          }
+        }
+      ],
+      "ordinal": 1,
+      "outputs": [
+        {
+          "kind": "stream",
+          "name": "stdout",
+          "text": "Python total: 12\n"
+        },
+        {
+          "kind": "stream",
+          "name": "stderr",
+          "text": "Intentional Python stderr\n"
+        }
+      ],
+      "reply_error": null,
+      "reply_status": "ok",
+      "source": "import sys\n\nprint(f\"Python total: {total}\")\nprint(\"Intentional Python stderr\", file=sys.stderr)\n",
+      "span": {
+        "end": 363,
+        "start": 226
+      }
+    },
+    {
+      "options": [
+        {
+          "key": "label",
+          "resolution": {
+            "declaration": 0,
+            "type": "resolved"
+          }
+        }
+      ],
+      "ordinal": 2,
+      "outputs": [
+        {
+          "data": {
+            "text/markdown": "**Python total:** `12`",
+            "text/plain": "**Python total:** `12`"
+          },
+          "kind": "result",
+          "metadata": {}
+        }
+      ],
+      "reply_error": null,
+      "reply_status": "ok",
+      "source": "from IPython.display import Markdown\n\nMarkdown(f\"**Python total:** `{total}`\")\n",
+      "span": {
+        "end": 485,
+        "start": 364
+      }
+    },
+    {
+      "options": [
+        {
+          "key": "fig-alt",
+          "resolution": {
+            "declaration": 1,
+            "type": "resolved"
+          }
+        },
+        {
+          "key": "label",
+          "resolution": {
+            "declaration": 0,
+            "type": "resolved"
+          }
+        }
+      ],
+      "ordinal": 3,
+      "outputs": [
+        {
+          "data": {
+            "image/svg+xml": "<svg xmlns=\"http://www.w3.org/2000/svg\"><text>total = 12</text></svg>"
+          },
+          "display_ref": 0,
+          "kind": "display",
+          "metadata": {}
+        },
+        {
+          "data": {
+            "image/svg+xml": "<svg xmlns=\"http://www.w3.org/2000/svg\"><text>total = 12.0</text></svg>"
+          },
+          "display_ref": 0,
+          "kind": "update",
+          "metadata": {}
+        }
+      ],
+      "reply_error": null,
+      "reply_status": "ok",
+      "source": "from IPython.display import SVG\n\nSVG(\n    f\"\"\"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"160\" height=\"80\"\n    viewBox=\"0 0 160 80\" role=\"img\">\n    <rect x=\"10\" y=\"10\" width=\"{total * 10}\" height=\"40\" fill=\"#3366cc\" />\n    <text x=\"10\" y=\"70\">total = {total}</text>\n    </svg>\"\"\"\n)\n",
+      "span": {
+        "end": 859,
+        "start": 486
+      }
+    },
+    {
+      "options": [
+        {
+          "key": "error",
+          "resolution": {
+            "declaration": 1,
+            "type": "resolved"
+          }
+        },
+        {
+          "key": "label",
+          "resolution": {
+            "declaration": 0,
+            "type": "resolved"
+          }
+        }
+      ],
+      "ordinal": 4,
+      "outputs": [
+        {
+          "kind": "error",
+          "name": "RuntimeError",
+          "traceback": [
+            "RuntimeError: intentional Python fixture error"
+          ],
+          "value": "intentional Python fixture error"
+        }
+      ],
+      "reply_error": null,
+      "reply_status": "ok",
+      "source": "raise RuntimeError(\"intentional Python fixture error\")\n",
+      "span": {
+        "end": 969,
+        "start": 860
+      }
+    }
+  ],
+  "path": "python/execution/stateful.qmd",
+  "producer": "canned-kernel",
+  "schema": "execution-spike-observation-v1"
+}

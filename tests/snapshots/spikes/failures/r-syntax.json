@@ -1,0 +1,9 @@
+{
+  "message": "expected assignment right-hand side",
+  "range": [
+    4,
+    6
+  ],
+  "reconstructed": "fit <-\n",
+  "source": "fit <-\n"
+}

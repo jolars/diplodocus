@@ -1,0 +1,764 @@
+{
+  "document": {
+    "span": {
+      "start": 0,
+      "end": 969
+    },
+    "frontmatter": {
+      "type": "mapping",
+      "entries": [
+        {
+          "key": {
+            "value": "title",
+            "span": {
+              "start": 4,
+              "end": 9
+            }
+          },
+          "value": {
+            "type": "scalar",
+            "raw": "Stateful Python execution",
+            "value": "Stateful Python execution",
+            "span": {
+              "start": 11,
+              "end": 36
+            }
+          },
+          "span": {
+            "start": 4,
+            "end": 37
+          }
+        }
+      ],
+      "span": {
+        "start": 4,
+        "end": 37
+      }
+    },
+    "blocks": [
+      {
+        "type": "heading",
+        "level": 1,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Stateful Python execution",
+            "span": {
+              "start": 44,
+              "end": 69
+            }
+          }
+        ],
+        "span": {
+          "start": 42,
+          "end": 70
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "The cells on this page share one page-scoped Python session.",
+            "span": {
+              "start": 71,
+              "end": 131
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 131,
+              "end": 132
+            }
+          }
+        ],
+        "span": {
+          "start": 71,
+          "end": 132
+        }
+      },
+      {
+        "type": "code-cell",
+        "language": "python",
+        "identifier": null,
+        "classes": [],
+        "labels": [
+          {
+            "value": "python-setup",
+            "span": {
+              "start": 155,
+              "end": 167
+            }
+          }
+        ],
+        "source": "values = [2, 4, 6]\ntotal = sum(values)\n",
+        "source_segments": [
+          {
+            "text": "values = [2, 4, 6]",
+            "span": {
+              "start": 182,
+              "end": 200
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 200,
+              "end": 201
+            }
+          },
+          {
+            "text": "total = sum(values)",
+            "span": {
+              "start": 201,
+              "end": 220
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 220,
+              "end": 221
+            }
+          }
+        ],
+        "options": [
+          {
+            "key": "label",
+            "canonical_key": "label",
+            "raw_value": "python-setup",
+            "cooked_value": "python-setup",
+            "value": {
+              "type": "scalar",
+              "raw": "python-setup",
+              "value": "python-setup",
+              "span": {
+                "start": 155,
+                "end": 167
+              }
+            },
+            "source": "hashpipe-yaml",
+            "key_span": {
+              "start": 148,
+              "end": 153
+            },
+            "value_span": {
+              "start": 155,
+              "end": 167
+            },
+            "span": {
+              "start": 148,
+              "end": 171
+            }
+          },
+          {
+            "key": "echo",
+            "canonical_key": "echo",
+            "raw_value": "true",
+            "cooked_value": "true",
+            "value": {
+              "type": "scalar",
+              "raw": "true",
+              "value": "true",
+              "span": {
+                "start": 177,
+                "end": 181
+              }
+            },
+            "source": "hashpipe-yaml",
+            "key_span": {
+              "start": 171,
+              "end": 175
+            },
+            "value_span": {
+              "start": 177,
+              "end": 181
+            },
+            "span": {
+              "start": 171,
+              "end": 182
+            }
+          }
+        ],
+        "resolved_options": [
+          {
+            "key": "echo",
+            "resolution": {
+              "type": "resolved",
+              "declaration": 1
+            }
+          },
+          {
+            "key": "label",
+            "resolution": {
+              "type": "resolved",
+              "declaration": 0
+            }
+          }
+        ],
+        "code_span": {
+          "start": 182,
+          "end": 221
+        },
+        "span": {
+          "start": 133,
+          "end": 225
+        }
+      },
+      {
+        "type": "code-cell",
+        "language": "python",
+        "identifier": null,
+        "classes": [],
+        "labels": [
+          {
+            "value": "python-streams",
+            "span": {
+              "start": 248,
+              "end": 262
+            }
+          }
+        ],
+        "source": "import sys\n\nprint(f\"Python total: {total}\")\nprint(\"Intentional Python stderr\", file=sys.stderr)\n",
+        "source_segments": [
+          {
+            "text": "import sys",
+            "span": {
+              "start": 263,
+              "end": 273
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 273,
+              "end": 274
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 274,
+              "end": 275
+            }
+          },
+          {
+            "text": "print(f\"Python total: {total}\")",
+            "span": {
+              "start": 275,
+              "end": 306
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 306,
+              "end": 307
+            }
+          },
+          {
+            "text": "print(\"Intentional Python stderr\", file=sys.stderr)",
+            "span": {
+              "start": 307,
+              "end": 358
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 358,
+              "end": 359
+            }
+          }
+        ],
+        "options": [
+          {
+            "key": "label",
+            "canonical_key": "label",
+            "raw_value": "python-streams",
+            "cooked_value": "python-streams",
+            "value": {
+              "type": "scalar",
+              "raw": "python-streams",
+              "value": "python-streams",
+              "span": {
+                "start": 248,
+                "end": 262
+              }
+            },
+            "source": "hashpipe-yaml",
+            "key_span": {
+              "start": 241,
+              "end": 246
+            },
+            "value_span": {
+              "start": 248,
+              "end": 262
+            },
+            "span": {
+              "start": 241,
+              "end": 263
+            }
+          }
+        ],
+        "resolved_options": [
+          {
+            "key": "label",
+            "resolution": {
+              "type": "resolved",
+              "declaration": 0
+            }
+          }
+        ],
+        "code_span": {
+          "start": 263,
+          "end": 359
+        },
+        "span": {
+          "start": 226,
+          "end": 363
+        }
+      },
+      {
+        "type": "code-cell",
+        "language": "python",
+        "identifier": null,
+        "classes": [],
+        "labels": [
+          {
+            "value": "python-markdown",
+            "span": {
+              "start": 386,
+              "end": 401
+            }
+          }
+        ],
+        "source": "from IPython.display import Markdown\n\nMarkdown(f\"**Python total:** `{total}`\")\n",
+        "source_segments": [
+          {
+            "text": "from IPython.display import Markdown",
+            "span": {
+              "start": 402,
+              "end": 438
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 438,
+              "end": 439
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 439,
+              "end": 440
+            }
+          },
+          {
+            "text": "Markdown(f\"**Python total:** `{total}`\")",
+            "span": {
+              "start": 440,
+              "end": 480
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 480,
+              "end": 481
+            }
+          }
+        ],
+        "options": [
+          {
+            "key": "label",
+            "canonical_key": "label",
+            "raw_value": "python-markdown",
+            "cooked_value": "python-markdown",
+            "value": {
+              "type": "scalar",
+              "raw": "python-markdown",
+              "value": "python-markdown",
+              "span": {
+                "start": 386,
+                "end": 401
+              }
+            },
+            "source": "hashpipe-yaml",
+            "key_span": {
+              "start": 379,
+              "end": 384
+            },
+            "value_span": {
+              "start": 386,
+              "end": 401
+            },
+            "span": {
+              "start": 379,
+              "end": 402
+            }
+          }
+        ],
+        "resolved_options": [
+          {
+            "key": "label",
+            "resolution": {
+              "type": "resolved",
+              "declaration": 0
+            }
+          }
+        ],
+        "code_span": {
+          "start": 402,
+          "end": 481
+        },
+        "span": {
+          "start": 364,
+          "end": 485
+        }
+      },
+      {
+        "type": "code-cell",
+        "language": "python",
+        "identifier": null,
+        "classes": [],
+        "labels": [
+          {
+            "value": "python-figure",
+            "span": {
+              "start": 508,
+              "end": 521
+            }
+          }
+        ],
+        "source": "from IPython.display import SVG\n\nSVG(\n    f\"\"\"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"160\" height=\"80\"\n    viewBox=\"0 0 160 80\" role=\"img\">\n    <rect x=\"10\" y=\"10\" width=\"{total * 10}\" height=\"40\" fill=\"#3366cc\" />\n    <text x=\"10\" y=\"70\">total = {total}</text>\n    </svg>\"\"\"\n)\n",
+        "source_segments": [
+          {
+            "text": "from IPython.display import SVG",
+            "span": {
+              "start": 570,
+              "end": 601
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 601,
+              "end": 602
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 602,
+              "end": 603
+            }
+          },
+          {
+            "text": "SVG(",
+            "span": {
+              "start": 603,
+              "end": 607
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 607,
+              "end": 608
+            }
+          },
+          {
+            "text": "    f\"\"\"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"160\" height=\"80\"",
+            "span": {
+              "start": 608,
+              "end": 679
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 679,
+              "end": 680
+            }
+          },
+          {
+            "text": "    viewBox=\"0 0 160 80\" role=\"img\">",
+            "span": {
+              "start": 680,
+              "end": 716
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 716,
+              "end": 717
+            }
+          },
+          {
+            "text": "    <rect x=\"10\" y=\"10\" width=\"{total * 10}\" height=\"40\" fill=\"#3366cc\" />",
+            "span": {
+              "start": 717,
+              "end": 791
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 791,
+              "end": 792
+            }
+          },
+          {
+            "text": "    <text x=\"10\" y=\"70\">total = {total}</text>",
+            "span": {
+              "start": 792,
+              "end": 838
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 838,
+              "end": 839
+            }
+          },
+          {
+            "text": "    </svg>\"\"\"",
+            "span": {
+              "start": 839,
+              "end": 852
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 852,
+              "end": 853
+            }
+          },
+          {
+            "text": ")",
+            "span": {
+              "start": 853,
+              "end": 854
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 854,
+              "end": 855
+            }
+          }
+        ],
+        "options": [
+          {
+            "key": "label",
+            "canonical_key": "label",
+            "raw_value": "python-figure",
+            "cooked_value": "python-figure",
+            "value": {
+              "type": "scalar",
+              "raw": "python-figure",
+              "value": "python-figure",
+              "span": {
+                "start": 508,
+                "end": 521
+              }
+            },
+            "source": "hashpipe-yaml",
+            "key_span": {
+              "start": 501,
+              "end": 506
+            },
+            "value_span": {
+              "start": 508,
+              "end": 521
+            },
+            "span": {
+              "start": 501,
+              "end": 525
+            }
+          },
+          {
+            "key": "fig-alt",
+            "canonical_key": "fig-alt",
+            "raw_value": "A bar labeled with the Python total",
+            "cooked_value": "A bar labeled with the Python total",
+            "value": {
+              "type": "scalar",
+              "raw": "A bar labeled with the Python total",
+              "value": "A bar labeled with the Python total",
+              "span": {
+                "start": 534,
+                "end": 569
+              }
+            },
+            "source": "hashpipe-yaml",
+            "key_span": {
+              "start": 525,
+              "end": 532
+            },
+            "value_span": {
+              "start": 534,
+              "end": 569
+            },
+            "span": {
+              "start": 525,
+              "end": 570
+            }
+          }
+        ],
+        "resolved_options": [
+          {
+            "key": "fig-alt",
+            "resolution": {
+              "type": "resolved",
+              "declaration": 1
+            }
+          },
+          {
+            "key": "label",
+            "resolution": {
+              "type": "resolved",
+              "declaration": 0
+            }
+          }
+        ],
+        "code_span": {
+          "start": 570,
+          "end": 855
+        },
+        "span": {
+          "start": 486,
+          "end": 859
+        }
+      },
+      {
+        "type": "code-cell",
+        "language": "python",
+        "identifier": null,
+        "classes": [],
+        "labels": [
+          {
+            "value": "python-error",
+            "span": {
+              "start": 882,
+              "end": 894
+            }
+          }
+        ],
+        "source": "raise RuntimeError(\"intentional Python fixture error\")\n",
+        "source_segments": [
+          {
+            "text": "raise RuntimeError(\"intentional Python fixture error\")",
+            "span": {
+              "start": 910,
+              "end": 964
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 964,
+              "end": 965
+            }
+          }
+        ],
+        "options": [
+          {
+            "key": "label",
+            "canonical_key": "label",
+            "raw_value": "python-error",
+            "cooked_value": "python-error",
+            "value": {
+              "type": "scalar",
+              "raw": "python-error",
+              "value": "python-error",
+              "span": {
+                "start": 882,
+                "end": 894
+              }
+            },
+            "source": "hashpipe-yaml",
+            "key_span": {
+              "start": 875,
+              "end": 880
+            },
+            "value_span": {
+              "start": 882,
+              "end": 894
+            },
+            "span": {
+              "start": 875,
+              "end": 898
+            }
+          },
+          {
+            "key": "error",
+            "canonical_key": "error",
+            "raw_value": "true",
+            "cooked_value": "true",
+            "value": {
+              "type": "scalar",
+              "raw": "true",
+              "value": "true",
+              "span": {
+                "start": 905,
+                "end": 909
+              }
+            },
+            "source": "hashpipe-yaml",
+            "key_span": {
+              "start": 898,
+              "end": 903
+            },
+            "value_span": {
+              "start": 905,
+              "end": 909
+            },
+            "span": {
+              "start": 898,
+              "end": 910
+            }
+          }
+        ],
+        "resolved_options": [
+          {
+            "key": "error",
+            "resolution": {
+              "type": "resolved",
+              "declaration": 1
+            }
+          },
+          {
+            "key": "label",
+            "resolution": {
+              "type": "resolved",
+              "declaration": 0
+            }
+          }
+        ],
+        "code_span": {
+          "start": 910,
+          "end": 965
+        },
+        "span": {
+          "start": 860,
+          "end": 969
+        }
+      }
+    ]
+  },
+  "diagnostics": []
+}

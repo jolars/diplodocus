@@ -1,0 +1,189 @@
+{
+  "document": {
+    "span": {
+      "start": 0,
+      "end": 331
+    },
+    "frontmatter": {
+      "type": "mapping",
+      "entries": [
+        {
+          "key": {
+            "value": "title",
+            "span": {
+              "start": 4,
+              "end": 9
+            }
+          },
+          "value": {
+            "type": "scalar",
+            "raw": "Unsafe kernel HTML crosses the sanitizer boundary",
+            "value": "Unsafe kernel HTML crosses the sanitizer boundary",
+            "span": {
+              "start": 11,
+              "end": 60
+            }
+          },
+          "span": {
+            "start": 4,
+            "end": 61
+          }
+        }
+      ],
+      "span": {
+        "start": 4,
+        "end": 61
+      }
+    },
+    "blocks": [
+      {
+        "type": "heading",
+        "level": 1,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Unsafe kernel HTML crosses the sanitizer boundary",
+            "span": {
+              "start": 68,
+              "end": 117
+            }
+          }
+        ],
+        "span": {
+          "start": 66,
+          "end": 118
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Kernel-produced HTML must never reach the renderer as trusted markup.",
+            "span": {
+              "start": 119,
+              "end": 188
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 188,
+              "end": 189
+            }
+          }
+        ],
+        "span": {
+          "start": 119,
+          "end": 189
+        }
+      },
+      {
+        "type": "code-cell",
+        "language": "python",
+        "identifier": null,
+        "classes": [],
+        "labels": [
+          {
+            "value": "unsafe-html",
+            "span": {
+              "start": 212,
+              "end": 223
+            }
+          }
+        ],
+        "source": "from IPython.display import HTML\n\nHTML(\"<script>document.body.dataset.kernelHtml = 'unsafe'</script>\")\n",
+        "source_segments": [
+          {
+            "text": "from IPython.display import HTML",
+            "span": {
+              "start": 224,
+              "end": 256
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 256,
+              "end": 257
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 257,
+              "end": 258
+            }
+          },
+          {
+            "text": "HTML(\"<script>document.body.dataset.kernelHtml = 'unsafe'</script>\")",
+            "span": {
+              "start": 258,
+              "end": 326
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 326,
+              "end": 327
+            }
+          }
+        ],
+        "options": [
+          {
+            "key": "label",
+            "canonical_key": "label",
+            "raw_value": "unsafe-html",
+            "cooked_value": "unsafe-html",
+            "value": {
+              "type": "scalar",
+              "raw": "unsafe-html",
+              "value": "unsafe-html",
+              "span": {
+                "start": 212,
+                "end": 223
+              }
+            },
+            "source": "hashpipe-yaml",
+            "key_span": {
+              "start": 205,
+              "end": 210
+            },
+            "value_span": {
+              "start": 212,
+              "end": 223
+            },
+            "span": {
+              "start": 205,
+              "end": 224
+            }
+          }
+        ],
+        "resolved_options": [
+          {
+            "key": "label",
+            "resolution": {
+              "type": "resolved",
+              "declaration": 0
+            }
+          }
+        ],
+        "code_span": {
+          "start": 224,
+          "end": 327
+        },
+        "span": {
+          "start": 190,
+          "end": 331
+        }
+      }
+    ]
+  },
+  "diagnostics": []
+}

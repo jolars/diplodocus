@@ -1,0 +1,757 @@
+{
+  "document": {
+    "span": {
+      "start": 0,
+      "end": 870
+    },
+    "frontmatter": {
+      "type": "mapping",
+      "entries": [
+        {
+          "key": {
+            "value": "title",
+            "span": {
+              "start": 4,
+              "end": 9
+            }
+          },
+          "value": {
+            "type": "scalar",
+            "raw": "Stateful R execution",
+            "value": "Stateful R execution",
+            "span": {
+              "start": 11,
+              "end": 31
+            }
+          },
+          "span": {
+            "start": 4,
+            "end": 32
+          }
+        }
+      ],
+      "span": {
+        "start": 4,
+        "end": 32
+      }
+    },
+    "blocks": [
+      {
+        "type": "heading",
+        "level": 1,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Stateful R execution",
+            "span": {
+              "start": 39,
+              "end": 59
+            }
+          }
+        ],
+        "span": {
+          "start": 37,
+          "end": 60
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "The cells on this page share one page-scoped R session.",
+            "span": {
+              "start": 61,
+              "end": 116
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 116,
+              "end": 117
+            }
+          }
+        ],
+        "span": {
+          "start": 61,
+          "end": 117
+        }
+      },
+      {
+        "type": "code-cell",
+        "language": "r",
+        "identifier": null,
+        "classes": [],
+        "labels": [
+          {
+            "value": "r-setup",
+            "span": {
+              "start": 135,
+              "end": 142
+            }
+          }
+        ],
+        "source": "values <- c(2, 4, 6)\ntotal <- sum(values)\n",
+        "source_segments": [
+          {
+            "text": "values <- c(2, 4, 6)",
+            "span": {
+              "start": 157,
+              "end": 177
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 177,
+              "end": 178
+            }
+          },
+          {
+            "text": "total <- sum(values)",
+            "span": {
+              "start": 178,
+              "end": 198
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 198,
+              "end": 199
+            }
+          }
+        ],
+        "options": [
+          {
+            "key": "label",
+            "canonical_key": "label",
+            "raw_value": "r-setup",
+            "cooked_value": "r-setup",
+            "value": {
+              "type": "scalar",
+              "raw": "r-setup",
+              "value": "r-setup",
+              "span": {
+                "start": 135,
+                "end": 142
+              }
+            },
+            "source": "hashpipe-yaml",
+            "key_span": {
+              "start": 128,
+              "end": 133
+            },
+            "value_span": {
+              "start": 135,
+              "end": 142
+            },
+            "span": {
+              "start": 128,
+              "end": 146
+            }
+          },
+          {
+            "key": "echo",
+            "canonical_key": "echo",
+            "raw_value": "true",
+            "cooked_value": "true",
+            "value": {
+              "type": "scalar",
+              "raw": "true",
+              "value": "true",
+              "span": {
+                "start": 152,
+                "end": 156
+              }
+            },
+            "source": "hashpipe-yaml",
+            "key_span": {
+              "start": 146,
+              "end": 150
+            },
+            "value_span": {
+              "start": 152,
+              "end": 156
+            },
+            "span": {
+              "start": 146,
+              "end": 157
+            }
+          }
+        ],
+        "resolved_options": [
+          {
+            "key": "echo",
+            "resolution": {
+              "type": "resolved",
+              "declaration": 1
+            }
+          },
+          {
+            "key": "label",
+            "resolution": {
+              "type": "resolved",
+              "declaration": 0
+            }
+          }
+        ],
+        "code_span": {
+          "start": 157,
+          "end": 199
+        },
+        "span": {
+          "start": 118,
+          "end": 203
+        }
+      },
+      {
+        "type": "code-cell",
+        "language": "r",
+        "identifier": null,
+        "classes": [],
+        "labels": [
+          {
+            "value": "r-streams",
+            "span": {
+              "start": 221,
+              "end": 230
+            }
+          }
+        ],
+        "source": "cat(sprintf(\"R total: %d\\n\", total))\nmessage(\"Intentional R stderr\")\n",
+        "source_segments": [
+          {
+            "text": "cat(sprintf(\"R total: %d\\n\", total))",
+            "span": {
+              "start": 231,
+              "end": 267
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 267,
+              "end": 268
+            }
+          },
+          {
+            "text": "message(\"Intentional R stderr\")",
+            "span": {
+              "start": 268,
+              "end": 299
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 299,
+              "end": 300
+            }
+          }
+        ],
+        "options": [
+          {
+            "key": "label",
+            "canonical_key": "label",
+            "raw_value": "r-streams",
+            "cooked_value": "r-streams",
+            "value": {
+              "type": "scalar",
+              "raw": "r-streams",
+              "value": "r-streams",
+              "span": {
+                "start": 221,
+                "end": 230
+              }
+            },
+            "source": "hashpipe-yaml",
+            "key_span": {
+              "start": 214,
+              "end": 219
+            },
+            "value_span": {
+              "start": 221,
+              "end": 230
+            },
+            "span": {
+              "start": 214,
+              "end": 231
+            }
+          }
+        ],
+        "resolved_options": [
+          {
+            "key": "label",
+            "resolution": {
+              "type": "resolved",
+              "declaration": 0
+            }
+          }
+        ],
+        "code_span": {
+          "start": 231,
+          "end": 300
+        },
+        "span": {
+          "start": 204,
+          "end": 304
+        }
+      },
+      {
+        "type": "code-cell",
+        "language": "r",
+        "identifier": null,
+        "classes": [],
+        "labels": [
+          {
+            "value": "r-markdown",
+            "span": {
+              "start": 322,
+              "end": 332
+            }
+          }
+        ],
+        "source": "IRdisplay::display_markdown(sprintf(\"**R total:** `%d`\", total))\n",
+        "source_segments": [
+          {
+            "text": "IRdisplay::display_markdown(sprintf(\"**R total:** `%d`\", total))",
+            "span": {
+              "start": 333,
+              "end": 397
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 397,
+              "end": 398
+            }
+          }
+        ],
+        "options": [
+          {
+            "key": "label",
+            "canonical_key": "label",
+            "raw_value": "r-markdown",
+            "cooked_value": "r-markdown",
+            "value": {
+              "type": "scalar",
+              "raw": "r-markdown",
+              "value": "r-markdown",
+              "span": {
+                "start": 322,
+                "end": 332
+              }
+            },
+            "source": "hashpipe-yaml",
+            "key_span": {
+              "start": 315,
+              "end": 320
+            },
+            "value_span": {
+              "start": 322,
+              "end": 332
+            },
+            "span": {
+              "start": 315,
+              "end": 333
+            }
+          }
+        ],
+        "resolved_options": [
+          {
+            "key": "label",
+            "resolution": {
+              "type": "resolved",
+              "declaration": 0
+            }
+          }
+        ],
+        "code_span": {
+          "start": 333,
+          "end": 398
+        },
+        "span": {
+          "start": 305,
+          "end": 402
+        }
+      },
+      {
+        "type": "code-cell",
+        "language": "r",
+        "identifier": null,
+        "classes": [],
+        "labels": [
+          {
+            "value": "r-figure",
+            "span": {
+              "start": 420,
+              "end": 428
+            }
+          }
+        ],
+        "source": "svg <- sprintf(\n  paste0(\n    '<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"160\" height=\"80\" ',\n    'viewBox=\"0 0 160 80\" role=\"img\">',\n    '<rect x=\"10\" y=\"10\" width=\"%d\" height=\"40\" fill=\"#3366cc\" />',\n    '<text x=\"10\" y=\"70\">total = %d</text></svg>'\n  ),\n  total * 10,\n  total\n)\nIRdisplay::display_svg(svg)\n",
+        "source_segments": [
+          {
+            "text": "svg <- sprintf(",
+            "span": {
+              "start": 472,
+              "end": 487
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 487,
+              "end": 488
+            }
+          },
+          {
+            "text": "  paste0(",
+            "span": {
+              "start": 488,
+              "end": 497
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 497,
+              "end": 498
+            }
+          },
+          {
+            "text": "    '<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"160\" height=\"80\" ',",
+            "span": {
+              "start": 498,
+              "end": 569
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 569,
+              "end": 570
+            }
+          },
+          {
+            "text": "    'viewBox=\"0 0 160 80\" role=\"img\">',",
+            "span": {
+              "start": 570,
+              "end": 609
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 609,
+              "end": 610
+            }
+          },
+          {
+            "text": "    '<rect x=\"10\" y=\"10\" width=\"%d\" height=\"40\" fill=\"#3366cc\" />',",
+            "span": {
+              "start": 610,
+              "end": 677
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 677,
+              "end": 678
+            }
+          },
+          {
+            "text": "    '<text x=\"10\" y=\"70\">total = %d</text></svg>'",
+            "span": {
+              "start": 678,
+              "end": 727
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 727,
+              "end": 728
+            }
+          },
+          {
+            "text": "  ),",
+            "span": {
+              "start": 728,
+              "end": 732
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 732,
+              "end": 733
+            }
+          },
+          {
+            "text": "  total * 10,",
+            "span": {
+              "start": 733,
+              "end": 746
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 746,
+              "end": 747
+            }
+          },
+          {
+            "text": "  total",
+            "span": {
+              "start": 747,
+              "end": 754
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 754,
+              "end": 755
+            }
+          },
+          {
+            "text": ")",
+            "span": {
+              "start": 755,
+              "end": 756
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 756,
+              "end": 757
+            }
+          },
+          {
+            "text": "IRdisplay::display_svg(svg)",
+            "span": {
+              "start": 757,
+              "end": 784
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 784,
+              "end": 785
+            }
+          }
+        ],
+        "options": [
+          {
+            "key": "label",
+            "canonical_key": "label",
+            "raw_value": "r-figure",
+            "cooked_value": "r-figure",
+            "value": {
+              "type": "scalar",
+              "raw": "r-figure",
+              "value": "r-figure",
+              "span": {
+                "start": 420,
+                "end": 428
+              }
+            },
+            "source": "hashpipe-yaml",
+            "key_span": {
+              "start": 413,
+              "end": 418
+            },
+            "value_span": {
+              "start": 420,
+              "end": 428
+            },
+            "span": {
+              "start": 413,
+              "end": 432
+            }
+          },
+          {
+            "key": "fig-alt",
+            "canonical_key": "fig-alt",
+            "raw_value": "A bar labeled with the R total",
+            "cooked_value": "A bar labeled with the R total",
+            "value": {
+              "type": "scalar",
+              "raw": "A bar labeled with the R total",
+              "value": "A bar labeled with the R total",
+              "span": {
+                "start": 441,
+                "end": 471
+              }
+            },
+            "source": "hashpipe-yaml",
+            "key_span": {
+              "start": 432,
+              "end": 439
+            },
+            "value_span": {
+              "start": 441,
+              "end": 471
+            },
+            "span": {
+              "start": 432,
+              "end": 472
+            }
+          }
+        ],
+        "resolved_options": [
+          {
+            "key": "fig-alt",
+            "resolution": {
+              "type": "resolved",
+              "declaration": 1
+            }
+          },
+          {
+            "key": "label",
+            "resolution": {
+              "type": "resolved",
+              "declaration": 0
+            }
+          }
+        ],
+        "code_span": {
+          "start": 472,
+          "end": 785
+        },
+        "span": {
+          "start": 403,
+          "end": 789
+        }
+      },
+      {
+        "type": "code-cell",
+        "language": "r",
+        "identifier": null,
+        "classes": [],
+        "labels": [
+          {
+            "value": "r-error",
+            "span": {
+              "start": 807,
+              "end": 814
+            }
+          }
+        ],
+        "source": "stop(\"intentional R fixture error\")\n",
+        "source_segments": [
+          {
+            "text": "stop(\"intentional R fixture error\")",
+            "span": {
+              "start": 830,
+              "end": 865
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 865,
+              "end": 866
+            }
+          }
+        ],
+        "options": [
+          {
+            "key": "label",
+            "canonical_key": "label",
+            "raw_value": "r-error",
+            "cooked_value": "r-error",
+            "value": {
+              "type": "scalar",
+              "raw": "r-error",
+              "value": "r-error",
+              "span": {
+                "start": 807,
+                "end": 814
+              }
+            },
+            "source": "hashpipe-yaml",
+            "key_span": {
+              "start": 800,
+              "end": 805
+            },
+            "value_span": {
+              "start": 807,
+              "end": 814
+            },
+            "span": {
+              "start": 800,
+              "end": 818
+            }
+          },
+          {
+            "key": "error",
+            "canonical_key": "error",
+            "raw_value": "true",
+            "cooked_value": "true",
+            "value": {
+              "type": "scalar",
+              "raw": "true",
+              "value": "true",
+              "span": {
+                "start": 825,
+                "end": 829
+              }
+            },
+            "source": "hashpipe-yaml",
+            "key_span": {
+              "start": 818,
+              "end": 823
+            },
+            "value_span": {
+              "start": 825,
+              "end": 829
+            },
+            "span": {
+              "start": 818,
+              "end": 830
+            }
+          }
+        ],
+        "resolved_options": [
+          {
+            "key": "error",
+            "resolution": {
+              "type": "resolved",
+              "declaration": 1
+            }
+          },
+          {
+            "key": "label",
+            "resolution": {
+              "type": "resolved",
+              "declaration": 0
+            }
+          }
+        ],
+        "code_span": {
+          "start": 830,
+          "end": 866
+        },
+        "span": {
+          "start": 790,
+          "end": 870
+        }
+      }
+    ]
+  },
+  "diagnostics": []
+}

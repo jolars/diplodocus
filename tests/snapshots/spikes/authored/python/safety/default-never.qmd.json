@@ -1,0 +1,168 @@
+{
+  "document": {
+    "span": {
+      "start": 0,
+      "end": 227
+    },
+    "frontmatter": {
+      "type": "mapping",
+      "entries": [
+        {
+          "key": {
+            "value": "title",
+            "span": {
+              "start": 4,
+              "end": 9
+            }
+          },
+          "value": {
+            "type": "scalar",
+            "raw": "Default execution mode",
+            "value": "Default execution mode",
+            "span": {
+              "start": 11,
+              "end": 33
+            }
+          },
+          "span": {
+            "start": 4,
+            "end": 34
+          }
+        }
+      ],
+      "span": {
+        "start": 4,
+        "end": 34
+      }
+    },
+    "blocks": [
+      {
+        "type": "heading",
+        "level": 1,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "text",
+            "value": "QMD execution defaults to never",
+            "span": {
+              "start": 41,
+              "end": 72
+            }
+          }
+        ],
+        "span": {
+          "start": 39,
+          "end": 73
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "The collection deliberately omits an execution table.",
+            "span": {
+              "start": 74,
+              "end": 127
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 127,
+              "end": 128
+            }
+          }
+        ],
+        "span": {
+          "start": 74,
+          "end": 128
+        }
+      },
+      {
+        "type": "code-cell",
+        "language": "python",
+        "identifier": null,
+        "classes": [],
+        "labels": [
+          {
+            "value": "default-never",
+            "span": {
+              "start": 151,
+              "end": 164
+            }
+          }
+        ],
+        "source": "raise RuntimeError(\"QMD execution must default to never\")\n",
+        "source_segments": [
+          {
+            "text": "raise RuntimeError(\"QMD execution must default to never\")",
+            "span": {
+              "start": 165,
+              "end": 222
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 222,
+              "end": 223
+            }
+          }
+        ],
+        "options": [
+          {
+            "key": "label",
+            "canonical_key": "label",
+            "raw_value": "default-never",
+            "cooked_value": "default-never",
+            "value": {
+              "type": "scalar",
+              "raw": "default-never",
+              "value": "default-never",
+              "span": {
+                "start": 151,
+                "end": 164
+              }
+            },
+            "source": "hashpipe-yaml",
+            "key_span": {
+              "start": 144,
+              "end": 149
+            },
+            "value_span": {
+              "start": 151,
+              "end": 164
+            },
+            "span": {
+              "start": 144,
+              "end": 165
+            }
+          }
+        ],
+        "resolved_options": [
+          {
+            "key": "label",
+            "resolution": {
+              "type": "resolved",
+              "declaration": 0
+            }
+          }
+        ],
+        "code_span": {
+          "start": 165,
+          "end": 223
+        },
+        "span": {
+          "start": 129,
+          "end": 227
+        }
+      }
+    ]
+  },
+  "diagnostics": []
+}

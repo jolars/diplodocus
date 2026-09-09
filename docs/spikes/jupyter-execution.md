@@ -29,6 +29,11 @@ in-process test kernel. A separate environment probe launches the declared
 `python3` and `ir` kernel processes directly. Neither test starts a Jupyter
 server.
 
+The accepted parsing and execution boundaries are recorded in
+[ADR 0002](../decisions/0002-authored-content.md). The
+[golden-fixture inventory](golden-fixtures.md) covers the canned protocol
+observations and the separate real-kernel outputs.
+
 ## Boundary
 
 ```text
@@ -198,8 +203,9 @@ Implementation should proceed in this order:
    escalation, and unconditional shutdown.
 3. Convert protocol messages into portable output IR before rendering or cache
    design makes crate-specific types persistent.
-4. Add real-kernel golden output for Python and R, then keep the in-process
-   transport probe as the deterministic lower layer.
+4. Preserve the captured real-kernel goldens for Python and R while adding
+   production output-IR assertions, and keep the in-process transport probe as
+   the deterministic lower layer.
 
 If the real-kernel tests expose an incompatibility, add a focused protocol
 fixture and adapter diagnostic. Do not introduce a Jupyter server: the selected

@@ -1,0 +1,239 @@
+{
+  "document": {
+    "span": {
+      "start": 0,
+      "end": 392
+    },
+    "frontmatter": {
+      "type": "mapping",
+      "entries": [
+        {
+          "key": {
+            "value": "title",
+            "span": {
+              "start": 4,
+              "end": 9
+            }
+          },
+          "value": {
+            "type": "scalar",
+            "raw": "Markdown-looking stdout remains text",
+            "value": "Markdown-looking stdout remains text",
+            "span": {
+              "start": 11,
+              "end": 47
+            }
+          },
+          "span": {
+            "start": 4,
+            "end": 48
+          }
+        }
+      ],
+      "span": {
+        "start": 4,
+        "end": 48
+      }
+    },
+    "blocks": [
+      {
+        "type": "heading",
+        "level": 1,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Markdown-looking stdout remains text",
+            "span": {
+              "start": 55,
+              "end": 91
+            }
+          }
+        ],
+        "span": {
+          "start": 53,
+          "end": 92
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Stream output must be escaped and displayed verbatim, even when it resembles",
+            "span": {
+              "start": 93,
+              "end": 169
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 169,
+              "end": 170
+            }
+          },
+          {
+            "type": "text",
+            "value": "authored Markdown.",
+            "span": {
+              "start": 170,
+              "end": 188
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 188,
+              "end": 189
+            }
+          }
+        ],
+        "span": {
+          "start": 93,
+          "end": 189
+        }
+      },
+      {
+        "type": "code-cell",
+        "language": "python",
+        "identifier": null,
+        "classes": [],
+        "labels": [
+          {
+            "value": "markdown-looking-stdout",
+            "span": {
+              "start": 212,
+              "end": 235
+            }
+          }
+        ],
+        "source": "print(\n    \"# Not a heading\\n\\n\"\n    \"[Not a link](https://example.invalid)\\n\\n\"\n    \"```{python}\\nraise RuntimeError('stdout must stay inert')\\n```\"\n)\n",
+        "source_segments": [
+          {
+            "text": "print(",
+            "span": {
+              "start": 236,
+              "end": 242
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 242,
+              "end": 243
+            }
+          },
+          {
+            "text": "    \"# Not a heading\\n\\n\"",
+            "span": {
+              "start": 243,
+              "end": 268
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 268,
+              "end": 269
+            }
+          },
+          {
+            "text": "    \"[Not a link](https://example.invalid)\\n\\n\"",
+            "span": {
+              "start": 269,
+              "end": 316
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 316,
+              "end": 317
+            }
+          },
+          {
+            "text": "    \"```{python}\\nraise RuntimeError('stdout must stay inert')\\n```\"",
+            "span": {
+              "start": 317,
+              "end": 385
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 385,
+              "end": 386
+            }
+          },
+          {
+            "text": ")",
+            "span": {
+              "start": 386,
+              "end": 387
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 387,
+              "end": 388
+            }
+          }
+        ],
+        "options": [
+          {
+            "key": "label",
+            "canonical_key": "label",
+            "raw_value": "markdown-looking-stdout",
+            "cooked_value": "markdown-looking-stdout",
+            "value": {
+              "type": "scalar",
+              "raw": "markdown-looking-stdout",
+              "value": "markdown-looking-stdout",
+              "span": {
+                "start": 212,
+                "end": 235
+              }
+            },
+            "source": "hashpipe-yaml",
+            "key_span": {
+              "start": 205,
+              "end": 210
+            },
+            "value_span": {
+              "start": 212,
+              "end": 235
+            },
+            "span": {
+              "start": 205,
+              "end": 236
+            }
+          }
+        ],
+        "resolved_options": [
+          {
+            "key": "label",
+            "resolution": {
+              "type": "resolved",
+              "declaration": 0
+            }
+          }
+        ],
+        "code_span": {
+          "start": 236,
+          "end": 388
+        },
+        "span": {
+          "start": 190,
+          "end": 392
+        }
+      }
+    ]
+  },
+  "diagnostics": []
+}

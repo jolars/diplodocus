@@ -1,0 +1,1248 @@
+{
+  "metadata": {
+    "dependencies": [
+      "foo-core>=1.9,<2"
+    ],
+    "description": "Python bindings for the Foo statistical library.",
+    "name": "foo-python",
+    "path": "pyproject.toml",
+    "requires_python": ">=3.11",
+    "version": "1.9.0"
+  },
+  "mode": "static",
+  "modules": [
+    {
+      "attribute_documentation": [],
+      "declarations": [
+        {
+          "kind": "assignment",
+          "range": [
+            283,
+            304
+          ],
+          "targets": [
+            "__version__"
+          ],
+          "value": "\"1.9.0\""
+        },
+        {
+          "kind": "assignment",
+          "range": [
+            306,
+            506
+          ],
+          "targets": [
+            "__all__"
+          ],
+          "value": "[\n    \"DEFAULT_TOLERANCE\",\n    \"SUPPORTED_SOLVERS\",\n    \"FitDiagnostics\",\n    \"FooModel\",\n    \"NativeWorkspace\",\n    \"experimental\",\n    \"fit\",\n    \"mean_squared_error\",\n    \"native_mean\",\n]"
+        }
+      ],
+      "documentation": {
+        "literal_range": [
+          0,
+          51
+        ],
+        "sections": [],
+        "summary": "Fit and evaluate statistical models with Foo.",
+        "text": "Fit and evaluate statistical models with Foo."
+      },
+      "export_expression": {
+        "is_static": true,
+        "range": [
+          316,
+          506
+        ],
+        "text": "[\n    \"DEFAULT_TOLERANCE\",\n    \"SUPPORTED_SOLVERS\",\n    \"FitDiagnostics\",\n    \"FooModel\",\n    \"NativeWorkspace\",\n    \"experimental\",\n    \"fit\",\n    \"mean_squared_error\",\n    \"native_mean\",\n]"
+      },
+      "exports": [
+        "DEFAULT_TOLERANCE",
+        "SUPPORTED_SOLVERS",
+        "FitDiagnostics",
+        "FooModel",
+        "NativeWorkspace",
+        "experimental",
+        "fit",
+        "mean_squared_error",
+        "native_mean"
+      ],
+      "path": "python/foo/__init__.py",
+      "reexports": [
+        {
+          "canonical_name": "foo.experimental",
+          "declaration": "experimental as experimental",
+          "public_name": "experimental",
+          "range": [
+            67,
+            95
+          ]
+        },
+        {
+          "canonical_name": "foo._native.NativeWorkspace",
+          "declaration": "NativeWorkspace",
+          "public_name": "NativeWorkspace",
+          "range": [
+            117,
+            132
+          ]
+        },
+        {
+          "canonical_name": "foo._native.native_mean",
+          "declaration": "native_mean",
+          "public_name": "native_mean",
+          "range": [
+            134,
+            145
+          ]
+        },
+        {
+          "canonical_name": "foo.model.DEFAULT_TOLERANCE",
+          "declaration": "DEFAULT_TOLERANCE",
+          "public_name": "DEFAULT_TOLERANCE",
+          "range": [
+            171,
+            188
+          ]
+        },
+        {
+          "canonical_name": "foo.model.SUPPORTED_SOLVERS",
+          "declaration": "SUPPORTED_SOLVERS",
+          "public_name": "SUPPORTED_SOLVERS",
+          "range": [
+            194,
+            211
+          ]
+        },
+        {
+          "canonical_name": "foo.model.FitDiagnostics",
+          "declaration": "FitDiagnostics",
+          "public_name": "FitDiagnostics",
+          "range": [
+            217,
+            231
+          ]
+        },
+        {
+          "canonical_name": "foo.model.FooModel",
+          "declaration": "FooModel",
+          "public_name": "FooModel",
+          "range": [
+            237,
+            245
+          ]
+        },
+        {
+          "canonical_name": "foo.model.fit",
+          "declaration": "fit",
+          "public_name": "fit",
+          "range": [
+            251,
+            254
+          ]
+        },
+        {
+          "canonical_name": "foo.model.mean_squared_error",
+          "declaration": "mean_squared_error",
+          "public_name": "mean_squared_error",
+          "range": [
+            260,
+            278
+          ]
+        }
+      ],
+      "source_type": "python"
+    },
+    {
+      "attribute_documentation": [],
+      "declarations": [
+        {
+          "annotation": "str",
+          "kind": "annotated-assignment",
+          "name": "__version__",
+          "range": [
+            446,
+            462
+          ],
+          "value": null
+        },
+        {
+          "kind": "assignment",
+          "range": [
+            464,
+            664
+          ],
+          "targets": [
+            "__all__"
+          ],
+          "value": "[\n    \"DEFAULT_TOLERANCE\",\n    \"SUPPORTED_SOLVERS\",\n    \"FitDiagnostics\",\n    \"FooModel\",\n    \"NativeWorkspace\",\n    \"experimental\",\n    \"fit\",\n    \"mean_squared_error\",\n    \"native_mean\",\n]"
+        }
+      ],
+      "documentation": null,
+      "export_expression": {
+        "is_static": true,
+        "range": [
+          474,
+          664
+        ],
+        "text": "[\n    \"DEFAULT_TOLERANCE\",\n    \"SUPPORTED_SOLVERS\",\n    \"FitDiagnostics\",\n    \"FooModel\",\n    \"NativeWorkspace\",\n    \"experimental\",\n    \"fit\",\n    \"mean_squared_error\",\n    \"native_mean\",\n]"
+      },
+      "exports": [
+        "DEFAULT_TOLERANCE",
+        "SUPPORTED_SOLVERS",
+        "FitDiagnostics",
+        "FooModel",
+        "NativeWorkspace",
+        "experimental",
+        "fit",
+        "mean_squared_error",
+        "native_mean"
+      ],
+      "path": "python/foo/__init__.pyi",
+      "reexports": [
+        {
+          "canonical_name": "foo.experimental",
+          "declaration": "experimental as experimental",
+          "public_name": "experimental",
+          "range": [
+            14,
+            42
+          ]
+        },
+        {
+          "canonical_name": "foo._native.NativeWorkspace",
+          "declaration": "NativeWorkspace as NativeWorkspace",
+          "public_name": "NativeWorkspace",
+          "range": [
+            64,
+            98
+          ]
+        },
+        {
+          "canonical_name": "foo._native.native_mean",
+          "declaration": "native_mean as native_mean",
+          "public_name": "native_mean",
+          "range": [
+            120,
+            146
+          ]
+        },
+        {
+          "canonical_name": "foo.model.DEFAULT_TOLERANCE",
+          "declaration": "DEFAULT_TOLERANCE as DEFAULT_TOLERANCE",
+          "public_name": "DEFAULT_TOLERANCE",
+          "range": [
+            166,
+            204
+          ]
+        },
+        {
+          "canonical_name": "foo.model.SUPPORTED_SOLVERS",
+          "declaration": "SUPPORTED_SOLVERS as SUPPORTED_SOLVERS",
+          "public_name": "SUPPORTED_SOLVERS",
+          "range": [
+            224,
+            262
+          ]
+        },
+        {
+          "canonical_name": "foo.model.FitDiagnostics",
+          "declaration": "FitDiagnostics as FitDiagnostics",
+          "public_name": "FitDiagnostics",
+          "range": [
+            282,
+            314
+          ]
+        },
+        {
+          "canonical_name": "foo.model.FooModel",
+          "declaration": "FooModel as FooModel",
+          "public_name": "FooModel",
+          "range": [
+            334,
+            354
+          ]
+        },
+        {
+          "canonical_name": "foo.model.fit",
+          "declaration": "fit as fit",
+          "public_name": "fit",
+          "range": [
+            374,
+            384
+          ]
+        },
+        {
+          "canonical_name": "foo.model.mean_squared_error",
+          "declaration": "mean_squared_error as mean_squared_error",
+          "public_name": "mean_squared_error",
+          "range": [
+            404,
+            444
+          ]
+        }
+      ],
+      "source_type": "stub"
+    },
+    {
+      "attribute_documentation": [],
+      "declarations": [
+        {
+          "decorators": [],
+          "documentation": {
+            "literal_range": [
+              136,
+              197
+            ],
+            "sections": [],
+            "summary": "Reusable workspace allocated by the native Foo library.",
+            "text": "Reusable workspace allocated by the native Foo library."
+          },
+          "kind": "class",
+          "members": [
+            {
+              "annotation": "int",
+              "kind": "annotated-assignment",
+              "name": "dimension",
+              "range": [
+                203,
+                217
+              ],
+              "value": null
+            },
+            {
+              "decorators": [],
+              "documentation": null,
+              "kind": "function",
+              "name": "__init__",
+              "parameters": "(self, dimension: int)",
+              "range": [
+                222,
+                269
+              ],
+              "returns": "None"
+            }
+          ],
+          "name": "NativeWorkspace",
+          "range": [
+            109,
+            269
+          ]
+        },
+        {
+          "decorators": [],
+          "documentation": null,
+          "kind": "function",
+          "name": "native_mean",
+          "parameters": "(values: Sequence[float], /)",
+          "range": [
+            271,
+            328
+          ],
+          "returns": "float"
+        }
+      ],
+      "documentation": {
+        "literal_range": [
+          0,
+          69
+        ],
+        "sections": [],
+        "summary": "Public declarations for the compiled ``foo._native`` extension.",
+        "text": "Public declarations for the compiled ``foo._native`` extension."
+      },
+      "export_expression": null,
+      "exports": null,
+      "path": "python/foo/_native.pyi",
+      "reexports": [],
+      "source_type": "stub"
+    },
+    {
+      "attribute_documentation": [],
+      "declarations": [
+        {
+          "decorators": [],
+          "documentation": {
+            "literal_range": [
+              175,
+              227
+            ],
+            "sections": [],
+            "summary": "Return stable zero-based ranks for a sequence.",
+            "text": "Return stable zero-based ranks for a sequence."
+          },
+          "kind": "function",
+          "name": "experimental_rank",
+          "parameters": "(values: Sequence[float])",
+          "range": [
+            110,
+            413
+          ],
+          "returns": "list[int]"
+        },
+        {
+          "decorators": [],
+          "documentation": null,
+          "kind": "function",
+          "name": "_exported_names",
+          "parameters": "()",
+          "range": [
+            416,
+            527
+          ],
+          "returns": "list[str]"
+        },
+        {
+          "kind": "assignment",
+          "range": [
+            530,
+            557
+          ],
+          "targets": [
+            "__all__"
+          ],
+          "value": "_exported_names()"
+        }
+      ],
+      "documentation": {
+        "literal_range": [
+          0,
+          69
+        ],
+        "sections": [],
+        "summary": "Experimental APIs with exports that require runtime evaluation.",
+        "text": "Experimental APIs with exports that require runtime evaluation."
+      },
+      "export_expression": {
+        "is_static": false,
+        "range": [
+          540,
+          557
+        ],
+        "text": "_exported_names()"
+      },
+      "exports": null,
+      "path": "python/foo/experimental.py",
+      "reexports": [],
+      "source_type": "python"
+    },
+    {
+      "attribute_documentation": [
+        {
+          "name": "DEFAULT_TOLERANCE",
+          "text": "Default convergence tolerance used by :func:`fit`."
+        },
+        {
+          "name": "SUPPORTED_SOLVERS",
+          "text": "Solver names accepted by :func:`fit`."
+        }
+      ],
+      "declarations": [
+        {
+          "annotation": "Final",
+          "kind": "annotated-assignment",
+          "name": "DEFAULT_TOLERANCE",
+          "range": [
+            192,
+            223
+          ],
+          "value": "1e-8"
+        },
+        {
+          "annotation": "Final",
+          "kind": "annotated-assignment",
+          "name": "SUPPORTED_SOLVERS",
+          "range": [
+            282,
+            325
+          ],
+          "value": "(\"normal\", \"qr\")"
+        },
+        {
+          "decorators": [
+            "dataclass(frozen=True)"
+          ],
+          "documentation": {
+            "literal_range": [
+              422,
+              645
+            ],
+            "sections": [
+              {
+                "entries": [
+                  {
+                    "decoded_range": [
+                      80,
+                      133
+                    ],
+                    "default": null,
+                    "name": "iterations",
+                    "text": "iterations : int\n        Number of solver iterations.",
+                    "type": "int"
+                  },
+                  {
+                    "decoded_range": [
+                      138,
+                      212
+                    ],
+                    "default": null,
+                    "name": "converged",
+                    "text": "converged : bool\n        Whether the solver met its convergence criterion.",
+                    "type": "bool"
+                  }
+                ],
+                "kind": "Parameters"
+              }
+            ],
+            "summary": "Information collected while fitting a model.",
+            "text": "Information collected while fitting a model.\n\n    Parameters\n    ----------\n    iterations : int\n        Number of solver iterations.\n    converged : bool\n        Whether the solver met its convergence criterion.\n    "
+          },
+          "kind": "class",
+          "members": [
+            {
+              "annotation": "int",
+              "kind": "annotated-assignment",
+              "name": "iterations",
+              "range": [
+                651,
+                666
+              ],
+              "value": null
+            },
+            {
+              "annotation": "bool",
+              "kind": "annotated-assignment",
+              "name": "converged",
+              "range": [
+                671,
+                686
+              ],
+              "value": null
+            }
+          ],
+          "name": "FitDiagnostics",
+          "range": [
+            372,
+            686
+          ]
+        },
+        {
+          "decorators": [],
+          "documentation": {
+            "literal_range": [
+              709,
+              945
+            ],
+            "sections": [
+              {
+                "entries": [
+                  {
+                    "decoded_range": [
+                      58,
+                      159
+                    ],
+                    "default": null,
+                    "name": "coefficients",
+                    "text": "coefficients : sequence of float\n        Coefficients ordered like the columns in the feature matrix.",
+                    "type": "sequence of float"
+                  },
+                  {
+                    "decoded_range": [
+                      164,
+                      225
+                    ],
+                    "default": null,
+                    "name": "intercept",
+                    "text": "intercept : float\n        Constant added to every prediction.",
+                    "type": "float"
+                  }
+                ],
+                "kind": "Parameters"
+              }
+            ],
+            "summary": "A fitted linear model.",
+            "text": "A fitted linear model.\n\n    Parameters\n    ----------\n    coefficients : sequence of float\n        Coefficients ordered like the columns in the feature matrix.\n    intercept : float\n        Constant added to every prediction.\n    "
+          },
+          "kind": "class",
+          "members": [
+            {
+              "decorators": [],
+              "documentation": null,
+              "kind": "function",
+              "name": "__init__",
+              "parameters": "(self, coefficients: Sequence[float], intercept: float)",
+              "range": [
+                951,
+                1145
+              ],
+              "returns": "None"
+            },
+            {
+              "decorators": [
+                "property"
+              ],
+              "documentation": {
+                "literal_range": [
+                  1218,
+                  1248
+                ],
+                "sections": [],
+                "summary": "The fitted coefficients.",
+                "text": "The fitted coefficients."
+              },
+              "kind": "function",
+              "name": "coefficients",
+              "parameters": "(self)",
+              "range": [
+                1151,
+                1283
+              ],
+              "returns": "tuple[float, ...]"
+            },
+            {
+              "decorators": [
+                "property"
+              ],
+              "documentation": {
+                "literal_range": [
+                  1341,
+                  1368
+                ],
+                "sections": [],
+                "summary": "The fitted intercept.",
+                "text": "The fitted intercept."
+              },
+              "kind": "function",
+              "name": "intercept",
+              "parameters": "(self)",
+              "range": [
+                1289,
+                1400
+              ],
+              "returns": "float"
+            },
+            {
+              "decorators": [],
+              "documentation": {
+                "literal_range": [
+                  1591,
+                  2032
+                ],
+                "sections": [
+                  {
+                    "entries": [
+                      {
+                        "decoded_range": [
+                          73,
+                          153
+                        ],
+                        "default": null,
+                        "name": "features",
+                        "text": "features : sequence of sequence of float\n            Rectangular feature matrix.",
+                        "type": "sequence of sequence of float"
+                      },
+                      {
+                        "decoded_range": [
+                          162,
+                          230
+                        ],
+                        "default": null,
+                        "name": "target",
+                        "text": "target : sequence of float\n            Response value for every row.",
+                        "type": "sequence of float"
+                      },
+                      {
+                        "decoded_range": [
+                          239,
+                          314
+                        ],
+                        "default": "1e-8",
+                        "name": "tolerance",
+                        "text": "tolerance : float, default=1e-8\n            Positive convergence tolerance.",
+                        "type": "float"
+                      }
+                    ],
+                    "kind": "Parameters"
+                  },
+                  {
+                    "entries": [
+                      {
+                        "decoded_range": [
+                          356,
+                          426
+                        ],
+                        "default": null,
+                        "name": null,
+                        "text": "FooModel\n            This model after replacing its fitted parameters.",
+                        "type": "FooModel"
+                      }
+                    ],
+                    "kind": "Returns"
+                  }
+                ],
+                "summary": "Refit the model in place.",
+                "text": "Refit the model in place.\n\n        Parameters\n        ----------\n        features : sequence of sequence of float\n            Rectangular feature matrix.\n        target : sequence of float\n            Response value for every row.\n        tolerance : float, default=1e-8\n            Positive convergence tolerance.\n\n        Returns\n        -------\n        FooModel\n            This model after replacing its fitted parameters.\n        "
+              },
+              "kind": "function",
+              "name": "fit",
+              "parameters": "(\n        self,\n        features: Sequence[Sequence[float]],\n        target: Sequence[float],\n        *,\n        tolerance: float = DEFAULT_TOLERANCE,\n    )",
+              "range": [
+                1406,
+                2205
+              ],
+              "returns": "FooModel"
+            },
+            {
+              "decorators": [],
+              "documentation": {
+                "literal_range": [
+                  2333,
+                  2690
+                ],
+                "sections": [
+                  {
+                    "entries": [
+                      {
+                        "decoded_range": [
+                          92,
+                          210
+                        ],
+                        "default": null,
+                        "name": "features",
+                        "text": "features : sequence of float or sequence of sequence of float\n            One feature row or a matrix of feature rows.",
+                        "type": "sequence of float or sequence of sequence of float"
+                      }
+                    ],
+                    "kind": "Parameters"
+                  },
+                  {
+                    "entries": [
+                      {
+                        "decoded_range": [
+                          252,
+                          342
+                        ],
+                        "default": null,
+                        "name": null,
+                        "text": "float or list of float\n            A scalar for one row, or one prediction per matrix row.",
+                        "type": "float or list of float"
+                      }
+                    ],
+                    "kind": "Returns"
+                  }
+                ],
+                "summary": "Predict one response or a list of responses.",
+                "text": "Predict one response or a list of responses.\n\n        Parameters\n        ----------\n        features : sequence of float or sequence of sequence of float\n            One feature row or a matrix of feature rows.\n\n        Returns\n        -------\n        float or list of float\n            A scalar for one row, or one prediction per matrix row.\n        "
+              },
+              "kind": "function",
+              "name": "predict",
+              "parameters": "(\n        self, features: Sequence[float] | Sequence[Sequence[float]], /\n    )",
+              "range": [
+                2211,
+                2891
+              ],
+              "returns": "float | list[float]"
+            },
+            {
+              "decorators": [],
+              "documentation": null,
+              "kind": "function",
+              "name": "_predict_one",
+              "parameters": "(self, features: Sequence[float])",
+              "range": [
+                2897,
+                3256
+              ],
+              "returns": "float"
+            }
+          ],
+          "name": "FooModel",
+          "range": [
+            689,
+            3256
+          ]
+        },
+        {
+          "decorators": [],
+          "documentation": {
+            "literal_range": [
+              3506,
+              4708
+            ],
+            "sections": [
+              {
+                "entries": [
+                  {
+                    "decoded_range": [
+                      55,
+                      157
+                    ],
+                    "default": null,
+                    "name": "features",
+                    "text": "features : sequence of sequence of float\n        Rectangular feature matrix with observations in rows.",
+                    "type": "sequence of sequence of float"
+                  },
+                  {
+                    "decoded_range": [
+                      162,
+                      234
+                    ],
+                    "default": null,
+                    "name": "target",
+                    "text": "target : sequence of float\n        Response value for every observation.",
+                    "type": "sequence of float"
+                  },
+                  {
+                    "decoded_range": [
+                      239,
+                      332
+                    ],
+                    "default": "\"normal\"",
+                    "name": "solver",
+                    "text": "solver : {\"normal\", \"qr\"}, default=\"normal\"\n        Solver used to estimate the coefficients.",
+                    "type": "{\"normal\", \"qr\"}"
+                  },
+                  {
+                    "decoded_range": [
+                      337,
+                      408
+                    ],
+                    "default": "1e-8",
+                    "name": "tolerance",
+                    "text": "tolerance : float, default=1e-8\n        Positive convergence tolerance.",
+                    "type": "float"
+                  },
+                  {
+                    "decoded_range": [
+                      413,
+                      522
+                    ],
+                    "default": "False",
+                    "name": "return_diagnostics",
+                    "text": "return_diagnostics : bool, default=False\n        Return solver diagnostics together with the model when true.",
+                    "type": "bool"
+                  }
+                ],
+                "kind": "Parameters"
+              },
+              {
+                "entries": [
+                  {
+                    "decoded_range": [
+                      552,
+                      669
+                    ],
+                    "default": null,
+                    "name": null,
+                    "text": "FooModel or tuple of FooModel and FitDiagnostics\n        The fitted model, optionally paired with solver diagnostics.",
+                    "type": "FooModel or tuple of FooModel and FitDiagnostics"
+                  }
+                ],
+                "kind": "Returns"
+              },
+              {
+                "entries": [
+                  {
+                    "decoded_range": [
+                      697,
+                      770
+                    ],
+                    "default": null,
+                    "name": null,
+                    "text": "ValueError\n        If the inputs are empty, incompatible, or unsupported.",
+                    "type": "ValueError"
+                  }
+                ],
+                "kind": "Raises"
+              },
+              {
+                "entries": [],
+                "kind": "FreeText(Notes)"
+              },
+              {
+                "entries": [],
+                "kind": "References"
+              },
+              {
+                "entries": [],
+                "kind": "FreeText(Examples)"
+              }
+            ],
+            "summary": "Fit a linear model.",
+            "text": "Fit a linear model.\n\n    Parameters\n    ----------\n    features : sequence of sequence of float\n        Rectangular feature matrix with observations in rows.\n    target : sequence of float\n        Response value for every observation.\n    solver : {\"normal\", \"qr\"}, default=\"normal\"\n        Solver used to estimate the coefficients.\n    tolerance : float, default=1e-8\n        Positive convergence tolerance.\n    return_diagnostics : bool, default=False\n        Return solver diagnostics together with the model when true.\n\n    Returns\n    -------\n    FooModel or tuple of FooModel and FitDiagnostics\n        The fitted model, optionally paired with solver diagnostics.\n\n    Raises\n    ------\n    ValueError\n        If the inputs are empty, incompatible, or unsupported.\n\n    Notes\n    -----\n    This fixture uses the mean response as a deterministic baseline estimator;\n    production bindings delegate fitting to the native Foo library.\n\n    References\n    ----------\n    .. [1] A. Researcher, \"A Small Model,\" Journal of Fixtures, 1, 1-4, 2024.\n\n    Examples\n    --------\n    >>> model = fit([[0.0], [1.0]], [1.0, 3.0])\n    >>> model.intercept\n    2.0\n    >>> model.predict([2.0])\n    2.0\n    "
+          },
+          "kind": "function",
+          "name": "fit",
+          "parameters": "(\n    features: Sequence[Sequence[float]],\n    target: Sequence[float],\n    *,\n    solver: str = \"normal\",\n    tolerance: float = DEFAULT_TOLERANCE,\n    return_diagnostics: bool = False,\n)",
+          "range": [
+            3259,
+            5592
+          ],
+          "returns": "FooModel | tuple[FooModel, FitDiagnostics]"
+        },
+        {
+          "decorators": [],
+          "documentation": {
+            "literal_range": [
+              5685,
+              6095
+            ],
+            "sections": [
+              {
+                "entries": [
+                  {
+                    "decoded_range": [
+                      78,
+                      138
+                    ],
+                    "default": null,
+                    "name": "actual",
+                    "text": "actual : sequence of float\n        Observed response values.",
+                    "type": "sequence of float"
+                  },
+                  {
+                    "decoded_range": [
+                      143,
+                      207
+                    ],
+                    "default": null,
+                    "name": "predicted",
+                    "text": "predicted : sequence of float\n        Predicted response values.",
+                    "type": "sequence of float"
+                  }
+                ],
+                "kind": "Parameters"
+              },
+              {
+                "entries": [
+                  {
+                    "decoded_range": [
+                      237,
+                      313
+                    ],
+                    "default": null,
+                    "name": null,
+                    "text": "float\n        Mean squared difference between observed and predicted values.",
+                    "type": "float"
+                  }
+                ],
+                "kind": "Returns"
+              },
+              {
+                "entries": [],
+                "kind": "FreeText(Examples)"
+              }
+            ],
+            "summary": "Compute the mean squared prediction error.",
+            "text": "Compute the mean squared prediction error.\n\n    Parameters\n    ----------\n    actual : sequence of float\n        Observed response values.\n    predicted : sequence of float\n        Predicted response values.\n\n    Returns\n    -------\n    float\n        Mean squared difference between observed and predicted values.\n\n    Examples\n    --------\n    >>> mean_squared_error([1.0, 2.0], [1.0, 3.0])\n    0.5\n    "
+          },
+          "kind": "function",
+          "name": "mean_squared_error",
+          "parameters": "(actual: Sequence[float], predicted: Sequence[float])",
+          "range": [
+            5595,
+            6425
+          ],
+          "returns": "float"
+        }
+      ],
+      "documentation": {
+        "literal_range": [
+          0,
+          35
+        ],
+        "sections": [],
+        "summary": "Model fitting and evaluation.",
+        "text": "Model fitting and evaluation."
+      },
+      "export_expression": null,
+      "exports": null,
+      "path": "python/foo/model.py",
+      "reexports": [],
+      "source_type": "python"
+    },
+    {
+      "attribute_documentation": [],
+      "declarations": [
+        {
+          "annotation": "Final[float]",
+          "kind": "annotated-assignment",
+          "name": "DEFAULT_TOLERANCE",
+          "range": [
+            82,
+            113
+          ],
+          "value": null
+        },
+        {
+          "annotation": "Final[tuple[str, ...]]",
+          "kind": "annotated-assignment",
+          "name": "SUPPORTED_SOLVERS",
+          "range": [
+            114,
+            155
+          ],
+          "value": null
+        },
+        {
+          "decorators": [],
+          "documentation": null,
+          "kind": "class",
+          "members": [
+            {
+              "annotation": "int",
+              "kind": "annotated-assignment",
+              "name": "iterations",
+              "range": [
+                183,
+                198
+              ],
+              "value": null
+            },
+            {
+              "annotation": "bool",
+              "kind": "annotated-assignment",
+              "name": "converged",
+              "range": [
+                203,
+                218
+              ],
+              "value": null
+            }
+          ],
+          "name": "FitDiagnostics",
+          "range": [
+            157,
+            218
+          ]
+        },
+        {
+          "decorators": [],
+          "documentation": null,
+          "kind": "class",
+          "members": [
+            {
+              "decorators": [],
+              "documentation": null,
+              "kind": "function",
+              "name": "__init__",
+              "parameters": "(self, coefficients: Sequence[float], intercept: float)",
+              "range": [
+                240,
+                320
+              ],
+              "returns": "None"
+            },
+            {
+              "decorators": [
+                "property"
+              ],
+              "documentation": null,
+              "kind": "function",
+              "name": "coefficients",
+              "parameters": "(self)",
+              "range": [
+                325,
+                387
+              ],
+              "returns": "tuple[float, ...]"
+            },
+            {
+              "decorators": [
+                "property"
+              ],
+              "documentation": null,
+              "kind": "function",
+              "name": "intercept",
+              "parameters": "(self)",
+              "range": [
+                392,
+                439
+              ],
+              "returns": "float"
+            },
+            {
+              "decorators": [],
+              "documentation": null,
+              "kind": "function",
+              "name": "fit",
+              "parameters": "(\n        self,\n        features: Sequence[Sequence[float]],\n        target: Sequence[float],\n        *,\n        tolerance: float = ...,\n    )",
+              "range": [
+                444,
+                610
+              ],
+              "returns": "FooModel"
+            },
+            {
+              "decorators": [
+                "overload"
+              ],
+              "documentation": null,
+              "kind": "function",
+              "name": "predict",
+              "parameters": "(self, features: Sequence[float], /)",
+              "range": [
+                615,
+                690
+              ],
+              "returns": "float"
+            },
+            {
+              "decorators": [
+                "overload"
+              ],
+              "documentation": null,
+              "kind": "function",
+              "name": "predict",
+              "parameters": "(self, features: Sequence[Sequence[float]], /)",
+              "range": [
+                695,
+                786
+              ],
+              "returns": "list[float]"
+            }
+          ],
+          "name": "FooModel",
+          "range": [
+            220,
+            786
+          ]
+        },
+        {
+          "decorators": [
+            "overload"
+          ],
+          "documentation": null,
+          "kind": "function",
+          "name": "fit",
+          "parameters": "(\n    features: Sequence[Sequence[float]],\n    target: Sequence[float],\n    *,\n    solver: Literal[\"normal\", \"qr\"] = \"normal\",\n    tolerance: float = ...,\n    return_diagnostics: Literal[False] = False,\n)",
+          "range": [
+            788,
+            1026
+          ],
+          "returns": "FooModel"
+        },
+        {
+          "decorators": [
+            "overload"
+          ],
+          "documentation": null,
+          "kind": "function",
+          "name": "fit",
+          "parameters": "(\n    features: Sequence[Sequence[float]],\n    target: Sequence[float],\n    *,\n    solver: Literal[\"normal\", \"qr\"] = \"normal\",\n    tolerance: float = ...,\n    return_diagnostics: Literal[True],\n)",
+          "range": [
+            1027,
+            1279
+          ],
+          "returns": "tuple[FooModel, FitDiagnostics]"
+        },
+        {
+          "decorators": [],
+          "documentation": null,
+          "kind": "function",
+          "name": "mean_squared_error",
+          "parameters": "(\n    actual: Sequence[float], predicted: Sequence[float]\n)",
+          "range": [
+            1280,
+            1375
+          ],
+          "returns": "float"
+        }
+      ],
+      "documentation": null,
+      "export_expression": null,
+      "exports": null,
+      "path": "python/foo/model.pyi",
+      "reexports": [],
+      "source_type": "stub"
+    }
+  ],
+  "preferred_annotation": {
+    "path": "model.pyi",
+    "range": [
+      101,
+      113
+    ],
+    "text": "Final[float]"
+  },
+  "reconciled_callables": [
+    {
+      "documentation_range": [
+        3509,
+        4705
+      ],
+      "documentation_source": "model.py",
+      "name": "fit",
+      "signature_source": "model.pyi",
+      "signatures": [
+        {
+          "declaration": "@overload\ndef fit(\n    features: Sequence[Sequence[float]],\n    target: Sequence[float],\n    *,\n    solver: Literal[\"normal\", \"qr\"] = \"normal\",\n    tolerance: float = ...,\n    return_diagnostics: Literal[False] = False,\n) -> FooModel: ...",
+          "decorators": [
+            "overload"
+          ],
+          "positional_only": [],
+          "range": [
+            788,
+            1026
+          ],
+          "return_annotation": "FooModel"
+        },
+        {
+          "declaration": "@overload\ndef fit(\n    features: Sequence[Sequence[float]],\n    target: Sequence[float],\n    *,\n    solver: Literal[\"normal\", \"qr\"] = \"normal\",\n    tolerance: float = ...,\n    return_diagnostics: Literal[True],\n) -> tuple[FooModel, FitDiagnostics]: ...",
+          "decorators": [
+            "overload"
+          ],
+          "positional_only": [],
+          "range": [
+            1027,
+            1279
+          ],
+          "return_annotation": "tuple[FooModel, FitDiagnostics]"
+        }
+      ],
+      "summary": "Fit a linear model."
+    },
+    {
+      "documentation_range": [
+        2336,
+        2687
+      ],
+      "documentation_source": "model.py",
+      "name": "predict",
+      "signature_source": "model.pyi",
+      "signatures": [
+        {
+          "declaration": "@overload\n    def predict(self, features: Sequence[float], /) -> float: ...",
+          "decorators": [
+            "overload"
+          ],
+          "positional_only": [
+            "self",
+            "features"
+          ],
+          "range": [
+            615,
+            690
+          ],
+          "return_annotation": "float"
+        },
+        {
+          "declaration": "@overload\n    def predict(self, features: Sequence[Sequence[float]], /) -> list[float]: ...",
+          "decorators": [
+            "overload"
+          ],
+          "positional_only": [
+            "self",
+            "features"
+          ],
+          "range": [
+            695,
+            786
+          ],
+          "return_annotation": "list[float]"
+        }
+      ],
+      "summary": "Predict one response or a list of responses."
+    }
+  ],
+  "schema": "python-spike-observation-v1",
+  "typed_marker": true
+}

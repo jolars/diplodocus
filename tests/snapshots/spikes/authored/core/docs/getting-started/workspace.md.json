@@ -1,0 +1,190 @@
+{
+  "document": {
+    "span": {
+      "start": 0,
+      "end": 251
+    },
+    "frontmatter": null,
+    "blocks": [
+      {
+        "type": "heading",
+        "level": 1,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Workspace layout",
+            "span": {
+              "start": 2,
+              "end": 18
+            }
+          }
+        ],
+        "span": {
+          "start": 0,
+          "end": 19
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Diplodocus combines the core project with the Python and R packages in one site.",
+            "span": {
+              "start": 20,
+              "end": 100
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 100,
+              "end": 101
+            }
+          },
+          {
+            "type": "text",
+            "value": "The project guide can link directly to ",
+            "span": {
+              "start": 101,
+              "end": 140
+            }
+          },
+          {
+            "type": "semantic-reference",
+            "target": "pyfoo::foo.fit",
+            "span": {
+              "start": 140,
+              "end": 158
+            },
+            "target_span": {
+              "start": 142,
+              "end": 156
+            }
+          },
+          {
+            "type": "text",
+            "value": ".",
+            "span": {
+              "start": 158,
+              "end": 159
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 159,
+              "end": 160
+            }
+          }
+        ],
+        "span": {
+          "start": 20,
+          "end": 160
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "image",
+            "alt": [
+              {
+                "type": "text",
+                "value": "Workspace layout",
+                "span": {
+                  "start": 163,
+                  "end": 179
+                }
+              }
+            ],
+            "target": "../assets/workspace.svg",
+            "title": null,
+            "attributes": {
+              "identifier": null,
+              "classes": [],
+              "key_values": []
+            },
+            "span": {
+              "start": 161,
+              "end": 205
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 205,
+              "end": 206
+            }
+          }
+        ],
+        "span": {
+          "start": 161,
+          "end": 206
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Return to the ",
+            "span": {
+              "start": 207,
+              "end": 221
+            }
+          },
+          {
+            "type": "link",
+            "inlines": [
+              {
+                "type": "text",
+                "value": "project guide",
+                "span": {
+                  "start": 222,
+                  "end": 235
+                }
+              }
+            ],
+            "target": "../index.md",
+            "title": null,
+            "attributes": {
+              "identifier": null,
+              "classes": [],
+              "key_values": []
+            },
+            "span": {
+              "start": 221,
+              "end": 249
+            }
+          },
+          {
+            "type": "text",
+            "value": ".",
+            "span": {
+              "start": 249,
+              "end": 250
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 250,
+              "end": 251
+            }
+          }
+        ],
+        "span": {
+          "start": 207,
+          "end": 251
+        }
+      }
+    ]
+  },
+  "diagnostics": []
+}

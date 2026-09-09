@@ -16,6 +16,8 @@ use jupyter_zmq_client::{
     peek_ports_with_listeners, peer_identity_for_session, wait_for_iopub_welcome,
 };
 
+#[path = "support/execution_observation.rs"]
+mod execution_observation;
 mod support;
 
 const IO_TIMEOUT: Duration = Duration::from_secs(15);
@@ -225,6 +227,27 @@ async fn exercise_real_kernel(case: RealKernelCase) {
         .expect("kernel process exit timeout")
         .expect("wait for kernel process");
     assert!(status.success(), "kernel process exited with {status}");
+
+    let mut observation = execution_observation::ExecutionObservation::default();
+    support::assert_json_golden(
+        &serde_json::json!({
+            "schema": "execution-spike-observation-v1",
+            "producer": "real-kernel",
+            "path": case.path,
+            "kernel": {
+                "name": case.kernel,
+                "implementation": info.implementation,
+                "implementation_version": info.implementation_version,
+                "language": info.language_info.name,
+                "language_version": info.language_info.version,
+                "protocol_version": info.protocol_version,
+            },
+            "cells": cells.iter().zip(&outputs).enumerate().map(|(ordinal, (cell, (reply, outputs)))| {
+                observation.cell(ordinal, cell, reply, outputs)
+            }).collect::<Vec<_>>(),
+        }),
+        format!("spikes/execution/real-{}.json", case.kernel),
+    );
 }
 
 async fn kernel_info(shell: &mut ClientShellConnection) -> KernelInfoReply {

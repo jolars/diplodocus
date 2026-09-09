@@ -192,13 +192,14 @@ extraction and explicitly authorized authored execution.
   covering source, normalized options, engine and kernel identity, relevant
   toolchain versions, and declared environment inputs. See [the page
   execution-cache contract](docs/spikes/page-execution-cache.md).
-- [ ] Record the selected approaches and rejected alternatives in
+- [x] Record the selected approaches and rejected alternatives in
   `docs/decisions/0001-static-extraction.md`.
-- [ ] Record the authored-format and execution decisions, including rejected Q2,
+- [x] Record the authored-format and execution decisions, including rejected Q2,
   Pandoc-projector, temporary-Markdown, and direct-HTML boundaries, in
   `docs/decisions/0002-authored-content.md`.
-- [ ] Capture exploratory output as golden fixtures before replacing spike code
-  with production extractors.
+- [x] Capture exploratory output as golden fixtures before replacing spike code
+  with production extractors. See [the golden-fixture inventory and capture
+  guide](docs/spikes/golden-fixtures.md).
 
 **Exit gate:** Every required Python and R API construct has a selected
 Rust-native static extraction path or an explicit diagnostic; every authored

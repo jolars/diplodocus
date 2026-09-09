@@ -1,0 +1,32 @@
+{
+  "malformed": {
+    "errors": [
+      {
+        "message": "Expected a parameter or the end of the parameter list at byte range 11..12",
+        "range": [
+          11,
+          12
+        ]
+      },
+      {
+        "message": "Expected `)`, found newline at byte range 12..13",
+        "range": [
+          12,
+          13
+        ]
+      }
+    ],
+    "source": "def broken(:\n    pass\n",
+    "unsupported_count": 0
+  },
+  "versioned": {
+    "error_count": 0,
+    "kind": "TypeAliasStatement",
+    "range": [
+      0,
+      4
+    ],
+    "source": "type Alias = int\n",
+    "target": "3.11"
+  }
+}

@@ -29,6 +29,10 @@ Native error channels, dynamic cases, source-location gaps, and adapter recovery
 rules are recorded in
 [`static-extraction-failure-modes.md`](static-extraction-failure-modes.md).
 
+The accepted decision is [ADR 0001](../decisions/0001-static-extraction.md).
+Exploratory outputs and failure observations are preserved in the
+[golden-fixture inventory](golden-fixtures.md).
+
 ## Boundary
 
 ```text

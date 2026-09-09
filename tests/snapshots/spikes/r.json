@@ -1,0 +1,2205 @@
+{
+  "description": {
+    "dependencies": [
+      {
+        "entries": [
+          {
+            "constraints": [
+              {
+                "operator": "Ge",
+                "version": "4.3"
+              }
+            ],
+            "malformed": false,
+            "name": "R"
+          }
+        ],
+        "field": "Depends"
+      },
+      {
+        "entries": [
+          {
+            "constraints": [],
+            "malformed": false,
+            "name": "stats"
+          }
+        ],
+        "field": "Imports"
+      },
+      {
+        "entries": [
+          {
+            "constraints": [
+              {
+                "operator": "Ge",
+                "version": "3.2.0"
+              }
+            ],
+            "malformed": false,
+            "name": "testthat"
+          }
+        ],
+        "field": "Suggests"
+      }
+    ],
+    "fields": [
+      {
+        "name": "Package",
+        "value": "foo"
+      },
+      {
+        "name": "Type",
+        "value": "Package"
+      },
+      {
+        "name": "Title",
+        "value": "Statistical Models with Foo"
+      },
+      {
+        "name": "Version",
+        "value": "1.8.0"
+      },
+      {
+        "name": "Authors@R",
+        "value": "person(\"Foo\", \"Contributors\", role = c(\"aut\", \"cre\"),\nemail = \"maintainers@example.com\")"
+      },
+      {
+        "name": "Author",
+        "value": "Foo Contributors [aut, cre]"
+      },
+      {
+        "name": "Maintainer",
+        "value": "Foo Contributors <maintainers@example.com>"
+      },
+      {
+        "name": "Description",
+        "value": "R bindings for the Foo statistical library. The package exposes a\nsmall model-fitting API used by Diplodocus's acceptance workspace."
+      },
+      {
+        "name": "License",
+        "value": "MIT + file LICENSE"
+      },
+      {
+        "name": "Encoding",
+        "value": "UTF-8"
+      },
+      {
+        "name": "Depends",
+        "value": "R (>= 4.3)"
+      },
+      {
+        "name": "Imports",
+        "value": "stats"
+      },
+      {
+        "name": "Suggests",
+        "value": "testthat (>= 3.2.0)"
+      },
+      {
+        "name": "Config/testthat/edition",
+        "value": "3"
+      },
+      {
+        "name": "NeedsCompilation",
+        "value": "no"
+      }
+    ],
+    "path": "DESCRIPTION"
+  },
+  "mode": "static",
+  "namespace": {
+    "directives": [
+      {
+        "arguments": [
+          "experimental_summary"
+        ],
+        "name": "export",
+        "range": [
+          0,
+          28
+        ],
+        "source": "export(experimental_summary)"
+      },
+      {
+        "arguments": [
+          "fit"
+        ],
+        "name": "export",
+        "range": [
+          29,
+          40
+        ],
+        "source": "export(fit)"
+      },
+      {
+        "arguments": [
+          "foo_model"
+        ],
+        "name": "export",
+        "range": [
+          41,
+          58
+        ],
+        "source": "export(foo_model)"
+      },
+      {
+        "arguments": [
+          "mean_squared_error"
+        ],
+        "name": "export",
+        "range": [
+          59,
+          85
+        ],
+        "source": "export(mean_squared_error)"
+      },
+      {
+        "arguments": [
+          "fit",
+          "default"
+        ],
+        "name": "S3method",
+        "range": [
+          86,
+          107
+        ],
+        "source": "S3method(fit,default)"
+      },
+      {
+        "arguments": [
+          "fit",
+          "foo_model"
+        ],
+        "name": "S3method",
+        "range": [
+          108,
+          131
+        ],
+        "source": "S3method(fit,foo_model)"
+      },
+      {
+        "arguments": [
+          "predict",
+          "foo_model"
+        ],
+        "name": "S3method",
+        "range": [
+          132,
+          159
+        ],
+        "source": "S3method(predict,foo_model)"
+      },
+      {
+        "arguments": [
+          "stats",
+          "predict"
+        ],
+        "name": "importFrom",
+        "range": [
+          160,
+          185
+        ],
+        "source": "importFrom(stats,predict)"
+      }
+    ],
+    "path": "NAMESPACE"
+  },
+  "schema": "r-spike-observation-v1",
+  "sources": [
+    {
+      "functions": [
+        {
+          "formals": [
+            {
+              "default": null,
+              "name": "x",
+              "range": [
+                33,
+                34
+              ],
+              "source": "x"
+            }
+          ],
+          "name": "experimental_summary",
+          "range": [
+            0,
+            206
+          ],
+          "source": "experimental_summary <- function(x) {\n  x <- as.double(x)\n  if (length(x) == 0L) {\n    stop(\"`x` must not be empty.\", call. = FALSE)\n  }\n\n  c(minimum = min(x), median = stats::median(x), maximum = max(x))\n}"
+        }
+      ],
+      "path": "R/experimental.R"
+    },
+    {
+      "functions": [
+        {
+          "formals": [
+            {
+              "default": null,
+              "name": "x",
+              "range": [
+                16,
+                17
+              ],
+              "source": "x"
+            },
+            {
+              "default": null,
+              "name": "...",
+              "range": [
+                19,
+                22
+              ],
+              "source": "..."
+            }
+          ],
+          "name": "fit",
+          "range": [
+            0,
+            46
+          ],
+          "source": "fit <- function(x, ...) {\n  UseMethod(\"fit\")\n}"
+        },
+        {
+          "formals": [
+            {
+              "default": null,
+              "name": "x",
+              "range": [
+                75,
+                76
+              ],
+              "source": "x"
+            },
+            {
+              "default": null,
+              "name": "y",
+              "range": [
+                80,
+                81
+              ],
+              "source": "y"
+            },
+            {
+              "default": "c(\"normal\", \"qr\")",
+              "name": "solver",
+              "range": [
+                85,
+                111
+              ],
+              "source": "solver = c(\"normal\", \"qr\")"
+            },
+            {
+              "default": "1e-8",
+              "name": "tolerance",
+              "range": [
+                115,
+                131
+              ],
+              "source": "tolerance = 1e-8"
+            },
+            {
+              "default": null,
+              "name": "...",
+              "range": [
+                135,
+                138
+              ],
+              "source": "..."
+            }
+          ],
+          "name": "fit.default",
+          "range": [
+            48,
+            741
+          ],
+          "source": "fit.default <- function(\n  x,\n  y,\n  solver = c(\"normal\", \"qr\"),\n  tolerance = 1e-8,\n  ...\n) {\n  solver <- match.arg(solver)\n  if (!is.numeric(tolerance) || length(tolerance) != 1L || tolerance <= 0) {\n    stop(\"`tolerance` must be one positive number.\", call. = FALSE)\n  }\n\n  features <- as.matrix(x)\n  target <- as.double(y)\n  if (length(target) == 0L || nrow(features) != length(target)) {\n    stop(\"`x` and `y` must contain the same nonzero number of rows.\", call. = FALSE)\n  }\n  if (ncol(features) == 0L) {\n    stop(\"`x` must contain at least one column.\", call. = FALSE)\n  }\n\n  foo_model(\n    coefficients = rep(0, ncol(features)),\n    intercept = mean(target),\n    solver = solver\n  )\n}"
+        },
+        {
+          "formals": [
+            {
+              "default": null,
+              "name": "x",
+              "range": [
+                769,
+                770
+              ],
+              "source": "x"
+            },
+            {
+              "default": null,
+              "name": "features",
+              "range": [
+                772,
+                780
+              ],
+              "source": "features"
+            },
+            {
+              "default": null,
+              "name": "target",
+              "range": [
+                782,
+                788
+              ],
+              "source": "target"
+            },
+            {
+              "default": "1e-8",
+              "name": "tolerance",
+              "range": [
+                790,
+                806
+              ],
+              "source": "tolerance = 1e-8"
+            },
+            {
+              "default": null,
+              "name": "...",
+              "range": [
+                808,
+                811
+              ],
+              "source": "..."
+            }
+          ],
+          "name": "fit.foo_model",
+          "range": [
+            743,
+            1020
+          ],
+          "source": "fit.foo_model <- function(x, features, target, tolerance = 1e-8, ...) {\n  refitted <- fit.default(\n    features,\n    target,\n    tolerance = tolerance,\n    ...\n  )\n  x$coefficients <- refitted$coefficients\n  x$intercept <- refitted$intercept\n  x$solver <- refitted$solver\n  x\n}"
+        },
+        {
+          "formals": [
+            {
+              "default": null,
+              "name": "coefficients",
+              "range": [
+                1044,
+                1056
+              ],
+              "source": "coefficients"
+            },
+            {
+              "default": "0",
+              "name": "intercept",
+              "range": [
+                1058,
+                1071
+              ],
+              "source": "intercept = 0"
+            },
+            {
+              "default": "\"normal\"",
+              "name": "solver",
+              "range": [
+                1073,
+                1090
+              ],
+              "source": "solver = \"normal\""
+            }
+          ],
+          "name": "foo_model",
+          "range": [
+            1022,
+            1261
+          ],
+          "source": "foo_model <- function(coefficients, intercept = 0, solver = \"normal\") {\n  structure(\n    list(\n      coefficients = as.double(coefficients),\n      intercept = as.double(intercept),\n      solver = solver\n    ),\n    class = \"foo_model\"\n  )\n}"
+        },
+        {
+          "formals": [
+            {
+              "default": null,
+              "name": "object",
+              "range": [
+                1293,
+                1299
+              ],
+              "source": "object"
+            },
+            {
+              "default": null,
+              "name": "newdata",
+              "range": [
+                1301,
+                1308
+              ],
+              "source": "newdata"
+            },
+            {
+              "default": null,
+              "name": "...",
+              "range": [
+                1310,
+                1313
+              ],
+              "source": "..."
+            }
+          ],
+          "name": "predict.foo_model",
+          "range": [
+            1263,
+            1749
+          ],
+          "source": "predict.foo_model <- function(object, newdata, ...) {\n  single_observation <- is.null(dim(newdata))\n  features <- if (single_observation) {\n    matrix(newdata, nrow = 1L)\n  } else {\n    as.matrix(newdata)\n  }\n  if (ncol(features) != length(object$coefficients)) {\n    stop(\"`newdata` must have one column per coefficient.\", call. = FALSE)\n  }\n\n  predictions <- as.vector(features %*% object$coefficients + object$intercept)\n  if (single_observation) predictions[[1L]] else predictions\n}"
+        }
+      ],
+      "path": "R/fit.R"
+    },
+    {
+      "functions": [
+        {
+          "formals": [
+            {
+              "default": null,
+              "name": "actual",
+              "range": [
+                31,
+                37
+              ],
+              "source": "actual"
+            },
+            {
+              "default": null,
+              "name": "predicted",
+              "range": [
+                39,
+                48
+              ],
+              "source": "predicted"
+            }
+          ],
+          "name": "mean_squared_error",
+          "range": [
+            0,
+            329
+          ],
+          "source": "mean_squared_error <- function(actual, predicted) {\n  actual <- as.double(actual)\n  predicted <- as.double(predicted)\n  if (length(actual) == 0L || length(actual) != length(predicted)) {\n    stop(\n      \"`actual` and `predicted` must have the same nonzero length.\",\n      call. = FALSE\n    )\n  }\n\n  mean((actual - predicted)^2)\n}"
+        }
+      ],
+      "path": "R/metrics.R"
+    }
+  ],
+  "topics": [
+    {
+      "aliases": [
+        "experimental_summary"
+      ],
+      "dynamic": [
+        {
+          "code": "paste(\"computed\", \"documentation\")",
+          "results": "Text",
+          "stage": "Render",
+          "unresolved": true
+        }
+      ],
+      "keywords": [
+        "univar"
+      ],
+      "name": "experimental_summary",
+      "nodes": [
+        {
+          "kind": "comment",
+          "text": "% This dynamic fragment must produce an unsupported-Rd diagnostic in Diplodocus."
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        },
+        {
+          "children": [
+            {
+              "kind": "verbatim",
+              "text": "experimental_summary"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\name"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        },
+        {
+          "children": [
+            {
+              "kind": "verbatim",
+              "text": "experimental_summary"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\alias"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        },
+        {
+          "children": [
+            {
+              "kind": "text",
+              "text": "Experimental Numeric Summary"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\title"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        },
+        {
+          "children": [
+            {
+              "kind": "r-code",
+              "text": "\n"
+            },
+            {
+              "kind": "r-code",
+              "text": "experimental_summary(x)\n"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\usage"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        },
+        {
+          "children": [
+            {
+              "kind": "text",
+              "text": "\n"
+            },
+            {
+              "kind": "text",
+              "text": "  "
+            },
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "kind": "text",
+                      "text": "x"
+                    }
+                  ],
+                  "kind": "group"
+                },
+                {
+                  "children": [
+                    {
+                      "kind": "text",
+                      "text": "A nonempty numeric vector."
+                    }
+                  ],
+                  "kind": "group"
+                }
+              ],
+              "kind": "markup",
+              "option": null,
+              "tag": "\\item"
+            },
+            {
+              "kind": "text",
+              "text": "\n"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\arguments"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        },
+        {
+          "children": [
+            {
+              "kind": "text",
+              "text": "\n"
+            },
+            {
+              "kind": "text",
+              "text": "A named numeric vector containing the minimum, median, and maximum.\n"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\value"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        },
+        {
+          "children": [
+            {
+              "kind": "text",
+              "text": "\n"
+            },
+            {
+              "kind": "text",
+              "text": "Compute three summary statistics for a numeric vector.\n"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\description"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        },
+        {
+          "children": [
+            {
+              "kind": "text",
+              "text": "\n"
+            },
+            {
+              "kind": "text",
+              "text": "This page deliberately includes dynamic documentation that static extraction\n"
+            },
+            {
+              "kind": "text",
+              "text": "must not evaluate:\n"
+            },
+            {
+              "children": [
+                {
+                  "kind": "r-code",
+                  "text": "paste(\"computed\", \"documentation\")"
+                }
+              ],
+              "kind": "markup",
+              "option": [
+                {
+                  "kind": "text",
+                  "text": "stage=render,results=text"
+                }
+              ],
+              "tag": "\\Sexpr"
+            },
+            {
+              "kind": "text",
+              "text": "\n"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\details"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        },
+        {
+          "children": [
+            {
+              "kind": "r-code",
+              "text": "\n"
+            },
+            {
+              "kind": "r-code",
+              "text": "experimental_summary(c(3, 1, 2))\n"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\examples"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        },
+        {
+          "children": [
+            {
+              "kind": "text",
+              "text": "univar"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\keyword"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        }
+      ],
+      "path": "man/experimental_summary.Rd",
+      "range": null
+    },
+    {
+      "aliases": [
+        "fit",
+        "fit.default",
+        "fit.foo_model"
+      ],
+      "dynamic": [],
+      "keywords": [
+        "models"
+      ],
+      "name": "fit",
+      "nodes": [
+        {
+          "children": [
+            {
+              "kind": "verbatim",
+              "text": "fit"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\name"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        },
+        {
+          "children": [
+            {
+              "kind": "verbatim",
+              "text": "fit"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\alias"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        },
+        {
+          "children": [
+            {
+              "kind": "verbatim",
+              "text": "fit.default"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\alias"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        },
+        {
+          "children": [
+            {
+              "kind": "verbatim",
+              "text": "fit.foo_model"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\alias"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        },
+        {
+          "children": [
+            {
+              "kind": "text",
+              "text": "Fit a Foo Model"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\title"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        },
+        {
+          "children": [
+            {
+              "kind": "r-code",
+              "text": "\n"
+            },
+            {
+              "kind": "r-code",
+              "text": "fit(x, ...)\n"
+            },
+            {
+              "kind": "r-code",
+              "text": "\n"
+            },
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "kind": "text",
+                      "text": "fit"
+                    }
+                  ],
+                  "kind": "group"
+                },
+                {
+                  "children": [
+                    {
+                      "kind": "text",
+                      "text": "default"
+                    }
+                  ],
+                  "kind": "group"
+                }
+              ],
+              "kind": "markup",
+              "option": null,
+              "tag": "\\method"
+            },
+            {
+              "kind": "r-code",
+              "text": "(x, y, solver = c(\"normal\", \"qr\"),\n"
+            },
+            {
+              "kind": "r-code",
+              "text": "  tolerance = 1e-8, ...)\n"
+            },
+            {
+              "kind": "r-code",
+              "text": "\n"
+            },
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "kind": "text",
+                      "text": "fit"
+                    }
+                  ],
+                  "kind": "group"
+                },
+                {
+                  "children": [
+                    {
+                      "kind": "text",
+                      "text": "foo_model"
+                    }
+                  ],
+                  "kind": "group"
+                }
+              ],
+              "kind": "markup",
+              "option": null,
+              "tag": "\\method"
+            },
+            {
+              "kind": "r-code",
+              "text": "(x, features, target, tolerance = 1e-8, ...)\n"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\usage"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        },
+        {
+          "children": [
+            {
+              "kind": "text",
+              "text": "\n"
+            },
+            {
+              "kind": "text",
+              "text": "  "
+            },
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "kind": "text",
+                      "text": "x"
+                    }
+                  ],
+                  "kind": "group"
+                },
+                {
+                  "children": [
+                    {
+                      "kind": "text",
+                      "text": "For "
+                    },
+                    {
+                      "children": [
+                        {
+                          "kind": "r-code",
+                          "text": "fit.default()"
+                        }
+                      ],
+                      "kind": "markup",
+                      "option": null,
+                      "tag": "\\code"
+                    },
+                    {
+                      "kind": "text",
+                      "text": ", a numeric feature matrix. For\n"
+                    },
+                    {
+                      "kind": "text",
+                      "text": "    "
+                    },
+                    {
+                      "children": [
+                        {
+                          "kind": "r-code",
+                          "text": "fit.foo_model()"
+                        }
+                      ],
+                      "kind": "markup",
+                      "option": null,
+                      "tag": "\\code"
+                    },
+                    {
+                      "kind": "text",
+                      "text": ", an existing "
+                    },
+                    {
+                      "children": [
+                        {
+                          "kind": "r-code",
+                          "text": "foo_model"
+                        }
+                      ],
+                      "kind": "markup",
+                      "option": null,
+                      "tag": "\\code"
+                    },
+                    {
+                      "kind": "text",
+                      "text": " object."
+                    }
+                  ],
+                  "kind": "group"
+                }
+              ],
+              "kind": "markup",
+              "option": null,
+              "tag": "\\item"
+            },
+            {
+              "kind": "text",
+              "text": "\n"
+            },
+            {
+              "kind": "text",
+              "text": "  "
+            },
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "kind": "text",
+                      "text": "..."
+                    }
+                  ],
+                  "kind": "group"
+                },
+                {
+                  "children": [
+                    {
+                      "kind": "text",
+                      "text": "Additional arguments passed to an S3 method."
+                    }
+                  ],
+                  "kind": "group"
+                }
+              ],
+              "kind": "markup",
+              "option": null,
+              "tag": "\\item"
+            },
+            {
+              "kind": "text",
+              "text": "\n"
+            },
+            {
+              "kind": "text",
+              "text": "  "
+            },
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "kind": "text",
+                      "text": "y"
+                    }
+                  ],
+                  "kind": "group"
+                },
+                {
+                  "children": [
+                    {
+                      "kind": "text",
+                      "text": "A numeric response vector with one value per row of "
+                    },
+                    {
+                      "children": [
+                        {
+                          "kind": "r-code",
+                          "text": "x"
+                        }
+                      ],
+                      "kind": "markup",
+                      "option": null,
+                      "tag": "\\code"
+                    },
+                    {
+                      "kind": "text",
+                      "text": "."
+                    }
+                  ],
+                  "kind": "group"
+                }
+              ],
+              "kind": "markup",
+              "option": null,
+              "tag": "\\item"
+            },
+            {
+              "kind": "text",
+              "text": "\n"
+            },
+            {
+              "kind": "text",
+              "text": "  "
+            },
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "kind": "text",
+                      "text": "solver"
+                    }
+                  ],
+                  "kind": "group"
+                },
+                {
+                  "children": [
+                    {
+                      "kind": "text",
+                      "text": "The fitting algorithm, either "
+                    },
+                    {
+                      "children": [
+                        {
+                          "kind": "r-code",
+                          "text": "\"normal\""
+                        }
+                      ],
+                      "kind": "markup",
+                      "option": null,
+                      "tag": "\\code"
+                    },
+                    {
+                      "kind": "text",
+                      "text": " or "
+                    },
+                    {
+                      "children": [
+                        {
+                          "kind": "r-code",
+                          "text": "\"qr\""
+                        }
+                      ],
+                      "kind": "markup",
+                      "option": null,
+                      "tag": "\\code"
+                    },
+                    {
+                      "kind": "text",
+                      "text": "."
+                    }
+                  ],
+                  "kind": "group"
+                }
+              ],
+              "kind": "markup",
+              "option": null,
+              "tag": "\\item"
+            },
+            {
+              "kind": "text",
+              "text": "\n"
+            },
+            {
+              "kind": "text",
+              "text": "  "
+            },
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "kind": "text",
+                      "text": "tolerance"
+                    }
+                  ],
+                  "kind": "group"
+                },
+                {
+                  "children": [
+                    {
+                      "kind": "text",
+                      "text": "A positive convergence tolerance."
+                    }
+                  ],
+                  "kind": "group"
+                }
+              ],
+              "kind": "markup",
+              "option": null,
+              "tag": "\\item"
+            },
+            {
+              "kind": "text",
+              "text": "\n"
+            },
+            {
+              "kind": "text",
+              "text": "  "
+            },
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "kind": "text",
+                      "text": "features"
+                    }
+                  ],
+                  "kind": "group"
+                },
+                {
+                  "children": [
+                    {
+                      "kind": "text",
+                      "text": "A numeric feature matrix used to refit "
+                    },
+                    {
+                      "children": [
+                        {
+                          "kind": "r-code",
+                          "text": "x"
+                        }
+                      ],
+                      "kind": "markup",
+                      "option": null,
+                      "tag": "\\code"
+                    },
+                    {
+                      "kind": "text",
+                      "text": "."
+                    }
+                  ],
+                  "kind": "group"
+                }
+              ],
+              "kind": "markup",
+              "option": null,
+              "tag": "\\item"
+            },
+            {
+              "kind": "text",
+              "text": "\n"
+            },
+            {
+              "kind": "text",
+              "text": "  "
+            },
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "kind": "text",
+                      "text": "target"
+                    }
+                  ],
+                  "kind": "group"
+                },
+                {
+                  "children": [
+                    {
+                      "kind": "text",
+                      "text": "A numeric response vector used to refit "
+                    },
+                    {
+                      "children": [
+                        {
+                          "kind": "r-code",
+                          "text": "x"
+                        }
+                      ],
+                      "kind": "markup",
+                      "option": null,
+                      "tag": "\\code"
+                    },
+                    {
+                      "kind": "text",
+                      "text": "."
+                    }
+                  ],
+                  "kind": "group"
+                }
+              ],
+              "kind": "markup",
+              "option": null,
+              "tag": "\\item"
+            },
+            {
+              "kind": "text",
+              "text": "\n"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\arguments"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        },
+        {
+          "children": [
+            {
+              "kind": "text",
+              "text": "\n"
+            },
+            {
+              "kind": "text",
+              "text": "An object of class "
+            },
+            {
+              "children": [
+                {
+                  "kind": "r-code",
+                  "text": "\"foo_model\""
+                }
+              ],
+              "kind": "markup",
+              "option": null,
+              "tag": "\\code"
+            },
+            {
+              "kind": "text",
+              "text": ". The "
+            },
+            {
+              "children": [
+                {
+                  "kind": "r-code",
+                  "text": "foo_model"
+                }
+              ],
+              "kind": "markup",
+              "option": null,
+              "tag": "\\code"
+            },
+            {
+              "kind": "text",
+              "text": " method returns the\n"
+            },
+            {
+              "kind": "text",
+              "text": "supplied model with its fitted values replaced.\n"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\value"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        },
+        {
+          "children": [
+            {
+              "kind": "text",
+              "text": "\n"
+            },
+            {
+              "kind": "text",
+              "text": "Fit a deterministic baseline model through an S3 generic.\n"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\description"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        },
+        {
+          "children": [
+            {
+              "kind": "text",
+              "text": "\n"
+            },
+            {
+              "kind": "text",
+              "text": "The default method records a zero coefficient for each feature and uses the\n"
+            },
+            {
+              "kind": "text",
+              "text": "mean response as the intercept. The simple estimator keeps this acceptance\n"
+            },
+            {
+              "kind": "text",
+              "text": "fixture deterministic while exercising generic and method extraction.\n"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\details"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        },
+        {
+          "children": [
+            {
+              "kind": "text",
+              "text": "\n"
+            },
+            {
+              "kind": "text",
+              "text": "A. Researcher (2024). A Small Model. "
+            },
+            {
+              "children": [
+                {
+                  "kind": "text",
+                  "text": "Journal of Fixtures"
+                }
+              ],
+              "kind": "markup",
+              "option": null,
+              "tag": "\\emph"
+            },
+            {
+              "kind": "text",
+              "text": ", 1, 1--4.\n"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\references"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        },
+        {
+          "children": [
+            {
+              "kind": "r-code",
+              "text": "\n"
+            },
+            {
+              "kind": "r-code",
+              "text": "features <- matrix(c(0, 1), ncol = 1)\n"
+            },
+            {
+              "kind": "r-code",
+              "text": "model <- fit(features, c(1, 3))\n"
+            },
+            {
+              "kind": "r-code",
+              "text": "model$intercept\n"
+            },
+            {
+              "kind": "r-code",
+              "text": "\n"
+            },
+            {
+              "kind": "r-code",
+              "text": "fit(model, features, c(2, 4), tolerance = 1e-6)\n"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\examples"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        },
+        {
+          "children": [
+            {
+              "kind": "text",
+              "text": "models"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\keyword"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        }
+      ],
+      "path": "man/fit.Rd",
+      "range": null
+    },
+    {
+      "aliases": [
+        "foo_model",
+        "predict.foo_model"
+      ],
+      "dynamic": [],
+      "keywords": [
+        "models"
+      ],
+      "name": "foo_model",
+      "nodes": [
+        {
+          "children": [
+            {
+              "kind": "verbatim",
+              "text": "foo_model"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\name"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        },
+        {
+          "children": [
+            {
+              "kind": "verbatim",
+              "text": "foo_model"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\alias"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        },
+        {
+          "children": [
+            {
+              "kind": "verbatim",
+              "text": "predict.foo_model"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\alias"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        },
+        {
+          "children": [
+            {
+              "kind": "text",
+              "text": "Create and Use a Foo Model"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\title"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        },
+        {
+          "children": [
+            {
+              "kind": "r-code",
+              "text": "\n"
+            },
+            {
+              "kind": "r-code",
+              "text": "foo_model(coefficients, intercept = 0, solver = \"normal\")\n"
+            },
+            {
+              "kind": "r-code",
+              "text": "\n"
+            },
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "kind": "text",
+                      "text": "predict"
+                    }
+                  ],
+                  "kind": "group"
+                },
+                {
+                  "children": [
+                    {
+                      "kind": "text",
+                      "text": "foo_model"
+                    }
+                  ],
+                  "kind": "group"
+                }
+              ],
+              "kind": "markup",
+              "option": null,
+              "tag": "\\method"
+            },
+            {
+              "kind": "r-code",
+              "text": "(object, newdata, ...)\n"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\usage"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        },
+        {
+          "children": [
+            {
+              "kind": "text",
+              "text": "\n"
+            },
+            {
+              "kind": "text",
+              "text": "  "
+            },
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "kind": "text",
+                      "text": "coefficients"
+                    }
+                  ],
+                  "kind": "group"
+                },
+                {
+                  "children": [
+                    {
+                      "kind": "text",
+                      "text": "A numeric vector of fitted coefficients."
+                    }
+                  ],
+                  "kind": "group"
+                }
+              ],
+              "kind": "markup",
+              "option": null,
+              "tag": "\\item"
+            },
+            {
+              "kind": "text",
+              "text": "\n"
+            },
+            {
+              "kind": "text",
+              "text": "  "
+            },
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "kind": "text",
+                      "text": "intercept"
+                    }
+                  ],
+                  "kind": "group"
+                },
+                {
+                  "children": [
+                    {
+                      "kind": "text",
+                      "text": "A numeric intercept."
+                    }
+                  ],
+                  "kind": "group"
+                }
+              ],
+              "kind": "markup",
+              "option": null,
+              "tag": "\\item"
+            },
+            {
+              "kind": "text",
+              "text": "\n"
+            },
+            {
+              "kind": "text",
+              "text": "  "
+            },
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "kind": "text",
+                      "text": "solver"
+                    }
+                  ],
+                  "kind": "group"
+                },
+                {
+                  "children": [
+                    {
+                      "kind": "text",
+                      "text": "The name of the fitting algorithm."
+                    }
+                  ],
+                  "kind": "group"
+                }
+              ],
+              "kind": "markup",
+              "option": null,
+              "tag": "\\item"
+            },
+            {
+              "kind": "text",
+              "text": "\n"
+            },
+            {
+              "kind": "text",
+              "text": "  "
+            },
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "kind": "text",
+                      "text": "object"
+                    }
+                  ],
+                  "kind": "group"
+                },
+                {
+                  "children": [
+                    {
+                      "kind": "text",
+                      "text": "An object of class "
+                    },
+                    {
+                      "children": [
+                        {
+                          "kind": "r-code",
+                          "text": "\"foo_model\""
+                        }
+                      ],
+                      "kind": "markup",
+                      "option": null,
+                      "tag": "\\code"
+                    },
+                    {
+                      "kind": "text",
+                      "text": "."
+                    }
+                  ],
+                  "kind": "group"
+                }
+              ],
+              "kind": "markup",
+              "option": null,
+              "tag": "\\item"
+            },
+            {
+              "kind": "text",
+              "text": "\n"
+            },
+            {
+              "kind": "text",
+              "text": "  "
+            },
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "kind": "text",
+                      "text": "newdata"
+                    }
+                  ],
+                  "kind": "group"
+                },
+                {
+                  "children": [
+                    {
+                      "kind": "text",
+                      "text": "A numeric feature vector or matrix."
+                    }
+                  ],
+                  "kind": "group"
+                }
+              ],
+              "kind": "markup",
+              "option": null,
+              "tag": "\\item"
+            },
+            {
+              "kind": "text",
+              "text": "\n"
+            },
+            {
+              "kind": "text",
+              "text": "  "
+            },
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "kind": "text",
+                      "text": "..."
+                    }
+                  ],
+                  "kind": "group"
+                },
+                {
+                  "children": [
+                    {
+                      "kind": "text",
+                      "text": "Additional arguments reserved for method compatibility."
+                    }
+                  ],
+                  "kind": "group"
+                }
+              ],
+              "kind": "markup",
+              "option": null,
+              "tag": "\\item"
+            },
+            {
+              "kind": "text",
+              "text": "\n"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\arguments"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        },
+        {
+          "children": [
+            {
+              "kind": "text",
+              "text": "\n"
+            },
+            {
+              "children": [
+                {
+                  "kind": "r-code",
+                  "text": "foo_model()"
+                }
+              ],
+              "kind": "markup",
+              "option": null,
+              "tag": "\\code"
+            },
+            {
+              "kind": "text",
+              "text": " returns an object of class "
+            },
+            {
+              "children": [
+                {
+                  "kind": "r-code",
+                  "text": "\"foo_model\""
+                }
+              ],
+              "kind": "markup",
+              "option": null,
+              "tag": "\\code"
+            },
+            {
+              "kind": "text",
+              "text": ".\n"
+            },
+            {
+              "children": [
+                {
+                  "kind": "r-code",
+                  "text": "predict.foo_model()"
+                }
+              ],
+              "kind": "markup",
+              "option": null,
+              "tag": "\\code"
+            },
+            {
+              "kind": "text",
+              "text": " returns one prediction or a numeric vector of\n"
+            },
+            {
+              "kind": "text",
+              "text": "predictions.\n"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\value"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        },
+        {
+          "children": [
+            {
+              "kind": "text",
+              "text": "\n"
+            },
+            {
+              "kind": "text",
+              "text": "Create a fitted model directly, or predict responses from one.\n"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\description"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        },
+        {
+          "children": [
+            {
+              "kind": "r-code",
+              "text": "\n"
+            },
+            {
+              "kind": "r-code",
+              "text": "model <- foo_model(c(0.5, -0.25), intercept = 1)\n"
+            },
+            {
+              "kind": "r-code",
+              "text": "predict(model, c(2, 4))\n"
+            },
+            {
+              "kind": "r-code",
+              "text": "predict(model, matrix(c(2, 4, 3, 5), ncol = 2, byrow = TRUE))\n"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\examples"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        },
+        {
+          "children": [
+            {
+              "kind": "text",
+              "text": "models"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\keyword"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        }
+      ],
+      "path": "man/foo_model.Rd",
+      "range": null
+    },
+    {
+      "aliases": [
+        "mean_squared_error"
+      ],
+      "dynamic": [],
+      "keywords": [
+        "models"
+      ],
+      "name": "mean_squared_error",
+      "nodes": [
+        {
+          "children": [
+            {
+              "kind": "verbatim",
+              "text": "mean_squared_error"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\name"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        },
+        {
+          "children": [
+            {
+              "kind": "verbatim",
+              "text": "mean_squared_error"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\alias"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        },
+        {
+          "children": [
+            {
+              "kind": "text",
+              "text": "Mean Squared Error"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\title"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        },
+        {
+          "children": [
+            {
+              "kind": "r-code",
+              "text": "\n"
+            },
+            {
+              "kind": "r-code",
+              "text": "mean_squared_error(actual, predicted)\n"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\usage"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        },
+        {
+          "children": [
+            {
+              "kind": "text",
+              "text": "\n"
+            },
+            {
+              "kind": "text",
+              "text": "  "
+            },
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "kind": "text",
+                      "text": "actual"
+                    }
+                  ],
+                  "kind": "group"
+                },
+                {
+                  "children": [
+                    {
+                      "kind": "text",
+                      "text": "A nonempty numeric vector of observed responses."
+                    }
+                  ],
+                  "kind": "group"
+                }
+              ],
+              "kind": "markup",
+              "option": null,
+              "tag": "\\item"
+            },
+            {
+              "kind": "text",
+              "text": "\n"
+            },
+            {
+              "kind": "text",
+              "text": "  "
+            },
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "kind": "text",
+                      "text": "predicted"
+                    }
+                  ],
+                  "kind": "group"
+                },
+                {
+                  "children": [
+                    {
+                      "kind": "text",
+                      "text": "A numeric vector of predictions with the same length as\n"
+                    },
+                    {
+                      "kind": "text",
+                      "text": "    "
+                    },
+                    {
+                      "children": [
+                        {
+                          "kind": "r-code",
+                          "text": "actual"
+                        }
+                      ],
+                      "kind": "markup",
+                      "option": null,
+                      "tag": "\\code"
+                    },
+                    {
+                      "kind": "text",
+                      "text": "."
+                    }
+                  ],
+                  "kind": "group"
+                }
+              ],
+              "kind": "markup",
+              "option": null,
+              "tag": "\\item"
+            },
+            {
+              "kind": "text",
+              "text": "\n"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\arguments"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        },
+        {
+          "children": [
+            {
+              "kind": "text",
+              "text": "\n"
+            },
+            {
+              "kind": "text",
+              "text": "One numeric mean squared error.\n"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\value"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        },
+        {
+          "children": [
+            {
+              "kind": "text",
+              "text": "\n"
+            },
+            {
+              "kind": "text",
+              "text": "Compute the mean squared difference between observed and predicted responses.\n"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\description"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        },
+        {
+          "children": [
+            {
+              "kind": "r-code",
+              "text": "\n"
+            },
+            {
+              "kind": "r-code",
+              "text": "mean_squared_error(c(1, 2), c(1, 3))\n"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\examples"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        },
+        {
+          "children": [
+            {
+              "kind": "text",
+              "text": "models"
+            }
+          ],
+          "kind": "markup",
+          "option": null,
+          "tag": "\\keyword"
+        },
+        {
+          "kind": "text",
+          "text": "\n"
+        }
+      ],
+      "path": "man/mean_squared_error.Rd",
+      "range": null
+    }
+  ]
+}

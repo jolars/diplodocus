@@ -1,0 +1,182 @@
+{
+  "cells": [
+    {
+      "options": [
+        {
+          "key": "echo",
+          "resolution": {
+            "declaration": 1,
+            "type": "resolved"
+          }
+        },
+        {
+          "key": "label",
+          "resolution": {
+            "declaration": 0,
+            "type": "resolved"
+          }
+        }
+      ],
+      "ordinal": 0,
+      "outputs": [],
+      "reply_error": null,
+      "reply_status": "ok",
+      "source": "values <- c(2, 4, 6)\ntotal <- sum(values)\n",
+      "span": {
+        "end": 203,
+        "start": 118
+      }
+    },
+    {
+      "options": [
+        {
+          "key": "label",
+          "resolution": {
+            "declaration": 0,
+            "type": "resolved"
+          }
+        }
+      ],
+      "ordinal": 1,
+      "outputs": [
+        {
+          "kind": "stream",
+          "name": "stdout",
+          "text": "R total: 12\n"
+        },
+        {
+          "kind": "stream",
+          "name": "stderr",
+          "text": "Intentional R stderr\n\n"
+        }
+      ],
+      "reply_error": null,
+      "reply_status": "ok",
+      "source": "cat(sprintf(\"R total: %d\\n\", total))\nmessage(\"Intentional R stderr\")\n",
+      "span": {
+        "end": 304,
+        "start": 204
+      }
+    },
+    {
+      "options": [
+        {
+          "key": "label",
+          "resolution": {
+            "declaration": 0,
+            "type": "resolved"
+          }
+        }
+      ],
+      "ordinal": 2,
+      "outputs": [
+        {
+          "data": {
+            "text/markdown": "**R total:** `12`"
+          },
+          "display_ref": null,
+          "kind": "display",
+          "metadata": {}
+        }
+      ],
+      "reply_error": null,
+      "reply_status": "ok",
+      "source": "IRdisplay::display_markdown(sprintf(\"**R total:** `%d`\", total))\n",
+      "span": {
+        "end": 402,
+        "start": 305
+      }
+    },
+    {
+      "options": [
+        {
+          "key": "fig-alt",
+          "resolution": {
+            "declaration": 1,
+            "type": "resolved"
+          }
+        },
+        {
+          "key": "label",
+          "resolution": {
+            "declaration": 0,
+            "type": "resolved"
+          }
+        }
+      ],
+      "ordinal": 3,
+      "outputs": [
+        {
+          "data": {
+            "image/svg+xml": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"160\" height=\"80\" viewBox=\"0 0 160 80\" role=\"img\"><rect x=\"10\" y=\"10\" width=\"120\" height=\"40\" fill=\"#3366cc\" /><text x=\"10\" y=\"70\">total = 12</text></svg>"
+          },
+          "display_ref": null,
+          "kind": "display",
+          "metadata": {}
+        }
+      ],
+      "reply_error": null,
+      "reply_status": "ok",
+      "source": "svg <- sprintf(\n  paste0(\n    '<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"160\" height=\"80\" ',\n    'viewBox=\"0 0 160 80\" role=\"img\">',\n    '<rect x=\"10\" y=\"10\" width=\"%d\" height=\"40\" fill=\"#3366cc\" />',\n    '<text x=\"10\" y=\"70\">total = %d</text></svg>'\n  ),\n  total * 10,\n  total\n)\nIRdisplay::display_svg(svg)\n",
+      "span": {
+        "end": 789,
+        "start": 403
+      }
+    },
+    {
+      "options": [
+        {
+          "key": "error",
+          "resolution": {
+            "declaration": 1,
+            "type": "resolved"
+          }
+        },
+        {
+          "key": "label",
+          "resolution": {
+            "declaration": 0,
+            "type": "resolved"
+          }
+        }
+      ],
+      "ordinal": 4,
+      "outputs": [
+        {
+          "kind": "error",
+          "name": "ERROR",
+          "traceback": [
+            "Error: intentional R fixture error\nTraceback:\n",
+            "1. .handleSimpleError(function (cnd) \n . {\n .     watcher$capture_plot_and_output()\n .     cnd <- sanitize_call(cnd)\n .     watcher$push(cnd)\n .     switch(on_error, continue = invokeRestart(\"eval_continue\"), \n .         stop = invokeRestart(\"eval_stop\"), error = NULL)\n . }, \"intentional R fixture error\", base::quote(eval(expr, envir)))"
+          ],
+          "value": "Error: intentional R fixture error\n"
+        }
+      ],
+      "reply_error": {
+        "name": "ERROR",
+        "traceback": [
+          "Error: intentional R fixture error\nTraceback:\n",
+          "1. .handleSimpleError(function (cnd) \n . {\n .     watcher$capture_plot_and_output()\n .     cnd <- sanitize_call(cnd)\n .     watcher$push(cnd)\n .     switch(on_error, continue = invokeRestart(\"eval_continue\"), \n .         stop = invokeRestart(\"eval_stop\"), error = NULL)\n . }, \"intentional R fixture error\", base::quote(eval(expr, envir)))"
+        ],
+        "value": "Error: intentional R fixture error\n"
+      },
+      "reply_status": "error",
+      "source": "stop(\"intentional R fixture error\")\n",
+      "span": {
+        "end": 870,
+        "start": 790
+      }
+    }
+  ],
+  "kernel": {
+    "implementation": "IRkernel",
+    "implementation_version": "1.3.2",
+    "language": "R",
+    "language_version": "4.6.1",
+    "name": "ir",
+    "protocol_version": "5.3"
+  },
+  "path": "r/execution/stateful.qmd",
+  "producer": "real-kernel",
+  "schema": "execution-spike-observation-v1"
+}
