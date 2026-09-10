@@ -1,3 +1,5 @@
+use std::error::Error;
+use std::io::{self, ErrorKind};
 use std::net::{IpAddr, Ipv4Addr};
 use std::path::Path;
 use std::time::Duration;
@@ -11,11 +13,11 @@ use jupyter_protocol::{
     Transient, Transport, UpdateDisplayData,
 };
 use jupyter_zmq_client::{
-    CannedResponse, ClientIoPubConnection, ClientShellConnection, TestKernel, TestKernelConfig,
-    create_client_control_connection, create_client_iopub_connection,
+    CannedResponse, ClientIoPubConnection, ClientShellConnection, RuntimeError, TestKernel,
+    TestKernelConfig, create_client_control_connection, create_client_iopub_connection,
     create_client_shell_connection_with_identity, create_kernel_control_connection,
-    peek_ports_with_listeners, peer_identity_for_session, read_kernelspec_jsons,
-    wait_for_iopub_welcome,
+    create_kernel_shell_connection, peek_ports_with_listeners, peer_identity_for_session,
+    read_kernelspec_jsons, wait_for_iopub_welcome,
 };
 
 #[path = "support/execution_observation.rs"]
@@ -23,6 +25,153 @@ mod execution_observation;
 mod support;
 
 const IO_TIMEOUT: Duration = Duration::from_secs(5);
+
+#[tokio::test]
+async fn shell_connection_survives_port_reservation_handoff() {
+    let ip = IpAddr::V4(Ipv4Addr::LOCALHOST);
+    let (ports, mut listeners) = peek_ports_with_listeners(ip, 1)
+        .await
+        .expect("reserve shell port");
+    let connection_info = shell_connection_info(ports[0]);
+    let listener = listeners.pop().expect("reserved listener");
+    let handoff = async {
+        let (stream, _) = listener.accept().await.expect("accept early client");
+        let mut greeting = [0];
+        assert_eq!(
+            stream.peek(&mut greeting).await.expect("peek ZMQ greeting"),
+            1
+        );
+        // Closing with unread handshake data reproduces the reservation reset.
+        drop(stream);
+        drop(listener);
+        create_kernel_shell_connection(&connection_info, "kernel-session")
+            .await
+            .expect("bind kernel shell channel")
+    };
+    let (shell, mut kernel) = tokio::time::timeout(IO_TIMEOUT, async {
+        tokio::join!(
+            connect_shell(&connection_info, "client-session", IO_TIMEOUT),
+            handoff
+        )
+    })
+    .await
+    .expect("shell handoff timeout");
+    let mut shell = shell.expect("connect after port reservation handoff");
+    let request: JupyterMessage = ShutdownRequest { restart: false }.into();
+    let request_id = request.header.msg_id.clone();
+    shell.send(request).await.expect("send shell request");
+    let received = tokio::time::timeout(IO_TIMEOUT, kernel.read())
+        .await
+        .expect("shell request timeout")
+        .expect("read shell request");
+    assert_eq!(received.header.msg_id, request_id);
+}
+
+#[tokio::test]
+async fn shell_connection_preserves_invalid_endpoint_errors() {
+    let mut connection_info = shell_connection_info(0);
+    connection_info.ip = "[invalid".to_string();
+    let result = tokio::time::timeout(
+        Duration::from_millis(100),
+        connect_shell(&connection_info, "client-session", IO_TIMEOUT),
+    )
+    .await
+    .expect("invalid endpoints must fail without retries");
+    assert!(matches!(result, Err(RuntimeError::ZmqError(_))));
+}
+
+#[tokio::test]
+async fn shell_connection_bounds_an_unresponsive_handshake() {
+    let ip = IpAddr::V4(Ipv4Addr::LOCALHOST);
+    let (ports, _listeners) = peek_ports_with_listeners(ip, 1)
+        .await
+        .expect("reserve unresponsive shell port");
+    let connection_info = shell_connection_info(ports[0]);
+    let result = tokio::time::timeout(
+        IO_TIMEOUT,
+        connect_shell(
+            &connection_info,
+            "client-session",
+            Duration::from_millis(50),
+        ),
+    )
+    .await
+    .expect("startup must respect its own deadline");
+    assert!(matches!(
+        result,
+        Err(RuntimeError::IoError(error)) if error.kind() == ErrorKind::TimedOut
+    ));
+}
+
+fn shell_connection_info(shell_port: u16) -> ConnectionInfo {
+    ConnectionInfo {
+        ip: Ipv4Addr::LOCALHOST.to_string(),
+        transport: Transport::TCP,
+        shell_port,
+        iopub_port: 0,
+        stdin_port: 0,
+        control_port: 0,
+        hb_port: 0,
+        key: "spike-key".to_string(),
+        signature_scheme: "hmac-sha256".to_string(),
+        kernel_name: Some("spike".to_string()),
+    }
+}
+
+async fn connect_shell(
+    connection_info: &ConnectionInfo,
+    session_id: &str,
+    timeout: Duration,
+) -> jupyter_zmq_client::Result<ClientShellConnection> {
+    let identity = peer_identity_for_session(session_id)?;
+    tokio::time::timeout(timeout, async {
+        loop {
+            match create_client_shell_connection_with_identity(
+                connection_info,
+                session_id,
+                identity.clone(),
+            )
+            .await
+            {
+                Err(error) if is_transient_connection_error(&error) => {
+                    // The test kernel can replace its reservation listeners mid-handshake.
+                    tokio::time::sleep(Duration::from_millis(10)).await;
+                }
+                result => return result,
+            }
+        }
+    })
+    .await
+    .unwrap_or_else(|_| {
+        Err(io::Error::new(
+            ErrorKind::TimedOut,
+            "kernel shell connection startup timed out",
+        )
+        .into())
+    })
+}
+
+fn is_transient_connection_error(error: &RuntimeError) -> bool {
+    // ZMQ wraps I/O errors differently depending on the handshake phase.
+    let mut cause: &(dyn Error + 'static) = error;
+    loop {
+        if let Some(error) = cause.downcast_ref::<io::Error>() {
+            return matches!(
+                error.kind(),
+                ErrorKind::ConnectionRefused
+                    | ErrorKind::ConnectionReset
+                    | ErrorKind::ConnectionAborted
+                    | ErrorKind::BrokenPipe
+                    | ErrorKind::UnexpectedEof
+                    | ErrorKind::TimedOut
+            );
+        }
+        match cause.source() {
+            Some(source) => cause = source,
+            None => return false,
+        }
+    }
+}
 
 #[tokio::test]
 async fn zmq_client_discovers_kernelspecs_and_builds_the_launch_command() {
@@ -326,11 +475,9 @@ async fn exercise_corpus(case: CorpusCase) {
         .await
         .expect("start deterministic test kernel");
     let session_id = format!("diplodocus-{}", case.error_name.to_lowercase());
-    let identity = peer_identity_for_session(&session_id).expect("valid ZMQ identity");
-    let mut shell =
-        create_client_shell_connection_with_identity(&connection_info, &session_id, identity)
-            .await
-            .expect("connect shell channel");
+    let mut shell = connect_shell(&connection_info, &session_id, IO_TIMEOUT)
+        .await
+        .expect("connect shell channel");
     let mut iopub = create_client_iopub_connection(&connection_info, "", &session_id)
         .await
         .expect("connect IOPub channel");

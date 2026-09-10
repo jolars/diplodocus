@@ -35,12 +35,12 @@ fn subcommand_help_is_stable() {
 }
 
 #[test]
-fn version_is_stable() {
+fn version_matches_package_metadata() {
     diplodocus()
         .arg("--version")
         .assert()
         .success()
-        .stdout_eq(golden("cli/version.stdout"))
+        .stdout_eq(concat!("diplodocus ", env!("CARGO_PKG_VERSION"), "\n"))
         .stderr_eq("");
 }
 
