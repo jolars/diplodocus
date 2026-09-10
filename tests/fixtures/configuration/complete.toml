@@ -1,0 +1,53 @@
+[project]
+name = "Foo"
+
+[[repository]]
+id = "python"
+path = "../foo-python"
+url = "https://forge.example/foo-python"
+source_link_template = "https://forge.example/foo-python/blob/{revision}/{path}#L{line}"
+revision = "release-1.9"
+
+[[package]]
+id = "pyfoo"
+name = "Foo for Python"
+slug = "python"
+ecosystem = "python"
+repository = "python"
+path = "."
+metadata_path = "pyproject.toml"
+kind = "component"
+visibility = "internal"
+targets = [
+  { id = "api", extractor = "python", path = "python/foo", role = "public-api" },
+  { id = "native", extractor = "python", path = "python/foo/_native.pyi", role = "internal-api" },
+]
+
+[[content]]
+id = "tutorials"
+owner = "pyfoo"
+repository = "python"
+path = "docs/tutorials"
+mount = "tutorials"
+format = "qmd"
+
+[content.execution]
+mode = "execute"
+engine = "jupyter"
+kernel = "python3"
+declared_environment_inputs = ["uv.lock", "environments/docs.toml"]
+
+[[concept]]
+id = "foo-model.fit"
+kind = "analogous"
+members = [
+  { package = "pyfoo", item = "foo.FooModel.fit" },
+  { package = "pyfoo", item = "pyfoo::foo.fit" },
+]
+
+[[relationship]]
+from = "pyfoo"
+to = "cargo:foo-core"
+kind = "binds"
+version_constraint = "^1.9"
+provenance = "explicit"

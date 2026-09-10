@@ -1,8 +1,25 @@
 # Workspace configuration
 
 The root `diplodocus.toml` is an authored-only example of the intended MVP
-configuration. Configuration loading and command execution remain under
-development.
+configuration. The library parses the `project`, `repository`, `package`,
+`content`, `concept`, and `relationship` sections into typed declarations:
+
+```rust
+let config = diplodocus::configuration::load_configuration("diplodocus.toml")?;
+```
+
+Use `configuration::parse_configuration` to parse a TOML string. Both entry
+points reject unknown fields, missing required fields, incorrect types, and
+unsupported enum values. Load errors include the configuration path and the
+underlying read or parse error; TOML errors retain source ranges when available.
+Omitted collections are empty, package kind defaults to `package`, visibility
+defaults to `public`, and execution mode defaults to `never`.
+
+Parsing retains declared paths, owners, concept members, and relationship
+endpoints for later validation. Path resolution, boundary checks, identity and
+relationship validation, execution-policy validation, and command integration
+remain under development. A parsed configuration alone does not authorize
+execution.
 
 ## Repositories and ownership
 

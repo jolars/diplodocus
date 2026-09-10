@@ -220,7 +220,7 @@ package, or loads documented package code.
 Write focused failing tests for every validation rule and serialization shape
 before implementing the model.
 
-- [ ] Parse the `project`, `repository`, `package`, `content`, `concept`, and
+- [x] Parse the `project`, `repository`, `package`, `content`, `concept`, and
   relationship configuration described in `DESIGN.md`.
 - [ ] Require each content collection to select `gfm` or `qmd`; default
   execution to `mode = "never"`; and validate the `execute` mode, Jupyter
