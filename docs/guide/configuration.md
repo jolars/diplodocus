@@ -10,16 +10,30 @@ let config = diplodocus::configuration::load_configuration("diplodocus.toml")?;
 
 Use `configuration::parse_configuration` to parse a TOML string. Both entry
 points reject unknown fields, missing required fields, incorrect types, and
-unsupported enum values. Load errors include the configuration path and the
+unsupported enum values. They also validate each collection's execution settings
+together. Load errors include the configuration path and the
 underlying read or parse error; TOML errors retain source ranges when available.
 Omitted collections are empty, package kind defaults to `package`, visibility
 defaults to `public`, and execution mode defaults to `never`.
 
+Execution requires `format = "qmd"`, `mode = "execute"`, `engine = "jupyter"`,
+and an explicit kernel selector. Kernel selectors contain only ASCII letters,
+digits, `-`, `.`, or `_`; empty names, `.` and `..`, and paths are rejected.
+The `never` mode accepts no engine, kernel, or nonempty environment-input list.
+Omitting the mode never enables execution, even when a kernel is specified.
+
+Environment inputs must declare individual repository-relative files. Parsing
+rejects empty paths, absolute paths, repository escapes, directory references,
+glob patterns, and duplicate paths after lexical normalization. It preserves
+the declared spelling, including the kernel selector's case, without reading
+inputs or discovering kernels. Programmatically modified collections can repeat
+these checks with `ContentConfiguration::validate_execution`.
+
 Parsing retains declared paths, owners, concept members, and relationship
-endpoints for later validation. Path resolution, boundary checks, identity and
-relationship validation, execution-policy validation, and command integration
-remain under development. A parsed configuration alone does not authorize
-execution.
+endpoints for later validation. Filesystem resolution, file existence and type
+checks, symlink containment, identity and relationship validation, document
+execution-authority validation, and command integration remain under development.
+A parsed configuration alone does not authorize execution.
 
 ## Repositories and ownership
 

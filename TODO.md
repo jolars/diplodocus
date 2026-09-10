@@ -222,7 +222,7 @@ before implementing the model.
 
 - [x] Parse the `project`, `repository`, `package`, `content`, `concept`, and
   relationship configuration described in `DESIGN.md`.
-- [ ] Require each content collection to select `gfm` or `qmd`; default
+- [x] Require each content collection to select `gfm` or `qmd`; default
   execution to `mode = "never"`; and validate the `execute` mode, Jupyter
   engine, kernel, and declared environment inputs as one coherent unit.
 - [ ] Reject execution for GFM collections and reject any document metadata that

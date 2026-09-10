@@ -1,13 +1,16 @@
 //! Typed parsing and loading of workspace configuration.
 //!
 //! These types retain declarations before semantic validation. Parsing checks
-//! TOML syntax, field types, required fields, and supported enum values. It does
-//! not resolve paths or references, check execution policy, or discover inputs.
+//! TOML syntax, field types, required fields, supported enum values, and coherent
+//! collection execution settings. It does not resolve filesystem paths or
+//! references, validate document execution authority, or discover inputs.
 
+use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use serde::{Deserialize, Serialize};
+use serde::de::Error as _;
+use serde::{Deserialize, Deserializer, Serialize};
 use thiserror::Error;
 
 use crate::documents::AuthoredFormat;
@@ -133,8 +136,7 @@ pub struct ExtractionTargetConfiguration {
 }
 
 /// An authored collection with independent ownership and source location.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct ContentConfiguration {
     /// Stable collection identifier.
     pub id: String,
@@ -153,9 +155,190 @@ pub struct ContentConfiguration {
     pub execution: ExecutionConfiguration,
 }
 
-/// Declared execution settings, pending collection-level policy validation.
+impl<'de> Deserialize<'de> for ContentConfiguration {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        // Validation needs both the profile and the completed execution table,
+        // regardless of their order in the source or the deserialization entry point.
+        #[derive(Deserialize)]
+        #[serde(deny_unknown_fields)]
+        struct Declaration {
+            id: String,
+            owner: String,
+            repository: String,
+            path: PathBuf,
+            mount: String,
+            format: AuthoredFormat,
+            #[serde(default)]
+            execution: ExecutionConfiguration,
+        }
+
+        let declaration = Declaration::deserialize(deserializer)?;
+        let collection = Self {
+            id: declaration.id,
+            owner: declaration.owner,
+            repository: declaration.repository,
+            path: declaration.path,
+            mount: declaration.mount,
+            format: declaration.format,
+            execution: declaration.execution,
+        };
+        collection
+            .validate_execution()
+            .map_err(|error| D::Error::custom(format!("content `{}`: {error}", collection.id)))?;
+        Ok(collection)
+    }
+}
+
+impl ContentConfiguration {
+    /// Validate the profile, mode, engine, kernel, and environment declarations together.
+    ///
+    /// Deserialization calls this automatically. Call it again after modifying
+    /// a collection programmatically. This performs no filesystem reads, kernel
+    /// discovery, or execution. Paths and kernel spelling remain as declared.
+    ///
+    /// # Errors
+    ///
+    /// Returns the first contradictory or malformed setting. Environment paths
+    /// must name explicit repository-relative files and be lexically distinct.
+    /// File existence, readability, type, and symlink containment are checked by
+    /// the later filesystem validation stage, not by this declaration check.
+    pub fn validate_execution(&self) -> Result<(), ExecutionConfigurationError> {
+        let execution = &self.execution;
+        if execution.mode == ExecutionMode::Never {
+            for (field, declared) in [
+                ("engine", execution.engine.is_some()),
+                ("kernel", execution.kernel.is_some()),
+                (
+                    "declared_environment_inputs",
+                    !execution.declared_environment_inputs.is_empty(),
+                ),
+            ] {
+                if declared {
+                    return Err(ExecutionConfigurationError::InactiveSetting { field });
+                }
+            }
+            return Ok(());
+        }
+
+        if self.format != AuthoredFormat::Qmd {
+            return Err(ExecutionConfigurationError::GfmExecution);
+        }
+        if execution.engine != Some(ExecutionEngine::Jupyter) {
+            return Err(ExecutionConfigurationError::MissingEngine);
+        }
+        let kernel = execution
+            .kernel
+            .as_deref()
+            .ok_or(ExecutionConfigurationError::MissingKernel)?;
+        if kernel.is_empty()
+            || matches!(kernel, "." | "..")
+            || !kernel
+                .bytes()
+                .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'.' | b'_'))
+        {
+            return Err(ExecutionConfigurationError::InvalidKernel);
+        }
+
+        let mut inputs = HashMap::new();
+        for (index, path) in execution.declared_environment_inputs.iter().enumerate() {
+            let components = environment_input_components(path).map_err(|reason| {
+                ExecutionConfigurationError::InvalidEnvironmentInput { index, reason }
+            })?;
+            if let Some(first_index) = inputs.insert(components, index) {
+                return Err(ExecutionConfigurationError::DuplicateEnvironmentInput {
+                    index,
+                    first_index,
+                });
+            }
+        }
+        Ok(())
+    }
+}
+
+fn environment_input_components(path: &Path) -> Result<Vec<&str>, &'static str> {
+    let path = path.to_str().ok_or("paths must be valid UTF-8")?;
+    if path.is_empty() {
+        return Err("paths must not be empty");
+    }
+    if path.starts_with('/')
+        || (path.as_bytes().get(1) == Some(&b':') && path.as_bytes()[0].is_ascii_alphabetic())
+    {
+        return Err("paths must be relative to the collection's repository");
+    }
+    if path.contains('\\') {
+        return Err("paths must use forward-slash separators");
+    }
+    if path.contains('\0') {
+        return Err("paths must not contain NUL bytes");
+    }
+    if path.contains(['*', '?', '[', ']', '{', '}']) {
+        return Err("declare individual files, not glob patterns");
+    }
+    if matches!(path.rsplit('/').next(), Some("" | "." | "..")) {
+        return Err("declare a file, not a directory reference");
+    }
+
+    let mut components = Vec::new();
+    for component in path.split('/') {
+        match component {
+            "" | "." => {}
+            ".." => {
+                if components.pop().is_none() {
+                    return Err("paths must not escape the collection's repository");
+                }
+            }
+            component => components.push(component),
+        }
+    }
+    Ok(components)
+}
+
+/// A contradictory or malformed collection execution declaration.
+#[derive(Debug, Clone, PartialEq, Eq, Error)]
+pub enum ExecutionConfigurationError {
+    /// A display-only collection has execution-specific settings.
+    #[error("`{field}` requires `mode = \"execute\"`")]
+    InactiveSetting {
+        /// The contradictory execution field.
+        field: &'static str,
+    },
+    /// A GFM collection requested execution.
+    #[error("`mode = \"execute\"` requires `format = \"qmd\"`")]
+    GfmExecution,
+    /// Execution has no explicitly selected Jupyter engine.
+    #[error("`mode = \"execute\"` requires `engine = \"jupyter\"`")]
+    MissingEngine,
+    /// Execution has no explicitly selected kernel.
+    #[error("`mode = \"execute\"` requires an explicit kernel")]
+    MissingKernel,
+    /// The kernel selector is empty, a path, or outside the supported ASCII syntax.
+    #[error(
+        "invalid kernel selector: use ASCII letters, digits, `-`, `.`, or `_`, excluding empty names, `.` and `..`"
+    )]
+    InvalidKernel,
+    /// An environment input does not declare an explicit repository-relative file.
+    #[error("invalid `declared_environment_inputs[{index}]`: {reason}")]
+    InvalidEnvironmentInput {
+        /// Zero-based index of the invalid declaration.
+        index: usize,
+        /// Explanation of the violated path rule.
+        reason: &'static str,
+    },
+    /// Two environment declarations normalize to the same relative path.
+    #[error("`declared_environment_inputs[{index}]` duplicates input {first_index}")]
+    DuplicateEnvironmentInput {
+        /// Zero-based index of the duplicate declaration.
+        index: usize,
+        /// Zero-based index of the first declaration of that path.
+        first_index: usize,
+    },
+}
+
+/// Declared execution settings, validated in their owning collection's context.
 ///
-/// A parsed value alone does not authorize kernel discovery or execution.
+/// Standalone deserialization checks field types. Collection deserialization also
+/// checks their consistency through [`ContentConfiguration::validate_execution`].
+/// Document authority and filesystem validation remain necessary before execution.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ExecutionConfiguration {
@@ -297,8 +480,9 @@ pub enum ConfigurationError {
 /// # Errors
 ///
 /// Returns a TOML error for malformed syntax, missing required fields, unknown
-/// fields, incorrect field types, or unsupported enum values. Semantic validation
-/// of paths, identities, relationships, and execution policy is a separate step.
+/// fields, incorrect field types, unsupported enum values, or incoherent collection
+/// execution settings. Filesystem, identity, relationship, and document-authority
+/// validation remain separate steps.
 pub fn parse_configuration(source: &str) -> Result<WorkspaceConfiguration, toml::de::Error> {
     toml::from_str(source)
 }

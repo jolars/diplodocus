@@ -157,8 +157,7 @@ fn applies_only_documented_defaults_without_discovering_inputs() {
         assert!(content.execution.declared_environment_inputs.is_empty());
     }
 
-    let config = parse_configuration(&COMPLETE.replace("mode = \"execute\"\n", "")).unwrap();
-    assert_eq!(config.content[0].execution.mode, ExecutionMode::Never);
+    assert!(parse_configuration(&COMPLETE.replace("mode = \"execute\"\n", "")).is_err());
     let config = parse_configuration(
         &COMPLETE
             .replace("version_constraint = \"^1.9\"\n", "")
@@ -293,6 +292,11 @@ fn accepts_documented_enum_spellings_and_rejects_other_values() {
     for (path, field, spellings) in cases {
         for spelling in *spellings {
             let mut value: toml::Value = toml::from_str(COMPLETE).unwrap();
+            if (*field == "format" && *spelling == "gfm")
+                || (*field == "mode" && *spelling == "never")
+            {
+                table_mut(&mut value, &["content", "execution"]).clear();
+            }
             table_mut(&mut value, path).insert((*field).into(), (*spelling).into());
             let config = parse_configuration(&toml::to_string(&value).unwrap()).unwrap();
             let mut serialized: toml::Value =
