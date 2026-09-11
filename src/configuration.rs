@@ -4,6 +4,7 @@
 //! TOML syntax, field types, required fields, supported enum values, and coherent
 //! collection execution settings. It does not resolve filesystem paths or
 //! references, validate document execution authority, or discover inputs.
+//! Use [`crate::paths::resolve_workspace_paths`] for explicit filesystem validation.
 
 use std::collections::HashMap;
 use std::fs;
@@ -202,8 +203,8 @@ impl ContentConfiguration {
     ///
     /// Returns the first contradictory or malformed setting. Environment paths
     /// must name explicit repository-relative files and be lexically distinct.
-    /// File existence, readability, type, and symlink containment are checked by
-    /// the later filesystem validation stage, not by this declaration check.
+    /// [`crate::paths::resolve_workspace_paths`] checks file existence, type, and
+    /// symlink containment separately. Reading file contents remains a later step.
     pub fn validate_execution(&self) -> Result<(), ExecutionConfigurationError> {
         let execution = &self.execution;
         if execution.mode == ExecutionMode::Never {
@@ -495,6 +496,8 @@ pub fn parse_configuration(source: &str) -> Result<WorkspaceConfiguration, toml:
 ///
 /// Only the configuration file is read. Declared paths remain unresolved, and
 /// parsing does not discover repositories, packages, targets, or kernels.
+/// Use [`crate::paths::resolve_workspace_paths`] to resolve and validate declared
+/// filesystem inputs after loading.
 ///
 /// # Errors
 ///
