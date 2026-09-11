@@ -229,10 +229,10 @@ before implementing the model.
   attempts to broaden the collection's configured execution authority.
 - [x] Apply documented defaults for package kind and visibility while requiring
   explicit repositories, packages, and extraction targets.
-- [ ] Resolve repository paths relative to the configuration file, package paths
+- [x] Resolve repository paths relative to the configuration file, package paths
   relative to repositories, target and metadata paths relative to packages,
   and content and declared-environment paths relative to repositories.
-- [ ] Reject missing roots, path traversal, and symlink escapes from each
+- [x] Reject missing roots, path traversal, and symlink escapes from each
   declared repository or package boundary.
 - [ ] Diagnose duplicate repository, package, target, content, and concept IDs;
   duplicate package slugs; unknown owners; and unknown unqualified workspace

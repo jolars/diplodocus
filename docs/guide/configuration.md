@@ -51,17 +51,49 @@ YAML merge keys are rejected in document and `execute` mappings. Malformed or
 duplicate YAML retains its parser error.
 
 Parsing retains declared paths, owners, concept members, and relationship
-endpoints for later validation. Filesystem resolution, file existence and type
-checks, symlink containment, identity and relationship validation, general
-metadata and cell-option validation, and command integration remain under development.
-A parsed configuration alone does not authorize execution.
+endpoints. Resolve filesystem inputs explicitly after parsing:
+
+```rust
+let config_path = std::path::Path::new("diplodocus.toml");
+let config = diplodocus::configuration::load_configuration(config_path)?;
+let paths = diplodocus::paths::resolve_workspace_paths(config_path, &config)?;
+```
+
+The resolver returns canonical absolute paths in declaration order without
+changing the configuration. These runtime records are separate from portable
+configuration and IR. It checks declared inputs without discovering sources,
+reading their contents, or starting kernels. Resolution errors identify the
+configuration, declaration, field, and failed path.
+
+Identity and relationship validation, general metadata and cell-option
+validation, and command integration remain under development. Neither parsing
+nor path resolution authorizes execution.
 
 ## Repositories and ownership
 
-Repository paths are relative to the configuration directory and may identify
-sibling checkouts. Package paths are relative to their repository, and API
-target paths are relative to their package. Authored content and declared
-environment inputs are relative to the named repository.
+Each path has an explicit base and boundary:
+
+| Declared path | Base and containment boundary |
+|:--------------|:------------------------------|
+| Repository | Configuration directory; sibling checkouts are allowed |
+| Package | Named repository |
+| Metadata or extraction target | Owning package |
+| Content or declared environment input | Named repository |
+
+The resolver uses the supplied configuration path's directory as the repository
+base. Relative configuration paths are interpreted from the working directory.
+A symlinked configuration file keeps the supplied location as its base. Content
+ownership does not change path resolution. The resolver does not reread the
+configuration file. Repository, package, and content roots must be
+directories; metadata and environment inputs must be regular files; extraction
+targets may be files or directories. Missing paths and incorrect types fail
+resolution.
+
+Paths inside repositories and packages must be relative. The resolver checks the
+canonical result of each declared path prefix and rejects any prefix outside
+the applicable boundary, even if later components would return inside. Symlinks
+whose canonical targets stay within the boundary are allowed.
+An unknown or ambiguous repository reference also fails resolution.
 
 The `project` owner places content in project navigation. A package ID gives a
 collection package ownership and that package's reference-resolution context.

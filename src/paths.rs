@@ -195,7 +195,8 @@ pub fn resolve_workspace_paths(
         .parent()
         .filter(|path| !path.as_os_str().is_empty())
         .unwrap_or(Path::new("."));
-    let configuration_directory = resolver.canonicalize("configuration_directory", parent)?;
+    let configuration_directory =
+        resolver.resolve_path("configuration_directory", parent, None, None)?;
     resolver.check_type(
         "configuration_directory",
         &configuration_directory,
@@ -205,9 +206,12 @@ pub fn resolve_workspace_paths(
     let mut repositories = Vec::with_capacity(configuration.repositories.len());
     for (index, repository) in configuration.repositories.iter().enumerate() {
         let field = format!("repository[{index}] (`{}`).path", repository.id);
-        resolver.check_spelling(&field, &repository.path, false)?;
-        let path =
-            resolver.canonicalize(&field, &configuration_directory.join(&repository.path))?;
+        let path = resolver.resolve_path(
+            &field,
+            &repository.path,
+            Some(&configuration_directory),
+            None,
+        )?;
         resolver.check_type(&field, &path, PathType::Directory)?;
         repositories.push(ResolvedRepositoryPaths {
             id: repository.id.clone(),
@@ -336,12 +340,17 @@ impl Resolver<'_> {
     ) -> Result<(), PathResolutionError> {
         let reason = if path.as_os_str().is_empty() {
             Some("paths must not be empty; use `.` to select a root")
-        } else if child
-            && path
-                .components()
-                .any(|component| matches!(component, Component::Prefix(_) | Component::RootDir))
+        } else if path
+            .components()
+            .any(|component| matches!(component, Component::Prefix(_) | Component::RootDir))
         {
-            Some("child paths must be relative to their declared boundary")
+            if child {
+                Some("child paths must be relative to their declared boundary")
+            } else if !path.is_absolute() {
+                Some("paths must be fully absolute or relative without a drive or root")
+            } else {
+                None
+            }
         } else {
             None
         };
@@ -388,21 +397,88 @@ impl Resolver<'_> {
         boundary: &Path,
         expected: PathType,
     ) -> Result<PathBuf, PathResolutionError> {
-        self.check_spelling(field, declared, true)?;
-        let mut prefix = boundary.to_owned();
-        for component in declared.components() {
-            prefix.push(component);
-            // Keep unresolved prefixes intact so symlinks are followed before
-            // parent components, and missing or nondirectory segments fail.
-            let resolved = self.canonicalize(field, &prefix)?;
-            self.check_boundary(field, &resolved, boundary)?;
-        }
-        // Components omits trailing separators and `.`. The original spelling
-        // must also pass filesystem resolution, so `file/` is not a file input.
-        let resolved = self.canonicalize(field, &boundary.join(declared))?;
-        self.check_boundary(field, &resolved, boundary)?;
+        let resolved = self.resolve_path(field, declared, Some(boundary), Some(boundary))?;
         self.check_type(field, &resolved, expected)?;
         Ok(resolved)
+    }
+
+    fn resolve_path(
+        &self,
+        field: &str,
+        declared: &Path,
+        base: Option<&Path>,
+        boundary: Option<&Path>,
+    ) -> Result<PathBuf, PathResolutionError> {
+        self.check_spelling(field, declared, boundary.is_some())?;
+        let mut components = declared.components().peekable();
+        let mut resolved = if declared.is_absolute() {
+            let mut root = PathBuf::new();
+            while let Some(component) = components
+                .next_if(|component| matches!(component, Component::Prefix(_) | Component::RootDir))
+            {
+                root.push(component);
+            }
+            self.canonicalize(field, &root)?
+        } else if let Some(base) = base {
+            base.to_owned()
+        } else {
+            self.canonicalize(field, Path::new("."))?
+        };
+
+        for component in components {
+            self.require_directory(field, &resolved)?;
+            match component {
+                Component::Normal(name) => {
+                    let mut next = resolved.clone();
+                    if !next
+                        .as_os_str()
+                        .as_encoded_bytes()
+                        .last()
+                        .is_some_and(|byte| is_separator(*byte))
+                    {
+                        next.as_mut_os_string().push(std::path::MAIN_SEPARATOR_STR);
+                    }
+                    // A normal component can resemble a Windows drive prefix
+                    // when parsed alone. Appending it must not change the base.
+                    next.as_mut_os_string().push(name);
+                    resolved = self.canonicalize(field, &next)?;
+                }
+                Component::ParentDir => {
+                    // Canonical Windows bases use verbatim prefixes, whose joins
+                    // erase dot components. Resolve links first, then take the
+                    // actual parent without joining an unresolved `..`.
+                    resolved.pop();
+                }
+                Component::CurDir => {}
+                Component::Prefix(_) | Component::RootDir => {
+                    unreachable!("root components are consumed before traversal");
+                }
+            }
+            if let Some(boundary) = boundary {
+                self.check_boundary(field, &resolved, boundary)?;
+            }
+        }
+
+        // Components omits trailing separators and dots, but their directory
+        // requirement must survive on both ordinary and verbatim paths.
+        let last = declared
+            .as_os_str()
+            .as_encoded_bytes()
+            .rsplit(|byte| is_separator(*byte))
+            .next()
+            .unwrap_or_default();
+        if last.is_empty() || last == b"." {
+            self.require_directory(field, &resolved)?;
+        }
+        Ok(resolved)
+    }
+
+    fn require_directory(&self, field: &str, path: &Path) -> Result<(), PathResolutionError> {
+        let metadata = fs::metadata(path).map_err(|source| self.io_error(field, path, source))?;
+        if !metadata.is_dir() {
+            return Err(self.io_error(field, path, std::io::ErrorKind::NotADirectory.into()));
+        }
+        Ok(())
     }
 
     fn check_boundary(
@@ -454,4 +530,8 @@ impl Resolver<'_> {
             },
         ))
     }
+}
+
+fn is_separator(byte: u8) -> bool {
+    byte == b'/' || (cfg!(windows) && byte == b'\\')
 }

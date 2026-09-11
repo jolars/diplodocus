@@ -395,6 +395,41 @@ fn configuration_parent_must_be_a_directory() {
     ));
 }
 
+#[cfg(windows)]
+#[test]
+fn repository_paths_cannot_depend_on_drive_relative_state() {
+    let (_workspace, original, path) = workspace();
+    for declared in [r"C:repo", r"\repo"] {
+        let mut config = original.clone();
+        config.repositories[0].path = declared.into();
+        assert!(matches!(
+            resolve_workspace_paths(&path, &config).unwrap_err().kind,
+            PathResolutionErrorKind::InvalidPath { .. }
+        ));
+    }
+}
+
+#[cfg(windows)]
+#[test]
+fn verbatim_bases_preserve_parent_and_directory_requirements() {
+    let (workspace, original, path) = workspace();
+    let path = fs::canonicalize(path).unwrap();
+    let mut config = original.clone();
+    config.packages[0].path = r"packages\pkg\..\pkg".into();
+    assert_eq!(
+        resolve_workspace_paths(&path, &config).unwrap().packages[0].path,
+        canonical(&workspace, "repo/packages/pkg")
+    );
+    for declared in [r"src\module.py\..", r"src\module.py\.", r"src\module.py\"] {
+        let mut config = original.clone();
+        config.packages[0].targets[0].path = declared.into();
+        assert!(matches!(
+            resolve_workspace_paths(&path, &config).unwrap_err().kind,
+            PathResolutionErrorKind::FileSystem { .. }
+        ));
+    }
+}
+
 #[test]
 fn repository_references_must_select_exactly_one_root() {
     let (_workspace, original, path) = workspace();
