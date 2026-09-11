@@ -170,6 +170,131 @@ fn applies_only_documented_defaults_without_discovering_inputs() {
     assert_eq!(config.relationships[0].provenance, None);
 }
 
+#[test]
+fn package_defaults_are_independent_of_explicit_kind_and_visibility() {
+    let kinds = [
+        (None, PackageKind::Package),
+        (Some("package"), PackageKind::Package),
+        (Some("component"), PackageKind::Component),
+    ];
+    let visibilities = [
+        (None, PackageVisibility::Public),
+        (Some("public"), PackageVisibility::Public),
+        (Some("internal"), PackageVisibility::Internal),
+        (Some("hidden"), PackageVisibility::Hidden),
+    ];
+    for (kind, expected_kind) in kinds {
+        for (visibility, expected_visibility) in visibilities {
+            let mut value: toml::Value = toml::from_str(COMPLETE).unwrap();
+            let package = table_mut(&mut value, &["package"]);
+            package.remove("kind");
+            package.remove("visibility");
+            if let Some(kind) = kind {
+                package.insert("kind".into(), kind.into());
+            }
+            if let Some(visibility) = visibility {
+                package.insert("visibility".into(), visibility.into());
+            }
+
+            let config = parse_configuration(&toml::to_string(&value).unwrap()).unwrap();
+            assert_eq!(config.packages[0].kind, expected_kind);
+            assert_eq!(config.packages[0].visibility, expected_visibility);
+            let serialized = toml::to_string(&config).unwrap();
+            assert_eq!(parse_configuration(&serialized).unwrap(), config);
+        }
+    }
+}
+
+#[test]
+fn omitted_and_explicitly_empty_workspace_inputs_are_equivalent() {
+    let minimal = "[project]\nname = 'Empty workspace'\n";
+    let empty = format!("repository = []\npackage = []\n{minimal}");
+    let expected = parse_configuration(minimal).unwrap();
+    let config = parse_configuration(&empty).unwrap();
+    assert_eq!(config, expected);
+    assert!(config.repositories.is_empty());
+    assert!(config.packages.is_empty());
+    assert_eq!(
+        parse_configuration(&toml::to_string(&config).unwrap()).unwrap(),
+        config
+    );
+}
+
+#[test]
+fn loading_populated_sources_never_discovers_workspace_inputs() {
+    let workspace = support::acceptance_workspace();
+    let path = workspace.path().join("workspace/diplodocus.toml");
+
+    workspace.write("workspace/diplodocus.toml", "[project]\nname = 'Minimal'\n");
+    let minimal = load_configuration(&path).unwrap();
+    assert!(minimal.repositories.is_empty());
+    assert!(minimal.packages.is_empty());
+
+    let mut value: toml::Value = toml::from_str(ACCEPTANCE).unwrap();
+    let mut packages = value.as_table_mut().unwrap().remove("package").unwrap();
+    value.as_table_mut().unwrap().remove("concept");
+    value.as_table_mut().unwrap().remove("relationship");
+    value["content"]
+        .as_array_mut()
+        .unwrap()
+        .retain(|collection| collection["owner"].as_str() == Some("project"));
+    workspace.write(
+        "workspace/diplodocus.toml",
+        toml::to_string(&value).unwrap(),
+    );
+    let docs_only = load_configuration(&path).unwrap();
+    assert_eq!(docs_only.repositories.len(), 3);
+    assert!(docs_only.packages.is_empty());
+    assert_eq!(docs_only.content.len(), 1);
+
+    for package in packages.as_array_mut().unwrap() {
+        package["targets"] = toml::Value::Array(Vec::new());
+    }
+    value
+        .as_table_mut()
+        .unwrap()
+        .insert("package".into(), packages);
+    workspace.write(
+        "workspace/diplodocus.toml",
+        toml::to_string(&value).unwrap(),
+    );
+    let config = load_configuration(&path).unwrap();
+    assert_eq!(config.repositories.len(), 3);
+    assert_eq!(config.packages.len(), 2);
+    for package in &config.packages {
+        assert!(package.targets.is_empty());
+    }
+    let serialized = toml::to_string(&config).unwrap();
+    let serialized_value: toml::Value = toml::from_str(&serialized).unwrap();
+    for package in serialized_value["package"].as_array().unwrap() {
+        assert!(package["targets"].as_array().unwrap().is_empty());
+    }
+    assert_eq!(parse_configuration(&serialized).unwrap(), config);
+}
+
+#[test]
+fn loading_requires_explicit_targets_even_when_package_sources_are_present() {
+    let workspace = support::acceptance_workspace();
+    let path = workspace.path().join("workspace/diplodocus.toml");
+    let mut value: toml::Value = toml::from_str(ACCEPTANCE).unwrap();
+    table_mut(&mut value, &["package"]).remove("targets");
+    workspace.write(
+        "workspace/diplodocus.toml",
+        toml::to_string(&value).unwrap(),
+    );
+
+    let ConfigurationError::Parse {
+        path: source_path,
+        source,
+    } = load_configuration(&path).unwrap_err()
+    else {
+        panic!("expected a parse error");
+    };
+    assert_eq!(source_path, path);
+    assert!(source.message().contains("missing field `targets`"));
+    assert!(source.span().is_some());
+}
+
 // Paths describe positions in the input schema, independent of the Rust model.
 fn table_mut<'a>(
     value: &'a mut toml::Value,

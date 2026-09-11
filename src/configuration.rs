@@ -21,10 +21,10 @@ use crate::documents::AuthoredFormat;
 pub struct WorkspaceConfiguration {
     /// Project-wide identity.
     pub project: ProjectConfiguration,
-    /// Explicit local source repositories.
+    /// Explicit local source repositories; omission declares none.
     #[serde(default, rename = "repository", skip_serializing_if = "Vec::is_empty")]
     pub repositories: Vec<RepositoryConfiguration>,
-    /// Packages and internal components to document.
+    /// Explicit packages and internal components to document; omission declares none.
     #[serde(default, rename = "package", skip_serializing_if = "Vec::is_empty")]
     pub packages: Vec<PackageConfiguration>,
     /// Authored content collections.
@@ -93,7 +93,9 @@ pub struct PackageConfiguration {
     /// Navigation and search visibility; defaults to `public`.
     #[serde(default)]
     pub visibility: PackageVisibility,
-    /// Declared extraction targets; never inferred from the ecosystem or files.
+    /// Explicit extraction targets; this field is required, but may be empty.
+    /// An empty list disables API extraction for this package. Targets are never
+    /// inferred from the ecosystem or files.
     pub targets: Vec<ExtractionTargetConfiguration>,
 }
 
@@ -464,9 +466,11 @@ pub enum ConfigurationError {
 
 /// Parse declarations from TOML without reading any paths or executing code.
 ///
-/// Omitted collections are empty. Package kind, package visibility, and execution
-/// mode use their documented defaults. Unknown fields are rejected in every table.
-/// Paths and unresolved references retain their declared spelling.
+/// Omitted repository, package, and content collections are empty. Each declared
+/// package requires a `targets` list; `targets = []` declares no API extraction.
+/// Package kind, package visibility, and execution mode use their documented
+/// defaults. Unknown fields are rejected in every table. Paths and unresolved
+/// references retain their declared spelling.
 ///
 /// ```
 /// use diplodocus::configuration::parse_configuration;
