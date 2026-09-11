@@ -1,0 +1,38 @@
+[
+  {
+    "code": "unsupported-qmd-metadata",
+    "severity": "error",
+    "message": "YAML merge keys cannot define document execution metadata",
+    "span": {
+      "start": 25,
+      "end": 63
+    }
+  },
+  {
+    "code": "unsupported-qmd-metadata",
+    "severity": "error",
+    "message": "YAML merge keys cannot define document execution metadata",
+    "span": {
+      "start": 25,
+      "end": 63
+    }
+  },
+  {
+    "code": "unsupported-qmd-metadata",
+    "severity": "error",
+    "message": "YAML merge keys cannot define document execution metadata",
+    "span": {
+      "start": 35,
+      "end": 56
+    }
+  },
+  {
+    "code": "unsupported-qmd-metadata",
+    "severity": "error",
+    "message": "YAML merge keys cannot define document execution metadata",
+    "span": {
+      "start": 35,
+      "end": 56
+    }
+  }
+]

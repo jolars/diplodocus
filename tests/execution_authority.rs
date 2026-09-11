@@ -287,6 +287,26 @@ fn execute_requires_a_literal_boolean_or_mapping() {
 }
 
 #[test]
+fn yaml_merges_cannot_hide_execution_declarations() {
+    let mut diagnostics = Vec::new();
+    for metadata in [
+        "<<: {execute: true, jupyter: python3}\n",
+        "execute: {<<: {kernel: python3}}\n",
+    ] {
+        for execute in [false, true] {
+            let source = page(metadata);
+            let parsed = parse_collection_document(&source, &collection(execute)).unwrap();
+            assert_eq!(parsed.diagnostics.len(), 1, "{metadata}");
+            let diagnostic = &parsed.diagnostics[0];
+            assert_error(diagnostic, DiagnosticCode::UnsupportedQmdMetadata);
+            assert!(declaration_text(&source, diagnostic.span.unwrap()).starts_with("<<:"));
+            diagnostics.push(diagnostic.clone());
+        }
+    }
+    support::assert_json_golden(&diagnostics, "execution/merge-authority.json");
+}
+
+#[test]
 fn ordinary_text_and_cell_defaults_are_not_authority_declarations() {
     let source = "---\ntitle: 'execute: true'\naudience: [jupyter, engine, kernel]\nexecute: {eval: true}\n---\n\nexecute: true\n\n```{python}\n#| eval: true\njupyter = 'python3'\n```\n";
     assert!(

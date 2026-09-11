@@ -16,6 +16,11 @@ underlying read or parse error; TOML errors retain source ranges when available.
 Omitted collections are empty, package kind defaults to `package`, visibility
 defaults to `public`, and execution mode defaults to `never`.
 
+Repositories and packages are documented only when explicitly declared; loading
+a configuration never discovers them from nearby source files. Documentation-only
+workspaces may omit packages. Every declared package requires a `targets` list:
+`targets = []` explicitly declares no API extraction.
+
 Execution requires `format = "qmd"`, `mode = "execute"`, `engine = "jupyter"`,
 and an explicit kernel selector. Kernel selectors contain only ASCII letters,
 digits, `-`, `.`, or `_`; empty names, `.` and `..`, and paths are rejected.
@@ -29,10 +34,26 @@ the declared spelling, including the kernel selector's case, without reading
 inputs or discovering kernels. Programmatically modified collections can repeat
 these checks with `ContentConfiguration::validate_execution`.
 
+Use `documents::parse_collection_document(source, &collection)` to parse an
+authored page and check its execution declarations against its owning collection.
+Invalid collection settings return an error. Document violations appear as
+error-severity entries in `DocumentParse::diagnostics`, which callers must inspect
+before proceeding. `validation::validate_document_execution` checks an already
+parsed document; `documents::parse_authored_document` provides syntax parsing alone.
+Authority validation performs no kernel discovery or execution.
+
+In a `never` collection, document `execute: true` and execution selectors produce
+one `document-execution-not-authorized` error with related source ranges. Document
+selectors are also rejected in authorized collections as
+`unsupported-qmd-metadata`. Supported restrictions, such as `execute: false`, and
+cell defaults remain in the document without granting collection authority.
+YAML merge keys are rejected in document and `execute` mappings. Malformed or
+duplicate YAML retains its parser error.
+
 Parsing retains declared paths, owners, concept members, and relationship
 endpoints for later validation. Filesystem resolution, file existence and type
-checks, symlink containment, identity and relationship validation, document
-execution-authority validation, and command integration remain under development.
+checks, symlink containment, identity and relationship validation, general
+metadata and cell-option validation, and command integration remain under development.
 A parsed configuration alone does not authorize execution.
 
 ## Repositories and ownership

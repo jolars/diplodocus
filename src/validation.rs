@@ -11,6 +11,7 @@ use crate::ir::{Document, MetadataEntry, MetadataValue, SourceSpan};
 /// cell defaults never enable a `never` collection. Document engine, kernel, and
 /// mode selectors are rejected even if they match an authorized collection.
 /// Unauthorized declarations share one diagnostic with related source ranges.
+/// YAML merge keys are rejected without interpreting inherited declarations.
 ///
 /// This checks execution declarations only; it does not normalize page or cell
 /// options, validate other metadata, or select executable cells. It performs no
@@ -56,6 +57,7 @@ pub fn validate_document_execution(
     // or later restriction must not hide an earlier attempt to grant authority.
     for entry in entries {
         match entry.key.value.as_str() {
+            "<<" => context.reject_merge(entry),
             "jupyter" | "engine" | "kernel" | "execution" => {
                 context.selector(entry, &entry.key.value);
             }
@@ -70,6 +72,8 @@ pub fn validate_document_execution(
                     for option in entries {
                         if matches!(option.key.value.as_str(), "mode" | "engine" | "kernel") {
                             context.selector(option, &format!("execute.{}", option.key.value));
+                        } else if option.key.value == "<<" {
+                            context.reject_merge(option);
                         }
                     }
                 }
@@ -112,6 +116,16 @@ struct ExecutionAuthority {
 }
 
 impl ExecutionAuthority {
+    fn reject_merge(&mut self, entry: &MetadataEntry) {
+        // Reject inheritance at either execution authority scope so hidden
+        // selectors cannot pass validation as ordinary metadata.
+        self.diagnostics.push(metadata_error(
+            DiagnosticCode::UnsupportedQmdMetadata,
+            "YAML merge keys cannot define document execution metadata".to_owned(),
+            entry.span,
+        ));
+    }
+
     fn selector(&mut self, entry: &MetadataEntry, key: &str) {
         if self.authorized {
             self.diagnostics.push(metadata_error(

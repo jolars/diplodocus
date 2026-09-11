@@ -225,9 +225,9 @@ before implementing the model.
 - [x] Require each content collection to select `gfm` or `qmd`; default
   execution to `mode = "never"`; and validate the `execute` mode, Jupyter
   engine, kernel, and declared environment inputs as one coherent unit.
-- [ ] Reject execution for GFM collections and reject any document metadata that
+- [x] Reject execution for GFM collections and reject any document metadata that
   attempts to broaden the collection's configured execution authority.
-- [ ] Apply documented defaults for package kind and visibility while requiring
+- [x] Apply documented defaults for package kind and visibility while requiring
   explicit repositories, packages, and extraction targets.
 - [ ] Resolve repository paths relative to the configuration file, package paths
   relative to repositories, target and metadata paths relative to packages,
