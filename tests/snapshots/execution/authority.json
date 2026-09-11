@@ -1,0 +1,17 @@
+[
+  {
+    "code": "document-execution-not-authorized",
+    "severity": "error",
+    "message": "document metadata cannot authorize execution in a collection with `mode = \"never\"`",
+    "span": {
+      "start": 56,
+      "end": 70
+    },
+    "related_spans": [
+      {
+        "start": 70,
+        "end": 87
+      }
+    ]
+  }
+]

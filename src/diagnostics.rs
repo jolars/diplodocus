@@ -14,6 +14,12 @@ pub enum DiagnosticCode {
     InvalidEmbeddedYaml,
     /// Cell-option precedence has more than one winner.
     AmbiguousCellOption,
+    /// Document metadata requests execution outside collection authority.
+    DocumentExecutionNotAuthorized,
+    /// A QMD document declares an unsupported metadata setting.
+    UnsupportedQmdMetadata,
+    /// A QMD metadata declaration has an invalid value type.
+    InvalidQmdMetadata,
 }
 
 /// Diagnostic severity.
@@ -37,4 +43,7 @@ pub struct Diagnostic {
     pub message: String,
     /// Source range when available.
     pub span: Option<SourceSpan>,
+    /// Additional declarations contributing to this diagnostic, in source order.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub related_spans: Vec<SourceSpan>,
 }

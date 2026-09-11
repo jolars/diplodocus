@@ -12,12 +12,14 @@ use panache_parser::syntax::{
 use panache_parser::{Flavor, ParserOptions, normalize_reference_label};
 use serde::{Deserialize, Serialize};
 
+use crate::configuration::{ContentConfiguration, ExecutionConfigurationError};
 use crate::diagnostics::{Diagnostic, DiagnosticCode, Severity};
 use crate::ir::{
     AttributeKeyValue, Attributes, Block, CalloutKind, CellOption, CellOptionResolution, CodeCell,
     Document, Inline, ListItem, MetadataEntry, MetadataValue, ResolvedCellOption, SourceSegment,
     SourceSpan, SpannedString, TableAlignment, TableCell, TableRow,
 };
+use crate::validation::validate_document_execution;
 
 /// Authored Markdown profile selected by a content collection.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -29,16 +31,19 @@ pub enum AuthoredFormat {
     Qmd,
 }
 
-/// A retained document plus diagnostics produced during translation.
+/// A retained document plus diagnostics produced during translation or validation.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DocumentParse {
     /// Portable authored-document IR.
     pub document: Document,
-    /// Parser and adapter diagnostics in source order.
+    /// Parser, adapter, and requested validation diagnostics in source order.
     pub diagnostics: Vec<Diagnostic>,
 }
 
 /// Parse authored Markdown in-process and translate it into Diplodocus's IR.
+///
+/// This does not validate collection execution authority. Use
+/// [`parse_collection_document`] when the owning collection is available.
 pub fn parse_authored_document(source: &str, format: AuthoredFormat) -> DocumentParse {
     let flavor = match format {
         AuthoredFormat::Gfm => Flavor::Gfm,
@@ -71,6 +76,7 @@ pub fn parse_authored_document(source: &str, format: AuthoredFormat) -> Document
                 severity: Severity::Error,
                 message: error.message.clone(),
                 span: Some(span(error.range)),
+                related_spans: Vec::new(),
             })
             .collect(),
     };
@@ -106,6 +112,34 @@ pub fn parse_authored_document(source: &str, format: AuthoredFormat) -> Document
         },
         diagnostics: context.diagnostics,
     }
+}
+
+/// Parse a collection's authored document and validate execution declarations.
+///
+/// The document and its declarations are retained unchanged. Metadata errors are
+/// returned in [`DocumentParse::diagnostics`], alongside parser diagnostics in
+/// source order. This performs no filesystem access, kernel discovery, execution,
+/// or cache operations. General metadata and cell-option validation are separate
+/// from this authority check.
+///
+/// # Errors
+///
+/// Returns an error if the collection's execution configuration is invalid,
+/// including a programmatically constructed GFM collection requesting execution.
+pub fn parse_collection_document(
+    source: &str,
+    collection: &ContentConfiguration,
+) -> Result<DocumentParse, ExecutionConfigurationError> {
+    let mut parsed = parse_authored_document(source, collection.format);
+    parsed
+        .diagnostics
+        .extend(validate_document_execution(&parsed.document, collection)?);
+    parsed.diagnostics.sort_by_key(|diagnostic| {
+        diagnostic
+            .span
+            .map_or((usize::MAX, usize::MAX), |span| (span.start, span.end))
+    });
+    Ok(parsed)
 }
 
 struct AdapterContext {
@@ -297,6 +331,7 @@ impl AdapterContext {
                                     resolved.key()
                                 ),
                                 span: first,
+                                related_spans: Vec::new(),
                             });
                             CellOptionResolution::Ambiguous { declarations }
                         }
@@ -577,6 +612,7 @@ impl AdapterContext {
             severity: Severity::Warning,
             message: format!("unsupported authored syntax: {source_kind}"),
             span: Some(source_span),
+            related_spans: Vec::new(),
         });
         Block::Unsupported {
             source_kind,
@@ -592,6 +628,7 @@ impl AdapterContext {
             severity: Severity::Warning,
             message: format!("unsupported authored syntax: {source_kind}"),
             span: Some(source_span),
+            related_spans: Vec::new(),
         });
         Inline::Unsupported {
             source_kind,
