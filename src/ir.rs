@@ -1,6 +1,27 @@
 //! Portable intermediate representation for extracted documentation.
+//!
+//! [`Workspace`] is the schema-versioned snapshot envelope. Map keys are the
+//! authoritative entity IDs, with targets and items scoped to their package.
+//! Maps and sets have deterministic order; vectors retain declaration, syntax,
+//! or output-event order. [`SourcedDocument`] adds source context to the existing
+//! [`Document`] tree, and signatures retain evidence independent of item prose.
+//!
+//! Paths name declared repositories and normalized relative locations, never
+//! local checkout roots. This model does not resolve identities, gather evidence,
+//! or execute cells. Decoding output representations also grants no rendering
+//! trust; serialized HTML remains an [`UnvalidatedHtml`] candidate.
 
 use serde::{Deserialize, Serialize};
+
+mod outputs;
+mod provenance;
+mod signatures;
+mod workspace;
+
+pub use outputs::*;
+pub use provenance::*;
+pub use signatures::*;
+pub use workspace::*;
 
 /// A zero-based, half-open byte range in one source file.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -231,6 +252,9 @@ pub struct CodeCell {
     pub options: Vec<CellOption>,
     /// Resolutions for canonical option keys.
     pub resolved_options: Vec<ResolvedCellOption>,
+    /// Execution outputs in event order; absent for unexecuted authored cells.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub outputs: Vec<CellOutput>,
     /// Envelope around the executable source segments.
     pub code_span: Option<SourceSpan>,
     /// Full fenced-cell range.

@@ -382,6 +382,7 @@ impl AdapterContext {
                 source_segments: source_segments(cell.code_source_segments()),
                 options,
                 resolved_options,
+                outputs: Vec::new(),
                 code_span: cell.code_range().map(span),
                 span: span(cell.text_range()),
             });

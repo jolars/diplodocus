@@ -239,7 +239,7 @@ before implementing the model.
   relationship endpoints. Accept explicit external package coordinates.
 - [x] Define deterministic diagnostics with a stable code, severity, message,
   related entity, source path, and source span when available.
-- [ ] Define a schema-versioned IR for repositories, packages, extraction
+- [x] Define a schema-versioned IR for repositories, packages, extraction
   targets, content collections, pages, items, signatures, documents, code
   cells, cell outputs, output representations, concepts, relationships,
   diagnostics, and provenance.

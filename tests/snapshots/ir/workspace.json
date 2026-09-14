@@ -1,0 +1,509 @@
+{
+  "schema_version": 1,
+  "name": "Foo",
+  "repositories": {
+    "core": {
+      "canonical_url": "https://example.com/foo.git",
+      "source_link_template": "https://example.com/foo/blob/{revision}/{path}#L{line}",
+      "revision": "abc123",
+      "dirty": false,
+      "declared_input_fingerprint": {
+        "algorithm": "sha256",
+        "value": "repository-digest"
+      }
+    }
+  },
+  "packages": {
+    "pyfoo": {
+      "slug": "python",
+      "name": "Foo for Python",
+      "ecosystem": "python",
+      "version": "2.1.0",
+      "repository": "core",
+      "path": null,
+      "metadata_path": "pyproject.toml",
+      "kind": "package",
+      "visibility": "public",
+      "extraction_targets": {
+        "api": {
+          "extractor": "python",
+          "path": "src",
+          "role": "public-api"
+        }
+      },
+      "items": {
+        "foo.Model": {
+          "kind": "class",
+          "name": "Model",
+          "qualified_name": "foo.Model",
+          "signatures": [],
+          "documentation": null,
+          "source_location": null,
+          "children": [],
+          "provenance": []
+        },
+        "foo.fit": {
+          "kind": "function",
+          "name": "fit",
+          "qualified_name": "foo.fit",
+          "signatures": [
+            {
+              "signature": {
+                "kind": "callable",
+                "parameters": [
+                  {
+                    "name": "x",
+                    "kind": {
+                      "kind": "positional-only"
+                    },
+                    "annotation": {
+                      "kind": "apply",
+                      "constructor": {
+                        "kind": "name",
+                        "name": "list",
+                        "target": null
+                      },
+                      "arguments": [
+                        {
+                          "kind": "name",
+                          "name": "float",
+                          "target": null
+                        }
+                      ]
+                    },
+                    "default": null
+                  },
+                  {
+                    "name": "strict",
+                    "kind": {
+                      "kind": "keyword-only"
+                    },
+                    "annotation": {
+                      "kind": "name",
+                      "name": "bool",
+                      "target": null
+                    },
+                    "default": {
+                      "kind": "literal",
+                      "text": "True"
+                    }
+                  }
+                ],
+                "returns": {
+                  "kind": "name",
+                  "name": "Model",
+                  "target": {
+                    "package": "pyfoo",
+                    "item": "foo.Model"
+                  }
+                }
+              },
+              "sources": [
+                {
+                  "source": {
+                    "repository": "core",
+                    "path": "src/foo.pyi",
+                    "span": {
+                      "start": 0,
+                      "end": 70
+                    }
+                  },
+                  "role": "signature",
+                  "parsers": [
+                    "ruff"
+                  ]
+                }
+              ]
+            }
+          ],
+          "documentation": {
+            "document": {
+              "span": {
+                "start": 0,
+                "end": 0
+              },
+              "frontmatter": null,
+              "blocks": []
+            },
+            "source_format": {
+              "kind": "extracted",
+              "name": "numpy-docstring"
+            },
+            "source_location": {
+              "repository": "core",
+              "path": "src/foo.py",
+              "span": {
+                "start": 20,
+                "end": 50
+              }
+            },
+            "raw_source": "Fit a model.",
+            "provenance": []
+          },
+          "source_location": {
+            "repository": "core",
+            "path": "src/foo.py",
+            "span": {
+              "start": 0,
+              "end": 100
+            }
+          },
+          "children": [],
+          "provenance": [
+            {
+              "activity": {
+                "kind": "extraction",
+                "target": {
+                  "package": "pyfoo",
+                  "target": "api"
+                },
+                "mode": "static",
+                "capabilities": [
+                  "python.signatures"
+                ],
+                "parsers": {
+                  "ruff": {
+                    "version": "0.0.12",
+                    "role": "python-syntax",
+                    "settings": {
+                      "mode": "stub"
+                    }
+                  }
+                },
+                "inputs": {
+                  "core": {
+                    "src/foo.pyi": {
+                      "kind": "python-stub",
+                      "fingerprint": {
+                        "algorithm": "sha256",
+                        "value": "stub-digest"
+                      },
+                      "parsers": [
+                        "ruff"
+                      ]
+                    }
+                  }
+                }
+              },
+              "source": null,
+              "span": null,
+              "tools": {
+                "python-extractor": "0.1.0",
+                "ruff": "0.0.12"
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  "content_collections": {
+    "guide": {
+      "owner": {
+        "kind": "project"
+      },
+      "repository": "core",
+      "path": "docs",
+      "mount": "guide",
+      "format": "qmd",
+      "execution": {
+        "mode": "execute",
+        "engine": "jupyter",
+        "kernel": "python3",
+        "declared_environment_inputs": [
+          "uv.lock"
+        ]
+      }
+    }
+  },
+  "pages": {
+    "guide/index": {
+      "owner": {
+        "kind": "project"
+      },
+      "kind": {
+        "kind": "authored",
+        "collection": "guide"
+      },
+      "title": "Guide",
+      "document": {
+        "document": {
+          "span": {
+            "start": 0,
+            "end": 40
+          },
+          "frontmatter": null,
+          "blocks": [
+            {
+              "type": "heading",
+              "level": 1,
+              "attributes": {
+                "identifier": null,
+                "classes": [],
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "Guide",
+                  "span": {
+                    "start": 2,
+                    "end": 7
+                  }
+                }
+              ],
+              "span": {
+                "start": 0,
+                "end": 8
+              }
+            },
+            {
+              "type": "code-cell",
+              "language": "python",
+              "identifier": null,
+              "classes": [],
+              "labels": [],
+              "source": "print('hello')\n",
+              "source_segments": [
+                {
+                  "text": "print('hello')",
+                  "span": {
+                    "start": 21,
+                    "end": 35
+                  }
+                },
+                {
+                  "text": "\n",
+                  "span": {
+                    "start": 35,
+                    "end": 36
+                  }
+                }
+              ],
+              "options": [],
+              "resolved_options": [],
+              "outputs": [
+                {
+                  "kind": {
+                    "type": "stream",
+                    "stream": "stdout"
+                  },
+                  "representations": [
+                    {
+                      "kind": "plain-text",
+                      "media_type": "text/plain",
+                      "text": "# plain stdout\n<script>literal</script>"
+                    }
+                  ],
+                  "provenance": [
+                    {
+                      "activity": {
+                        "kind": "execution",
+                        "mode": "execute",
+                        "engine": "jupyter",
+                        "kernel": {
+                          "name": "python3",
+                          "language": "python",
+                          "language_version": "3.13",
+                          "version": "6.0"
+                        },
+                        "origin": "cache",
+                        "declared_environment_inputs": [
+                          {
+                            "source": {
+                              "repository": "core",
+                              "path": "uv.lock",
+                              "span": null
+                            },
+                            "fingerprint": {
+                              "algorithm": "sha256",
+                              "value": "environment-digest"
+                            }
+                          }
+                        ]
+                      },
+                      "source": {
+                        "kind": "repository",
+                        "repository": "core",
+                        "path": "docs/guide.qmd"
+                      },
+                      "span": {
+                        "start": 9,
+                        "end": 40
+                      },
+                      "tools": {
+                        "jupyter-engine": "0.1.0",
+                        "jupyter-protocol": "2.0.2",
+                        "python": "3.13"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": {
+                    "type": "display"
+                  },
+                  "representations": [
+                    {
+                      "kind": "markdown-blocks",
+                      "media_type": "text/markdown",
+                      "blocks": [
+                        {
+                          "type": "paragraph",
+                          "inlines": [
+                            {
+                              "type": "text",
+                              "value": "Result",
+                              "span": {
+                                "start": 0,
+                                "end": 6
+                              }
+                            }
+                          ],
+                          "span": {
+                            "start": 0,
+                            "end": 6
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "asset",
+                      "media_type": "image/png",
+                      "asset": {
+                        "path": "assets/figure-digest.png",
+                        "fingerprint": {
+                          "algorithm": "sha256",
+                          "value": "figure-digest"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "sanitized-html",
+                      "media_type": "text/html",
+                      "html": "<b>Result</b>",
+                      "policy": "html-v1",
+                      "sanitizer": {
+                        "name": "html-sanitizer",
+                        "version": "1.0"
+                      }
+                    }
+                  ],
+                  "provenance": []
+                },
+                {
+                  "kind": {
+                    "type": "error",
+                    "name": "ValueError",
+                    "message": "invalid input",
+                    "traceback": [
+                      "ValueError: invalid input"
+                    ]
+                  },
+                  "representations": [],
+                  "provenance": []
+                }
+              ],
+              "code_span": {
+                "start": 21,
+                "end": 36
+              },
+              "span": {
+                "start": 9,
+                "end": 40
+              }
+            }
+          ]
+        },
+        "source_format": {
+          "kind": "authored",
+          "format": "qmd"
+        },
+        "source_location": {
+          "repository": "core",
+          "path": "docs/guide.qmd",
+          "span": null
+        },
+        "raw_source": null,
+        "provenance": []
+      }
+    }
+  },
+  "concepts": {
+    "fitting": {
+      "kind": "equivalent",
+      "members": [
+        {
+          "package": "pyfoo",
+          "item": "foo.fit"
+        }
+      ],
+      "documentation": null
+    }
+  },
+  "relationships": [
+    {
+      "from": {
+        "kind": "workspace",
+        "package": "pyfoo"
+      },
+      "to": {
+        "kind": "external",
+        "ecosystem": "rust",
+        "name": "foo-core"
+      },
+      "kind": "binds",
+      "version_constraint": "^1.9",
+      "provenance": [
+        {
+          "activity": {
+            "kind": "declaration"
+          },
+          "source": {
+            "kind": "configuration",
+            "path": "diplodocus.toml"
+          },
+          "span": {
+            "start": 10,
+            "end": 30
+          },
+          "tools": {}
+        }
+      ]
+    }
+  ],
+  "diagnostics": [
+    {
+      "code": "unsupported-authored-syntax",
+      "severity": "warning",
+      "message": "Unsupported source construct.",
+      "related_entity": {
+        "kind": "item",
+        "package": "pyfoo",
+        "id": "foo.fit"
+      },
+      "source": {
+        "kind": "repository",
+        "repository": "core",
+        "path": "src/foo.py"
+      },
+      "span": {
+        "start": 10,
+        "end": 20
+      }
+    }
+  ],
+  "provenance": [
+    {
+      "activity": {
+        "kind": "declaration"
+      },
+      "source": null,
+      "span": null,
+      "tools": {
+        "diplodocus": "0.1.0",
+        "panache": "0.29.0"
+      }
+    }
+  ]
+}
