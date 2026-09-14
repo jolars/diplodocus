@@ -14,7 +14,11 @@ use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize};
 use thiserror::Error;
 
+use crate::diagnostics::{
+    Diagnostic, DiagnosticCode, DiagnosticEntity, DiagnosticPath, DiagnosticSource, Severity,
+};
 use crate::documents::AuthoredFormat;
+use crate::ir::SourceSpan;
 
 /// The declarations in a root `diplodocus.toml` file, in source order.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -337,6 +341,22 @@ pub enum ExecutionConfigurationError {
     },
 }
 
+impl ExecutionConfigurationError {
+    /// Identify the collection whose programmatically constructed execution
+    /// settings failed validation. No source path or span is invented.
+    /// Callers with source context can attach it to the returned diagnostic.
+    pub fn to_diagnostic(&self, collection: impl Into<String>) -> Diagnostic {
+        Diagnostic::new(
+            DiagnosticCode::InvalidExecutionConfiguration,
+            Severity::Error,
+            self.to_string(),
+        )
+        .with_entity(DiagnosticEntity::Content {
+            id: collection.into(),
+        })
+    }
+}
+
 /// Declared execution settings, validated in their owning collection's context.
 ///
 /// Standalone deserialization checks field types. Collection deserialization also
@@ -463,6 +483,39 @@ pub enum ConfigurationError {
         /// Underlying TOML error, including its source range when available.
         source: toml::de::Error,
     },
+}
+
+impl ConfigurationError {
+    /// Convert a load failure to a portable diagnostic using a caller-supplied
+    /// configuration-relative path, retaining the TOML byte range when available.
+    ///
+    /// Runtime paths remain in this error for local troubleshooting. Filesystem
+    /// causes contribute only their error kind because custom I/O messages can
+    /// embed machine paths. Parser messages describe the input declarations.
+    pub fn to_diagnostic(&self, path: DiagnosticPath) -> Diagnostic {
+        let mut diagnostic = match self {
+            Self::Read { source, .. } => Diagnostic::new(
+                DiagnosticCode::ConfigurationReadFailed,
+                Severity::Error,
+                format!("could not read configuration: {}", source.kind()),
+            ),
+            Self::Parse { source, .. } => {
+                let mut diagnostic = Diagnostic::new(
+                    DiagnosticCode::InvalidConfiguration,
+                    Severity::Error,
+                    source.message(),
+                );
+                diagnostic.span = source.span().map(|range| SourceSpan {
+                    start: range.start,
+                    end: range.end,
+                });
+                diagnostic
+            }
+        };
+        diagnostic.source = Some(DiagnosticSource::Configuration { path });
+        diagnostic.related_entity = Some(DiagnosticEntity::Configuration);
+        diagnostic
+    }
 }
 
 /// Parse declarations from TOML without reading any paths or executing code.

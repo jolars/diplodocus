@@ -99,13 +99,11 @@ pub fn validate_document_execution(
                 .to_owned(),
             span: Some(span),
             related_spans: related_spans.to_vec(),
+            related_entity: None,
+            source: None,
         });
     }
-    context.diagnostics.sort_by_key(|diagnostic| {
-        diagnostic
-            .span
-            .map_or((usize::MAX, usize::MAX), |span| (span.start, span.end))
-    });
+    context.diagnostics.sort();
     Ok(context.diagnostics)
 }
 
@@ -146,5 +144,7 @@ fn metadata_error(code: DiagnosticCode, message: String, span: SourceSpan) -> Di
         message,
         span: Some(span),
         related_spans: Vec::new(),
+        related_entity: None,
+        source: None,
     }
 }

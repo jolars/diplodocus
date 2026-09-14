@@ -11,6 +11,9 @@ use std::path::{Component, Path, PathBuf};
 use thiserror::Error;
 
 use crate::configuration::WorkspaceConfiguration;
+use crate::diagnostics::{
+    Diagnostic, DiagnosticCode, DiagnosticEntity, DiagnosticPath, DiagnosticSource, Severity,
+};
 
 /// Canonical local inputs, retaining the configuration's declaration order.
 ///
@@ -85,6 +88,49 @@ pub struct PathResolutionError {
     /// Underlying path or repository-reference failure.
     #[source]
     pub kind: PathResolutionErrorKind,
+}
+
+impl PathResolutionError {
+    /// Convert a resolution failure to a portable configuration diagnostic.
+    ///
+    /// The caller supplies the configuration-relative path. The schema field
+    /// identifies the declaration, while runtime paths and custom I/O messages
+    /// stay in this error for local troubleshooting. Resolution has no source
+    /// text, so it cannot supply a byte range.
+    pub fn to_diagnostic(&self, path: DiagnosticPath) -> Diagnostic {
+        let (code, message) = match &self.kind {
+            PathResolutionErrorKind::InvalidPath { reason, .. } => (
+                DiagnosticCode::InvalidSourcePath,
+                format!("invalid source path: {reason}"),
+            ),
+            PathResolutionErrorKind::FileSystem { source, .. } => (
+                DiagnosticCode::SourcePathIo,
+                format!("could not inspect source path: {}", source.kind()),
+            ),
+            PathResolutionErrorKind::WrongType { expected, .. } => (
+                DiagnosticCode::SourcePathWrongType,
+                format!("source path must identify {expected}"),
+            ),
+            PathResolutionErrorKind::OutsideBoundary { .. } => (
+                DiagnosticCode::SourcePathOutsideBoundary,
+                "source path escapes its declared boundary".to_owned(),
+            ),
+            PathResolutionErrorKind::RepositoryReference {
+                repository,
+                matches,
+            } => (
+                DiagnosticCode::InvalidRepositoryReference,
+                format!(
+                    "repository `{repository}` matches {matches} declarations; expected exactly one"
+                ),
+            ),
+        };
+        Diagnostic::new(code, Severity::Error, message)
+            .with_source(DiagnosticSource::Configuration { path })
+            .with_entity(DiagnosticEntity::ConfigurationField {
+                path: self.field.clone(),
+            })
+    }
 }
 
 /// The reason a declared filesystem input could not be resolved.

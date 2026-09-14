@@ -13,7 +13,9 @@ use panache_parser::{Flavor, ParserOptions, normalize_reference_label};
 use serde::{Deserialize, Serialize};
 
 use crate::configuration::{ContentConfiguration, ExecutionConfigurationError};
-use crate::diagnostics::{Diagnostic, DiagnosticCode, Severity};
+use crate::diagnostics::{
+    Diagnostic, DiagnosticCode, DiagnosticEntity, DiagnosticSource, Severity,
+};
 use crate::ir::{
     AttributeKeyValue, Attributes, Block, CalloutKind, CellOption, CellOptionResolution, CodeCell,
     Document, Inline, ListItem, MetadataEntry, MetadataValue, ResolvedCellOption, SourceSegment,
@@ -38,6 +40,22 @@ pub struct DocumentParse {
     pub document: Document,
     /// Parser, adapter, and requested validation diagnostics in source order.
     pub diagnostics: Vec<Diagnostic>,
+}
+
+impl DocumentParse {
+    /// Attach known context to every parser and validation diagnostic.
+    ///
+    /// Call this after parsing or collection validation when the source's
+    /// portable path and owning entity are known. It preserves the document,
+    /// primary spans, and related spans and restores diagnostic ordering.
+    pub fn with_context(mut self, source: DiagnosticSource, entity: DiagnosticEntity) -> Self {
+        for diagnostic in &mut self.diagnostics {
+            diagnostic.source = Some(source.clone());
+            diagnostic.related_entity = Some(entity.clone());
+        }
+        self.diagnostics.sort();
+        self
+    }
 }
 
 /// Parse authored Markdown in-process and translate it into Diplodocus's IR.
@@ -77,6 +95,8 @@ pub fn parse_authored_document(source: &str, format: AuthoredFormat) -> Document
                 message: error.message.clone(),
                 span: Some(span(error.range)),
                 related_spans: Vec::new(),
+                related_entity: None,
+                source: None,
             })
             .collect(),
     };
@@ -98,11 +118,7 @@ pub fn parse_authored_document(source: &str, format: AuthoredFormat) -> Document
         .block_nodes()
         .filter_map(|block| context.block(block))
         .collect();
-    context.diagnostics.sort_by_key(|diagnostic| {
-        diagnostic
-            .span
-            .map_or((usize::MAX, usize::MAX), |span| (span.start, span.end))
-    });
+    context.diagnostics.sort();
 
     DocumentParse {
         document: Document {
@@ -134,11 +150,7 @@ pub fn parse_collection_document(
     parsed
         .diagnostics
         .extend(validate_document_execution(&parsed.document, collection)?);
-    parsed.diagnostics.sort_by_key(|diagnostic| {
-        diagnostic
-            .span
-            .map_or((usize::MAX, usize::MAX), |span| (span.start, span.end))
-    });
+    parsed.diagnostics.sort();
     Ok(parsed)
 }
 
@@ -332,6 +344,8 @@ impl AdapterContext {
                                 ),
                                 span: first,
                                 related_spans: Vec::new(),
+                                related_entity: None,
+                                source: None,
                             });
                             CellOptionResolution::Ambiguous { declarations }
                         }
@@ -613,6 +627,8 @@ impl AdapterContext {
             message: format!("unsupported authored syntax: {source_kind}"),
             span: Some(source_span),
             related_spans: Vec::new(),
+            related_entity: None,
+            source: None,
         });
         Block::Unsupported {
             source_kind,
@@ -629,6 +645,8 @@ impl AdapterContext {
             message: format!("unsupported authored syntax: {source_kind}"),
             span: Some(source_span),
             related_spans: Vec::new(),
+            related_entity: None,
+            source: None,
         });
         Inline::Unsupported {
             source_kind,

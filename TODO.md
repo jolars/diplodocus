@@ -237,7 +237,7 @@ before implementing the model.
 - [ ] Diagnose duplicate repository, package, target, content, and concept IDs;
   duplicate package slugs; unknown owners; and unknown unqualified workspace
   relationship endpoints. Accept explicit external package coordinates.
-- [ ] Define deterministic diagnostics with a stable code, severity, message,
+- [x] Define deterministic diagnostics with a stable code, severity, message,
   related entity, source path, and source span when available.
 - [ ] Define a schema-versioned IR for repositories, packages, extraction
   targets, content collections, pages, items, signatures, documents, code

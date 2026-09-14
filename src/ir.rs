@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-/// A zero-based, half-open byte range in one authored source document.
+/// A zero-based, half-open byte range in one source file.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SourceSpan {
     /// First byte included in the range.
