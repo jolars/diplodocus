@@ -52,6 +52,36 @@ pub enum DiagnosticCode {
     /// A repository reference does not select exactly one declaration.
     #[serde(rename = "invalid-repository-reference")]
     InvalidRepositoryReference,
+    /// A repository ID is declared more than once in the workspace.
+    #[serde(rename = "duplicate-repository-id")]
+    DuplicateRepositoryId,
+    /// A package ID is declared more than once in the workspace.
+    #[serde(rename = "duplicate-package-id")]
+    DuplicatePackageId,
+    /// An extraction target ID is declared more than once within a package.
+    #[serde(rename = "duplicate-target-id")]
+    DuplicateTargetId,
+    /// A content collection ID is declared more than once in the workspace.
+    #[serde(rename = "duplicate-content-id")]
+    DuplicateContentId,
+    /// A concept ID is declared more than once in the workspace.
+    #[serde(rename = "duplicate-concept-id")]
+    DuplicateConceptId,
+    /// A package URL slug is declared more than once in the site.
+    #[serde(rename = "duplicate-package-slug")]
+    DuplicatePackageSlug,
+    /// A content owner is neither `project` nor a declared package ID.
+    #[serde(rename = "unknown-content-owner")]
+    UnknownContentOwner,
+    /// A concept member references an undeclared workspace package.
+    #[serde(rename = "unknown-concept-package")]
+    UnknownConceptPackage,
+    /// An unqualified relationship endpoint references an undeclared package.
+    #[serde(rename = "unknown-relationship-endpoint")]
+    UnknownRelationshipEndpoint,
+    /// An external relationship endpoint has malformed coordinate syntax.
+    #[serde(rename = "invalid-external-package-coordinate")]
+    InvalidExternalPackageCoordinate,
 }
 
 impl DiagnosticCode {
@@ -72,6 +102,16 @@ impl DiagnosticCode {
             Self::SourcePathWrongType => "source-path-wrong-type",
             Self::SourcePathOutsideBoundary => "source-path-outside-boundary",
             Self::InvalidRepositoryReference => "invalid-repository-reference",
+            Self::DuplicateRepositoryId => "duplicate-repository-id",
+            Self::DuplicatePackageId => "duplicate-package-id",
+            Self::DuplicateTargetId => "duplicate-target-id",
+            Self::DuplicateContentId => "duplicate-content-id",
+            Self::DuplicateConceptId => "duplicate-concept-id",
+            Self::DuplicatePackageSlug => "duplicate-package-slug",
+            Self::UnknownContentOwner => "unknown-content-owner",
+            Self::UnknownConceptPackage => "unknown-concept-package",
+            Self::UnknownRelationshipEndpoint => "unknown-relationship-endpoint",
+            Self::InvalidExternalPackageCoordinate => "invalid-external-package-coordinate",
         }
     }
 }

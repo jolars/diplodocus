@@ -234,7 +234,7 @@ before implementing the model.
   and content and declared-environment paths relative to repositories.
 - [x] Reject missing roots, path traversal, and symlink escapes from each
   declared repository or package boundary.
-- [ ] Diagnose duplicate repository, package, target, content, and concept IDs;
+- [x] Diagnose duplicate repository, package, target, content, and concept IDs;
   duplicate package slugs; unknown owners; and unknown unqualified workspace
   relationship endpoints. Accept explicit external package coordinates.
 - [x] Define deterministic diagnostics with a stable code, severity, message,

@@ -4,6 +4,8 @@
 //! TOML syntax, field types, required fields, supported enum values, and coherent
 //! collection execution settings. It does not resolve filesystem paths or
 //! references, validate document execution authority, or discover inputs.
+//! Use [`crate::configuration_validation::validate_configuration`] for workspace
+//! identity and reference validation.
 //! Use [`crate::paths::resolve_workspace_paths`] for explicit filesystem validation.
 
 use std::collections::HashMap;
