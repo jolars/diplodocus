@@ -42,6 +42,19 @@ pub struct Provenance {
 pub enum ProvenanceActivity {
     /// An explicit declaration or source observation.
     Declaration,
+    /// Inert parsing of Markdown output from an authored cell.
+    ///
+    /// The enclosing provenance source and span identify the producing page and
+    /// authored cell fence. Fragment block and diagnostic ranges are relative to
+    /// the output identified here, not that page. No execution is implied.
+    GeneratedMarkdown {
+        /// Owning authored content collection ID.
+        collection: String,
+        /// Zero-based producing cell ordinal in authored source order.
+        cell: usize,
+        /// Zero-based output-slot ordinal within the producing cell.
+        output: usize,
+    },
     /// API extraction from an explicit target.
     Extraction {
         /// Package-scoped source target.

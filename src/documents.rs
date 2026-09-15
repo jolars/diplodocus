@@ -23,6 +23,10 @@ use crate::ir::{
 };
 use crate::validation::validate_document_execution;
 
+mod fragments;
+
+pub use fragments::{MarkdownFragmentOrigin, MarkdownFragmentParse, parse_markdown_fragment};
+
 /// Authored Markdown profile selected by a content collection.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -63,13 +67,30 @@ impl DocumentParse {
 /// This does not validate collection execution authority. Use
 /// [`parse_collection_document`] when the owning collection is available.
 pub fn parse_authored_document(source: &str, format: AuthoredFormat) -> DocumentParse {
+    parse_document(source, format, false)
+}
+
+fn parse_document(source: &str, format: AuthoredFormat, fragment: bool) -> DocumentParse {
     let flavor = match format {
         AuthoredFormat::Gfm => Flavor::Gfm,
         AuthoredFormat::Qmd => Flavor::Quarto,
     };
     let mut options = ParserOptions::for_flavor(flavor);
     options.preserve_unresolved_references = true;
-    let parsed = panache_parser::parse_document(source, Some(options));
+    if fragment {
+        options.extensions.executable_code = false;
+        options.extensions.rmarkdown_inline_code = false;
+        options.extensions.quarto_inline_code = false;
+        options.extensions.auto_identifiers = false;
+        options.extensions.gfm_auto_identifiers = false;
+        options.extensions.implicit_header_references = false;
+    }
+    let parsed = panache_parser::parse_document(source, Some(options.clone()));
+    let fragment_sources = if fragment {
+        fragments::display_sources(source, parsed.document(), options)
+    } else {
+        HashMap::new()
+    };
 
     let references = parsed
         .document()
@@ -85,6 +106,8 @@ pub fn parse_authored_document(source: &str, format: AuthoredFormat) -> Document
 
     let mut context = AdapterContext {
         format,
+        fragment,
+        fragment_sources,
         references,
         diagnostics: parsed
             .errors()
@@ -123,7 +146,7 @@ pub fn parse_authored_document(source: &str, format: AuthoredFormat) -> Document
     DocumentParse {
         document: Document {
             span: span(parsed.document().syntax().text_range()),
-            frontmatter,
+            frontmatter: if fragment { None } else { frontmatter },
             blocks,
         },
         diagnostics: context.diagnostics,
@@ -156,6 +179,8 @@ pub fn parse_collection_document(
 
 struct AdapterContext {
     format: AuthoredFormat,
+    fragment: bool,
+    fragment_sources: HashMap<TextRange, Vec<SourceSegment>>,
     references: HashMap<String, (String, Option<String>)>,
     diagnostics: Vec<Diagnostic>,
 }
@@ -166,6 +191,9 @@ impl AdapterContext {
         let fallback_raw = block.source_text();
         let fallback_range = block.text_range();
         match block {
+            BlockNode::YamlMetadata(metadata) if self.fragment => {
+                Some(self.unsupported_syntax(metadata.syntax()))
+            }
             BlockNode::YamlMetadata(_)
             | BlockNode::ReferenceDefinition(_)
             | BlockNode::Trivia(_) => None,
@@ -294,6 +322,10 @@ impl AdapterContext {
     }
 
     fn code_block(&mut self, code: CodeBlock) -> Block {
+        if self.fragment {
+            return fragments::display_code(&code, &mut self.fragment_sources)
+                .unwrap_or_else(|| self.unsupported_syntax(code.syntax()));
+        }
         if self.format == AuthoredFormat::Qmd
             && let Some(cell) = code.executable_cell()
         {

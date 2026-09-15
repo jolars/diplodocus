@@ -1,0 +1,55 @@
+{
+  "representation": {
+    "kind": "markdown-blocks",
+    "media_type": "text/markdown",
+    "blocks": [
+      {
+        "type": "code-block",
+        "language": "{python}",
+        "source": "raise RuntimeError('Generated Markdown must stay inert')\n",
+        "source_segments": [
+          {
+            "text": "raise RuntimeError('Generated Markdown must stay inert')",
+            "span": {
+              "start": 12,
+              "end": 68
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 68,
+              "end": 69
+            }
+          }
+        ],
+        "span": {
+          "start": 0,
+          "end": 73
+        }
+      }
+    ]
+  },
+  "provenance": {
+    "activity": {
+      "kind": "generated-markdown",
+      "collection": "python-execution",
+      "cell": 0,
+      "output": 0
+    },
+    "source": {
+      "kind": "repository",
+      "repository": "python",
+      "path": "execution/generated-markdown.qmd"
+    },
+    "span": {
+      "start": 170,
+      "end": 362
+    },
+    "tools": {
+      "diplodocus": "0.1.0",
+      "panache-parser": "0.29.0"
+    }
+  },
+  "diagnostics": []
+}

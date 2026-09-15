@@ -1,0 +1,326 @@
+{
+  "representation": {
+    "kind": "markdown-blocks",
+    "media_type": "text/markdown",
+    "blocks": [
+      {
+        "type": "heading",
+        "level": 1,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Café",
+            "span": {
+              "start": 2,
+              "end": 7
+            }
+          }
+        ],
+        "span": {
+          "start": 0,
+          "end": 8
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "A ",
+            "span": {
+              "start": 9,
+              "end": 11
+            }
+          },
+          {
+            "type": "strong",
+            "inlines": [
+              {
+                "type": "text",
+                "value": "strong",
+                "span": {
+                  "start": 13,
+                  "end": 19
+                }
+              }
+            ],
+            "span": {
+              "start": 11,
+              "end": 21
+            }
+          },
+          {
+            "type": "text",
+            "value": " ",
+            "span": {
+              "start": 21,
+              "end": 22
+            }
+          },
+          {
+            "type": "semantic-reference",
+            "target": "pyfoo::foo.fit",
+            "span": {
+              "start": 22,
+              "end": 40
+            },
+            "target_span": {
+              "start": 24,
+              "end": 38
+            }
+          },
+          {
+            "type": "text",
+            "value": " and ",
+            "span": {
+              "start": 40,
+              "end": 45
+            }
+          },
+          {
+            "type": "link",
+            "inlines": [
+              {
+                "type": "text",
+                "value": "guide",
+                "span": {
+                  "start": 46,
+                  "end": 51
+                }
+              }
+            ],
+            "target": "../guide.qmd",
+            "title": null,
+            "attributes": {
+              "identifier": null,
+              "classes": [],
+              "key_values": []
+            },
+            "span": {
+              "start": 45,
+              "end": 66
+            }
+          },
+          {
+            "type": "text",
+            "value": ".",
+            "span": {
+              "start": 66,
+              "end": 67
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 67,
+              "end": 68
+            }
+          }
+        ],
+        "span": {
+          "start": 9,
+          "end": 68
+        }
+      },
+      {
+        "type": "table",
+        "caption": [],
+        "alignments": [
+          "default",
+          "right"
+        ],
+        "rows": [
+          {
+            "header": true,
+            "cells": [
+              {
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "value": "Name",
+                        "span": {
+                          "start": 71,
+                          "end": 75
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 71,
+                      "end": 75
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 71,
+                  "end": 75
+                }
+              },
+              {
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "value": "Value",
+                        "span": {
+                          "start": 78,
+                          "end": 83
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 78,
+                      "end": 83
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 78,
+                  "end": 83
+                }
+              }
+            ],
+            "span": {
+              "start": 69,
+              "end": 86
+            }
+          },
+          {
+            "header": false,
+            "cells": [
+              {
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "value": "x",
+                        "span": {
+                          "start": 103,
+                          "end": 104
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 103,
+                      "end": 104
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 103,
+                  "end": 104
+                }
+              },
+              {
+                "blocks": [
+                  {
+                    "type": "paragraph",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "value": "1",
+                        "span": {
+                          "start": 107,
+                          "end": 108
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 107,
+                      "end": 108
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 107,
+                  "end": 108
+                }
+              }
+            ],
+            "span": {
+              "start": 101,
+              "end": 111
+            }
+          }
+        ],
+        "span": {
+          "start": 69,
+          "end": 111
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "inlines": [
+              {
+                "type": "text",
+                "value": "local",
+                "span": {
+                  "start": 113,
+                  "end": 118
+                }
+              }
+            ],
+            "target": "https://example.invalid",
+            "title": null,
+            "attributes": {
+              "identifier": null,
+              "classes": [],
+              "key_values": []
+            },
+            "span": {
+              "start": 112,
+              "end": 124
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 124,
+              "end": 125
+            }
+          }
+        ],
+        "span": {
+          "start": 112,
+          "end": 125
+        }
+      }
+    ]
+  },
+  "provenance": {
+    "activity": {
+      "kind": "generated-markdown",
+      "collection": "python-execution",
+      "cell": 2,
+      "output": 1
+    },
+    "source": {
+      "kind": "repository",
+      "repository": "python",
+      "path": "execution/generated-markdown.qmd"
+    },
+    "span": {
+      "start": 170,
+      "end": 362
+    },
+    "tools": {
+      "diplodocus": "0.1.0",
+      "panache-parser": "0.29.0"
+    }
+  },
+  "diagnostics": []
+}

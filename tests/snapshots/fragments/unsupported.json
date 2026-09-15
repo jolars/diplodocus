@@ -1,0 +1,166 @@
+{
+  "representation": {
+    "kind": "markdown-blocks",
+    "media_type": "text/markdown",
+    "blocks": [
+      {
+        "type": "unsupported",
+        "source_kind": "YAML_METADATA",
+        "raw": "---\nexecute: true\njupyter: python3\nfilters: [evil.lua]\n---\n",
+        "span": {
+          "start": 0,
+          "end": 59
+        }
+      },
+      {
+        "type": "heading",
+        "level": 1,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Generated {#injected}",
+            "span": {
+              "start": 62,
+              "end": 83
+            }
+          }
+        ],
+        "span": {
+          "start": 60,
+          "end": 84
+        }
+      },
+      {
+        "type": "unsupported",
+        "source_kind": "HTML_BLOCK",
+        "raw": "<script>alert('unsafe')</script>\n",
+        "span": {
+          "start": 85,
+          "end": 118
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Text ",
+            "span": {
+              "start": 119,
+              "end": 124
+            }
+          },
+          {
+            "type": "unsupported",
+            "source_kind": "INLINE_HTML",
+            "raw": "<img src=x onerror=alert(1)>",
+            "span": {
+              "start": 124,
+              "end": 152
+            }
+          },
+          {
+            "type": "text",
+            "value": " and ",
+            "span": {
+              "start": 152,
+              "end": 157
+            }
+          },
+          {
+            "type": "unsupported",
+            "source_kind": "INLINE_MATH",
+            "raw": "$x$",
+            "span": {
+              "start": 157,
+              "end": 160
+            }
+          },
+          {
+            "type": "text",
+            "value": ".",
+            "span": {
+              "start": 160,
+              "end": 161
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 161,
+              "end": 162
+            }
+          }
+        ],
+        "span": {
+          "start": 119,
+          "end": 162
+        }
+      }
+    ]
+  },
+  "provenance": {
+    "activity": {
+      "kind": "generated-markdown",
+      "collection": "python-execution",
+      "cell": 2,
+      "output": 1
+    },
+    "source": {
+      "kind": "repository",
+      "repository": "python",
+      "path": "execution/generated-markdown.qmd"
+    },
+    "span": {
+      "start": 170,
+      "end": 362
+    },
+    "tools": {
+      "diplodocus": "0.1.0",
+      "panache-parser": "0.29.0"
+    }
+  },
+  "diagnostics": [
+    {
+      "code": "unsupported-authored-syntax",
+      "severity": "warning",
+      "message": "unsupported authored syntax: YAML_METADATA",
+      "span": {
+        "start": 0,
+        "end": 59
+      }
+    },
+    {
+      "code": "unsupported-authored-syntax",
+      "severity": "warning",
+      "message": "unsupported authored syntax: HTML_BLOCK",
+      "span": {
+        "start": 85,
+        "end": 118
+      }
+    },
+    {
+      "code": "unsupported-authored-syntax",
+      "severity": "warning",
+      "message": "unsupported authored syntax: INLINE_HTML",
+      "span": {
+        "start": 124,
+        "end": 152
+      }
+    },
+    {
+      "code": "unsupported-authored-syntax",
+      "severity": "warning",
+      "message": "unsupported authored syntax: INLINE_MATH",
+      "span": {
+        "start": 157,
+        "end": 160
+      }
+    }
+  ]
+}
