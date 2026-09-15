@@ -7,17 +7,22 @@
 //! [`Document`] tree, and signatures retain evidence independent of item prose.
 //!
 //! Paths name declared repositories and normalized relative locations, never
-//! local checkout roots. This model does not resolve identities, gather evidence,
+//! local checkout roots. Identity helpers assign canonical keys without extraction.
+//! This model does not resolve source declarations, gather evidence,
 //! or execute cells. Decoding output representations also grants no rendering
 //! trust; serialized HTML remains an [`UnvalidatedHtml`] candidate.
 
 use serde::{Deserialize, Serialize};
 
+mod identity;
+mod languages;
 mod outputs;
 mod provenance;
 mod signatures;
 mod workspace;
 
+pub use identity::*;
+pub use languages::*;
 pub use outputs::*;
 pub use provenance::*;
 pub use signatures::*;

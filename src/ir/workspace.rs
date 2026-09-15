@@ -17,7 +17,9 @@ pub use crate::configuration::{
 use crate::diagnostics::{Diagnostic, DiagnosticPath};
 use crate::documents::AuthoredFormat;
 
-use super::{Document, Fingerprint, Provenance, SourceSpan, SourcedSignature};
+use super::{
+    Document, Fingerprint, ItemAlias, ItemLanguageData, Provenance, SourceSpan, SourcedSignature,
+};
 
 /// Current portable workspace schema version.
 pub const WORKSPACE_SCHEMA_VERSION: u32 = 1;
@@ -259,6 +261,12 @@ pub struct Item {
     pub name: String,
     /// Language-qualified name; not assumed unique across overloads or aliases.
     pub qualified_name: String,
+    /// Typed language semantics after reconciling all authoritative inputs.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub language_data: Option<ItemLanguageData>,
+    /// Additional lookup names for this canonical entity, in declaration order.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub aliases: Vec<ItemAlias>,
     /// Signatures in declaration order, each with independent source evidence.
     pub signatures: Vec<SourcedSignature>,
     /// Structured documentation when available.

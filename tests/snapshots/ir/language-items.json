@@ -1,0 +1,1684 @@
+{
+  "pyfoo": {
+    "sid1:python:function:foo.model.fit": {
+      "kind": "function",
+      "name": "fit",
+      "qualified_name": "foo.model.fit",
+      "language_data": {
+        "language": "python",
+        "data": {
+          "visibility": "public",
+          "declaration": {
+            "kind": "callable",
+            "binding": "function",
+            "is_async": false,
+            "role": {
+              "kind": "family",
+              "overloads": [
+                {
+                  "package": "pyfoo",
+                  "item": "sid1:python:function:foo.model.fit:overload:call(parameter(features,positional-or-keyword,some(apply(name(Sequence);apply(name(Sequence);name(float););)),none);parameter(target,positional-or-keyword,some(apply(name(Sequence);name(float);)),none);parameter(solver,keyword-only,some(apply(name(Literal);literal(%22normal%22);literal(%22qr%22);)),some(literal(%22normal%22)));parameter(tolerance,keyword-only,some(name(float)),some(literal(...)));parameter(return_diagnostics,keyword-only,some(apply(name(Literal);literal(False);)),some(literal(False)));)returns(some(name(FooModel)))"
+                },
+                {
+                  "package": "pyfoo",
+                  "item": "sid1:python:function:foo.model.fit:overload:call(parameter(features,positional-or-keyword,some(apply(name(Sequence);apply(name(Sequence);name(float););)),none);parameter(target,positional-or-keyword,some(apply(name(Sequence);name(float);)),none);parameter(solver,keyword-only,some(apply(name(Literal);literal(%22normal%22);literal(%22qr%22);)),some(literal(%22normal%22)));parameter(tolerance,keyword-only,some(name(float)),some(literal(...)));parameter(return_diagnostics,keyword-only,some(apply(name(Literal);literal(True);)),none);)returns(some(apply(name(tuple);name(FooModel);name(FitDiagnostics);)))"
+                }
+              ]
+            }
+          },
+          "decorators": []
+        }
+      },
+      "aliases": [
+        {
+          "qualified_name": "foo.fit",
+          "kind": "python-reexport",
+          "sources": [
+            {
+              "source": {
+                "repository": "python",
+                "path": "python/foo/__init__.py",
+                "span": null
+              },
+              "role": "export",
+              "parsers": []
+            },
+            {
+              "source": {
+                "repository": "python",
+                "path": "python/foo/__init__.pyi",
+                "span": null
+              },
+              "role": "export",
+              "parsers": []
+            }
+          ]
+        }
+      ],
+      "signatures": [
+        {
+          "signature": {
+            "kind": "callable",
+            "parameters": [
+              {
+                "name": "features",
+                "kind": {
+                  "kind": "positional-or-keyword"
+                },
+                "annotation": {
+                  "kind": "apply",
+                  "constructor": {
+                    "kind": "name",
+                    "name": "Sequence",
+                    "target": null
+                  },
+                  "arguments": [
+                    {
+                      "kind": "apply",
+                      "constructor": {
+                        "kind": "name",
+                        "name": "Sequence",
+                        "target": null
+                      },
+                      "arguments": [
+                        {
+                          "kind": "name",
+                          "name": "float",
+                          "target": null
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "default": null
+              },
+              {
+                "name": "target",
+                "kind": {
+                  "kind": "positional-or-keyword"
+                },
+                "annotation": {
+                  "kind": "apply",
+                  "constructor": {
+                    "kind": "name",
+                    "name": "Sequence",
+                    "target": null
+                  },
+                  "arguments": [
+                    {
+                      "kind": "name",
+                      "name": "float",
+                      "target": null
+                    }
+                  ]
+                },
+                "default": null
+              },
+              {
+                "name": "solver",
+                "kind": {
+                  "kind": "keyword-only"
+                },
+                "annotation": {
+                  "kind": "apply",
+                  "constructor": {
+                    "kind": "name",
+                    "name": "Literal",
+                    "target": null
+                  },
+                  "arguments": [
+                    {
+                      "kind": "literal",
+                      "text": "\"normal\""
+                    },
+                    {
+                      "kind": "literal",
+                      "text": "\"qr\""
+                    }
+                  ]
+                },
+                "default": {
+                  "kind": "literal",
+                  "text": "\"normal\""
+                }
+              },
+              {
+                "name": "tolerance",
+                "kind": {
+                  "kind": "keyword-only"
+                },
+                "annotation": {
+                  "kind": "name",
+                  "name": "float",
+                  "target": null
+                },
+                "default": {
+                  "kind": "literal",
+                  "text": "..."
+                }
+              },
+              {
+                "name": "return_diagnostics",
+                "kind": {
+                  "kind": "keyword-only"
+                },
+                "annotation": {
+                  "kind": "apply",
+                  "constructor": {
+                    "kind": "name",
+                    "name": "Literal",
+                    "target": null
+                  },
+                  "arguments": [
+                    {
+                      "kind": "literal",
+                      "text": "False"
+                    }
+                  ]
+                },
+                "default": {
+                  "kind": "literal",
+                  "text": "False"
+                }
+              }
+            ],
+            "returns": {
+              "kind": "name",
+              "name": "FooModel",
+              "target": null
+            }
+          },
+          "sources": [
+            {
+              "source": {
+                "repository": "python",
+                "path": "python/foo/model.pyi",
+                "span": null
+              },
+              "role": "signature",
+              "parsers": []
+            }
+          ]
+        },
+        {
+          "signature": {
+            "kind": "callable",
+            "parameters": [
+              {
+                "name": "features",
+                "kind": {
+                  "kind": "positional-or-keyword"
+                },
+                "annotation": {
+                  "kind": "apply",
+                  "constructor": {
+                    "kind": "name",
+                    "name": "Sequence",
+                    "target": null
+                  },
+                  "arguments": [
+                    {
+                      "kind": "apply",
+                      "constructor": {
+                        "kind": "name",
+                        "name": "Sequence",
+                        "target": null
+                      },
+                      "arguments": [
+                        {
+                          "kind": "name",
+                          "name": "float",
+                          "target": null
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "default": null
+              },
+              {
+                "name": "target",
+                "kind": {
+                  "kind": "positional-or-keyword"
+                },
+                "annotation": {
+                  "kind": "apply",
+                  "constructor": {
+                    "kind": "name",
+                    "name": "Sequence",
+                    "target": null
+                  },
+                  "arguments": [
+                    {
+                      "kind": "name",
+                      "name": "float",
+                      "target": null
+                    }
+                  ]
+                },
+                "default": null
+              },
+              {
+                "name": "solver",
+                "kind": {
+                  "kind": "keyword-only"
+                },
+                "annotation": {
+                  "kind": "apply",
+                  "constructor": {
+                    "kind": "name",
+                    "name": "Literal",
+                    "target": null
+                  },
+                  "arguments": [
+                    {
+                      "kind": "literal",
+                      "text": "\"normal\""
+                    },
+                    {
+                      "kind": "literal",
+                      "text": "\"qr\""
+                    }
+                  ]
+                },
+                "default": {
+                  "kind": "literal",
+                  "text": "\"normal\""
+                }
+              },
+              {
+                "name": "tolerance",
+                "kind": {
+                  "kind": "keyword-only"
+                },
+                "annotation": {
+                  "kind": "name",
+                  "name": "float",
+                  "target": null
+                },
+                "default": {
+                  "kind": "literal",
+                  "text": "..."
+                }
+              },
+              {
+                "name": "return_diagnostics",
+                "kind": {
+                  "kind": "keyword-only"
+                },
+                "annotation": {
+                  "kind": "apply",
+                  "constructor": {
+                    "kind": "name",
+                    "name": "Literal",
+                    "target": null
+                  },
+                  "arguments": [
+                    {
+                      "kind": "literal",
+                      "text": "True"
+                    }
+                  ]
+                },
+                "default": null
+              }
+            ],
+            "returns": {
+              "kind": "apply",
+              "constructor": {
+                "kind": "name",
+                "name": "tuple",
+                "target": null
+              },
+              "arguments": [
+                {
+                  "kind": "name",
+                  "name": "FooModel",
+                  "target": null
+                },
+                {
+                  "kind": "name",
+                  "name": "FitDiagnostics",
+                  "target": null
+                }
+              ]
+            }
+          },
+          "sources": [
+            {
+              "source": {
+                "repository": "python",
+                "path": "python/foo/model.pyi",
+                "span": null
+              },
+              "role": "signature",
+              "parsers": []
+            }
+          ]
+        }
+      ],
+      "documentation": {
+        "document": {
+          "span": {
+            "start": 0,
+            "end": 0
+          },
+          "frontmatter": null,
+          "blocks": []
+        },
+        "source_format": {
+          "kind": "extracted",
+          "name": "numpy-docstring"
+        },
+        "source_location": {
+          "repository": "python",
+          "path": "python/foo/model.py",
+          "span": null
+        },
+        "raw_source": null,
+        "provenance": []
+      },
+      "source_location": {
+        "repository": "python",
+        "path": "python/foo/model.py",
+        "span": null
+      },
+      "children": [],
+      "provenance": []
+    },
+    "sid1:python:function:foo.model.fit:overload:call(parameter(features,positional-or-keyword,some(apply(name(Sequence);apply(name(Sequence);name(float););)),none);parameter(target,positional-or-keyword,some(apply(name(Sequence);name(float);)),none);parameter(solver,keyword-only,some(apply(name(Literal);literal(%22normal%22);literal(%22qr%22);)),some(literal(%22normal%22)));parameter(tolerance,keyword-only,some(name(float)),some(literal(...)));parameter(return_diagnostics,keyword-only,some(apply(name(Literal);literal(False);)),some(literal(False)));)returns(some(name(FooModel)))": {
+      "kind": "function",
+      "name": "fit",
+      "qualified_name": "foo.model.fit",
+      "language_data": {
+        "language": "python",
+        "data": {
+          "visibility": "public",
+          "declaration": {
+            "kind": "callable",
+            "binding": "function",
+            "is_async": false,
+            "role": {
+              "kind": "overload",
+              "family": {
+                "package": "pyfoo",
+                "item": "sid1:python:function:foo.model.fit"
+              }
+            }
+          },
+          "decorators": [
+            {
+              "expression": {
+                "kind": "name",
+                "name": "overload",
+                "target": null
+              },
+              "semantics": "overload",
+              "sources": [
+                {
+                  "source": {
+                    "repository": "python",
+                    "path": "python/foo/model.pyi",
+                    "span": null
+                  },
+                  "role": "definition",
+                  "parsers": []
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "signatures": [
+        {
+          "signature": {
+            "kind": "callable",
+            "parameters": [
+              {
+                "name": "features",
+                "kind": {
+                  "kind": "positional-or-keyword"
+                },
+                "annotation": {
+                  "kind": "apply",
+                  "constructor": {
+                    "kind": "name",
+                    "name": "Sequence",
+                    "target": null
+                  },
+                  "arguments": [
+                    {
+                      "kind": "apply",
+                      "constructor": {
+                        "kind": "name",
+                        "name": "Sequence",
+                        "target": null
+                      },
+                      "arguments": [
+                        {
+                          "kind": "name",
+                          "name": "float",
+                          "target": null
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "default": null
+              },
+              {
+                "name": "target",
+                "kind": {
+                  "kind": "positional-or-keyword"
+                },
+                "annotation": {
+                  "kind": "apply",
+                  "constructor": {
+                    "kind": "name",
+                    "name": "Sequence",
+                    "target": null
+                  },
+                  "arguments": [
+                    {
+                      "kind": "name",
+                      "name": "float",
+                      "target": null
+                    }
+                  ]
+                },
+                "default": null
+              },
+              {
+                "name": "solver",
+                "kind": {
+                  "kind": "keyword-only"
+                },
+                "annotation": {
+                  "kind": "apply",
+                  "constructor": {
+                    "kind": "name",
+                    "name": "Literal",
+                    "target": null
+                  },
+                  "arguments": [
+                    {
+                      "kind": "literal",
+                      "text": "\"normal\""
+                    },
+                    {
+                      "kind": "literal",
+                      "text": "\"qr\""
+                    }
+                  ]
+                },
+                "default": {
+                  "kind": "literal",
+                  "text": "\"normal\""
+                }
+              },
+              {
+                "name": "tolerance",
+                "kind": {
+                  "kind": "keyword-only"
+                },
+                "annotation": {
+                  "kind": "name",
+                  "name": "float",
+                  "target": null
+                },
+                "default": {
+                  "kind": "literal",
+                  "text": "..."
+                }
+              },
+              {
+                "name": "return_diagnostics",
+                "kind": {
+                  "kind": "keyword-only"
+                },
+                "annotation": {
+                  "kind": "apply",
+                  "constructor": {
+                    "kind": "name",
+                    "name": "Literal",
+                    "target": null
+                  },
+                  "arguments": [
+                    {
+                      "kind": "literal",
+                      "text": "False"
+                    }
+                  ]
+                },
+                "default": {
+                  "kind": "literal",
+                  "text": "False"
+                }
+              }
+            ],
+            "returns": {
+              "kind": "name",
+              "name": "FooModel",
+              "target": null
+            }
+          },
+          "sources": [
+            {
+              "source": {
+                "repository": "python",
+                "path": "python/foo/model.pyi",
+                "span": null
+              },
+              "role": "signature",
+              "parsers": []
+            }
+          ]
+        }
+      ],
+      "documentation": null,
+      "source_location": null,
+      "children": [],
+      "provenance": []
+    },
+    "sid1:python:function:foo.model.fit:overload:call(parameter(features,positional-or-keyword,some(apply(name(Sequence);apply(name(Sequence);name(float););)),none);parameter(target,positional-or-keyword,some(apply(name(Sequence);name(float);)),none);parameter(solver,keyword-only,some(apply(name(Literal);literal(%22normal%22);literal(%22qr%22);)),some(literal(%22normal%22)));parameter(tolerance,keyword-only,some(name(float)),some(literal(...)));parameter(return_diagnostics,keyword-only,some(apply(name(Literal);literal(True);)),none);)returns(some(apply(name(tuple);name(FooModel);name(FitDiagnostics);)))": {
+      "kind": "function",
+      "name": "fit",
+      "qualified_name": "foo.model.fit",
+      "language_data": {
+        "language": "python",
+        "data": {
+          "visibility": "public",
+          "declaration": {
+            "kind": "callable",
+            "binding": "function",
+            "is_async": false,
+            "role": {
+              "kind": "overload",
+              "family": {
+                "package": "pyfoo",
+                "item": "sid1:python:function:foo.model.fit"
+              }
+            }
+          },
+          "decorators": [
+            {
+              "expression": {
+                "kind": "name",
+                "name": "overload",
+                "target": null
+              },
+              "semantics": "overload",
+              "sources": [
+                {
+                  "source": {
+                    "repository": "python",
+                    "path": "python/foo/model.pyi",
+                    "span": null
+                  },
+                  "role": "definition",
+                  "parsers": []
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "signatures": [
+        {
+          "signature": {
+            "kind": "callable",
+            "parameters": [
+              {
+                "name": "features",
+                "kind": {
+                  "kind": "positional-or-keyword"
+                },
+                "annotation": {
+                  "kind": "apply",
+                  "constructor": {
+                    "kind": "name",
+                    "name": "Sequence",
+                    "target": null
+                  },
+                  "arguments": [
+                    {
+                      "kind": "apply",
+                      "constructor": {
+                        "kind": "name",
+                        "name": "Sequence",
+                        "target": null
+                      },
+                      "arguments": [
+                        {
+                          "kind": "name",
+                          "name": "float",
+                          "target": null
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "default": null
+              },
+              {
+                "name": "target",
+                "kind": {
+                  "kind": "positional-or-keyword"
+                },
+                "annotation": {
+                  "kind": "apply",
+                  "constructor": {
+                    "kind": "name",
+                    "name": "Sequence",
+                    "target": null
+                  },
+                  "arguments": [
+                    {
+                      "kind": "name",
+                      "name": "float",
+                      "target": null
+                    }
+                  ]
+                },
+                "default": null
+              },
+              {
+                "name": "solver",
+                "kind": {
+                  "kind": "keyword-only"
+                },
+                "annotation": {
+                  "kind": "apply",
+                  "constructor": {
+                    "kind": "name",
+                    "name": "Literal",
+                    "target": null
+                  },
+                  "arguments": [
+                    {
+                      "kind": "literal",
+                      "text": "\"normal\""
+                    },
+                    {
+                      "kind": "literal",
+                      "text": "\"qr\""
+                    }
+                  ]
+                },
+                "default": {
+                  "kind": "literal",
+                  "text": "\"normal\""
+                }
+              },
+              {
+                "name": "tolerance",
+                "kind": {
+                  "kind": "keyword-only"
+                },
+                "annotation": {
+                  "kind": "name",
+                  "name": "float",
+                  "target": null
+                },
+                "default": {
+                  "kind": "literal",
+                  "text": "..."
+                }
+              },
+              {
+                "name": "return_diagnostics",
+                "kind": {
+                  "kind": "keyword-only"
+                },
+                "annotation": {
+                  "kind": "apply",
+                  "constructor": {
+                    "kind": "name",
+                    "name": "Literal",
+                    "target": null
+                  },
+                  "arguments": [
+                    {
+                      "kind": "literal",
+                      "text": "True"
+                    }
+                  ]
+                },
+                "default": null
+              }
+            ],
+            "returns": {
+              "kind": "apply",
+              "constructor": {
+                "kind": "name",
+                "name": "tuple",
+                "target": null
+              },
+              "arguments": [
+                {
+                  "kind": "name",
+                  "name": "FooModel",
+                  "target": null
+                },
+                {
+                  "kind": "name",
+                  "name": "FitDiagnostics",
+                  "target": null
+                }
+              ]
+            }
+          },
+          "sources": [
+            {
+              "source": {
+                "repository": "python",
+                "path": "python/foo/model.pyi",
+                "span": null
+              },
+              "role": "signature",
+              "parsers": []
+            }
+          ]
+        }
+      ],
+      "documentation": null,
+      "source_location": null,
+      "children": [],
+      "provenance": []
+    },
+    "sid1:python:method:foo.model.FooModel.predict": {
+      "kind": "method",
+      "name": "predict",
+      "qualified_name": "foo.model.FooModel.predict",
+      "language_data": {
+        "language": "python",
+        "data": {
+          "visibility": "public",
+          "declaration": {
+            "kind": "callable",
+            "binding": "instance-method",
+            "is_async": false,
+            "role": {
+              "kind": "family",
+              "overloads": [
+                {
+                  "package": "pyfoo",
+                  "item": "sid1:python:method:foo.model.FooModel.predict:overload:call(parameter(self,positional-only,none,none);parameter(features,positional-only,some(apply(name(Sequence);name(float);)),none);)returns(some(name(float)))"
+                },
+                {
+                  "package": "pyfoo",
+                  "item": "sid1:python:method:foo.model.FooModel.predict:overload:call(parameter(self,positional-only,none,none);parameter(features,positional-only,some(apply(name(Sequence);apply(name(Sequence);name(float););)),none);)returns(some(apply(name(list);name(float);)))"
+                }
+              ]
+            }
+          },
+          "decorators": []
+        }
+      },
+      "aliases": [
+        {
+          "qualified_name": "foo.FooModel.predict",
+          "kind": "python-reexport",
+          "sources": [
+            {
+              "source": {
+                "repository": "python",
+                "path": "python/foo/__init__.py",
+                "span": null
+              },
+              "role": "export",
+              "parsers": []
+            },
+            {
+              "source": {
+                "repository": "python",
+                "path": "python/foo/__init__.pyi",
+                "span": null
+              },
+              "role": "export",
+              "parsers": []
+            }
+          ]
+        }
+      ],
+      "signatures": [
+        {
+          "signature": {
+            "kind": "callable",
+            "parameters": [
+              {
+                "name": "self",
+                "kind": {
+                  "kind": "positional-only"
+                },
+                "annotation": null,
+                "default": null
+              },
+              {
+                "name": "features",
+                "kind": {
+                  "kind": "positional-only"
+                },
+                "annotation": {
+                  "kind": "apply",
+                  "constructor": {
+                    "kind": "name",
+                    "name": "Sequence",
+                    "target": null
+                  },
+                  "arguments": [
+                    {
+                      "kind": "name",
+                      "name": "float",
+                      "target": null
+                    }
+                  ]
+                },
+                "default": null
+              }
+            ],
+            "returns": {
+              "kind": "name",
+              "name": "float",
+              "target": null
+            }
+          },
+          "sources": [
+            {
+              "source": {
+                "repository": "python",
+                "path": "python/foo/model.pyi",
+                "span": null
+              },
+              "role": "signature",
+              "parsers": []
+            }
+          ]
+        },
+        {
+          "signature": {
+            "kind": "callable",
+            "parameters": [
+              {
+                "name": "self",
+                "kind": {
+                  "kind": "positional-only"
+                },
+                "annotation": null,
+                "default": null
+              },
+              {
+                "name": "features",
+                "kind": {
+                  "kind": "positional-only"
+                },
+                "annotation": {
+                  "kind": "apply",
+                  "constructor": {
+                    "kind": "name",
+                    "name": "Sequence",
+                    "target": null
+                  },
+                  "arguments": [
+                    {
+                      "kind": "apply",
+                      "constructor": {
+                        "kind": "name",
+                        "name": "Sequence",
+                        "target": null
+                      },
+                      "arguments": [
+                        {
+                          "kind": "name",
+                          "name": "float",
+                          "target": null
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "default": null
+              }
+            ],
+            "returns": {
+              "kind": "apply",
+              "constructor": {
+                "kind": "name",
+                "name": "list",
+                "target": null
+              },
+              "arguments": [
+                {
+                  "kind": "name",
+                  "name": "float",
+                  "target": null
+                }
+              ]
+            }
+          },
+          "sources": [
+            {
+              "source": {
+                "repository": "python",
+                "path": "python/foo/model.pyi",
+                "span": null
+              },
+              "role": "signature",
+              "parsers": []
+            }
+          ]
+        }
+      ],
+      "documentation": {
+        "document": {
+          "span": {
+            "start": 0,
+            "end": 0
+          },
+          "frontmatter": null,
+          "blocks": []
+        },
+        "source_format": {
+          "kind": "extracted",
+          "name": "numpy-docstring"
+        },
+        "source_location": {
+          "repository": "python",
+          "path": "python/foo/model.py",
+          "span": null
+        },
+        "raw_source": null,
+        "provenance": []
+      },
+      "source_location": {
+        "repository": "python",
+        "path": "python/foo/model.py",
+        "span": null
+      },
+      "children": [],
+      "provenance": []
+    },
+    "sid1:python:method:foo.model.FooModel.predict:overload:call(parameter(self,positional-only,none,none);parameter(features,positional-only,some(apply(name(Sequence);apply(name(Sequence);name(float););)),none);)returns(some(apply(name(list);name(float);)))": {
+      "kind": "method",
+      "name": "predict",
+      "qualified_name": "foo.model.FooModel.predict",
+      "language_data": {
+        "language": "python",
+        "data": {
+          "visibility": "public",
+          "declaration": {
+            "kind": "callable",
+            "binding": "instance-method",
+            "is_async": false,
+            "role": {
+              "kind": "overload",
+              "family": {
+                "package": "pyfoo",
+                "item": "sid1:python:method:foo.model.FooModel.predict"
+              }
+            }
+          },
+          "decorators": [
+            {
+              "expression": {
+                "kind": "name",
+                "name": "overload",
+                "target": null
+              },
+              "semantics": "overload",
+              "sources": [
+                {
+                  "source": {
+                    "repository": "python",
+                    "path": "python/foo/model.pyi",
+                    "span": null
+                  },
+                  "role": "definition",
+                  "parsers": []
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "signatures": [
+        {
+          "signature": {
+            "kind": "callable",
+            "parameters": [
+              {
+                "name": "self",
+                "kind": {
+                  "kind": "positional-only"
+                },
+                "annotation": null,
+                "default": null
+              },
+              {
+                "name": "features",
+                "kind": {
+                  "kind": "positional-only"
+                },
+                "annotation": {
+                  "kind": "apply",
+                  "constructor": {
+                    "kind": "name",
+                    "name": "Sequence",
+                    "target": null
+                  },
+                  "arguments": [
+                    {
+                      "kind": "apply",
+                      "constructor": {
+                        "kind": "name",
+                        "name": "Sequence",
+                        "target": null
+                      },
+                      "arguments": [
+                        {
+                          "kind": "name",
+                          "name": "float",
+                          "target": null
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "default": null
+              }
+            ],
+            "returns": {
+              "kind": "apply",
+              "constructor": {
+                "kind": "name",
+                "name": "list",
+                "target": null
+              },
+              "arguments": [
+                {
+                  "kind": "name",
+                  "name": "float",
+                  "target": null
+                }
+              ]
+            }
+          },
+          "sources": [
+            {
+              "source": {
+                "repository": "python",
+                "path": "python/foo/model.pyi",
+                "span": null
+              },
+              "role": "signature",
+              "parsers": []
+            }
+          ]
+        }
+      ],
+      "documentation": null,
+      "source_location": null,
+      "children": [],
+      "provenance": []
+    },
+    "sid1:python:method:foo.model.FooModel.predict:overload:call(parameter(self,positional-only,none,none);parameter(features,positional-only,some(apply(name(Sequence);name(float);)),none);)returns(some(name(float)))": {
+      "kind": "method",
+      "name": "predict",
+      "qualified_name": "foo.model.FooModel.predict",
+      "language_data": {
+        "language": "python",
+        "data": {
+          "visibility": "public",
+          "declaration": {
+            "kind": "callable",
+            "binding": "instance-method",
+            "is_async": false,
+            "role": {
+              "kind": "overload",
+              "family": {
+                "package": "pyfoo",
+                "item": "sid1:python:method:foo.model.FooModel.predict"
+              }
+            }
+          },
+          "decorators": [
+            {
+              "expression": {
+                "kind": "name",
+                "name": "overload",
+                "target": null
+              },
+              "semantics": "overload",
+              "sources": [
+                {
+                  "source": {
+                    "repository": "python",
+                    "path": "python/foo/model.pyi",
+                    "span": null
+                  },
+                  "role": "definition",
+                  "parsers": []
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "signatures": [
+        {
+          "signature": {
+            "kind": "callable",
+            "parameters": [
+              {
+                "name": "self",
+                "kind": {
+                  "kind": "positional-only"
+                },
+                "annotation": null,
+                "default": null
+              },
+              {
+                "name": "features",
+                "kind": {
+                  "kind": "positional-only"
+                },
+                "annotation": {
+                  "kind": "apply",
+                  "constructor": {
+                    "kind": "name",
+                    "name": "Sequence",
+                    "target": null
+                  },
+                  "arguments": [
+                    {
+                      "kind": "name",
+                      "name": "float",
+                      "target": null
+                    }
+                  ]
+                },
+                "default": null
+              }
+            ],
+            "returns": {
+              "kind": "name",
+              "name": "float",
+              "target": null
+            }
+          },
+          "sources": [
+            {
+              "source": {
+                "repository": "python",
+                "path": "python/foo/model.pyi",
+                "span": null
+              },
+              "role": "signature",
+              "parsers": []
+            }
+          ]
+        }
+      ],
+      "documentation": null,
+      "source_location": null,
+      "children": [],
+      "provenance": []
+    }
+  },
+  "rfoo": {
+    "sid1:r:s3-generic:fit": {
+      "kind": "function",
+      "name": "fit",
+      "qualified_name": "fit",
+      "language_data": {
+        "language": "r",
+        "data": {
+          "exported": true,
+          "declaration": {
+            "kind": "s3-generic",
+            "dispatch_name": "fit",
+            "dispatch_object": null,
+            "methods": [
+              {
+                "package": "rfoo",
+                "item": "sid1:r:s3-method:fit.default:workspace(rfoo,sid1%3Ar%3As3-generic%3Afit):default"
+              },
+              {
+                "package": "rfoo",
+                "item": "sid1:r:s3-method:fit.foo_model:workspace(rfoo,sid1%3Ar%3As3-generic%3Afit):foo_model"
+              }
+            ]
+          }
+        }
+      },
+      "aliases": [
+        {
+          "qualified_name": "fit",
+          "kind": "rd-alias",
+          "sources": [
+            {
+              "source": {
+                "repository": "r",
+                "path": "man/fit.Rd",
+                "span": null
+              },
+              "role": "documentation",
+              "parsers": []
+            }
+          ]
+        }
+      ],
+      "signatures": [
+        {
+          "signature": {
+            "kind": "callable",
+            "parameters": [
+              {
+                "name": "x",
+                "kind": {
+                  "kind": "positional-or-keyword"
+                },
+                "annotation": null,
+                "default": null
+              },
+              {
+                "name": "...",
+                "kind": {
+                  "kind": "language-specific",
+                  "language": "r",
+                  "name": "dots"
+                },
+                "annotation": null,
+                "default": null
+              }
+            ],
+            "returns": null
+          },
+          "sources": [
+            {
+              "source": {
+                "repository": "r",
+                "path": "R/fit.R",
+                "span": null
+              },
+              "role": "signature",
+              "parsers": []
+            }
+          ]
+        }
+      ],
+      "documentation": null,
+      "source_location": null,
+      "children": [],
+      "provenance": []
+    },
+    "sid1:r:s3-method:fit.default:workspace(rfoo,sid1%3Ar%3As3-generic%3Afit):default": {
+      "kind": "method",
+      "name": "fit.default",
+      "qualified_name": "fit.default",
+      "language_data": {
+        "language": "r",
+        "data": {
+          "exported": false,
+          "declaration": {
+            "kind": "s3-method",
+            "generic": {
+              "kind": "workspace",
+              "item": {
+                "package": "rfoo",
+                "item": "sid1:r:s3-generic:fit"
+              }
+            },
+            "class": "default",
+            "registration": [
+              {
+                "source": {
+                  "repository": "r",
+                  "path": "NAMESPACE",
+                  "span": null
+                },
+                "role": "registration",
+                "parsers": []
+              }
+            ]
+          }
+        }
+      },
+      "aliases": [
+        {
+          "qualified_name": "fit.default",
+          "kind": "rd-alias",
+          "sources": [
+            {
+              "source": {
+                "repository": "r",
+                "path": "man/fit.Rd",
+                "span": null
+              },
+              "role": "documentation",
+              "parsers": []
+            }
+          ]
+        }
+      ],
+      "signatures": [
+        {
+          "signature": {
+            "kind": "callable",
+            "parameters": [
+              {
+                "name": "x",
+                "kind": {
+                  "kind": "positional-or-keyword"
+                },
+                "annotation": null,
+                "default": null
+              },
+              {
+                "name": "y",
+                "kind": {
+                  "kind": "positional-or-keyword"
+                },
+                "annotation": null,
+                "default": null
+              },
+              {
+                "name": "solver",
+                "kind": {
+                  "kind": "positional-or-keyword"
+                },
+                "annotation": null,
+                "default": {
+                  "kind": "apply",
+                  "constructor": {
+                    "kind": "name",
+                    "name": "c",
+                    "target": null
+                  },
+                  "arguments": [
+                    {
+                      "kind": "literal",
+                      "text": "\"normal\""
+                    },
+                    {
+                      "kind": "literal",
+                      "text": "\"qr\""
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "tolerance",
+                "kind": {
+                  "kind": "positional-or-keyword"
+                },
+                "annotation": null,
+                "default": {
+                  "kind": "literal",
+                  "text": "1e-8"
+                }
+              },
+              {
+                "name": "...",
+                "kind": {
+                  "kind": "language-specific",
+                  "language": "r",
+                  "name": "dots"
+                },
+                "annotation": null,
+                "default": null
+              }
+            ],
+            "returns": null
+          },
+          "sources": [
+            {
+              "source": {
+                "repository": "r",
+                "path": "R/fit.R",
+                "span": null
+              },
+              "role": "signature",
+              "parsers": []
+            }
+          ]
+        }
+      ],
+      "documentation": null,
+      "source_location": {
+        "repository": "r",
+        "path": "R/fit.R",
+        "span": null
+      },
+      "children": [],
+      "provenance": []
+    },
+    "sid1:r:s3-method:fit.foo_model:workspace(rfoo,sid1%3Ar%3As3-generic%3Afit):foo_model": {
+      "kind": "method",
+      "name": "fit.foo_model",
+      "qualified_name": "fit.foo_model",
+      "language_data": {
+        "language": "r",
+        "data": {
+          "exported": false,
+          "declaration": {
+            "kind": "s3-method",
+            "generic": {
+              "kind": "workspace",
+              "item": {
+                "package": "rfoo",
+                "item": "sid1:r:s3-generic:fit"
+              }
+            },
+            "class": "foo_model",
+            "registration": [
+              {
+                "source": {
+                  "repository": "r",
+                  "path": "NAMESPACE",
+                  "span": null
+                },
+                "role": "registration",
+                "parsers": []
+              }
+            ]
+          }
+        }
+      },
+      "aliases": [
+        {
+          "qualified_name": "fit.foo_model",
+          "kind": "rd-alias",
+          "sources": [
+            {
+              "source": {
+                "repository": "r",
+                "path": "man/fit.Rd",
+                "span": null
+              },
+              "role": "documentation",
+              "parsers": []
+            }
+          ]
+        }
+      ],
+      "signatures": [
+        {
+          "signature": {
+            "kind": "callable",
+            "parameters": [
+              {
+                "name": "x",
+                "kind": {
+                  "kind": "positional-or-keyword"
+                },
+                "annotation": null,
+                "default": null
+              },
+              {
+                "name": "features",
+                "kind": {
+                  "kind": "positional-or-keyword"
+                },
+                "annotation": null,
+                "default": null
+              },
+              {
+                "name": "target",
+                "kind": {
+                  "kind": "positional-or-keyword"
+                },
+                "annotation": null,
+                "default": null
+              },
+              {
+                "name": "tolerance",
+                "kind": {
+                  "kind": "positional-or-keyword"
+                },
+                "annotation": null,
+                "default": {
+                  "kind": "literal",
+                  "text": "1e-8"
+                }
+              },
+              {
+                "name": "...",
+                "kind": {
+                  "kind": "language-specific",
+                  "language": "r",
+                  "name": "dots"
+                },
+                "annotation": null,
+                "default": null
+              }
+            ],
+            "returns": null
+          },
+          "sources": [
+            {
+              "source": {
+                "repository": "r",
+                "path": "R/fit.R",
+                "span": null
+              },
+              "role": "signature",
+              "parsers": []
+            }
+          ]
+        }
+      ],
+      "documentation": null,
+      "source_location": {
+        "repository": "r",
+        "path": "R/fit.R",
+        "span": null
+      },
+      "children": [],
+      "provenance": []
+    },
+    "sid1:r:s3-method:predict.foo_model:external(stats,predict):foo_model": {
+      "kind": "method",
+      "name": "predict.foo_model",
+      "qualified_name": "predict.foo_model",
+      "language_data": {
+        "language": "r",
+        "data": {
+          "exported": false,
+          "declaration": {
+            "kind": "s3-method",
+            "generic": {
+              "kind": "external",
+              "package": "stats",
+              "name": "predict"
+            },
+            "class": "foo_model",
+            "registration": [
+              {
+                "source": {
+                  "repository": "r",
+                  "path": "NAMESPACE",
+                  "span": null
+                },
+                "role": "registration",
+                "parsers": []
+              }
+            ]
+          }
+        }
+      },
+      "aliases": [
+        {
+          "qualified_name": "predict.foo_model",
+          "kind": "rd-alias",
+          "sources": [
+            {
+              "source": {
+                "repository": "r",
+                "path": "man/foo_model.Rd",
+                "span": null
+              },
+              "role": "documentation",
+              "parsers": []
+            }
+          ]
+        }
+      ],
+      "signatures": [
+        {
+          "signature": {
+            "kind": "callable",
+            "parameters": [
+              {
+                "name": "object",
+                "kind": {
+                  "kind": "positional-or-keyword"
+                },
+                "annotation": null,
+                "default": null
+              },
+              {
+                "name": "newdata",
+                "kind": {
+                  "kind": "positional-or-keyword"
+                },
+                "annotation": null,
+                "default": null
+              },
+              {
+                "name": "...",
+                "kind": {
+                  "kind": "language-specific",
+                  "language": "r",
+                  "name": "dots"
+                },
+                "annotation": null,
+                "default": null
+              }
+            ],
+            "returns": null
+          },
+          "sources": [
+            {
+              "source": {
+                "repository": "r",
+                "path": "R/fit.R",
+                "span": null
+              },
+              "role": "signature",
+              "parsers": []
+            }
+          ]
+        }
+      ],
+      "documentation": null,
+      "source_location": {
+        "repository": "r",
+        "path": "R/fit.R",
+        "span": null
+      },
+      "children": [],
+      "provenance": []
+    }
+  }
+}

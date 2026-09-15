@@ -1,0 +1,5 @@
+{
+  "code": "invalid-identity",
+  "field": "signature-expression",
+  "reason": "opaque source-only syntax cannot establish overload identity"
+}

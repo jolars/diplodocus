@@ -1,0 +1,13 @@
+[
+  "sid1:python:function:foo.model.fit",
+  "sid1:python:function:foo.model.fit:overload:call(parameter(return_diagnostics,keyword-only,some(apply(name(Literal);literal(False);)),some(literal(False)));)returns(some(name(FooModel)))",
+  "sid1:python:function:foo.model.fit:overload:call(parameter(return_diagnostics,keyword-only,some(apply(name(Literal);literal(True);)),none);)returns(some(apply(name(tuple);name(FooModel);name(FitDiagnostics);)))",
+  "sid1:python:class:foo.model.fit",
+  "sid1:python:type-alias:foo.model.fit",
+  "sid1:python:function:foo.other.fit",
+  "sid1:r:function:fit",
+  "sid1:r:s3-generic:fit",
+  "sid1:r:s3-method:fit:workspace(rfoo,sid1%3Ar%3As3-generic%3Afit):default",
+  "sid1:r:s3-method:fit:workspace(rfoo,sid1%3Ar%3As3-generic%3Afit):foo_model",
+  "sid1:r:s3-method:predict.foo_model:external(stats,predict):foo_model"
+]

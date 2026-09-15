@@ -1,0 +1,32 @@
+{
+  "conflict": {
+    "alias": "foo.fit",
+    "candidates": [
+      {
+        "item": "sid1:python:function:foo.model.fit",
+        "package": "pyfoo"
+      },
+      {
+        "item": "sid1:python:type-alias:foo.fit",
+        "package": "pyfoo"
+      }
+    ],
+    "code": "conflicting-item-alias",
+    "package": "pyfoo"
+  },
+  "duplicate": {
+    "code": "duplicate-item-identity",
+    "item": {
+      "item": "sid1:python:function:foo.model.fit",
+      "package": "pyfoo"
+    }
+  },
+  "unknown": {
+    "alias": "foo.missing",
+    "code": "unknown-alias-target",
+    "target": {
+      "item": "missing",
+      "package": "pyfoo"
+    }
+  }
+}
