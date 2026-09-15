@@ -1,0 +1,21 @@
+[
+  {
+    "code": "unsupported-authored-syntax",
+    "message": "unsupported authored syntax: FENCED_DIV",
+    "related_entity": {
+      "collection": "python-guide",
+      "kind": "document",
+      "path": "guide.qmd"
+    },
+    "severity": "warning",
+    "source": {
+      "kind": "repository",
+      "path": "docs/guide.qmd",
+      "repository": "python"
+    },
+    "span": {
+      "end": 364,
+      "start": 295
+    }
+  }
+]

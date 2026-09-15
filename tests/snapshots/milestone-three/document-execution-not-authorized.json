@@ -1,0 +1,27 @@
+[
+  {
+    "code": "document-execution-not-authorized",
+    "message": "document metadata cannot authorize execution in a collection with `mode = \"never\"`",
+    "related_entity": {
+      "collection": "python-default-never",
+      "kind": "document",
+      "path": "metadata-cannot-authorize.qmd"
+    },
+    "related_spans": [
+      {
+        "end": 87,
+        "start": 70
+      }
+    ],
+    "severity": "error",
+    "source": {
+      "kind": "repository",
+      "path": "safety/metadata-cannot-authorize.qmd",
+      "repository": "python"
+    },
+    "span": {
+      "end": 70,
+      "start": 56
+    }
+  }
+]
