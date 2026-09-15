@@ -1,0 +1,381 @@
+{
+  "configuration": {
+    "concept": [
+      {
+        "id": "fit",
+        "kind": "equivalent",
+        "members": [
+          {
+            "item": "foo.fit",
+            "package": "pyfoo"
+          },
+          {
+            "item": "fit",
+            "package": "rfoo"
+          }
+        ]
+      },
+      {
+        "id": "foo-model.fit",
+        "kind": "analogous",
+        "members": [
+          {
+            "item": "foo.FooModel.fit",
+            "package": "pyfoo"
+          },
+          {
+            "item": "fit.foo_model",
+            "package": "rfoo"
+          }
+        ]
+      }
+    ],
+    "content": [
+      {
+        "execution": {
+          "mode": "never"
+        },
+        "format": "gfm",
+        "id": "guide",
+        "mount": "guide",
+        "owner": "project",
+        "path": "docs",
+        "repository": "core"
+      },
+      {
+        "execution": {
+          "mode": "never"
+        },
+        "format": "qmd",
+        "id": "python-guide",
+        "mount": "guide",
+        "owner": "pyfoo",
+        "path": "docs",
+        "repository": "python"
+      },
+      {
+        "execution": {
+          "mode": "never"
+        },
+        "format": "qmd",
+        "id": "python-default-never",
+        "mount": "safety",
+        "owner": "pyfoo",
+        "path": "safety",
+        "repository": "python"
+      },
+      {
+        "execution": {
+          "declared_environment_inputs": [
+            "pyproject.toml"
+          ],
+          "engine": "jupyter",
+          "kernel": "python3",
+          "mode": "execute"
+        },
+        "format": "qmd",
+        "id": "python-execution",
+        "mount": "execution",
+        "owner": "pyfoo",
+        "path": "execution",
+        "repository": "python"
+      },
+      {
+        "execution": {
+          "declared_environment_inputs": [
+            "DESCRIPTION"
+          ],
+          "engine": "jupyter",
+          "kernel": "ir",
+          "mode": "execute"
+        },
+        "format": "qmd",
+        "id": "r-execution",
+        "mount": "execution",
+        "owner": "rfoo",
+        "path": "execution",
+        "repository": "r"
+      }
+    ],
+    "package": [
+      {
+        "ecosystem": "python",
+        "id": "pyfoo",
+        "kind": "package",
+        "metadata_path": "pyproject.toml",
+        "name": "Foo for Python",
+        "path": ".",
+        "repository": "python",
+        "slug": "python",
+        "targets": [
+          {
+            "extractor": "python",
+            "id": "api",
+            "path": "python/foo",
+            "role": "public-api"
+          }
+        ],
+        "visibility": "public"
+      },
+      {
+        "ecosystem": "r",
+        "id": "rfoo",
+        "kind": "package",
+        "metadata_path": "DESCRIPTION",
+        "name": "Foo for R",
+        "path": ".",
+        "repository": "r",
+        "slug": "r",
+        "targets": [
+          {
+            "extractor": "r",
+            "id": "api",
+            "path": ".",
+            "role": "public-api"
+          }
+        ],
+        "visibility": "public"
+      }
+    ],
+    "project": {
+      "name": "Foo"
+    },
+    "relationship": [
+      {
+        "from": "pyfoo",
+        "kind": "binds",
+        "provenance": "explicit",
+        "to": "cargo:foo-core",
+        "version_constraint": "^1.9"
+      }
+    ],
+    "repository": [
+      {
+        "id": "core",
+        "path": "../core",
+        "url": "https://github.com/example/foo-core"
+      },
+      {
+        "id": "python",
+        "path": "../python",
+        "url": "https://github.com/example/foo-python"
+      },
+      {
+        "id": "r",
+        "path": "../r",
+        "url": "https://github.com/example/foo-r"
+      }
+    ]
+  },
+  "diagnostics": [],
+  "evidence": {
+    "declared_environment_inputs": {
+      "guide": [],
+      "python-default-never": [],
+      "python-execution": [
+        {
+          "fingerprint": {
+            "algorithm": "sha256",
+            "value": "dc627c929f34ff89155faa6f5031e12541a774ceaa60c629304994d2b79fe421"
+          },
+          "source": {
+            "path": "pyproject.toml",
+            "repository": "python",
+            "span": null
+          }
+        }
+      ],
+      "python-guide": [],
+      "r-execution": [
+        {
+          "fingerprint": {
+            "algorithm": "sha256",
+            "value": "f72f289b705a670221bbef9d9873403a6f921f027d36acbe9236d54485730f6e"
+          },
+          "source": {
+            "path": "DESCRIPTION",
+            "repository": "r",
+            "span": null
+          }
+        }
+      ]
+    },
+    "inputs": {
+      "core": {
+        "docs/assets/workspace.svg": {
+          "algorithm": "sha256",
+          "value": "6d3fb46a306c58aa9d9d104430cb24aabeb8d29d60f7e437c70de2dfa5646196"
+        },
+        "docs/execution/display-only.md": {
+          "algorithm": "sha256",
+          "value": "ac9dd7af71ebbcd6bcd3aba3768550985d4d7ed025f01a416ed4d086ecf8140f"
+        },
+        "docs/getting-started/workspace.md": {
+          "algorithm": "sha256",
+          "value": "d8615de3a8caf5d01cad54a553e73075908f53bed3441286c72c76736ec10d70"
+        },
+        "docs/index.md": {
+          "algorithm": "sha256",
+          "value": "1144c7a9e4e50c802e3e76db35c609b5f4c744ff51951e7e38fc5353d2c3622d"
+        }
+      },
+      "python": {
+        "docs/guide.qmd": {
+          "algorithm": "sha256",
+          "value": "cf612668fce527ef817b8e00240974fc68a1a9be09d92d9b70c3660a90c6a60a"
+        },
+        "docs/models/fitting.qmd": {
+          "algorithm": "sha256",
+          "value": "ccf4fc0b1ba36e155f588efee80996cdf9c8f475a098e4aa2c0a076a1b13ec53"
+        },
+        "execution/generated-markdown.qmd": {
+          "algorithm": "sha256",
+          "value": "9cf1b222624a287f1595db8b759bcea0ef0939dedfd981038a69029be54cda8d"
+        },
+        "execution/markdown-looking-stdout.qmd": {
+          "algorithm": "sha256",
+          "value": "808bfa63bd6966d62ea76c724dd5c064df02c5c9dd3232fd45acb56302a0a7e5"
+        },
+        "execution/stateful.qmd": {
+          "algorithm": "sha256",
+          "value": "c5277307bbdc71409cea6fbef2b27ca9360d9f876e513e85b68512966905550d"
+        },
+        "pyproject.toml": {
+          "algorithm": "sha256",
+          "value": "dc627c929f34ff89155faa6f5031e12541a774ceaa60c629304994d2b79fe421"
+        },
+        "python/foo/__init__.py": {
+          "algorithm": "sha256",
+          "value": "68df91dcf74b0175be1e9cdc52b92327fee104daff9217fb4c294ae3468fcc19"
+        },
+        "python/foo/__init__.pyi": {
+          "algorithm": "sha256",
+          "value": "6bfd8e5c9bb95379195cb3bc418edf535be344519b2485321e0dfe0eface3540"
+        },
+        "python/foo/_native.pyi": {
+          "algorithm": "sha256",
+          "value": "88d95feab26c039566f9146260ef13713b495677b12bfb4e46bae6d8c504a4b0"
+        },
+        "python/foo/experimental.py": {
+          "algorithm": "sha256",
+          "value": "fc493acfeb7e4afdf329feba66ac44a5b7f6a874f3a57a558bebca31e6cf65e2"
+        },
+        "python/foo/model.py": {
+          "algorithm": "sha256",
+          "value": "097bfd77a7c775b93313528d807aff3d854201f66239c3c2bad08a1df2d2fb67"
+        },
+        "python/foo/model.pyi": {
+          "algorithm": "sha256",
+          "value": "40a29fd1baf666b98540450fffa189b9a25fe3c9cbfd0fd215a148c6df1ecb4d"
+        },
+        "python/foo/py.typed": {
+          "algorithm": "sha256",
+          "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "safety/default-never.qmd": {
+          "algorithm": "sha256",
+          "value": "531cf6a2dcce23cc18cdee93455558a5130418a7b3f84d7c105138ea62df0d80"
+        }
+      },
+      "r": {
+        "DESCRIPTION": {
+          "algorithm": "sha256",
+          "value": "f72f289b705a670221bbef9d9873403a6f921f027d36acbe9236d54485730f6e"
+        },
+        "LICENSE": {
+          "algorithm": "sha256",
+          "value": "a45948118a83c059a20057bf5711a18c79b69589a1a6a3a217fc2c79a5dbdc25"
+        },
+        "NAMESPACE": {
+          "algorithm": "sha256",
+          "value": "194fba4725afdc06a953dfaebaedd97f75a0bcf2defcda5d05bcaa68f1cef5a5"
+        },
+        "R/experimental.R": {
+          "algorithm": "sha256",
+          "value": "b0d6e2d87372691addd9d7fb3d7645981ff3b59b3f5684d96a510c5060ee72df"
+        },
+        "R/fit.R": {
+          "algorithm": "sha256",
+          "value": "f57a381609521e790e7b0e2182a1e1f800bb8d1383b53042f72f749f42d155fc"
+        },
+        "R/metrics.R": {
+          "algorithm": "sha256",
+          "value": "66c9ba0e7677d321dcb08ba9c91c60436c32f4213680d4e9feefdd1f686c01be"
+        },
+        "execution/stateful.qmd": {
+          "algorithm": "sha256",
+          "value": "cf65cba05910006c17dd5e18ad80d47ace59c119a501b7b0d2fc9b0ccdd4a2a1"
+        },
+        "man/experimental_summary.Rd": {
+          "algorithm": "sha256",
+          "value": "f95f9f081d6c66a881fe4ba27caa192901cc82d3256487f1c3c06401a9048118"
+        },
+        "man/fit.Rd": {
+          "algorithm": "sha256",
+          "value": "aeb068c562853998833e6610e8886487a5da9e2ee1a789b4461a0c193ffee1d4"
+        },
+        "man/foo_model.Rd": {
+          "algorithm": "sha256",
+          "value": "98cb66bf39460385c1edd50d945da81e46f08574769791ad82f32addb6ad92c2"
+        },
+        "man/mean_squared_error.Rd": {
+          "algorithm": "sha256",
+          "value": "0fc66bfa0b8252f866959f49ee734d4cca49af44ff1a68d13d599a55299b92d8"
+        }
+      }
+    },
+    "repositories": {
+      "core": {
+        "canonical_url": "https://github.com/example/foo-core",
+        "declared_input_fingerprint": {
+          "algorithm": "sha256",
+          "value": "930631e9c1825065c34179f6c6c2edae6fd91428525985d304f75c2b851bef48"
+        },
+        "dirty": null,
+        "revision": null,
+        "source_link_template": null
+      },
+      "python": {
+        "canonical_url": "https://github.com/example/foo-python",
+        "declared_input_fingerprint": {
+          "algorithm": "sha256",
+          "value": "2e0cf26848cfbaf1bc01228f1f8e7fec90f5f47539a011401c78c10b6c936e97"
+        },
+        "dirty": null,
+        "revision": null,
+        "source_link_template": null
+      },
+      "r": {
+        "canonical_url": "https://github.com/example/foo-r",
+        "declared_input_fingerprint": {
+          "algorithm": "sha256",
+          "value": "77c98ea5d8880eb38b0f1c4eaa76c638708c4b5b9cebaba47614e01e1b318417"
+        },
+        "dirty": null,
+        "revision": null,
+        "source_link_template": null
+      }
+    },
+    "revisions": {
+      "core": {
+        "declared": null,
+        "dirty": null,
+        "observed": null
+      },
+      "python": {
+        "declared": null,
+        "dirty": null,
+        "observed": null
+      },
+      "r": {
+        "declared": null,
+        "dirty": null,
+        "observed": null
+      }
+    },
+    "tools": {
+      "diplodocus": "0.1.0",
+      "panache-parser": "0.29.0"
+    }
+  }
+}

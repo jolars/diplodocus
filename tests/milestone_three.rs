@@ -142,6 +142,11 @@ fn acceptance_configuration_documents_and_evidence_are_portable_together() {
     assert_ne!(first_workspace.path(), second_workspace.path());
     let first = snapshot(&first_workspace, false);
     assert_eq!(first["diagnostics"], serde_json::json!([]));
+    // Existing document goldens lock every authored tree. Keep this golden
+    // focused on the complete declarations and collected portable evidence.
+    let mut declarations = first.clone();
+    declarations.as_object_mut().unwrap().remove("documents");
+    support::assert_json_golden(&declarations, "milestone-three/acceptance.json");
     assert_eq!(
         first["evidence"]["repositories"].as_object().unwrap().len(),
         3
