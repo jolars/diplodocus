@@ -1,6 +1,6 @@
 //! Generated Markdown is local output content, without authored-page authority.
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 
 use panache_parser::ParserOptions;
 use panache_parser::syntax::{AstNode, CodeBlock, Document, TextRange};
@@ -11,10 +11,9 @@ use crate::ir::{
     Block, CellOutput, CellOutputKind, OutputRepresentation, Provenance, ProvenanceActivity,
     SourceLocation, SourceSegment,
 };
+use crate::provenance::builtin_tools;
 
 use super::{AuthoredFormat, parse_document, source_segments, span};
-
-const PANACHE_VERSION: &str = "0.29.0";
 
 /// Portable attribution supplied by the producer of one Markdown output.
 ///
@@ -106,10 +105,7 @@ pub fn parse_markdown_fragment(
                 path: origin.source.path,
             }),
             span: origin.source.span,
-            tools: BTreeMap::from([
-                ("diplodocus".into(), env!("CARGO_PKG_VERSION").into()),
-                ("panache-parser".into(), PANACHE_VERSION.into()),
-            ]),
+            tools: builtin_tools(),
         },
         diagnostics: parsed.diagnostics,
     }
