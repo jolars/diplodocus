@@ -2,6 +2,7 @@
 
 #![allow(dead_code)]
 
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -92,6 +93,15 @@ pub fn assert_json_golden(actual: &impl serde::Serialize, relative: impl AsRef<P
     let serialized = serde_json::to_string_pretty(actual).expect("serialize spike observation");
     assert!(!serialized.contains(env!("CARGO_MANIFEST_DIR")));
     assert_matches_golden(serialized, relative);
+}
+
+pub fn normalize_build_tool_versions(tools: &mut BTreeMap<String, String>, names: &[&str]) {
+    for name in names {
+        let version = tools.get_mut(*name).expect("build tool should be recorded");
+        // Verify the observation before making the golden independent of releases.
+        assert_eq!(version, env!("CARGO_PKG_VERSION"), "version of {name}");
+        *version = "[DIPLODOCUS_VERSION]".into();
+    }
 }
 
 pub fn golden(relative: impl AsRef<Path>) -> Data {

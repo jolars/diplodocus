@@ -17,7 +17,7 @@ Quarto or Pandoc feature. Parsing a document must not implicitly execute it.
 
 ### Parsing and the document boundary
 
-Use `panache-parser = 0.29.0` in-process. Each content collection explicitly
+Use `panache-parser = 0.29.1` in-process. Each content collection explicitly
 selects `gfm` for `.md` or `qmd` for `.qmd`; the adapter selects Panache's GFM
 or Quarto flavor respectively. GFM fences are display-only. QMD adds the
 supported braced executable fences, hashpipe options, frontmatter, and callouts.

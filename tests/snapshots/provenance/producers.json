@@ -37,8 +37,8 @@
     "source": null,
     "span": null,
     "tools": {
-      "diplodocus": "0.1.0",
-      "python": "0.1.0",
+      "diplodocus": "[DIPLODOCUS_VERSION]",
+      "python": "[DIPLODOCUS_VERSION]",
       "ruff_python_parser": "0.0.12"
     }
   },

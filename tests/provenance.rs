@@ -131,7 +131,9 @@ fn relocated_workspaces_have_identical_portable_evidence() {
             .is_some()
     );
     assert_eq!(left.inputs["repo"].len(), 6);
-    support::assert_json_golden(&left, "provenance/static.json");
+    let mut snapshot = left.clone();
+    support::normalize_build_tool_versions(&mut snapshot.tools, &["diplodocus"]);
+    support::assert_json_golden(&snapshot, "provenance/static.json");
 }
 
 #[test]
@@ -622,7 +624,9 @@ fn producers_supply_extraction_and_execution_observations_explicitly() {
     assert_eq!(kernel.language_version, None);
     assert_eq!(kernel.version, None);
     assert!(execution.tools.is_empty());
-    support::assert_json_golden(&(extraction, execution), "provenance/producers.json");
+    let mut snapshot = extraction.clone();
+    support::normalize_build_tool_versions(&mut snapshot.tools, &["diplodocus", "python"]);
+    support::assert_json_golden(&(snapshot, execution), "provenance/producers.json");
 }
 
 #[cfg(unix)]

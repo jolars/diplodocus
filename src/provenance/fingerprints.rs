@@ -18,9 +18,14 @@ use crate::ir::Fingerprint;
 /// Only content and portable input identity participate, never Git state,
 /// revisions, absolute roots, discovery order, or file metadata.
 pub fn fingerprint_bytes(bytes: &[u8]) -> Fingerprint {
+    let digest = Sha256::digest(bytes);
+    let mut value = String::with_capacity(digest.len() * 2);
+    for byte in digest {
+        write!(value, "{byte:02x}").expect("write to string");
+    }
     Fingerprint {
         algorithm: "sha256".into(),
-        value: format!("{:x}", Sha256::digest(bytes)),
+        value,
     }
 }
 

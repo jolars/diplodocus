@@ -146,6 +146,9 @@ fn acceptance_configuration_documents_and_evidence_are_portable_together() {
     // focused on the complete declarations and collected portable evidence.
     let mut declarations = first.clone();
     declarations.as_object_mut().unwrap().remove("documents");
+    let mut tools = serde_json::from_value(declarations["evidence"]["tools"].take()).unwrap();
+    support::normalize_build_tool_versions(&mut tools, &["diplodocus"]);
+    declarations["evidence"]["tools"] = serde_json::to_value(tools).unwrap();
     support::assert_json_golden(&declarations, "milestone-three/acceptance.json");
     assert_eq!(
         first["evidence"]["repositories"].as_object().unwrap().len(),

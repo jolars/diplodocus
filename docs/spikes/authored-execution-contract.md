@@ -344,7 +344,7 @@ There is no fallback to stale execution after a failed fresh run.
 
 ## Toolchain requirements
 
-Use the exact `panache-parser = 0.29.0`, `jupyter-zmq-client = 1.0.1`, and
+Use the exact `panache-parser = 0.29.1`, `jupyter-zmq-client = 1.0.1`, and
 `jupyter-protocol = 2.0.2` pins in [Cargo.toml](../../Cargo.toml), with the
 Tokio version resolved in [Cargo.lock](../../Cargo.lock). Parser crates remain
 in-process. The client crates are still spike dev-dependencies until the
