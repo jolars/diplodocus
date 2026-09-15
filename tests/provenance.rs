@@ -319,6 +319,171 @@ fn observes_git_head_and_clean_dirty_and_unborn_states_without_writes() {
 }
 
 #[test]
+fn missing_promisor_objects_never_trigger_transport() {
+    let (workspace, config, path) = workspace(false);
+    let root = workspace.path().join("repo");
+    git(&root, &["init", "--quiet"]);
+    git(&root, &["add", "."]);
+    git(
+        &root,
+        &[
+            "-c",
+            "commit.gpgsign=false",
+            "commit",
+            "--quiet",
+            "-m",
+            "fixture",
+        ],
+    );
+    let head = git(&root, &["rev-parse", "HEAD"]);
+    git(&root, &["config", "extensions.partialClone", "origin"]);
+    git(&root, &["config", "remote.origin.promisor", "true"]);
+    git(
+        &root,
+        &["config", "remote.origin.partialCloneFilter", "blob:none"],
+    );
+    git(
+        &root,
+        &["config", "remote.origin.url", "ssh://example.invalid/repo"],
+    );
+    // The fake transport records invocation and exits before any network access.
+    git(
+        &root,
+        &["config", "core.sshCommand", "touch lazy-fetch-ran; false"],
+    );
+    let object = root.join(".git/objects").join(&head[..2]).join(&head[2..]);
+    fs::rename(&object, root.join(".git/missing-head")).unwrap();
+    let index = fs::read(root.join(".git/index")).unwrap();
+    let resolved = resolve_workspace_paths(&path, &config).unwrap();
+    let observation = observe_repository(&resolved.repositories[0], Some("declared"));
+    assert!(
+        !root.join("lazy-fetch-ran").exists(),
+        "executed lazy fetch transport"
+    );
+    assert_eq!(observation.declared.as_deref(), Some("declared"));
+    assert_eq!(observation.observed, None);
+    assert_eq!(observation.dirty, None);
+    assert_eq!(fs::read(root.join(".git/index")).unwrap(), index);
+    assert!(!object.exists());
+}
+
+#[test]
+fn repository_content_filters_are_never_executed() {
+    for filter in ["clean", "process"] {
+        for configuration in ["local", "included", "worktree"] {
+            let (workspace, config, path) = workspace(false);
+            let root = workspace.path().join("repo");
+            workspace.write("repo/.gitattributes", "*.py filter=provenance-test\n");
+            git(&root, &["init", "--quiet"]);
+            git(&root, &["add", "."]);
+            git(
+                &root,
+                &[
+                    "-c",
+                    "commit.gpgsign=false",
+                    "commit",
+                    "--quiet",
+                    "-m",
+                    "fixture",
+                ],
+            );
+            let head = git(&root, &["rev-parse", "HEAD"]);
+            let key = format!("filter.provenance-test.{filter}");
+            let command = if filter == "clean" {
+                "touch filter-ran; cat"
+            } else {
+                "touch filter-ran; exit 1"
+            };
+            if configuration == "included" {
+                git(
+                    &root,
+                    &["config", "--file", ".git/filter-config", &key, command],
+                );
+                git(&root, &["config", "include.path", "filter-config"]);
+            } else if configuration == "worktree" {
+                git(&root, &["config", "extensions.worktreeConfig", "true"]);
+                git(&root, &["config", "--worktree", &key, command]);
+            } else {
+                git(&root, &["config", &key, command]);
+            }
+            workspace.write("repo/pkg/src/api.py", "changed content\n");
+            let index = fs::read(root.join(".git/index")).unwrap();
+            let resolved = resolve_workspace_paths(&path, &config).unwrap();
+            let observation = observe_repository(&resolved.repositories[0], Some("declared"));
+            assert!(
+                !root.join("filter-ran").exists(),
+                "executed {filter}, configuration={configuration}"
+            );
+            assert_eq!(observation.dirty, None);
+            assert_eq!(observation.observed.as_deref(), Some(head.as_str()));
+            assert_eq!(observation.declared.as_deref(), Some("declared"));
+            assert_eq!(fs::read(root.join(".git/index")).unwrap(), index);
+        }
+    }
+}
+
+#[test]
+fn submodule_content_filters_are_never_executed() {
+    let (workspace, config, path) = workspace(false);
+    let root = workspace.path().join("repo");
+    let nested = root.join("dependency");
+    workspace.write("repo/dependency/file.py", "original\n");
+    workspace.write(
+        "repo/dependency/.gitattributes",
+        "*.py filter=provenance-test\n",
+    );
+    git(&nested, &["init", "--quiet"]);
+    git(&nested, &["add", "."]);
+    git(
+        &nested,
+        &[
+            "-c",
+            "commit.gpgsign=false",
+            "commit",
+            "--quiet",
+            "-m",
+            "nested fixture",
+        ],
+    );
+    workspace.write(
+        "repo/.gitmodules",
+        "[submodule \"dependency\"]\npath = dependency\nurl = ./dependency\n",
+    );
+    git(&root, &["init", "--quiet"]);
+    git(&root, &["add", "."]);
+    git(
+        &root,
+        &[
+            "-c",
+            "commit.gpgsign=false",
+            "commit",
+            "--quiet",
+            "-m",
+            "fixture",
+        ],
+    );
+    git(
+        &nested,
+        &[
+            "config",
+            "filter.provenance-test.clean",
+            "touch filter-ran; cat",
+        ],
+    );
+    workspace.write("repo/dependency/file.py", "changed content\n");
+    let index = fs::read(root.join(".git/index")).unwrap();
+    let resolved = resolve_workspace_paths(&path, &config).unwrap();
+    let observation = observe_repository(&resolved.repositories[0], None);
+    assert!(
+        !nested.join("filter-ran").exists(),
+        "executed submodule filter"
+    );
+    assert_eq!(observation.dirty, None);
+    assert!(observation.observed.is_some());
+    assert_eq!(fs::read(root.join(".git/index")).unwrap(), index);
+}
+
+#[test]
 fn a_nested_non_git_root_does_not_inherit_its_parents_revision() {
     let (workspace, config, path) = workspace(false);
     git(workspace.path(), &["init", "--quiet"]);

@@ -27,10 +27,13 @@ pub struct RepositoryObservation {
 /// Read this explicitly supplied root's Git HEAD and working-tree state.
 ///
 /// An enclosing checkout is not evidence for a nested non-Git source root.
-/// Git is invoked with optional index writes and filesystem-monitor hooks
-/// disabled. Nothing is fetched, checked out, or executed from documented code.
+/// Git is invoked with optional index writes, filesystem-monitor hooks, and
+/// lazy fetching disabled. Nothing is fetched, checked out, or executed from
+/// documented code.
 /// Missing Git, missing metadata, unborn HEADs, and failed commands leave the
 /// corresponding observations unknown; a declared revision remains available.
+/// Dirty state also remains unknown for configured content filters or indexed
+/// submodules, since inspecting them can run repository-provided commands.
 pub fn observe_repository(
     repository: &ResolvedRepositoryPaths,
     declared: Option<&str>,
@@ -56,6 +59,9 @@ pub fn observe_repository(
         .and_then(|bytes| String::from_utf8(bytes).ok())
         .map(|value| value.trim_end().to_owned())
         .filter(|value| !value.is_empty() && value.bytes().all(|byte| byte.is_ascii_hexdigit()));
+    if !can_observe_dirty_state(repository) {
+        return result;
+    }
     result.dirty = git(
         repository,
         &[
@@ -63,7 +69,7 @@ pub fn observe_repository(
             "--porcelain=v1",
             "-z",
             "--untracked-files=all",
-            "--ignore-submodules=none",
+            "--ignore-submodules=all",
         ],
     )
     .map(|bytes| !bytes.is_empty());
@@ -71,6 +77,46 @@ pub fn observe_repository(
 }
 
 fn git(repository: &ResolvedRepositoryPaths, args: &[&str]) -> Option<Vec<u8>> {
+    git_command(repository, args)
+        .output()
+        .ok()
+        .filter(|output| output.status.success())
+        .map(|output| output.stdout)
+}
+
+fn can_observe_dirty_state(repository: &ResolvedRepositoryPaths) -> bool {
+    // Status may execute clean/process filters to compare working files with
+    // the index. Inspect only configuration names, and treat failed inspection
+    // as unknown rather than running a potentially active comparison.
+    let Ok(filters) = git_command(
+        repository,
+        &[
+            "config",
+            "--includes",
+            "--null",
+            "--name-only",
+            "--get-regexp",
+            "^filter\\.",
+        ],
+    )
+    .output() else {
+        return false;
+    };
+    if filters.status.code() != Some(1) || !filters.stdout.is_empty() || !filters.stderr.is_empty()
+    {
+        return false;
+    }
+    // A submodule can have its own filters and hooks. Skipping its contents in
+    // status would hide real changes, so retain an explicitly unknown state.
+    let Some(index) = git(repository, &["ls-files", "--stage", "-z"]) else {
+        return false;
+    };
+    !index
+        .split(|byte| *byte == 0)
+        .any(|entry| entry.starts_with(b"160000 "))
+}
+
+fn git_command(repository: &ResolvedRepositoryPaths, args: &[&str]) -> Command {
     let mut command = Command::new("git");
     command
         .arg("--no-optional-locks")
@@ -83,6 +129,8 @@ fn git(repository: &ResolvedRepositoryPaths, args: &[&str]) -> Option<Vec<u8>> {
             "core.untrackedCache=false",
         ])
         .args(args)
+        // Even revision lookup can fetch a missing object from a promisor remote.
+        .env("GIT_NO_LAZY_FETCH", "1")
         .env("GIT_CONFIG_NOSYSTEM", "1")
         .env(
             "GIT_CONFIG_GLOBAL",
@@ -102,10 +150,6 @@ fn git(repository: &ResolvedRepositoryPaths, args: &[&str]) -> Option<Vec<u8>> {
         command.env_remove(name);
     }
     command
-        .output()
-        .ok()
-        .filter(|output| output.status.success())
-        .map(|output| output.stdout)
 }
 
 /// Built-in extractors versioned with the Diplodocus semantic adapter.
