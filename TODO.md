@@ -243,34 +243,47 @@ before implementing the model.
   targets, content collections, pages, items, signatures, documents, code
   cells, cell outputs, output representations, concepts, relationships,
   diagnostics, and provenance.
-- [ ] Add typed Python and R item extensions instead of flattening
+- [x] Add typed Python and R item extensions instead of flattening
   language-specific semantics into generic fields.
-- [ ] Represent signatures and documents as structured nodes rather than display
+- [x] Represent signatures and documents as structured nodes rather than display
   strings or extractor-produced HTML.
-- [ ] Define stable package-scoped item IDs that distinguish overloads,
+- [x] Define stable package-scoped item IDs that distinguish overloads,
   generics, methods, aliases, and other same-name entities while remaining
   independent of rendered URLs.
-- [ ] Normalize source locations to repository IDs and forward-slash-separated,
+- [x] Normalize source locations to repository IDs and forward-slash-separated,
   repository-relative paths.
 - [ ] Collect repository revisions, dirty states, declared-input fingerprints,
   extractor, parser, and Panache versions, execution toolchain and kernel
   versions, extraction and execution modes, and declared environment
   fingerprints without writing machine-specific paths into portable data.
-- [ ] Translate the supported GFM and QMD profiles from Panache's typed syntax
+  - [x] Collect static repository revision and dirty-or-unknown observations,
+    declared-input and environment fingerprints, and built-in tool versions.
+  - [x] Provide typed producer interfaces for extraction and execution evidence.
+  - [ ] Wire actual extractor/parser observations in Milestones 4 and 5 and
+    execution toolchain/kernel observations in Milestone 6.
+- [x] Translate the supported GFM and QMD profiles from Panache's typed syntax
   views into document IR, including semantic references, code cells, source
   ranges, and visible placeholders for unsupported constructs.
-- [ ] Represent stream, error, display, Markdown-fragment, sanitized-HTML, and
+- [x] Represent stream, error, display, Markdown-fragment, sanitized-HTML, and
   asset outputs as typed nodes; never place extractor-, parser-, or
   engine-produced HTML directly in a document.
-- [ ] Parse Markdown-valued cell output as an isolated fragment with execution
+- [x] Parse Markdown-valued cell output as an isolated fragment with execution
   disabled and provenance pointing to the producing cell.
-- [ ] Use ordered collections or explicit sorting wherever filesystem or hash
+- [x] Use ordered collections or explicit sorting wherever filesystem or hash
   iteration could affect serialized IR, diagnostics, or output.
 
 **Exit gate:** Configuration and GFM/QMD document fixtures have stable golden
 IR; execution authority, unsupported syntax, invalid paths, and identity cases
 yield stable diagnostics; serializing the same model twice produces identical
 bytes and no absolute paths.
+
+The [integration tests](tests/milestone_three.rs) lock the acceptance
+configuration and static evidence in a reviewed golden, check authored documents
+and diagnostics across relocated workspaces, and reverse declared-input order.
+Existing authored-document goldens cover the supported syntax trees. The
+[item identity contract](docs/ir/item-identity.md) defines canonical identity and
+alias handling; source/stub and export reconciliation remains extractor work.
+Live producer provenance and HTML sanitization remain in Milestones 4–6.
 
 ## Milestone 4: Implement the Python extractor
 
