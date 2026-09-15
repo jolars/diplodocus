@@ -142,7 +142,9 @@ fn acceptance_markdown_output_remains_inert_and_retains_its_producer() {
         })
     );
     assert_eq!(parsed.provenance.span, Some(cell.span));
-    support::assert_json_golden(&parsed, "fragments/generated-markdown.json");
+    let mut snapshot = parsed.clone();
+    support::normalize_build_tool_versions(&mut snapshot.provenance.tools, &["diplodocus"]);
+    support::assert_json_golden(&snapshot, "fragments/generated-markdown.json");
     let provenance = parsed.provenance.clone();
     let (output, diagnostics) = parsed.into_cell_output(CellOutputKind::Display);
     assert_eq!(output.provenance, vec![provenance]);
@@ -332,7 +334,9 @@ fn metadata_and_unsupported_html_remain_visible_with_fragment_diagnostics() {
         assert!(diagnostic.span.is_some());
     }
     assert!(parsed.diagnostics.windows(2).all(|pair| pair[0] <= pair[1]));
-    support::assert_json_golden(&parsed, "fragments/unsupported.json");
+    let mut snapshot = parsed.clone();
+    support::normalize_build_tool_versions(&mut snapshot.provenance.tools, &["diplodocus"]);
+    support::assert_json_golden(&snapshot, "fragments/unsupported.json");
 }
 
 #[test]
@@ -348,7 +352,9 @@ fn supported_gfm_and_semantic_references_keep_fragment_ranges() {
     assert!(serialized.contains("../guide.qmd"));
     assert!(serialized.contains("https://example.invalid"));
     assert!(serialized.contains("table"));
-    support::assert_json_golden(&parsed, "fragments/gfm.json");
+    let mut snapshot = parsed.clone();
+    support::normalize_build_tool_versions(&mut snapshot.provenance.tools, &["diplodocus"]);
+    support::assert_json_golden(&snapshot, "fragments/gfm.json");
 }
 
 #[test]

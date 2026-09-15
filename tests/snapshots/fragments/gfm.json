@@ -318,7 +318,7 @@
       "end": 362
     },
     "tools": {
-      "diplodocus": "0.1.0",
+      "diplodocus": "[DIPLODOCUS_VERSION]",
       "panache-parser": "0.29.0"
     }
   },
