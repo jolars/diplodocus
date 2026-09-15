@@ -1,0 +1,63 @@
+[
+  {
+    "activity": {
+      "kind": "extraction",
+      "target": {
+        "package": "pkg",
+        "target": "api"
+      },
+      "mode": "static",
+      "capabilities": [
+        "provenance.source"
+      ],
+      "parsers": {
+        "ruff_python_parser": {
+          "version": "0.0.12",
+          "role": "python-syntax",
+          "settings": {
+            "target_version": "py310"
+          }
+        }
+      },
+      "inputs": {
+        "repo": {
+          "pkg/src/api.py": {
+            "kind": "python-source",
+            "fingerprint": {
+              "algorithm": "sha256",
+              "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "parsers": [
+              "ruff_python_parser"
+            ]
+          }
+        }
+      }
+    },
+    "source": null,
+    "span": null,
+    "tools": {
+      "diplodocus": "0.1.0",
+      "python": "0.1.0",
+      "ruff_python_parser": "0.0.12"
+    }
+  },
+  {
+    "activity": {
+      "kind": "execution",
+      "mode": "execute",
+      "engine": "jupyter",
+      "kernel": {
+        "name": "python3",
+        "language": null,
+        "language_version": null,
+        "version": null
+      },
+      "origin": "executed",
+      "declared_environment_inputs": []
+    },
+    "source": null,
+    "span": null,
+    "tools": {}
+  }
+]

@@ -12,6 +12,7 @@ pub mod documents;
 pub mod extractors;
 pub mod ir;
 pub mod paths;
+pub mod provenance;
 pub mod rendering;
 pub mod site;
 pub mod validation;

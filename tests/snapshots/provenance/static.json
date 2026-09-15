@@ -1,0 +1,79 @@
+{
+  "repositories": {
+    "repo": {
+      "canonical_url": "https://example.org/source",
+      "source_link_template": null,
+      "revision": null,
+      "dirty": null,
+      "declared_input_fingerprint": {
+        "algorithm": "sha256",
+        "value": "83bd9867d156f3fe4bc832481cf0d655d5e67c637d2a344c43090bc1280d352e"
+      }
+    }
+  },
+  "revisions": {
+    "repo": {
+      "declared": null,
+      "observed": null,
+      "dirty": null
+    }
+  },
+  "inputs": {
+    "repo": {
+      "docs/index.qmd": {
+        "algorithm": "sha256",
+        "value": "bc553ffe57e544498b12a9865dbf3abc2004c474e349c52c378eaa402287424b"
+      },
+      "pkg/pyproject.toml": {
+        "algorithm": "sha256",
+        "value": "2b54f9a0010ed96c857bf3a97e2a5652cb54d578c8edb3efdd6d3c5c4e745037"
+      },
+      "pkg/src/api.py": {
+        "algorithm": "sha256",
+        "value": "77837220fa16cba6fd72fcfe8e0447aa0d6f67c21c4a50bc42cc8189cc7d1c44"
+      },
+      "pkg/src/api.pyi": {
+        "algorithm": "sha256",
+        "value": "177c147a83bc430e22dbc4b7eb9cf469db8f06fed821406451f92028886e54ff"
+      },
+      "requirements.txt": {
+        "algorithm": "sha256",
+        "value": "1bdf86043728f7123c93bec94e49d9abeb0264c7452aa1b498e0589cdb140a41"
+      },
+      "uv.lock": {
+        "algorithm": "sha256",
+        "value": "1bd443a1b1dedcc73ff594f821ec85e243b30b57b01128cf2b03bff827a7f24d"
+      }
+    }
+  },
+  "declared_environment_inputs": {
+    "guide": [
+      {
+        "source": {
+          "repository": "repo",
+          "path": "requirements.txt",
+          "span": null
+        },
+        "fingerprint": {
+          "algorithm": "sha256",
+          "value": "1bdf86043728f7123c93bec94e49d9abeb0264c7452aa1b498e0589cdb140a41"
+        }
+      },
+      {
+        "source": {
+          "repository": "repo",
+          "path": "uv.lock",
+          "span": null
+        },
+        "fingerprint": {
+          "algorithm": "sha256",
+          "value": "1bd443a1b1dedcc73ff594f821ec85e243b30b57b01128cf2b03bff827a7f24d"
+        }
+      }
+    ]
+  },
+  "tools": {
+    "diplodocus": "0.1.0",
+    "panache-parser": "0.29.0"
+  }
+}

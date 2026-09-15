@@ -14,6 +14,7 @@ use crate::configuration::WorkspaceConfiguration;
 use crate::diagnostics::{
     Diagnostic, DiagnosticCode, DiagnosticEntity, DiagnosticPath, DiagnosticSource, Severity,
 };
+use crate::ir::{SourceLocation, SourceSpan};
 
 /// Canonical local inputs, retaining the configuration's declaration order.
 ///
@@ -38,6 +39,111 @@ pub struct ResolvedRepositoryPaths {
     pub id: String,
     /// Canonical absolute repository directory.
     pub path: PathBuf,
+}
+
+impl ResolvedRepositoryPaths {
+    /// Convert a contained absolute file path to portable source evidence.
+    ///
+    /// Recheck the repository boundary and every component using the same rules
+    /// as configuration resolution. The location names the canonical referent,
+    /// relative to this repository. A supplied span is evidence from the caller;
+    /// this operation does not read or validate source text.
+    ///
+    /// # Errors
+    ///
+    /// Reject missing or nonregular files, nonportable names, relative runtime
+    /// paths, and escapes, including intermediate escapes that later return.
+    /// Errors retain runtime paths locally; [`PathResolutionError::to_diagnostic`]
+    /// removes them from portable diagnostics.
+    pub fn source_location(
+        &self,
+        path: impl AsRef<Path>,
+        span: Option<SourceSpan>,
+    ) -> Result<SourceLocation, PathResolutionError> {
+        let path = path.as_ref();
+        let resolver = Resolver {
+            configuration_path: &self.path,
+        };
+        let field = "source_location";
+        let relative = path.strip_prefix(&self.path).map_err(|_| {
+            resolver.error(
+                field,
+                PathResolutionErrorKind::OutsideBoundary {
+                    path: path.to_owned(),
+                    boundary: self.path.clone(),
+                },
+            )
+        })?;
+        let relative = if relative.as_os_str().is_empty() {
+            Path::new(".")
+        } else {
+            relative
+        };
+        let resolved = resolve_input_file(&self.path, field, relative, &self.path)?;
+        Ok(SourceLocation {
+            repository: self.id.clone(),
+            path: portable_relative_path(
+                &self.path,
+                field,
+                resolved
+                    .strip_prefix(&self.path)
+                    .expect("validated boundary"),
+            )?,
+            span,
+        })
+    }
+}
+
+/// Reuse component-by-component boundary validation when reading selected files.
+pub(crate) fn resolve_input_file(
+    configuration_path: &Path,
+    field: &str,
+    declared: &Path,
+    boundary: &Path,
+) -> Result<PathBuf, PathResolutionError> {
+    let resolver = Resolver { configuration_path };
+    let current_boundary = resolver.canonicalize(field, boundary)?;
+    if current_boundary != boundary {
+        return Err(resolver.error(
+            field,
+            PathResolutionErrorKind::OutsideBoundary {
+                path: current_boundary,
+                boundary: boundary.to_owned(),
+            },
+        ));
+    }
+    resolver.child(field, declared, boundary, PathType::File)
+}
+
+/// Normalize a relative spelling without losing case or Unicode identity.
+pub(crate) fn portable_relative_path(
+    configuration_path: &Path,
+    field: &str,
+    declared: &Path,
+) -> Result<DiagnosticPath, PathResolutionError> {
+    let resolver = Resolver { configuration_path };
+    resolver.check_spelling(field, declared, true)?;
+    let invalid = || {
+        resolver.error(
+            field,
+            PathResolutionErrorKind::InvalidPath {
+                path: declared.to_owned(),
+                reason: "source files require normalized, UTF-8, portable relative paths",
+            },
+        )
+    };
+    let mut names = Vec::new();
+    for component in declared.components() {
+        match component {
+            Component::Normal(name) => names.push(name.to_str().ok_or_else(invalid)?),
+            Component::CurDir => {}
+            Component::ParentDir => {
+                names.pop().ok_or_else(invalid)?;
+            }
+            Component::Prefix(_) | Component::RootDir => return Err(invalid()),
+        }
+    }
+    DiagnosticPath::try_from(names.join("/")).map_err(|_| invalid())
 }
 
 /// A package's local boundary and explicit extractor inputs.

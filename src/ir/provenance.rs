@@ -65,7 +65,7 @@ pub enum ProvenanceActivity {
         kernel: KernelProvenance,
         /// Whether the result was freshly executed or restored.
         origin: ExecutionOrigin,
-        /// Declared environment evidence in configured input order.
+        /// Declared environment evidence sorted by repository and relative path.
         declared_environment_inputs: Vec<InputFingerprint>,
     },
 }
