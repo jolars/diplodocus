@@ -1,0 +1,142 @@
+{
+  "document": {
+    "document": {
+      "span": {
+        "start": 0,
+        "end": 41
+      },
+      "frontmatter": null,
+      "blocks": [
+        {
+          "type": "paragraph",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "Résumé.",
+              "span": {
+                "start": 0,
+                "end": 9
+              }
+            }
+          ],
+          "span": {
+            "start": 0,
+            "end": 9
+          }
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "attributes": {
+            "identifier": null,
+            "classes": [],
+            "key_values": []
+          },
+          "inlines": [
+            {
+              "type": "text",
+              "value": "Parameters",
+              "span": {
+                "start": 11,
+                "end": 21
+              }
+            }
+          ],
+          "span": {
+            "start": 11,
+            "end": 32
+          }
+        },
+        {
+          "type": "list",
+          "ordered": false,
+          "items": [
+            {
+              "checked": null,
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "inlines": [
+                    {
+                      "type": "code",
+                      "value": "value :",
+                      "span": {
+                        "start": 33,
+                        "end": 40
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 33,
+                    "end": 40
+                  }
+                }
+              ],
+              "span": {
+                "start": 33,
+                "end": 40
+              }
+            }
+          ],
+          "span": {
+            "start": 33,
+            "end": 40
+          }
+        }
+      ]
+    },
+    "source_format": {
+      "kind": "extracted",
+      "name": "numpy-docstring"
+    },
+    "source_location": {
+      "repository": "python",
+      "path": "src/demo.py",
+      "span": null
+    },
+    "raw_source": "Résumé.\n\nParameters\n----------\nvalue :\n",
+    "provenance": [
+      {
+        "activity": {
+          "kind": "declaration"
+        },
+        "source": {
+          "kind": "repository",
+          "repository": "python",
+          "path": "src/demo.py"
+        },
+        "span": null,
+        "tools": {
+          "diplodocus": "[DIPLODOCUS_VERSION]",
+          "panache-parser": "0.29.0",
+          "pydocstring": "0.4.1"
+        }
+      }
+    ]
+  },
+  "diagnostics": [
+    {
+      "code": "python-docstring-source-attribution",
+      "severity": "warning",
+      "message": "docstring offsets cannot all be mapped exactly to Python source; enclosing source retained",
+      "source": {
+        "kind": "repository",
+        "repository": "python",
+        "path": "src/demo.py"
+      },
+      "span": null
+    },
+    {
+      "code": "python-incomplete-docstring",
+      "severity": "warning",
+      "message": "incomplete docstring: missing type",
+      "source": {
+        "kind": "repository",
+        "repository": "python",
+        "path": "src/demo.py"
+      },
+      "span": null
+    }
+  ],
+  "source_map": []
+}

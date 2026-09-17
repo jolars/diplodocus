@@ -1,0 +1,171 @@
+{
+  "document": {
+    "document": {
+      "span": {
+        "start": 0,
+        "end": 169
+      },
+      "frontmatter": null,
+      "blocks": [
+        {
+          "type": "paragraph",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "Summary.",
+              "span": {
+                "start": 0,
+                "end": 8
+              }
+            }
+          ],
+          "span": {
+            "start": 0,
+            "end": 8
+          }
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "attributes": {
+            "identifier": null,
+            "classes": [],
+            "key_values": []
+          },
+          "inlines": [
+            {
+              "type": "text",
+              "value": "Examples",
+              "span": {
+                "start": 10,
+                "end": 18
+              }
+            }
+          ],
+          "span": {
+            "start": 10,
+            "end": 27
+          }
+        },
+        {
+          "type": "code-block",
+          "language": "python",
+          "source": ">>> if True:\n...     print('never run')\nnever run",
+          "source_segments": [
+            {
+              "text": ">>> if True:\n",
+              "span": {
+                "start": 32,
+                "end": 45
+              }
+            },
+            {
+              "text": "...     print('never run')\n",
+              "span": {
+                "start": 49,
+                "end": 76
+              }
+            },
+            {
+              "text": "never run",
+              "span": {
+                "start": 80,
+                "end": 89
+              }
+            }
+          ],
+          "span": {
+            "start": 32,
+            "end": 89
+          }
+        },
+        {
+          "type": "code-block",
+          "language": "python",
+          "source": "```{python}\n#| eval: true\nraise RuntimeError('never run')\n```",
+          "source_segments": [
+            {
+              "text": "```{python}\n",
+              "span": {
+                "start": 95,
+                "end": 107
+              }
+            },
+            {
+              "text": "#| eval: true\n",
+              "span": {
+                "start": 111,
+                "end": 125
+              }
+            },
+            {
+              "text": "raise RuntimeError('never run')\n",
+              "span": {
+                "start": 129,
+                "end": 161
+              }
+            },
+            {
+              "text": "```",
+              "span": {
+                "start": 165,
+                "end": 168
+              }
+            }
+          ],
+          "span": {
+            "start": 95,
+            "end": 168
+          }
+        }
+      ]
+    },
+    "source_format": {
+      "kind": "extracted",
+      "name": "numpy-docstring"
+    },
+    "source_location": {
+      "repository": "python",
+      "path": "src/demo.py",
+      "span": {
+        "start": 100,
+        "end": 275
+      }
+    },
+    "raw_source": "Summary.\n\nExamples\n--------\n    >>> if True:\n    ...     print('never run')\n    never run\n\n    ```{python}\n    #| eval: true\n    raise RuntimeError('never run')\n    ```\n",
+    "provenance": [
+      {
+        "activity": {
+          "kind": "declaration"
+        },
+        "source": {
+          "kind": "repository",
+          "repository": "python",
+          "path": "src/demo.py"
+        },
+        "span": {
+          "start": 100,
+          "end": 275
+        },
+        "tools": {
+          "diplodocus": "[DIPLODOCUS_VERSION]",
+          "panache-parser": "0.29.0",
+          "pydocstring": "0.4.1"
+        }
+      }
+    ]
+  },
+  "diagnostics": [],
+  "source_map": [
+    {
+      "decoded": {
+        "start": 0,
+        "end": 169
+      },
+      "source": {
+        "start": 103,
+        "end": 272
+      }
+    }
+  ]
+}

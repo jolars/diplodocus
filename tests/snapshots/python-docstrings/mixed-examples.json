@@ -1,0 +1,230 @@
+{
+  "document": {
+    "document": {
+      "span": {
+        "start": 0,
+        "end": 139
+      },
+      "frontmatter": null,
+      "blocks": [
+        {
+          "type": "paragraph",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "Summary.",
+              "span": {
+                "start": 0,
+                "end": 8
+              }
+            }
+          ],
+          "span": {
+            "start": 0,
+            "end": 8
+          }
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "attributes": {
+            "identifier": null,
+            "classes": [],
+            "key_values": []
+          },
+          "inlines": [
+            {
+              "type": "text",
+              "value": "Examples",
+              "span": {
+                "start": 10,
+                "end": 18
+              }
+            }
+          ],
+          "span": {
+            "start": 10,
+            "end": 27
+          }
+        },
+        {
+          "type": "paragraph",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "A ",
+              "span": {
+                "start": 28,
+                "end": 30
+              }
+            },
+            {
+              "type": "strong",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "small",
+                  "span": {
+                    "start": 32,
+                    "end": 37
+                  }
+                }
+              ],
+              "span": {
+                "start": 30,
+                "end": 39
+              }
+            },
+            {
+              "type": "text",
+              "value": " example.",
+              "span": {
+                "start": 39,
+                "end": 48
+              }
+            }
+          ],
+          "span": {
+            "start": 28,
+            "end": 48
+          }
+        },
+        {
+          "type": "code-block",
+          "language": "python",
+          "source": ">>> f()\n1",
+          "source_segments": [
+            {
+              "text": ">>> f()\n",
+              "span": {
+                "start": 50,
+                "end": 58
+              }
+            },
+            {
+              "text": "1",
+              "span": {
+                "start": 58,
+                "end": 59
+              }
+            }
+          ],
+          "span": {
+            "start": 50,
+            "end": 59
+          }
+        },
+        {
+          "type": "paragraph",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "More explanation.",
+              "span": {
+                "start": 61,
+                "end": 78
+              }
+            }
+          ],
+          "span": {
+            "start": 61,
+            "end": 78
+          }
+        },
+        {
+          "type": "code-block",
+          "language": "python",
+          "source": "```{python}\n#| eval: true\n\nraise RuntimeError('inert')\n```",
+          "source_segments": [
+            {
+              "text": "```{python}\n",
+              "span": {
+                "start": 80,
+                "end": 92
+              }
+            },
+            {
+              "text": "#| eval: true\n",
+              "span": {
+                "start": 92,
+                "end": 106
+              }
+            },
+            {
+              "text": "\n",
+              "span": {
+                "start": 106,
+                "end": 107
+              }
+            },
+            {
+              "text": "raise RuntimeError('inert')\n",
+              "span": {
+                "start": 107,
+                "end": 135
+              }
+            },
+            {
+              "text": "```",
+              "span": {
+                "start": 135,
+                "end": 138
+              }
+            }
+          ],
+          "span": {
+            "start": 80,
+            "end": 138
+          }
+        }
+      ]
+    },
+    "source_format": {
+      "kind": "extracted",
+      "name": "numpy-docstring"
+    },
+    "source_location": {
+      "repository": "python",
+      "path": "src/demo.py",
+      "span": {
+        "start": 100,
+        "end": 245
+      }
+    },
+    "raw_source": "Summary.\n\nExamples\n--------\nA **small** example.\n\n>>> f()\n1\n\nMore explanation.\n\n```{python}\n#| eval: true\n\nraise RuntimeError('inert')\n```\n",
+    "provenance": [
+      {
+        "activity": {
+          "kind": "declaration"
+        },
+        "source": {
+          "kind": "repository",
+          "repository": "python",
+          "path": "src/demo.py"
+        },
+        "span": {
+          "start": 100,
+          "end": 245
+        },
+        "tools": {
+          "diplodocus": "[DIPLODOCUS_VERSION]",
+          "panache-parser": "0.29.0",
+          "pydocstring": "0.4.1"
+        }
+      }
+    ]
+  },
+  "diagnostics": [],
+  "source_map": [
+    {
+      "decoded": {
+        "start": 0,
+        "end": 139
+      },
+      "source": {
+        "start": 103,
+        "end": 242
+      }
+    }
+  ]
+}

@@ -1,0 +1,158 @@
+{
+  "document": {
+    "document": {
+      "span": {
+        "start": 0,
+        "end": 101
+      },
+      "frontmatter": null,
+      "blocks": [
+        {
+          "type": "paragraph",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "Résumé.",
+              "span": {
+                "start": 0,
+                "end": 9
+              }
+            }
+          ],
+          "span": {
+            "start": 0,
+            "end": 9
+          }
+        },
+        {
+          "type": "paragraph",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "First paragraph.",
+              "span": {
+                "start": 17,
+                "end": 33
+              }
+            },
+            {
+              "type": "soft-break",
+              "span": {
+                "start": 33,
+                "end": 39
+              }
+            },
+            {
+              "type": "text",
+              "value": "With a ",
+              "span": {
+                "start": 39,
+                "end": 46
+              }
+            },
+            {
+              "type": "link",
+              "inlines": [
+                {
+                  "type": "text",
+                  "value": "link",
+                  "span": {
+                    "start": 47,
+                    "end": 51
+                  }
+                }
+              ],
+              "target": "https://example.com",
+              "title": null,
+              "attributes": {
+                "identifier": null,
+                "classes": [],
+                "key_values": []
+              },
+              "span": {
+                "start": 46,
+                "end": 73
+              }
+            },
+            {
+              "type": "text",
+              "value": ".",
+              "span": {
+                "start": 73,
+                "end": 74
+              }
+            }
+          ],
+          "span": {
+            "start": 17,
+            "end": 74
+          }
+        },
+        {
+          "type": "paragraph",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "Second paragraph.",
+              "span": {
+                "start": 82,
+                "end": 99
+              }
+            }
+          ],
+          "span": {
+            "start": 82,
+            "end": 99
+          }
+        }
+      ]
+    },
+    "source_format": {
+      "kind": "extracted",
+      "name": "numpy-docstring"
+    },
+    "source_location": {
+      "repository": "python",
+      "path": "src/demo.py",
+      "span": {
+        "start": 100,
+        "end": 207
+      }
+    },
+    "raw_source": "Résumé.\r\n\r\n    First paragraph.\r\n    With a [link](https://example.com).\r\n\r\n    Second paragraph.\r\n",
+    "provenance": [
+      {
+        "activity": {
+          "kind": "declaration"
+        },
+        "source": {
+          "kind": "repository",
+          "repository": "python",
+          "path": "src/demo.py"
+        },
+        "span": {
+          "start": 100,
+          "end": 207
+        },
+        "tools": {
+          "diplodocus": "[DIPLODOCUS_VERSION]",
+          "panache-parser": "0.29.0",
+          "pydocstring": "0.4.1"
+        }
+      }
+    ]
+  },
+  "diagnostics": [],
+  "source_map": [
+    {
+      "decoded": {
+        "start": 0,
+        "end": 101
+      },
+      "source": {
+        "start": 103,
+        "end": 204
+      }
+    }
+  ]
+}

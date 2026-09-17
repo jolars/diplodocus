@@ -1,0 +1,186 @@
+{
+  "document": {
+    "document": {
+      "span": {
+        "start": 0,
+        "end": 95
+      },
+      "frontmatter": null,
+      "blocks": [
+        {
+          "type": "paragraph",
+          "inlines": [
+            {
+              "type": "text",
+              "value": "Summary ",
+              "span": {
+                "start": 0,
+                "end": 8
+              }
+            },
+            {
+              "type": "unsupported",
+              "source_kind": "INLINE_HTML",
+              "raw": "<script>",
+              "span": {
+                "start": 8,
+                "end": 16
+              }
+            },
+            {
+              "type": "text",
+              "value": "alert(1)",
+              "span": {
+                "start": 16,
+                "end": 24
+              }
+            },
+            {
+              "type": "unsupported",
+              "source_kind": "INLINE_HTML",
+              "raw": "</script>",
+              "span": {
+                "start": 24,
+                "end": 33
+              }
+            },
+            {
+              "type": "text",
+              "value": ".",
+              "span": {
+                "start": 33,
+                "end": 34
+              }
+            }
+          ],
+          "span": {
+            "start": 0,
+            "end": 34
+          }
+        },
+        {
+          "type": "unsupported",
+          "source_kind": "numpy-DIRECTIVE",
+          "raw": ".. deprecated:: 1.0\n    Old API.",
+          "span": {
+            "start": 36,
+            "end": 68
+          }
+        },
+        {
+          "type": "unsupported",
+          "source_kind": "numpy-SECTION",
+          "raw": "Mystery\n-------\nKeep me.",
+          "span": {
+            "start": 70,
+            "end": 94
+          }
+        }
+      ]
+    },
+    "source_format": {
+      "kind": "extracted",
+      "name": "numpy-docstring"
+    },
+    "source_location": {
+      "repository": "python",
+      "path": "src/demo.py",
+      "span": {
+        "start": 100,
+        "end": 201
+      }
+    },
+    "raw_source": "Summary <script>alert(1)</script>.\n\n.. deprecated:: 1.0\n    Old API.\n\nMystery\n-------\nKeep me.\n",
+    "provenance": [
+      {
+        "activity": {
+          "kind": "declaration"
+        },
+        "source": {
+          "kind": "repository",
+          "repository": "python",
+          "path": "src/demo.py"
+        },
+        "span": {
+          "start": 100,
+          "end": 201
+        },
+        "tools": {
+          "diplodocus": "[DIPLODOCUS_VERSION]",
+          "panache-parser": "0.29.0",
+          "pydocstring": "0.4.1"
+        }
+      }
+    ]
+  },
+  "diagnostics": [
+    {
+      "code": "python-unsupported-docstring",
+      "severity": "warning",
+      "message": "unsupported authored syntax: INLINE_HTML",
+      "source": {
+        "kind": "repository",
+        "repository": "python",
+        "path": "src/demo.py"
+      },
+      "span": {
+        "start": 111,
+        "end": 119
+      }
+    },
+    {
+      "code": "python-unsupported-docstring",
+      "severity": "warning",
+      "message": "unsupported authored syntax: INLINE_HTML",
+      "source": {
+        "kind": "repository",
+        "repository": "python",
+        "path": "src/demo.py"
+      },
+      "span": {
+        "start": 127,
+        "end": 136
+      }
+    },
+    {
+      "code": "python-unsupported-docstring",
+      "severity": "warning",
+      "message": "unsupported docstring DIRECTIVE; source retained",
+      "source": {
+        "kind": "repository",
+        "repository": "python",
+        "path": "src/demo.py"
+      },
+      "span": {
+        "start": 139,
+        "end": 171
+      }
+    },
+    {
+      "code": "python-unsupported-docstring",
+      "severity": "warning",
+      "message": "unsupported docstring SECTION; source retained",
+      "source": {
+        "kind": "repository",
+        "repository": "python",
+        "path": "src/demo.py"
+      },
+      "span": {
+        "start": 173,
+        "end": 197
+      }
+    }
+  ],
+  "source_map": [
+    {
+      "decoded": {
+        "start": 0,
+        "end": 95
+      },
+      "source": {
+        "start": 103,
+        "end": 198
+      }
+    }
+  ]
+}
