@@ -31,6 +31,19 @@ with hashpipe YAML. A code-only unresolved reference such as
 is retained as an explicit IR node and produces a warning rather than being
 silently discarded.
 
+## Static Python extraction
+
+The library's `extractors::python::extract_target` reads a configured Python
+target and its `pyproject.toml` without importing package code or invoking a
+build backend. Its portable result contains canonical API items, structured
+signatures and NumPy-style documentation, ordered diagnostics, and input and
+parser provenance. Maintained stubs supply signatures while implementation
+docstrings retain their own source evidence.
+
+See the [Python extraction contract](docs/ir/python-extraction.md) for the
+supported surface and the component APIs. CLI pipeline integration remains in
+the later roadmap milestones.
+
 ## Development
 
 Enter the reproducible development shell:

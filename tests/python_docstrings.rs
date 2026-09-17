@@ -1,9 +1,7 @@
-use diplodocus::{diagnostics, documents, ir};
+use diplodocus::extractors::python::docstrings;
+use diplodocus::ir;
 use ir::{Block, Inline, SourceLocation, SourceSpan};
 
-// The production module is wired by the source-adapter assignment.
-#[path = "../src/extractors/python/docstrings.rs"]
-mod docstrings;
 mod support;
 
 use docstrings::{DocstringParse, DocstringSourceSegment, parse_docstring};
@@ -74,6 +72,34 @@ fn pep257_prose_and_empty_docs() {
         assert!(parsed.diagnostics.is_empty());
         assert_eq!(parsed.document.raw_source.as_deref(), Some(text));
     }
+}
+
+#[test]
+fn function_roles_in_acceptance_docstrings_become_semantic_references() {
+    let text = "Default convergence tolerance used by :func:`fit`.";
+    let parsed = parse(text);
+    assert!(parsed.diagnostics.is_empty(), "{:?}", parsed.diagnostics);
+    let Block::Paragraph { inlines, .. } = &parsed.document.document.blocks[0] else {
+        panic!("paragraph");
+    };
+    assert!(inlines.iter().any(
+        |inline| matches!(inline, Inline::SemanticReference { target, .. } if target == "fit")
+    ));
+}
+
+#[test]
+fn empty_docstrings_only_record_the_parser_that_ran() {
+    let parsed = parse("");
+    assert!(
+        parsed.document.provenance[0]
+            .tools
+            .contains_key("pydocstring")
+    );
+    assert!(
+        !parsed.document.provenance[0]
+            .tools
+            .contains_key("panache-parser")
+    );
 }
 
 const SECTIONS: &str = "Compute a **score**.\n\nExtended *prose* and ``code``.\n\nParameters\n----------\nx, y : float, optional, default=1\n    Input values.\n\nReturns\n-------\nscore : float\n    The score.\n\nRaises\n------\nValueError\n    Invalid input.\n\nNotes\n-----\nKeep the scale.\n\nReferences\n----------\n.. [1] A. Author, Study.\n\nExamples\n--------\n>>> score(1, 2)\n3\n";

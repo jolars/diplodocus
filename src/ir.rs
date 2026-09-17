@@ -470,7 +470,7 @@ pub enum Inline {
     SemanticReference {
         /// Package-qualified or unqualified semantic target.
         target: String,
-        /// Full bracketed source range.
+        /// Full source range of the semantic reference.
         span: SourceSpan,
         /// Range of the code payload.
         target_span: SourceSpan,

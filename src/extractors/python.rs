@@ -18,11 +18,15 @@ use crate::paths::{
 };
 use crate::provenance::{BuiltinExtractor, ExtractionObservation, fingerprint_bytes};
 
+pub mod docstrings;
+mod extraction;
 mod metadata;
 mod model;
 mod signatures;
 mod source;
+pub mod surface;
 
+pub use extraction::{PythonExtraction, extract_target};
 pub use model::*;
 
 /// Parse one explicitly selected Python module file or package directory.

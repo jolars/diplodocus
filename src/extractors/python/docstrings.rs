@@ -59,6 +59,7 @@ pub fn parse_docstring(
     let mut context = Context {
         text,
         diagnostics: Vec::new(),
+        panache_used: false,
     };
     let parsed = parse_numpy(text);
     context.missing(parsed.root());
@@ -111,6 +112,13 @@ pub fn parse_docstring(
     }
     context.diagnostics.sort();
     context.diagnostics.dedup();
+    let mut tools = std::collections::BTreeMap::from([
+        ("diplodocus".into(), env!("CARGO_PKG_VERSION").into()),
+        ("pydocstring".into(), "0.4.1".into()),
+    ]);
+    if context.panache_used {
+        tools.insert("panache-parser".into(), "0.29.0".into());
+    }
     DocstringParse {
         document: SourcedDocument {
             document: Document {
@@ -130,11 +138,7 @@ pub fn parse_docstring(
                 activity: ProvenanceActivity::Declaration,
                 source: Some(diagnostic_source),
                 span: source.span,
-                tools: std::collections::BTreeMap::from([
-                    ("diplodocus".into(), env!("CARGO_PKG_VERSION").into()),
-                    ("pydocstring".into(), "0.4.1".into()),
-                    ("panache-parser".into(), "0.29.0".into()),
-                ]),
+                tools,
             }],
         },
         diagnostics: context.diagnostics,
@@ -146,6 +150,7 @@ struct Context<'a> {
     text: &'a str,
     // These ranges stay decoded-relative until the final attribution pass.
     diagnostics: Vec<Diagnostic>,
+    panache_used: bool,
 }
 
 impl Context<'_> {
@@ -293,6 +298,7 @@ impl Context<'_> {
                 &self.text[range.start..range.end],
                 range.start,
                 &mut self.diagnostics,
+                &mut self.panache_used,
             ));
         }
         if let Some(span) = paragraph_span {

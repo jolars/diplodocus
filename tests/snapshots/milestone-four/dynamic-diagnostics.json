@@ -1,0 +1,20 @@
+[
+  {
+    "code": "python-dynamic-export",
+    "severity": "warning",
+    "message": "The export list of foo.experimental cannot be resolved statically.",
+    "related_entity": {
+      "kind": "package",
+      "id": "pyfoo"
+    },
+    "source": {
+      "kind": "repository",
+      "repository": "python",
+      "path": "python/foo/experimental.py"
+    },
+    "span": {
+      "start": 530,
+      "end": 557
+    }
+  }
+]

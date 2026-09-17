@@ -6,12 +6,35 @@ pub(super) fn parse_line(
     text: &str,
     offset: usize,
     diagnostics: &mut Vec<Diagnostic>,
+    panache_used: &mut bool,
 ) -> Vec<Inline> {
+    if let Some((start, end, target_start, target_end)) = function_reference(text) {
+        let mut inlines = parse_piece(&text[..start], offset, diagnostics, panache_used);
+        inlines.push(Inline::SemanticReference {
+            target: text[target_start..target_end].into(),
+            span: SourceSpan {
+                start: offset + start,
+                end: offset + end,
+            },
+            target_span: SourceSpan {
+                start: offset + target_start,
+                end: offset + target_end,
+            },
+        });
+        inlines.extend(parse_piece(
+            &text[end..],
+            offset + end,
+            diagnostics,
+            panache_used,
+        ));
+        return inlines;
+    }
     // Markdown interprets a reST role's payload as ordinary inline code,
     // which would silently discard its distinct reference semantics.
     if text.trim_start().starts_with(".. ") || has_rst_role(text) {
         return unsupported(text, offset, diagnostics);
     }
+    *panache_used = true;
     let parsed = parse_authored_document(text, AuthoredFormat::Gfm);
     for mut diagnostic in parsed.diagnostics {
         diagnostic.code = DiagnosticCode::PythonUnsupportedDocstring;
@@ -31,6 +54,77 @@ pub(super) fn parse_line(
         return inlines;
     }
     unsupported(text, offset, diagnostics)
+}
+
+fn parse_piece(
+    text: &str,
+    offset: usize,
+    diagnostics: &mut Vec<Diagnostic>,
+    panache_used: &mut bool,
+) -> Vec<Inline> {
+    // Parsing fragments independently would otherwise discard the spaces that
+    // separate a semantic reference from the surrounding prose.
+    let start = text.len() - text.trim_start().len();
+    let end = text.trim_end().len().max(start);
+    let mut inlines = Vec::new();
+    if start > 0 {
+        inlines.push(Inline::Text {
+            value: text[..start].into(),
+            span: SourceSpan {
+                start: offset,
+                end: offset + start,
+            },
+        });
+    }
+    if end > start {
+        inlines.extend(parse_line(
+            &text[start..end],
+            offset + start,
+            diagnostics,
+            panache_used,
+        ));
+    }
+    if end < text.len() {
+        inlines.push(Inline::Text {
+            value: text[end..].into(),
+            span: SourceSpan {
+                start: offset + end,
+                end: offset + text.len(),
+            },
+        });
+    }
+    inlines
+}
+
+fn function_reference(text: &str) -> Option<(usize, usize, usize, usize)> {
+    let bytes = text.as_bytes();
+    let mut index = 0;
+    while index < bytes.len() {
+        if bytes[index] == b'`' {
+            let width = bytes[index..].iter().take_while(|b| **b == b'`').count();
+            let delimiter = &text[index..index + width];
+            index = text[index + width..]
+                .find(delimiter)
+                .map_or(bytes.len(), |end| index + width + end + width);
+            continue;
+        }
+        if bytes[index] == b':' && text[index..].starts_with(":func:`") {
+            let start = index + ":func:`".len();
+            if let Some(length) = text[start..].find('`') {
+                let end = start + length;
+                let target = &text[start..end];
+                if !target.is_empty()
+                    && target
+                        .chars()
+                        .all(|c| c.is_alphanumeric() || matches!(c, '_' | '.' | ':'))
+                {
+                    return Some((index, end + 1, start, end));
+                }
+            }
+        }
+        index += if bytes[index] == b'\\' { 2 } else { 1 };
+    }
+    None
 }
 
 fn has_rst_role(text: &str) -> bool {

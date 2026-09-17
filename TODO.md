@@ -259,7 +259,8 @@ before implementing the model.
   - [x] Collect static repository revision and dirty-or-unknown observations,
     declared-input and environment fingerprints, and built-in tool versions.
   - [x] Provide typed producer interfaces for extraction and execution evidence.
-  - [ ] Wire actual extractor/parser observations in Milestones 4 and 5 and
+  - [x] Wire actual Python extractor/parser observations in Milestone 4.
+  - [ ] Wire actual R extractor/parser observations in Milestone 5 and
     execution toolchain/kernel observations in Milestone 6.
 - [x] Translate the supported GFM and QMD profiles from Panache's typed syntax
   views into document IR, including semantic references, code cells, source
@@ -287,34 +288,40 @@ Live producer provenance and HTML sanitization remain in Milestones 4–6.
 
 ## Milestone 4: Implement the Python extractor
 
-- [ ] Add golden tests for each Python acceptance case before implementing it.
-- [ ] Read package name, version, and dependency metadata from `pyproject.toml`
+- [x] Add golden tests for each Python acceptance case before implementing it.
+- [x] Read package name, version, and dependency metadata from `pyproject.toml`
   without invoking a build backend.
-- [ ] Parse maintained `.py` and `.pyi` sources statically and retain source
+- [x] Parse maintained `.py` and `.pyi` sources statically and retain source
   spans.
-- [ ] Treat a statically resolvable `__all__` as authoritative; diagnose dynamic
+- [x] Treat a statically resolvable `__all__` as authoritative; diagnose dynamic
   export computation that cannot be resolved safely.
-- [ ] Without `__all__`, expose public definitions and explicit public imports
+- [x] Without `__all__`, expose public definitions and explicit public imports
   from the documented module; exclude underscore-prefixed names by default.
-- [ ] Resolve package and module re-exports without assigning a second identity
+- [x] Resolve package and module re-exports without assigning a second identity
   to the same public item.
-- [ ] Prefer a maintained `.pyi` surface over the corresponding implementation
+- [x] Prefer a maintained `.pyi` surface over the corresponding implementation
   surface and support stub-only native extension modules.
-- [ ] Extract functions, classes, methods, properties, constants, parameters,
+- [x] Extract functions, classes, methods, properties, constants, parameters,
   annotations, defaults, return types, decorators, and async state.
-- [ ] Preserve individual overloads as addressable items and connect them to a
+- [x] Preserve individual overloads as addressable items and connect them to a
   public callable family.
-- [ ] Parse PEP 257 prose and NumPy-style Parameters, Returns, Raises, Notes,
+- [x] Parse PEP 257 prose and NumPy-style Parameters, Returns, Raises, Notes,
   References, and Examples sections into document IR.
-- [ ] Emit stable diagnostics for syntax errors, unresolved re-exports,
+- [x] Emit stable diagnostics for syntax errors, unresolved re-exports,
   conflicting stubs, unsupported decorators, and incomplete docstring
   syntax.
-- [ ] Record extractor capabilities, extractor and parser versions, and static
+- [x] Record extractor capabilities, extractor and parser versions, and static
   mode in provenance.
 
 **Exit gate:** Python extraction matches the reviewed golden IR for every
 acceptance case, remains unchanged when imports would have side effects, and
 reports every unsupported case without silently dropping public information.
+
+The [integrated Python tests](tests/milestone_four.rs) lock the complete
+acceptance fragment, compare relocated workspaces, verify the sole dynamic-export
+warning, and exercise inputs that must never be imported or built. The
+[Python extraction contract](docs/ir/python-extraction.md) documents the library
+entry point, supported surface, and source-attribution rules.
 
 ## Milestone 5: Implement the R extractor
 

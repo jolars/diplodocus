@@ -1,11 +1,6 @@
 use std::collections::BTreeMap;
 
-// The integration coordinator registers this module after merging prerequisites.
-mod model {
-    pub use diplodocus::extractors::python::*;
-}
-#[path = "../src/extractors/python/surface.rs"]
-mod surface;
+use diplodocus::extractors::python::{self as model, surface};
 use surface::PythonSurface;
 
 use diplodocus::{diagnostics, ir, paths};
