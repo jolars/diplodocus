@@ -1,0 +1,411 @@
+{
+  "items": {
+    "sid1:python:function:foo.native.f": {
+      "kind": "function",
+      "name": "f",
+      "qualified_name": "foo.native.f",
+      "language_data": {
+        "language": "python",
+        "data": {
+          "visibility": "public",
+          "declaration": {
+            "kind": "callable",
+            "binding": "function",
+            "is_async": false,
+            "role": {
+              "kind": "family",
+              "overloads": [
+                {
+                  "package": "pyfoo",
+                  "item": "sid1:python:function:foo.native.f:overload:call()returns(some(name(int)))"
+                },
+                {
+                  "package": "pyfoo",
+                  "item": "sid1:python:function:foo.native.f:overload:call()returns(some(name(str)))"
+                }
+              ]
+            }
+          },
+          "decorators": [
+            {
+              "expression": {
+                "kind": "name",
+                "name": "overload",
+                "target": null
+              },
+              "semantics": "overload",
+              "sources": [
+                {
+                  "source": {
+                    "repository": "python",
+                    "path": "foo/native.pyi",
+                    "span": {
+                      "start": 10,
+                      "end": 30
+                    }
+                  },
+                  "role": "definition",
+                  "parsers": [
+                    "ruff_python_parser"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "signatures": [
+        {
+          "signature": {
+            "kind": "callable",
+            "parameters": [],
+            "returns": {
+              "kind": "name",
+              "name": "int",
+              "target": null
+            }
+          },
+          "sources": [
+            {
+              "source": {
+                "repository": "python",
+                "path": "foo/native.pyi",
+                "span": {
+                  "start": 10,
+                  "end": 30
+                }
+              },
+              "role": "signature",
+              "parsers": [
+                "ruff_python_parser"
+              ]
+            }
+          ]
+        },
+        {
+          "signature": {
+            "kind": "callable",
+            "parameters": [],
+            "returns": {
+              "kind": "name",
+              "name": "str",
+              "target": null
+            }
+          },
+          "sources": [
+            {
+              "source": {
+                "repository": "python",
+                "path": "foo/native.pyi",
+                "span": {
+                  "start": 10,
+                  "end": 30
+                }
+              },
+              "role": "signature",
+              "parsers": [
+                "ruff_python_parser"
+              ]
+            }
+          ]
+        }
+      ],
+      "documentation": null,
+      "source_location": {
+        "repository": "python",
+        "path": "foo/native.pyi",
+        "span": {
+          "start": 10,
+          "end": 30
+        }
+      },
+      "children": [],
+      "provenance": [
+        {
+          "activity": {
+            "kind": "declaration"
+          },
+          "source": {
+            "kind": "repository",
+            "repository": "python",
+            "path": "foo/native.pyi"
+          },
+          "span": {
+            "start": 10,
+            "end": 30
+          },
+          "tools": {
+            "ruff_python_parser": "0.0.12"
+          }
+        }
+      ]
+    },
+    "sid1:python:function:foo.native.f:overload:call()returns(some(name(int)))": {
+      "kind": "function",
+      "name": "f",
+      "qualified_name": "foo.native.f",
+      "language_data": {
+        "language": "python",
+        "data": {
+          "visibility": "public",
+          "declaration": {
+            "kind": "callable",
+            "binding": "function",
+            "is_async": false,
+            "role": {
+              "kind": "overload",
+              "family": {
+                "package": "pyfoo",
+                "item": "sid1:python:function:foo.native.f"
+              }
+            }
+          },
+          "decorators": [
+            {
+              "expression": {
+                "kind": "name",
+                "name": "overload",
+                "target": null
+              },
+              "semantics": "overload",
+              "sources": [
+                {
+                  "source": {
+                    "repository": "python",
+                    "path": "foo/native.pyi",
+                    "span": {
+                      "start": 10,
+                      "end": 30
+                    }
+                  },
+                  "role": "definition",
+                  "parsers": [
+                    "ruff_python_parser"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "signatures": [
+        {
+          "signature": {
+            "kind": "callable",
+            "parameters": [],
+            "returns": {
+              "kind": "name",
+              "name": "int",
+              "target": null
+            }
+          },
+          "sources": [
+            {
+              "source": {
+                "repository": "python",
+                "path": "foo/native.pyi",
+                "span": {
+                  "start": 10,
+                  "end": 30
+                }
+              },
+              "role": "signature",
+              "parsers": [
+                "ruff_python_parser"
+              ]
+            }
+          ]
+        }
+      ],
+      "documentation": null,
+      "source_location": {
+        "repository": "python",
+        "path": "foo/native.pyi",
+        "span": {
+          "start": 10,
+          "end": 30
+        }
+      },
+      "children": [],
+      "provenance": [
+        {
+          "activity": {
+            "kind": "declaration"
+          },
+          "source": {
+            "kind": "repository",
+            "repository": "python",
+            "path": "foo/native.pyi"
+          },
+          "span": {
+            "start": 10,
+            "end": 30
+          },
+          "tools": {
+            "ruff_python_parser": "0.0.12"
+          }
+        }
+      ]
+    },
+    "sid1:python:function:foo.native.f:overload:call()returns(some(name(str)))": {
+      "kind": "function",
+      "name": "f",
+      "qualified_name": "foo.native.f",
+      "language_data": {
+        "language": "python",
+        "data": {
+          "visibility": "public",
+          "declaration": {
+            "kind": "callable",
+            "binding": "function",
+            "is_async": false,
+            "role": {
+              "kind": "overload",
+              "family": {
+                "package": "pyfoo",
+                "item": "sid1:python:function:foo.native.f"
+              }
+            }
+          },
+          "decorators": [
+            {
+              "expression": {
+                "kind": "name",
+                "name": "overload",
+                "target": null
+              },
+              "semantics": "overload",
+              "sources": [
+                {
+                  "source": {
+                    "repository": "python",
+                    "path": "foo/native.pyi",
+                    "span": {
+                      "start": 10,
+                      "end": 30
+                    }
+                  },
+                  "role": "definition",
+                  "parsers": [
+                    "ruff_python_parser"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "signatures": [
+        {
+          "signature": {
+            "kind": "callable",
+            "parameters": [],
+            "returns": {
+              "kind": "name",
+              "name": "str",
+              "target": null
+            }
+          },
+          "sources": [
+            {
+              "source": {
+                "repository": "python",
+                "path": "foo/native.pyi",
+                "span": {
+                  "start": 10,
+                  "end": 30
+                }
+              },
+              "role": "signature",
+              "parsers": [
+                "ruff_python_parser"
+              ]
+            }
+          ]
+        }
+      ],
+      "documentation": null,
+      "source_location": {
+        "repository": "python",
+        "path": "foo/native.pyi",
+        "span": {
+          "start": 10,
+          "end": 30
+        }
+      },
+      "children": [],
+      "provenance": [
+        {
+          "activity": {
+            "kind": "declaration"
+          },
+          "source": {
+            "kind": "repository",
+            "repository": "python",
+            "path": "foo/native.pyi"
+          },
+          "span": {
+            "start": 10,
+            "end": 30
+          },
+          "tools": {
+            "ruff_python_parser": "0.0.12"
+          }
+        }
+      ]
+    },
+    "sid1:python:module:foo.native": {
+      "kind": "module",
+      "name": "native",
+      "qualified_name": "foo.native",
+      "language_data": {
+        "language": "python",
+        "data": {
+          "visibility": "public",
+          "declaration": {
+            "kind": "module",
+            "source": "stub-only",
+            "exports": {
+              "kind": "implicit"
+            }
+          },
+          "decorators": []
+        }
+      },
+      "signatures": [],
+      "documentation": null,
+      "source_location": {
+        "repository": "python",
+        "path": "foo/native.pyi",
+        "span": {
+          "start": 0,
+          "end": 5
+        }
+      },
+      "children": [
+        "sid1:python:function:foo.native.f"
+      ],
+      "provenance": [
+        {
+          "activity": {
+            "kind": "declaration"
+          },
+          "source": {
+            "kind": "repository",
+            "repository": "python",
+            "path": "foo/native.pyi"
+          },
+          "span": {
+            "start": 0,
+            "end": 5
+          },
+          "tools": {
+            "ruff_python_parser": "0.0.12"
+          }
+        }
+      ]
+    }
+  },
+  "docstrings": {},
+  "diagnostics": []
+}

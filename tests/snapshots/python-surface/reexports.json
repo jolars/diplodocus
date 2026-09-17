@@ -1,0 +1,311 @@
+{
+  "items": {
+    "sid1:python:function:foo.model.fit": {
+      "kind": "function",
+      "name": "fit",
+      "qualified_name": "foo.model.fit",
+      "language_data": {
+        "language": "python",
+        "data": {
+          "visibility": "public",
+          "declaration": {
+            "kind": "callable",
+            "binding": "function",
+            "is_async": false,
+            "role": {
+              "kind": "family",
+              "overloads": []
+            }
+          },
+          "decorators": []
+        }
+      },
+      "aliases": [
+        {
+          "qualified_name": "foo.api.fit",
+          "kind": "python-reexport",
+          "sources": [
+            {
+              "source": {
+                "repository": "python",
+                "path": "foo/api.py",
+                "span": {
+                  "start": 0,
+                  "end": 5
+                }
+              },
+              "role": "export",
+              "parsers": [
+                "ruff_python_parser"
+              ]
+            }
+          ]
+        },
+        {
+          "qualified_name": "foo.fit",
+          "kind": "python-reexport",
+          "sources": [
+            {
+              "source": {
+                "repository": "python",
+                "path": "foo.py",
+                "span": {
+                  "start": 0,
+                  "end": 5
+                }
+              },
+              "role": "export",
+              "parsers": [
+                "ruff_python_parser"
+              ]
+            },
+            {
+              "source": {
+                "repository": "python",
+                "path": "foo.pyi",
+                "span": {
+                  "start": 0,
+                  "end": 5
+                }
+              },
+              "role": "export",
+              "parsers": [
+                "ruff_python_parser"
+              ]
+            }
+          ]
+        }
+      ],
+      "signatures": [
+        {
+          "signature": {
+            "kind": "callable",
+            "parameters": [],
+            "returns": {
+              "kind": "name",
+              "name": "int",
+              "target": null
+            }
+          },
+          "sources": [
+            {
+              "source": {
+                "repository": "python",
+                "path": "foo/model.py",
+                "span": {
+                  "start": 10,
+                  "end": 30
+                }
+              },
+              "role": "signature",
+              "parsers": [
+                "ruff_python_parser"
+              ]
+            }
+          ]
+        }
+      ],
+      "documentation": null,
+      "source_location": {
+        "repository": "python",
+        "path": "foo/model.py",
+        "span": {
+          "start": 10,
+          "end": 30
+        }
+      },
+      "children": [],
+      "provenance": [
+        {
+          "activity": {
+            "kind": "declaration"
+          },
+          "source": {
+            "kind": "repository",
+            "repository": "python",
+            "path": "foo/model.py"
+          },
+          "span": {
+            "start": 10,
+            "end": 30
+          },
+          "tools": {
+            "ruff_python_parser": "0.0.12"
+          }
+        }
+      ]
+    },
+    "sid1:python:module:foo": {
+      "kind": "module",
+      "name": "foo",
+      "qualified_name": "foo",
+      "language_data": {
+        "language": "python",
+        "data": {
+          "visibility": "public",
+          "declaration": {
+            "kind": "module",
+            "source": "implementation-and-stub",
+            "exports": {
+              "kind": "implicit"
+            }
+          },
+          "decorators": []
+        }
+      },
+      "signatures": [],
+      "documentation": null,
+      "source_location": {
+        "repository": "python",
+        "path": "foo.py",
+        "span": {
+          "start": 0,
+          "end": 5
+        }
+      },
+      "children": [
+        "sid1:python:function:foo.model.fit"
+      ],
+      "provenance": [
+        {
+          "activity": {
+            "kind": "declaration"
+          },
+          "source": {
+            "kind": "repository",
+            "repository": "python",
+            "path": "foo.py"
+          },
+          "span": {
+            "start": 0,
+            "end": 5
+          },
+          "tools": {
+            "ruff_python_parser": "0.0.12"
+          }
+        },
+        {
+          "activity": {
+            "kind": "declaration"
+          },
+          "source": {
+            "kind": "repository",
+            "repository": "python",
+            "path": "foo.pyi"
+          },
+          "span": {
+            "start": 0,
+            "end": 5
+          },
+          "tools": {
+            "ruff_python_parser": "0.0.12"
+          }
+        }
+      ]
+    },
+    "sid1:python:module:foo.api": {
+      "kind": "module",
+      "name": "api",
+      "qualified_name": "foo.api",
+      "language_data": {
+        "language": "python",
+        "data": {
+          "visibility": "public",
+          "declaration": {
+            "kind": "module",
+            "source": "implementation",
+            "exports": {
+              "kind": "implicit"
+            }
+          },
+          "decorators": []
+        }
+      },
+      "signatures": [],
+      "documentation": null,
+      "source_location": {
+        "repository": "python",
+        "path": "foo/api.py",
+        "span": {
+          "start": 0,
+          "end": 5
+        }
+      },
+      "children": [
+        "sid1:python:function:foo.model.fit"
+      ],
+      "provenance": [
+        {
+          "activity": {
+            "kind": "declaration"
+          },
+          "source": {
+            "kind": "repository",
+            "repository": "python",
+            "path": "foo/api.py"
+          },
+          "span": {
+            "start": 0,
+            "end": 5
+          },
+          "tools": {
+            "ruff_python_parser": "0.0.12"
+          }
+        }
+      ]
+    },
+    "sid1:python:module:foo.model": {
+      "kind": "module",
+      "name": "model",
+      "qualified_name": "foo.model",
+      "language_data": {
+        "language": "python",
+        "data": {
+          "visibility": "public",
+          "declaration": {
+            "kind": "module",
+            "source": "implementation",
+            "exports": {
+              "kind": "implicit"
+            }
+          },
+          "decorators": []
+        }
+      },
+      "signatures": [],
+      "documentation": null,
+      "source_location": {
+        "repository": "python",
+        "path": "foo/model.py",
+        "span": {
+          "start": 0,
+          "end": 5
+        }
+      },
+      "children": [
+        "sid1:python:function:foo.model.fit"
+      ],
+      "provenance": [
+        {
+          "activity": {
+            "kind": "declaration"
+          },
+          "source": {
+            "kind": "repository",
+            "repository": "python",
+            "path": "foo/model.py"
+          },
+          "span": {
+            "start": 0,
+            "end": 5
+          },
+          "tools": {
+            "ruff_python_parser": "0.0.12"
+          }
+        }
+      ]
+    }
+  },
+  "docstrings": {},
+  "diagnostics": []
+}
