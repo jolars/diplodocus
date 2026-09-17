@@ -82,6 +82,57 @@ pub enum DiagnosticCode {
     /// An external relationship endpoint has malformed coordinate syntax.
     #[serde(rename = "invalid-external-package-coordinate")]
     InvalidExternalPackageCoordinate,
+    /// Python package metadata is malformed or missing required static fields.
+    #[serde(rename = "python-metadata")]
+    PythonMetadata,
+    /// Required Python package metadata needs backend execution.
+    #[serde(rename = "python-dynamic-metadata")]
+    PythonDynamicMetadata,
+    /// Python source contains malformed syntax.
+    #[serde(rename = "python-syntax")]
+    PythonSyntax,
+    /// Python syntax or version constraints exceed the supported target grammar.
+    #[serde(rename = "python-unsupported-version")]
+    PythonUnsupportedVersion,
+    /// Python source has syntax outside the static extraction subset.
+    #[serde(rename = "python-unsupported-syntax")]
+    PythonUnsupportedSyntax,
+    /// A declared Python input could not be read safely.
+    #[serde(rename = "python-source-read")]
+    PythonSourceRead,
+    /// Multiple inputs define the same Python module surface.
+    #[serde(rename = "python-module-collision")]
+    PythonModuleCollision,
+    /// A Python export list cannot be determined statically.
+    #[serde(rename = "python-dynamic-export")]
+    PythonDynamicExport,
+    /// A public Python import cannot be resolved to a canonical entity.
+    #[serde(rename = "python-unresolved-reexport")]
+    PythonUnresolvedReexport,
+    /// A maintained Python stub conflicts with its implementation.
+    #[serde(rename = "python-conflicting-stub")]
+    PythonConflictingStub,
+    /// A public Python construct has unsupported semantics.
+    #[serde(rename = "python-unsupported-surface")]
+    PythonUnsupportedSurface,
+    /// Python declarations have conflicting canonical identities.
+    #[serde(rename = "python-duplicate-identity")]
+    PythonDuplicateIdentity,
+    /// A Python lookup name refers to multiple canonical entities.
+    #[serde(rename = "python-conflicting-alias")]
+    PythonConflictingAlias,
+    /// A Python declaration lacks supported semantic identity inputs.
+    #[serde(rename = "python-invalid-identity")]
+    PythonInvalidIdentity,
+    /// A Python docstring contains incomplete section syntax.
+    #[serde(rename = "python-incomplete-docstring")]
+    PythonIncompleteDocstring,
+    /// A Python docstring contains unsupported markup or sections.
+    #[serde(rename = "python-unsupported-docstring")]
+    PythonUnsupportedDocstring,
+    /// Decoded Python documentation cannot be mapped exactly to source.
+    #[serde(rename = "python-docstring-source-attribution")]
+    PythonDocstringSourceAttribution,
 }
 
 impl DiagnosticCode {
@@ -112,6 +163,23 @@ impl DiagnosticCode {
             Self::UnknownConceptPackage => "unknown-concept-package",
             Self::UnknownRelationshipEndpoint => "unknown-relationship-endpoint",
             Self::InvalidExternalPackageCoordinate => "invalid-external-package-coordinate",
+            Self::PythonMetadata => "python-metadata",
+            Self::PythonDynamicMetadata => "python-dynamic-metadata",
+            Self::PythonSyntax => "python-syntax",
+            Self::PythonUnsupportedVersion => "python-unsupported-version",
+            Self::PythonUnsupportedSyntax => "python-unsupported-syntax",
+            Self::PythonSourceRead => "python-source-read",
+            Self::PythonModuleCollision => "python-module-collision",
+            Self::PythonDynamicExport => "python-dynamic-export",
+            Self::PythonUnresolvedReexport => "python-unresolved-reexport",
+            Self::PythonConflictingStub => "python-conflicting-stub",
+            Self::PythonUnsupportedSurface => "python-unsupported-surface",
+            Self::PythonDuplicateIdentity => "python-duplicate-identity",
+            Self::PythonConflictingAlias => "python-conflicting-alias",
+            Self::PythonInvalidIdentity => "python-invalid-identity",
+            Self::PythonIncompleteDocstring => "python-incomplete-docstring",
+            Self::PythonUnsupportedDocstring => "python-unsupported-docstring",
+            Self::PythonDocstringSourceAttribution => "python-docstring-source-attribution",
         }
     }
 }

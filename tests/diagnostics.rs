@@ -362,6 +362,26 @@ fn stable_codes_match_their_serialized_identifiers() {
         (SourcePathWrongType, "source-path-wrong-type"),
         (SourcePathOutsideBoundary, "source-path-outside-boundary"),
         (InvalidRepositoryReference, "invalid-repository-reference"),
+        (PythonMetadata, "python-metadata"),
+        (PythonDynamicMetadata, "python-dynamic-metadata"),
+        (PythonSyntax, "python-syntax"),
+        (PythonUnsupportedVersion, "python-unsupported-version"),
+        (PythonUnsupportedSyntax, "python-unsupported-syntax"),
+        (PythonSourceRead, "python-source-read"),
+        (PythonModuleCollision, "python-module-collision"),
+        (PythonDynamicExport, "python-dynamic-export"),
+        (PythonUnresolvedReexport, "python-unresolved-reexport"),
+        (PythonConflictingStub, "python-conflicting-stub"),
+        (PythonUnsupportedSurface, "python-unsupported-surface"),
+        (PythonDuplicateIdentity, "python-duplicate-identity"),
+        (PythonConflictingAlias, "python-conflicting-alias"),
+        (PythonInvalidIdentity, "python-invalid-identity"),
+        (PythonIncompleteDocstring, "python-incomplete-docstring"),
+        (PythonUnsupportedDocstring, "python-unsupported-docstring"),
+        (
+            PythonDocstringSourceAttribution,
+            "python-docstring-source-attribution",
+        ),
     ] {
         assert_eq!(code.as_str(), spelling);
         assert_eq!(serde_json::to_value(code).unwrap(), json!(spelling));
