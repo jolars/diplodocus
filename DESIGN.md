@@ -30,8 +30,10 @@ others. Rust, Julia, and TypeScript are natural candidates for later extractors,
 but are not part of the initial scope.
 
 The initial product is one coherent snapshot of the documentation in the
-current set of supplied source repositories. Historical release assembly is a
-later concern.
+current set of supplied source repositories. Extraction saves that snapshot in
+a portable SQLite database; generation turns it into a static website. The two
+stages can run independently, while `build` runs both. Historical release
+assembly is a later concern.
 
 ## Core principles
 
@@ -94,6 +96,10 @@ Cloudflare Pages, Netlify, or any ordinary HTTP server.
 The same source repositories and configuration should produce the same
 documentation output, apart from explicitly non-reproducible metadata.
 
+The same logical snapshot, generator version, and presentation settings should
+produce identical site files. Snapshot equivalence is defined by its records
+and asset contents, not by the physical layout or bytes of the SQLite file.
+
 Diplodocus itself should not perform implicit network access during normal builds.
 
 Executable authored content weakens this guarantee in a visible, controlled
@@ -117,38 +123,45 @@ Diplodocus does not sandbox cells, install their dependencies, or make network
 requests on their behalf. Because execution is unsandboxed, however, a cell may
 access the network unless the surrounding environment prevents it.
 
-`diplodocus check` parses and validates code cells without executing them. `build`
-and `serve` execute cells only for content collections whose configuration
-explicitly enables execution.
+`diplodocus check` parses and validates code cells without executing them.
+`extract`, including extraction invoked by `build` or `serve`, executes cells
+only for content collections whose configuration explicitly enables execution.
+`generate` never executes cells or starts a kernel.
 
 --------------------------------------------------------------------------------
 
 ## Architecture
 
-The main data flow is:
+Diplodocus separates extraction and preparation from website generation. The
+intermediate representation (IR) is the structured documentation model shared
+by both stages; SQLite stores a complete snapshot of that model.
 
 ```text
-checked-out source repositories
-      │
-      ▼
-packages, extraction targets, and authored content
-      │
-      ├── API extractors
-      └── Panache content adapters
-      │
-      ▼
-documentation IR
-      │
-      ├── optional authored-cell execution
-      ├── cross-package concepts
-      └── package version metadata
-      │
-      ▼
-site model
-      │
-      ▼
-HTML renderer
+Extraction
+  checked-out source repositories and workspace configuration
+      → static API extraction and authored-content parsing
+      → optional authorized authored-cell execution
+      → semantic reference resolution, validation, and asset collection
+      → documentation.sqlite
+
+Generation
+  documentation.sqlite + presentation settings
+      → snapshot validation
+      → site model, URLs, navigation, and search
+      → HTML renderer and static assets
 ```
+
+The `extract` command coordinates preparation of the whole workspace snapshot.
+API extractors remain static components within that stage; the separate
+execution engine alone runs authorized authored cells. The core merges their
+results, resolves semantic references, and publishes the snapshot only after
+successful validation.
+
+Generation reads a completed snapshot without changing it. It requires neither
+the source checkouts nor their configuration files, execution caches, or
+language runtimes. A compatible Diplodocus binary supplies the renderer and
+built-in theme. This boundary allows extraction and generation to run in
+separate CI jobs or on different machines.
 
 ### API extractors
 
@@ -189,15 +202,14 @@ cannot represent a required dynamic construct, the extractor emits a visible
 diagnostic rather than falling back to runtime introspection or an external
 parser helper.
 
-The extractor boundary should remain independent from the renderer.
+The extractor boundary should remain independent from storage and rendering.
 
 Conceptually:
 
 ```text
-diplodocus extract python ./python/package
-         │
-         ▼
-   package fragment
+configured Python extraction target
+         → Python extractor
+         → package fragment
 ```
 
 ### Static extractor boundary
@@ -396,6 +408,80 @@ RItemData
 The IR should have an explicit schema version so extractors and renderers can
 evolve independently.
 
+### SQLite snapshot
+
+The database is a portable documentation artifact, containing one complete
+workspace snapshot. Source files and workspace configuration remain
+authoritative when refreshing it; extraction does not preserve manual database
+edits or append historical snapshots.
+
+The snapshot contains:
+
+- repository and package metadata, versions, and portable provenance;
+- API items, signatures, authored documents, and recorded cell outputs;
+- semantic references, concepts, package relationships, and diagnostics;
+- the bytes of every local content asset needed by the site, including images,
+  downloads, and generated figures;
+- default presentation settings, package slugs, content mounts, and source-link
+  information; and
+- schema and producer versions, stable entity IDs, and content fingerprints.
+
+Asset bytes are stored by content fingerprint and referenced from the IR.
+Generation writes them to the output tree. Source locations remain
+repository-relative evidence, not files that generation must open. External
+hyperlinks remain links; extraction does not fetch their targets. Built-in
+theme assets ship with Diplodocus. A future custom-theme facility must specify
+how its assets travel with the snapshot before claiming the same portability.
+
+SQLite is the persistence layer for the typed IR. Extractors return structured
+values, and the core owns their storage. Top-level entities should be queryable
+by semantic ID; nested documents, signatures, and language extensions may use
+versioned serialized values instead of a table for every syntax node. The
+storage implementation should also provide a canonical text export for golden
+fixtures and readable comparisons.
+
+The storage schema has an explicit version alongside the IR schema. Readers
+and writers reject unsupported versions with a clear diagnostic. The initial
+implementation does not migrate old snapshots automatically. Generation
+validates stored records, asset fingerprints, paths, and references before
+constructing the site model. Serialized HTML conveys no rendering trust and
+must pass the active sanitizer policy again.
+
+Published snapshots must be self-contained files with no dependency on a live
+journal or write-ahead log. If extraction uses a live database internally, it
+must publish a consistent standalone copy, following SQLite's
+[snapshot and backup rules](https://www.sqlite.org/backup.html).
+
+### Snapshot updates
+
+Extraction is idempotent at the level of logical documentation state. Given
+the same declared inputs, implementation versions, and execution results, a
+refresh produces the same records and fingerprints without accumulating
+duplicates. Stable IDs match existing entities; removed packages, items, pages,
+relationships, and unreferenced assets disappear from the new snapshot.
+Content fingerprints use a versioned canonical encoding of semantic records,
+preserving meaningful order while sorting unordered collections. Database
+layout and transient build metadata do not participate in those fingerprints.
+
+A refresh publishes the complete workspace atomically, using a transaction or
+replacement of a completed temporary database. Readers see one coherent
+snapshot, and a failed refresh leaves the previous successful snapshot intact.
+The initial implementation may replace the whole snapshot; skipping unchanged
+extraction work is a later optimization. `build` and `serve` must report a
+failed refresh rather than silently generating from the previous snapshot.
+
+Idempotent storage does not make authored execution deterministic or free of
+side effects. Execution remains subject to its authorization and cache
+contracts. A snapshot records the results that were obtained; generation
+renders those results without trying to refresh them. It cannot establish
+whether absent source checkouts have changed since extraction.
+
+This boundary adds storage and validation code, serialization costs, and a
+format compatibility obligation. Complete snapshots may be large when they
+contain many figures or downloads. The initial scope accepts those costs for
+portable artifacts and independent generation, while deferring automatic
+migration, historical assembly, and incremental processing.
+
 ### Item identity
 
 Every item ID is scoped by a stable package ID and assigned by its API
@@ -480,6 +566,12 @@ The [page execution-cache contract](docs/spikes/page-execution-cache.md) defines
 canonical key encoding, runtime identity verification, the versioned artifact
 layout, validation on restore, and atomic publication. A hit verifies the
 current kernel through startup and kernel info, then skips authored cells.
+
+That cache is private working data used during extraction. The portable
+snapshot contains the accepted outputs and asset bytes, not a dependency on
+cache entries. Generation consumes those recorded outputs without performing
+a cache lookup or verifying the current kernel. It does not claim that the
+results would be reproduced by a fresh execution in another environment.
 
 Authored pages and generated API pages participate in the same navigation, link
 resolution, and search index.
@@ -624,7 +716,7 @@ pyfoo  2.1.0
 rfoo   1.8.0
 ```
 
-A generated snapshot might look like:
+A site generated from that snapshot might look like:
 
 ```text
 /
@@ -824,10 +916,17 @@ The first implementation can generate a static browser-side search index.
 
 ## Rendering
 
-The renderer consumes only the site model and must not contain language parsing
-logic.
+Generation loads and validates the snapshot, then constructs the site model.
+The renderer consumes only that model and must not contain language parsing or
+database access logic.
 
-It is responsible for:
+Default presentation settings travel with the snapshot. Explicit generation
+options may override presentation without repeating extraction; changes to
+source selection, API semantics, or execution policy require a new extraction.
+The initial renderer has one built-in theme. This boundary permits later theme
+support without making a theme extension API part of the first release.
+
+The renderer is responsible for:
 
 - HTML;
 - layout;
@@ -852,33 +951,71 @@ the renderer as trusted markup.
 For example, a Python class page and an R generic-function page may use different
 layouts while clearly belonging to the same visual system.
 
+### Incremental rendering
+
+The initial generator may render the entire site. The snapshot contract must
+nevertheless preserve stable entity IDs, per-entity content fingerprints, and
+structured references so that later generators can determine which outputs
+depend on changed documentation. A changed database file alone does not imply
+that every page has changed. Full extraction and incremental rendering are
+independent choices.
+
+A future incremental generator keeps a disposable build manifest alongside
+the generated output, separate from the input snapshot. It records input
+fingerprints, dependencies, and emitted paths for pages and shared outputs.
+Dependencies include referenced entities, package navigation, concepts, and
+search data. The generator must also account for renderer and sanitizer
+versions, theme assets, and effective presentation settings, falling back to
+a full render when its previous state is missing or incompatible.
+
+For example, changing a function's documentation may affect its reference page
+and search entry, while renaming a package can affect navigation throughout
+the site. Deleted entities and changed URLs also require removing obsolete
+output files. Selective generation must produce the same files as a clean full
+generation from the same snapshot and settings. Dependency tracking and
+invalidation are later work, not behavior supplied automatically by SQLite.
+
 --------------------------------------------------------------------------------
 
 ## CLI
 
-The initial CLI should remain small:
+The CLI exposes both stages and a convenient combined workflow:
 
 ```text
 diplodocus build
 diplodocus serve
 diplodocus check
+diplodocus extract --output documentation.sqlite
+diplodocus generate --input documentation.sqlite --output site
 ```
 
-Potential additional commands:
+`extract` reads the workspace configuration and declared sources, parses and
+extracts documentation, performs configured authored execution, resolves
+semantic references, collects assets, and publishes a validated SQLite
+snapshot. Its default output is `.diplodocus/documentation.sqlite` relative to
+the workspace configuration. `--output` selects another snapshot path.
 
-```text
-diplodocus init
-diplodocus extract
-```
+`generate` requires an explicit `--input` snapshot and renders it to `--output`,
+which defaults to `./site`. It uses recorded defaults and explicit presentation
+overrides without discovering a workspace configuration or reading sources.
+Both stages report diagnostics and return a nonzero exit status on errors.
 
-`build` should perform extraction, authored-content parsing, configured cell
-execution, validation, site construction, and rendering.
+`build` runs extraction into the default snapshot location followed by
+generation. It must have the same behavior as running the two stages
+separately. `serve` builds, serves, and watches declared inputs, retaining the
+last successful site when a rebuild fails. A failed generation also leaves the
+last successful site intact; a successfully extracted snapshot remains usable
+for another generation attempt.
 
 `check` should validate configuration, source roots, unresolved references,
 duplicate identifiers, missing package metadata, incompatible package
 relationships, unsupported content constructs and cell options, execution
-configuration, and similar documentation problems without executing cells or
-producing a site.
+configuration, and similar documentation problems without executing cells,
+publishing a snapshot, or producing a site. It shares parsing, extraction, and
+validation components with `extract` but cannot validate references introduced
+only by execution results that do not yet exist.
+
+`diplodocus init` may be added later.
 
 --------------------------------------------------------------------------------
 
@@ -958,13 +1095,21 @@ repositories. A sensible order is:
 6. Implement semantic reference resolution and `diplodocus check`, including
    diagnostics for ambiguity, unsupported constructs, incoherent package
    relationships, and unresolved concepts.
-7. Render authored pages, code-cell outputs, and both API references in one
-   site.
-8. Add package navigation, static workspace search, and the appropriate concept
+7. Implement SQLite snapshot storage and `extract`, with tests for IR and asset
+   round trips, schema validation, logical idempotence, removal of stale records,
+   and preservation of the last successful snapshot on failure. Include stable
+   IDs, per-entity fingerprints, and canonical text exports from the outset.
+8. Implement `generate` by loading a snapshot and rendering authored pages,
+   code-cell outputs, and both API references in one site. Verify generation
+   from a copied standalone database without source checkouts, execution
+   caches, or language runtimes.
+9. Add package navigation, static workspace search, and the appropriate concept
    switchers.
-9. Add end-to-end snapshot tests that verify deterministic output from the
-   acceptance workspace, including deterministic executable cells.
-10. Only then consider historical release assembly or another ecosystem.
+10. Add end-to-end tests that verify deterministic output from the acceptance
+    workspace, including deterministic executable cells, and equivalence of
+    `build` with separate `extract` and `generate` commands.
+11. Only then consider incremental extraction or rendering, custom themes,
+    historical release assembly, or another ecosystem.
 
 Diplodocus's CLI, core, renderer, built-in extractors, Panache adapter, and Jupyter
 client will be implemented in Rust. This provides a convenient single binary
