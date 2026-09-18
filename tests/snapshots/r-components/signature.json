@@ -1,0 +1,152 @@
+[
+  {
+    "signature": {
+      "kind": "callable",
+      "parameters": [
+        {
+          "name": "arg name",
+          "kind": {
+            "kind": "positional-or-keyword"
+          },
+          "annotation": null,
+          "default": null
+        },
+        {
+          "name": "...",
+          "kind": {
+            "kind": "language-specific",
+            "language": "r",
+            "name": "dots"
+          },
+          "annotation": null,
+          "default": null
+        },
+        {
+          "name": "option",
+          "kind": {
+            "kind": "keyword-only"
+          },
+          "annotation": null,
+          "default": {
+            "kind": "literal",
+            "text": "NULL"
+          }
+        },
+        {
+          "name": "formula",
+          "kind": {
+            "kind": "keyword-only"
+          },
+          "annotation": null,
+          "default": {
+            "kind": "language-specific",
+            "language": "r",
+            "name": "unary_expr",
+            "children": [
+              {
+                "kind": "literal",
+                "text": "~"
+              },
+              {
+                "kind": "language-specific",
+                "language": "r",
+                "name": "binary_expr",
+                "children": [
+                  {
+                    "kind": "name",
+                    "name": "x",
+                    "target": null
+                  },
+                  {
+                    "kind": "literal",
+                    "text": "+"
+                  },
+                  {
+                    "kind": "name",
+                    "name": "y",
+                    "target": null
+                  }
+                ],
+                "source": "x + y"
+              }
+            ],
+            "source": "~ x + y"
+          }
+        }
+      ],
+      "returns": null
+    },
+    "sources": [
+      {
+        "source": {
+          "repository": "r",
+          "path": "R/api.R",
+          "span": {
+            "start": 0,
+            "end": 79
+          }
+        },
+        "role": "signature",
+        "parsers": [
+          "arity-parser"
+        ]
+      },
+      {
+        "source": {
+          "repository": "r",
+          "path": "R/api.R",
+          "span": {
+            "start": 27,
+            "end": 37
+          }
+        },
+        "role": "signature",
+        "parsers": [
+          "arity-parser"
+        ]
+      },
+      {
+        "source": {
+          "repository": "r",
+          "path": "R/api.R",
+          "span": {
+            "start": 39,
+            "end": 42
+          }
+        },
+        "role": "signature",
+        "parsers": [
+          "arity-parser"
+        ]
+      },
+      {
+        "source": {
+          "repository": "r",
+          "path": "R/api.R",
+          "span": {
+            "start": 44,
+            "end": 57
+          }
+        },
+        "role": "signature",
+        "parsers": [
+          "arity-parser"
+        ]
+      },
+      {
+        "source": {
+          "repository": "r",
+          "path": "R/api.R",
+          "span": {
+            "start": 59,
+            "end": 76
+          }
+        },
+        "role": "signature",
+        "parsers": [
+          "arity-parser"
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,5471 @@
+{
+  "diagnostics": [
+    {
+      "code": "r-rd-source-attribution",
+      "message": "Rd nodes have file-level source attribution; exact node byte ranges are unavailable.",
+      "severity": "warning",
+      "source": {
+        "kind": "repository",
+        "path": "man/experimental_summary.Rd",
+        "repository": "r"
+      },
+      "span": null
+    },
+    {
+      "code": "r-rd-source-attribution",
+      "message": "Rd nodes have file-level source attribution; exact node byte ranges are unavailable.",
+      "severity": "warning",
+      "source": {
+        "kind": "repository",
+        "path": "man/fit.Rd",
+        "repository": "r"
+      },
+      "span": null
+    },
+    {
+      "code": "r-rd-source-attribution",
+      "message": "Rd nodes have file-level source attribution; exact node byte ranges are unavailable.",
+      "severity": "warning",
+      "source": {
+        "kind": "repository",
+        "path": "man/foo_model.Rd",
+        "repository": "r"
+      },
+      "span": null
+    },
+    {
+      "code": "r-rd-source-attribution",
+      "message": "Rd nodes have file-level source attribution; exact node byte ranges are unavailable.",
+      "severity": "warning",
+      "source": {
+        "kind": "repository",
+        "path": "man/mean_squared_error.Rd",
+        "repository": "r"
+      },
+      "span": null
+    }
+  ],
+  "inputs": {
+    "DESCRIPTION": {
+      "kind": "package-metadata",
+      "source": {
+        "path": "DESCRIPTION",
+        "repository": "r",
+        "span": null
+      },
+      "text": "Package: foo\nType: Package\nTitle: Statistical Models with Foo\nVersion: 1.8.0\nAuthors@R:\n    person(\"Foo\", \"Contributors\", role = c(\"aut\", \"cre\"),\n           email = \"maintainers@example.com\")\nAuthor: Foo Contributors [aut, cre]\nMaintainer: Foo Contributors <maintainers@example.com>\nDescription: R bindings for the Foo statistical library. The package exposes a\n    small model-fitting API used by Diplodocus's acceptance workspace.\nLicense: MIT + file LICENSE\nEncoding: UTF-8\nDepends:\n    R (>= 4.3)\nImports:\n    stats\nSuggests:\n    testthat (>= 3.2.0)\nConfig/testthat/edition: 3\nNeedsCompilation: no\n"
+    },
+    "NAMESPACE": {
+      "kind": "namespace",
+      "source": {
+        "path": "NAMESPACE",
+        "repository": "r",
+        "span": null
+      },
+      "text": "export(experimental_summary)\nexport(fit)\nexport(foo_model)\nexport(mean_squared_error)\nS3method(fit,default)\nS3method(fit,foo_model)\nS3method(predict,foo_model)\nimportFrom(stats,predict)\n"
+    },
+    "R/experimental.R": {
+      "kind": "r-source",
+      "source": {
+        "path": "R/experimental.R",
+        "repository": "r",
+        "span": null
+      },
+      "text": "experimental_summary <- function(x) {\n  x <- as.double(x)\n  if (length(x) == 0L) {\n    stop(\"`x` must not be empty.\", call. = FALSE)\n  }\n\n  c(minimum = min(x), median = stats::median(x), maximum = max(x))\n}\n"
+    },
+    "R/fit.R": {
+      "kind": "r-source",
+      "source": {
+        "path": "R/fit.R",
+        "repository": "r",
+        "span": null
+      },
+      "text": "fit <- function(x, ...) {\n  UseMethod(\"fit\")\n}\n\nfit.default <- function(\n  x,\n  y,\n  solver = c(\"normal\", \"qr\"),\n  tolerance = 1e-8,\n  ...\n) {\n  solver <- match.arg(solver)\n  if (!is.numeric(tolerance) || length(tolerance) != 1L || tolerance <= 0) {\n    stop(\"`tolerance` must be one positive number.\", call. = FALSE)\n  }\n\n  features <- as.matrix(x)\n  target <- as.double(y)\n  if (length(target) == 0L || nrow(features) != length(target)) {\n    stop(\"`x` and `y` must contain the same nonzero number of rows.\", call. = FALSE)\n  }\n  if (ncol(features) == 0L) {\n    stop(\"`x` must contain at least one column.\", call. = FALSE)\n  }\n\n  foo_model(\n    coefficients = rep(0, ncol(features)),\n    intercept = mean(target),\n    solver = solver\n  )\n}\n\nfit.foo_model <- function(x, features, target, tolerance = 1e-8, ...) {\n  refitted <- fit.default(\n    features,\n    target,\n    tolerance = tolerance,\n    ...\n  )\n  x$coefficients <- refitted$coefficients\n  x$intercept <- refitted$intercept\n  x$solver <- refitted$solver\n  x\n}\n\nfoo_model <- function(coefficients, intercept = 0, solver = \"normal\") {\n  structure(\n    list(\n      coefficients = as.double(coefficients),\n      intercept = as.double(intercept),\n      solver = solver\n    ),\n    class = \"foo_model\"\n  )\n}\n\npredict.foo_model <- function(object, newdata, ...) {\n  single_observation <- is.null(dim(newdata))\n  features <- if (single_observation) {\n    matrix(newdata, nrow = 1L)\n  } else {\n    as.matrix(newdata)\n  }\n  if (ncol(features) != length(object$coefficients)) {\n    stop(\"`newdata` must have one column per coefficient.\", call. = FALSE)\n  }\n\n  predictions <- as.vector(features %*% object$coefficients + object$intercept)\n  if (single_observation) predictions[[1L]] else predictions\n}\n"
+    },
+    "R/metrics.R": {
+      "kind": "r-source",
+      "source": {
+        "path": "R/metrics.R",
+        "repository": "r",
+        "span": null
+      },
+      "text": "mean_squared_error <- function(actual, predicted) {\n  actual <- as.double(actual)\n  predicted <- as.double(predicted)\n  if (length(actual) == 0L || length(actual) != length(predicted)) {\n    stop(\n      \"`actual` and `predicted` must have the same nonzero length.\",\n      call. = FALSE\n    )\n  }\n\n  mean((actual - predicted)^2)\n}\n"
+    },
+    "man/experimental_summary.Rd": {
+      "kind": "rd",
+      "source": {
+        "path": "man/experimental_summary.Rd",
+        "repository": "r",
+        "span": null
+      },
+      "text": "\\name{experimental_summary}\n\\alias{experimental_summary}\n\\title{Experimental Numeric Summary}\n\\usage{\nexperimental_summary(x)\n}\n\\arguments{\n  \\item{x}{A nonempty numeric vector.}\n}\n\\value{\nA named numeric vector containing the minimum, median, and maximum.\n}\n\\description{\nCompute three summary statistics for a numeric vector.\n}\n\\details{\nThe summary uses the minimum, median, and maximum of the supplied values.\n}\n\\examples{\nexperimental_summary(c(3, 1, 2))\n}\n\\keyword{univar}\n"
+    },
+    "man/fit.Rd": {
+      "kind": "rd",
+      "source": {
+        "path": "man/fit.Rd",
+        "repository": "r",
+        "span": null
+      },
+      "text": "\\name{fit}\n\\alias{fit}\n\\alias{fit.default}\n\\alias{fit.foo_model}\n\\title{Fit a Foo Model}\n\\usage{\nfit(x, ...)\n\n\\method{fit}{default}(x, y, solver = c(\"normal\", \"qr\"),\n  tolerance = 1e-8, ...)\n\n\\method{fit}{foo_model}(x, features, target, tolerance = 1e-8, ...)\n}\n\\arguments{\n  \\item{x}{For \\code{fit.default()}, a numeric feature matrix. For\n    \\code{fit.foo_model()}, an existing \\code{foo_model} object.}\n  \\item{...}{Additional arguments passed to an S3 method.}\n  \\item{y}{A numeric response vector with one value per row of \\code{x}.}\n  \\item{solver}{The fitting algorithm, either \\code{\"normal\"} or \\code{\"qr\"}.}\n  \\item{tolerance}{A positive convergence tolerance.}\n  \\item{features}{A numeric feature matrix used to refit \\code{x}.}\n  \\item{target}{A numeric response vector used to refit \\code{x}.}\n}\n\\value{\nAn object of class \\code{\"foo_model\"}. The \\code{foo_model} method returns the\nsupplied model with its fitted values replaced.\n}\n\\description{\nFit a deterministic baseline model through an S3 generic.\n}\n\\details{\nThe default method records a zero coefficient for each feature and uses the\nmean response as the intercept. The simple estimator keeps this acceptance\nfixture deterministic while exercising generic and method extraction.\n}\n\\references{\nA. Researcher (2024). A Small Model. \\emph{Journal of Fixtures}, 1, 1--4.\n}\n\\examples{\nfeatures <- matrix(c(0, 1), ncol = 1)\nmodel <- fit(features, c(1, 3))\nmodel$intercept\n\nfit(model, features, c(2, 4), tolerance = 1e-6)\n}\n\\keyword{models}\n"
+    },
+    "man/foo_model.Rd": {
+      "kind": "rd",
+      "source": {
+        "path": "man/foo_model.Rd",
+        "repository": "r",
+        "span": null
+      },
+      "text": "\\name{foo_model}\n\\alias{foo_model}\n\\alias{predict.foo_model}\n\\title{Create and Use a Foo Model}\n\\usage{\nfoo_model(coefficients, intercept = 0, solver = \"normal\")\n\n\\method{predict}{foo_model}(object, newdata, ...)\n}\n\\arguments{\n  \\item{coefficients}{A numeric vector of fitted coefficients.}\n  \\item{intercept}{A numeric intercept.}\n  \\item{solver}{The name of the fitting algorithm.}\n  \\item{object}{An object of class \\code{\"foo_model\"}.}\n  \\item{newdata}{A numeric feature vector or matrix.}\n  \\item{...}{Additional arguments reserved for method compatibility.}\n}\n\\value{\n\\code{foo_model()} returns an object of class \\code{\"foo_model\"}.\n\\code{predict.foo_model()} returns one prediction or a numeric vector of\npredictions.\n}\n\\description{\nCreate a fitted model directly, or predict responses from one.\n}\n\\examples{\nmodel <- foo_model(c(0.5, -0.25), intercept = 1)\npredict(model, c(2, 4))\npredict(model, matrix(c(2, 4, 3, 5), ncol = 2, byrow = TRUE))\n}\n\\keyword{models}\n"
+    },
+    "man/mean_squared_error.Rd": {
+      "kind": "rd",
+      "source": {
+        "path": "man/mean_squared_error.Rd",
+        "repository": "r",
+        "span": null
+      },
+      "text": "\\name{mean_squared_error}\n\\alias{mean_squared_error}\n\\title{Mean Squared Error}\n\\usage{\nmean_squared_error(actual, predicted)\n}\n\\arguments{\n  \\item{actual}{A nonempty numeric vector of observed responses.}\n  \\item{predicted}{A numeric vector of predictions with the same length as\n    \\code{actual}.}\n}\n\\value{\nOne numeric mean squared error.\n}\n\\description{\nCompute the mean squared difference between observed and predicted responses.\n}\n\\examples{\nmean_squared_error(c(1, 2), c(1, 3))\n}\n\\keyword{models}\n"
+    }
+  },
+  "items": {
+    "sid1:r:function:experimental_summary": {
+      "aliases": [
+        {
+          "kind": "rd-alias",
+          "qualified_name": "experimental_summary",
+          "sources": [
+            {
+              "parsers": [
+                "rd-ast",
+                "rd-source"
+              ],
+              "role": "documentation",
+              "source": {
+                "path": "man/experimental_summary.Rd",
+                "repository": "r",
+                "span": null
+              }
+            }
+          ]
+        }
+      ],
+      "children": [],
+      "documentation": {
+        "document": {
+          "blocks": [
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 479,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Experimental Numeric Summary"
+                }
+              ],
+              "level": 1,
+              "span": {
+                "end": 479,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 479,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Usage"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 479,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "language": "r",
+              "source": "experimental_summary(x)",
+              "source_segments": [],
+              "span": {
+                "end": 479,
+                "start": 0
+              },
+              "type": "code-block"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 479,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Arguments"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 479,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 479,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "x"
+                        }
+                      ],
+                      "span": {
+                        "end": 479,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    },
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 479,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "A nonempty numeric vector."
+                        }
+                      ],
+                      "span": {
+                        "end": 479,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    }
+                  ],
+                  "checked": null,
+                  "span": {
+                    "end": 479,
+                    "start": 0
+                  }
+                }
+              ],
+              "ordered": false,
+              "span": {
+                "end": 479,
+                "start": 0
+              },
+              "type": "list"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 479,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Value"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 479,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 479,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "A named numeric vector containing the minimum, median, and maximum.\n"
+                }
+              ],
+              "span": {
+                "end": 479,
+                "start": 0
+              },
+              "type": "paragraph"
+            },
+            {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 479,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Compute three summary statistics for a numeric vector.\n"
+                }
+              ],
+              "span": {
+                "end": 479,
+                "start": 0
+              },
+              "type": "paragraph"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 479,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Details"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 479,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 479,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "The summary uses the minimum, median, and maximum of the supplied values.\n"
+                }
+              ],
+              "span": {
+                "end": 479,
+                "start": 0
+              },
+              "type": "paragraph"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 479,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Examples"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 479,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "language": "r",
+              "source": "experimental_summary(c(3, 1, 2))",
+              "source_segments": [],
+              "span": {
+                "end": 479,
+                "start": 0
+              },
+              "type": "code-block"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 479,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Keywords"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 479,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 479,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "univar"
+                }
+              ],
+              "span": {
+                "end": 479,
+                "start": 0
+              },
+              "type": "paragraph"
+            }
+          ],
+          "frontmatter": null,
+          "span": {
+            "end": 479,
+            "start": 0
+          }
+        },
+        "provenance": [
+          {
+            "activity": {
+              "kind": "declaration"
+            },
+            "source": {
+              "kind": "repository",
+              "path": "man/experimental_summary.Rd",
+              "repository": "r"
+            },
+            "span": null,
+            "tools": {
+              "arity-parser": "0.6.0",
+              "diplodocus": "[DIPLODOCUS_VERSION]",
+              "r": "[DIPLODOCUS_VERSION]",
+              "rd-ast": "0.4.0",
+              "rd-source": "0.4.0"
+            }
+          }
+        ],
+        "raw_source": "\\name{experimental_summary}\n\\alias{experimental_summary}\n\\title{Experimental Numeric Summary}\n\\usage{\nexperimental_summary(x)\n}\n\\arguments{\n  \\item{x}{A nonempty numeric vector.}\n}\n\\value{\nA named numeric vector containing the minimum, median, and maximum.\n}\n\\description{\nCompute three summary statistics for a numeric vector.\n}\n\\details{\nThe summary uses the minimum, median, and maximum of the supplied values.\n}\n\\examples{\nexperimental_summary(c(3, 1, 2))\n}\n\\keyword{univar}\n",
+        "source_format": {
+          "kind": "extracted",
+          "name": "rd"
+        },
+        "source_location": {
+          "path": "man/experimental_summary.Rd",
+          "repository": "r",
+          "span": null
+        }
+      },
+      "kind": "function",
+      "language_data": {
+        "data": {
+          "declaration": {
+            "kind": "function"
+          },
+          "exported": true
+        },
+        "language": "r"
+      },
+      "name": "experimental_summary",
+      "provenance": [
+        {
+          "activity": {
+            "kind": "declaration"
+          },
+          "source": {
+            "kind": "repository",
+            "path": "R/experimental.R",
+            "repository": "r"
+          },
+          "span": {
+            "end": 206,
+            "start": 0
+          },
+          "tools": {
+            "arity-parser": "0.6.0",
+            "diplodocus": "[DIPLODOCUS_VERSION]",
+            "r": "[DIPLODOCUS_VERSION]"
+          }
+        },
+        {
+          "activity": {
+            "kind": "declaration"
+          },
+          "source": {
+            "kind": "repository",
+            "path": "NAMESPACE",
+            "repository": "r"
+          },
+          "span": {
+            "end": 28,
+            "start": 0
+          },
+          "tools": {
+            "arity-parser": "0.6.0",
+            "diplodocus": "[DIPLODOCUS_VERSION]",
+            "r": "[DIPLODOCUS_VERSION]"
+          }
+        }
+      ],
+      "qualified_name": "experimental_summary",
+      "signatures": [
+        {
+          "signature": {
+            "kind": "callable",
+            "parameters": [
+              {
+                "annotation": null,
+                "default": null,
+                "kind": {
+                  "kind": "positional-or-keyword"
+                },
+                "name": "x"
+              }
+            ],
+            "returns": null
+          },
+          "sources": [
+            {
+              "parsers": [
+                "arity-parser"
+              ],
+              "role": "signature",
+              "source": {
+                "path": "R/experimental.R",
+                "repository": "r",
+                "span": {
+                  "end": 206,
+                  "start": 0
+                }
+              }
+            },
+            {
+              "parsers": [
+                "arity-parser"
+              ],
+              "role": "signature",
+              "source": {
+                "path": "R/experimental.R",
+                "repository": "r",
+                "span": {
+                  "end": 34,
+                  "start": 33
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "source_location": {
+        "path": "R/experimental.R",
+        "repository": "r",
+        "span": {
+          "end": 206,
+          "start": 0
+        }
+      }
+    },
+    "sid1:r:function:foo_model": {
+      "aliases": [
+        {
+          "kind": "rd-alias",
+          "qualified_name": "foo_model",
+          "sources": [
+            {
+              "parsers": [
+                "rd-ast",
+                "rd-source"
+              ],
+              "role": "documentation",
+              "source": {
+                "path": "man/foo_model.Rd",
+                "repository": "r",
+                "span": null
+              }
+            }
+          ]
+        }
+      ],
+      "children": [],
+      "documentation": {
+        "document": {
+          "blocks": [
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Create and Use a Foo Model"
+                }
+              ],
+              "level": 1,
+              "span": {
+                "end": 972,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Usage"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 972,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "language": "r",
+              "source": "foo_model(coefficients, intercept = 0, solver = \"normal\")",
+              "source_segments": [],
+              "span": {
+                "end": 972,
+                "start": 0
+              },
+              "type": "code-block"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Arguments"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 972,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 972,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "coefficients"
+                        }
+                      ],
+                      "span": {
+                        "end": 972,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    },
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 972,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "A numeric vector of fitted coefficients."
+                        }
+                      ],
+                      "span": {
+                        "end": 972,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    }
+                  ],
+                  "checked": null,
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  }
+                },
+                {
+                  "blocks": [
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 972,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "intercept"
+                        }
+                      ],
+                      "span": {
+                        "end": 972,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    },
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 972,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "A numeric intercept."
+                        }
+                      ],
+                      "span": {
+                        "end": 972,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    }
+                  ],
+                  "checked": null,
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  }
+                },
+                {
+                  "blocks": [
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 972,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "solver"
+                        }
+                      ],
+                      "span": {
+                        "end": 972,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    },
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 972,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "The name of the fitting algorithm."
+                        }
+                      ],
+                      "span": {
+                        "end": 972,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    }
+                  ],
+                  "checked": null,
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  }
+                }
+              ],
+              "ordered": false,
+              "span": {
+                "end": 972,
+                "start": 0
+              },
+              "type": "list"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Value"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 972,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  },
+                  "type": "code",
+                  "value": "foo_model()"
+                },
+                {
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": " returns an object of class "
+                },
+                {
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  },
+                  "type": "code",
+                  "value": "\"foo_model\""
+                },
+                {
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": ".\n"
+                },
+                {
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  },
+                  "type": "code",
+                  "value": "predict.foo_model()"
+                },
+                {
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": " returns one prediction or a numeric vector of\n"
+                },
+                {
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "predictions.\n"
+                }
+              ],
+              "span": {
+                "end": 972,
+                "start": 0
+              },
+              "type": "paragraph"
+            },
+            {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Create a fitted model directly, or predict responses from one.\n"
+                }
+              ],
+              "span": {
+                "end": 972,
+                "start": 0
+              },
+              "type": "paragraph"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Examples"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 972,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "language": "r",
+              "source": "model <- foo_model(c(0.5, -0.25), intercept = 1)\npredict(model, c(2, 4))\npredict(model, matrix(c(2, 4, 3, 5), ncol = 2, byrow = TRUE))",
+              "source_segments": [],
+              "span": {
+                "end": 972,
+                "start": 0
+              },
+              "type": "code-block"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Keywords"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 972,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "models"
+                }
+              ],
+              "span": {
+                "end": 972,
+                "start": 0
+              },
+              "type": "paragraph"
+            }
+          ],
+          "frontmatter": null,
+          "span": {
+            "end": 972,
+            "start": 0
+          }
+        },
+        "provenance": [
+          {
+            "activity": {
+              "kind": "declaration"
+            },
+            "source": {
+              "kind": "repository",
+              "path": "man/foo_model.Rd",
+              "repository": "r"
+            },
+            "span": null,
+            "tools": {
+              "arity-parser": "0.6.0",
+              "diplodocus": "[DIPLODOCUS_VERSION]",
+              "r": "[DIPLODOCUS_VERSION]",
+              "rd-ast": "0.4.0",
+              "rd-source": "0.4.0"
+            }
+          }
+        ],
+        "raw_source": "\\name{foo_model}\n\\alias{foo_model}\n\\alias{predict.foo_model}\n\\title{Create and Use a Foo Model}\n\\usage{\nfoo_model(coefficients, intercept = 0, solver = \"normal\")\n\n\\method{predict}{foo_model}(object, newdata, ...)\n}\n\\arguments{\n  \\item{coefficients}{A numeric vector of fitted coefficients.}\n  \\item{intercept}{A numeric intercept.}\n  \\item{solver}{The name of the fitting algorithm.}\n  \\item{object}{An object of class \\code{\"foo_model\"}.}\n  \\item{newdata}{A numeric feature vector or matrix.}\n  \\item{...}{Additional arguments reserved for method compatibility.}\n}\n\\value{\n\\code{foo_model()} returns an object of class \\code{\"foo_model\"}.\n\\code{predict.foo_model()} returns one prediction or a numeric vector of\npredictions.\n}\n\\description{\nCreate a fitted model directly, or predict responses from one.\n}\n\\examples{\nmodel <- foo_model(c(0.5, -0.25), intercept = 1)\npredict(model, c(2, 4))\npredict(model, matrix(c(2, 4, 3, 5), ncol = 2, byrow = TRUE))\n}\n\\keyword{models}\n",
+        "source_format": {
+          "kind": "extracted",
+          "name": "rd"
+        },
+        "source_location": {
+          "path": "man/foo_model.Rd",
+          "repository": "r",
+          "span": null
+        }
+      },
+      "kind": "function",
+      "language_data": {
+        "data": {
+          "declaration": {
+            "classes": [
+              "foo_model"
+            ],
+            "kind": "constructor"
+          },
+          "exported": true
+        },
+        "language": "r"
+      },
+      "name": "foo_model",
+      "provenance": [
+        {
+          "activity": {
+            "kind": "declaration"
+          },
+          "source": {
+            "kind": "repository",
+            "path": "R/fit.R",
+            "repository": "r"
+          },
+          "span": {
+            "end": 1261,
+            "start": 1022
+          },
+          "tools": {
+            "arity-parser": "0.6.0",
+            "diplodocus": "[DIPLODOCUS_VERSION]",
+            "r": "[DIPLODOCUS_VERSION]"
+          }
+        },
+        {
+          "activity": {
+            "kind": "declaration"
+          },
+          "source": {
+            "kind": "repository",
+            "path": "NAMESPACE",
+            "repository": "r"
+          },
+          "span": {
+            "end": 58,
+            "start": 41
+          },
+          "tools": {
+            "arity-parser": "0.6.0",
+            "diplodocus": "[DIPLODOCUS_VERSION]",
+            "r": "[DIPLODOCUS_VERSION]"
+          }
+        }
+      ],
+      "qualified_name": "foo_model",
+      "signatures": [
+        {
+          "signature": {
+            "kind": "callable",
+            "parameters": [
+              {
+                "annotation": null,
+                "default": null,
+                "kind": {
+                  "kind": "positional-or-keyword"
+                },
+                "name": "coefficients"
+              },
+              {
+                "annotation": null,
+                "default": {
+                  "kind": "literal",
+                  "text": "0"
+                },
+                "kind": {
+                  "kind": "positional-or-keyword"
+                },
+                "name": "intercept"
+              },
+              {
+                "annotation": null,
+                "default": {
+                  "kind": "literal",
+                  "text": "\"normal\""
+                },
+                "kind": {
+                  "kind": "positional-or-keyword"
+                },
+                "name": "solver"
+              }
+            ],
+            "returns": null
+          },
+          "sources": [
+            {
+              "parsers": [
+                "arity-parser"
+              ],
+              "role": "signature",
+              "source": {
+                "path": "R/fit.R",
+                "repository": "r",
+                "span": {
+                  "end": 1261,
+                  "start": 1022
+                }
+              }
+            },
+            {
+              "parsers": [
+                "arity-parser"
+              ],
+              "role": "signature",
+              "source": {
+                "path": "R/fit.R",
+                "repository": "r",
+                "span": {
+                  "end": 1056,
+                  "start": 1044
+                }
+              }
+            },
+            {
+              "parsers": [
+                "arity-parser"
+              ],
+              "role": "signature",
+              "source": {
+                "path": "R/fit.R",
+                "repository": "r",
+                "span": {
+                  "end": 1071,
+                  "start": 1058
+                }
+              }
+            },
+            {
+              "parsers": [
+                "arity-parser"
+              ],
+              "role": "signature",
+              "source": {
+                "path": "R/fit.R",
+                "repository": "r",
+                "span": {
+                  "end": 1090,
+                  "start": 1073
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "source_location": {
+        "path": "R/fit.R",
+        "repository": "r",
+        "span": {
+          "end": 1261,
+          "start": 1022
+        }
+      }
+    },
+    "sid1:r:function:mean_squared_error": {
+      "aliases": [
+        {
+          "kind": "rd-alias",
+          "qualified_name": "mean_squared_error",
+          "sources": [
+            {
+              "parsers": [
+                "rd-ast",
+                "rd-source"
+              ],
+              "role": "documentation",
+              "source": {
+                "path": "man/mean_squared_error.Rd",
+                "repository": "r",
+                "span": null
+              }
+            }
+          ]
+        }
+      ],
+      "children": [],
+      "documentation": {
+        "document": {
+          "blocks": [
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 506,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Mean Squared Error"
+                }
+              ],
+              "level": 1,
+              "span": {
+                "end": 506,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 506,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Usage"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 506,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "language": "r",
+              "source": "mean_squared_error(actual, predicted)",
+              "source_segments": [],
+              "span": {
+                "end": 506,
+                "start": 0
+              },
+              "type": "code-block"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 506,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Arguments"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 506,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 506,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "actual"
+                        }
+                      ],
+                      "span": {
+                        "end": 506,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    },
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 506,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "A nonempty numeric vector of observed responses."
+                        }
+                      ],
+                      "span": {
+                        "end": 506,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    }
+                  ],
+                  "checked": null,
+                  "span": {
+                    "end": 506,
+                    "start": 0
+                  }
+                },
+                {
+                  "blocks": [
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 506,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "predicted"
+                        }
+                      ],
+                      "span": {
+                        "end": 506,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    },
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 506,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "A numeric vector of predictions with the same length as\n"
+                        },
+                        {
+                          "span": {
+                            "end": 506,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "    "
+                        },
+                        {
+                          "span": {
+                            "end": 506,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "actual"
+                        },
+                        {
+                          "span": {
+                            "end": 506,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "."
+                        }
+                      ],
+                      "span": {
+                        "end": 506,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    }
+                  ],
+                  "checked": null,
+                  "span": {
+                    "end": 506,
+                    "start": 0
+                  }
+                }
+              ],
+              "ordered": false,
+              "span": {
+                "end": 506,
+                "start": 0
+              },
+              "type": "list"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 506,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Value"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 506,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 506,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "One numeric mean squared error.\n"
+                }
+              ],
+              "span": {
+                "end": 506,
+                "start": 0
+              },
+              "type": "paragraph"
+            },
+            {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 506,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Compute the mean squared difference between observed and predicted responses.\n"
+                }
+              ],
+              "span": {
+                "end": 506,
+                "start": 0
+              },
+              "type": "paragraph"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 506,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Examples"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 506,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "language": "r",
+              "source": "mean_squared_error(c(1, 2), c(1, 3))",
+              "source_segments": [],
+              "span": {
+                "end": 506,
+                "start": 0
+              },
+              "type": "code-block"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 506,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Keywords"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 506,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 506,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "models"
+                }
+              ],
+              "span": {
+                "end": 506,
+                "start": 0
+              },
+              "type": "paragraph"
+            }
+          ],
+          "frontmatter": null,
+          "span": {
+            "end": 506,
+            "start": 0
+          }
+        },
+        "provenance": [
+          {
+            "activity": {
+              "kind": "declaration"
+            },
+            "source": {
+              "kind": "repository",
+              "path": "man/mean_squared_error.Rd",
+              "repository": "r"
+            },
+            "span": null,
+            "tools": {
+              "arity-parser": "0.6.0",
+              "diplodocus": "[DIPLODOCUS_VERSION]",
+              "r": "[DIPLODOCUS_VERSION]",
+              "rd-ast": "0.4.0",
+              "rd-source": "0.4.0"
+            }
+          }
+        ],
+        "raw_source": "\\name{mean_squared_error}\n\\alias{mean_squared_error}\n\\title{Mean Squared Error}\n\\usage{\nmean_squared_error(actual, predicted)\n}\n\\arguments{\n  \\item{actual}{A nonempty numeric vector of observed responses.}\n  \\item{predicted}{A numeric vector of predictions with the same length as\n    \\code{actual}.}\n}\n\\value{\nOne numeric mean squared error.\n}\n\\description{\nCompute the mean squared difference between observed and predicted responses.\n}\n\\examples{\nmean_squared_error(c(1, 2), c(1, 3))\n}\n\\keyword{models}\n",
+        "source_format": {
+          "kind": "extracted",
+          "name": "rd"
+        },
+        "source_location": {
+          "path": "man/mean_squared_error.Rd",
+          "repository": "r",
+          "span": null
+        }
+      },
+      "kind": "function",
+      "language_data": {
+        "data": {
+          "declaration": {
+            "kind": "function"
+          },
+          "exported": true
+        },
+        "language": "r"
+      },
+      "name": "mean_squared_error",
+      "provenance": [
+        {
+          "activity": {
+            "kind": "declaration"
+          },
+          "source": {
+            "kind": "repository",
+            "path": "R/metrics.R",
+            "repository": "r"
+          },
+          "span": {
+            "end": 329,
+            "start": 0
+          },
+          "tools": {
+            "arity-parser": "0.6.0",
+            "diplodocus": "[DIPLODOCUS_VERSION]",
+            "r": "[DIPLODOCUS_VERSION]"
+          }
+        },
+        {
+          "activity": {
+            "kind": "declaration"
+          },
+          "source": {
+            "kind": "repository",
+            "path": "NAMESPACE",
+            "repository": "r"
+          },
+          "span": {
+            "end": 85,
+            "start": 59
+          },
+          "tools": {
+            "arity-parser": "0.6.0",
+            "diplodocus": "[DIPLODOCUS_VERSION]",
+            "r": "[DIPLODOCUS_VERSION]"
+          }
+        }
+      ],
+      "qualified_name": "mean_squared_error",
+      "signatures": [
+        {
+          "signature": {
+            "kind": "callable",
+            "parameters": [
+              {
+                "annotation": null,
+                "default": null,
+                "kind": {
+                  "kind": "positional-or-keyword"
+                },
+                "name": "actual"
+              },
+              {
+                "annotation": null,
+                "default": null,
+                "kind": {
+                  "kind": "positional-or-keyword"
+                },
+                "name": "predicted"
+              }
+            ],
+            "returns": null
+          },
+          "sources": [
+            {
+              "parsers": [
+                "arity-parser"
+              ],
+              "role": "signature",
+              "source": {
+                "path": "R/metrics.R",
+                "repository": "r",
+                "span": {
+                  "end": 329,
+                  "start": 0
+                }
+              }
+            },
+            {
+              "parsers": [
+                "arity-parser"
+              ],
+              "role": "signature",
+              "source": {
+                "path": "R/metrics.R",
+                "repository": "r",
+                "span": {
+                  "end": 37,
+                  "start": 31
+                }
+              }
+            },
+            {
+              "parsers": [
+                "arity-parser"
+              ],
+              "role": "signature",
+              "source": {
+                "path": "R/metrics.R",
+                "repository": "r",
+                "span": {
+                  "end": 48,
+                  "start": 39
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "source_location": {
+        "path": "R/metrics.R",
+        "repository": "r",
+        "span": {
+          "end": 329,
+          "start": 0
+        }
+      }
+    },
+    "sid1:r:s3-generic:fit": {
+      "aliases": [
+        {
+          "kind": "rd-alias",
+          "qualified_name": "fit",
+          "sources": [
+            {
+              "parsers": [
+                "rd-ast",
+                "rd-source"
+              ],
+              "role": "documentation",
+              "source": {
+                "path": "man/fit.Rd",
+                "repository": "r",
+                "span": null
+              }
+            }
+          ]
+        }
+      ],
+      "children": [],
+      "documentation": {
+        "document": {
+          "blocks": [
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Fit a Foo Model"
+                }
+              ],
+              "level": 1,
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Usage"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "language": "r",
+              "source": "fit(x, ...)",
+              "source_segments": [],
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "code-block"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Arguments"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "x"
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    },
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "For "
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "fit.default()"
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": ", a numeric feature matrix. For\n"
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "    "
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "fit.foo_model()"
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": ", an existing "
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "foo_model"
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": " object."
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    }
+                  ],
+                  "checked": null,
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  }
+                },
+                {
+                  "blocks": [
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "..."
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    },
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "Additional arguments passed to an S3 method."
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    }
+                  ],
+                  "checked": null,
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  }
+                }
+              ],
+              "ordered": false,
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "list"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Value"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "An object of class "
+                },
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "code",
+                  "value": "\"foo_model\""
+                },
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": ". The "
+                },
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "code",
+                  "value": "foo_model"
+                },
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": " method returns the\n"
+                },
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "supplied model with its fitted values replaced.\n"
+                }
+              ],
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "paragraph"
+            },
+            {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Fit a deterministic baseline model through an S3 generic.\n"
+                }
+              ],
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "paragraph"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Details"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "The default method records a zero coefficient for each feature and uses the\n"
+                },
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "mean response as the intercept. The simple estimator keeps this acceptance\n"
+                },
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "fixture deterministic while exercising generic and method extraction.\n"
+                }
+              ],
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "paragraph"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "References"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "A. Researcher (2024). A Small Model. "
+                },
+                {
+                  "inlines": [
+                    {
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "text",
+                      "value": "Journal of Fixtures"
+                    }
+                  ],
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "emphasis"
+                },
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": ", 1, 1--4.\n"
+                }
+              ],
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "paragraph"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Examples"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "language": "r",
+              "source": "features <- matrix(c(0, 1), ncol = 1)\nmodel <- fit(features, c(1, 3))\nmodel$intercept\n\nfit(model, features, c(2, 4), tolerance = 1e-6)",
+              "source_segments": [],
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "code-block"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Keywords"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "models"
+                }
+              ],
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "paragraph"
+            }
+          ],
+          "frontmatter": null,
+          "span": {
+            "end": 1508,
+            "start": 0
+          }
+        },
+        "provenance": [
+          {
+            "activity": {
+              "kind": "declaration"
+            },
+            "source": {
+              "kind": "repository",
+              "path": "man/fit.Rd",
+              "repository": "r"
+            },
+            "span": null,
+            "tools": {
+              "arity-parser": "0.6.0",
+              "diplodocus": "[DIPLODOCUS_VERSION]",
+              "r": "[DIPLODOCUS_VERSION]",
+              "rd-ast": "0.4.0",
+              "rd-source": "0.4.0"
+            }
+          }
+        ],
+        "raw_source": "\\name{fit}\n\\alias{fit}\n\\alias{fit.default}\n\\alias{fit.foo_model}\n\\title{Fit a Foo Model}\n\\usage{\nfit(x, ...)\n\n\\method{fit}{default}(x, y, solver = c(\"normal\", \"qr\"),\n  tolerance = 1e-8, ...)\n\n\\method{fit}{foo_model}(x, features, target, tolerance = 1e-8, ...)\n}\n\\arguments{\n  \\item{x}{For \\code{fit.default()}, a numeric feature matrix. For\n    \\code{fit.foo_model()}, an existing \\code{foo_model} object.}\n  \\item{...}{Additional arguments passed to an S3 method.}\n  \\item{y}{A numeric response vector with one value per row of \\code{x}.}\n  \\item{solver}{The fitting algorithm, either \\code{\"normal\"} or \\code{\"qr\"}.}\n  \\item{tolerance}{A positive convergence tolerance.}\n  \\item{features}{A numeric feature matrix used to refit \\code{x}.}\n  \\item{target}{A numeric response vector used to refit \\code{x}.}\n}\n\\value{\nAn object of class \\code{\"foo_model\"}. The \\code{foo_model} method returns the\nsupplied model with its fitted values replaced.\n}\n\\description{\nFit a deterministic baseline model through an S3 generic.\n}\n\\details{\nThe default method records a zero coefficient for each feature and uses the\nmean response as the intercept. The simple estimator keeps this acceptance\nfixture deterministic while exercising generic and method extraction.\n}\n\\references{\nA. Researcher (2024). A Small Model. \\emph{Journal of Fixtures}, 1, 1--4.\n}\n\\examples{\nfeatures <- matrix(c(0, 1), ncol = 1)\nmodel <- fit(features, c(1, 3))\nmodel$intercept\n\nfit(model, features, c(2, 4), tolerance = 1e-6)\n}\n\\keyword{models}\n",
+        "source_format": {
+          "kind": "extracted",
+          "name": "rd"
+        },
+        "source_location": {
+          "path": "man/fit.Rd",
+          "repository": "r",
+          "span": null
+        }
+      },
+      "kind": "function",
+      "language_data": {
+        "data": {
+          "declaration": {
+            "dispatch_name": "fit",
+            "dispatch_object": null,
+            "kind": "s3-generic",
+            "methods": [
+              {
+                "item": "sid1:r:s3-method:fit.default:workspace(rfoo,sid1%3Ar%3As3-generic%3Afit):default",
+                "package": "rfoo"
+              },
+              {
+                "item": "sid1:r:s3-method:fit.foo_model:workspace(rfoo,sid1%3Ar%3As3-generic%3Afit):foo_model",
+                "package": "rfoo"
+              }
+            ]
+          },
+          "exported": true
+        },
+        "language": "r"
+      },
+      "name": "fit",
+      "provenance": [
+        {
+          "activity": {
+            "kind": "declaration"
+          },
+          "source": {
+            "kind": "repository",
+            "path": "R/fit.R",
+            "repository": "r"
+          },
+          "span": {
+            "end": 46,
+            "start": 0
+          },
+          "tools": {
+            "arity-parser": "0.6.0",
+            "diplodocus": "[DIPLODOCUS_VERSION]",
+            "r": "[DIPLODOCUS_VERSION]"
+          }
+        },
+        {
+          "activity": {
+            "kind": "declaration"
+          },
+          "source": {
+            "kind": "repository",
+            "path": "NAMESPACE",
+            "repository": "r"
+          },
+          "span": {
+            "end": 40,
+            "start": 29
+          },
+          "tools": {
+            "arity-parser": "0.6.0",
+            "diplodocus": "[DIPLODOCUS_VERSION]",
+            "r": "[DIPLODOCUS_VERSION]"
+          }
+        }
+      ],
+      "qualified_name": "fit",
+      "signatures": [
+        {
+          "signature": {
+            "kind": "callable",
+            "parameters": [
+              {
+                "annotation": null,
+                "default": null,
+                "kind": {
+                  "kind": "positional-or-keyword"
+                },
+                "name": "x"
+              },
+              {
+                "annotation": null,
+                "default": null,
+                "kind": {
+                  "kind": "language-specific",
+                  "language": "r",
+                  "name": "dots"
+                },
+                "name": "..."
+              }
+            ],
+            "returns": null
+          },
+          "sources": [
+            {
+              "parsers": [
+                "arity-parser"
+              ],
+              "role": "signature",
+              "source": {
+                "path": "R/fit.R",
+                "repository": "r",
+                "span": {
+                  "end": 46,
+                  "start": 0
+                }
+              }
+            },
+            {
+              "parsers": [
+                "arity-parser"
+              ],
+              "role": "signature",
+              "source": {
+                "path": "R/fit.R",
+                "repository": "r",
+                "span": {
+                  "end": 17,
+                  "start": 16
+                }
+              }
+            },
+            {
+              "parsers": [
+                "arity-parser"
+              ],
+              "role": "signature",
+              "source": {
+                "path": "R/fit.R",
+                "repository": "r",
+                "span": {
+                  "end": 22,
+                  "start": 19
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "source_location": {
+        "path": "R/fit.R",
+        "repository": "r",
+        "span": {
+          "end": 46,
+          "start": 0
+        }
+      }
+    },
+    "sid1:r:s3-method:fit.default:workspace(rfoo,sid1%3Ar%3As3-generic%3Afit):default": {
+      "aliases": [
+        {
+          "kind": "rd-alias",
+          "qualified_name": "fit.default",
+          "sources": [
+            {
+              "parsers": [
+                "rd-ast",
+                "rd-source"
+              ],
+              "role": "documentation",
+              "source": {
+                "path": "man/fit.Rd",
+                "repository": "r",
+                "span": null
+              }
+            }
+          ]
+        }
+      ],
+      "children": [],
+      "documentation": {
+        "document": {
+          "blocks": [
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Fit a Foo Model"
+                }
+              ],
+              "level": 1,
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Usage"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "language": "r",
+              "source": "fit.default(x, y, solver = c(\"normal\", \"qr\"),\n  tolerance = 1e-8, ...)",
+              "source_segments": [],
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "code-block"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Arguments"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "x"
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    },
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "For "
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "fit.default()"
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": ", a numeric feature matrix. For\n"
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "    "
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "fit.foo_model()"
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": ", an existing "
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "foo_model"
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": " object."
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    }
+                  ],
+                  "checked": null,
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  }
+                },
+                {
+                  "blocks": [
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "..."
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    },
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "Additional arguments passed to an S3 method."
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    }
+                  ],
+                  "checked": null,
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  }
+                },
+                {
+                  "blocks": [
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "y"
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    },
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "A numeric response vector with one value per row of "
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "x"
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "."
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    }
+                  ],
+                  "checked": null,
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  }
+                },
+                {
+                  "blocks": [
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "solver"
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    },
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "The fitting algorithm, either "
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "\"normal\""
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": " or "
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "\"qr\""
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "."
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    }
+                  ],
+                  "checked": null,
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  }
+                },
+                {
+                  "blocks": [
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "tolerance"
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    },
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "A positive convergence tolerance."
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    }
+                  ],
+                  "checked": null,
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  }
+                }
+              ],
+              "ordered": false,
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "list"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Value"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "An object of class "
+                },
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "code",
+                  "value": "\"foo_model\""
+                },
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": ". The "
+                },
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "code",
+                  "value": "foo_model"
+                },
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": " method returns the\n"
+                },
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "supplied model with its fitted values replaced.\n"
+                }
+              ],
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "paragraph"
+            },
+            {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Fit a deterministic baseline model through an S3 generic.\n"
+                }
+              ],
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "paragraph"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Details"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "The default method records a zero coefficient for each feature and uses the\n"
+                },
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "mean response as the intercept. The simple estimator keeps this acceptance\n"
+                },
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "fixture deterministic while exercising generic and method extraction.\n"
+                }
+              ],
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "paragraph"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "References"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "A. Researcher (2024). A Small Model. "
+                },
+                {
+                  "inlines": [
+                    {
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "text",
+                      "value": "Journal of Fixtures"
+                    }
+                  ],
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "emphasis"
+                },
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": ", 1, 1--4.\n"
+                }
+              ],
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "paragraph"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Examples"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "language": "r",
+              "source": "features <- matrix(c(0, 1), ncol = 1)\nmodel <- fit(features, c(1, 3))\nmodel$intercept\n\nfit(model, features, c(2, 4), tolerance = 1e-6)",
+              "source_segments": [],
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "code-block"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Keywords"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "models"
+                }
+              ],
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "paragraph"
+            }
+          ],
+          "frontmatter": null,
+          "span": {
+            "end": 1508,
+            "start": 0
+          }
+        },
+        "provenance": [
+          {
+            "activity": {
+              "kind": "declaration"
+            },
+            "source": {
+              "kind": "repository",
+              "path": "man/fit.Rd",
+              "repository": "r"
+            },
+            "span": null,
+            "tools": {
+              "arity-parser": "0.6.0",
+              "diplodocus": "[DIPLODOCUS_VERSION]",
+              "r": "[DIPLODOCUS_VERSION]",
+              "rd-ast": "0.4.0",
+              "rd-source": "0.4.0"
+            }
+          }
+        ],
+        "raw_source": "\\name{fit}\n\\alias{fit}\n\\alias{fit.default}\n\\alias{fit.foo_model}\n\\title{Fit a Foo Model}\n\\usage{\nfit(x, ...)\n\n\\method{fit}{default}(x, y, solver = c(\"normal\", \"qr\"),\n  tolerance = 1e-8, ...)\n\n\\method{fit}{foo_model}(x, features, target, tolerance = 1e-8, ...)\n}\n\\arguments{\n  \\item{x}{For \\code{fit.default()}, a numeric feature matrix. For\n    \\code{fit.foo_model()}, an existing \\code{foo_model} object.}\n  \\item{...}{Additional arguments passed to an S3 method.}\n  \\item{y}{A numeric response vector with one value per row of \\code{x}.}\n  \\item{solver}{The fitting algorithm, either \\code{\"normal\"} or \\code{\"qr\"}.}\n  \\item{tolerance}{A positive convergence tolerance.}\n  \\item{features}{A numeric feature matrix used to refit \\code{x}.}\n  \\item{target}{A numeric response vector used to refit \\code{x}.}\n}\n\\value{\nAn object of class \\code{\"foo_model\"}. The \\code{foo_model} method returns the\nsupplied model with its fitted values replaced.\n}\n\\description{\nFit a deterministic baseline model through an S3 generic.\n}\n\\details{\nThe default method records a zero coefficient for each feature and uses the\nmean response as the intercept. The simple estimator keeps this acceptance\nfixture deterministic while exercising generic and method extraction.\n}\n\\references{\nA. Researcher (2024). A Small Model. \\emph{Journal of Fixtures}, 1, 1--4.\n}\n\\examples{\nfeatures <- matrix(c(0, 1), ncol = 1)\nmodel <- fit(features, c(1, 3))\nmodel$intercept\n\nfit(model, features, c(2, 4), tolerance = 1e-6)\n}\n\\keyword{models}\n",
+        "source_format": {
+          "kind": "extracted",
+          "name": "rd"
+        },
+        "source_location": {
+          "path": "man/fit.Rd",
+          "repository": "r",
+          "span": null
+        }
+      },
+      "kind": "method",
+      "language_data": {
+        "data": {
+          "declaration": {
+            "class": "default",
+            "generic": {
+              "item": {
+                "item": "sid1:r:s3-generic:fit",
+                "package": "rfoo"
+              },
+              "kind": "workspace"
+            },
+            "kind": "s3-method",
+            "registration": [
+              {
+                "parsers": [
+                  "arity-parser"
+                ],
+                "role": "registration",
+                "source": {
+                  "path": "NAMESPACE",
+                  "repository": "r",
+                  "span": {
+                    "end": 107,
+                    "start": 86
+                  }
+                }
+              }
+            ]
+          },
+          "exported": false
+        },
+        "language": "r"
+      },
+      "name": "fit.default",
+      "provenance": [
+        {
+          "activity": {
+            "kind": "declaration"
+          },
+          "source": {
+            "kind": "repository",
+            "path": "R/fit.R",
+            "repository": "r"
+          },
+          "span": {
+            "end": 741,
+            "start": 48
+          },
+          "tools": {
+            "arity-parser": "0.6.0",
+            "diplodocus": "[DIPLODOCUS_VERSION]",
+            "r": "[DIPLODOCUS_VERSION]"
+          }
+        }
+      ],
+      "qualified_name": "fit.default",
+      "signatures": [
+        {
+          "signature": {
+            "kind": "callable",
+            "parameters": [
+              {
+                "annotation": null,
+                "default": null,
+                "kind": {
+                  "kind": "positional-or-keyword"
+                },
+                "name": "x"
+              },
+              {
+                "annotation": null,
+                "default": null,
+                "kind": {
+                  "kind": "positional-or-keyword"
+                },
+                "name": "y"
+              },
+              {
+                "annotation": null,
+                "default": {
+                  "arguments": [
+                    {
+                      "kind": "literal",
+                      "text": "\"normal\""
+                    },
+                    {
+                      "kind": "literal",
+                      "text": "\"qr\""
+                    }
+                  ],
+                  "constructor": {
+                    "kind": "name",
+                    "name": "c",
+                    "target": null
+                  },
+                  "kind": "apply"
+                },
+                "kind": {
+                  "kind": "positional-or-keyword"
+                },
+                "name": "solver"
+              },
+              {
+                "annotation": null,
+                "default": {
+                  "kind": "literal",
+                  "text": "1e-8"
+                },
+                "kind": {
+                  "kind": "positional-or-keyword"
+                },
+                "name": "tolerance"
+              },
+              {
+                "annotation": null,
+                "default": null,
+                "kind": {
+                  "kind": "language-specific",
+                  "language": "r",
+                  "name": "dots"
+                },
+                "name": "..."
+              }
+            ],
+            "returns": null
+          },
+          "sources": [
+            {
+              "parsers": [
+                "arity-parser"
+              ],
+              "role": "signature",
+              "source": {
+                "path": "R/fit.R",
+                "repository": "r",
+                "span": {
+                  "end": 741,
+                  "start": 48
+                }
+              }
+            },
+            {
+              "parsers": [
+                "arity-parser"
+              ],
+              "role": "signature",
+              "source": {
+                "path": "R/fit.R",
+                "repository": "r",
+                "span": {
+                  "end": 76,
+                  "start": 75
+                }
+              }
+            },
+            {
+              "parsers": [
+                "arity-parser"
+              ],
+              "role": "signature",
+              "source": {
+                "path": "R/fit.R",
+                "repository": "r",
+                "span": {
+                  "end": 81,
+                  "start": 80
+                }
+              }
+            },
+            {
+              "parsers": [
+                "arity-parser"
+              ],
+              "role": "signature",
+              "source": {
+                "path": "R/fit.R",
+                "repository": "r",
+                "span": {
+                  "end": 111,
+                  "start": 85
+                }
+              }
+            },
+            {
+              "parsers": [
+                "arity-parser"
+              ],
+              "role": "signature",
+              "source": {
+                "path": "R/fit.R",
+                "repository": "r",
+                "span": {
+                  "end": 131,
+                  "start": 115
+                }
+              }
+            },
+            {
+              "parsers": [
+                "arity-parser"
+              ],
+              "role": "signature",
+              "source": {
+                "path": "R/fit.R",
+                "repository": "r",
+                "span": {
+                  "end": 138,
+                  "start": 135
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "source_location": {
+        "path": "R/fit.R",
+        "repository": "r",
+        "span": {
+          "end": 741,
+          "start": 48
+        }
+      }
+    },
+    "sid1:r:s3-method:fit.foo_model:workspace(rfoo,sid1%3Ar%3As3-generic%3Afit):foo_model": {
+      "aliases": [
+        {
+          "kind": "rd-alias",
+          "qualified_name": "fit.foo_model",
+          "sources": [
+            {
+              "parsers": [
+                "rd-ast",
+                "rd-source"
+              ],
+              "role": "documentation",
+              "source": {
+                "path": "man/fit.Rd",
+                "repository": "r",
+                "span": null
+              }
+            }
+          ]
+        }
+      ],
+      "children": [],
+      "documentation": {
+        "document": {
+          "blocks": [
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Fit a Foo Model"
+                }
+              ],
+              "level": 1,
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Usage"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "language": "r",
+              "source": "fit.foo_model(x, features, target, tolerance = 1e-8, ...)",
+              "source_segments": [],
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "code-block"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Arguments"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "x"
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    },
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "For "
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "fit.default()"
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": ", a numeric feature matrix. For\n"
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "    "
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "fit.foo_model()"
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": ", an existing "
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "foo_model"
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": " object."
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    }
+                  ],
+                  "checked": null,
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  }
+                },
+                {
+                  "blocks": [
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "..."
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    },
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "Additional arguments passed to an S3 method."
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    }
+                  ],
+                  "checked": null,
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  }
+                },
+                {
+                  "blocks": [
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "tolerance"
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    },
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "A positive convergence tolerance."
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    }
+                  ],
+                  "checked": null,
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  }
+                },
+                {
+                  "blocks": [
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "features"
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    },
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "A numeric feature matrix used to refit "
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "x"
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "."
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    }
+                  ],
+                  "checked": null,
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  }
+                },
+                {
+                  "blocks": [
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "target"
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    },
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "A numeric response vector used to refit "
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "x"
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "."
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    }
+                  ],
+                  "checked": null,
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  }
+                }
+              ],
+              "ordered": false,
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "list"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Value"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "An object of class "
+                },
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "code",
+                  "value": "\"foo_model\""
+                },
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": ". The "
+                },
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "code",
+                  "value": "foo_model"
+                },
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": " method returns the\n"
+                },
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "supplied model with its fitted values replaced.\n"
+                }
+              ],
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "paragraph"
+            },
+            {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Fit a deterministic baseline model through an S3 generic.\n"
+                }
+              ],
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "paragraph"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Details"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "The default method records a zero coefficient for each feature and uses the\n"
+                },
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "mean response as the intercept. The simple estimator keeps this acceptance\n"
+                },
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "fixture deterministic while exercising generic and method extraction.\n"
+                }
+              ],
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "paragraph"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "References"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "A. Researcher (2024). A Small Model. "
+                },
+                {
+                  "inlines": [
+                    {
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "text",
+                      "value": "Journal of Fixtures"
+                    }
+                  ],
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "emphasis"
+                },
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": ", 1, 1--4.\n"
+                }
+              ],
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "paragraph"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Examples"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "language": "r",
+              "source": "features <- matrix(c(0, 1), ncol = 1)\nmodel <- fit(features, c(1, 3))\nmodel$intercept\n\nfit(model, features, c(2, 4), tolerance = 1e-6)",
+              "source_segments": [],
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "code-block"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Keywords"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "models"
+                }
+              ],
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "paragraph"
+            }
+          ],
+          "frontmatter": null,
+          "span": {
+            "end": 1508,
+            "start": 0
+          }
+        },
+        "provenance": [
+          {
+            "activity": {
+              "kind": "declaration"
+            },
+            "source": {
+              "kind": "repository",
+              "path": "man/fit.Rd",
+              "repository": "r"
+            },
+            "span": null,
+            "tools": {
+              "arity-parser": "0.6.0",
+              "diplodocus": "[DIPLODOCUS_VERSION]",
+              "r": "[DIPLODOCUS_VERSION]",
+              "rd-ast": "0.4.0",
+              "rd-source": "0.4.0"
+            }
+          }
+        ],
+        "raw_source": "\\name{fit}\n\\alias{fit}\n\\alias{fit.default}\n\\alias{fit.foo_model}\n\\title{Fit a Foo Model}\n\\usage{\nfit(x, ...)\n\n\\method{fit}{default}(x, y, solver = c(\"normal\", \"qr\"),\n  tolerance = 1e-8, ...)\n\n\\method{fit}{foo_model}(x, features, target, tolerance = 1e-8, ...)\n}\n\\arguments{\n  \\item{x}{For \\code{fit.default()}, a numeric feature matrix. For\n    \\code{fit.foo_model()}, an existing \\code{foo_model} object.}\n  \\item{...}{Additional arguments passed to an S3 method.}\n  \\item{y}{A numeric response vector with one value per row of \\code{x}.}\n  \\item{solver}{The fitting algorithm, either \\code{\"normal\"} or \\code{\"qr\"}.}\n  \\item{tolerance}{A positive convergence tolerance.}\n  \\item{features}{A numeric feature matrix used to refit \\code{x}.}\n  \\item{target}{A numeric response vector used to refit \\code{x}.}\n}\n\\value{\nAn object of class \\code{\"foo_model\"}. The \\code{foo_model} method returns the\nsupplied model with its fitted values replaced.\n}\n\\description{\nFit a deterministic baseline model through an S3 generic.\n}\n\\details{\nThe default method records a zero coefficient for each feature and uses the\nmean response as the intercept. The simple estimator keeps this acceptance\nfixture deterministic while exercising generic and method extraction.\n}\n\\references{\nA. Researcher (2024). A Small Model. \\emph{Journal of Fixtures}, 1, 1--4.\n}\n\\examples{\nfeatures <- matrix(c(0, 1), ncol = 1)\nmodel <- fit(features, c(1, 3))\nmodel$intercept\n\nfit(model, features, c(2, 4), tolerance = 1e-6)\n}\n\\keyword{models}\n",
+        "source_format": {
+          "kind": "extracted",
+          "name": "rd"
+        },
+        "source_location": {
+          "path": "man/fit.Rd",
+          "repository": "r",
+          "span": null
+        }
+      },
+      "kind": "method",
+      "language_data": {
+        "data": {
+          "declaration": {
+            "class": "foo_model",
+            "generic": {
+              "item": {
+                "item": "sid1:r:s3-generic:fit",
+                "package": "rfoo"
+              },
+              "kind": "workspace"
+            },
+            "kind": "s3-method",
+            "registration": [
+              {
+                "parsers": [
+                  "arity-parser"
+                ],
+                "role": "registration",
+                "source": {
+                  "path": "NAMESPACE",
+                  "repository": "r",
+                  "span": {
+                    "end": 131,
+                    "start": 108
+                  }
+                }
+              }
+            ]
+          },
+          "exported": false
+        },
+        "language": "r"
+      },
+      "name": "fit.foo_model",
+      "provenance": [
+        {
+          "activity": {
+            "kind": "declaration"
+          },
+          "source": {
+            "kind": "repository",
+            "path": "R/fit.R",
+            "repository": "r"
+          },
+          "span": {
+            "end": 1020,
+            "start": 743
+          },
+          "tools": {
+            "arity-parser": "0.6.0",
+            "diplodocus": "[DIPLODOCUS_VERSION]",
+            "r": "[DIPLODOCUS_VERSION]"
+          }
+        }
+      ],
+      "qualified_name": "fit.foo_model",
+      "signatures": [
+        {
+          "signature": {
+            "kind": "callable",
+            "parameters": [
+              {
+                "annotation": null,
+                "default": null,
+                "kind": {
+                  "kind": "positional-or-keyword"
+                },
+                "name": "x"
+              },
+              {
+                "annotation": null,
+                "default": null,
+                "kind": {
+                  "kind": "positional-or-keyword"
+                },
+                "name": "features"
+              },
+              {
+                "annotation": null,
+                "default": null,
+                "kind": {
+                  "kind": "positional-or-keyword"
+                },
+                "name": "target"
+              },
+              {
+                "annotation": null,
+                "default": {
+                  "kind": "literal",
+                  "text": "1e-8"
+                },
+                "kind": {
+                  "kind": "positional-or-keyword"
+                },
+                "name": "tolerance"
+              },
+              {
+                "annotation": null,
+                "default": null,
+                "kind": {
+                  "kind": "language-specific",
+                  "language": "r",
+                  "name": "dots"
+                },
+                "name": "..."
+              }
+            ],
+            "returns": null
+          },
+          "sources": [
+            {
+              "parsers": [
+                "arity-parser"
+              ],
+              "role": "signature",
+              "source": {
+                "path": "R/fit.R",
+                "repository": "r",
+                "span": {
+                  "end": 1020,
+                  "start": 743
+                }
+              }
+            },
+            {
+              "parsers": [
+                "arity-parser"
+              ],
+              "role": "signature",
+              "source": {
+                "path": "R/fit.R",
+                "repository": "r",
+                "span": {
+                  "end": 770,
+                  "start": 769
+                }
+              }
+            },
+            {
+              "parsers": [
+                "arity-parser"
+              ],
+              "role": "signature",
+              "source": {
+                "path": "R/fit.R",
+                "repository": "r",
+                "span": {
+                  "end": 780,
+                  "start": 772
+                }
+              }
+            },
+            {
+              "parsers": [
+                "arity-parser"
+              ],
+              "role": "signature",
+              "source": {
+                "path": "R/fit.R",
+                "repository": "r",
+                "span": {
+                  "end": 788,
+                  "start": 782
+                }
+              }
+            },
+            {
+              "parsers": [
+                "arity-parser"
+              ],
+              "role": "signature",
+              "source": {
+                "path": "R/fit.R",
+                "repository": "r",
+                "span": {
+                  "end": 806,
+                  "start": 790
+                }
+              }
+            },
+            {
+              "parsers": [
+                "arity-parser"
+              ],
+              "role": "signature",
+              "source": {
+                "path": "R/fit.R",
+                "repository": "r",
+                "span": {
+                  "end": 811,
+                  "start": 808
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "source_location": {
+        "path": "R/fit.R",
+        "repository": "r",
+        "span": {
+          "end": 1020,
+          "start": 743
+        }
+      }
+    },
+    "sid1:r:s3-method:predict.foo_model:external(stats,predict):foo_model": {
+      "aliases": [
+        {
+          "kind": "rd-alias",
+          "qualified_name": "predict.foo_model",
+          "sources": [
+            {
+              "parsers": [
+                "rd-ast",
+                "rd-source"
+              ],
+              "role": "documentation",
+              "source": {
+                "path": "man/foo_model.Rd",
+                "repository": "r",
+                "span": null
+              }
+            }
+          ]
+        }
+      ],
+      "children": [],
+      "documentation": {
+        "document": {
+          "blocks": [
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Create and Use a Foo Model"
+                }
+              ],
+              "level": 1,
+              "span": {
+                "end": 972,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Usage"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 972,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "language": "r",
+              "source": "predict.foo_model(object, newdata, ...)",
+              "source_segments": [],
+              "span": {
+                "end": 972,
+                "start": 0
+              },
+              "type": "code-block"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Arguments"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 972,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "items": [
+                {
+                  "blocks": [
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 972,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "object"
+                        }
+                      ],
+                      "span": {
+                        "end": 972,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    },
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 972,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "An object of class "
+                        },
+                        {
+                          "span": {
+                            "end": 972,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "\"foo_model\""
+                        },
+                        {
+                          "span": {
+                            "end": 972,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "."
+                        }
+                      ],
+                      "span": {
+                        "end": 972,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    }
+                  ],
+                  "checked": null,
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  }
+                },
+                {
+                  "blocks": [
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 972,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "newdata"
+                        }
+                      ],
+                      "span": {
+                        "end": 972,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    },
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 972,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "A numeric feature vector or matrix."
+                        }
+                      ],
+                      "span": {
+                        "end": 972,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    }
+                  ],
+                  "checked": null,
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  }
+                },
+                {
+                  "blocks": [
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 972,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "..."
+                        }
+                      ],
+                      "span": {
+                        "end": 972,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    },
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 972,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "Additional arguments reserved for method compatibility."
+                        }
+                      ],
+                      "span": {
+                        "end": 972,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    }
+                  ],
+                  "checked": null,
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  }
+                }
+              ],
+              "ordered": false,
+              "span": {
+                "end": 972,
+                "start": 0
+              },
+              "type": "list"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Value"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 972,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  },
+                  "type": "code",
+                  "value": "foo_model()"
+                },
+                {
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": " returns an object of class "
+                },
+                {
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  },
+                  "type": "code",
+                  "value": "\"foo_model\""
+                },
+                {
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": ".\n"
+                },
+                {
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  },
+                  "type": "code",
+                  "value": "predict.foo_model()"
+                },
+                {
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": " returns one prediction or a numeric vector of\n"
+                },
+                {
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "predictions.\n"
+                }
+              ],
+              "span": {
+                "end": 972,
+                "start": 0
+              },
+              "type": "paragraph"
+            },
+            {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Create a fitted model directly, or predict responses from one.\n"
+                }
+              ],
+              "span": {
+                "end": 972,
+                "start": 0
+              },
+              "type": "paragraph"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Examples"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 972,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "language": "r",
+              "source": "model <- foo_model(c(0.5, -0.25), intercept = 1)\npredict(model, c(2, 4))\npredict(model, matrix(c(2, 4, 3, 5), ncol = 2, byrow = TRUE))",
+              "source_segments": [],
+              "span": {
+                "end": 972,
+                "start": 0
+              },
+              "type": "code-block"
+            },
+            {
+              "attributes": {
+                "classes": [],
+                "identifier": null,
+                "key_values": []
+              },
+              "inlines": [
+                {
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Keywords"
+                }
+              ],
+              "level": 2,
+              "span": {
+                "end": 972,
+                "start": 0
+              },
+              "type": "heading"
+            },
+            {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "models"
+                }
+              ],
+              "span": {
+                "end": 972,
+                "start": 0
+              },
+              "type": "paragraph"
+            }
+          ],
+          "frontmatter": null,
+          "span": {
+            "end": 972,
+            "start": 0
+          }
+        },
+        "provenance": [
+          {
+            "activity": {
+              "kind": "declaration"
+            },
+            "source": {
+              "kind": "repository",
+              "path": "man/foo_model.Rd",
+              "repository": "r"
+            },
+            "span": null,
+            "tools": {
+              "arity-parser": "0.6.0",
+              "diplodocus": "[DIPLODOCUS_VERSION]",
+              "r": "[DIPLODOCUS_VERSION]",
+              "rd-ast": "0.4.0",
+              "rd-source": "0.4.0"
+            }
+          }
+        ],
+        "raw_source": "\\name{foo_model}\n\\alias{foo_model}\n\\alias{predict.foo_model}\n\\title{Create and Use a Foo Model}\n\\usage{\nfoo_model(coefficients, intercept = 0, solver = \"normal\")\n\n\\method{predict}{foo_model}(object, newdata, ...)\n}\n\\arguments{\n  \\item{coefficients}{A numeric vector of fitted coefficients.}\n  \\item{intercept}{A numeric intercept.}\n  \\item{solver}{The name of the fitting algorithm.}\n  \\item{object}{An object of class \\code{\"foo_model\"}.}\n  \\item{newdata}{A numeric feature vector or matrix.}\n  \\item{...}{Additional arguments reserved for method compatibility.}\n}\n\\value{\n\\code{foo_model()} returns an object of class \\code{\"foo_model\"}.\n\\code{predict.foo_model()} returns one prediction or a numeric vector of\npredictions.\n}\n\\description{\nCreate a fitted model directly, or predict responses from one.\n}\n\\examples{\nmodel <- foo_model(c(0.5, -0.25), intercept = 1)\npredict(model, c(2, 4))\npredict(model, matrix(c(2, 4, 3, 5), ncol = 2, byrow = TRUE))\n}\n\\keyword{models}\n",
+        "source_format": {
+          "kind": "extracted",
+          "name": "rd"
+        },
+        "source_location": {
+          "path": "man/foo_model.Rd",
+          "repository": "r",
+          "span": null
+        }
+      },
+      "kind": "method",
+      "language_data": {
+        "data": {
+          "declaration": {
+            "class": "foo_model",
+            "generic": {
+              "kind": "external",
+              "name": "predict",
+              "package": "stats"
+            },
+            "kind": "s3-method",
+            "registration": [
+              {
+                "parsers": [
+                  "arity-parser"
+                ],
+                "role": "registration",
+                "source": {
+                  "path": "NAMESPACE",
+                  "repository": "r",
+                  "span": {
+                    "end": 159,
+                    "start": 132
+                  }
+                }
+              }
+            ]
+          },
+          "exported": false
+        },
+        "language": "r"
+      },
+      "name": "predict.foo_model",
+      "provenance": [
+        {
+          "activity": {
+            "kind": "declaration"
+          },
+          "source": {
+            "kind": "repository",
+            "path": "R/fit.R",
+            "repository": "r"
+          },
+          "span": {
+            "end": 1749,
+            "start": 1263
+          },
+          "tools": {
+            "arity-parser": "0.6.0",
+            "diplodocus": "[DIPLODOCUS_VERSION]",
+            "r": "[DIPLODOCUS_VERSION]"
+          }
+        }
+      ],
+      "qualified_name": "predict.foo_model",
+      "signatures": [
+        {
+          "signature": {
+            "kind": "callable",
+            "parameters": [
+              {
+                "annotation": null,
+                "default": null,
+                "kind": {
+                  "kind": "positional-or-keyword"
+                },
+                "name": "object"
+              },
+              {
+                "annotation": null,
+                "default": null,
+                "kind": {
+                  "kind": "positional-or-keyword"
+                },
+                "name": "newdata"
+              },
+              {
+                "annotation": null,
+                "default": null,
+                "kind": {
+                  "kind": "language-specific",
+                  "language": "r",
+                  "name": "dots"
+                },
+                "name": "..."
+              }
+            ],
+            "returns": null
+          },
+          "sources": [
+            {
+              "parsers": [
+                "arity-parser"
+              ],
+              "role": "signature",
+              "source": {
+                "path": "R/fit.R",
+                "repository": "r",
+                "span": {
+                  "end": 1749,
+                  "start": 1263
+                }
+              }
+            },
+            {
+              "parsers": [
+                "arity-parser"
+              ],
+              "role": "signature",
+              "source": {
+                "path": "R/fit.R",
+                "repository": "r",
+                "span": {
+                  "end": 1299,
+                  "start": 1293
+                }
+              }
+            },
+            {
+              "parsers": [
+                "arity-parser"
+              ],
+              "role": "signature",
+              "source": {
+                "path": "R/fit.R",
+                "repository": "r",
+                "span": {
+                  "end": 1308,
+                  "start": 1301
+                }
+              }
+            },
+            {
+              "parsers": [
+                "arity-parser"
+              ],
+              "role": "signature",
+              "source": {
+                "path": "R/fit.R",
+                "repository": "r",
+                "span": {
+                  "end": 1313,
+                  "start": 1310
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "source_location": {
+        "path": "R/fit.R",
+        "repository": "r",
+        "span": {
+          "end": 1749,
+          "start": 1263
+        }
+      }
+    }
+  },
+  "metadata": {
+    "dependencies": {
+      "Depends": [
+        {
+          "constraints": [
+            {
+              "operator": ">=",
+              "source": {
+                "path": "DESCRIPTION",
+                "repository": "r",
+                "span": {
+                  "end": 499,
+                  "start": 493
+                }
+              },
+              "version": "4.3"
+            }
+          ],
+          "name": "R",
+          "source": {
+            "path": "DESCRIPTION",
+            "repository": "r",
+            "span": {
+              "end": 500,
+              "start": 490
+            }
+          }
+        }
+      ],
+      "Imports": [
+        {
+          "constraints": [],
+          "name": "stats",
+          "source": {
+            "path": "DESCRIPTION",
+            "repository": "r",
+            "span": {
+              "end": 519,
+              "start": 514
+            }
+          }
+        }
+      ],
+      "Suggests": [
+        {
+          "constraints": [
+            {
+              "operator": ">=",
+              "source": {
+                "path": "DESCRIPTION",
+                "repository": "r",
+                "span": {
+                  "end": 552,
+                  "start": 544
+                }
+              },
+              "version": "3.2.0"
+            }
+          ],
+          "name": "testthat",
+          "source": {
+            "path": "DESCRIPTION",
+            "repository": "r",
+            "span": {
+              "end": 553,
+              "start": 534
+            }
+          }
+        }
+      ]
+    },
+    "description": "R bindings for the Foo statistical library. The package exposes a\nsmall model-fitting API used by Diplodocus's acceptance workspace.",
+    "fields": {
+      "Author": {
+        "source": {
+          "path": "DESCRIPTION",
+          "repository": "r",
+          "span": {
+            "end": 228,
+            "start": 192
+          }
+        },
+        "value": "Foo Contributors [aut, cre]"
+      },
+      "Authors@R": {
+        "source": {
+          "path": "DESCRIPTION",
+          "repository": "r",
+          "span": {
+            "end": 192,
+            "start": 77
+          }
+        },
+        "value": "person(\"Foo\", \"Contributors\", role = c(\"aut\", \"cre\"),\nemail = \"maintainers@example.com\")"
+      },
+      "Config/testthat/edition": {
+        "source": {
+          "path": "DESCRIPTION",
+          "repository": "r",
+          "span": {
+            "end": 581,
+            "start": 554
+          }
+        },
+        "value": "3"
+      },
+      "Depends": {
+        "source": {
+          "path": "DESCRIPTION",
+          "repository": "r",
+          "span": {
+            "end": 501,
+            "start": 477
+          }
+        },
+        "value": "R (>= 4.3)"
+      },
+      "Description": {
+        "source": {
+          "path": "DESCRIPTION",
+          "repository": "r",
+          "span": {
+            "end": 433,
+            "start": 283
+          }
+        },
+        "value": "R bindings for the Foo statistical library. The package exposes a\nsmall model-fitting API used by Diplodocus's acceptance workspace."
+      },
+      "Encoding": {
+        "source": {
+          "path": "DESCRIPTION",
+          "repository": "r",
+          "span": {
+            "end": 477,
+            "start": 461
+          }
+        },
+        "value": "UTF-8"
+      },
+      "Imports": {
+        "source": {
+          "path": "DESCRIPTION",
+          "repository": "r",
+          "span": {
+            "end": 520,
+            "start": 501
+          }
+        },
+        "value": "stats"
+      },
+      "License": {
+        "source": {
+          "path": "DESCRIPTION",
+          "repository": "r",
+          "span": {
+            "end": 461,
+            "start": 433
+          }
+        },
+        "value": "MIT + file LICENSE"
+      },
+      "Maintainer": {
+        "source": {
+          "path": "DESCRIPTION",
+          "repository": "r",
+          "span": {
+            "end": 283,
+            "start": 228
+          }
+        },
+        "value": "Foo Contributors <maintainers@example.com>"
+      },
+      "NeedsCompilation": {
+        "source": {
+          "path": "DESCRIPTION",
+          "repository": "r",
+          "span": {
+            "end": 602,
+            "start": 581
+          }
+        },
+        "value": "no"
+      },
+      "Package": {
+        "source": {
+          "path": "DESCRIPTION",
+          "repository": "r",
+          "span": {
+            "end": 13,
+            "start": 0
+          }
+        },
+        "value": "foo"
+      },
+      "Suggests": {
+        "source": {
+          "path": "DESCRIPTION",
+          "repository": "r",
+          "span": {
+            "end": 554,
+            "start": 520
+          }
+        },
+        "value": "testthat (>= 3.2.0)"
+      },
+      "Title": {
+        "source": {
+          "path": "DESCRIPTION",
+          "repository": "r",
+          "span": {
+            "end": 62,
+            "start": 27
+          }
+        },
+        "value": "Statistical Models with Foo"
+      },
+      "Type": {
+        "source": {
+          "path": "DESCRIPTION",
+          "repository": "r",
+          "span": {
+            "end": 27,
+            "start": 13
+          }
+        },
+        "value": "Package"
+      },
+      "Version": {
+        "source": {
+          "path": "DESCRIPTION",
+          "repository": "r",
+          "span": {
+            "end": 77,
+            "start": 62
+          }
+        },
+        "value": "1.8.0"
+      }
+    },
+    "license": "MIT + file LICENSE",
+    "name": "foo",
+    "source": {
+      "path": "DESCRIPTION",
+      "repository": "r",
+      "span": null
+    },
+    "title": "Statistical Models with Foo",
+    "version": "1.8.0"
+  },
+  "package": "rfoo",
+  "provenance": {
+    "activity": {
+      "capabilities": [
+        "diagnostics.unsupported-visible",
+        "provenance.source",
+        "r.docs.rd",
+        "r.metadata.dcf",
+        "r.namespace.static",
+        "r.s3",
+        "r.source.functions"
+      ],
+      "inputs": {
+        "r": {
+          "DESCRIPTION": {
+            "fingerprint": {
+              "algorithm": "sha256",
+              "value": "f72f289b705a670221bbef9d9873403a6f921f027d36acbe9236d54485730f6e"
+            },
+            "kind": "package-metadata",
+            "parsers": [
+              "arity-parser"
+            ]
+          },
+          "NAMESPACE": {
+            "fingerprint": {
+              "algorithm": "sha256",
+              "value": "194fba4725afdc06a953dfaebaedd97f75a0bcf2defcda5d05bcaa68f1cef5a5"
+            },
+            "kind": "namespace",
+            "parsers": [
+              "arity-parser"
+            ]
+          },
+          "R/experimental.R": {
+            "fingerprint": {
+              "algorithm": "sha256",
+              "value": "b0d6e2d87372691addd9d7fb3d7645981ff3b59b3f5684d96a510c5060ee72df"
+            },
+            "kind": "r-source",
+            "parsers": [
+              "arity-parser"
+            ]
+          },
+          "R/fit.R": {
+            "fingerprint": {
+              "algorithm": "sha256",
+              "value": "f57a381609521e790e7b0e2182a1e1f800bb8d1383b53042f72f749f42d155fc"
+            },
+            "kind": "r-source",
+            "parsers": [
+              "arity-parser"
+            ]
+          },
+          "R/metrics.R": {
+            "fingerprint": {
+              "algorithm": "sha256",
+              "value": "66c9ba0e7677d321dcb08ba9c91c60436c32f4213680d4e9feefdd1f686c01be"
+            },
+            "kind": "r-source",
+            "parsers": [
+              "arity-parser"
+            ]
+          },
+          "man/experimental_summary.Rd": {
+            "fingerprint": {
+              "algorithm": "sha256",
+              "value": "f95f9f081d6c66a881fe4ba27caa192901cc82d3256487f1c3c06401a9048118"
+            },
+            "kind": "rd",
+            "parsers": [
+              "arity-parser",
+              "rd-ast",
+              "rd-source"
+            ]
+          },
+          "man/fit.Rd": {
+            "fingerprint": {
+              "algorithm": "sha256",
+              "value": "aeb068c562853998833e6610e8886487a5da9e2ee1a789b4461a0c193ffee1d4"
+            },
+            "kind": "rd",
+            "parsers": [
+              "arity-parser",
+              "rd-ast",
+              "rd-source"
+            ]
+          },
+          "man/foo_model.Rd": {
+            "fingerprint": {
+              "algorithm": "sha256",
+              "value": "98cb66bf39460385c1edd50d945da81e46f08574769791ad82f32addb6ad92c2"
+            },
+            "kind": "rd",
+            "parsers": [
+              "arity-parser",
+              "rd-ast",
+              "rd-source"
+            ]
+          },
+          "man/mean_squared_error.Rd": {
+            "fingerprint": {
+              "algorithm": "sha256",
+              "value": "0fc66bfa0b8252f866959f49ee734d4cca49af44ff1a68d13d599a55299b92d8"
+            },
+            "kind": "rd",
+            "parsers": [
+              "arity-parser",
+              "rd-ast",
+              "rd-source"
+            ]
+          }
+        }
+      },
+      "kind": "extraction",
+      "mode": "static",
+      "parsers": {
+        "arity-parser": {
+          "role": "r-metadata-namespace-source",
+          "settings": {
+            "grammar:DESCRIPTION": "dcf",
+            "grammar:NAMESPACE": "namespace",
+            "grammar:R/experimental.R": "r",
+            "grammar:R/fit.R": "r",
+            "grammar:R/metrics.R": "r",
+            "grammar:man/experimental_summary.Rd": "r",
+            "grammar:man/fit.Rd": "r",
+            "grammar:man/foo_model.Rd": "r",
+            "grammar:man/mean_squared_error.Rd": "r"
+          },
+          "version": "0.6.0"
+        },
+        "rd-ast": {
+          "role": "rd-semantics",
+          "settings": {
+            "default_features": "false",
+            "source_locations": "file",
+            "views": "strict"
+          },
+          "version": "0.4.0"
+        },
+        "rd-source": {
+          "role": "rd-syntax",
+          "settings": {
+            "dynamic_markup": "unresolved"
+          },
+          "version": "0.4.0"
+        }
+      },
+      "target": {
+        "package": "rfoo",
+        "target": "api"
+      }
+    },
+    "source": null,
+    "span": null,
+    "tools": {
+      "arity-parser": "0.6.0",
+      "diplodocus": "[DIPLODOCUS_VERSION]",
+      "r": "[DIPLODOCUS_VERSION]",
+      "rd-ast": "0.4.0",
+      "rd-source": "0.4.0"
+    }
+  },
+  "schema_version": 1,
+  "target": {
+    "package": "rfoo",
+    "target": "api"
+  }
+}

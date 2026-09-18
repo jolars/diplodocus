@@ -103,7 +103,17 @@ fn validate_registry(registry: &AcceptanceRegistry) {
     for case in &registry.cases {
         assert!(support::is_relative_input(&case.config));
         assert!(matrix.contains(&format!("| `{}` |", case.id)));
-        assert!(case.check.len() <= 1 && case.build.len() <= 1);
+        let check: Vec<_> = case
+            .check
+            .iter()
+            .filter(|d| d.code != "r-rd-source-attribution")
+            .collect();
+        let build: Vec<_> = case
+            .build
+            .iter()
+            .filter(|d| d.code != "r-rd-source-attribution")
+            .collect();
+        assert!(check.len() <= 1 && build.len() <= 1);
         for diagnostic in case.check.iter().chain(&case.build) {
             assert!(matches!(diagnostic.severity.as_str(), "warning" | "error"));
             assert!(support::is_relative_input(&diagnostic.source));
@@ -111,8 +121,8 @@ fn validate_registry(registry: &AcceptanceRegistry) {
         }
         if let Some(overlay) = &case.overlay {
             assert_eq!(case.changes.len(), 1);
-            assert_eq!(case.build.len(), 1);
-            assert_eq!(case.build[0].source, case.changes[0]);
+            assert_eq!(build.len(), 1);
+            assert_eq!(build[0].source, case.changes[0]);
             for path in &case.changes {
                 let relative = Path::new(overlay).join(path);
                 assert!(matrix.contains(&format!("`../acceptance-cases/{}`", relative.display())));

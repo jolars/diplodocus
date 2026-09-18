@@ -37,6 +37,10 @@ an unsupplied package or generic item. Namespace registration evidence stays
 separate from source definitions. The `exported` flag records a name export;
 an unexported S3 method can still be public through its registration.
 
+Proven R assignment aliases carry `r-assignment` evidence and use the defining
+function's identity. They can provide an exported spelling without duplicating
+the function or generic family.
+
 Rd aliases are apportioned to their actual canonical declarations. The three
 aliases in `fit.Rd` address the generic and its two methods, respectively, even
 though those declarations share documentation. Sharing a topic does not merge
@@ -122,6 +126,7 @@ duplicate and conflicting identities, delimiter escaping, signature structure,
 and relocation, source-range shifts, and URL changes. These tests establish
 representation and construction contracts. They do not claim production
 source/stub/Rd reconciliation, public-surface extraction, or graph validation.
-Those remain extractor work. Package-level Python metadata, including the
-`py.typed` marker, also remains Milestone 4 work. S4 extraction is outside the
-MVP S3 contract.
+The [Python extractor](python-extraction.md) and [R extractor](r-extraction.md)
+implement the corresponding production reconciliation. Workspace graph
+validation remains a later milestone. S4 extraction is outside the MVP S3
+contract.

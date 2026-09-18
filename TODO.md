@@ -325,29 +325,36 @@ entry point, supported surface, and source-attribution rules.
 
 ## Milestone 5: Implement the R extractor
 
-- [ ] Add golden tests for each R acceptance case before implementing it.
-- [ ] Read package name, version, title, and dependency constraints from
+- [x] Add golden tests for each R acceptance case before implementing it.
+- [x] Read package name, version, title, and dependency constraints from
   `DESCRIPTION` without installing or loading the package.
-- [ ] Parse `NAMESPACE` exports, S3 registrations, imports, and relevant method
+- [x] Parse `NAMESPACE` exports, S3 registrations, imports, and relevant method
   declarations.
-- [ ] Parse maintained R source sufficiently to identify documented functions,
+- [x] Parse maintained R source sufficiently to identify documented functions,
   formals, generics, methods, aliases, and available source spans.
-- [ ] Parse checked-in `Rd` without loading package code and translate names,
+- [x] Parse checked-in `Rd` without loading package code and translate names,
   aliases, usage, arguments, value, description, details, references,
   examples, and supported markup into document IR.
-- [ ] Preserve a generic and each S3 method as addressable items and connect
+- [x] Preserve a generic and each S3 method as addressable items and connect
   them through a callable family.
-- [ ] Reconcile namespace exports, source definitions, and `Rd` aliases without
+- [x] Reconcile namespace exports, source definitions, and `Rd` aliases without
   duplicating one public entity.
-- [ ] Emit stable diagnostics for malformed metadata, missing documented
+- [x] Emit stable diagnostics for malformed metadata, missing documented
   aliases, unsupported namespace directives, unsupported `Rd`, incomplete
   source locations, and information loss.
-- [ ] Record extractor capabilities, extractor and parser versions, and static
+- [x] Record extractor capabilities, extractor and parser versions, and static
   mode in provenance.
 
 **Exit gate:** R extraction matches the reviewed golden IR for every acceptance
 case, works without starting R or attaching or loading the package, and makes
 unsupported or incomplete semantic information visible through diagnostics.
+
+The [integrated R tests](tests/r_extraction.rs) lock the seven acceptance items,
+shared Rd documentation, four baseline location warnings, and the additional
+dynamic-Rd warning. They compare relocated workspaces and verify extraction
+with no runtime on `PATH`. The [R extraction contract](docs/ir/r-extraction.md)
+documents the library entry point, supported subset, and file-level Rd
+attribution. CLI integration and workspace merging remain later milestones.
 
 ## Milestone 6: Implement authored code execution
 

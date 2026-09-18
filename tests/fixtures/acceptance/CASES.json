@@ -56,8 +56,50 @@
       "config": "workspace/diplodocus.toml",
       "overlay": null,
       "changes": [],
-      "check": [],
-      "build": []
+      "check": [
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/experimental_summary.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/fit.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/foo_model.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/mean_squared_error.Rd"
+        }
+      ],
+      "build": [
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/experimental_summary.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/fit.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/foo_model.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/mean_squared_error.Rd"
+        }
+      ]
     },
     {
       "id": "visibility",
@@ -72,8 +114,50 @@
       "config": "workspace/variants/relationship-compatible.toml",
       "overlay": null,
       "changes": [],
-      "check": [],
-      "build": []
+      "check": [
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/experimental_summary.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/fit.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/foo_model.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/mean_squared_error.Rd"
+        }
+      ],
+      "build": [
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/experimental_summary.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/fit.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/foo_model.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/mean_squared_error.Rd"
+        }
+      ]
     },
     {
       "id": "relationship-external",
@@ -95,6 +179,26 @@
           "code": "python-dynamic-export",
           "severity": "warning",
           "source": "python/python/foo/experimental.py"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/experimental_summary.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/fit.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/foo_model.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/mean_squared_error.Rd"
         }
       ],
       "build": [
@@ -102,6 +206,26 @@
           "code": "python-dynamic-export",
           "severity": "warning",
           "source": "python/python/foo/experimental.py"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/experimental_summary.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/fit.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/foo_model.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/mean_squared_error.Rd"
         }
       ]
     },
@@ -114,16 +238,56 @@
       ],
       "check": [
         {
-          "code": "unsupported-rd",
+          "code": "r-rd-source-attribution",
           "severity": "warning",
           "source": "r/man/experimental_summary.Rd"
-        }
-      ],
-      "build": [
+        },
         {
           "code": "unsupported-rd",
           "severity": "warning",
           "source": "r/man/experimental_summary.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/fit.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/foo_model.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/mean_squared_error.Rd"
+        }
+      ],
+      "build": [
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/experimental_summary.Rd"
+        },
+        {
+          "code": "unsupported-rd",
+          "severity": "warning",
+          "source": "r/man/experimental_summary.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/fit.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/foo_model.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/mean_squared_error.Rd"
         }
       ]
     },
@@ -139,6 +303,26 @@
           "code": "unsupported-authored-syntax",
           "severity": "warning",
           "source": "core/docs/index.md"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/experimental_summary.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/fit.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/foo_model.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/mean_squared_error.Rd"
         }
       ],
       "build": [
@@ -146,6 +330,26 @@
           "code": "unsupported-authored-syntax",
           "severity": "warning",
           "source": "core/docs/index.md"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/experimental_summary.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/fit.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/foo_model.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/mean_squared_error.Rd"
         }
       ]
     },
@@ -161,6 +365,26 @@
           "code": "unsupported-authored-syntax",
           "severity": "warning",
           "source": "python/docs/guide.qmd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/experimental_summary.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/fit.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/foo_model.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/mean_squared_error.Rd"
         }
       ],
       "build": [
@@ -168,6 +392,26 @@
           "code": "unsupported-authored-syntax",
           "severity": "warning",
           "source": "python/docs/guide.qmd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/experimental_summary.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/fit.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/foo_model.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/mean_squared_error.Rd"
         }
       ]
     },
@@ -183,6 +427,26 @@
           "code": "document-execution-not-authorized",
           "severity": "error",
           "source": "python/safety/metadata-cannot-authorize.qmd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/experimental_summary.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/fit.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/foo_model.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/mean_squared_error.Rd"
         }
       ],
       "build": [
@@ -190,6 +454,26 @@
           "code": "document-execution-not-authorized",
           "severity": "error",
           "source": "python/safety/metadata-cannot-authorize.qmd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/experimental_summary.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/fit.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/foo_model.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/mean_squared_error.Rd"
         }
       ]
     },
@@ -200,12 +484,53 @@
       "changes": [
         "python/execution/unsafe-html.qmd"
       ],
-      "check": [],
+      "check": [
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/experimental_summary.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/fit.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/foo_model.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/mean_squared_error.Rd"
+        }
+      ],
       "build": [
         {
           "code": "unsafe-kernel-html",
           "severity": "warning",
           "source": "python/execution/unsafe-html.qmd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/experimental_summary.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/fit.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/foo_model.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/mean_squared_error.Rd"
         }
       ]
     },
@@ -216,12 +541,53 @@
       "changes": [
         "python/execution/asset-boundary-escape.qmd"
       ],
-      "check": [],
+      "check": [
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/experimental_summary.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/fit.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/foo_model.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/mean_squared_error.Rd"
+        }
+      ],
       "build": [
         {
           "code": "generated-asset-outside-boundary",
           "severity": "error",
           "source": "python/execution/asset-boundary-escape.qmd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/experimental_summary.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/fit.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/foo_model.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/mean_squared_error.Rd"
         }
       ]
     },
@@ -232,12 +598,52 @@
       "changes": [],
       "check": [
         {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/experimental_summary.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/fit.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/foo_model.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/mean_squared_error.Rd"
+        },
+        {
           "code": "incompatible-package-relationship",
           "severity": "error",
           "source": "workspace/variants/relationship-incompatible.toml"
         }
       ],
       "build": [
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/experimental_summary.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/fit.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/foo_model.Rd"
+        },
+        {
+          "code": "r-rd-source-attribution",
+          "severity": "warning",
+          "source": "r/man/mean_squared_error.Rd"
+        },
         {
           "code": "incompatible-package-relationship",
           "severity": "error",
@@ -274,8 +680,8 @@
         "tests/fixtures/acceptance/r/NAMESPACE"
       ],
       "action": "Extract each configured Python and R API using the pinned static parsers.",
-      "expected": "Preserve the complete API rows and provenance; the baseline is diagnostic-free and each warning case has exactly its registered diagnostic.",
-      "milestone": 4
+      "expected": "Preserve the complete API rows and provenance; the baseline has four Rd location warnings and each focused case adds exactly its registered diagnostic.",
+      "milestone": 5
     },
     {
       "id": "authored-profiles",

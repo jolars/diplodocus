@@ -1,0 +1,567 @@
+{
+  "blocks": [
+    {
+      "attributes": {
+        "classes": [],
+        "identifier": null,
+        "key_values": []
+      },
+      "inlines": [
+        {
+          "span": {
+            "end": 429,
+            "start": 0
+          },
+          "type": "text",
+          "value": "An "
+        },
+        {
+          "inlines": [
+            {
+              "span": {
+                "end": 429,
+                "start": 0
+              },
+              "type": "text",
+              "value": "example"
+            }
+          ],
+          "span": {
+            "end": 429,
+            "start": 0
+          },
+          "type": "emphasis"
+        }
+      ],
+      "level": 1,
+      "span": {
+        "end": 429,
+        "start": 0
+      },
+      "type": "heading"
+    },
+    {
+      "attributes": {
+        "classes": [],
+        "identifier": null,
+        "key_values": []
+      },
+      "inlines": [
+        {
+          "span": {
+            "end": 429,
+            "start": 0
+          },
+          "type": "text",
+          "value": "Usage"
+        }
+      ],
+      "level": 2,
+      "span": {
+        "end": 429,
+        "start": 0
+      },
+      "type": "heading"
+    },
+    {
+      "language": "r",
+      "source": "f(x, ..., choice = 'a')",
+      "source_segments": [],
+      "span": {
+        "end": 429,
+        "start": 0
+      },
+      "type": "code-block"
+    },
+    {
+      "attributes": {
+        "classes": [],
+        "identifier": null,
+        "key_values": []
+      },
+      "inlines": [
+        {
+          "span": {
+            "end": 429,
+            "start": 0
+          },
+          "type": "text",
+          "value": "Arguments"
+        }
+      ],
+      "level": 2,
+      "span": {
+        "end": 429,
+        "start": 0
+      },
+      "type": "heading"
+    },
+    {
+      "items": [
+        {
+          "blocks": [
+            {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 429,
+                    "start": 0
+                  },
+                  "type": "code",
+                  "value": "x"
+                }
+              ],
+              "span": {
+                "end": 429,
+                "start": 0
+              },
+              "type": "paragraph"
+            },
+            {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 429,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "A "
+                },
+                {
+                  "inlines": [
+                    {
+                      "span": {
+                        "end": 429,
+                        "start": 0
+                      },
+                      "type": "text",
+                      "value": "value"
+                    }
+                  ],
+                  "span": {
+                    "end": 429,
+                    "start": 0
+                  },
+                  "type": "strong"
+                },
+                {
+                  "span": {
+                    "end": 429,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "."
+                }
+              ],
+              "span": {
+                "end": 429,
+                "start": 0
+              },
+              "type": "paragraph"
+            }
+          ],
+          "checked": null,
+          "span": {
+            "end": 429,
+            "start": 0
+          }
+        },
+        {
+          "blocks": [
+            {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 429,
+                    "start": 0
+                  },
+                  "type": "code",
+                  "value": "..."
+                }
+              ],
+              "span": {
+                "end": 429,
+                "start": 0
+              },
+              "type": "paragraph"
+            },
+            {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 429,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "More values."
+                }
+              ],
+              "span": {
+                "end": 429,
+                "start": 0
+              },
+              "type": "paragraph"
+            }
+          ],
+          "checked": null,
+          "span": {
+            "end": 429,
+            "start": 0
+          }
+        },
+        {
+          "blocks": [
+            {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 429,
+                    "start": 0
+                  },
+                  "type": "code",
+                  "value": "choice"
+                }
+              ],
+              "span": {
+                "end": 429,
+                "start": 0
+              },
+              "type": "paragraph"
+            },
+            {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 429,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "A choice."
+                }
+              ],
+              "span": {
+                "end": 429,
+                "start": 0
+              },
+              "type": "paragraph"
+            }
+          ],
+          "checked": null,
+          "span": {
+            "end": 429,
+            "start": 0
+          }
+        }
+      ],
+      "ordered": false,
+      "span": {
+        "end": 429,
+        "start": 0
+      },
+      "type": "list"
+    },
+    {
+      "inlines": [
+        {
+          "span": {
+            "end": 429,
+            "start": 0
+          },
+          "type": "text",
+          "value": "First paragraph with "
+        },
+        {
+          "span": {
+            "end": 429,
+            "start": 0
+          },
+          "type": "code",
+          "value": "x"
+        },
+        {
+          "span": {
+            "end": 429,
+            "start": 0
+          },
+          "type": "text",
+          "value": ", "
+        },
+        {
+          "attributes": {
+            "classes": [],
+            "identifier": null,
+            "key_values": []
+          },
+          "inlines": [
+            {
+              "span": {
+                "end": 429,
+                "start": 0
+              },
+              "type": "text",
+              "value": "https://example.org"
+            }
+          ],
+          "span": {
+            "end": 429,
+            "start": 0
+          },
+          "target": "https://example.org",
+          "title": null,
+          "type": "link"
+        },
+        {
+          "span": {
+            "end": 429,
+            "start": 0
+          },
+          "type": "text",
+          "value": ", and "
+        },
+        {
+          "span": {
+            "end": 429,
+            "start": 0
+          },
+          "target": "f",
+          "target_span": {
+            "end": 429,
+            "start": 0
+          },
+          "type": "semantic-reference"
+        },
+        {
+          "span": {
+            "end": 429,
+            "start": 0
+          },
+          "type": "text",
+          "value": ".\n"
+        }
+      ],
+      "span": {
+        "end": 429,
+        "start": 0
+      },
+      "type": "paragraph"
+    },
+    {
+      "inlines": [
+        {
+          "span": {
+            "end": 429,
+            "start": 0
+          },
+          "type": "text",
+          "value": "Second paragraph."
+        }
+      ],
+      "span": {
+        "end": 429,
+        "start": 0
+      },
+      "type": "paragraph"
+    },
+    {
+      "attributes": {
+        "classes": [],
+        "identifier": null,
+        "key_values": []
+      },
+      "inlines": [
+        {
+          "span": {
+            "end": 429,
+            "start": 0
+          },
+          "type": "text",
+          "value": "Details"
+        }
+      ],
+      "level": 2,
+      "span": {
+        "end": 429,
+        "start": 0
+      },
+      "type": "heading"
+    },
+    {
+      "items": [
+        {
+          "blocks": [
+            {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 429,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": " One"
+                }
+              ],
+              "span": {
+                "end": 429,
+                "start": 0
+              },
+              "type": "paragraph"
+            }
+          ],
+          "checked": null,
+          "span": {
+            "end": 429,
+            "start": 0
+          }
+        },
+        {
+          "blocks": [
+            {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 429,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": " Two with "
+                },
+                {
+                  "inlines": [
+                    {
+                      "span": {
+                        "end": 429,
+                        "start": 0
+                      },
+                      "type": "text",
+                      "value": "markup"
+                    }
+                  ],
+                  "span": {
+                    "end": 429,
+                    "start": 0
+                  },
+                  "type": "emphasis"
+                },
+                {
+                  "span": {
+                    "end": 429,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "."
+                }
+              ],
+              "span": {
+                "end": 429,
+                "start": 0
+              },
+              "type": "paragraph"
+            }
+          ],
+          "checked": null,
+          "span": {
+            "end": 429,
+            "start": 0
+          }
+        }
+      ],
+      "ordered": false,
+      "span": {
+        "end": 429,
+        "start": 0
+      },
+      "type": "list"
+    },
+    {
+      "items": [
+        {
+          "blocks": [
+            {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 429,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Label"
+                }
+              ],
+              "span": {
+                "end": 429,
+                "start": 0
+              },
+              "type": "paragraph"
+            },
+            {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 429,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Description."
+                }
+              ],
+              "span": {
+                "end": 429,
+                "start": 0
+              },
+              "type": "paragraph"
+            }
+          ],
+          "checked": null,
+          "span": {
+            "end": 429,
+            "start": 0
+          }
+        }
+      ],
+      "ordered": false,
+      "span": {
+        "end": 429,
+        "start": 0
+      },
+      "type": "list"
+    },
+    {
+      "attributes": {
+        "classes": [],
+        "identifier": null,
+        "key_values": []
+      },
+      "inlines": [
+        {
+          "span": {
+            "end": 429,
+            "start": 0
+          },
+          "type": "text",
+          "value": "Examples"
+        }
+      ],
+      "level": 2,
+      "span": {
+        "end": 429,
+        "start": 0
+      },
+      "type": "heading"
+    },
+    {
+      "language": "r",
+      "source": "# \\dontrun\nstop('inert')\n# \\donttest\nf(1)",
+      "source_segments": [],
+      "span": {
+        "end": 429,
+        "start": 0
+      },
+      "type": "code-block"
+    }
+  ],
+  "frontmatter": null,
+  "span": {
+    "end": 429,
+    "start": 0
+  }
+}

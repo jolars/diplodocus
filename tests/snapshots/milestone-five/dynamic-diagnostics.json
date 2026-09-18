@@ -1,0 +1,57 @@
+[
+  {
+    "code": "r-rd-source-attribution",
+    "severity": "warning",
+    "message": "Rd nodes have file-level source attribution; exact node byte ranges are unavailable.",
+    "source": {
+      "kind": "repository",
+      "repository": "r",
+      "path": "man/experimental_summary.Rd"
+    },
+    "span": null
+  },
+  {
+    "code": "unsupported-rd",
+    "severity": "warning",
+    "message": "Unsupported Rd `\\Sexpr` at top-level[16] / child[3]; content remains unevaluated.",
+    "source": {
+      "kind": "repository",
+      "repository": "r",
+      "path": "man/experimental_summary.Rd"
+    },
+    "span": null
+  },
+  {
+    "code": "r-rd-source-attribution",
+    "severity": "warning",
+    "message": "Rd nodes have file-level source attribution; exact node byte ranges are unavailable.",
+    "source": {
+      "kind": "repository",
+      "repository": "r",
+      "path": "man/fit.Rd"
+    },
+    "span": null
+  },
+  {
+    "code": "r-rd-source-attribution",
+    "severity": "warning",
+    "message": "Rd nodes have file-level source attribution; exact node byte ranges are unavailable.",
+    "source": {
+      "kind": "repository",
+      "repository": "r",
+      "path": "man/foo_model.Rd"
+    },
+    "span": null
+  },
+  {
+    "code": "r-rd-source-attribution",
+    "severity": "warning",
+    "message": "Rd nodes have file-level source attribution; exact node byte ranges are unavailable.",
+    "source": {
+      "kind": "repository",
+      "repository": "r",
+      "path": "man/mean_squared_error.Rd"
+    },
+    "span": null
+  }
+]

@@ -44,6 +44,19 @@ See the [Python extraction contract](docs/ir/python-extraction.md) for the
 supported surface and the component APIs. CLI pipeline integration remains in
 the later roadmap milestones.
 
+## Static R extraction
+
+The library's `extractors::r::extract_target` reads `DESCRIPTION`, `NAMESPACE`,
+maintained R source, and checked-in Rd documentation without starting R or
+evaluating package code. It reconciles exports, assignment and help aliases,
+S3 generics, methods, and constructors into canonical items with structured
+signatures and documentation.
+
+See the [R extraction contract](docs/ir/r-extraction.md) for the supported
+subset and diagnostics. Rd nodes currently carry file-level attribution and
+one location warning per file; parser diagnostics retain their exact ranges.
+CLI pipeline integration remains in the later roadmap milestones.
+
 ## Development
 
 Enter the reproducible development shell:

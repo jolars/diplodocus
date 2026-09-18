@@ -700,5 +700,6 @@ fn alias_rank(kind: ItemAliasKind) -> u8 {
         ItemAliasKind::PythonReexport => 0,
         ItemAliasKind::PythonAssignment => 1,
         ItemAliasKind::RdAlias => 2,
+        ItemAliasKind::RAssignment => 3,
     }
 }

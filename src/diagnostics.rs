@@ -10,6 +10,42 @@ use crate::ir::SourceSpan;
 /// Stable diagnostic identifier.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DiagnosticCode {
+    /// R metadata is malformed or lacks required static values.
+    #[serde(rename = "r-metadata")]
+    RMetadata,
+    /// An R input cannot be read or decoded.
+    #[serde(rename = "r-source-read")]
+    RSourceRead,
+    /// Maintained R source has syntax errors.
+    #[serde(rename = "r-syntax")]
+    RSyntax,
+    /// Namespace syntax or semantics cannot establish a static surface.
+    #[serde(rename = "r-unsupported-namespace")]
+    RUnsupportedNamespace,
+    /// An exported or registered R definition cannot be established.
+    #[serde(rename = "r-unresolved-definition")]
+    RUnresolvedDefinition,
+    /// R declarations, signatures, or documentation have conflicting meanings.
+    #[serde(rename = "r-conflicting-surface")]
+    RConflictingSurface,
+    /// A public R declaration lacks a documented alias.
+    #[serde(rename = "r-missing-documented-alias")]
+    RMissingDocumentedAlias,
+    /// A public R construct exceeds the static semantic subset.
+    #[serde(rename = "r-unsupported-surface")]
+    RUnsupportedSurface,
+    /// Rd parsing failed or recovered malformed syntax.
+    #[serde(rename = "r-rd-syntax")]
+    RRdSyntax,
+    /// Strict Rd views reject a lossy or ambiguous projection.
+    #[serde(rename = "r-rd-information-loss")]
+    RRdInformationLoss,
+    /// Successful Rd nodes have only file-level source attribution.
+    #[serde(rename = "r-rd-source-attribution")]
+    RRdSourceAttribution,
+    /// Rd content cannot be translated or evaluated statically.
+    #[serde(rename = "unsupported-rd")]
+    UnsupportedRd,
     /// Authored syntax is outside Diplodocus's supported profile.
     #[serde(rename = "unsupported-authored-syntax")]
     UnsupportedAuthoredSyntax,
@@ -139,6 +175,18 @@ impl DiagnosticCode {
     /// Stable serialized identifier, also used to order diagnostics.
     pub const fn as_str(self) -> &'static str {
         match self {
+            Self::RMetadata => "r-metadata",
+            Self::RSourceRead => "r-source-read",
+            Self::RSyntax => "r-syntax",
+            Self::RUnsupportedNamespace => "r-unsupported-namespace",
+            Self::RUnresolvedDefinition => "r-unresolved-definition",
+            Self::RConflictingSurface => "r-conflicting-surface",
+            Self::RMissingDocumentedAlias => "r-missing-documented-alias",
+            Self::RUnsupportedSurface => "r-unsupported-surface",
+            Self::RRdSyntax => "r-rd-syntax",
+            Self::RRdInformationLoss => "r-rd-information-loss",
+            Self::RRdSourceAttribution => "r-rd-source-attribution",
+            Self::UnsupportedRd => "unsupported-rd",
             Self::UnsupportedAuthoredSyntax => "unsupported-authored-syntax",
             Self::InvalidEmbeddedYaml => "invalid-embedded-yaml",
             Self::AmbiguousCellOption => "ambiguous-cell-option",

@@ -106,7 +106,7 @@ when decoded text cannot be mapped back to its literal. Those cases follow
 
 | Component | Version | Role and recorded settings |
 | --- | --- | --- |
-| `arity-parser` | `0.6.0` | Parse `DESCRIPTION`, `NAMESPACE`, and maintained R source; record the selected grammar as `dcf`, `namespace`, or `r` for each input. Conditional namespace expressions and R calls remain unevaluated. |
+| `arity-parser` | `0.6.0` | Parse `DESCRIPTION`, `NAMESPACE`, maintained R source, and supported Rd usage calls; record the selected grammar as `dcf`, `namespace`, or `r` for each input. Conditional namespace expressions and R calls remain unevaluated. |
 | `rd-source` | `0.4.0` | Parse checked-in `Rd` bytes and provide native diagnostics. Dynamic markup remains unresolved. |
 | `rd-ast` | `0.4.0` | Interpret supported `Rd` semantics through strict shape-checking views, with default features disabled. Lossy convenience projections are not authoritative. |
 
@@ -132,7 +132,9 @@ implicit capabilities:
 The manifest does not claim roxygen generation, package installation, namespace
 loading, source evaluation, dynamic `Rd` evaluation, or exact ranges for
 successful `Rd` nodes. Until an exact `Rd` source map exists, those nodes carry
-file-level provenance and an incomplete-source-location diagnostic.
+file-level provenance and one `r-rd-source-attribution` warning per Rd file.
+The [R extraction contract](../ir/r-extraction.md) defines the production API,
+supported subset, and coarse document-range behavior.
 
 ## Provenance fields
 

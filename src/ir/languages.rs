@@ -43,6 +43,8 @@ pub enum ItemAliasKind {
     PythonReexport,
     /// A statically proven assignment of the same object.
     PythonAssignment,
+    /// A statically proven assignment of the same R function.
+    RAssignment,
     /// An Rd lookup name reconciled with a maintained declaration.
     RdAlias,
 }
