@@ -2,22 +2,18 @@
 
 ## Purpose
 
-Diplodocus is a documentation generator for polyglot software projects, including
-both monorepos and product families spread across several repositories.
+Diplodocus is a documentation generator for polyglot software projects,
+including both monorepos and product families spread across several
+repositories.
 
 Its central goal is to provide **one coherent documentation website** for
 packages implemented in different languages, rather than composing sites
 produced independently by tools such as rustdoc, pkgdown, Sphinx, or
 Documenter.jl.
 
-Typical projects include:
-
-- Python and R packages that expose the same statistical library;
-- a core library with bindings for several programming languages;
-- several independently released packages in one monorepo;
-- several independently released packages in separate repositories;
-- packages written in different languages but belonging to the same software
-  project.
+Typical projects include Python and R packages exposing the same statistical
+library, a core library with bindings for several languages, and independently
+released packages belonging to one software project.
 
 Diplodocus should make these appear as parts of one documentation system, with
 common navigation, styling, search, URLs, and page structure.
@@ -29,9 +25,9 @@ It should prove the complete workflow for those two ecosystems before adding
 others. Rust, Julia, and TypeScript are natural candidates for later extractors,
 but are not part of the initial scope.
 
-The initial product is one coherent snapshot of the documentation in the
-current set of supplied source repositories. Extraction saves that snapshot in
-a portable SQLite database; generation turns it into a static website. The two
+The initial product is one coherent snapshot of the documentation in the current
+set of supplied source repositories. Extraction saves that snapshot in a
+portable SQLite database; generation turns it into a static website. The two
 stages can run independently, while `build` runs both. Historical release
 assembly is a later concern.
 
@@ -39,18 +35,14 @@ assembly is a later concern.
 
 ### One renderer
 
-Diplodocus owns the generated HTML.
+Diplodocus owns the generated HTML. Extractors and content adapters supply a
+shared structured model, giving the renderer control over navigation, search,
+URLs, and language-specific presentation. Delegating HTML generation to rustdoc,
+pkgdown, Sphinx, or Documenter.jl would divide that control among independent
+systems and is outside the design.
 
-Package metadata, source code, stubs, namespaces, and documentation formats are
-parsed in-process with Rust libraries or Diplodocus-owned Rust parsers. Language
-runtimes are reserved for explicitly authorized execution of code examples and
-authored documentation chunks; they are not part of parsing or API extraction.
-Diplodocus must not delegate HTML generation to rustdoc, pkgdown, Sphinx,
-Documenter.jl, or equivalent systems.
-
-When an extractor encounters a construct that Diplodocus cannot faithfully
-represent, it should emit a visible diagnostic rather than silently discarding
-information.
+Unsupported constructs must produce visible diagnostics rather than silent
+information loss.
 
 ### Language-aware, not lowest-common-denominator
 
@@ -82,8 +74,8 @@ checkouts/
 └── foo-r/
 ```
 
-Packages need not share a repository, language, or release cycle. Diplodocus does
-not clone, fetch, or update repositories; the caller is responsible for
+Packages need not share a repository, language, or release cycle. Diplodocus
+does not clone, fetch, or update repositories; the caller is responsible for
 supplying the local source roots.
 
 ### Static output
@@ -93,35 +85,36 @@ Cloudflare Pages, Netlify, or any ordinary HTTP server.
 
 ### Reproducible builds
 
-The same source repositories and configuration should produce the same
-documentation output, apart from explicitly non-reproducible metadata.
+The same declared source contents, configuration, extractor and parser versions,
+capabilities, and environment inputs should produce the same extraction results,
+apart from explicitly non-reproducible metadata.
 
 The same logical snapshot, generator version, and presentation settings should
-produce identical site files. Snapshot equivalence is defined by its records
-and asset contents, not by the physical layout or bytes of the SQLite file.
+produce identical site files. Snapshot equivalence is defined by its records and
+asset contents, not by the physical layout or bytes of the SQLite file.
 
-Diplodocus itself should not perform implicit network access during normal builds.
+Diplodocus itself should not perform implicit network access during normal
+builds.
 
-Executable authored content weakens this guarantee in a visible, controlled
-way. Diplodocus records the selected execution engine, kernel, toolchain,
-normalized cell options, declared environment inputs, and source fingerprint in
-provenance and execution-cache keys. It cannot make code deterministic when the
-code reads undeclared state, uses randomness or time, or accesses the network.
+Authored execution adds its toolchain and results to this contract. Recording
+provenance cannot make code deterministic when it reads undeclared state, uses
+randomness or time, or accesses the network. A snapshot preserves the results
+obtained, without claiming that another environment would reproduce them.
 
 ### Explicit authored execution
 
-Language runtimes may be invoked only by execution engines, and only to run
-explicitly authorized examples or authored documentation code chunks. The MVP
-authorizes executable QMD cells; extracted API examples remain display-only
-until they have a separate execution policy. Parsing completes before execution
-and never depends on runtime results.
+Language runtimes may be invoked only by execution engines for explicitly
+authorized authored code. The MVP permits executable QMD cells; extracted API
+examples remain display-only until they have a separate execution policy.
+Parsing completes before execution and never depends on runtime results.
 
 Authored code cells execute arbitrary code with the user's privileges. Execution
 is therefore disabled by default and may be enabled only by workspace
-configuration; document metadata alone cannot grant permission to execute.
-Diplodocus does not sandbox cells, install their dependencies, or make network
-requests on their behalf. Because execution is unsandboxed, however, a cell may
-access the network unless the surrounding environment prevents it.
+configuration; document metadata alone cannot grant permission to execute. An
+executing collection must select `mode = "execute"`, the `jupyter` engine, and
+an explicit kernel name. The default mode is `never`. Diplodocus does not
+sandbox cells or install their dependencies. Cells may access the network unless
+the surrounding environment prevents it.
 
 `diplodocus check` parses and validates code cells without executing them.
 `extract`, including extraction invoked by `build` or `serve`, executes cells
@@ -133,8 +126,8 @@ only for content collections whose configuration explicitly enables execution.
 ## Architecture
 
 Diplodocus separates extraction and preparation from website generation. The
-intermediate representation (IR) is the structured documentation model shared
-by both stages; SQLite stores a complete snapshot of that model.
+intermediate representation (IR) is the structured documentation model shared by
+both stages; SQLite stores a complete snapshot of that model.
 
 ```text
 Extraction
@@ -151,11 +144,8 @@ Generation
       → HTML renderer and static assets
 ```
 
-The `extract` command coordinates preparation of the whole workspace snapshot.
-API extractors remain static components within that stage; the separate
-execution engine alone runs authorized authored cells. The core merges their
-results, resolves semantic references, and publishes the snapshot only after
-successful validation.
+The core coordinates extraction, merges results, resolves semantic references,
+and publishes the snapshot only after successful validation.
 
 Generation reads a completed snapshot without changing it. It requires neither
 the source checkouts nor their configuration files, execution caches, or
@@ -176,73 +166,45 @@ package with a Python extraction target, not separate Python and Rust packages.
 Internal bindings may be declared separately when their APIs are themselves
 intended documentation targets.
 
-Initial extractors:
+Built-in extractors run in-process with Rust-native parsers and read only
+declared inputs. They never start a language runtime or external parser, execute
+package code, or invoke a build backend. Dynamic metadata and semantics outside
+the supported static subset produce diagnostics, with no runtime fallback.
 
-```text
-Python
-R
-```
-
-Possible later extractors include Rust, Julia, and TypeScript.
-
-Extractors use Rust-native parsing infrastructure. They may preserve and model
-ecosystem-specific semantics, but they do not invoke the documented language's
-runtime to discover those semantics.
+This keeps extraction usable without installing the documented packages or their
+language environments, including native extensions available only as stubs. It
+also leaves parser adaptation and semantic analysis under Diplodocus's control.
+The cost is maintaining those adapters and accepting incomplete coverage of
+dynamic APIs. The [static-extraction
+decision](docs/decisions/0001-static-extraction.md) records the parser choices
+and rejected alternatives.
 
 For the initial extractors:
 
 - Python uses static source analysis and package metadata. Public exports,
   re-exports, type stubs, and extension-module stubs form part of that static
-  surface. Extraction never imports the documented package.
+  surface.
 - R parses `DESCRIPTION`, `NAMESPACE`, maintained R source, and checked-in `Rd`
-  documentation without starting R or loading the documented package.
+  documentation.
 
-The same boundary applies to later ecosystems. When Rust-native extraction
-cannot represent a required dynamic construct, the extractor emits a visible
-diagnostic rather than falling back to runtime introspection or an external
-parser helper.
-
-The extractor boundary should remain independent from storage and rendering.
-
-Conceptually:
-
-```text
-configured Python extraction target
-         → Python extractor
-         → package fragment
-```
-
-### Static extractor boundary
-
-Built-in extractors run in the Diplodocus process. They may read only declared
-inputs and do not start a language runtime, execute package code, invoke a build
-backend, import a Python package, or source, attach, or load an R package.
-Dynamic metadata and semantics outside a supported static subset produce
-diagnostics.
-
-The generated IR records the extractor and parser versions, declared
-capabilities, static extraction mode, and diagnostics. These inputs also form
-part of any extraction cache key.
-
-Reproducibility means that the same source repository contents, configuration,
-extractor and parser versions, capabilities, and declared environment inputs
-produce the same output. External runtimes and toolchains affect this contract
-only when explicitly authorized code examples or authored code chunks are
-executed.
+Extractors return package fragments independently of storage and rendering. The
+[static-extractor contract](docs/spikes/static-extractor-contract.md) defines
+their capabilities and provenance, including extractor and parser versions,
+static mode, and diagnostics. These inputs also participate in any extraction
+cache key.
 
 ### Authored content parsing
 
-Diplodocus uses the `panache-parser` Rust crate in-process for authored Markdown. It
-does not invoke Panache's command-line interface, Pandoc, or Quarto. The content
-adapter selects Panache's GFM or Quarto flavor, consumes its typed syntax views
-and embedded-language diagnostics, and translates supported constructs directly
-into Diplodocus's document IR.
+Diplodocus uses `panache-parser` in-process for authored Markdown. The adapter
+selects its GFM or Quarto flavor and translates typed syntax views directly into
+document IR, preserving source ranges and embedded-language diagnostics.
+Unsupported syntax remains visible to the adapter.
 
-The Panache CST is a source-facing representation, not Diplodocus's portable IR.
-Diplodocus does not use Panache's Pandoc-native or Pandoc-JSON projectors as an
-interchange format. Unsupported and newly introduced syntax must remain visible
-to the adapter with its source range so that Diplodocus can diagnose it rather than
-silently flattening or discarding it.
+Panache's CST stays inside this boundary. Neither its Pandoc projectors nor the
+Panache, Pandoc, or Quarto command-line tools participate in the pipeline.
+Direct translation preserves source evidence and cell declarations under the
+adapter's control; the [authored-content
+decision](docs/decisions/0002-authored-content.md) explains this choice.
 
 ### Documentation IR
 
@@ -346,20 +308,20 @@ OutputRepresentation
 
 A repository represents one caller-supplied source root. Its local root is a
 build input and is never written into portable IR or rendered output; source
-locations use a repository ID and normalized repository-relative path. A
-package represents a documented or released unit. Its `ecosystem` is the
-language of its public API, not necessarily every implementation language
-present in its source tree. A package `kind` is either `package` or `component`.
-Its `visibility` is `public`, `internal`, or `hidden`, allowing an ABI used by a
-binding to participate in semantic links without automatically appearing as a
-top-level public package.
+locations use a repository ID and normalized repository-relative path. A package
+represents a documented or released unit. Its `ecosystem` is the language of its
+public API, not necessarily every implementation language present in its source
+tree. A package `kind` is either `package` or `component`. Its `visibility` is
+`public`, `internal`, or `hidden`, allowing an ABI used by a binding to
+participate in semantic links without automatically appearing as a top-level
+public package.
 
 An extraction target identifies one authoritative API source within a package.
 It may have a different root from the package metadata. Generated artifacts may
-be targets when they are the only authoritative description of a public API,
-but extractors should otherwise prefer maintained source and avoid indexing the
-same API from both maintained and generated files. The target role distinguishes
-a package's public API from an internal interface that is retained only for
+be targets when they are the only authoritative description of a public API, but
+extractors should otherwise prefer maintained source and avoid indexing the same
+API from both maintained and generated files. The target role distinguishes a
+package's public API from an internal interface that is retained only for
 cross-component documentation and links.
 
 Signatures are structured syntax trees rather than display strings. Their nodes
@@ -373,40 +335,15 @@ return sections, admonitions, examples, and semantic references. Extractors and
 content adapters should retain source-format provenance and raw source where it
 is useful for diagnostics, but the renderer consumes the structured form.
 
-Cell output is never an untyped HTML or Markdown string passed to the renderer.
-Ordinary stdout and stderr become escaped, preformatted stream output. A
-`text/markdown` representation, or stdout explicitly marked as `output: asis`,
-is parsed as a Markdown fragment with execution disabled and stored as document
-blocks. Binary figures become content-addressed local assets. HTML output must
-be sanitized into a distinct representation before reaching the renderer; when
-safe sanitization would lose the result's meaning, Diplodocus emits a diagnostic
-and falls back to another supported MIME representation.
+Cell outputs distinguish escaped stream text, inert Markdown blocks,
+content-addressed assets, and sanitized HTML. The [authored-execution
+contract](docs/spikes/authored-execution-contract.md) defines conversion,
+sanitization, and fallback behavior. Untyped output strings cannot bypass that
+boundary.
 
-Common item kinds might include:
-
-```text
-module
-function
-method
-type
-class
-constant
-field
-namespace
-```
-
-Language-specific concepts belong in typed language extensions rather than being
-flattened into generic concepts.
-
-For example:
-
-```text
-PythonItemData
-RItemData
-```
-
-The IR should have an explicit schema version so extractors and renderers can
-evolve independently.
+Common item kinds include modules, functions, methods, types, classes,
+constants, fields, and namespaces. Language-specific concepts belong in typed
+extensions such as `PythonItemData` and `RItemData`.
 
 ### SQLite snapshot
 
@@ -426,61 +363,33 @@ The snapshot contains:
   information; and
 - schema and producer versions, stable entity IDs, and content fingerprints.
 
-Asset bytes are stored by content fingerprint and referenced from the IR.
-Generation writes them to the output tree. Source locations remain
-repository-relative evidence, not files that generation must open. External
-hyperlinks remain links; extraction does not fetch their targets. Built-in
-theme assets ship with Diplodocus. A future custom-theme facility must specify
-how its assets travel with the snapshot before claiming the same portability.
+SQLite keeps semantic records and asset bytes together in one transferable file
+and supports atomic publication. It adds storage and validation code,
+serialization costs, and a format compatibility obligation; snapshots with many
+figures or downloads may be large. The initial scope accepts these costs for
+portable artifacts and independent generation.
 
-SQLite is the persistence layer for the typed IR. Extractors return structured
-values, and the core owns their storage. Top-level entities should be queryable
-by semantic ID; nested documents, signatures, and language extensions may use
-versioned serialized values instead of a table for every syntax node. The
-storage implementation should also provide a canonical text export for golden
-fixtures and readable comparisons.
-
-The storage schema has an explicit version alongside the IR schema. Readers
-and writers reject unsupported versions with a clear diagnostic. The initial
-implementation does not migrate old snapshots automatically. Generation
-validates stored records, asset fingerprints, paths, and references before
-constructing the site model. Serialized HTML conveys no rendering trust and
-must pass the active sanitizer policy again.
-
-Published snapshots must be self-contained files with no dependency on a live
-journal or write-ahead log. If extraction uses a live database internally, it
-must publish a consistent standalone copy, following SQLite's
-[snapshot and backup rules](https://www.sqlite.org/backup.html).
+The core owns storage. Readers and writers reject unsupported IR or storage
+schema versions; automatic migration is deferred. Generation validates records,
+assets, paths, and references before constructing the site model, and
+revalidates stored HTML against the active sanitizer policy. Built-in theme
+assets ship with Diplodocus; external hyperlinks remain unfetched links.
 
 ### Snapshot updates
 
-Extraction is idempotent at the level of logical documentation state. Given
-the same declared inputs, implementation versions, and execution results, a
-refresh produces the same records and fingerprints without accumulating
-duplicates. Stable IDs match existing entities; removed packages, items, pages,
-relationships, and unreferenced assets disappear from the new snapshot.
-Content fingerprints use a versioned canonical encoding of semantic records,
-preserving meaningful order while sorting unordered collections. Database
-layout and transient build metadata do not participate in those fingerprints.
+A refresh produces the same logical records and fingerprints from the same
+declared inputs, implementation versions, and execution results. Stable IDs
+identify retained entities; removed entities and unreferenced assets disappear.
+The initial implementation may replace the whole snapshot.
 
-A refresh publishes the complete workspace atomically, using a transaction or
-replacement of a completed temporary database. Readers see one coherent
-snapshot, and a failed refresh leaves the previous successful snapshot intact.
-The initial implementation may replace the whole snapshot; skipping unchanged
-extraction work is a later optimization. `build` and `serve` must report a
-failed refresh rather than silently generating from the previous snapshot.
+Publication is atomic and produces a standalone file. A failed refresh leaves
+the previous snapshot intact, but `build` and `serve` must report the failure
+rather than silently generating from it. Storage idempotence does not eliminate
+execution side effects or establish whether absent sources have changed.
 
-Idempotent storage does not make authored execution deterministic or free of
-side effects. Execution remains subject to its authorization and cache
-contracts. A snapshot records the results that were obtained; generation
-renders those results without trying to refresh them. It cannot establish
-whether absent source checkouts have changed since extraction.
-
-This boundary adds storage and validation code, serialization costs, and a
-format compatibility obligation. Complete snapshots may be large when they
-contain many figures or downloads. The initial scope accepts those costs for
-portable artifacts and independent generation, while deferring automatic
-migration, historical assembly, and incremental processing.
+The [snapshot storage design](docs/design/snapshots.md) specifies record
+storage, canonical fingerprints and text exports, publication mechanics, and
+provenance.
 
 ### Item identity
 
@@ -488,10 +397,6 @@ Every item ID is scoped by a stable package ID and assigned by its API
 extractor. An item ID must distinguish overloaded functions, R methods and
 generics, aliases, and other entities that may share a qualified name. It should
 remain stable while the corresponding public API remains unchanged.
-
-Every source location is scoped by a repository ID and uses a normalized path
-relative to that repository root. Portable IR and generated output must not
-contain machine-specific absolute checkout paths.
 
 Item IDs are not URLs. The site model derives URLs from package slugs and item
 metadata, which permits redirects and layout changes without changing semantic
@@ -521,57 +426,39 @@ for example, a project-level Python quickstart to live beside the core library.
 
 The initial implementation supports two named input profiles:
 
-- `gfm` reads `.md` files as a safe GitHub-Flavored Markdown subset. Fenced
-  code is display-only.
+- `gfm` reads `.md` files as a safe GitHub-Flavored Markdown subset. Fenced code
+  is display-only.
 - `qmd` reads `.qmd` files as a documented subset of Quarto Markdown. It adds
   Quarto executable fences with braced language names, hashpipe cell options,
   and the supported Quarto callout syntax.
 
-These are compatibility profiles, not a new Diplodocus Markdown dialect. Diplodocus
-does not promise every Quarto, Pandoc, R Markdown, MyST, or GFM extension.
-Diplodocus semantic references are its only domain-specific inline extension.
-Unsupported directives, metadata, cell options, and embedded components produce
-visible diagnostics.
+These are compatibility profiles, not a new Diplodocus Markdown dialect.
+Diplodocus does not promise every Quarto, Pandoc, R Markdown, MyST, or GFM
+extension. Diplodocus semantic references are its only domain-specific inline
+extension. Unsupported directives, metadata, cell options, and embedded
+components produce visible diagnostics.
 
-The [authored-execution contract](docs/spikes/authored-execution-contract.md)
-defines the MVP metadata and cell-option subset, MIME preference, sanitization
-boundary, failure policy, toolchain requirements, and execution provenance.
+Each executable QMD page uses one configured Jupyter kernel, with cells run
+sequentially in source order. Other-language blocks remain display-only. An
+in-process Rust client consumes streams, errors, and display results without a
+Jupyter server. This gives Python, R, and other installed kernels one execution
+protocol; their executables and language packages remain external toolchain
+requirements.
 
-Only `qmd` collections may contain executable cells. Each executable page uses
-one configured Jupyter kernel, and its cells run sequentially in source order in
-one page-scoped session. Code blocks for other languages remain display-only;
-multiple executable kernels within one page are outside the initial scope.
-Kernel-backed execution provides a language-neutral protocol for Python, R, and
-other installed kernels without making Quarto, Pandoc, or a Jupyter server a
-Diplodocus dependency.
+Execution attaches structured outputs to `CodeCell` nodes. Only Markdown-valued
+results are parsed as isolated, non-executable fragments, preserving source
+locations and preventing generated output from introducing executable cells. The
+[authored-execution contract](docs/spikes/authored-execution-contract.md)
+defines the supported metadata and options, output conversion, sanitization,
+failure policy, and provenance.
 
-The first execution implementation consumes Jupyter streams, errors, display
-data, and result MIME bundles through an in-process Rust client. Kernel
-executables and language packages remain declared external toolchain
-requirements. Diplodocus never installs a kernel or its dependencies.
-
-Execution transforms `CodeCell` nodes in the document IR by attaching structured
-outputs. It does not generate an intermediate Markdown file or reparse the
-complete authored page. Markdown-valued results are parsed only as isolated,
-non-executable fragments. This preserves original source locations and prevents
-generated output from introducing another executable cell.
-
-An execution cache stores a complete page's structured cell results rather than
-generated Markdown. Its key includes the authored source, normalized options,
-engine and kernel identities, relevant toolchain versions, and declared
-environment inputs. Page-level caching preserves stateful cell semantics; fine-
-grained dependency analysis and cell-level caching are later concerns.
-
-The [page execution-cache contract](docs/spikes/page-execution-cache.md) defines
-canonical key encoding, runtime identity verification, the versioned artifact
-layout, validation on restore, and atomic publication. A hit verifies the
-current kernel through startup and kernel info, then skips authored cells.
-
-That cache is private working data used during extraction. The portable
-snapshot contains the accepted outputs and asset bytes, not a dependency on
-cache entries. Generation consumes those recorded outputs without performing
-a cache lookup or verifying the current kernel. It does not claim that the
-results would be reproduced by a fresh execution in another environment.
+The private execution cache stores complete pages of structured results to
+preserve stateful cell semantics. The [page execution-cache
+contract](docs/spikes/page-execution-cache.md) defines keys covering source,
+options, engine, kernel, toolchain, and declared environment inputs, plus
+validation and atomic publication. A hit verifies the current kernel through
+startup and kernel info, then skips authored cells. Accepted outputs and asset
+bytes enter the portable snapshot independently of cache entries.
 
 Authored pages and generated API pages participate in the same navigation, link
 resolution, and search index.
@@ -666,40 +553,31 @@ repository after normalization. This allows explicit sibling checkouts without
 making an arbitrary relative path an undeclared source root.
 
 The repository URL identifies the canonical source origin. An optional source
-link template controls forge-specific revision, path, and line URLs; Diplodocus may
-infer standard templates for known forges. Diplodocus records a revision and a
-fingerprint of the declared extraction and content inputs for every repository
-in the generated provenance. It may inspect local version-control metadata
-without modifying the checkout, but it never fetches or changes revisions.
-Configuration or the build environment may provide the revision when the source
-is not a version-control checkout.
+link template controls forge-specific revision, path, and line URLs; Diplodocus
+may infer standard templates for known forges. It may read local version-control
+metadata for provenance. Configuration or the build environment may supply the
+revision when the source is not a version-control checkout.
 
 The package `id` is the stable identity used by references and relationships.
 The `slug` controls its URL and must be unique within the site. Neither is
-derived from the package's ecosystem, so a workspace may contain several
-Python or R packages, and packages in different ecosystems may share the same
-published name. `kind` defaults to `package`, and `visibility` defaults to
-`public`. The reserved content owner `project` denotes project-level material;
-any other owner is a package ID.
+derived from the package's ecosystem, so a workspace may contain several Python
+or R packages, and packages in different ecosystems may share the same published
+name. `kind` defaults to `package`, and `visibility` defaults to `public`. The
+reserved content owner `project` denotes project-level material; any other owner
+is a package ID.
 
-The content `format` is explicit: `gfm` collections discover `.md` files, and
-`qmd` collections discover `.qmd` files. Execution defaults to `mode = "never"`.
-The initial execution modes are `never` and `execute`; `execute` is valid only
-for `qmd` and requires the `jupyter` engine and an explicit kernel name.
-Document frontmatter may configure supported presentation and cell behavior but
-cannot select an execution mode, engine, or kernel that the collection did not
-authorize.
+The content `format` selects the [authored
+documentation](#authored-documentation) profile. Execution follows the
+[workspace authorization policy](#explicit-authored-execution); frontmatter may
+configure supported presentation and cell behavior within that authority.
 
 Declared environment inputs are paths relative to the content collection's
 repository and obey the same traversal and symlink restrictions as other
-declared inputs. They commonly include lockfiles or environment manifests.
-Their contents participate in provenance and execution-cache keys, but Diplodocus
-does not interpret them or install the environment they describe.
+declared inputs. They commonly include lockfiles or environment manifests. Their
+contents participate in provenance and execution-cache keys, but Diplodocus does
+not interpret them or install the environment they describe.
 
-Configuration should be explicit and small.
-
-Automatic package discovery may be added later, but the configuration file
-remains authoritative.
+Configuration remains authoritative; automatic package discovery is deferred.
 
 --------------------------------------------------------------------------------
 
@@ -726,20 +604,14 @@ A site generated from that snapshot might look like:
     └── r/
 ```
 
-The snapshot provenance records each repository's canonical URL, revision,
-declared-input fingerprint, and dirty state when available, together with each
-package's extracted version and declared relationships. For executed content it
-also records the engine, kernel, kernel-reported language and version, cell
-options, declared environment fingerprints, and whether an output came from a
-fresh execution or the page-level cache. A multi-repository snapshot is
-coherent only when its binding and dependency constraints match the versions
-represented by the supplied sources. `diplodocus check` should diagnose known
-mismatches but must not resolve, install, or update dependencies.
+A multi-repository snapshot is coherent only when its binding and dependency
+constraints match the versions represented by the supplied sources. Package
+relationships let `diplodocus check` diagnose known mismatches.
 
-Historical documentation requires assembling snapshots built from different
-sets of source revisions. That operation is outside the initial `build`
-command. A later release assembler may consume existing snapshot artifacts or
-explicit checkouts, but it must not make ordinary builds depend on implicit
+Historical documentation requires assembling snapshots built from different sets
+of source revisions. That operation is outside the initial `build` command. A
+later release assembler may consume existing snapshot artifacts or explicit
+checkouts, but it must not make ordinary builds depend on implicit
 version-control operations or network access.
 
 --------------------------------------------------------------------------------
@@ -766,8 +638,8 @@ Foo for Python
 └── Modules
 ```
 
-Navigation is generated from packages in the site model rather than from its
-set of ecosystems or independently by each extractor.
+Navigation is generated from packages in the site model rather than from its set
+of ecosystems or independently by each extractor.
 
 Only public packages appear at the project level by default. Internal units may
 contribute reference pages, semantic link targets, and search entries without
@@ -803,22 +675,22 @@ provenance even when no corresponding source repository is present; version
 compatibility can be checked only when the other endpoint and its version are
 available.
 
-For example, a Python distribution may bind a Rust crate compatible with
-version `1.9`, while a Julia package consumes an artifact from one exact C ABI
-release. Recording both relationships lets validation distinguish the source
-version currently being documented from the dependency version actually used
-by each binding.
+For example, a Python distribution may bind a Rust crate compatible with version
+`1.9`, while a Julia package consumes an artifact from one exact C ABI release.
+Recording both relationships lets validation distinguish the source version
+currently being documented from the dependency version actually used by each
+binding.
 
 Diplodocus does not attempt dependency resolution. It reports inconsistent or
-unknown relationships when enough information is available and otherwise
-retains them as snapshot metadata.
+unknown relationships when enough information is available and otherwise retains
+them as snapshot metadata.
 
 --------------------------------------------------------------------------------
 
 ## Cross-package relationships
 
-Diplodocus should support relationships between equivalent or related APIs across
-packages in its first useful release.
+Diplodocus should support relationships between equivalent or related APIs
+across packages in its first useful release.
 
 For example:
 
@@ -848,11 +720,11 @@ including several packages written in the same language. Members resolve to
 semantic item IDs during validation. Qualified names are accepted as authoring
 conveniences only when they resolve unambiguously.
 
-Concept members normally target a public callable family. A family may contain
-a generic and its methods, or a function and its overloads, so that languages
-with different dispatch models do not require one concept per method. The
-API extractor defines these family relationships in the package IR while
-preserving every method or overload as an addressable item.
+Concept members normally target a public callable family. A family may contain a
+generic and its methods, or a function and its overloads, so that languages with
+different dispatch models do not require one concept per method. The API
+extractor defines these family relationships in the package IR while preserving
+every method or overload as an addressable item.
 
 Concept pages and member pages should expose the relationship prominently, for
 example through a "Same API in" switcher for equivalent members or a "Related
@@ -866,18 +738,9 @@ principal differentiator from existing documentation generators.
 
 ## Linking
 
-Every documentation entity must have a stable internal identifier independent of
-its rendered URL.
-
-Links should therefore resolve against semantic identifiers rather than raw HTML
-paths.
-
-This enables:
-
-- cross-package references;
-- API renames and redirects;
-- automatic source links;
-- link validation.
+Every documentation entity has a stable internal identifier independent of its
+rendered URL. Links resolve against those identifiers, supporting cross-package
+references, renames and redirects, source links, and validation.
 
 Authored content should support package-qualified semantic references:
 
@@ -886,38 +749,24 @@ Authored content should support package-qualified semantic references:
 ```
 
 An unqualified shorthand such as ``[`FooModel.fit`]`` may be accepted when it
-resolves unambiguously in the current package or workspace. Ambiguous
-references are errors reported by `diplodocus check`.
+resolves unambiguously in the current package or workspace. Ambiguous references
+are errors reported by `diplodocus check`.
 
 --------------------------------------------------------------------------------
 
 ## Search
 
-Search should operate over the entire documentation workspace.
-
-The search index should include:
-
-```text
-authored pages
-packages
-modules
-types
-functions
-methods
-signatures
-documentation text
-```
-
-Search results should identify both package and API ecosystem.
-
-The first implementation can generate a static browser-side search index.
+Search covers authored pages, packages, modules, types, functions, methods,
+signatures, and documentation text across the workspace. Results identify both
+package and API ecosystem. The first implementation can generate a static
+browser-side index.
 
 --------------------------------------------------------------------------------
 
 ## Rendering
 
-Generation loads and validates the snapshot, then constructs the site model.
-The renderer consumes only that model and must not contain language parsing or
+Generation loads and validates the snapshot, then constructs the site model. The
+renderer consumes only that model and must not contain language parsing or
 database access logic.
 
 Default presentation settings travel with the snapshot. Explicit generation
@@ -926,54 +775,23 @@ source selection, API semantics, or execution policy require a new extraction.
 The initial renderer has one built-in theme. This boundary permits later theme
 support without making a theme extension API part of the first release.
 
-The renderer is responsible for:
+The renderer owns HTML, responsive layout, navigation, breadcrumbs, search,
+source links, syntax highlighting, API signatures, and code-cell presentation.
+Language-specific components allow a Python class page and an R generic-function
+page to use different layouts within one visual system.
 
-- HTML;
-- layout;
-- navigation;
-- syntax highlighting;
-- code-cell inputs and structured outputs;
-- API signatures;
-- source links;
-- breadcrumbs;
-- search;
-- responsive design.
-
-Language-specific presentation should be implemented through structured renderer
-components rather than separate themes.
-
-The renderer chooses among the safe representations retained for a display
-result. It escapes text, renders parsed Markdown blocks through the ordinary
-document path, emits local content-addressed assets, and accepts HTML only from
-the sanitizer boundary. Raw source HTML and unsanitized kernel HTML never enter
-the renderer as trusted markup.
-
-For example, a Python class page and an R generic-function page may use different
-layouts while clearly belonging to the same visual system.
+Display results use the safe representations defined by the document IR and
+execution contract. Raw source HTML and unsanitized kernel HTML never enter the
+renderer as trusted markup.
 
 ### Incremental rendering
 
-The initial generator may render the entire site. The snapshot contract must
-nevertheless preserve stable entity IDs, per-entity content fingerprints, and
-structured references so that later generators can determine which outputs
-depend on changed documentation. A changed database file alone does not imply
-that every page has changed. Full extraction and incremental rendering are
-independent choices.
-
-A future incremental generator keeps a disposable build manifest alongside
-the generated output, separate from the input snapshot. It records input
-fingerprints, dependencies, and emitted paths for pages and shared outputs.
-Dependencies include referenced entities, package navigation, concepts, and
-search data. The generator must also account for renderer and sanitizer
-versions, theme assets, and effective presentation settings, falling back to
-a full render when its previous state is missing or incompatible.
-
-For example, changing a function's documentation may affect its reference page
-and search entry, while renaming a package can affect navigation throughout
-the site. Deleted entities and changed URLs also require removing obsolete
-output files. Selective generation must produce the same files as a clean full
-generation from the same snapshot and settings. Dependency tracking and
-invalidation are later work, not behavior supplied automatically by SQLite.
+The initial generator may render the entire site. Snapshots must preserve stable
+entity IDs, per-entity content fingerprints, and structured references for later
+dependency tracking. Selective generation must produce the same files as a clean
+full generation. The [future rendering
+design](docs/design/snapshots.md#future-incremental-rendering) describes the
+proposed manifest and invalidation behavior.
 
 --------------------------------------------------------------------------------
 
@@ -989,23 +807,21 @@ diplodocus extract --output documentation.sqlite
 diplodocus generate --input documentation.sqlite --output site
 ```
 
-`extract` reads the workspace configuration and declared sources, parses and
-extracts documentation, performs configured authored execution, resolves
-semantic references, collects assets, and publishes a validated SQLite
-snapshot. Its default output is `.diplodocus/documentation.sqlite` relative to
-the workspace configuration. `--output` selects another snapshot path.
+`extract` runs the [extraction pipeline](#architecture). Its default output is
+`.diplodocus/documentation.sqlite` relative to the workspace configuration;
+`--output` selects another snapshot path.
 
 `generate` requires an explicit `--input` snapshot and renders it to `--output`,
 which defaults to `./site`. It uses recorded defaults and explicit presentation
-overrides without discovering a workspace configuration or reading sources.
-Both stages report diagnostics and return a nonzero exit status on errors.
+overrides. Both stages report diagnostics and return a nonzero exit status on
+errors.
 
 `build` runs extraction into the default snapshot location followed by
-generation. It must have the same behavior as running the two stages
-separately. `serve` builds, serves, and watches declared inputs, retaining the
-last successful site when a rebuild fails. A failed generation also leaves the
-last successful site intact; a successfully extracted snapshot remains usable
-for another generation attempt.
+generation. It must have the same behavior as running the two stages separately.
+`serve` builds, serves, and watches declared inputs, retaining the last
+successful site when a rebuild fails. A failed generation also leaves the last
+successful site intact; a successfully extracted snapshot remains usable for
+another generation attempt.
 
 `check` should validate configuration, source roots, unresolved references,
 duplicate identifiers, missing package metadata, incompatible package
@@ -1021,9 +837,7 @@ only by execution results that do not yet exist.
 
 ## Extensibility
 
-API ecosystem support should be modular.
-
-The core should define an extractor interface conceptually similar to:
+The core defines an internal extractor interface conceptually similar to:
 
 ```text
 Extractor
@@ -1041,13 +855,6 @@ The core merges fragments from a package's extraction targets and diagnoses
 duplicate or conflicting item identities. Extractors do not merge fragments or
 infer undeclared targets themselves.
 
-Configuration is authoritative, so automatic package or ecosystem detection is
-not part of the initial interface. Extractors should not have access to
-rendering internals.
-
-Initially, extractors can live in the main repository. A stable external plugin
-API is unnecessary until the internal IR and extractor API have matured.
-
 Authored execution is modular through a separate internal interface:
 
 ```text
@@ -1064,66 +871,39 @@ ExecutionResult
   provenance
 ```
 
-The initial engine is `jupyter`. It consumes the document IR, executes its cells
-in one page-scoped kernel session, and returns structured outputs. Engines do not
-emit page HTML, mutate the source document, install dependencies, or bypass the
-renderer. This internal interface does not imply a stable external execution-
-engine plugin API.
+Engines return document IR and assets without modifying source files or emitting
+page HTML. Both interfaces can initially live in the main repository; stable
+external plugin APIs are deferred until the internal contracts have matured.
 
 --------------------------------------------------------------------------------
 
 ## Implementation strategy
 
-The initial implementation should be a vertical slice through one representative
-workspace containing related Python and R packages in separate source
-repositories. A sensible order is:
+Implement a vertical slice through related Python and R packages in separate
+repositories. Diplodocus's CLI, core, renderer, extractors, content adapter, and
+Jupyter client will use Rust, providing one binary for the complete pipeline.
+The [roadmap](TODO.md) tracks milestones and fixtures; the architectural
+sequence is:
 
-1. Define a small multi-repository acceptance corpus containing Python functions
-   and classes, public re-exports and type stubs, a native-extension stub, R
-   functions and S3 methods, authored GFM and executable QMD, unsupported
-   content directives, and several equivalent and analogous APIs.
-2. Spike both API extractors, the Panache content adapter, and Jupyter execution
-   against that corpus to discover what their Rust-native libraries expose and
-   where information is lost.
-3. Define the repository, package, extraction-target, content-collection, and
-   relationship models, together with the structured IR, stable item IDs, and
-   conceptual API groups, code cells, output representations, and execution
-   provenance from the observed data.
-4. Implement the Python and R extractors test-first against golden IR fixtures.
-5. Implement the GFM and QMD adapters, followed by page-scoped Jupyter execution
-   and its structured output conversion.
-6. Implement semantic reference resolution and `diplodocus check`, including
-   diagnostics for ambiguity, unsupported constructs, incoherent package
-   relationships, and unresolved concepts.
-7. Implement SQLite snapshot storage and `extract`, with tests for IR and asset
-   round trips, schema validation, logical idempotence, removal of stale records,
-   and preservation of the last successful snapshot on failure. Include stable
-   IDs, per-entity fingerprints, and canonical text exports from the outset.
-8. Implement `generate` by loading a snapshot and rendering authored pages,
-   code-cell outputs, and both API references in one site. Verify generation
-   from a copied standalone database without source checkouts, execution
-   caches, or language runtimes.
-9. Add package navigation, static workspace search, and the appropriate concept
-   switchers.
-10. Add end-to-end tests that verify deterministic output from the acceptance
-    workspace, including deterministic executable cells, and equivalence of
-    `build` with separate `extract` and `generate` commands.
-11. Only then consider incremental extraction or rendering, custom themes,
-    historical release assembly, or another ecosystem.
+1. Build an acceptance corpus covering Python functions, classes, re-exports,
+   maintained and native-extension stubs, R functions and S3 methods, GFM,
+   executable QMD, unsupported constructs, and equivalent and analogous APIs.
+2. Spike extraction, authored parsing, and execution to expose information loss,
+   then define the structured IR and identity rules from that evidence.
+3. Implement both extractors test-first against golden IR fixtures, followed by
+   content adapters, execution, semantic resolution, and `check` diagnostics.
+4. Implement snapshot storage and `extract`. Test IR and asset round trips,
+   schema validation, idempotence, stale-record removal, and failure recovery.
+   Include stable IDs, fingerprints, and canonical text exports from the outset.
+5. Implement `generate`, shared navigation, search, and concept switchers.
+   Verify generation from a copied database without sources, caches, or
+   runtimes.
+6. Verify deterministic end-to-end output, including deterministic executable
+   cells, and equivalence of `build` with separate `extract` and `generate`.
 
-Diplodocus's CLI, core, renderer, built-in extractors, Panache adapter, and Jupyter
-client will be implemented in Rust. This provides a convenient single binary
-and fits well with parsing, static-site generation, and concurrent builds. All
-built-in extractors parse their inputs in-process with Rust-native
-infrastructure. An execution engine alone may start an explicitly configured
-external Jupyter kernel, subject to the code-execution contract. Kernel
-executables and language packages are execution toolchain requirements; they
-are not extractor dependencies and do not replace Diplodocus's Rust implementation
-or renderer.
-
-Rust, Julia, and TypeScript are the next natural public-API extractors for a
-core-with-bindings ecosystem. A C extractor is optional: a C ABI may instead be
-represented initially by authored reference content and an internal component.
+Incremental processing, custom themes, historical release assembly, and further
+ecosystems follow this complete workflow. A C extractor is optional: authored
+reference content and an internal component can initially represent a C ABI.
 
 --------------------------------------------------------------------------------
 
