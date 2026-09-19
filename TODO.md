@@ -3,12 +3,20 @@
 This roadmap turns the initial product described in [DESIGN.md](DESIGN.md) into
 an ordered implementation plan. The MVP is one reproducible documentation
 snapshot for an explicitly configured workspace containing related Python and R
-packages. It is not a general documentation platform.
+packages. Extraction publishes a portable SQLite database; generation reads it
+to produce the static site. `build` runs both stages.
+
+The next contributor handoff is a documented snapshot schema, a working
+`extract` command, and a representative R/Python database with a canonical text
+export. The non-executing portion of Milestone 7 can deliver this handoff before
+Milestone 6 is complete, allowing frontend work against the snapshot to begin.
+The full MVP still includes authorized authored execution.
 
 ## How to use this roadmap
 
-- Complete the milestones in order. A milestone is complete only when its exit
-  gate passes.
+- Follow milestone dependencies. The static snapshot handoff in Milestone 7
+  may precede Milestone 6, and generation work in Milestone 8 may begin against
+  that artifact. A milestone is complete only when its full exit gate passes.
 - Add a failing test or fixture before implementing each observable behavior.
 - Keep the acceptance workspace as the source of truth for polyglot behavior and
   Diplodocus's own site as the source of truth for authored-documentation
@@ -41,10 +49,14 @@ The MVP is complete when all of the following are true:
   through one HTML renderer with safe code-cell output, shared navigation,
   source links, semantic references, concept switchers, and workspace-wide
   search.
-- [ ] **MVP-06:** `diplodocus check`, `diplodocus build`, and `diplodocus serve` satisfy the command contract below.
+- [ ] **MVP-06:** `check`, `extract`, `generate`, `build`, and `serve` satisfy
+  the command contract below. Extraction publishes a versioned, self-contained
+  SQLite snapshot; generation needs only that snapshot and the generator.
 - [ ] **MVP-07:** Repeated builds of the deterministic acceptance cells from
   identical declared sources, environments, kernels, and toolchains are
-  byte-for-byte identical and contain no machine-specific checkout paths.
+  byte-for-byte identical in site output and logically identical in snapshot
+  records and asset contents. Neither contains machine-specific checkout paths;
+  SQLite file bytes need not match.
 - [ ] **MVP-08:** Diplodocus neither installs dependencies nor performs
   implicit network access; authored execution is configuration-authorized and
   documented as arbitrary, unsandboxed code execution.
@@ -52,26 +64,45 @@ The MVP is complete when all of the following are true:
   golden, integration, link, and end-to-end tests.
 - [ ] **MVP-10:** Diplodocus builds, checks, previews, and publishes its own
   project documentation without another site generator.
-- [ ] **MVP-11:** A new user can build and preview the acceptance site by
-  following the checked-in documentation.
+- [ ] **MVP-11:** A new user can build and preview the acceptance site, or
+  extract a snapshot and generate the site separately, by following the
+  checked-in documentation.
 
 ## MVP interface contract
 
 ### Commands
 
-  | Command            | MVP behavior                                                |
-  | ------------------ | ----------------------------------------------------------- |
-  | `diplodocus check` | Load, parse, extract, and validate without executing cells. |
-  | `diplodocus build` | Run configured execution and render the static site.        |
-  | `diplodocus serve` | Build, serve, watch declared inputs, and rebuild safely.    |
+| Command | MVP behavior |
+| --- | --- |
+| `diplodocus check` | Load, parse, extract, and validate without executing cells or publishing a snapshot or site. |
+| `diplodocus extract` | Parse and extract, run authorized execution, resolve references, validate, collect assets, and publish a SQLite snapshot. |
+| `diplodocus generate` | Read and validate a snapshot, then build the site model and render the static site. |
+| `diplodocus build` | Run extraction followed by generation with the same behavior as the separate commands. |
+| `diplodocus serve` | Build, serve, watch declared inputs, and rebuild safely. |
 
-All commands accept `--config`; its default is `./diplodocus.toml`. `build` and
-`serve` accept `--output`, whose default is `./site`. `serve` also accepts
-`--host` and `--port`, defaulting to `127.0.0.1` and `8000`.
+`check`, `extract`, `build`, and `serve` accept `--config`, which defaults to
+`./diplodocus.toml`. `extract --output` selects the snapshot path; its default is
+`.diplodocus/documentation.sqlite` relative to the configuration directory.
+`build` and `serve` use that default snapshot location.
+
+`generate` requires an explicit `--input` snapshot. It uses recorded presentation
+defaults and explicit presentation overrides without reading source checkouts,
+workspace configuration, or execution caches, and never starts a language
+runtime. `generate`, `build`, and `serve` accept `--output`, defaulting to
+`./site`. `serve` also accepts `--host` and `--port`, defaulting to `127.0.0.1`
+and `8000`.
 
 Errors produce a nonzero exit status. Warnings remain visible but do not fail a
-command. A failed watched rebuild must leave the last successful site available
-and print the new diagnostics. Browser live reload is not part of the MVP.
+command. A failed extraction leaves the previous snapshot intact; `build` and
+`serve` report the failure without generating from that stale snapshot. A failed
+generation leaves the last successful site intact and preserves the newly
+extracted snapshot for another attempt. Watched rebuilds print new diagnostics
+while keeping the last successful site available. Browser live reload is not
+part of the MVP.
+
+`check` shares extraction and validation components but neither executes cells
+nor publishes output. It cannot validate references introduced only by execution
+results that do not yet exist.
 
 ### Content and output
 
@@ -90,6 +121,10 @@ and print the new diagnostics. Browser live reload is not part of the MVP.
   rooted at `/packages/<slug>/`.
 - Generated CSS, JavaScript, fonts, search data, and other runtime assets are
   local to the output tree; rendered pages do not depend on a CDN.
+- A snapshot contains semantic records, recorded execution outputs, local
+  content asset bytes, default presentation settings, provenance, schema and
+  producer versions, stable IDs, and content fingerprints. The generator
+  supplies the built-in theme; external hyperlinks remain unfetched links.
 - Portable IR and rendered output use repository-relative source locations,
   never absolute checkout paths.
 
@@ -406,10 +441,19 @@ and produce reviewed structured-output snapshots; disabled and check-only paths
 execute nothing; failure leaves no kernel or partial assets behind; and a cache
 hit produces the same portable IR and assets as its originating execution.
 
-## Milestone 7: Merge, resolve, validate, and build the site model
+## Milestone 7: Assemble, validate, and publish SQLite snapshots
+
+The core owns workspace assembly and storage. Follow the [snapshot storage
+design](docs/design/snapshots.md) and keep rendered routes, navigation, and page
+layouts in the generation stage.
+
+### Workspace assembly and checking
 
 - [ ] Add failing tests for fragment conflicts, references, relationships,
-  concepts, routes, and visibility before implementing each behavior.
+  concepts, storage, and publication before implementing each behavior.
+- [ ] Assemble declared repositories, packages, extraction targets, authored
+  collections and pages, diagnostics, and provenance into one workspace IR.
+  Include authorized execution results when the engine is available.
 - [ ] Merge all extraction-target fragments for a package deterministically and
   diagnose duplicate or conflicting identities.
 - [ ] Resolve package-qualified references such as
@@ -423,6 +467,85 @@ hit produces the same portable IR and assets as its originating execution.
   constraint as a warning.
 - [ ] Retain external relationship coordinates as provenance without treating a
   missing external source repository as an error.
+- [ ] Resolve authored page and local asset references against declared sources
+  and retain portable targets for generation to map to URLs.
+- [ ] Wire `diplodocus check` through configuration, authored-content parsing,
+  extraction, merging, reference resolution, and validation without
+  executing a cell, publishing a snapshot, or creating the output directory.
+
+### Snapshot storage and extraction
+
+- [ ] Specify and document the SQLite tables, keys, relationships, serialized
+  field shapes, and independent storage and IR schema versions. Make top-level
+  entities queryable by semantic ID; use versioned serialized values for nested
+  documents, signatures, and language extensions where appropriate.
+- [ ] Implement snapshot writing and read-only loading with rejection of
+  unsupported storage or IR versions. Validate required records, identities,
+  paths, references, and asset fingerprints; defer automatic migrations.
+- [ ] Store checked-in images and downloads and generated figure bytes by
+  content fingerprint, with all references needed to recover them without
+  source checkouts or execution caches.
+- [ ] Include presentation defaults, slugs, content mounts, source-link
+  information, diagnostics, and portable producer and repository provenance.
+- [ ] Define versioned canonical record encodings and per-entity content
+  fingerprints. Add a canonical text export for readable fixtures and logical
+  snapshot comparisons, independent of SQLite file layout.
+- [ ] Test semantic IR and asset round trips, deterministic fingerprints,
+  unsupported schema versions, malformed records, missing assets, and corrupted
+  asset contents.
+- [ ] Publish a complete workspace atomically as a standalone database with no
+  dependency on a live journal or write-ahead log. A failed refresh preserves
+  the previous successful snapshot.
+- [ ] Test repeated refreshes, stable IDs for retained entities, removal of
+  stale records and unreferenced assets, and publication failure recovery.
+  Refresh from source inputs without preserving manual database edits or
+  accumulating historical snapshots.
+- [ ] Wire `diplodocus extract` through assembly, configured execution,
+  resolution, validation, asset collection, and snapshot publication. Implement
+  the documented default path and `--output` override, and reject destinations
+  that would overwrite declared inputs.
+- [ ] Exclude generated snapshots and temporary storage files from source
+  discovery and input fingerprints.
+- [ ] Extend the acceptance registry and matrix with snapshot portability,
+  refresh, validation, and failure scenarios, plus the separate `extract` and
+  `generate` workflow.
+
+### Contributor handoff checkpoint
+
+- [ ] Provide a reproducible R/Python monorepo fixture with authored pages,
+  semantic references, concepts, and a local asset. Configure its collections
+  with `mode = "never"` so export needs no authored execution engine or runtime.
+- [ ] Export that fixture through the real `extract` command and supply the
+  database, its canonical text export, schema documentation, and example queries
+  for packages, items, documents, references, and assets.
+- [ ] Document the generator's input contract and the boundary between snapshot
+  loading, site-model construction, and rendering, so frontend work can proceed
+  independently of extraction.
+- [ ] Copy the database to a directory without source checkouts and verify that
+  the loader recovers the complete IR and asset bytes. Keep this artifact as a
+  generation fixture for Milestone 8.
+
+This checkpoint may precede production authored execution. Until that engine is
+available, `extract` must report an error for collections requesting execution;
+it must not silently publish a snapshot with their outputs missing. Completing
+this checkpoint does not satisfy the full milestone's execution coverage.
+
+**Exit gate:** `diplodocus check` succeeds for the valid acceptance workspace,
+fails with the expected diagnostics for every invalid variant, publishes no
+output, and produces the same ordered diagnostics on repeated runs. `extract`
+publishes a complete, independently readable acceptance snapshot, including
+authorized execution results and assets. Round trips, logical idempotence,
+stale-record removal, schema validation, and failed-publication recovery pass.
+
+## Milestone 8: Generate the coherent site from a snapshot
+
+- [ ] Wire `diplodocus generate --input` through read-only snapshot loading and
+  validation, site-model construction, and rendering. Use recorded presentation
+  defaults and explicit overrides without consulting source configuration.
+- [ ] Validate stored HTML against the active sanitizer policy before exposing
+  it as renderable markup; deserialization alone grants no rendering trust.
+- [ ] Add failing tests for routes, mount collisions, navigation, and visibility
+  before implementing the site model.
 - [ ] Assign stable routes independently of semantic IDs and diagnose route or
   mount collisions before rendering.
 - [ ] Build project navigation from content collections and public packages,
@@ -431,18 +554,8 @@ hit produces the same portable IR and assets as its originating execution.
   in the project switcher; keep hidden items linkable but absent from
   navigation and search.
 - [ ] Construct renderer-ready page, breadcrumb, source-link, navigation,
-  concept-switcher, code-cell-output, and search-entry models without
-  embedding parser or execution logic.
-- [ ] Wire `diplodocus check` through configuration, authored-content parsing,
-  extraction, merging, reference resolution, and validation without
-  executing a cell or creating the output directory.
-
-**Exit gate:** `diplodocus check` succeeds for the valid acceptance workspace,
-fails with the expected diagnostics for every invalid variant, writes no site,
-and produces the same ordered diagnostics on repeated runs.
-
-## Milestone 8: Render the coherent site and search index
-
+  concept-switcher, code-cell-output, and search-entry models. Keep parsing,
+  execution, and database access outside the renderer.
 - [ ] Snapshot the intended HTML for representative project, content, package,
   category, item, and concept pages before completing their templates.
 - [ ] Render all pages from the site model through one escaped HTML and asset
@@ -472,18 +585,31 @@ and produces the same ordered diagnostics on repeated runs.
   focus, contrast, narrow-screen, and no-JavaScript fallbacks.
 - [ ] Generate site-local links independently of the hosting prefix so the same
   output works at an apex domain or beneath a GitHub Pages repository path.
+- [ ] Restore content assets from the snapshot and combine them with the
+  generator's bundled theme assets without reading source files.
+- [ ] Render into a temporary sibling directory and replace the output only
+  after successful generation. Reject an output path that would overwrite the
+  input snapshot, and leave the snapshot unchanged on success or failure.
+- [ ] Generate from copied databases without source checkouts, source
+  configuration, execution caches, or language runtimes. Compare the resulting
+  site files with generation beside the original sources.
 
-**Exit gate:** Reviewed snapshots cover both ecosystems and authored content;
+**Exit gate:** `generate` produces the complete site from a copied SQLite
+snapshot alone, leaving the input unchanged and preserving the previous site on
+failure. Reviewed HTML snapshots cover both ecosystems and authored content;
 all generated internal links resolve; search returns the expected cross-package
 results; and no rendered page requires a network resource.
 
 ## Milestone 9: Complete `build` and `serve`
 
-- [ ] Wire `diplodocus build` through the same checked pipeline and render only
-  after error-free validation and successful configured execution.
-- [ ] Render into a temporary sibling directory and replace the configured
-  output only after a successful build so failures cannot leave a partial
-  site.
+- [ ] Implement `diplodocus build` as extraction to the default snapshot path
+  followed by generation. Reuse both stages and render only after successful
+  snapshot publication.
+- [ ] Prove that `build` and separate `extract` then `generate` produce the same
+  logical snapshot, site files, and diagnostic outcomes for the same inputs.
+- [ ] Preserve the previous snapshot on extraction failure and never generate
+  from stale records after that failure. Preserve a successfully published
+  snapshot and the previous site when generation fails.
 - [ ] Reject an output path that overlaps the configuration file or any declared
   repository input.
 - [ ] Write schema-versioned snapshot provenance into the output without
@@ -494,8 +620,8 @@ results; and no rendered page requires a network resource.
 - [ ] Make `diplodocus serve` perform an initial build, bind only to its
   configured local address, and serve the successful output tree.
 - [ ] Watch the configuration file and declared extraction, metadata, content,
-  environment, and asset inputs; ignore the output and execution-cache
-  directories and unrelated repository files.
+  environment, and asset inputs; ignore generated snapshots, temporary storage
+  files, output and execution-cache directories, and unrelated repository files.
 - [ ] Debounce related filesystem events into one rebuild and keep the previous
   successful output available when parsing, execution, validation, or
   rendering fails.
@@ -506,11 +632,12 @@ results; and no rendered page requires a network resource.
   replacement, HTTP serving, watched rebuilds, ignored changes, and recovery
   after a failed rebuild.
 
-**Exit gate:** All three commands satisfy the interface contract in temporary
-multi-repository workspaces; `check` executes nothing; `build` runs only
-authorized cells; and `serve` observes a source or declared-environment edit and
-exposes the new page without a restart while preserving the last good site after
-an error.
+**Exit gate:** All five commands satisfy the interface contract in temporary
+monorepo and multi-repository workspaces; `check` executes nothing and publishes
+no output; `generate` uses only its snapshot and generator assets; `build`
+matches the separate stages and runs only authorized cells; and `serve` observes
+a source or declared-environment edit and exposes the new page without a restart
+while preserving the last good site after an error.
 
 ## Milestone 10: Dogfood Diplodocus for its own documentation
 
@@ -525,9 +652,9 @@ deferred until a Rust extractor exists.
   so the self-documentation configuration does not pretend that Diplodocus
   has a Python or R public API.
 - [ ] Make `docs/` the canonical source for the project overview, installation,
-  quick start, workspace configuration, CLI, GFM and QMD profiles, Python
-  and R support, diagnostics, reproducibility, and the authored-execution
-  security model.
+  quick start, workspace configuration, CLI, snapshot handoff and schema
+  compatibility, GFM and QMD profiles, Python and R support, diagnostics,
+  reproducibility, and the authored-execution security model.
 - [ ] Link design and contributor material where useful instead of copying
   internal rationale into user documentation.
 - [ ] Use the supported GFM and QMD features, one small deterministic executable
@@ -537,9 +664,9 @@ deferred until a Rust extractor exists.
 - [ ] Add tests that run the in-tree binary against the root `diplodocus.toml`,
   snapshot representative pages and the search index, and validate every
   local link and asset.
-- [ ] Ensure the configured output directory is ignored and excluded from
-  declared inputs so self-documentation builds cannot recurse into
-  themselves.
+- [ ] Ensure the configured output directory and generated snapshot files are
+  ignored and excluded from declared inputs so self-documentation builds cannot
+  recurse into themselves.
 - [ ] Use `diplodocus serve` as the documented local preview workflow for
   changes under `docs/`.
 - [ ] Add `.github/workflows/docs.yml`, modeled on Basin's website workflow, to
@@ -564,12 +691,16 @@ that generated tree without invoking another documentation generator.
 
 ## Milestone 11: Harden and release the MVP
 
-- [ ] Run the complete acceptance workspace through `check`, `build`, and
-  `serve` in end-to-end tests.
+- [ ] Run the complete acceptance workspace through `check`, `extract`,
+  `generate`, `build`, and `serve` in end-to-end tests.
 - [ ] Build the same declared inputs twice in different absolute directories and
-  with fresh execution caches, then compare every output path and byte.
-- [ ] Scan portable IR, provenance, HTML, search data, and diagnostics for
-  leaked absolute paths and nondeterministic metadata.
+  with fresh execution caches, then compare every site output path and byte and
+  the snapshots' canonical records, fingerprints, and asset contents.
+- [ ] Verify that `build` matches separate extraction and generation, including
+  generation from a copied snapshot after removing its source checkout and
+  execution cache from the disposable test workspace.
+- [ ] Scan portable IR, snapshot records and assets, provenance, HTML, search
+  data, and diagnostics for leaked absolute paths and nondeterministic metadata.
 - [ ] Run normal command tests with network access disabled, fixtures whose API
   package imports or load hooks would fail if executed, and deterministic
   authored cells that require no network.
@@ -577,8 +708,9 @@ that generated tree without invoking another documentation generator.
   navigation target, concept target, and indexed result.
 - [ ] Exercise missing tools and kernels, malformed configuration and sources,
   unsupported constructs, cell timeouts and failures, unsafe and unsupported
-  output, version mismatches, ambiguous references, and output write
-  failures.
+  output, unsupported storage and IR versions, corrupted snapshots and assets,
+  version mismatches, ambiguous references, publication failures, and output
+  write failures.
 - [ ] Review generated pages at narrow and wide viewport sizes and verify
   keyboard access, focus indication, heading order, labels, and color
   contrast.
@@ -587,7 +719,8 @@ that generated tree without invoking another documentation generator.
   supported cell options and MIME output, and the authored-execution
   security model in the dogfooded project site.
 - [ ] Add a quick start that builds and previews the acceptance site from a
-  clean checkout with declared tools already installed.
+  clean checkout with declared tools already installed, and demonstrates
+  exporting a snapshot for independent generation.
 - [ ] Build the dogfooded project site twice in different absolute checkout
   paths and compare every output path and byte.
 - [ ] Complete the MVP's Versionary release pull request and verify that its
@@ -600,7 +733,10 @@ that generated tree without invoking another documentation generator.
   - [ ] `cargo doc --no-deps` with `RUSTDOCFLAGS=-D warnings`;
   - [ ] `cargo publish --locked --dry-run`;
   - [ ] `diplodocus check` on the acceptance workspace;
-  - [ ] two byte-identical acceptance builds from fresh execution caches; and
+  - [ ] `extract` and source-independent `generate` on the acceptance workspace;
+  - [ ] equivalence of `build` and the separate stages;
+  - [ ] two acceptance builds from fresh execution caches with byte-identical
+    site output and logically identical snapshots; and
   - [ ] a byte-identical dogfood build plus its link and asset checker.
 
 **Exit gate:** Every MVP completion criterion at the top of this file is
@@ -618,6 +754,8 @@ network access required by Diplodocus or its deterministic authored cells.
 
 - Extraction caches and incremental extraction beyond `serve` rebuilding the
   current snapshot.
+- Incremental rendering and its disposable dependency manifest.
+- Automatic migration of older snapshot schemas.
 - Browser live reload.
 - Historical snapshot assembly and version switching.
 - Rust, Julia, TypeScript, C, or other public-API extractors; until a Rust
@@ -632,7 +770,7 @@ network access required by Diplodocus or its deterministic authored cells.
 - Full Quarto, Pandoc, Sphinx, MyST, pkgdown, Documenter.jl, R Markdown, or
   arbitrary theme compatibility.
 - Additional content adapters and trusted raw HTML.
-- The `diplodocus init` and `diplodocus extract` commands.
+- The `diplodocus init` command.
 - A hosted documentation service operated by Diplodocus, repository management,
   package installation, dependency resolution, or implicit version-control
   operations.
