@@ -397,7 +397,7 @@ Keep execution separate from parsing and rendering. Tests should use the
 smallest deterministic kernels and cells that exercise the Jupyter protocol and
 Diplodocus's document transformation.
 
-- [ ] Define the internal `ExecutionEngine` interface, execution context,
+- [x] Define the internal `ExecutionEngine` interface, execution context,
   capabilities, requirements, result, diagnostics, assets, and provenance.
 - [ ] Implement the Jupyter engine with `jupyter-zmq-client` and
   `jupyter-protocol`; discover and start only the explicitly configured

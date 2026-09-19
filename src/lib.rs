@@ -9,6 +9,7 @@ pub mod configuration;
 pub mod configuration_validation;
 pub mod diagnostics;
 pub mod documents;
+pub mod execution;
 pub mod extractors;
 pub mod ir;
 pub mod paths;

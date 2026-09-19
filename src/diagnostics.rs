@@ -10,6 +10,42 @@ use crate::ir::SourceSpan;
 /// Stable diagnostic identifier.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DiagnosticCode {
+    /// Configured kernel selection, launch, or readiness failed.
+    #[serde(rename = "execution-startup-failed")]
+    ExecutionStartupFailed,
+    /// Kernel transport, protocol validation, or liveness failed.
+    #[serde(rename = "execution-protocol-failed")]
+    ExecutionProtocolFailed,
+    /// A kernel requested unsupported interactive input.
+    #[serde(rename = "execution-input-requested")]
+    ExecutionInputRequested,
+    /// A cell failed without permission to continue.
+    #[serde(rename = "execution-cell-failed")]
+    ExecutionCellFailed,
+    /// A bounded execution phase timed out.
+    #[serde(rename = "execution-timeout")]
+    ExecutionTimeout,
+    /// The caller canceled page execution.
+    #[serde(rename = "execution-cancelled")]
+    ExecutionCancelled,
+    /// Kernel or asset-staging cleanup failed.
+    #[serde(rename = "execution-cleanup-failed")]
+    ExecutionCleanupFailed,
+    /// An unrecoverable output conversion or validation failure occurred.
+    #[serde(rename = "execution-output-failed")]
+    ExecutionOutputFailed,
+    /// A generated asset escaped its declared boundary.
+    #[serde(rename = "generated-asset-outside-boundary")]
+    GeneratedAssetOutsideBoundary,
+    /// A generated asset could not be found.
+    #[serde(rename = "generated-asset-missing")]
+    GeneratedAssetMissing,
+    /// Execution assets conflict at the same content digest.
+    #[serde(rename = "execution-asset-collision")]
+    ExecutionAssetCollision,
+    /// Cell output has no supported faithful representation.
+    #[serde(rename = "unsupported-cell-output")]
+    UnsupportedCellOutput,
     /// R metadata is malformed or lacks required static values.
     #[serde(rename = "r-metadata")]
     RMetadata,
@@ -175,6 +211,18 @@ impl DiagnosticCode {
     /// Stable serialized identifier, also used to order diagnostics.
     pub const fn as_str(self) -> &'static str {
         match self {
+            Self::ExecutionStartupFailed => "execution-startup-failed",
+            Self::ExecutionProtocolFailed => "execution-protocol-failed",
+            Self::ExecutionInputRequested => "execution-input-requested",
+            Self::ExecutionCellFailed => "execution-cell-failed",
+            Self::ExecutionTimeout => "execution-timeout",
+            Self::ExecutionCancelled => "execution-cancelled",
+            Self::ExecutionCleanupFailed => "execution-cleanup-failed",
+            Self::ExecutionOutputFailed => "execution-output-failed",
+            Self::GeneratedAssetOutsideBoundary => "generated-asset-outside-boundary",
+            Self::GeneratedAssetMissing => "generated-asset-missing",
+            Self::ExecutionAssetCollision => "execution-asset-collision",
+            Self::UnsupportedCellOutput => "unsupported-cell-output",
             Self::RMetadata => "r-metadata",
             Self::RSourceRead => "r-source-read",
             Self::RSyntax => "r-syntax",

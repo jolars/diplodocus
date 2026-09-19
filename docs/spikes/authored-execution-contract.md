@@ -16,6 +16,10 @@ entire contract. The [page execution-cache contract](page-execution-cache.md)
 specifies key encoding and artifact layout; this document defines the
 information that those artifacts must preserve.
 
+The [Rust execution interface](../ir/authored-execution.md) now defines the
+Milestone 6 engine boundary and supporting records. Production execution and
+policy enforcement remain subsequent work.
+
 Policy identifiers are `qmd-mvp-v1`, `mime-mvp-v1`, `html-mvp-v1`, `svg-mvp-v1`,
 and `execution-mvp-v1`. Changing a default, supported value, selection order, or
 safety rule changes the corresponding identifier. Parser and sanitizer
