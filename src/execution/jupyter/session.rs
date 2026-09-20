@@ -10,10 +10,13 @@ use tokio::time::timeout;
 
 use super::FailureSource;
 use super::discovery::SelectedKernel;
+use super::execution::execute_cells;
+use super::page::ExecutedCells;
 use super::process::KernelProcess;
 use super::transport::Channels;
 use crate::execution::{
-    ExecutionContext, ExecutionDeadlines, ExecutionFailure, ExecutionFailureKind, ExecutionPhase,
+    ExecutionCancellation, ExecutionContext, ExecutionDeadlines, ExecutionFailure,
+    ExecutionFailureKind, ExecutionPhase, PreparedCell,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -29,9 +32,40 @@ pub(super) struct KernelSession {
     pub runtime: KernelRuntime,
     pub kernel: SelectedKernel,
     handle: SessionHandle,
+    page: oneshot::Sender<PageWork>,
 }
 
 impl KernelSession {
+    pub async fn execute(
+        mut self,
+        cells: Vec<PreparedCell>,
+        cancellation: &mut ExecutionCancellation<'_>,
+    ) -> Result<ExecutedCells, ExecutionFailure> {
+        let (completed, completion) = oneshot::channel();
+        let _ = self.page.send(PageWork { cells, completed });
+        let (result, cancelled) = tokio::select! {
+            biased;
+            _ = cancellation => {
+                self.handle.stop(Stop::Cancel);
+                (None, true)
+            }
+            result = completion => (result.ok(), false),
+        };
+        self.handle.finish().await?;
+        if cancelled {
+            return Err(self.handle.source.failure(
+                ExecutionFailureKind::Cancelled,
+                "Page execution was canceled.",
+            ));
+        }
+        result.ok_or_else(|| {
+            self.handle.source.failure(
+                ExecutionFailureKind::Protocol,
+                "The kernel stopped before completing the page.",
+            )
+        })
+    }
+
     pub async fn shutdown(mut self) -> Result<(), ExecutionFailure> {
         self.handle.stop(Stop::Shutdown);
         self.handle.finish().await
@@ -43,9 +77,14 @@ impl KernelSession {
     }
 }
 
-enum Stop {
+pub(super) enum Stop {
     Shutdown,
     Cancel,
+}
+
+struct PageWork {
+    cells: Vec<PreparedCell>,
+    completed: oneshot::Sender<ExecutedCells>,
 }
 
 struct SessionHandle {
@@ -109,7 +148,8 @@ pub(super) async fn start_session(
     };
     let (stop, stopped) = oneshot::channel();
     let (ready, started) = oneshot::channel();
-    let task = tokio::spawn(supervise(kernel.clone(), inputs, stopped, ready));
+    let (page, requested) = oneshot::channel();
+    let task = tokio::spawn(supervise(kernel.clone(), inputs, stopped, ready, requested));
     let mut handle = SessionHandle {
         stop: Some(stop),
         task,
@@ -120,7 +160,7 @@ pub(super) async fn start_session(
         _ = &mut context.cancellation => { handle.stop(Stop::Cancel); }
         result = started => {
             if let Ok(runtime) = result {
-                return Ok(KernelSession { runtime, kernel, handle });
+                return Ok(KernelSession { runtime, kernel, handle, page });
             }
         }
     }
@@ -143,6 +183,7 @@ async fn supervise(
     inputs: SessionInputs,
     mut stopped: oneshot::Receiver<Stop>,
     ready: oneshot::Sender<KernelRuntime>,
+    requested: oneshot::Receiver<PageWork>,
 ) -> Result<(), ExecutionFailure> {
     let mut process = KernelProcess::default();
     let mut channels = None;
@@ -186,6 +227,7 @@ async fn supervise(
                 "Kernel startup timed out.")))
         }
     };
+    let mut completed = None;
     let outcome = match outcome {
         Ok(runtime) => {
             if ready.send(runtime).is_err() {
@@ -202,6 +244,27 @@ async fn supervise(
                     },
                     _ = process.child.as_mut().expect("spawned child").wait() => {
                         Err(inputs.source.failure(ExecutionFailureKind::Protocol, "The kernel exited unexpectedly."))
+                    }
+                    request = requested => {
+                        match request {
+                            Ok(work) => {
+                                match execute_cells(
+                                    work.cells,
+                                    &kernel.language,
+                                    channels.as_mut().expect("connected channels"),
+                                    process.child.as_mut().expect("spawned child"),
+                                    &mut stopped,
+                                    &inputs,
+                                ).await {
+                                    Ok(cells) => {
+                                        completed = Some((work.completed, cells));
+                                        Ok(())
+                                    }
+                                    Err(failure) => Err(failure),
+                                }
+                            }
+                            Err(_) => Err(inputs.source.failure(ExecutionFailureKind::Cancelled, "The kernel session was dropped.")),
+                        }
                     }
                 }
             }
@@ -222,7 +285,12 @@ async fn supervise(
             failure.cleanup_diagnostics.extend(cleanup);
             Err(failure)
         }
-        Ok(()) if cleanup.is_empty() => Ok(()),
+        Ok(()) if cleanup.is_empty() => {
+            if let Some((sender, cells)) = completed {
+                let _ = sender.send(cells);
+            }
+            Ok(())
+        }
         Ok(()) => {
             let mut failure = inputs.source.failure(
                 ExecutionFailureKind::Cleanup,

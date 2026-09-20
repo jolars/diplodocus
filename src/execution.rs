@@ -1,8 +1,9 @@
-//! Page-level authored execution contracts and an internal Jupyter foundation.
+//! Page-level authored execution contracts and an internal Jupyter runner.
 //!
-//! The internal Linux adapter discovers and supervises kernels; page execution
-//! remains unimplemented. Callers must validate collection authority and prepare
-//! QMD cells before calling [`ExecutionEngine::execute_page`].
+//! The internal Linux adapter executes prepared cells in one supervised session
+//! per page. Validated output conversion and the [`ExecutionEngine`] implementation
+//! remain future work. Callers must validate collection authority and prepare QMD
+//! cells before dispatching execution.
 //! Parsing, option enforcement, rendering, and cache publication are separate
 //! stages. This library interface is not a plugin registration API.
 //!
@@ -24,7 +25,7 @@ mod failure;
 #[cfg(target_os = "linux")]
 #[allow(
     dead_code,
-    reason = "Page execution will consume the internal session adapter next."
+    reason = "The public engine awaits option preparation and validated output conversion."
 )]
 mod jupyter;
 mod options;

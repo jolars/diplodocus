@@ -18,8 +18,9 @@ information that those artifacts must preserve.
 
 The [Rust execution interface](../ir/authored-execution.md) now defines the
 Milestone 6 engine boundary, supporting records, and an internal Linux kernel
-discovery and session adapter. Page execution and policy enforcement remain
-subsequent work.
+discovery and session adapter. The internal runner executes prepared cells
+sequentially in a fresh page session. Public engine dispatch, option preparation,
+validated output conversion, and full policy enforcement remain subsequent work.
 
 Policy identifiers are `qmd-mvp-v1`, `mime-mvp-v1`, `html-mvp-v1`, `svg-mvp-v1`,
 and `execution-mvp-v1`. Changing a default, supported value, selection order, or

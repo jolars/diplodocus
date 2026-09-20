@@ -5,10 +5,11 @@ use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 
 use jupyter_protocol::{
-    ConnectionInfo, InterruptReply, JupyterMessageContent, KernelInfoReply, ReplyStatus,
-    ShutdownReply, Status,
+    ConnectionInfo, ExecuteReply, InterruptReply, JupyterMessage, JupyterMessageContent,
+    KernelInfoReply, ReplyStatus, ShutdownReply, Status,
 };
 use jupyter_zmq_client::{
+    KernelIoPubConnection, KernelShellConnection, KernelStdinConnection,
     create_kernel_control_connection, create_kernel_heartbeat_connection,
     create_kernel_iopub_connection, create_kernel_shell_connection, create_kernel_stdin_connection,
 };
@@ -68,6 +69,7 @@ fn kernel_process() {
         let mut stdin = create_kernel_stdin_connection(&info, "fixture").await.unwrap();
         let mut heartbeat = create_kernel_heartbeat_connection(&info).await.unwrap();
         let mut probes = 0;
+        let mut executions = 0;
         loop {
             tokio::select! {
                 message = shell.read() => {
@@ -79,6 +81,13 @@ fn kernel_process() {
                         }
                         break;
                     };
+                    if matches!(message.content, JupyterMessageContent::ExecuteRequest(_)) && mode.starts_with("execute-") {
+                        executions += 1;
+                        if !execute(&mode, observation, executions, &message, &mut shell, &mut iopub, &mut stdin).await {
+                            break;
+                        }
+                        continue;
+                    }
                     if !matches!(message.content, JupyterMessageContent::KernelInfoRequest(_)) {
                         event(observation, "execute");
                         panic!("Startup must never submit code");
@@ -126,6 +135,9 @@ fn kernel_process() {
                         JupyterMessageContent::ShutdownRequest(_) => {
                             event(observation, "shutdown");
                             if matches!(mode.as_str(), "ignore-shutdown" | "ignore-term") { continue; }
+                            if mode == "execute-slow-shutdown" {
+                                tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+                            }
                             control.send(ShutdownReply { status: ReplyStatus::Ok, restart: false, error: None }.as_child_of(&message)).await.unwrap();
                             if let Some(child) = descendant.as_mut() { child.wait().await.unwrap(); }
                             break;
@@ -145,6 +157,151 @@ fn kernel_process() {
             }
         }
     });
+}
+
+async fn execute(
+    mode: &str,
+    observation: &Path,
+    ordinal: usize,
+    message: &JupyterMessage,
+    shell: &mut KernelShellConnection,
+    iopub: &mut KernelIoPubConnection,
+    stdin: &mut KernelStdinConnection,
+) -> bool {
+    let JupyterMessageContent::ExecuteRequest(request) = &message.content else {
+        unreachable!()
+    };
+    let mut file = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(observation.with_file_name("requests"))
+        .unwrap();
+    writeln!(file, "{}", serde_json::to_string(request).unwrap()).unwrap();
+    assert_eq!(
+        request.code.trim() == "define",
+        ordinal == 1,
+        "State must belong to one page session"
+    );
+    event(observation, "execute");
+    if mode == "execute-exit" {
+        return false;
+    }
+    iopub
+        .send(Status::busy().as_child_of(message))
+        .await
+        .unwrap();
+    if mode == "execute-stdin" {
+        stdin
+            .send(
+                jupyter_protocol::InputRequest {
+                    prompt: "unexpected input".into(),
+                    password: false,
+                }
+                .as_child_of(message),
+            )
+            .await
+            .unwrap();
+        return true;
+    }
+    if mode == "execute-no-terminal" {
+        return true;
+    }
+    let error = jupyter_protocol::ReplyError {
+        ename: "FixtureError".into(),
+        evalue: "expected".into(),
+        traceback: Vec::new(),
+    };
+    let mut reply = ExecuteReply::default();
+    if ordinal == 1 {
+        match mode {
+            "execute-error" | "execute-both-errors" => {
+                reply.status = ReplyStatus::Error;
+                reply.error = Some(Box::new(error.clone()));
+            }
+            "execute-iopub-error" => {
+                iopub
+                    .send(
+                        jupyter_protocol::ErrorOutput {
+                            ename: error.ename,
+                            evalue: error.evalue,
+                            traceback: error.traceback,
+                        }
+                        .as_child_of(message),
+                    )
+                    .await
+                    .unwrap();
+            }
+            "execute-aborted" => reply.status = ReplyStatus::Aborted,
+            "execute-malformed-reply" => reply.status = ReplyStatus::Error,
+            _ => {}
+        }
+        if mode == "execute-both-errors" {
+            iopub
+                .send(
+                    jupyter_protocol::ErrorOutput {
+                        ename: "FixtureError".into(),
+                        evalue: "expected".into(),
+                        traceback: Vec::new(),
+                    }
+                    .as_child_of(message),
+                )
+                .await
+                .unwrap();
+        }
+    }
+    if mode == "execute-wrong-reply" {
+        shell
+            .send(Status::idle().as_child_of(message))
+            .await
+            .unwrap();
+        return true;
+    }
+    // A terminal event for another request must never advance this page.
+    let mut unrelated = message.clone();
+    unrelated.header.msg_id = "unrelated-request".into();
+    shell
+        .send(reply.clone().as_child_of(&unrelated))
+        .await
+        .unwrap();
+    iopub
+        .send(Status::idle().as_child_of(&unrelated))
+        .await
+        .unwrap();
+    let idle_first = matches!(mode, "execute-idle-first" | "execute-no-reply");
+    if idle_first {
+        iopub
+            .send(Status::idle().as_child_of(message))
+            .await
+            .unwrap();
+    } else {
+        shell
+            .send(reply.clone().as_child_of(message))
+            .await
+            .unwrap();
+    }
+    let _ = tokio::time::timeout(std::time::Duration::from_millis(60), async {
+        loop {
+            let next = shell.read().await.unwrap();
+            // Startup may have queued another metadata probe before readiness.
+            assert!(
+                matches!(next.content, JupyterMessageContent::KernelInfoRequest(_)),
+                "The next cell arrived before both terminal events"
+            );
+        }
+    })
+    .await;
+    if mode == "execute-no-idle" || mode == "execute-no-reply" {
+        return true;
+    }
+    if idle_first {
+        shell.send(reply.as_child_of(message)).await.unwrap();
+    } else {
+        iopub
+            .send(Status::idle().as_child_of(message))
+            .await
+            .unwrap();
+    }
+    true
 }
 
 #[test]

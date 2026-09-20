@@ -402,10 +402,13 @@ Diplodocus's document transformation.
 - [x] Implement the Jupyter discovery and startup foundation with
   `jupyter-zmq-client` and `jupyter-protocol`; discover and start only the
   explicitly configured kernel without requiring a Jupyter server.
-  The internal adapter now validates readiness and supervises bounded cleanup;
-  page execution through `ExecutionEngine` remains the next step.
-- [ ] Execute the `CodeCell` nodes of one page sequentially in one page-scoped
+  The internal adapter validates readiness and supervises bounded cleanup.
+- [x] Execute the `CodeCell` nodes of one page sequentially in one page-scoped
   kernel session so definitions and imports persist between cells.
+  The internal runner consumes prepared cells and waits for both terminal
+  messages before advancing. Protocol fixtures and real Python and R tests
+  verify retained state, separate page sessions, and cleanup. Public
+  `ExecutionEngine` dispatch awaits option preparation and output validation.
 - [ ] Enforce the supported QMD option subset, including non-executing cells and
   the selected echo, output, and error behavior; retain option-source ranges
   in diagnostics.

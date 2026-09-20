@@ -342,6 +342,7 @@ fn execution_configuration_errors_can_identify_the_owning_collection() {
 fn stable_codes_match_their_serialized_identifiers() {
     use DiagnosticCode::*;
     for (code, spelling) in [
+        (UnsupportedKernelMessage, "unsupported-kernel-message"),
         (UnsupportedAuthoredSyntax, "unsupported-authored-syntax"),
         (InvalidEmbeddedYaml, "invalid-embedded-yaml"),
         (AmbiguousCellOption, "ambiguous-cell-option"),

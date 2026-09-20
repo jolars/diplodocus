@@ -1,13 +1,13 @@
 # Authored execution interface
 
 The `diplodocus::execution` module defines the Rust library boundary for authored
-page execution. It implements the interface and kernel startup portions of
-Milestone 6 and follows the
+page execution. It implements the interface, kernel startup, and sequential
+session portions of Milestone 6 and follows the
 [authored-execution policy](../spikes/authored-execution-contract.md). It
 includes an internal Linux adapter for static kernel discovery, authenticated
-startup, and bounded shutdown. Page preparation, the `ExecutionEngine`
-implementation, option enforcement, output conversion, and caching remain later
-work.
+startup, sequential submission of prepared cells, and bounded shutdown. Page
+preparation, the public `ExecutionEngine` implementation, option enforcement,
+validated output conversion, and caching remain later work.
 
 ## Engine and caller responsibilities
 
@@ -69,8 +69,8 @@ The Tokio runtime must remain alive until cleanup finishes.
 
 ## Internal Jupyter sessions
 
-The Linux adapter separates static discovery from startup so the future page
-executor can skip a page whose cells do not match the selected language before
+The Linux adapter separates static discovery from startup so the internal page
+runner can skip a page whose cells do not match the selected language before
 launching a kernel. Discovery reads only specifications matching the explicit
 case-insensitive selector. It follows the documented `JUPYTER_PATH`, user, and
 system precedence, deduplicates roots, diagnoses shadowed matches, and rejects
@@ -101,14 +101,48 @@ termination and kill when needed. The supervisor reaps the kernel, closes the
 channels, and removes the connection directory before completing. Cleanup errors
 remain separate from the original failure. Dropping a handle wakes the supervisor
 instead of abandoning the child. No execution assets or cache entries are created
-by this foundation, and CLI commands do not dispatch to it yet.
+by this adapter, and CLI commands do not dispatch to it yet.
 
 The [session tests](../../src/execution/jupyter/tests.rs) cover injected discovery
 environments, a controllable subprocess protocol fixture, cancellation and dropped
 futures, signal and message interruption, descendants, forced shutdown, private
 connection permissions, and cleanup failures. They also start and stop the
 declared Python and R kernels through the production adapter without submitting
-code. Page results and complete execution provenance remain subsequent work.
+code.
+
+The internal page runner takes a `PageExecutionRequest`, preserving prepared
+cell order, original source bytes, and authored ordinals. The caller supplies
+nested cells in that same order. The runner rejects inconsistent ordinals,
+overlapping or reversed source ranges, existing outputs, and absent page
+authority before discovery. Empty pages and pages with every effective `eval`
+disabled need no discovery. After discovery, cells with a different normalized
+language remain skipped, and a page with no matching executable cells needs no
+session.
+
+Each executing page starts a fresh session and submits one `execute_request` at
+a time. Submission uses the fixed execution policy, including disabled stdin.
+The runner advances only after both the matching shell reply and IOPub idle,
+in either order. Cell and terminal synchronization deadlines are monotonic;
+kernel death, cancellation, input requests, and protocol failures stop further
+submission. Disallowed language errors and aborted replies also stop the page.
+An allowed language error retains the current session for later cells. Cleanup
+completes before either success or failure returns, including cancellation
+during shutdown.
+
+The runner retains ordered kernel events in private, nonserializable records.
+These records contain unvalidated MIME data, display IDs, and raw error details.
+They cannot serve as `PageExecutionResult` or renderer input. Unrelated and late
+messages produce source-attributed `unsupported-kernel-message` warnings instead
+of being attached to the active cell. Converting events into validated
+`CellOutput` nodes, applying display updates, producing portable provenance,
+and implementing the public `ExecutionEngine` boundary remain subsequent work.
+
+The [page tests](../../src/execution/jupyter/tests/pages.rs) check exact submitted
+bytes, nested source order, skipped cells, both terminal arrival orders, parent
+correlation, allowed errors, failure attribution, deadlines, cancellation, and
+dropped futures. The real Python and R tests retain definitions and imports
+across three cells and repeat each page to prove that state does not carry into
+another session.
 
 ## Options and outcomes
 

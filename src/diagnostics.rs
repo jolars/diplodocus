@@ -10,6 +10,9 @@ use crate::ir::SourceSpan;
 /// Stable diagnostic identifier.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DiagnosticCode {
+    /// A kernel message cannot be attributed or handled during execution.
+    #[serde(rename = "unsupported-kernel-message")]
+    UnsupportedKernelMessage,
     /// A lower-priority kernelspec matches the explicitly configured selector.
     #[serde(rename = "shadowed-kernelspec")]
     ShadowedKernelspec,
@@ -214,6 +217,7 @@ impl DiagnosticCode {
     /// Stable serialized identifier, also used to order diagnostics.
     pub const fn as_str(self) -> &'static str {
         match self {
+            Self::UnsupportedKernelMessage => "unsupported-kernel-message",
             Self::ShadowedKernelspec => "shadowed-kernelspec",
             Self::ExecutionStartupFailed => "execution-startup-failed",
             Self::ExecutionProtocolFailed => "execution-protocol-failed",

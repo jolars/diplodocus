@@ -10,6 +10,7 @@ use crate::execution::{ExecutionFailureKind, KernelInterruptMode, KernelSearchCl
 use crate::ir::SourceLocation;
 
 mod fixture;
+mod pages;
 
 use super::session::start_session;
 use crate::execution::{ExecutionContext, ExecutionDeadlines, ExecutionPhase};

@@ -1,6 +1,8 @@
-//! Linux kernel selection and supervised sessions, below the page executor.
+//! Linux kernel selection and supervised execution of prepared pages.
 
 mod discovery;
+mod execution;
+mod page;
 mod process;
 mod session;
 mod transport;
@@ -19,6 +21,12 @@ struct FailureSource {
 }
 
 impl FailureSource {
+    fn for_cell(&self, cell: &crate::execution::PreparedCell) -> Self {
+        let mut source = self.clone();
+        source.source.span = Some(cell.cell.span);
+        source
+    }
+
     fn failure(&self, kind: ExecutionFailureKind, message: &str) -> ExecutionFailure {
         let mut diagnostic = kind.to_diagnostic(&self.collection, self.source.clone());
         diagnostic.message = message.into();
