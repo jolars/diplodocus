@@ -17,8 +17,9 @@ specifies key encoding and artifact layout; this document defines the
 information that those artifacts must preserve.
 
 The [Rust execution interface](../ir/authored-execution.md) now defines the
-Milestone 6 engine boundary and supporting records. Production execution and
-policy enforcement remain subsequent work.
+Milestone 6 engine boundary, supporting records, and an internal Linux kernel
+discovery and session adapter. Page execution and policy enforcement remain
+subsequent work.
 
 Policy identifiers are `qmd-mvp-v1`, `mime-mvp-v1`, `html-mvp-v1`, `svg-mvp-v1`,
 and `execution-mvp-v1`. Changing a default, supported value, selection order, or
@@ -351,9 +352,10 @@ There is no fallback to stale execution after a failed fresh run.
 Use the exact `panache-parser = 0.29.0`, `jupyter-zmq-client = 1.0.1`, and
 `jupyter-protocol = 2.0.2` pins in [Cargo.toml](../../Cargo.toml), with the
 Tokio version resolved in [Cargo.lock](../../Cargo.lock). Parser crates remain
-in-process. The client crates are still spike dev-dependencies until the
-production engine lands. The repository's Rust build toolchain is 1.98.0; users
-of a built executable do not need Rust to run it.
+in-process. The client crates and Tokio are production dependencies of the
+internal session adapter; the test-kernel feature remains a development
+dependency. The repository's Rust build toolchain is 1.98.0; users of a built
+executable do not need Rust to run it.
 
 The supported execution baseline is the Linux environment in
 [devenv.nix](../../devenv.nix) and [devenv.lock](../../devenv.lock): Python with

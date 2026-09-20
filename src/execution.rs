@@ -1,7 +1,8 @@
-//! Page-level authored execution contracts, independent of a transport runtime.
+//! Page-level authored execution contracts and an internal Jupyter foundation.
 //!
-//! No production engine is provided here. Callers must validate collection
-//! authority and prepare QMD cells before calling [`ExecutionEngine::execute_page`].
+//! The internal Linux adapter discovers and supervises kernels; page execution
+//! remains unimplemented. Callers must validate collection authority and prepare
+//! QMD cells before calling [`ExecutionEngine::execute_page`].
 //! Parsing, option enforcement, rendering, and cache publication are separate
 //! stages. This library interface is not a plugin registration API.
 //!
@@ -20,6 +21,12 @@ use serde::{Deserialize, Serialize};
 use crate::ir::{CodeCell, InputFingerprint};
 
 mod failure;
+#[cfg(target_os = "linux")]
+#[allow(
+    dead_code,
+    reason = "Page execution will consume the internal session adapter next."
+)]
+mod jupyter;
 mod options;
 mod records;
 

@@ -399,9 +399,11 @@ Diplodocus's document transformation.
 
 - [x] Define the internal `ExecutionEngine` interface, execution context,
   capabilities, requirements, result, diagnostics, assets, and provenance.
-- [ ] Implement the Jupyter engine with `jupyter-zmq-client` and
-  `jupyter-protocol`; discover and start only the explicitly configured
-  kernel without requiring a Jupyter server.
+- [x] Implement the Jupyter discovery and startup foundation with
+  `jupyter-zmq-client` and `jupyter-protocol`; discover and start only the
+  explicitly configured kernel without requiring a Jupyter server.
+  The internal adapter now validates readiness and supervises bounded cleanup;
+  page execution through `ExecutionEngine` remains the next step.
 - [ ] Execute the `CodeCell` nodes of one page sequentially in one page-scoped
   kernel session so definitions and imports persist between cells.
 - [ ] Enforce the supported QMD option subset, including non-executing cells and

@@ -10,6 +10,9 @@ use crate::ir::SourceSpan;
 /// Stable diagnostic identifier.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DiagnosticCode {
+    /// A lower-priority kernelspec matches the explicitly configured selector.
+    #[serde(rename = "shadowed-kernelspec")]
+    ShadowedKernelspec,
     /// Configured kernel selection, launch, or readiness failed.
     #[serde(rename = "execution-startup-failed")]
     ExecutionStartupFailed,
@@ -211,6 +214,7 @@ impl DiagnosticCode {
     /// Stable serialized identifier, also used to order diagnostics.
     pub const fn as_str(self) -> &'static str {
         match self {
+            Self::ShadowedKernelspec => "shadowed-kernelspec",
             Self::ExecutionStartupFailed => "execution-startup-failed",
             Self::ExecutionProtocolFailed => "execution-protocol-failed",
             Self::ExecutionInputRequested => "execution-input-requested",

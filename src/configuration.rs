@@ -239,12 +239,7 @@ impl ContentConfiguration {
             .kernel
             .as_deref()
             .ok_or(ExecutionConfigurationError::MissingKernel)?;
-        if kernel.is_empty()
-            || matches!(kernel, "." | "..")
-            || !kernel
-                .bytes()
-                .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'.' | b'_'))
-        {
+        if !valid_kernel_selector(kernel) {
             return Err(ExecutionConfigurationError::InvalidKernel);
         }
 
@@ -262,6 +257,14 @@ impl ContentConfiguration {
         }
         Ok(())
     }
+}
+
+pub(crate) fn valid_kernel_selector(kernel: &str) -> bool {
+    !kernel.is_empty()
+        && !matches!(kernel, "." | "..")
+        && kernel
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'.' | b'_'))
 }
 
 fn environment_input_components(path: &Path) -> Result<Vec<&str>, &'static str> {

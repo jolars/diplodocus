@@ -1,10 +1,13 @@
 # Authored execution interface
 
 The `diplodocus::execution` module defines the Rust library boundary for authored
-page execution. It implements the interface portion of Milestone 6 and follows
-the [authored-execution policy](../spikes/authored-execution-contract.md). It
-provides no production engine, page preparation, kernel discovery, option
-enforcement, output conversion, or cache implementation.
+page execution. It implements the interface and kernel startup portions of
+Milestone 6 and follows the
+[authored-execution policy](../spikes/authored-execution-contract.md). It
+includes an internal Linux adapter for static kernel discovery, authenticated
+startup, and bounded shutdown. Page preparation, the `ExecutionEngine`
+implementation, option enforcement, output conversion, and caching remain later
+work.
 
 ## Engine and caller responsibilities
 
@@ -29,8 +32,9 @@ fn execute_page<'a>(
 `Result<PageExecutionResult, ExecutionFailure>`. The existing
 `configuration::ExecutionEngine` remains the configuration selector enum;
 `execution::ExecutionEngine` is the implementation interface. No plugin
-registration mechanism is introduced. Tokio and the Jupyter crates remain
-development dependencies.
+registration mechanism is introduced. Tokio and the pinned Jupyter crates are
+production dependencies; the client's `test-kernel` feature remains confined to
+development builds.
 
 Before dispatch, the caller validates collection authority, the QMD page veto,
 and every option declaration, then prepares all authored cells in source order,
@@ -53,14 +57,58 @@ and returns diagnostics without a page result or publishable asset handles.
 `ExecutionContext` contains local repository, page, and staging paths, phase
 limits, and a cancellation future. The engine runs in the page's parent
 directory, reads generated assets within the repository boundary, and stages
-accepted assets within the separate page output boundary. These are requirements
-for future implementations; the context constructor performs no path checks.
+accepted assets within the separate page output boundary. The session adapter
+rechecks the canonical repository and page paths before launch. Asset handling
+remains future work; the context constructor performs no path checks.
 
 Completion of the cancellation future requests interruption followed by cleanup.
 The caller continues awaiting execution until that cleanup finishes. Dropping the
-execution future is not a supported cancellation mechanism. A production session
-supervisor must also handle unexpected future drops. This interface neither
-launches nor supervises processes.
+execution future is not a supported cancellation mechanism. The internal session
+supervisor also handles unexpected drops of startup futures and session handles.
+The Tokio runtime must remain alive until cleanup finishes.
+
+## Internal Jupyter sessions
+
+The Linux adapter separates static discovery from startup so the future page
+executor can skip a page whose cells do not match the selected language before
+launching a kernel. Discovery reads only specifications matching the explicit
+case-insensitive selector. It follows the documented `JUPYTER_PATH`, user, and
+system precedence, deduplicates roots, diagnoses shadowed matches, and rejects
+same-directory case ambiguity. A malformed or unreadable selected specification
+fails without falling through to another kernel. No discovery command or
+language runtime is launched.
+
+The adapter validates arguments, language, interrupt mode, and literal environment
+overrides. It rejects variable expansion, unknown top-level fields, kernel
+provisioners, and transport-encryption extensions. It resolves the executable
+through the captured build `PATH` before applying the kernel's environment
+overrides. Relative executable paths and relative `PATH` entries resolve from the
+page's parent directory. It substitutes `{connection_file}` within arguments and
+invokes the argument vector directly. Local launch records remain private.
+
+Each supervised process group receives five loopback ports, a fresh random
+authentication key, and a mode-0600 connection file in a mode-0700 temporary
+directory. Startup connects all channels and requires a valid protocol-major-5
+kernel-info reply plus its matching IOPub idle message. Repeated information
+requests recover from initial subscription delays within one startup deadline.
+The adapter accepts either order of reply and idle, ignores unrelated messages,
+and works with kernels that do not send `iopub_welcome`. It never sends an
+`execute_request` during startup.
+
+Shutdown and cancellation await bounded cleanup. Cancellation uses the selected
+interrupt mode; shutdown escalates from a control-channel request to process-group
+termination and kill when needed. The supervisor reaps the kernel, closes the
+channels, and removes the connection directory before completing. Cleanup errors
+remain separate from the original failure. Dropping a handle wakes the supervisor
+instead of abandoning the child. No execution assets or cache entries are created
+by this foundation, and CLI commands do not dispatch to it yet.
+
+The [session tests](../../src/execution/jupyter/tests.rs) cover injected discovery
+environments, a controllable subprocess protocol fixture, cancellation and dropped
+futures, signal and message interruption, descendants, forced shutdown, private
+connection permissions, and cleanup failures. They also start and stop the
+declared Python and R kernels through the production adapter without submitting
+code. Page results and complete execution provenance remain subsequent work.
 
 ## Options and outcomes
 
