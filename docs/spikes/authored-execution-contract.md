@@ -11,16 +11,18 @@ This is the logical contract for the Milestone 2 policy decision. It extends the
 [Jupyter spike](jupyter-execution.md) and the [acceptance
 matrix](../../tests/fixtures/acceptance/MATRIX.md). Milestone 3 will define
 serialized execution types, and Milestone 6 will implement this policy. The
-existing parser retains declarations and ranges but does not yet enforce this
-entire contract. The [page execution-cache contract](page-execution-cache.md)
+syntax reader retains declarations and ranges; collection parsing and preparation
+now enforce the QMD option policy. Full runtime policy enforcement remains later work.
+The [page execution-cache contract](page-execution-cache.md)
 specifies key encoding and artifact layout; this document defines the
 information that those artifacts must preserve.
 
 The [Rust execution interface](../ir/authored-execution.md) now defines the
 Milestone 6 engine boundary, supporting records, and an internal Linux kernel
 discovery and session adapter. The internal runner executes prepared cells
-sequentially in a fresh page session. Public engine dispatch, option preparation,
-validated output conversion, and full policy enforcement remain subsequent work.
+sequentially in a fresh page session. Collection document preparation implements
+option validation and precedence. Public engine dispatch, validated output
+conversion, and full policy enforcement remain subsequent work.
 
 Policy identifiers are `qmd-mvp-v1`, `mime-mvp-v1`, `html-mvp-v1`, `svg-mvp-v1`,
 and `execution-mvp-v1`. Changing a default, supported value, selection order, or
@@ -116,6 +118,8 @@ restrictions and defaults here are Diplodocus policy.
 Use the fence identifier (`#setup`) as the label when no explicit `label`
 exists. If both exist, they must agree. Labels must match
 `[A-Za-z][A-Za-z0-9_.:-]*` and be unique among authored anchors on the page.
+Bare chunk labels such as `{r setup}` are outside this subset; use `#setup`
+or the `label` option instead.
 They do not enable Quarto's automatic figure numbering or cross-reference
 machinery. A nonempty `fig-subcap` list must match the number of selected figure
 assets after display updates and clearing. Diagnose a mismatch as

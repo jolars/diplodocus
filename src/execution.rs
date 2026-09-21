@@ -2,10 +2,11 @@
 //!
 //! The internal Linux adapter executes prepared cells in one supervised session
 //! per page. Validated output conversion and the [`ExecutionEngine`] implementation
-//! remain future work. Callers must validate collection authority and prepare QMD
-//! cells before dispatching execution.
-//! Parsing, option enforcement, rendering, and cache publication are separate
-//! stages. This library interface is not a plugin registration API.
+//! remain future work. [`crate::documents::prepare_collection_document`]
+//! validates collection authority and prepares QMD cells without I/O. Callers
+//! must also authorize the current command before dispatching execution.
+//! Parsing, runtime option enforcement, rendering, and cache publication are
+//! separate stages. This library interface is not a plugin registration API.
 //!
 //! Portable records describe producer evidence, not verified rendering trust or
 //! the final cache wire format. Constructing or decoding them performs no I/O
@@ -25,7 +26,7 @@ mod failure;
 #[cfg(target_os = "linux")]
 #[allow(
     dead_code,
-    reason = "The public engine awaits option preparation and validated output conversion."
+    reason = "The public engine awaits validated output conversion."
 )]
 mod jupyter;
 mod options;

@@ -17,6 +17,8 @@ use crate::ir::{Document, MetadataEntry, MetadataValue, SourceSpan};
 /// options, validate other metadata, or select executable cells. It performs no
 /// I/O and leaves the document and collection unchanged. The document must have
 /// been parsed using the collection's authored format.
+/// Collection consumers should use [`crate::documents::parse_collection_document`]
+/// or [`crate::documents::prepare_collection_document`] for the full QMD policy.
 ///
 /// # Errors
 ///

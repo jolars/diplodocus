@@ -21,11 +21,11 @@ use crate::ir::{
     Document, Inline, ListItem, MetadataEntry, MetadataValue, ResolvedCellOption, SourceSegment,
     SourceSpan, SpannedString, TableAlignment, TableCell, TableRow,
 };
-use crate::validation::validate_document_execution;
-
 mod fragments;
+mod preparation;
 
 pub use fragments::{MarkdownFragmentOrigin, MarkdownFragmentParse, parse_markdown_fragment};
+pub use preparation::{PreparedDocument, QmdPreparation, prepare_collection_document};
 
 /// Authored Markdown profile selected by a content collection.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -67,10 +67,18 @@ impl DocumentParse {
 /// This does not validate collection execution authority. Use
 /// [`parse_collection_document`] when the owning collection is available.
 pub fn parse_authored_document(source: &str, format: AuthoredFormat) -> DocumentParse {
-    parse_document(source, format, false)
+    parse_document(source, format, ParseMode::Authored)
 }
 
-fn parse_document(source: &str, format: AuthoredFormat, fragment: bool) -> DocumentParse {
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum ParseMode {
+    Authored,
+    Fragment,
+    Collection,
+}
+
+fn parse_document(source: &str, format: AuthoredFormat, mode: ParseMode) -> DocumentParse {
+    let fragment = mode == ParseMode::Fragment;
     let flavor = match format {
         AuthoredFormat::Gfm => Flavor::Gfm,
         AuthoredFormat::Qmd => Flavor::Quarto,
@@ -141,6 +149,11 @@ fn parse_document(source: &str, format: AuthoredFormat, fragment: bool) -> Docum
         .block_nodes()
         .filter_map(|block| context.block(block))
         .collect();
+    if mode == ParseMode::Collection && format == AuthoredFormat::Qmd {
+        context
+            .diagnostics
+            .extend(preparation::syntax_diagnostics(parsed.document().syntax()));
+    }
     context.diagnostics.sort();
 
     DocumentParse {
@@ -153,13 +166,14 @@ fn parse_document(source: &str, format: AuthoredFormat, fragment: bool) -> Docum
     }
 }
 
-/// Parse a collection's authored document and validate execution declarations.
+/// Parse a collection's document and validate the supported QMD policy.
 ///
 /// The document and its declarations are retained unchanged. Metadata errors are
 /// returned in [`DocumentParse::diagnostics`], alongside parser diagnostics in
 /// source order. This performs no filesystem access, kernel discovery, execution,
-/// or cache operations. General metadata and cell-option validation are separate
-/// from this authority check.
+/// or cache operations. Validation includes disabled cells and collections.
+/// Use [`prepare_collection_document`] to also retain typed effective options
+/// and source-ordered cells for a future executor.
 ///
 /// # Errors
 ///
@@ -169,12 +183,7 @@ pub fn parse_collection_document(
     source: &str,
     collection: &ContentConfiguration,
 ) -> Result<DocumentParse, ExecutionConfigurationError> {
-    let mut parsed = parse_authored_document(source, collection.format);
-    parsed
-        .diagnostics
-        .extend(validate_document_execution(&parsed.document, collection)?);
-    parsed.diagnostics.sort();
-    Ok(parsed)
+    Ok(prepare_collection_document(source, collection)?.parsed)
 }
 
 struct AdapterContext {

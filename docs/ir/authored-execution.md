@@ -5,8 +5,9 @@ page execution. It implements the interface, kernel startup, and sequential
 session portions of Milestone 6 and follows the
 [authored-execution policy](../spikes/authored-execution-contract.md). It
 includes an internal Linux adapter for static kernel discovery, authenticated
-startup, sequential submission of prepared cells, and bounded shutdown. Page
-preparation, the public `ExecutionEngine` implementation, option enforcement,
+startup, sequential submission of prepared cells, and bounded shutdown. The
+`diplodocus::documents` module validates QMD options and prepares cells without
+I/O. The public `ExecutionEngine` implementation, presentation policy enforcement,
 validated output conversion, and caching remain later work.
 
 ## Engine and caller responsibilities
@@ -39,8 +40,8 @@ development builds.
 Before dispatch, the caller validates collection authority, the QMD page veto,
 and every option declaration, then prepares all authored cells in source order,
 including nested cells. Each `PreparedCell` retains the original `CodeCell` and
-typed effective options with their winning origins. Preparing these records is
-separate work; their public constructors do not establish authorization.
+typed effective options with their winning origins. The preparation API below
+produces these records; their public constructors do not establish authorization.
 
 Checks, collections with `mode = "never"`, vetoed pages, and pages with no
 potentially executable cells must bypass the engine entirely. The engine
@@ -155,9 +156,59 @@ policy default, document declaration, inline option, hashpipe declaration, or
 fence identifier. Authored origins carry page-relative UTF-8 ranges. Raw and
 overridden declarations remain in the request's original `CodeCell`.
 
-The types do not parse options, resolve precedence, validate labels, or suppress
-output. `error = true` permits only ordinary language exceptions; it cannot
+Constructing the option types does not validate them or suppress output.
+`error = true` permits only ordinary language exceptions; it cannot
 override transport, timeout, cancellation, asset, or cleanup failures.
+
+### Preparing a collection document
+
+`documents::prepare_collection_document(source, collection)` returns a
+`PreparedDocument` containing `parsed: DocumentParse` and
+`preparation: Option<QmdPreparation>`. Invalid collection execution configuration
+is a returned error. Authoring errors remain in `parsed.diagnostics` and prevent
+preparation. GFM has no QMD preparation. Valid QMD pages retain preparation even
+when their collection disables execution or their metadata vetoes it.
+
+`QmdPreparation` contains document `defaults`, `page_veto`, source-ordered
+`cells`, and preliminary `execution_eligible`. Eligibility requires collection
+authority, no page veto, and at least one cell with effective `eval: true`.
+It does not inspect the selected kernel or determine which cell languages match.
+It never authorizes a check command to execute. Future command dispatch must
+apply its own gate before calling the engine.
+
+`parse_collection_document` uses the same validation and returns only the
+`DocumentParse`. `parse_authored_document` remains the permissive syntax reader.
+Both collection entry points preserve the original document, declarations, and
+source segments. Neither reads declared environment files, discovers kernels,
+executes source, or accesses execution caches and assets.
+
+Validation checks supported metadata and every option declaration, including
+overridden declarations and disabled cells. It derives effective values using
+hashpipe, inline, document, then policy-default precedence. Duplicate options in
+any tier are errors; `ambiguous-cell-option` replaces the parser warning with
+one error and related declaration ranges. Malformed YAML retains
+`invalid-embedded-yaml`. Unsupported options and fence classes use
+`unsupported-cell-option`; invalid values, labels, and label conflicts use
+`invalid-cell-option`. Authority declarations retain their existing grouped
+diagnostic without redundant value errors.
+
+Scalar validation distinguishes literal booleans from quoted strings and rejects
+YAML tags, anchors, aliases, and merge keys. String options retain literal text;
+quoted escapes and block scalar indentation, folding, and chomping are decoded
+without altering authored IR. Labels use the explicit `label` option or the
+fence identifier, which must agree when both are present. They must be unique
+among cell labels and other authored anchors retained in the document.
+Bare chunk labels are unsupported; use `#identifier` or `label` instead.
+
+Preparation validates figure-option types but does not count figures before
+execution. Presentation, allowed-error behavior, and subcaption counts remain
+runtime responsibilities. In particular, preparing `echo: false` does not remove
+input from a collection with mode `never`.
+
+The [preparation tests](../../tests/qmd_preparation.rs) cover precedence and
+origins, nested cells, disabled pages, scalar types, label conflicts, diagnostics,
+and Python and R preparation snapshots. They also prepare an eligible page with
+an unavailable kernel and missing declared inputs without creating artifacts.
 
 `CellOutcome` distinguishes `ok`, `allowed-error`, and `skipped`. Skipped cells
 carry `eval-false` or `language-mismatch`, with language mismatch taking

@@ -88,7 +88,7 @@ pub fn parse_markdown_fragment(
     source: &str,
     origin: MarkdownFragmentOrigin,
 ) -> MarkdownFragmentParse {
-    let parsed = parse_document(source, AuthoredFormat::Gfm, true);
+    let parsed = parse_document(source, AuthoredFormat::Gfm, super::ParseMode::Fragment);
     MarkdownFragmentParse {
         representation: OutputRepresentation::MarkdownBlocks {
             media_type: "text/markdown".into(),

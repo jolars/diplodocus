@@ -97,6 +97,12 @@ pub enum DiagnosticCode {
     /// Cell-option precedence has more than one winner.
     #[serde(rename = "ambiguous-cell-option")]
     AmbiguousCellOption,
+    /// A cell declares an option or fence class outside the QMD subset.
+    #[serde(rename = "unsupported-cell-option")]
+    UnsupportedCellOption,
+    /// A cell option has an invalid type, label, or conflicting declaration.
+    #[serde(rename = "invalid-cell-option")]
+    InvalidCellOption,
     /// Document metadata requests execution outside collection authority.
     #[serde(rename = "document-execution-not-authorized")]
     DocumentExecutionNotAuthorized,
@@ -246,6 +252,8 @@ impl DiagnosticCode {
             Self::UnsupportedAuthoredSyntax => "unsupported-authored-syntax",
             Self::InvalidEmbeddedYaml => "invalid-embedded-yaml",
             Self::AmbiguousCellOption => "ambiguous-cell-option",
+            Self::UnsupportedCellOption => "unsupported-cell-option",
+            Self::InvalidCellOption => "invalid-cell-option",
             Self::DocumentExecutionNotAuthorized => "document-execution-not-authorized",
             Self::UnsupportedQmdMetadata => "unsupported-qmd-metadata",
             Self::InvalidQmdMetadata => "invalid-qmd-metadata",

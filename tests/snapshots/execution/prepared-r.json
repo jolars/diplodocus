@@ -1,0 +1,400 @@
+{
+  "cells": [
+    {
+      "language": "r",
+      "options": {
+        "execution": {
+          "echo": {
+            "origin": {
+              "kind": "hashpipe",
+              "span": {
+                "end": 157,
+                "start": 146
+              }
+            },
+            "value": true
+          },
+          "error": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": false
+          },
+          "eval": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "include": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "output": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": "show"
+          }
+        },
+        "fig_alt": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_cap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_subcap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": []
+        },
+        "label": {
+          "origin": {
+            "kind": "hashpipe",
+            "span": {
+              "end": 146,
+              "start": 128
+            }
+          },
+          "value": "r-setup"
+        }
+      },
+      "ordinal": 0,
+      "span": {
+        "end": 203,
+        "start": 118
+      }
+    },
+    {
+      "language": "r",
+      "options": {
+        "execution": {
+          "echo": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "error": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": false
+          },
+          "eval": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "include": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "output": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": "show"
+          }
+        },
+        "fig_alt": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_cap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_subcap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": []
+        },
+        "label": {
+          "origin": {
+            "kind": "hashpipe",
+            "span": {
+              "end": 231,
+              "start": 214
+            }
+          },
+          "value": "r-streams"
+        }
+      },
+      "ordinal": 1,
+      "span": {
+        "end": 304,
+        "start": 204
+      }
+    },
+    {
+      "language": "r",
+      "options": {
+        "execution": {
+          "echo": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "error": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": false
+          },
+          "eval": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "include": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "output": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": "show"
+          }
+        },
+        "fig_alt": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_cap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_subcap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": []
+        },
+        "label": {
+          "origin": {
+            "kind": "hashpipe",
+            "span": {
+              "end": 333,
+              "start": 315
+            }
+          },
+          "value": "r-markdown"
+        }
+      },
+      "ordinal": 2,
+      "span": {
+        "end": 402,
+        "start": 305
+      }
+    },
+    {
+      "language": "r",
+      "options": {
+        "execution": {
+          "echo": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "error": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": false
+          },
+          "eval": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "include": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "output": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": "show"
+          }
+        },
+        "fig_alt": {
+          "origin": {
+            "kind": "hashpipe",
+            "span": {
+              "end": 472,
+              "start": 432
+            }
+          },
+          "value": "A bar labeled with the R total"
+        },
+        "fig_cap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_subcap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": []
+        },
+        "label": {
+          "origin": {
+            "kind": "hashpipe",
+            "span": {
+              "end": 432,
+              "start": 413
+            }
+          },
+          "value": "r-figure"
+        }
+      },
+      "ordinal": 3,
+      "span": {
+        "end": 789,
+        "start": 403
+      }
+    },
+    {
+      "language": "r",
+      "options": {
+        "execution": {
+          "echo": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "error": {
+            "origin": {
+              "kind": "hashpipe",
+              "span": {
+                "end": 830,
+                "start": 818
+              }
+            },
+            "value": true
+          },
+          "eval": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "include": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "output": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": "show"
+          }
+        },
+        "fig_alt": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_cap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_subcap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": []
+        },
+        "label": {
+          "origin": {
+            "kind": "hashpipe",
+            "span": {
+              "end": 818,
+              "start": 800
+            }
+          },
+          "value": "r-error"
+        }
+      },
+      "ordinal": 4,
+      "span": {
+        "end": 870,
+        "start": 790
+      }
+    }
+  ],
+  "defaults": {
+    "echo": {
+      "origin": {
+        "kind": "default"
+      },
+      "value": true
+    },
+    "error": {
+      "origin": {
+        "kind": "default"
+      },
+      "value": false
+    },
+    "eval": {
+      "origin": {
+        "kind": "default"
+      },
+      "value": true
+    },
+    "include": {
+      "origin": {
+        "kind": "default"
+      },
+      "value": true
+    },
+    "output": {
+      "origin": {
+        "kind": "default"
+      },
+      "value": "show"
+    }
+  },
+  "execution_eligible": true,
+  "page_veto": false
+}

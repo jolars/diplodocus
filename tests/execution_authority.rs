@@ -324,7 +324,7 @@ fn ordinary_text_and_cell_defaults_are_not_authority_declarations() {
 }
 
 #[test]
-fn parser_diagnostics_are_preserved_alongside_authority_errors() {
+fn option_ambiguity_is_promoted_alongside_authority_errors() {
     let source = "---\nexecute: true\njupyter: python3\n---\n\n```{python, echo=true, echo=false}\npass\n```\n";
     let original = parse_authored_document(source, AuthoredFormat::Qmd);
     let parsed = parse_collection_document(source, &collection(false)).unwrap();
@@ -333,7 +333,15 @@ fn parser_diagnostics_are_preserved_alongside_authority_errors() {
         &parsed.diagnostics[0],
         DiagnosticCode::DocumentExecutionNotAuthorized,
     );
-    assert_eq!(&parsed.diagnostics[1..], &original.diagnostics);
+    let ambiguity = &parsed.diagnostics[1];
+    assert_error(ambiguity, DiagnosticCode::AmbiguousCellOption);
+    assert_eq!(ambiguity.span, original.diagnostics[0].span);
+    assert_eq!(original.diagnostics[0].severity, Severity::Warning);
+    assert_eq!(ambiguity.related_spans.len(), 1);
+    assert_eq!(
+        declaration_text(source, ambiguity.related_spans[0]),
+        "echo=false"
+    );
     assert_eq!(
         validate_document_execution(&original.document, &collection(false)).unwrap(),
         parsed.diagnostics[..1]

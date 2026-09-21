@@ -408,10 +408,12 @@ Diplodocus's document transformation.
   The internal runner consumes prepared cells and waits for both terminal
   messages before advancing. Protocol fixtures and real Python and R tests
   verify retained state, separate page sessions, and cleanup. Public
-  `ExecutionEngine` dispatch awaits option preparation and output validation.
-- [ ] Enforce the supported QMD option subset, including non-executing cells and
-  the selected echo, output, and error behavior; retain option-source ranges
-  in diagnostics.
+  `ExecutionEngine` dispatch awaits output validation.
+- [x] Validate the supported QMD metadata and option subset, including disabled
+  and overridden declarations; prepare cells in source order with typed options,
+  declaration ranges, and execution eligibility without kernel discovery or I/O.
+- [ ] Apply prepared evaluation, echo, output, include, and error behavior during
+  execution and rendering; validate subcaption counts against final figures.
 - [ ] Collect stdout, stderr, execution errors, display data, display updates,
   and result MIME bundles into typed `CellOutput` nodes in protocol order.
 - [ ] Treat ordinary streams as escaped preformatted text. Parse

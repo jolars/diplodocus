@@ -1,0 +1,400 @@
+{
+  "cells": [
+    {
+      "language": "python",
+      "options": {
+        "execution": {
+          "echo": {
+            "origin": {
+              "kind": "hashpipe",
+              "span": {
+                "end": 182,
+                "start": 171
+              }
+            },
+            "value": true
+          },
+          "error": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": false
+          },
+          "eval": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "include": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "output": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": "show"
+          }
+        },
+        "fig_alt": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_cap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_subcap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": []
+        },
+        "label": {
+          "origin": {
+            "kind": "hashpipe",
+            "span": {
+              "end": 171,
+              "start": 148
+            }
+          },
+          "value": "python-setup"
+        }
+      },
+      "ordinal": 0,
+      "span": {
+        "end": 225,
+        "start": 133
+      }
+    },
+    {
+      "language": "python",
+      "options": {
+        "execution": {
+          "echo": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "error": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": false
+          },
+          "eval": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "include": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "output": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": "show"
+          }
+        },
+        "fig_alt": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_cap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_subcap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": []
+        },
+        "label": {
+          "origin": {
+            "kind": "hashpipe",
+            "span": {
+              "end": 263,
+              "start": 241
+            }
+          },
+          "value": "python-streams"
+        }
+      },
+      "ordinal": 1,
+      "span": {
+        "end": 363,
+        "start": 226
+      }
+    },
+    {
+      "language": "python",
+      "options": {
+        "execution": {
+          "echo": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "error": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": false
+          },
+          "eval": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "include": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "output": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": "show"
+          }
+        },
+        "fig_alt": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_cap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_subcap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": []
+        },
+        "label": {
+          "origin": {
+            "kind": "hashpipe",
+            "span": {
+              "end": 402,
+              "start": 379
+            }
+          },
+          "value": "python-markdown"
+        }
+      },
+      "ordinal": 2,
+      "span": {
+        "end": 485,
+        "start": 364
+      }
+    },
+    {
+      "language": "python",
+      "options": {
+        "execution": {
+          "echo": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "error": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": false
+          },
+          "eval": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "include": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "output": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": "show"
+          }
+        },
+        "fig_alt": {
+          "origin": {
+            "kind": "hashpipe",
+            "span": {
+              "end": 570,
+              "start": 525
+            }
+          },
+          "value": "A bar labeled with the Python total"
+        },
+        "fig_cap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_subcap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": []
+        },
+        "label": {
+          "origin": {
+            "kind": "hashpipe",
+            "span": {
+              "end": 525,
+              "start": 501
+            }
+          },
+          "value": "python-figure"
+        }
+      },
+      "ordinal": 3,
+      "span": {
+        "end": 859,
+        "start": 486
+      }
+    },
+    {
+      "language": "python",
+      "options": {
+        "execution": {
+          "echo": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "error": {
+            "origin": {
+              "kind": "hashpipe",
+              "span": {
+                "end": 910,
+                "start": 898
+              }
+            },
+            "value": true
+          },
+          "eval": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "include": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "output": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": "show"
+          }
+        },
+        "fig_alt": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_cap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_subcap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": []
+        },
+        "label": {
+          "origin": {
+            "kind": "hashpipe",
+            "span": {
+              "end": 898,
+              "start": 875
+            }
+          },
+          "value": "python-error"
+        }
+      },
+      "ordinal": 4,
+      "span": {
+        "end": 969,
+        "start": 860
+      }
+    }
+  ],
+  "defaults": {
+    "echo": {
+      "origin": {
+        "kind": "default"
+      },
+      "value": true
+    },
+    "error": {
+      "origin": {
+        "kind": "default"
+      },
+      "value": false
+    },
+    "eval": {
+      "origin": {
+        "kind": "default"
+      },
+      "value": true
+    },
+    "include": {
+      "origin": {
+        "kind": "default"
+      },
+      "value": true
+    },
+    "output": {
+      "origin": {
+        "kind": "default"
+      },
+      "value": "show"
+    }
+  },
+  "execution_eligible": true,
+  "page_veto": false
+}
