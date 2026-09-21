@@ -8,8 +8,10 @@ includes an internal Linux adapter for static kernel discovery, authenticated
 startup, sequential submission of prepared cells, and bounded shutdown. The
 `diplodocus::documents` module validates QMD options and prepares cells without
 I/O. Shared presentation views apply visibility options, and final-output
-validation checks figure counts. The public `ExecutionEngine` implementation,
-validated output conversion, site rendering, and caching remain later work.
+validation checks figure counts. An internal incremental reducer collects typed
+outputs through a representation validator. Rich-output validators, supervised
+reducer integration, the public `ExecutionEngine` implementation, site rendering,
+and caching remain later work.
 
 The [Milestone 6 implementation boundaries](../design/execution-implementation.md)
 freeze module ownership, validation and cache seams, dependency choices, and the
@@ -139,9 +141,10 @@ The runner retains ordered kernel events in private, nonserializable records.
 These records contain unvalidated MIME data, display IDs, and raw error details.
 They cannot serve as `PageExecutionResult` or renderer input. Unrelated and late
 messages produce source-attributed `unsupported-kernel-message` warnings instead
-of being attached to the active cell. Converting events into validated
-`CellOutput` nodes, applying display updates, producing portable provenance,
-and implementing the public `ExecutionEngine` boundary remain subsequent work.
+of being attached to the active cell. The reducer described below converts these
+events into typed `CellOutput` nodes. Wiring it into supervised execution,
+producing portable provenance, and implementing the public `ExecutionEngine`
+boundary remain subsequent work.
 
 The [page tests](../../src/execution/jupyter/tests/pages.rs) use the QMD preparer
 and check exact submitted bytes, nested source order, skipped cells, both terminal
@@ -151,6 +154,52 @@ deadlines, cancellation, and dropped futures. Hidden cells still submit with
 policy. The real Python and R tests retain definitions and imports
 across three cells and repeat each page to prove that state does not carry into
 another session.
+
+### Incremental output reduction
+
+The private `jupyter::output::OutputReducer` accepts one completed cell at a time
+and finalizes the surviving output slots after the last cell. It preserves stream,
+display, result, and error order. A page-wide registry replaces every surviving
+slot for a display ID, including slots in earlier cells. Updates retain the
+original owner, producer, and slot number, while recording the latest updater
+and current representation producer separately. Raw display IDs stay private.
+
+Immediate clearing removes only the current cell's slots and registrations.
+Deferred clearing waits for its next output, including an update, and expires
+when that cell completes. Slot numbers keep gaps after clearing. Unknown or
+missing update IDs produce source-attributed warnings without creating slots.
+
+A validator closure receives each supported MIME candidate in the policy's
+fixed preference order, with its metadata and producing page, cell, and slot.
+It can capture mutable asset staging. Accepted representations retain content
+fingerprints and policy evidence. Rejected candidates retain warnings. Fatal
+validation errors stop reduction, including for unknown display updates, and
+prevent later finalization. Hidden output and lower-priority alternatives still
+pass through validation. Unsupported bundles produce payload-free placeholders
+with offered MIME names and diagnostic references.
+
+The implemented validator accepts plain-text strings and arrays of strings.
+Other supported media require the later fragment, asset, and HTML validators;
+the plain-text validator rejects them with a warning. Ordinary streams retain
+their literal bytes as preformatted text. As-is stdout parsing remains the next
+output step. Errors lose terminal controls, known checkout frame paths become
+repository-relative, and external frame paths and IPython execution counts use
+stable markers. Ordinary exception messages and source text retain authored
+paths. The existing transport coalesces shell and IOPub reports of an exception
+before reduction.
+
+Finalization checks figure options before presentation and returns the surviving
+asset references. Clearing and replacement never erase validation warnings.
+The returned cells and diagnostics are internal reduction results, not a
+publishable page: asset validation, retention after cleanup, and execution
+provenance remain the engine's responsibility. The engine must invoke reduction
+before submitting the next cell so validation can stop execution in time.
+
+The [reducer tests](../../src/execution/jupyter/output/tests.rs) cover ordering,
+cross-cell updates, clearing, MIME preference and fallback, malformed payloads,
+fatal validation, asset references, hidden figure counts, skipped cells, and
+portable error text. The protocol page tests also reduce shell-only, IOPub-only,
+and duplicate-channel error reports into one typed error.
 
 ## Options and outcomes
 

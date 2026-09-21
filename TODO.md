@@ -418,8 +418,13 @@ Diplodocus's document transformation.
   views enforce visibility without deleting evidence. Final-output validation
   checks subcaptions before hiding output. Output conversion and site renderer
   integration follow in their respective steps.
-- [ ] Collect stdout, stderr, execution errors, display data, display updates,
+- [x] Collect stdout, stderr, execution errors, display data, display updates,
   and result MIME bundles into typed `CellOutput` nodes in protocol order.
+  The internal incremental reducer retains stable slots, applies page-wide
+  updates and clearing, orders validated MIME alternatives, and normalizes
+  errors. Its validator boundary separates collection from the remaining
+  fragment, asset, and HTML work. Supervised engine integration follows those
+  validators, as specified in the execution implementation design.
 - [ ] Treat ordinary streams as escaped preformatted text. Parse
   `text/markdown`, and explicitly as-is stream output, as isolated document
   fragments with execution disabled.

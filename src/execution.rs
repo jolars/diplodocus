@@ -1,8 +1,10 @@
 //! Page-level authored execution contracts and an internal Jupyter runner.
 //!
 //! The internal Linux adapter executes prepared cells in one supervised session
-//! per page. Validated output conversion and the [`ExecutionEngine`] implementation
-//! remain future work. [`crate::documents::prepare_collection_document`]
+//! per page. An internal incremental reducer converts kernel events into typed
+//! outputs through a representation validator. Rich-output validators and the
+//! [`ExecutionEngine`] implementation remain future work.
+//! [`crate::documents::prepare_collection_document`]
 //! validates collection authority and prepares QMD cells without I/O. Callers
 //! must also authorize the current command before dispatching execution.
 //! Parsing, runtime option enforcement, rendering, and cache publication are

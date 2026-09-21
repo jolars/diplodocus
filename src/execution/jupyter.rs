@@ -2,6 +2,7 @@
 
 mod discovery;
 mod execution;
+mod output;
 mod page;
 mod process;
 mod session;

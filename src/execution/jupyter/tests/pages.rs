@@ -5,6 +5,7 @@ use crate::execution::{CellOutcome, CellSkipReason, ExecutionPage, PageExecution
 use crate::provenance::fingerprint_bytes;
 
 use super::super::execution::CellEvent;
+use super::super::output::{ErrorContext, OutputReducer, validate_plain_text};
 use super::super::page::{execute_page, execute_page_with_environment};
 
 fn request(authored: &str) -> PageExecutionRequest {
@@ -340,6 +341,27 @@ async fn allowed_language_errors_keep_the_same_session_alive() {
             1
         );
         assert_eq!(submitted(root.path()).len(), 2);
+        let mut outputs = OutputReducer::new(
+            request.page.clone(),
+            ErrorContext::new(root.path().to_path_buf()),
+        );
+        for (prepared, executed) in request.cells.iter().zip(result.cells) {
+            outputs
+                .accept_cell(
+                    prepared,
+                    executed.outcome,
+                    executed.events,
+                    &mut validate_plain_text,
+                )
+                .unwrap();
+        }
+        let outputs = outputs.finish().unwrap();
+        assert!(outputs.diagnostics.is_empty());
+        assert_eq!(outputs.cells[0].outputs.len(), 1);
+        assert!(matches!(
+            outputs.cells[0].outputs[0].output.kind,
+            crate::ir::CellOutputKind::Error { .. }
+        ));
         assert_cleaned(root.path()).await;
     }
 }
