@@ -9,9 +9,9 @@ Use these components behind a small Diplodocus-owned adapter:
 
 - [`pyproject-toml` 0.13.7](https://docs.rs/pyproject-toml/0.13.7/) for PEP 621
   project metadata and its typed PEP 440 and PEP 508 values;
-- [`ruff_python_parser` 0.0.12](https://docs.rs/ruff_python_parser/0.0.12/),
-  [`ruff_python_ast` 0.0.12](https://docs.rs/ruff_python_ast/0.0.12/), and
-  [`ruff_text_size` 0.0.12](https://docs.rs/ruff_text_size/0.0.12/) for Python
+- [`ruff_python_parser` 0.0.14](https://docs.rs/ruff_python_parser/0.0.14/),
+  [`ruff_python_ast` 0.0.14](https://docs.rs/ruff_python_ast/0.0.14/), and
+  [`ruff_text_size` 0.0.14](https://docs.rs/ruff_text_size/0.0.14/) for Python
   and stub syntax, tokens, and byte ranges; and
 - [`pydocstring` 0.4.1](https://docs.rs/pydocstring/0.4.1/) for NumPy-style
   docstring structure and byte ranges.

@@ -29,6 +29,8 @@ pub mod surface;
 pub use extraction::{PythonExtraction, extract_target};
 pub use model::*;
 
+const RUFF_VERSION: &str = "0.0.14";
+
 /// Parse one explicitly selected Python module file or package directory.
 ///
 /// A directory is the importable package or namespace-package root: its final
@@ -401,9 +403,9 @@ fn provenance(
     }
     for (name, version, role) in [
         ("pyproject-toml", "0.13.7", "python-metadata"),
-        ("ruff_python_parser", "0.0.12", "python-syntax"),
-        ("ruff_python_ast", "0.0.12", "python-ast"),
-        ("ruff_text_size", "0.0.12", "source-ranges"),
+        ("ruff_python_parser", RUFF_VERSION, "python-syntax"),
+        ("ruff_python_ast", RUFF_VERSION, "python-ast"),
+        ("ruff_text_size", RUFF_VERSION, "source-ranges"),
     ] {
         if (name == "pyproject-toml" && !metadata_used)
             || (name != "pyproject-toml" && !syntax_used)

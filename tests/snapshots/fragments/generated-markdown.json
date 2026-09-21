@@ -48,7 +48,7 @@
     },
     "tools": {
       "diplodocus": "[DIPLODOCUS_VERSION]",
-      "panache-parser": "0.29.0"
+      "panache-parser": "0.29.2"
     }
   },
   "diagnostics": []

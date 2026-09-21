@@ -135,7 +135,7 @@
             "end": 30
           },
           "tools": {
-            "ruff_python_parser": "0.0.12"
+            "ruff_python_parser": "0.0.14"
           }
         }
       ]
@@ -242,7 +242,7 @@
             "end": 30
           },
           "tools": {
-            "ruff_python_parser": "0.0.12"
+            "ruff_python_parser": "0.0.14"
           }
         }
       ]
@@ -349,7 +349,7 @@
             "end": 30
           },
           "tools": {
-            "ruff_python_parser": "0.0.12"
+            "ruff_python_parser": "0.0.14"
           }
         }
       ]
@@ -400,7 +400,7 @@
             "end": 5
           },
           "tools": {
-            "ruff_python_parser": "0.0.12"
+            "ruff_python_parser": "0.0.14"
           }
         }
       ]

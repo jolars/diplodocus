@@ -11,6 +11,7 @@ use crate::ir::{
     Attributes, Block, Document, DocumentFormat, Inline, ListItem, Provenance, ProvenanceActivity,
     SourceLocation, SourceSegment, SourceSpan, SourcedDocument,
 };
+use crate::provenance::PANACHE_VERSION;
 
 #[path = "docstrings/inline.rs"]
 mod inline;
@@ -117,7 +118,7 @@ pub fn parse_docstring(
         ("pydocstring".into(), "0.4.1".into()),
     ]);
     if context.panache_used {
-        tools.insert("panache-parser".into(), "0.29.0".into());
+        tools.insert("panache-parser".into(), PANACHE_VERSION.into());
     }
     DocstringParse {
         document: SourcedDocument {

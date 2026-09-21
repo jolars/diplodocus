@@ -6,7 +6,7 @@
 //! Maintained stubs select declarations and signatures; implementation prose
 //! remains independently attributable. This pass never evaluates Python code.
 
-use super::model;
+use super::{RUFF_VERSION, model};
 use crate::diagnostics::{
     Diagnostic, DiagnosticCode, DiagnosticEntity, DiagnosticSource, Severity,
 };
@@ -667,7 +667,7 @@ fn provenance(source: &SourceLocation) -> Provenance {
             path: source.path.clone(),
         }),
         span: source.span,
-        tools: [("ruff_python_parser".into(), "0.0.12".into())].into(),
+        tools: [("ruff_python_parser".into(), RUFF_VERSION.into())].into(),
     }
 }
 fn normalize_provenance(values: &mut Vec<Provenance>) {
