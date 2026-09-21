@@ -412,8 +412,12 @@ Diplodocus's document transformation.
 - [x] Validate the supported QMD metadata and option subset, including disabled
   and overridden declarations; prepare cells in source order with typed options,
   declaration ranges, and execution eligibility without kernel discovery or I/O.
-- [ ] Apply prepared evaluation, echo, output, include, and error behavior during
+- [x] Apply prepared evaluation, echo, output, include, and error behavior during
   execution and rendering; validate subcaption counts against final figures.
+  The runner consumes prepared evaluation and error options; shared presentation
+  views enforce visibility without deleting evidence. Final-output validation
+  checks subcaptions before hiding output. Output conversion and site renderer
+  integration follow in their respective steps.
 - [ ] Collect stdout, stderr, execution errors, display data, display updates,
   and result MIME bundles into typed `CellOutput` nodes in protocol order.
 - [ ] Treat ordinary streams as escaped preformatted text. Parse

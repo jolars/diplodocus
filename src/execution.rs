@@ -23,6 +23,7 @@ use serde::{Deserialize, Serialize};
 use crate::ir::{CodeCell, InputFingerprint};
 
 mod failure;
+mod figures;
 #[cfg(target_os = "linux")]
 #[allow(
     dead_code,
@@ -33,6 +34,7 @@ mod options;
 mod records;
 
 pub use failure::*;
+pub use figures::*;
 pub use options::*;
 pub use records::*;
 

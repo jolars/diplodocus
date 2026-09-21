@@ -1,41 +1,23 @@
 use super::*;
 use crate::configuration::ExecutionMode;
-use crate::documents::{AuthoredFormat, parse_authored_document};
-use crate::execution::{
-    CellOutcome, CellSkipReason, EffectiveCellOptions, ExecutionDefaults, ExecutionPage,
-    PageExecutionRequest, PreparedCell,
-};
-use crate::ir::Block;
+use crate::documents::{AuthoredFormat, prepare_collection_document};
+use crate::execution::{CellOutcome, CellSkipReason, ExecutionPage, PageExecutionRequest};
 use crate::provenance::fingerprint_bytes;
 
 use super::super::execution::CellEvent;
 use super::super::page::{execute_page, execute_page_with_environment};
 
 fn request(authored: &str) -> PageExecutionRequest {
-    fn visit(blocks: Vec<Block>, cells: &mut Vec<PreparedCell>) {
-        for block in blocks {
-            match block {
-                Block::CodeCell(cell) => cells.push(PreparedCell {
-                    ordinal: cells.len(),
-                    cell,
-                    options: EffectiveCellOptions::default(),
-                }),
-                Block::BlockQuote { blocks, .. } | Block::Callout { blocks, .. } => {
-                    visit(blocks, cells);
-                }
-                Block::List { items, .. } => {
-                    for item in items {
-                        visit(item.blocks, cells);
-                    }
-                }
-                _ => {}
-            }
-        }
-    }
-    let parsed = parse_authored_document(authored, AuthoredFormat::Qmd);
-    assert!(parsed.diagnostics.is_empty(), "{:?}", parsed.diagnostics);
-    let mut cells = Vec::new();
-    visit(parsed.document.blocks, &mut cells);
+    let collection = toml::from_str(
+        "id = 'guide'\nowner = 'project'\nrepository = 'docs'\npath = 'guide'\nmount = 'guide'\nformat = 'qmd'\n[execution]\nmode = 'execute'\nengine = 'jupyter'\nkernel = 'fixture'\n",
+    ).unwrap();
+    let prepared = prepare_collection_document(authored, &collection).unwrap();
+    assert!(
+        prepared.parsed.diagnostics.is_empty(),
+        "{:?}",
+        prepared.parsed.diagnostics
+    );
+    let prepared = prepared.preparation.unwrap();
     PageExecutionRequest {
         page: ExecutionPage {
             source: source().source,
@@ -44,13 +26,13 @@ fn request(authored: &str) -> PageExecutionRequest {
             source_fingerprint: fingerprint_bytes(authored.as_bytes()),
             format: AuthoredFormat::Qmd,
             mode: ExecutionMode::Execute,
-            page_veto: false,
-            parser_version: "0.29.0".into(),
+            page_veto: prepared.page_veto,
+            parser_version: "0.29.2".into(),
             qmd_policy: "qmd-mvp-v1".into(),
         },
         kernel: "fixture".into(),
-        defaults: ExecutionDefaults::default(),
-        cells,
+        defaults: prepared.defaults,
+        cells: prepared.cells,
         declared_environment_inputs: Vec::new(),
     }
 }
@@ -163,6 +145,70 @@ async fn skipped_cells_do_not_submit_or_start_another_language() {
     assert!(result.cells[..2].iter().all(|cell| cell.events.is_empty()));
     assert_eq!(submitted(root.path()).len(), 2);
     assert_cleaned(root.path()).await;
+}
+
+#[tokio::test]
+async fn hidden_cells_execute_and_collect_output_using_prepared_options() {
+    let root = TempDir::new().unwrap();
+    fixture_kernel(root.path(), "execute-streams").await;
+    let request = request(
+        "---\nexecute: {eval: false, echo: false, output: false}\n---\n\n```{python}\nskip\n```\n\n```{python, eval=true}\n#| include: false\ndefine\n```\n\n```{python, eval=true, output=asis}\nuse\n```\n",
+    );
+    let result =
+        execute_page_with_environment(context(root.path()), &request, &environment(root.path()))
+            .await
+            .unwrap();
+    assert_eq!(
+        result.cells[0].outcome,
+        CellOutcome::Skipped {
+            reason: CellSkipReason::EvalFalse
+        }
+    );
+    assert!(result.cells[0].events.is_empty());
+    for cell in &result.cells[1..] {
+        assert_eq!(cell.outcome, CellOutcome::Ok);
+        assert!(matches!(cell.events.as_slice(), [
+            CellEvent::Stream { name: crate::ir::StreamName::Stdout, text: stdout },
+            CellEvent::Stream { name: crate::ir::StreamName::Stderr, text: stderr },
+        ] if stdout == "# ordinary stdout\n" && stderr == "stderr\n"));
+    }
+    let submitted = submitted(root.path());
+    assert_eq!(submitted.len(), 2);
+    assert!(submitted.iter().all(|message| message["silent"] == false));
+    assert_cleaned(root.path()).await;
+}
+
+#[tokio::test]
+async fn hiding_output_does_not_override_prepared_error_policy() {
+    for visibility in ["output: false", "include: false"] {
+        for allow_error in [false, true] {
+            let root = TempDir::new().unwrap();
+            fixture_kernel(root.path(), "execute-both-errors").await;
+            let request = request(&format!(
+                "---\nexecute: {{error: {allow_error}}}\n---\n\n```{{python}}\n#| {visibility}\ndefine\n```\n\n```{{python}}\nuse\n```\n",
+            ));
+            let result = execute_page_with_environment(
+                context(root.path()),
+                &request,
+                &environment(root.path()),
+            )
+            .await;
+            if allow_error {
+                let result = result.unwrap();
+                assert_eq!(result.cells[0].outcome, CellOutcome::AllowedError);
+                assert_eq!(result.cells[1].outcome, CellOutcome::Ok);
+                assert!(matches!(
+                    result.cells[0].events.as_slice(),
+                    [CellEvent::Error { .. }]
+                ));
+                assert_eq!(submitted(root.path()).len(), 2);
+            } else {
+                assert_eq!(result.err().unwrap().kind, ExecutionFailureKind::CellError);
+                assert_eq!(submitted(root.path()).len(), 1);
+            }
+            assert_cleaned(root.path()).await;
+        }
+    }
 }
 
 #[tokio::test]

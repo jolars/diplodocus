@@ -7,8 +7,9 @@ session portions of Milestone 6 and follows the
 includes an internal Linux adapter for static kernel discovery, authenticated
 startup, sequential submission of prepared cells, and bounded shutdown. The
 `diplodocus::documents` module validates QMD options and prepares cells without
-I/O. The public `ExecutionEngine` implementation, presentation policy enforcement,
-validated output conversion, and caching remain later work.
+I/O. Shared presentation views apply visibility options, and final-output
+validation checks figure counts. The public `ExecutionEngine` implementation,
+validated output conversion, site rendering, and caching remain later work.
 
 ## Engine and caller responsibilities
 
@@ -138,10 +139,12 @@ of being attached to the active cell. Converting events into validated
 `CellOutput` nodes, applying display updates, producing portable provenance,
 and implementing the public `ExecutionEngine` boundary remain subsequent work.
 
-The [page tests](../../src/execution/jupyter/tests/pages.rs) check exact submitted
-bytes, nested source order, skipped cells, both terminal arrival orders, parent
-correlation, allowed errors, failure attribution, deadlines, cancellation, and
-dropped futures. The real Python and R tests retain definitions and imports
+The [page tests](../../src/execution/jupyter/tests/pages.rs) use the QMD preparer
+and check exact submitted bytes, nested source order, skipped cells, both terminal
+arrival orders, parent correlation, allowed errors, failure attribution,
+deadlines, cancellation, and dropped futures. Hidden cells still submit with
+`silent = false`, collect streams and errors, and obey the effective error
+policy. The real Python and R tests retain definitions and imports
 across three cells and repeat each page to prove that state does not carry into
 another session.
 
@@ -201,9 +204,9 @@ among cell labels and other authored anchors retained in the document.
 Bare chunk labels are unsupported; use `#identifier` or `label` instead.
 
 Preparation validates figure-option types but does not count figures before
-execution. Presentation, allowed-error behavior, and subcaption counts remain
-runtime responsibilities. In particular, preparing `echo: false` does not remove
-input from a collection with mode `never`.
+execution. The runner applies evaluation and error options, while presentation
+and final-output validation consume the prepared values separately. In particular,
+preparing `echo: false` does not remove input from a collection with mode `never`.
 
 The [preparation tests](../../tests/qmd_preparation.rs) cover precedence and
 origins, nested cells, disabled pages, scalar types, label conflicts, diagnostics,
@@ -222,6 +225,44 @@ or enforce positive limits. The producer records actual configured limits,
 including shorter test limits, without recording elapsed durations.
 
 ## Portable results and local assets
+
+### Cell presentation and final figure validation
+
+`rendering::present_prepared_cell(mode, cell)` presents a prepared cell when no
+execution result exists. `rendering::present_cell(page, cell_result)` presents a
+completed cell after all page-level display updates and clearing. Both return a
+borrowed `CellPresentation` with optional source segments and a slice of visible
+outputs. They retain the original source, options, and execution evidence.
+
+The collection mode determines presentation policy. In `never` collections,
+source remains visible regardless of execution options. In authorized
+collections, `echo: false` hides source, `output: false` hides all output, and
+`include: false` hides both. These rules also apply to skipped cells and vetoed
+pages. `output: asis` shows converted output without changing its representation;
+stdout fragment parsing belongs to the subsequent output-conversion step.
+Allowed errors follow the same output visibility as other results. Neither view
+grants rendering trust or replaces MIME, asset, HTML, or record validation.
+
+`execution::validate_figure_options(page, cells)` checks final output slots before
+publication. A nonempty `fig-subcap` list must match the number of selected SVG,
+PNG, or JPEG asset representations. Each surviving slot counts once, including
+repeated uses of the same asset. MIME alternatives and cleared slots do not
+count. Skipped cells retain their options without figure-count validation.
+An executed cell with no figures still fails when it declares subcaptions.
+
+Mismatches return `ExecutionFailureKind::OutputValidation` with one
+`invalid-figure-options` error per cell, in supplied cell order. Each diagnostic
+points to the winning declaration and relates it to the owning cell, even if
+another cell updated that output. `present_cell` runs the same validation before
+applying visibility, so hidden output cannot conceal a mismatch. The future
+output converter must also call the page-wide validator after applying all
+updates and clearing, before constructing a successful page result.
+
+The [presentation tests](../../tests/cell_presentation.rs) cover option precedence,
+visibility combinations, skipped cells, unchanged evidence, selected figures,
+final updated and cleared slots, repeated assets, and hidden figure errors.
+
+### Records and staging
 
 `PageExecutionResult` separates a serializable `PageExecutionRecord` from local
 `StagedExecutionAsset` handles. The result envelope, staged handles, and runtime

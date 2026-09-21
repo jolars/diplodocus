@@ -206,6 +206,14 @@ async fn execute(
     if mode == "execute-no-terminal" {
         return true;
     }
+    if mode == "execute-streams" {
+        for stream in [
+            jupyter_protocol::StreamContent::stdout("# ordinary stdout\n"),
+            jupyter_protocol::StreamContent::stderr("stderr\n"),
+        ] {
+            iopub.send(stream.as_child_of(message)).await.unwrap();
+        }
+    }
     let error = jupyter_protocol::ReplyError {
         ename: "FixtureError".into(),
         evalue: "expected".into(),

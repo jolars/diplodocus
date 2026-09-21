@@ -103,6 +103,9 @@ pub enum DiagnosticCode {
     /// A cell option has an invalid type, label, or conflicting declaration.
     #[serde(rename = "invalid-cell-option")]
     InvalidCellOption,
+    /// Subcaptions do not match the cell's final selected figures.
+    #[serde(rename = "invalid-figure-options")]
+    InvalidFigureOptions,
     /// Document metadata requests execution outside collection authority.
     #[serde(rename = "document-execution-not-authorized")]
     DocumentExecutionNotAuthorized,
@@ -254,6 +257,7 @@ impl DiagnosticCode {
             Self::AmbiguousCellOption => "ambiguous-cell-option",
             Self::UnsupportedCellOption => "unsupported-cell-option",
             Self::InvalidCellOption => "invalid-cell-option",
+            Self::InvalidFigureOptions => "invalid-figure-options",
             Self::DocumentExecutionNotAuthorized => "document-execution-not-authorized",
             Self::UnsupportedQmdMetadata => "unsupported-qmd-metadata",
             Self::InvalidQmdMetadata => "invalid-qmd-metadata",
