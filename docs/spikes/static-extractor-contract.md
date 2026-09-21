@@ -68,9 +68,9 @@ invoked parsers.
 | Component | Version | Role and recorded settings |
 | --- | --- | --- |
 | `pyproject-toml` | `0.13.7` | Parse PEP 621 metadata, PEP 440 versions, and PEP 508 dependencies. No build-backend metadata hooks are permitted. |
-| `ruff_python_parser` | `0.0.12` | Parse `.py` and `.pyi`; record `source_type` for each input and the `target_version` selected from the package's declared Python requirement. |
-| `ruff_python_ast` | `0.0.12` | Supply the typed syntax consumed by the semantic adapter. |
-| `ruff_text_size` | `0.0.12` | Define Ruff's zero-based, half-open UTF-8 byte ranges. |
+| `ruff_python_parser` | `0.0.14` | Parse `.py` and `.pyi`; record `source_type` for each input and the `target_version` selected from the package's declared Python requirement. |
+| `ruff_python_ast` | `0.0.14` | Supply the typed syntax consumed by the semantic adapter. |
+| `ruff_text_size` | `0.0.14` | Define Ruff's zero-based, half-open UTF-8 byte ranges. |
 | `pydocstring` | `0.4.1` | Parse PEP 257 prose and NumPy-style sections; record `style = "numpy"`. |
 
 All five releases are exact pins in `Cargo.toml`. The production adapter must

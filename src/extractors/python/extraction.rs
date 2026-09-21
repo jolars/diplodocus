@@ -9,6 +9,7 @@ use crate::ir::{
     Item, ParserProvenance, Provenance, ProvenanceActivity, SchemaVersion, TargetReference,
 };
 use crate::paths::{ResolvedPackagePaths, ResolvedRepositoryPaths, ResolvedTargetPath};
+use crate::provenance::PANACHE_VERSION;
 
 use super::{PythonMetadata, docstrings, parse_target, surface};
 
@@ -115,7 +116,7 @@ pub fn extract_target(
                 ),
                 (
                     "panache-parser",
-                    "0.29.0",
+                    PANACHE_VERSION,
                     "docstring-inline",
                     BTreeMap::from([
                         ("profile".into(), "gfm".into()),

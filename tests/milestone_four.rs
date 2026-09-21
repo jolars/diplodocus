@@ -42,6 +42,50 @@ fn normalize_versions(value: &mut serde_json::Value) {
 }
 
 #[test]
+fn parser_provenance_matches_exact_dependency_pins() {
+    let manifest: toml::Value = toml::from_str(include_str!("../Cargo.toml")).unwrap();
+    let result = extract(&support::acceptance_workspace());
+    let assert_version = |name: &str, version: &str| {
+        assert_eq!(
+            manifest["dependencies"][name].as_str(),
+            Some(format!("={version}").as_str()),
+            "provenance must report the pinned version of {name}"
+        );
+    };
+    let assert_tools = |provenance: &diplodocus::ir::Provenance| {
+        for (name, version) in &provenance.tools {
+            if name != "diplodocus" && name != "python" {
+                assert_version(name, version);
+            }
+        }
+    };
+    let ProvenanceActivity::Extraction { parsers, .. } = &result.provenance.activity else {
+        panic!("extraction");
+    };
+    for name in [
+        "panache-parser",
+        "pydocstring",
+        "pyproject-toml",
+        "ruff_python_parser",
+        "ruff_python_ast",
+        "ruff_text_size",
+    ] {
+        assert_version(name, &parsers[name].version);
+        assert_version(name, &result.provenance.tools[name]);
+    }
+    for item in result.items.values() {
+        for provenance in &item.provenance {
+            assert_tools(provenance);
+        }
+        if let Some(documentation) = &item.documentation {
+            for provenance in &documentation.provenance {
+                assert_tools(provenance);
+            }
+        }
+    }
+}
+
+#[test]
 fn complete_python_extraction_matches_portable_acceptance_ir() {
     let first_workspace = support::acceptance_workspace();
     let second_workspace = support::acceptance_workspace();
@@ -108,7 +152,7 @@ fn complete_python_extraction_matches_portable_acceptance_ir() {
         panic!("extraction");
     };
     assert_eq!(parsers["pydocstring"].version, "0.4.1");
-    assert_eq!(parsers["panache-parser"].version, "0.29.0");
+    assert_eq!(parsers["panache-parser"].version, "0.29.2");
     assert!(capabilities.contains("python.docs.numpy"));
     assert_eq!(inputs["python"].len(), 8);
     assert!(

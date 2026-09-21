@@ -11,18 +11,18 @@ fn parser_versions_are_pinned_and_match_the_contract() {
         ),
         (
             "ruff_python_parser",
-            "ruff_python_parser = \"=0.0.12\"",
-            "| `ruff_python_parser` | `0.0.12` |",
+            "ruff_python_parser = \"=0.0.14\"",
+            "| `ruff_python_parser` | `0.0.14` |",
         ),
         (
             "ruff_python_ast",
-            "ruff_python_ast = \"=0.0.12\"",
-            "| `ruff_python_ast` | `0.0.12` |",
+            "ruff_python_ast = \"=0.0.14\"",
+            "| `ruff_python_ast` | `0.0.14` |",
         ),
         (
             "ruff_text_size",
-            "ruff_text_size = \"=0.0.12\"",
-            "| `ruff_text_size` | `0.0.12` |",
+            "ruff_text_size = \"=0.0.14\"",
+            "| `ruff_text_size` | `0.0.14` |",
         ),
         (
             "pydocstring",
