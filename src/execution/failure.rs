@@ -123,6 +123,9 @@ pub enum ExecutionFailureKind {
     /// The caller requested cancellation.
     #[error("Page execution was canceled.")]
     Cancelled,
+    /// Source, declared files, or launch identity changed during the attempt.
+    #[error("Declared execution inputs changed during the page attempt.")]
+    InputChanged,
     /// An unrecoverable output conversion or validation failure occurred.
     ///
     /// Unsupported representations normally produce warnings and placeholders;
@@ -153,6 +156,7 @@ impl ExecutionFailureKind {
             Self::CellError => DiagnosticCode::ExecutionCellFailed,
             Self::Timeout { .. } => DiagnosticCode::ExecutionTimeout,
             Self::Cancelled => DiagnosticCode::ExecutionCancelled,
+            Self::InputChanged => DiagnosticCode::ExecutionInputChanged,
             Self::OutputValidation => DiagnosticCode::ExecutionOutputFailed,
             Self::AssetOutsideBoundary => DiagnosticCode::GeneratedAssetOutsideBoundary,
             Self::AssetMissing => DiagnosticCode::GeneratedAssetMissing,

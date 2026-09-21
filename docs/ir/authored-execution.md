@@ -11,6 +11,10 @@ I/O. Shared presentation views apply visibility options, and final-output
 validation checks figure counts. The public `ExecutionEngine` implementation,
 validated output conversion, site rendering, and caching remain later work.
 
+The [Milestone 6 implementation boundaries](../design/execution-implementation.md)
+freeze module ownership, validation and cache seams, dependency choices, and the
+remaining acceptance gates. They distinguish planned APIs from implemented code.
+
 ## Engine and caller responsibilities
 
 `ExecutionEngine` is an object-safe, `Send + Sync` trait. Its `capabilities()` and
@@ -282,8 +286,13 @@ It records owning, producing, and latest updating cell ordinals, stable output
 slot ordinals, offered MIME names, selected MIME type, representation evidence,
 and diagnostic indices. Display replacement preserves slot identity, and clearing
 may leave gaps. Unsupported output can retain offered MIME names and diagnostic
-references without retaining rejected payloads. Representations remain in MIME
-preference order; offered MIME names use lexical order.
+references without retaining rejected payloads. Its explicit shape is a display
+with empty representation and evidence lists, no selected MIME, and at least one
+diagnostic reference. `ExecutionOutput::unsupported_placeholder()` exposes that
+shape without changing shared output tags or validating cross-record references.
+The separate cache DTO maps it to the contract's `unsupported` representation.
+Representations remain in MIME preference order; offered MIME names use lexical
+order.
 
 Diagnostics have their final deterministic order before outputs refer to their
 indices. Representation evidence has the same order and length as the accepted

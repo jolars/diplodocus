@@ -9,7 +9,8 @@ use crate::configuration::ExecutionMode;
 use crate::diagnostics::{Diagnostic, DiagnosticPath};
 use crate::documents::AuthoredFormat;
 use crate::ir::{
-    AssetReference, CellOutput, Fingerprint, Provenance, SourceLocation, SourceSegment, SourceSpan,
+    AssetReference, CellOutput, CellOutputKind, Fingerprint, Provenance, SourceLocation,
+    SourceSegment, SourceSpan,
 };
 
 use super::{EffectiveCellOptions, ExecutionDeadlines, ExecutionDefaults};
@@ -154,6 +155,38 @@ pub struct ExecutionOutput {
     pub representations: Vec<RepresentationEvidence>,
     /// Indices into the owning page's diagnostic vector, in diagnostic order.
     pub diagnostic_indices: Vec<usize>,
+}
+
+impl ExecutionOutput {
+    /// Identify a display placeholder without inventing an accepted representation.
+    ///
+    /// Unsupported displays retain their offered MIME names and at least one
+    /// diagnostic reference, with no selected MIME or representation evidence.
+    /// This checks the slot's shape only. Consumers must still validate diagnostic
+    /// indices against the page and enforce all other cross-record invariants.
+    pub fn unsupported_placeholder(&self) -> Option<UnsupportedOutput<'_>> {
+        (matches!(self.output.kind, CellOutputKind::Display)
+            && self.output.representations.is_empty()
+            && self.representations.is_empty()
+            && self.selected_mime_type.is_none()
+            && !self.diagnostic_indices.is_empty())
+        .then_some(UnsupportedOutput {
+            mime_types: &self.offered_mime_types,
+            diagnostic_indices: &self.diagnostic_indices,
+        })
+    }
+}
+
+/// A borrowed unsupported-display placeholder, with no rejected payload.
+///
+/// Render MIME names as escaped text. The execution artifact codec supplies its
+/// own explicit `unsupported` tag; this view does not change the shared IR schema.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct UnsupportedOutput<'a> {
+    /// Offered MIME names in lexical order; an empty bundle has no names.
+    pub mime_types: &'a BTreeSet<String>,
+    /// References to the page's output-validation warnings.
+    pub diagnostic_indices: &'a [usize],
 }
 
 /// Accepted representation evidence without transport payloads or rendering trust.

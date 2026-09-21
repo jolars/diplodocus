@@ -52,6 +52,27 @@ pub enum DiagnosticCode {
     /// Cell output has no supported faithful representation.
     #[serde(rename = "unsupported-cell-output")]
     UnsupportedCellOutput,
+    /// A supported output payload is malformed and needs a safe alternative.
+    #[serde(rename = "invalid-cell-output")]
+    InvalidCellOutput,
+    /// A kernel HTML candidate violates the active allowlist.
+    #[serde(rename = "unsafe-kernel-html")]
+    UnsafeKernelHtml,
+    /// A kernel SVG candidate violates the active allowlist.
+    #[serde(rename = "unsafe-kernel-svg")]
+    UnsafeKernelSvg,
+    /// Declared execution inputs changed before the attempt could be accepted.
+    #[serde(rename = "execution-input-changed")]
+    ExecutionInputChanged,
+    /// An execution-cache candidate failed complete validation.
+    #[serde(rename = "invalid-execution-cache")]
+    InvalidExecutionCache,
+    /// Optional cache storage failed without invalidating a successful page.
+    #[serde(rename = "execution-cache-unavailable")]
+    ExecutionCacheUnavailable,
+    /// Valid executions produced different results for the same page key.
+    #[serde(rename = "non-deterministic-execution")]
+    NonDeterministicExecution,
     /// R metadata is malformed or lacks required static values.
     #[serde(rename = "r-metadata")]
     RMetadata,
@@ -240,6 +261,13 @@ impl DiagnosticCode {
             Self::GeneratedAssetMissing => "generated-asset-missing",
             Self::ExecutionAssetCollision => "execution-asset-collision",
             Self::UnsupportedCellOutput => "unsupported-cell-output",
+            Self::InvalidCellOutput => "invalid-cell-output",
+            Self::UnsafeKernelHtml => "unsafe-kernel-html",
+            Self::UnsafeKernelSvg => "unsafe-kernel-svg",
+            Self::ExecutionInputChanged => "execution-input-changed",
+            Self::InvalidExecutionCache => "invalid-execution-cache",
+            Self::ExecutionCacheUnavailable => "execution-cache-unavailable",
+            Self::NonDeterministicExecution => "non-deterministic-execution",
             Self::RMetadata => "r-metadata",
             Self::RSourceRead => "r-source-read",
             Self::RSyntax => "r-syntax",

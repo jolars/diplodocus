@@ -472,6 +472,85 @@ fn portable_records_preserve_output_updates_slot_gaps_and_diagnostic_indices() {
 }
 
 #[test]
+fn unsupported_displays_have_a_placeholder_without_rejected_payloads() {
+    let mut output = text_output(0, 3, "accepted alternative");
+    output.output.kind = CellOutputKind::Display;
+    assert!(output.unsupported_placeholder().is_none());
+    output.output.representations.clear();
+    output.representations.clear();
+    output.selected_mime_type = None;
+    output.offered_mime_types = ["text/html".into(), "application/javascript".into()].into();
+    assert!(output.unsupported_placeholder().is_none());
+    output.diagnostic_indices = vec![2];
+
+    let encoded = serde_json::to_value(&output).unwrap();
+    let restored: ExecutionOutput = serde_json::from_value(encoded.clone()).unwrap();
+    let placeholder = restored.unsupported_placeholder().unwrap();
+    assert_eq!(
+        placeholder
+            .mime_types
+            .iter()
+            .map(String::as_str)
+            .collect::<Vec<_>>(),
+        ["application/javascript", "text/html"]
+    );
+    assert_eq!(placeholder.diagnostic_indices, [2]);
+    assert_eq!(encoded["output"]["kind"]["type"], "display");
+    assert_eq!(encoded["output"]["representations"], serde_json::json!([]));
+    assert!(!encoded.to_string().contains("accepted alternative"));
+
+    output.selected_mime_type = Some("text/plain".into());
+    assert!(output.unsupported_placeholder().is_none());
+    output.selected_mime_type = None;
+    output.representations = text_output(0, 3, "orphan evidence").representations;
+    assert!(output.unsupported_placeholder().is_none());
+    output.representations.clear();
+    output.output.kind = CellOutputKind::Stream {
+        stream: StreamName::Stdout,
+    };
+    assert!(output.unsupported_placeholder().is_none());
+    output.output.kind = error_output().output.kind;
+    assert!(output.unsupported_placeholder().is_none());
+}
+
+#[test]
+fn output_and_cache_diagnostics_have_the_contract_spellings() {
+    for (code, spelling) in [
+        (DiagnosticCode::InvalidCellOutput, "invalid-cell-output"),
+        (DiagnosticCode::UnsafeKernelHtml, "unsafe-kernel-html"),
+        (DiagnosticCode::UnsafeKernelSvg, "unsafe-kernel-svg"),
+        (
+            DiagnosticCode::ExecutionInputChanged,
+            "execution-input-changed",
+        ),
+        (
+            DiagnosticCode::InvalidExecutionCache,
+            "invalid-execution-cache",
+        ),
+        (
+            DiagnosticCode::ExecutionCacheUnavailable,
+            "execution-cache-unavailable",
+        ),
+        (
+            DiagnosticCode::NonDeterministicExecution,
+            "non-deterministic-execution",
+        ),
+    ] {
+        assert_eq!(code.as_str(), spelling);
+        let encoded = serde_json::to_value(code).unwrap();
+        assert_eq!(encoded, spelling);
+        assert_eq!(
+            serde_json::from_value::<DiagnosticCode>(encoded).unwrap(),
+            code
+        );
+    }
+    assert_eq!(
+        ExecutionFailureKind::InputChanged.diagnostic_code(),
+        DiagnosticCode::ExecutionInputChanged
+    );
+}
+
+#[test]
 fn staging_paths_stay_out_of_portable_assets_and_provenance() {
     let mut record = record(&request());
     let fingerprint = fingerprint_bytes(b"fixture asset");
@@ -640,6 +719,7 @@ fn failure_codes_use_the_shared_diagnostic_serialization() {
             phase: ExecutionPhase::ForcedExit,
         },
         ExecutionFailureKind::Cancelled,
+        ExecutionFailureKind::InputChanged,
         ExecutionFailureKind::OutputValidation,
         ExecutionFailureKind::AssetOutsideBoundary,
         ExecutionFailureKind::AssetMissing,
