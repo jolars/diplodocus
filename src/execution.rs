@@ -2,7 +2,8 @@
 //!
 //! The internal Linux adapter executes prepared cells in one supervised session
 //! per page. An internal incremental reducer converts kernel events into typed
-//! outputs through a representation validator. Rich-output validators and the
+//! outputs through a representation validator, including inert Markdown MIME
+//! and as-is stdout fragments. Asset and HTML validators and the
 //! [`ExecutionEngine`] implementation remain future work.
 //! [`crate::documents::prepare_collection_document`]
 //! validates collection authority and prepares QMD cells without I/O. Callers

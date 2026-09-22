@@ -423,11 +423,16 @@ Diplodocus's document transformation.
   The internal incremental reducer retains stable slots, applies page-wide
   updates and clearing, orders validated MIME alternatives, and normalizes
   errors. Its validator boundary separates collection from the remaining
-  fragment, asset, and HTML work. Supervised engine integration follows those
+  asset and HTML work. Supervised engine integration follows those
   validators, as specified in the execution implementation design.
-- [ ] Treat ordinary streams as escaped preformatted text. Parse
+- [x] Treat ordinary streams as escaped preformatted text. Parse
   `text/markdown`, and explicitly as-is stream output, as isolated document
   fragments with execution disabled.
+  The reducer parses Markdown MIME and adjacent as-is stdout runs, preserving
+  fragment attribution and diagnostics. Literal output has an escaped
+  preformatted rendering primitive. Reducer and protocol tests cover inert
+  generated fences, stream boundaries, hidden output, and MIME fallbacks.
+  URL and asset validation and full site rendering remain their own steps.
 - [ ] Store binary figures as content-addressed assets beneath an execution-
   output boundary; reject unsupported media, path traversal, and asset
   collisions deterministically.

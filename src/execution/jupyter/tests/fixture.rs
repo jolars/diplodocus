@@ -214,6 +214,24 @@ async fn execute(
             iopub.send(stream.as_child_of(message)).await.unwrap();
         }
     }
+    if mode == "execute-markdown" {
+        for stream in [
+            jupyter_protocol::StreamContent::stdout("# Gener"),
+            jupyter_protocol::StreamContent::stdout("ated\n"),
+            jupyter_protocol::StreamContent::stderr("<stderr>&literal\n"),
+        ] {
+            iopub.send(stream.as_child_of(message)).await.unwrap();
+        }
+        let display: jupyter_protocol::DisplayData = serde_json::from_value(json!({
+            "data": {
+                "text/markdown": "```{python}\nraise RuntimeError('inert')\n```\n",
+                "text/plain": "literal fallback"
+            },
+            "metadata": {}
+        }))
+        .unwrap();
+        iopub.send(display.as_child_of(message)).await.unwrap();
+    }
     let error = jupyter_protocol::ReplyError {
         ename: "FixtureError".into(),
         evalue: "expected".into(),

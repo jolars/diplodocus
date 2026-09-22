@@ -22,7 +22,7 @@ pub struct CellOutput {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum CellOutputKind {
-    /// Preformatted stdout or stderr; ordinary stream text is never Markdown.
+    /// Stdout or stderr; only explicitly as-is stdout may contain Markdown.
     Stream {
         /// Producing stream.
         stream: StreamName,

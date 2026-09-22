@@ -7,6 +7,26 @@ use crate::execution::{
 };
 use crate::ir::SourceSegment;
 
+/// Render literal output as escaped, preformatted HTML without Markdown parsing.
+///
+/// Use this for `PlainText` representations, stderr, and normalized error text.
+/// Keep the IR's original bytes and escape only at this final HTML boundary.
+pub fn render_preformatted_text(text: &str) -> String {
+    let mut html = String::from("<pre><code>");
+    for ch in text.chars() {
+        match ch {
+            '&' => html.push_str("&amp;"),
+            '<' => html.push_str("&lt;"),
+            '>' => html.push_str("&gt;"),
+            '"' => html.push_str("&quot;"),
+            '\'' => html.push_str("&#39;"),
+            _ => html.push(ch),
+        }
+    }
+    html.push_str("</code></pre>");
+    html
+}
+
 /// A borrowed presentation view that preserves the complete execution evidence.
 ///
 /// This view applies visibility only. Text still requires escaping, and output

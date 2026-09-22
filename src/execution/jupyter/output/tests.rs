@@ -1,3 +1,4 @@
+use super::text::validate_text;
 use super::*;
 use crate::configuration::ExecutionMode;
 use crate::diagnostics::DiagnosticPath;
@@ -5,6 +6,8 @@ use crate::documents::{AuthoredFormat, prepare_collection_document};
 use crate::execution::{CellSkipReason, ExecutionDefaults, OutputVisibility};
 use crate::ir::{SourceLocation, SourceSpan, StreamName};
 use serde_json::json;
+
+mod fragments;
 
 fn page() -> ExecutionPage {
     ExecutionPage {
@@ -76,12 +79,7 @@ fn update(id: Option<&str>, text: &str) -> CellEvent {
 
 fn accept(reducer: &mut OutputReducer, ordinal: usize, events: Vec<CellEvent>) {
     reducer
-        .accept_cell(
-            &cell(ordinal),
-            CellOutcome::Ok,
-            events,
-            &mut validate_plain_text,
-        )
+        .accept_cell(&cell(ordinal), CellOutcome::Ok, events, &mut validate_text)
         .unwrap();
 }
 
@@ -115,7 +113,7 @@ fn typed_outputs_preserve_protocol_order_and_exact_stream_bytes() {
             &prepared,
             CellOutcome::AllowedError,
             events,
-            &mut validate_plain_text,
+            &mut validate_text,
         )
         .unwrap();
     let result = reducer.finish().unwrap();
@@ -348,7 +346,7 @@ fn every_supported_candidate_is_validated_in_policy_order_even_when_hidden() {
         assert_eq!(candidate.slot, 0);
         assert_eq!(candidate.metadata["arbitrary"], "metadata");
         if candidate.media_type == "text/plain" {
-            validate_plain_text(candidate)
+            validate_text(candidate)
         } else {
             Ok(CandidateValidation {
                 accepted: None,
@@ -483,7 +481,7 @@ fn skipped_cells_preserve_authored_evidence_without_source_digest_or_outputs() {
                 reason: CellSkipReason::EvalFalse,
             },
             vec![],
-            &mut validate_plain_text,
+            &mut validate_text,
         )
         .unwrap();
     let result = reducer.finish().unwrap();
@@ -510,7 +508,7 @@ fn invalid_cell_sequences_and_skipped_events_fail_closed() {
         let mut reducer = new_reducer();
         assert!(
             reducer
-                .accept_cell(&prepared, outcome, events, &mut validate_plain_text)
+                .accept_cell(&prepared, outcome, events, &mut validate_text)
                 .is_err()
         );
         assert!(reducer.finish().is_err());
@@ -560,7 +558,7 @@ fn validate_fixture_asset(
     candidate: OutputCandidate<'_>,
 ) -> Result<CandidateValidation, ExecutionFailure> {
     if candidate.media_type == "text/plain" {
-        return validate_plain_text(candidate);
+        return validate_text(candidate);
     }
     let bytes = candidate.data.as_str().unwrap().as_bytes();
     let fingerprint = fingerprint_bytes(bytes);
@@ -577,6 +575,7 @@ fn validate_fixture_asset(
             },
             content_fingerprint: fingerprint,
             policy: Some("fixture-media-v1".into()),
+            provenance: Vec::new(),
         }),
         diagnostics: Vec::new(),
     })
@@ -646,7 +645,7 @@ fn final_figure_counts_use_updated_slots_even_when_the_owner_is_hidden() {
             &prepared,
             CellOutcome::Ok,
             vec![display(Some("figure"), "not yet a figure")],
-            &mut validate_plain_text,
+            &mut validate_text,
         )
         .unwrap();
     reducer_with_options
@@ -721,7 +720,7 @@ fn mismatched_validator_media_fails_instead_of_fabricating_evidence() {
             CellOutcome::Ok,
             vec![display(None, "text")],
             &mut |candidate: OutputCandidate<'_>| {
-                let mut accepted = validate_plain_text(candidate)?;
+                let mut accepted = validate_text(candidate)?;
                 let OutputRepresentation::PlainText { media_type, .. } =
                     &mut accepted.accepted.as_mut().unwrap().representation
                 else {

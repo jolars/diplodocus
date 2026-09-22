@@ -178,11 +178,26 @@ prevent later finalization. Hidden output and lower-priority alternatives still
 pass through validation. Unsupported bundles produce payload-free placeholders
 with offered MIME names and diagnostic references.
 
-The implemented validator accepts plain-text strings and arrays of strings.
-Other supported media require the later fragment, asset, and HTML validators;
-the plain-text validator rejects them with a warning. Ordinary streams retain
-their literal bytes as preformatted text. As-is stdout parsing remains the next
-output step. Errors lose terminal controls, known checkout frame paths become
+The text validator accepts strings and arrays of strings for `text/plain` and
+`text/markdown`. Arrays concatenate without inserted separators. Markdown uses
+the isolated fragment parser with execution and semantic-target creation
+disabled. Generated fences remain display code, frontmatter cannot change page
+options, and raw HTML remains unsupported source. Each fragment retains its
+producing page, cell, and slot, parser versions, and fragment-relative diagnostic
+ranges. The text content fingerprint covers the concatenated UTF-8 payload;
+the later cache codec owns canonical structured-content digests.
+
+Ordinary streams retain their literal bytes as preformatted text. With
+`output: asis`, only adjacent stdout events within one cell concatenate into a
+Markdown fragment. Stderr, displays, results, errors, updates, and clearing break
+the run. Each run occupies one stable output slot and passes through the same
+validator boundary as Markdown MIME output, including when hidden or cleared
+later. A rejected run retains a literal-text fallback and its warnings; a fatal
+validation failure still stops reduction. Stderr and plain-text MIME results
+keep their ordinary semantics. Markdown parsing does not validate links or
+images or grant rendering trust; asset and HTML validators remain later work.
+
+Errors lose terminal controls, known checkout frame paths become
 repository-relative, and external frame paths and IPython execution counts use
 stable markers. Ordinary exception messages and source text retain authored
 paths. The existing transport coalesces shell and IOPub reports of an exception
@@ -199,7 +214,11 @@ The [reducer tests](../../src/execution/jupyter/output/tests.rs) cover ordering,
 cross-cell updates, clearing, MIME preference and fallback, malformed payloads,
 fatal validation, asset references, hidden figure counts, skipped cells, and
 portable error text. The protocol page tests also reduce shell-only, IOPub-only,
-and duplicate-channel error reports into one typed error.
+and duplicate-channel error reports into one typed error. The
+[fragment reduction tests](../../src/execution/jupyter/output/tests/fragments.rs)
+cover stream grouping, inert generated content, attribution, diagnostics, MIME
+fallbacks, and validation before visibility filtering. A protocol fixture proves
+conversion from prepared as-is options through stream and display messages.
 
 ## Options and outcomes
 
@@ -292,9 +311,15 @@ source remains visible regardless of execution options. In authorized
 collections, `echo: false` hides source, `output: false` hides all output, and
 `include: false` hides both. These rules also apply to skipped cells and vetoed
 pages. `output: asis` shows converted output without changing its representation;
-stdout fragment parsing belongs to the subsequent output-conversion step.
+the output reducer has already parsed stdout fragments.
 Allowed errors follow the same output visibility as other results. Neither view
 grants rendering trust or replaces MIME, asset, HTML, or record validation.
+
+`rendering::render_preformatted_text(text)` escapes literal output into
+`<pre><code>` HTML, preserving whitespace and leaving Markdown syntax literal.
+Escaping happens at the HTML boundary, so portable plain-text records retain
+their original bytes. This rendering primitive is tested independently; full
+site renderer integration remains later work.
 
 `execution::validate_figure_options(page, cells)` checks final output slots before
 publication. A nonempty `fig-subcap` list must match the number of selected SVG,

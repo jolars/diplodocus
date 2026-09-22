@@ -14,12 +14,16 @@ use super::execution::{CellEvent, MimeBundle};
 use crate::diagnostics::{Diagnostic, DiagnosticCode, Severity};
 use crate::execution::{
     CellExecutionResult, CellOutcome, ExecutionFailure, ExecutionFailureKind, ExecutionOutput,
-    ExecutionPage, PreparedCell, RepresentationEvidence, validate_figure_options,
+    ExecutionPage, OutputVisibility, PreparedCell, RepresentationEvidence, validate_figure_options,
 };
-use crate::ir::{AssetReference, CellOutput, CellOutputKind, Fingerprint, OutputRepresentation};
+use crate::ir::{
+    AssetReference, CellOutput, CellOutputKind, Fingerprint, OutputRepresentation, Provenance,
+    StreamName,
+};
 use crate::provenance::fingerprint_bytes;
 
 mod errors;
+pub(super) mod text;
 pub(super) use errors::ErrorContext;
 #[cfg(test)]
 mod tests;
@@ -65,6 +69,7 @@ pub(super) struct AcceptedRepresentation {
     pub representation: OutputRepresentation,
     pub content_fingerprint: Fingerprint,
     pub policy: Option<String>,
+    pub provenance: Vec<Provenance>,
 }
 
 /// A reduction result is not a publishable page or a rendering trust token.
@@ -145,7 +150,8 @@ impl OutputReducer {
         });
         let mut next_slot = 0;
         let mut pending_clear = false;
-        for event in events {
+        let mut events = events.into_iter().peekable();
+        while let Some(event) = events.next() {
             if let CellEvent::Clear { wait } = event {
                 pending_clear = wait;
                 if !wait {
@@ -174,22 +180,46 @@ impl OutputReducer {
             };
             let mut register = None;
             match event {
+                CellEvent::Stream {
+                    name: StreamName::Stdout,
+                    mut text,
+                } if prepared.options.execution.output.value == OutputVisibility::AsIs => {
+                    // Transport chunks need not align with Markdown syntax. Only
+                    // uninterrupted stdout belongs to the same fragment.
+                    while let Some(CellEvent::Stream {
+                        name: StreamName::Stdout,
+                        ..
+                    }) = events.peek()
+                    {
+                        let Some(CellEvent::Stream { text: next, .. }) = events.next() else {
+                            unreachable!()
+                        };
+                        text.push_str(&next);
+                    }
+                    output.output.kind = CellOutputKind::Stream {
+                        stream: StreamName::Stdout,
+                    };
+                    self.rich_output(
+                        prepared,
+                        &mut output,
+                        MimeBundle {
+                            data: Value::Object(Map::from_iter([(
+                                "text/markdown".into(),
+                                Value::String(text.clone()),
+                            )])),
+                            metadata: Map::new(),
+                        },
+                        validator,
+                    )?;
+                    if output.output.representations.is_empty() {
+                        // Rejected fragments still have a faithful escaped-text
+                        // fallback; streams cannot be display placeholders.
+                        plain_stream(&mut output, prepared.ordinal, text);
+                    }
+                }
                 CellEvent::Stream { name, text } => {
                     output.output.kind = CellOutputKind::Stream { stream: name };
-                    output.offered_mime_types.insert("text/plain".into());
-                    output.selected_mime_type = Some("text/plain".into());
-                    output.representations.push(RepresentationEvidence {
-                        content_fingerprint: fingerprint_bytes(text.as_bytes()),
-                        producing_cell: prepared.ordinal,
-                        policy: None,
-                    });
-                    output
-                        .output
-                        .representations
-                        .push(OutputRepresentation::PlainText {
-                            media_type: "text/plain".into(),
-                            text,
-                        });
+                    plain_stream(&mut output, prepared.ordinal, text);
                 }
                 CellEvent::Error {
                     name,
@@ -292,6 +322,7 @@ impl OutputReducer {
                         policy: accepted.policy,
                     });
                     output.output.representations.push(accepted.representation);
+                    output.output.provenance.extend(accepted.provenance);
                 }
             }
         } else {
@@ -381,47 +412,19 @@ fn representation_media_type(representation: &OutputRepresentation) -> &str {
     }
 }
 
-/// The currently available MIME validator. Rich validators compose at this same
-/// boundary when their asset, fragment, and sanitizer implementations arrive.
-pub(super) fn validate_plain_text(
-    candidate: OutputCandidate<'_>,
-) -> Result<CandidateValidation, ExecutionFailure> {
-    if candidate.media_type != "text/plain" {
-        return Ok(CandidateValidation {
-            accepted: None,
-            diagnostics: vec![candidate.warning(
-                DiagnosticCode::UnsupportedCellOutput,
-                "This output representation has no installed validator.",
-            )],
+fn plain_stream(output: &mut ExecutionOutput, producer: usize, text: String) {
+    output.offered_mime_types.insert("text/plain".into());
+    output.selected_mime_type = Some("text/plain".into());
+    output.representations.push(RepresentationEvidence {
+        content_fingerprint: fingerprint_bytes(text.as_bytes()),
+        producing_cell: producer,
+        policy: None,
+    });
+    output
+        .output
+        .representations
+        .push(OutputRepresentation::PlainText {
+            media_type: "text/plain".into(),
+            text,
         });
-    }
-    let text = match candidate.data {
-        Value::String(text) => Some(text.clone()),
-        Value::Array(lines) => lines
-            .iter()
-            .map(Value::as_str)
-            .collect::<Option<Vec<_>>>()
-            .map(|lines| lines.concat()),
-        _ => None,
-    };
-    Ok(match text {
-        Some(text) => CandidateValidation {
-            accepted: Some(AcceptedRepresentation {
-                content_fingerprint: fingerprint_bytes(text.as_bytes()),
-                policy: None,
-                representation: OutputRepresentation::PlainText {
-                    media_type: "text/plain".into(),
-                    text,
-                },
-            }),
-            diagnostics: Vec::new(),
-        },
-        None => CandidateValidation {
-            accepted: None,
-            diagnostics: vec![candidate.warning(
-                DiagnosticCode::InvalidCellOutput,
-                "A plain-text payload must be a string or an array of strings.",
-            )],
-        },
-    })
 }

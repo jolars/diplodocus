@@ -5,7 +5,8 @@ use crate::execution::{CellOutcome, CellSkipReason, ExecutionPage, PageExecution
 use crate::provenance::fingerprint_bytes;
 
 use super::super::execution::CellEvent;
-use super::super::output::{ErrorContext, OutputReducer, validate_plain_text};
+use super::super::output::text::validate_text;
+use super::super::output::{ErrorContext, OutputReducer};
 use super::super::page::{execute_page, execute_page_with_environment};
 
 fn request(authored: &str) -> PageExecutionRequest {
@@ -176,6 +177,73 @@ async fn hidden_cells_execute_and_collect_output_using_prepared_options() {
     let submitted = submitted(root.path());
     assert_eq!(submitted.len(), 2);
     assert!(submitted.iter().all(|message| message["silent"] == false));
+    assert_cleaned(root.path()).await;
+}
+
+#[tokio::test]
+async fn protocol_text_output_respects_prepared_asis_and_inert_markdown() {
+    use crate::ir::{Block, CellOutputKind, OutputRepresentation, StreamName};
+
+    let root = TempDir::new().unwrap();
+    fixture_kernel(root.path(), "execute-markdown").await;
+    let request = request("```{python}\n#| output: asis\ndefine\n```\n\n```{python}\nuse\n```\n");
+    let result =
+        execute_page_with_environment(context(root.path()), &request, &environment(root.path()))
+            .await
+            .unwrap();
+    let mut reducer =
+        OutputReducer::new(request.page.clone(), ErrorContext::new(root.path().into()));
+    for (prepared, executed) in request.cells.iter().zip(result.cells) {
+        reducer
+            .accept_cell(
+                prepared,
+                executed.outcome,
+                executed.events,
+                &mut validate_text,
+            )
+            .unwrap();
+    }
+    let result = reducer.finish().unwrap();
+    let asis = &result.cells[0].outputs;
+    let ordinary = &result.cells[1].outputs;
+    assert_eq!(asis.len(), 3);
+    assert_eq!(ordinary.len(), 4);
+    assert!(
+        matches!(&asis[0].output.representations[0], OutputRepresentation::MarkdownBlocks { blocks, .. }
+        if matches!(blocks.as_slice(), [Block::Heading { .. }]))
+    );
+    assert!(
+        matches!(&ordinary[0].output.representations[0], OutputRepresentation::PlainText { text, .. } if text == "# Gener")
+    );
+    assert!(
+        matches!(&ordinary[1].output.representations[0], OutputRepresentation::PlainText { text, .. } if text == "ated\n")
+    );
+    for outputs in [asis, ordinary] {
+        let stderr = &outputs[outputs.len() - 2];
+        assert_eq!(
+            stderr.output.kind,
+            CellOutputKind::Stream {
+                stream: StreamName::Stderr
+            }
+        );
+        let OutputRepresentation::PlainText { text, .. } = &stderr.output.representations[0] else {
+            panic!()
+        };
+        assert_eq!(
+            crate::rendering::render_preformatted_text(text),
+            "<pre><code>&lt;stderr&gt;&amp;literal\n</code></pre>"
+        );
+        let display = outputs.last().unwrap();
+        assert_eq!(display.selected_mime_type.as_deref(), Some("text/markdown"));
+        assert!(
+            matches!(&display.output.representations[0], OutputRepresentation::MarkdownBlocks { blocks, .. }
+            if matches!(blocks.as_slice(), [Block::CodeBlock { source, .. }] if source == "raise RuntimeError('inert')\n"))
+        );
+        assert_eq!(display.output.representations.len(), 2);
+        assert_eq!(display.output.provenance.len(), 1);
+    }
+    assert!(result.diagnostics.is_empty());
+    assert_eq!(submitted(root.path()).len(), 2);
     assert_cleaned(root.path()).await;
 }
 
@@ -351,7 +419,7 @@ async fn allowed_language_errors_keep_the_same_session_alive() {
                     prepared,
                     executed.outcome,
                     executed.events,
-                    &mut validate_plain_text,
+                    &mut validate_text,
                 )
                 .unwrap();
         }
