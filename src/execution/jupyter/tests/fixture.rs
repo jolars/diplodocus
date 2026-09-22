@@ -232,6 +232,13 @@ async fn execute(
         .unwrap();
         iopub.send(display.as_child_of(message)).await.unwrap();
     }
+    if mode == "execute-images" {
+        let display: jupyter_protocol::DisplayData = serde_json::from_value(json!({
+            "data": {"image/svg+xml": "<svg xmlns='http://www.w3.org/2000/svg'><rect width='10' height='10'/></svg>", "text/plain": "a figure"},
+            "metadata": {"filename": "../../ignored.svg"}
+        })).unwrap();
+        iopub.send(display.as_child_of(message)).await.unwrap();
+    }
     let error = jupyter_protocol::ReplyError {
         ename: "FixtureError".into(),
         evalue: "expected".into(),

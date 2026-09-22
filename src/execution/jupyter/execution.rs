@@ -7,12 +7,12 @@ use jupyter_protocol::{
 };
 use serde_json::{Map, Value};
 use tokio::process::Child;
-use tokio::sync::oneshot;
+use tokio::sync::{mpsc, oneshot};
 use tokio::time::{Instant, sleep_until, timeout};
 
 use super::FailureSource;
 use super::page::{ExecutedCell, ExecutedCells, skip_reason};
-use super::session::{SessionInputs, Stop};
+use super::session::{PendingCell, SessionInputs, Stop};
 use super::transport::Channels;
 use crate::diagnostics::{Diagnostic, DiagnosticCode, Severity};
 use crate::execution::{
@@ -64,32 +64,57 @@ pub(super) async fn execute_cells(
     child: &mut Child,
     stopped: &mut oneshot::Receiver<Stop>,
     inputs: &SessionInputs,
+    output: &mpsc::Sender<PendingCell>,
 ) -> Result<ExecutedCells, ExecutionFailure> {
     let mut result = ExecutedCells::default();
     for cell in cells {
-        if let Some(reason) = skip_reason(&cell, language) {
-            result.cells.push(ExecutedCell {
-                ordinal: cell.ordinal,
-                outcome: CellOutcome::Skipped { reason },
-                events: Vec::new(),
-            });
-            continue;
-        }
         let source = inputs.source.for_cell(&cell);
         let execution = async {
-            timeout(
-                Duration::from_millis(inputs.deadlines.cell),
-                channels.execute_cell(&cell, inputs.deadlines, &source, &mut result.diagnostics),
-            )
-            .await
-            .unwrap_or_else(|_| {
-                Err(source.failure(
-                    ExecutionFailureKind::Timeout {
-                        phase: ExecutionPhase::Cell,
-                    },
-                    "Cell execution timed out.",
-                ))
-            })
+            let completed = if let Some(reason) = skip_reason(&cell, language) {
+                ExecutedCell {
+                    ordinal: cell.ordinal,
+                    outcome: CellOutcome::Skipped { reason },
+                    events: Vec::new(),
+                }
+            } else {
+                timeout(
+                    Duration::from_millis(inputs.deadlines.cell),
+                    channels.execute_cell(
+                        &cell,
+                        inputs.deadlines,
+                        &source,
+                        &mut result.diagnostics,
+                    ),
+                )
+                .await
+                .unwrap_or_else(|_| {
+                    Err(source.failure(
+                        ExecutionFailureKind::Timeout {
+                            phase: ExecutionPhase::Cell,
+                        },
+                        "Cell execution timed out.",
+                    ))
+                })?
+            };
+            let (accepted, response) = oneshot::channel();
+            output
+                .send(PendingCell {
+                    cell: completed,
+                    accepted,
+                })
+                .await
+                .map_err(|_| {
+                    source.failure(
+                        ExecutionFailureKind::Cancelled,
+                        "The output consumer was dropped.",
+                    )
+                })?;
+            response.await.map_err(|_| {
+                source.failure(
+                    ExecutionFailureKind::Cancelled,
+                    "The output consumer was dropped.",
+                )
+            })?
         };
         let outcome = tokio::select! {
             biased;

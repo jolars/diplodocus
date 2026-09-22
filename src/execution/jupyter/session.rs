@@ -1,17 +1,17 @@
 //! Supervision outlives a caller that drops its startup future or session handle.
 
-use std::future::ready;
+use std::future::{Future, pending, ready};
 use std::path::PathBuf;
 use std::time::Duration;
 
-use tokio::sync::oneshot;
+use tokio::sync::{mpsc, oneshot};
 use tokio::task::JoinHandle;
 use tokio::time::timeout;
 
 use super::FailureSource;
 use super::discovery::SelectedKernel;
 use super::execution::execute_cells;
-use super::page::ExecutedCells;
+use super::page::{ExecutedCell, ExecutedCells};
 use super::process::KernelProcess;
 use super::transport::Channels;
 use crate::execution::{
@@ -37,12 +37,44 @@ pub(super) struct KernelSession {
 
 impl KernelSession {
     pub async fn execute(
-        mut self,
+        self,
         cells: Vec<PreparedCell>,
         cancellation: &mut ExecutionCancellation<'_>,
     ) -> Result<ExecutedCells, ExecutionFailure> {
+        self.execute_with(cells, cancellation, |cell| ready(Ok(cell)))
+            .await
+    }
+
+    /// Process each completed cell before the supervisor can submit another.
+    /// The caller may borrow its reducer and asset owner; the supervisor retains
+    /// kernel ownership and watches cancellation and process exit while awaiting
+    /// the fallible response. Dropping this future still wakes supervised cleanup.
+    pub async fn execute_with<F, Fut>(
+        mut self,
+        cells: Vec<PreparedCell>,
+        cancellation: &mut ExecutionCancellation<'_>,
+        mut accept: F,
+    ) -> Result<ExecutedCells, ExecutionFailure>
+    where
+        F: FnMut(ExecutedCell) -> Fut,
+        Fut: Future<Output = Result<ExecutedCell, ExecutionFailure>>,
+    {
         let (completed, completion) = oneshot::channel();
-        let _ = self.page.send(PageWork { cells, completed });
+        let (output, mut outputs) = mpsc::channel::<PendingCell>(1);
+        let _ = self.page.send(PageWork {
+            cells,
+            completed,
+            output,
+        });
+        let processing = async {
+            while let Some(pending) = outputs.recv().await {
+                let result = accept(pending.cell).await;
+                if pending.accepted.send(result).is_err() {
+                    break;
+                }
+            }
+            pending::<()>().await
+        };
         let (result, cancelled) = tokio::select! {
             biased;
             _ = cancellation => {
@@ -50,6 +82,7 @@ impl KernelSession {
                 (None, true)
             }
             result = completion => (result.ok(), false),
+            _ = processing => unreachable!("cell processing waits for page completion"),
         };
         self.handle.finish().await?;
         if cancelled {
@@ -85,6 +118,12 @@ pub(super) enum Stop {
 struct PageWork {
     cells: Vec<PreparedCell>,
     completed: oneshot::Sender<ExecutedCells>,
+    output: mpsc::Sender<PendingCell>,
+}
+
+pub(super) struct PendingCell {
+    pub cell: ExecutedCell,
+    pub accepted: oneshot::Sender<Result<ExecutedCell, ExecutionFailure>>,
 }
 
 struct SessionHandle {
@@ -255,6 +294,7 @@ async fn supervise(
                                     process.child.as_mut().expect("spawned child"),
                                     &mut stopped,
                                     &inputs,
+                                    &work.output,
                                 ).await {
                                     Ok(cells) => {
                                         completed = Some((work.completed, cells));
@@ -275,7 +315,9 @@ async fn supervise(
         }
     };
     let interrupt = matches!(&outcome, Err(failure)
-        if matches!(failure.kind, ExecutionFailureKind::Cancelled | ExecutionFailureKind::Timeout { .. }));
+        if matches!(failure.kind, ExecutionFailureKind::Cancelled | ExecutionFailureKind::Timeout { .. }
+            | ExecutionFailureKind::OutputValidation | ExecutionFailureKind::AssetOutsideBoundary
+            | ExecutionFailureKind::AssetMissing | ExecutionFailureKind::AssetCollision));
     let cleanup = process
         .cleanup(&mut channels, &kernel, &inputs, interrupt)
         .await;

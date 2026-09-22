@@ -22,16 +22,7 @@ pub fn validate_text(
             )],
         });
     }
-    let text = match candidate.data {
-        Value::String(text) => Some(text.clone()),
-        Value::Array(lines) => lines
-            .iter()
-            .map(Value::as_str)
-            .collect::<Option<Vec<_>>>()
-            .map(|lines| lines.concat()),
-        _ => None,
-    };
-    let Some(text) = text else {
+    let Some(text) = text_payload(candidate.data) else {
         return Ok(CandidateValidation {
             accepted: None,
             diagnostics: vec![candidate.warning(
@@ -81,4 +72,16 @@ pub fn validate_text(
         }),
         diagnostics,
     })
+}
+
+pub(super) fn text_payload(data: &Value) -> Option<String> {
+    match data {
+        Value::String(text) => Some(text.clone()),
+        Value::Array(lines) => lines
+            .iter()
+            .map(Value::as_str)
+            .collect::<Option<Vec<_>>>()
+            .map(|lines| lines.concat()),
+        _ => None,
+    }
 }

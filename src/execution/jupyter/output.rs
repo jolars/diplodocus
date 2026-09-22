@@ -23,6 +23,7 @@ use crate::ir::{
 use crate::provenance::fingerprint_bytes;
 
 mod errors;
+pub(super) mod images;
 pub(super) mod text;
 pub(super) use errors::ErrorContext;
 #[cfg(test)]

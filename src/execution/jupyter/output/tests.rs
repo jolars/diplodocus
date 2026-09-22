@@ -8,6 +8,7 @@ use crate::ir::{SourceLocation, SourceSpan, StreamName};
 use serde_json::json;
 
 mod fragments;
+mod images;
 
 fn page() -> ExecutionPage {
     ExecutionPage {

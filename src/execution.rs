@@ -3,8 +3,10 @@
 //! The internal Linux adapter executes prepared cells in one supervised session
 //! per page. An internal incremental reducer converts kernel events into typed
 //! outputs through a representation validator, including inert Markdown MIME
-//! and as-is stdout fragments. Asset and HTML validators and the
-//! [`ExecutionEngine`] implementation remain future work.
+//! and as-is stdout fragments. A page-scoped asset store validates and stages
+//! PNG, JPEG, and inert SVG figures. A supervised cell-consumption hook prevents
+//! further execution after a fatal output failure. HTML and fragment image
+//! safety and the [`ExecutionEngine`] implementation remain future work.
 //! [`crate::documents::prepare_collection_document`]
 //! validates collection authority and prepares QMD cells without I/O. Callers
 //! must also authorize the current command before dispatching execution.
@@ -25,6 +27,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::ir::{CodeCell, InputFingerprint};
 
+pub mod assets;
 mod failure;
 mod figures;
 #[cfg(target_os = "linux")]

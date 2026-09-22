@@ -433,9 +433,13 @@ Diplodocus's document transformation.
   preformatted rendering primitive. Reducer and protocol tests cover inert
   generated fences, stream boundaries, hidden output, and MIME fallbacks.
   URL and asset validation and full site rendering remain their own steps.
-- [ ] Store binary figures as content-addressed assets beneath an execution-
+- [x] Store binary figures as content-addressed assets beneath an execution-
   output boundary; reject unsupported media, path traversal, and asset
   collisions deterministically.
+  The page asset owner validates PNG, JPEG, and inert SVG, checks cached bytes,
+  deduplicates safely, and retains only referenced assets. Reducer and protocol
+  fixtures cover MIME fallback, boundary failures before the next cell,
+  cancellation, and cleanup.
 - [ ] Sanitize supported `text/html` into a distinct IR representation before
   rendering, prefer a safe alternative MIME representation when available,
   and diagnose output that has no faithful safe representation.

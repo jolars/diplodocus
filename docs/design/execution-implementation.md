@@ -17,7 +17,8 @@ display view, missing diagnostic names, an input-change failure, and dependencie
 | QMD preparation | `documents::prepare_collection_document`; `tests/qmd_preparation.rs` | Reuse validation, origins, eligibility, source order, and exact source. Command authority remains separate. |
 | Discovery and readiness | `src/execution/jupyter/discovery.rs`, `session.rs`; `tests.rs` | Production tests cover explicit selection, malformed/shadowed specs, authentication, readiness ordering, cancellation, process groups, and bounded cleanup. |
 | Sequential execution | `src/execution/jupyter/execution.rs`, `page.rs`; `tests/pages.rs` | Production tests cover prepared bytes, terminal ordering, correlation, skipped/hidden cells, allowed errors, deadlines, and cleanup. Collected events are private and unvalidated. |
-| Output reduction | `src/execution/jupyter/output.rs` and child modules/tests | Incremental typed slots, page-wide updates and clearing, validator callbacks, text MIME, as-is fragments, normalized errors, diagnostics, and final figure validation are implemented. Asset and HTML validators and supervised invocation remain subsequent work. |
+| Output reduction | `src/execution/jupyter/output.rs` and child modules/tests | Incremental typed slots, page-wide updates and clearing, validator callbacks, text MIME, as-is fragments, inline images, normalized errors, diagnostics, and final figure validation are implemented. HTML and fragment safety and public engine composition remain subsequent work. |
+| Execution assets | `src/execution/assets.rs` and child modules/tests; `tests/execution_assets.rs` | Image validation, boundary checks, deterministic namespaces, collision detection, cache-byte validation, rollback, and retention are implemented. The session has a supervised cell-consumption hook with protocol tests for incremental staging and stopping on fatal asset failure. |
 | Real kernels | `declared_python_and_r_start_without_submitting_code` and `declared_python_and_r_retain_definitions_and_imports_only_within_a_page` | Both production tests run unconditionally for `python3` and `ir`; the latter executes each page twice. They do not yet prove typed rich output or cache restoration. |
 | Fragment parsing | `documents::parse_markdown_fragment`; `tests/markdown_fragments.rs`; `jupyter/output/text.rs` | The reducer reuses inert parsing and attribution for Markdown MIME and adjacent as-is stdout. URL, image, and cache validation are additional steps. |
 | Presentation | `src/rendering.rs`, `execution/figures.rs`; `tests/cell_presentation.rs` | Reuse visibility and final selected-figure counting. Tests supply records; they do not prove reduction or site rendering. |
@@ -76,8 +77,10 @@ fallible and awaited under cancellation and kernel-liveness supervision. A fatal
 asset or validation failure stops further submission and follows normal cleanup.
 Converting the entire raw page after `execute_page` returns is insufficient.
 Local image bytes are validated and staged before later cells can overwrite or
-delete their source paths. M6-06 adds a fixture proving a fatal boundary violation
-in the first cell prevents submission of the second.
+delete their source paths. The `execute_with` hook and asset protocol fixtures
+now prove that a fatal boundary violation in the first cell prevents submission
+of the second. M6-06 still composes this hook into the public engine with the
+remaining validators, input revalidation, and provenance.
 
 Keep monotonically increasing slot counters per owning cell. Updates replace all
 surviving registrations, including earlier cells, without changing slot, owning
@@ -246,7 +249,7 @@ dependency versions and adds only the selected dependency closure.
 | Role | Selection |
 | --- | --- |
 | Base64 | `base64 = 0.22.1`, default `std`; use strict standard decoding |
-| Raster decoding | `image = 0.25.10`, defaults disabled, only `jpeg` and `png`; locked codecs are `png = 0.18.1` and `zune-jpeg = 0.5.15` |
+| Raster decoding | `image = 0.25.10`, defaults disabled, only `jpeg` and `png`; strict validation calls the existing codecs directly through pins `png = 0.18.1`, `zune-jpeg = 0.5.15`, and `zune-core = 0.5.3` |
 | SVG XML | `roxmltree = 0.21.1`, default `std` and `positions`; reject DTDs, entity declarations, and processing instructions |
 | SVG values | `svgtypes = 0.16.1`, default `std`; parsing is subordinate to the finite-value/keyword/paint allowlist |
 | HTML parsing | `html5ever = 0.39.0` and `markup5ever_rcdom = 0.39.0+unofficial`; Cargo requirement `=0.39.0` omits semver build metadata |

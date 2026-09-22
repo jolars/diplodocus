@@ -52,6 +52,196 @@ fn submitted(root: &Path) -> Vec<Value> {
 }
 
 #[tokio::test]
+async fn asset_boundary_failure_stops_before_the_next_cell_and_reaps_the_kernel() {
+    use super::super::output::images::validate_with_assets;
+    use crate::execution::assets::PageAssetStore;
+
+    let root = TempDir::new().unwrap();
+    let kernel = fixture_kernel(root.path(), "execute-images").await;
+    let request = two_cells();
+    let outside = TempDir::new().unwrap();
+    let boundary = root.path().join("staging");
+    std::os::unix::fs::symlink(outside.path(), &boundary).unwrap();
+    let mut assets =
+        PageAssetStore::new(request.page.clone(), root.path().to_owned(), boundary).unwrap();
+    let mut reducer = OutputReducer::new(
+        request.page.clone(),
+        ErrorContext::new(root.path().to_owned()),
+    );
+    let mut context = context(root.path());
+    let session = start_session(kernel, &mut context, source()).await.unwrap();
+    let failure = session
+        .execute_with(
+            request.cells.clone(),
+            &mut context.cancellation,
+            |mut completed| {
+                let result = reducer.accept_cell(
+                    &request.cells[completed.ordinal],
+                    completed.outcome,
+                    std::mem::take(&mut completed.events),
+                    &mut |candidate| validate_with_assets(candidate, &mut assets),
+                );
+                ready(result.map(|()| completed))
+            },
+        )
+        .await
+        .unwrap_err();
+    assert_eq!(failure.kind, ExecutionFailureKind::AssetOutsideBoundary);
+    assert_eq!(submitted(root.path()).len(), 1);
+    assert!(reducer.finish().is_err());
+    assets.rollback().unwrap();
+    assert_eq!(std::fs::read_dir(outside.path()).unwrap().count(), 0);
+    assert_cleaned(root.path()).await;
+}
+
+#[tokio::test]
+async fn figures_are_staged_incrementally_and_retained_after_kernel_cleanup() {
+    use super::super::output::images::validate_with_assets;
+    use crate::execution::assets::PageAssetStore;
+
+    let root = TempDir::new().unwrap();
+    let kernel = fixture_kernel(root.path(), "execute-images").await;
+    let request = two_cells();
+    let mut assets = PageAssetStore::new(
+        request.page.clone(),
+        root.path().to_owned(),
+        root.path().join("staging"),
+    )
+    .unwrap();
+    let mut reducer = OutputReducer::new(
+        request.page.clone(),
+        ErrorContext::new(root.path().to_owned()),
+    );
+    let mut context = context(root.path());
+    let session = start_session(kernel, &mut context, source()).await.unwrap();
+    session
+        .execute_with(
+            request.cells.clone(),
+            &mut context.cancellation,
+            |mut completed| {
+                assert_eq!(submitted(root.path()).len(), completed.ordinal + 1);
+                let result = reducer.accept_cell(
+                    &request.cells[completed.ordinal],
+                    completed.outcome,
+                    std::mem::take(&mut completed.events),
+                    &mut |candidate| validate_with_assets(candidate, &mut assets),
+                );
+                ready(result.map(|()| completed))
+            },
+        )
+        .await
+        .unwrap();
+    assert_cleaned(root.path()).await;
+    let reduced = reducer.finish().unwrap();
+    let retained = assets.retain(&reduced.retained_assets).unwrap();
+    assert_eq!(retained.assets.len(), 1);
+    assert_eq!(reduced.cells.len(), 2);
+    assert!(
+        reduced
+            .cells
+            .iter()
+            .all(|cell| cell.outputs[0].selected_mime_type.as_deref() == Some("image/svg+xml"))
+    );
+    let bytes = std::fs::read(&retained.staged_assets[0].path).unwrap();
+    assert_eq!(
+        retained.assets[0].reference.fingerprint,
+        fingerprint_bytes(&bytes)
+    );
+}
+
+#[tokio::test]
+async fn pending_asset_validation_remains_cancellable_and_supervised() {
+    use super::super::output::images::validate_with_assets;
+    use crate::execution::assets::PageAssetStore;
+
+    for action in ["cancel", "drop", "exit"] {
+        let root = TempDir::new().unwrap();
+        let kernel = fixture_kernel(root.path(), "execute-images").await;
+        let request = two_cells();
+        let mut context = context(root.path());
+        let (cancel, cancelled) = tokio::sync::oneshot::channel();
+        context.cancellation = Box::pin(async {
+            let _ = cancelled.await;
+        });
+        let session = start_session(kernel, &mut context, source()).await.unwrap();
+        let mut assets = PageAssetStore::new(
+            request.page.clone(),
+            root.path().to_owned(),
+            root.path().join("staging"),
+        )
+        .unwrap();
+        let mut reducer = OutputReducer::new(
+            request.page.clone(),
+            ErrorContext::new(root.path().to_owned()),
+        );
+        let (started, processing) = tokio::sync::oneshot::channel();
+        let task = tokio::spawn(async move {
+            let mut started = Some(started);
+            let result = session
+                .execute_with(
+                    request.cells.clone(),
+                    &mut context.cancellation,
+                    |mut completed| {
+                        reducer
+                            .accept_cell(
+                                &request.cells[completed.ordinal],
+                                completed.outcome,
+                                std::mem::take(&mut completed.events),
+                                &mut |candidate| validate_with_assets(candidate, &mut assets),
+                            )
+                            .unwrap();
+                        started.take().unwrap().send(()).unwrap();
+                        pending::<Result<_, crate::execution::ExecutionFailure>>()
+                    },
+                )
+                .await;
+            assets.rollback().unwrap();
+            result
+        });
+        tokio::time::timeout(Duration::from_secs(5), processing)
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(submitted(root.path()).len(), 1);
+        match action {
+            "cancel" => cancel.send(()).unwrap(),
+            "drop" => task.abort(),
+            "exit" => {
+                let pid = rustix::process::Pid::from_raw(
+                    observation(root.path())["pid"].as_i64().unwrap() as i32,
+                )
+                .unwrap();
+                rustix::process::kill_process(pid, rustix::process::Signal::KILL).unwrap();
+            }
+            _ => unreachable!(),
+        }
+        let result = tokio::time::timeout(Duration::from_secs(5), task)
+            .await
+            .unwrap();
+        if action == "drop" {
+            assert!(result.unwrap_err().is_cancelled());
+        } else {
+            assert_eq!(
+                result.unwrap().unwrap_err().kind,
+                if action == "cancel" {
+                    ExecutionFailureKind::Cancelled
+                } else {
+                    ExecutionFailureKind::Protocol
+                }
+            );
+        }
+        assert_cleaned(root.path()).await;
+        assert_eq!(
+            std::fs::read_dir(root.path().join("staging"))
+                .unwrap()
+                .count(),
+            0
+        );
+        assert_eq!(submitted(root.path()).len(), 1);
+    }
+}
+
+#[tokio::test]
 async fn a_page_submits_exact_source_sequentially_in_one_fresh_session() {
     for mode in ["execute-reply-first", "execute-idle-first"] {
         let root = TempDir::new().unwrap();

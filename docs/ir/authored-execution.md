@@ -66,8 +66,9 @@ and returns diagnostics without a page result or publishable asset handles.
 limits, and a cancellation future. The engine runs in the page's parent
 directory, reads generated assets within the repository boundary, and stages
 accepted assets within the separate page output boundary. The session adapter
-rechecks the canonical repository and page paths before launch. Asset handling
-remains future work; the context constructor performs no path checks.
+rechecks the canonical repository and page paths before launch. The asset store
+rechecks boundaries when reading or staging images; the context constructor
+performs no path checks.
 
 Completion of the cancellation future requests interruption followed by cleanup.
 The caller continues awaiting execution until that cleanup finishes. Dropping the
@@ -195,7 +196,8 @@ validator boundary as Markdown MIME output, including when hidden or cleared
 later. A rejected run retains a literal-text fallback and its warnings; a fatal
 validation failure still stops reduction. Stderr and plain-text MIME results
 keep their ordinary semantics. Markdown parsing does not validate links or
-images or grant rendering trust; asset and HTML validators remain later work.
+images or grant rendering trust. The fragment image bridge and HTML validator
+remain later work; the image-byte validator and staging owner are implemented.
 
 Errors lose terminal controls, known checkout frame paths become
 repository-relative, and external frame paths and IPython execution counts use
@@ -206,9 +208,12 @@ before reduction.
 Finalization checks figure options before presentation and returns the surviving
 asset references. Clearing and replacement never erase validation warnings.
 The returned cells and diagnostics are internal reduction results, not a
-publishable page: asset validation, retention after cleanup, and execution
-provenance remain the engine's responsibility. The engine must invoke reduction
-before submitting the next cell so validation can stop execution in time.
+publishable page. The internal session's `execute_with` hook now lets a caller
+reduce each completed cell before the supervisor submits another. While it
+waits for the caller's fallible response, the supervisor watches cancellation
+and kernel exit. A fatal output failure interrupts and cleans up the session.
+The public engine must still compose these operations with HTML and fragment
+safety, input revalidation, and execution provenance.
 
 The [reducer tests](../../src/execution/jupyter/output/tests.rs) cover ordering,
 cross-cell updates, clearing, MIME preference and fallback, malformed payloads,
@@ -219,6 +224,8 @@ and duplicate-channel error reports into one typed error. The
 cover stream grouping, inert generated content, attribution, diagnostics, MIME
 fallbacks, and validation before visibility filtering. A protocol fixture proves
 conversion from prepared as-is options through stream and display messages.
+Image protocol fixtures also prove staging before the next submission, fatal
+boundary rejection before the second cell, and kernel cleanup before retention.
 
 ## Options and outcomes
 
@@ -341,6 +348,65 @@ visibility combinations, skipped cells, unchanged evidence, selected figures,
 final updated and cleared slots, repeated assets, and hidden figure errors.
 
 ### Records and staging
+
+`execution::assets::PageAssetStore` owns the accepted figures for one page.
+Construction creates no directories. `stage_bytes` validates PNG, JPEG, or SVG
+bytes, `stage_local` reads a generated image relative to the page, and
+`stage_cached` checks supplied bytes against their expected digest, media type,
+size, and page namespace without reading a generated source file. These
+operations return portable `ExecutionAsset` records. Kernel filenames and
+display metadata never control an output path.
+
+The inline MIME adapter concatenates string arrays and uses strict standard
+base64 for PNG and JPEG. SVG arrives as XML text. Raster validation uses the
+pinned PNG and JPEG codecs directly: PNG decoding checks every frame and the
+final chunks; JPEG uses strict decoding plus marker framing that requires a
+real end marker. Decoded buffers are limited to 512 MiB. The convenience image
+decoders alone do not establish these checks. The SVG validator implements
+`svg-mvp-v1`, checking namespaces, static elements and attributes, finite values,
+and literal paints. It rejects active markup, external references, DTDs, entity
+declarations, and processing instructions. Accepted bytes are preserved exactly.
+
+Invalid inline images produce candidate warnings and permit safe MIME fallback.
+Missing, escaping, or nonregular local files, staging failures, and content
+collisions fail the page. Local URL escapes are decoded before component-wise
+repository containment checks, including symlinks and intermediate escapes.
+Linux reads check the opened regular file before reading bytes and use
+nonblocking, no-follow opens. Staging checks every directory component and, on
+Unix, the private directory's device and inode. A fatal asset error also poisons
+the owner so catching it cannot make retention succeed.
+
+Portable paths have this exact layout:
+
+```text
+execution-assets/<page-hex>/sha256/<content-hex>
+```
+
+Both digests use SHA-256 and lowercase hexadecimal. The content digest covers
+the accepted bytes. The page digest covers the UTF-8 bytes
+`diplodocus/execution-assets-v1` followed by one NUL byte, then the repository ID,
+collection ID, and normalized repository-relative page path in that order.
+Each field is encoded as its UTF-8 byte length in an unsigned 64-bit big-endian
+integer followed by its UTF-8 bytes. Length prefixes distinguish identities
+even when their fields contain delimiters. Checkout locations, staging paths,
+timestamps, and source-file names of generated figures do not participate.
+There is no filename extension or kernel-chosen suffix.
+
+Each owner lazily creates a private child beneath its staging boundary. It
+deduplicates only when digest, bytes, and media metadata agree. Dropping it
+attempts rollback; explicit `rollback` reports cleanup failures. The consuming
+`retain` operation revalidates retained files, removes unreferenced assets, and
+returns records and local handles sorted by digest. Call it only after kernel
+cleanup, input revalidation, and final output validation. The recipient owns
+the files and their private parent directory. The shared staging boundary
+remains caller-owned. Failed retention reports both its primary failure and
+any cleanup failure.
+
+The [asset tests](../../tests/execution_assets.rs) cover formats, truncation,
+cache metadata, relocation, namespace encoding, traversal, symlinks, and
+retention. Unit tests inject digest collisions and altered staging, including
+directory replacement and explicit cleanup failure. Reducer tests use the real
+asset validator to check hidden output, MIME alternatives, updates, and clearing.
 
 `PageExecutionResult` separates a serializable `PageExecutionRecord` from local
 `StagedExecutionAsset` handles. The result envelope, staged handles, and runtime

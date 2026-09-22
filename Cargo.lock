@@ -476,6 +476,7 @@ dependencies = [
  "markup5ever_rcdom",
  "panache-parser",
  "percent-encoding",
+ "png",
  "pydocstring",
  "pyproject-toml",
  "rd-ast",
@@ -495,6 +496,8 @@ dependencies = [
  "tokio",
  "toml 1.1.6+spec-1.1.0",
  "url",
+ "zune-core",
+ "zune-jpeg",
 ]
 
 [[package]]
