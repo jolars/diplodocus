@@ -1,0 +1,20 @@
+# Artifact contract
+
+```{python}
+print('first')
+```
+
+```{python}
+#| include: false
+update()
+```
+
+```{python}
+#| error: true
+raise ValueError('expected')
+```
+
+```{python}
+#| eval: false
+never()
+```

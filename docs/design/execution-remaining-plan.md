@@ -11,8 +11,9 @@ The planning pass delegated three source audits through Coterie run
 `cr-01M36CJ6S3PH09F9VXEKTD8JFG` and registered twelve follow-up tasks in group
 `m6-remaining`. Those tasks include two external evidence gates, M6-X7 and
 M6-X789; they are not assignments to implement entire later milestones.
-Implementation remains unstarted. The task descriptions record ownership,
-dependencies, acceptance, and coordinator handoffs.
+M6-01R now records the reviewed integration contracts and reference artifact;
+production implementation remains pending. The task descriptions record
+ownership, dependencies, acceptance, and coordinator handoffs.
 
 ## Starting point
 
@@ -88,6 +89,18 @@ one explicit owner, even when several tasks need it. Module registration is a
 small integration change, not grounds for parallel edits to a shared entry point.
 
 ## Decisions that precede implementation
+
+The concrete signatures, wire shapes, ownership decisions, and complete artifact
+fixture for these six items are in the
+[M6-01R integration contracts](execution-integration-contracts.md). The list
+below records why those decisions were needed; it does not claim the consumer
+implementations have landed.
+
+M6-05 acceptance includes coordinator integration and validation of the shared
+prepared/result records and private accessors, using its reviewed wrappers and
+accepted M6-04 types. Close M6-05 only after that checkpoint, then release the
+engine and cache workers together against those shared records. Their existing
+M6-04/M6-05 dependency edges remain sufficient.
 
 1. **Keep validation evidence alive.** `AcceptedRepresentation` and `ReducedPage`
    currently hold portable records; they cannot carry the planned private
