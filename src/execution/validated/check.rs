@@ -486,11 +486,32 @@ fn check_output_diagnostic(
         NoSupportedRepresentation { mime_types, .. } => {
             (mime_types.iter().eq(offered.iter()), true)
         }
-        UnsupportedMedia { media_type, .. }
-        | InvalidTextPayload { media_type, .. }
-        | InvalidImage { media_type, .. } => (offered.contains(media_type), true),
+        UnsupportedMedia { media_type, .. } | InvalidTextPayload { media_type, .. } => {
+            (offered.contains(media_type), true)
+        }
+        InvalidImage {
+            attribution,
+            media_type,
+        } => (
+            offered.contains(media_type)
+                || (media_type == "image/*"
+                    && if attribution.fragment.is_some() {
+                        offered.contains("text/markdown")
+                    } else {
+                        offered.contains("text/html")
+                    }),
+            true,
+        ),
         InvalidMimeBundle { .. } => (true, true),
-        SvgRejected { .. } => (offered.contains("image/svg+xml"), true),
+        SvgRejected { attribution } => (
+            offered.contains("image/svg+xml")
+                || if attribution.fragment.is_some() {
+                    offered.contains("text/markdown")
+                } else {
+                    offered.contains("text/html")
+                },
+            true,
+        ),
         HtmlRejected { .. } => (offered.contains("text/html"), true),
         MarkdownRejected { .. } => (offered.contains("text/markdown"), true),
         FragmentUnsupported { .. } => (offered.contains("text/markdown"), false),

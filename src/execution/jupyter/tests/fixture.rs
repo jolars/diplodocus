@@ -247,6 +247,23 @@ async fn execute(
         })).unwrap();
         iopub.send(display.as_child_of(message)).await.unwrap();
     }
+    if matches!(
+        mode,
+        "execute-generated-html-image" | "execute-generated-markdown-image"
+    ) {
+        let mut data = json!({
+            "image/svg+xml": "<svg xmlns='http://www.w3.org/2000/svg'><rect width='10' height='10'/></svg>",
+            "text/plain": "a safe fallback"
+        });
+        if mode == "execute-generated-html-image" {
+            data["text/html"] = json!("<p><img src='missing.png'></p>");
+        } else {
+            data["text/markdown"] = json!("> ![nested](missing.png)\n");
+        }
+        let display: jupyter_protocol::DisplayData =
+            serde_json::from_value(json!({"data": data, "metadata": {}})).unwrap();
+        iopub.send(display.as_child_of(message)).await.unwrap();
+    }
     let error = jupyter_protocol::ReplyError {
         ename: "FixtureError".into(),
         evalue: "expected".into(),

@@ -1,7 +1,7 @@
 use super::text::validate_text;
 use super::*;
 use crate::configuration::ExecutionMode;
-use crate::diagnostics::DiagnosticPath;
+use crate::diagnostics::{DiagnosticCode, DiagnosticPath};
 use crate::documents::{AuthoredFormat, prepare_collection_document};
 use crate::execution::{CellSkipReason, ExecutionDefaults, OutputVisibility};
 use crate::ir::{SourceLocation, SourceSpan, StreamName};
@@ -9,6 +9,7 @@ use serde_json::json;
 
 mod fragments;
 mod images;
+mod validated;
 
 fn page() -> ExecutionPage {
     ExecutionPage {
@@ -351,9 +352,10 @@ fn every_supported_candidate_is_validated_in_policy_order_even_when_hidden() {
         } else {
             Ok(CandidateValidation {
                 accepted: None,
-                diagnostics: vec![
-                    candidate.warning(DiagnosticCode::InvalidCellOutput, "Rejected candidate."),
-                ],
+                diagnostics: vec![ExecutionDiagnostic::InvalidTextPayload {
+                    attribution: candidate.attribution(),
+                    media_type: candidate.media_type.into(),
+                }],
             })
         }
     };
@@ -570,6 +572,11 @@ fn validate_fixture_asset(
     };
     Ok(CandidateValidation {
         accepted: Some(AcceptedRepresentation {
+            value: OwnedRepresentation::Asset(ExecutionAsset {
+                reference: asset.clone(),
+                media_type: candidate.media_type.into(),
+                byte_size: bytes.len() as u64,
+            }),
             representation: OutputRepresentation::Asset {
                 media_type: candidate.media_type.into(),
                 asset,

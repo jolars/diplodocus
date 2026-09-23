@@ -113,7 +113,7 @@ pub(crate) enum OwnedRepresentation {
     },
     Asset(ExecutionAsset),
 }
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct SlotEvidence {
     pub owning_cell: usize,
     pub slot: usize,

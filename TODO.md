@@ -427,9 +427,9 @@ command and watched-site guarantees, which require Milestones 7 through 9.
   and result MIME bundles into typed `CellOutput` nodes in protocol order.
   The internal incremental reducer retains stable slots, applies page-wide
   updates and clearing, orders validated MIME alternatives, and normalizes
-  errors. Its validator boundary separates collection from the remaining
-  asset and HTML work. Supervised engine integration follows those
-  validators, as specified in the execution implementation design.
+  errors. Its validator boundary now retains safe Markdown/HTML and complete
+  image bindings. Public engine integration remains in the execution
+  implementation design.
 - [x] Treat ordinary streams as escaped preformatted text. Parse
   `text/markdown`, and explicitly as-is stream output, as isolated document
   fragments with execution disabled.
@@ -437,7 +437,8 @@ command and watched-site guarantees, which require Milestones 7 through 9.
   fragment attribution and diagnostics. Literal output has an escaped
   preformatted rendering primitive. Reducer and protocol tests cover inert
   generated fences, stream boundaries, hidden output, and MIME fallbacks.
-  URL and asset validation and full site rendering remain their own steps.
+  The live adapter validates URLs and stages nested images before the next
+  cell. Full site rendering remains its own step.
 - [x] Store binary figures as content-addressed assets beneath an execution-
   output boundary; reject unsupported media, path traversal, and asset
   collisions deterministically.
@@ -450,8 +451,9 @@ command and watched-site guarantees, which require Milestones 7 through 9.
   and diagnose output that has no faithful safe representation.
   Reviewed HTML/Markdown validators and shared immutable result records bind
   safe content, typed diagnostics, canonical hashes, and verified image assets.
-  The reducer supports MIME fallback; production engine and site-renderer
-  integration remain in their respective steps.
+  The reducer retains those wrappers and nested assets through MIME fallback,
+  display updates, and clearing. Production engine and site-renderer integration
+  remain in their respective steps.
 - [ ] Add deterministic startup, idle, cell, and shutdown timeouts; interrupt
   failed execution, reap the kernel process, and preserve the last
   successful site during a watched-build failure.

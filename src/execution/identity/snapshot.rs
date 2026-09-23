@@ -11,7 +11,7 @@ use super::{
 use crate::configuration::{
     ContentConfiguration, ExecutionConfiguration, ExecutionEngine, ExecutionMode,
 };
-use crate::documents::{AuthoredFormat, prepare_collection_document};
+use crate::documents::{AuthoredFormat, QmdPreparation, prepare_collection_document};
 use crate::execution::{
     EffectiveCellOptions, ExecutionDeadlines, ExecutionDefaults, ExecutionFailure,
     ExecutionFailureKind, ExecutionPolicies, OutputVisibility, PageExecutionRequest,
@@ -186,7 +186,7 @@ fn sort_environment(environment: &mut [InputFingerprint]) {
 pub(crate) fn validate_prepared(
     request: &PageExecutionRequest,
     source: &[u8],
-) -> Result<(), IdentityError> {
+) -> Result<QmdPreparation, IdentityError> {
     if request.page.format != AuthoredFormat::Qmd
         || request.page.mode != ExecutionMode::Execute
         || request.page.page_veto
@@ -225,7 +225,7 @@ pub(crate) fn validate_prepared(
     {
         return Err(IdentityError);
     }
-    Ok(())
+    Ok(prepared)
 }
 fn validate_build(build: &BuildObservation) -> Result<(), IdentityError> {
     digest(&build.executable_digest)?;

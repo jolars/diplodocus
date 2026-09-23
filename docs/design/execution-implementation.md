@@ -17,10 +17,10 @@ display view, missing diagnostic names, an input-change failure, and dependencie
 | QMD preparation | `documents::prepare_collection_document`; `tests/qmd_preparation.rs` | Reuse validation, origins, eligibility, source order, and exact source. Command authority remains separate. |
 | Discovery and readiness | `src/execution/jupyter/discovery.rs`, `session.rs`; `tests.rs` | Production tests cover explicit selection, malformed/shadowed specs, authentication, readiness ordering, cancellation, process groups, and bounded cleanup. |
 | Sequential execution | `src/execution/jupyter/execution.rs`, `page.rs`; `tests/pages.rs` | Production tests cover prepared bytes, terminal ordering, correlation, skipped/hidden cells, allowed errors, deadlines, and cleanup. Collected events are private and unvalidated. |
-| Output reduction | `src/execution/jupyter/output.rs` and child modules/tests | Incremental typed slots, page-wide updates and clearing, validator callbacks, text MIME, as-is fragments, inline images, normalized errors, diagnostics, and final figure validation are implemented. HTML and fragment safety and public engine composition remain subsequent work. |
+| Output reduction | `src/execution/jupyter/output.rs` and child modules/tests | Incremental typed slots, page-wide updates and clearing, live Markdown/HTML safety, inline and nested images, normalized errors, typed diagnostics, and final figure validation are implemented. Immutable evidence survives with each final slot. Public engine composition remains work. |
 | Execution assets | `src/execution/assets.rs` and child modules/tests; `tests/execution_assets.rs` | Image validation, boundary checks, deterministic namespaces, collision detection, cache-byte validation, rollback, and retention are implemented. The session has a supervised cell-consumption hook with protocol tests for incremental staging and stopping on fatal asset failure. |
 | Real kernels | `declared_python_and_r_start_without_submitting_code` and `declared_python_and_r_retain_definitions_and_imports_only_within_a_page` | Both production tests run unconditionally for `python3` and `ir`; the latter executes each page twice. They do not yet prove typed rich output or cache restoration. |
-| Fragment parsing | `documents::parse_markdown_fragment`; `tests/markdown_fragments.rs`; `jupyter/output/text.rs` | The reducer reuses inert parsing and attribution for Markdown MIME and adjacent as-is stdout. URL, image, and cache validation are additional steps. |
+| Fragment parsing | `documents::parse_markdown_fragment`; `tests/markdown_fragments.rs`; `jupyter/output/text.rs` | The reducer reuses inert parsing and attribution for Markdown MIME and adjacent as-is stdout, then validates URLs and stages nested images. Cache restoration remains a separate consumer. |
 | Presentation | `src/rendering.rs`, `execution/figures.rs`; `tests/cell_presentation.rs` | Reuse visibility and final selected-figure counting. Tests supply records; they do not prove reduction or site rendering. |
 
 `tests/jupyter_execution_spike.rs`, `tests/jupyter_real_kernels.rs`, and spike
@@ -80,8 +80,10 @@ Converting the entire raw page after `execute_page` returns is insufficient.
 Local image bytes are validated and staged before later cells can overwrite or
 delete their source paths. The `execute_with` hook and asset protocol fixtures
 now prove that a fatal boundary violation in the first cell prevents submission
-of the second. M6-06 still composes this hook into the public engine with the
-remaining validators, input revalidation, and provenance.
+of the second. Missing nested images in unselected Markdown/HTML alternatives
+also stop submission and roll back staged assets. M6-06 still composes this hook
+and the live validators into the public engine with input revalidation and
+provenance.
 
 Keep monotonically increasing slot counters per owning cell. Updates replace all
 surviving registrations, including earlier cells, without changing slot, owning

@@ -6,6 +6,66 @@ use base64::engine::general_purpose::STANDARD;
 
 const SVG: &str = "<svg xmlns='http://www.w3.org/2000/svg'><rect width='10' height='10'/></svg>";
 
+#[test]
+fn safe_html_is_validated_and_selected_before_plain_text() {
+    let root = tempfile::tempdir().unwrap();
+    let mut assets = assets(root.path());
+    let mut reducer = new_reducer();
+    reducer
+        .accept_cell(
+            &cell(0),
+            CellOutcome::Ok,
+            vec![CellEvent::Display {
+                bundle: bundle(
+                    json!({"text/html": "<p><strong>safe</strong></p>", "text/plain": "safe"}),
+                ),
+                display_id: None,
+            }],
+            &mut |candidate| validate_with_assets(candidate, &mut assets),
+        )
+        .unwrap();
+    let reduced = reducer.finish().unwrap();
+    assert_eq!(
+        reduced.cells[0].outputs[0].selected_mime_type.as_deref(),
+        Some("text/html")
+    );
+    assert!(reduced.diagnostics.is_empty());
+}
+
+#[test]
+fn nested_markdown_images_are_staged_before_later_cells_and_retained() {
+    let root = tempfile::tempdir().unwrap();
+    std::fs::create_dir(root.path().join("guide")).unwrap();
+    let image = root.path().join("guide/plot.svg");
+    std::fs::write(&image, SVG).unwrap();
+    let mut assets = assets(root.path());
+    let mut reducer = new_reducer();
+    let mut hidden = cell(0);
+    hidden.options.execution.include.value = false;
+    reducer
+        .accept_cell(
+            &hidden,
+            CellOutcome::Ok,
+            vec![CellEvent::Display {
+                bundle: bundle(
+                    json!({"text/markdown": "> ![nested](plot.svg)\n", "text/plain": "plot"}),
+                ),
+                display_id: None,
+            }],
+            &mut |candidate| validate_with_assets(candidate, &mut assets),
+        )
+        .unwrap();
+    std::fs::remove_file(image).unwrap();
+    accept(&mut reducer, 1, vec![display(None, "later")]);
+    let reduced = reducer.finish().unwrap();
+    assert_eq!(reduced.retained_assets.len(), 1);
+    let retained = assets.retain(&reduced.retained_assets).unwrap();
+    assert_eq!(
+        std::fs::read(&retained.staged_assets[0].path).unwrap(),
+        SVG.as_bytes()
+    );
+}
+
 fn assets(root: &std::path::Path) -> PageAssetStore {
     PageAssetStore::new(page(), root.to_owned(), root.join("staging")).unwrap()
 }
@@ -115,7 +175,14 @@ fn base64_is_strict_and_string_arrays_are_concatenated() {
     let png = png();
     let base64 = STANDARD.encode(&png);
     let metadata = Map::new();
+    let context = AuthoredOutputContext::new(
+        page.source.clone(),
+        page.collection.clone(),
+        Default::default(),
+    );
     let make = |data| OutputCandidate {
+        context: &context,
+        fragment_ordinal: 0,
         page: &page,
         cell: &prepared,
         slot: 0,
@@ -141,7 +208,7 @@ fn base64_is_strict_and_string_arrays_are_concatenated() {
         let result = validate_with_assets(make(payload), &mut assets).unwrap();
         assert!(result.accepted.is_none());
         assert_eq!(
-            result.diagnostics[0].code,
+            result.diagnostics[0].code(),
             DiagnosticCode::InvalidCellOutput
         );
     }

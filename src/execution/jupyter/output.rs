@@ -1,4 +1,4 @@
-//! Incremental page output reduction; MIME validation remains a separate boundary.
+//! Incremental page output reduction with slot-owned validation evidence.
 //!
 //! The session integration must accept each completed cell before submitting the
 //! next one. Validators can capture mutable asset staging in their closure. Raw
@@ -11,10 +11,15 @@ use serde_json::{Map, Value};
 use super::FailureSource;
 use super::discovery::normalize_language;
 use super::execution::{CellEvent, MimeBundle};
-use crate::diagnostics::{Diagnostic, DiagnosticCode, Severity};
+use crate::diagnostics::Diagnostic;
+use crate::execution::output_safety::{
+    AuthoredOutputContext, DiagnosticAttribution, ExecutionDiagnostic, OutputOrigin,
+};
+use crate::execution::validated::{OwnedRepresentation, SlotEvidence};
 use crate::execution::{
-    CellExecutionResult, CellOutcome, ExecutionFailure, ExecutionFailureKind, ExecutionOutput,
-    ExecutionPage, OutputVisibility, PreparedCell, RepresentationEvidence, validate_figure_options,
+    CellExecutionResult, CellOutcome, ExecutionAsset, ExecutionFailure, ExecutionFailureKind,
+    ExecutionOutput, ExecutionPage, OutputVisibility, PreparedCell, RepresentationEvidence,
+    validate_figure_options,
 };
 use crate::ir::{
     AssetReference, CellOutput, CellOutputKind, Fingerprint, OutputRepresentation, Provenance,
@@ -47,11 +52,22 @@ pub(super) struct OutputCandidate<'a> {
     pub media_type: &'a str,
     pub data: &'a Value,
     pub metadata: &'a Map<String, Value>,
+    pub context: &'a AuthoredOutputContext,
+    pub fragment_ordinal: usize,
 }
 
 impl OutputCandidate<'_> {
-    pub fn warning(&self, code: DiagnosticCode, message: &str) -> Diagnostic {
-        warning(self.page, self.cell, code, message)
+    pub fn origin(&self) -> OutputOrigin {
+        OutputOrigin {
+            cell: self.cell.ordinal,
+            slot: self.slot,
+            cell_span: self.cell.cell.span,
+            fragment: None,
+        }
+    }
+
+    pub fn attribution(&self) -> DiagnosticAttribution {
+        DiagnosticAttribution::output(self.context, &self.origin(), None)
     }
 
     pub fn failure(&self, kind: ExecutionFailureKind, message: &str) -> ExecutionFailure {
@@ -63,7 +79,7 @@ impl OutputCandidate<'_> {
 /// carry specific warnings; fatal failures use the enclosing `Result` instead.
 pub(super) struct CandidateValidation {
     pub accepted: Option<AcceptedRepresentation>,
-    pub diagnostics: Vec<Diagnostic>,
+    pub diagnostics: Vec<ExecutionDiagnostic>,
 }
 
 pub(super) struct AcceptedRepresentation {
@@ -71,6 +87,7 @@ pub(super) struct AcceptedRepresentation {
     pub content_fingerprint: Fingerprint,
     pub policy: Option<String>,
     pub provenance: Vec<Provenance>,
+    pub value: OwnedRepresentation,
 }
 
 /// A reduction result is not a publishable page or a rendering trust token.
@@ -79,25 +96,48 @@ pub(super) struct ReducedPage {
     pub cells: Vec<CellExecutionResult>,
     pub diagnostics: Vec<Diagnostic>,
     pub retained_assets: Vec<AssetReference>,
+    pub assets: Vec<ExecutionAsset>,
+    pub slots: Vec<SlotEvidence>,
+    pub execution_diagnostics: Vec<ExecutionDiagnostic>,
 }
 
 pub(super) struct OutputReducer {
     page: ExecutionPage,
     errors: ErrorContext,
     cells: Vec<CellExecutionResult>,
-    diagnostics: Vec<Diagnostic>,
+    diagnostics: Vec<ExecutionDiagnostic>,
     displays: BTreeMap<String, Vec<(usize, usize)>>,
+    slots: BTreeMap<(usize, usize), SlotEvidence>,
+    context: AuthoredOutputContext,
+    next_fragment: usize,
     failed: bool,
 }
 
 impl OutputReducer {
+    #[cfg(test)]
     pub fn new(page: ExecutionPage, errors: ErrorContext) -> Self {
+        let context = AuthoredOutputContext::new(
+            page.source.clone(),
+            page.collection.clone(),
+            Default::default(),
+        );
+        Self::with_context(page, errors, context)
+    }
+
+    pub fn with_context(
+        page: ExecutionPage,
+        errors: ErrorContext,
+        context: AuthoredOutputContext,
+    ) -> Self {
         Self {
             page,
             errors,
             cells: Vec::new(),
             diagnostics: Vec::new(),
             displays: BTreeMap::new(),
+            slots: BTreeMap::new(),
+            context,
+            next_fragment: 0,
             failed: false,
         }
     }
@@ -114,7 +154,12 @@ impl OutputReducer {
         let result = self.accept(prepared, outcome, events, validator);
         if let Err(mut failure) = result {
             self.failed = true;
-            failure.diagnostics.splice(0..0, self.diagnostics.clone());
+            failure.diagnostics.splice(
+                0..0,
+                self.diagnostics
+                    .iter()
+                    .map(|d| d.to_diagnostic(&self.page.collection)),
+            );
             return Err(failure);
         }
         Ok(())
@@ -129,6 +174,8 @@ impl OutputReducer {
     ) -> Result<(), ExecutionFailure> {
         let skipped = matches!(outcome, CellOutcome::Skipped { .. });
         if self.failed
+            || self.context.source() != &self.page.source
+            || self.context.collection() != self.page.collection
             || prepared.ordinal != self.cells.len()
             || !prepared.cell.outputs.is_empty()
             || (skipped && !events.is_empty())
@@ -150,6 +197,7 @@ impl OutputReducer {
             outputs: Vec::new(),
         });
         let mut next_slot = 0;
+        self.next_fragment = 0;
         let mut pending_clear = false;
         let mut events = events.into_iter().peekable();
         while let Some(event) = events.next() {
@@ -180,6 +228,18 @@ impl OutputReducer {
                 diagnostic_indices: Vec::new(),
             };
             let mut register = None;
+            let mut evidence = SlotEvidence {
+                owning_cell: prepared.ordinal,
+                slot: next_slot,
+                origin: OutputOrigin {
+                    cell: prepared.ordinal,
+                    slot: next_slot,
+                    cell_span: prepared.cell.span,
+                    fragment: None,
+                }
+                .into(),
+                representations: Vec::new(),
+            };
             match event {
                 CellEvent::Stream {
                     name: StreamName::Stdout,
@@ -203,6 +263,7 @@ impl OutputReducer {
                     self.rich_output(
                         prepared,
                         &mut output,
+                        &mut evidence,
                         MimeBundle {
                             data: Value::Object(Map::from_iter([(
                                 "text/markdown".into(),
@@ -215,11 +276,17 @@ impl OutputReducer {
                     if output.output.representations.is_empty() {
                         // Rejected fragments still have a faithful escaped-text
                         // fallback; streams cannot be display placeholders.
+                        evidence
+                            .representations
+                            .push(OwnedRepresentation::Text(text.clone()));
                         plain_stream(&mut output, prepared.ordinal, text);
                     }
                 }
                 CellEvent::Stream { name, text } => {
                     output.output.kind = CellOutputKind::Stream { stream: name };
+                    evidence
+                        .representations
+                        .push(OwnedRepresentation::Text(text.clone()));
                     plain_stream(&mut output, prepared.ordinal, text);
                 }
                 CellEvent::Error {
@@ -231,13 +298,13 @@ impl OutputReducer {
                 }
                 CellEvent::Display { bundle, display_id }
                 | CellEvent::Result { bundle, display_id } => {
-                    self.rich_output(prepared, &mut output, bundle, validator)?;
+                    self.rich_output(prepared, &mut output, &mut evidence, bundle, validator)?;
                     register = display_id;
                 }
                 CellEvent::UpdateDisplay { bundle, display_id } => {
                     // Validate even an unregistered update: a fatal asset failure
                     // cannot be hidden by a missing or previously cleared ID.
-                    self.rich_output(prepared, &mut output, bundle, validator)?;
+                    self.rich_output(prepared, &mut output, &mut evidence, bundle, validator)?;
                     let slots = display_id.as_ref().and_then(|id| self.displays.get(id));
                     if let Some(slots) = slots.filter(|slots| !slots.is_empty()) {
                         for &(owner, slot) in slots {
@@ -251,14 +318,15 @@ impl OutputReducer {
                             output.slot = previous.slot;
                             output.updating_cell = Some(prepared.ordinal);
                             *previous = output.clone();
+                            evidence.owning_cell = owner;
+                            evidence.slot = slot;
+                            self.slots.insert((owner, slot), evidence.clone());
                         }
                     } else {
-                        self.diagnostics.push(warning(
-                            &self.page,
-                            prepared,
-                            DiagnosticCode::UnsupportedCellOutput,
-                            "A display update has no surviving registered output.",
-                        ));
+                        self.diagnostics
+                            .push(ExecutionDiagnostic::UnknownDisplayUpdate {
+                                attribution: self.attribution(prepared, next_slot),
+                            });
                     }
                     continue;
                 }
@@ -271,6 +339,7 @@ impl OutputReducer {
                     .push((prepared.ordinal, next_slot));
             }
             self.cells[prepared.ordinal].outputs.push(output);
+            self.slots.insert((prepared.ordinal, next_slot), evidence);
             next_slot += 1;
         }
         Ok(())
@@ -278,6 +347,7 @@ impl OutputReducer {
 
     fn clear(&mut self, owner: usize) {
         self.cells[owner].outputs.clear();
+        self.slots.retain(|(cell, _), _| *cell != owner);
         self.displays.retain(|_, slots| {
             slots.retain(|&(cell, _)| cell != owner);
             !slots.is_empty()
@@ -288,6 +358,7 @@ impl OutputReducer {
         &mut self,
         prepared: &PreparedCell,
         output: &mut ExecutionOutput,
+        evidence: &mut SlotEvidence,
         bundle: MimeBundle,
         validator: &mut impl FnMut(OutputCandidate<'_>) -> Result<CandidateValidation, ExecutionFailure>,
     ) -> Result<(), ExecutionFailure> {
@@ -298,6 +369,10 @@ impl OutputReducer {
                 let Some(data) = data.get(media_type) else {
                     continue;
                 };
+                let fragment_ordinal = self.next_fragment;
+                if media_type == "text/markdown" {
+                    self.next_fragment += 1;
+                }
                 let validated = validator(OutputCandidate {
                     page: &self.page,
                     cell: prepared,
@@ -305,6 +380,8 @@ impl OutputReducer {
                     media_type,
                     data,
                     metadata: &bundle.metadata,
+                    context: &self.context,
+                    fragment_ordinal,
                 })?;
                 self.diagnostics.extend(validated.diagnostics);
                 if let Some(accepted) = validated.accepted {
@@ -324,23 +401,21 @@ impl OutputReducer {
                     });
                     output.output.representations.push(accepted.representation);
                     output.output.provenance.extend(accepted.provenance);
+                    evidence.representations.push(accepted.value);
                 }
             }
         } else {
-            self.diagnostics.push(warning(
-                &self.page,
-                prepared,
-                DiagnosticCode::InvalidCellOutput,
-                "A MIME bundle must be an object.",
-            ));
+            self.diagnostics
+                .push(ExecutionDiagnostic::InvalidMimeBundle {
+                    attribution: self.attribution(prepared, output.slot),
+                });
         }
         if output.output.representations.is_empty() && self.diagnostics.len() == first_diagnostic {
-            self.diagnostics.push(warning(
-                &self.page,
-                prepared,
-                DiagnosticCode::UnsupportedCellOutput,
-                "The output has no supported representation.",
-            ));
+            self.diagnostics
+                .push(ExecutionDiagnostic::NoSupportedRepresentation {
+                    attribution: self.attribution(prepared, output.slot),
+                    mime_types: output.offered_mime_types.iter().cloned().collect(),
+                });
         }
         output
             .diagnostic_indices
@@ -360,24 +435,77 @@ impl OutputReducer {
             ));
         }
         validate_figure_options(&self.page, &self.cells).map_err(|mut failure| {
-            failure.diagnostics.splice(0..0, self.diagnostics.clone());
+            failure.diagnostics.splice(
+                0..0,
+                self.diagnostics
+                    .iter()
+                    .map(|d| d.to_diagnostic(&self.page.collection)),
+            );
             failure
         })?;
         let mut retained = BTreeMap::new();
-        for cell in &self.cells {
-            for output in &cell.outputs {
-                for representation in &output.output.representations {
-                    if let OutputRepresentation::Asset { asset, .. } = representation {
-                        retained.insert(asset.path.as_str().to_owned(), asset.clone());
+        for slot in self.slots.values() {
+            for representation in &slot.representations {
+                let assets: Vec<_> = match representation {
+                    OwnedRepresentation::Text(_) => vec![],
+                    OwnedRepresentation::Asset(asset) => vec![asset],
+                    OwnedRepresentation::Markdown { value, .. } => {
+                        value.referenced_assets().collect()
+                    }
+                    OwnedRepresentation::Html { value } => value.referenced_assets().collect(),
+                };
+                for asset in assets {
+                    if let Some(previous) =
+                        retained.insert(asset.reference.fingerprint.value.clone(), asset.clone())
+                        && previous != *asset
+                    {
+                        let mut failure = FailureSource {
+                            collection: self.page.collection.clone(),
+                            source: self.page.source.clone(),
+                        }
+                        .failure(
+                            ExecutionFailureKind::AssetCollision,
+                            "Surviving execution assets have conflicting metadata.",
+                        );
+                        failure.diagnostics.splice(
+                            0..0,
+                            self.diagnostics
+                                .iter()
+                                .map(|d| d.to_diagnostic(&self.page.collection)),
+                        );
+                        return Err(failure);
                     }
                 }
             }
         }
         Ok(ReducedPage {
             cells: self.cells,
-            diagnostics: self.diagnostics,
-            retained_assets: retained.into_values().collect(),
+            diagnostics: self
+                .diagnostics
+                .iter()
+                .map(|d| d.to_diagnostic(&self.page.collection))
+                .collect(),
+            execution_diagnostics: self.diagnostics,
+            retained_assets: retained
+                .values()
+                .map(|asset| asset.reference.clone())
+                .collect(),
+            assets: retained.into_values().collect(),
+            slots: self.slots.into_values().collect(),
         })
+    }
+
+    fn attribution(&self, prepared: &PreparedCell, slot: usize) -> DiagnosticAttribution {
+        DiagnosticAttribution::output(
+            &self.context,
+            &OutputOrigin {
+                cell: prepared.ordinal,
+                slot,
+                cell_span: prepared.cell.span,
+                fragment: None,
+            },
+            None,
+        )
     }
 }
 
@@ -387,21 +515,6 @@ fn source(page: &ExecutionPage, cell: &PreparedCell) -> FailureSource {
         source: page.source.clone(),
     }
     .for_cell(cell)
-}
-
-fn warning(
-    page: &ExecutionPage,
-    cell: &PreparedCell,
-    code: DiagnosticCode,
-    message: &str,
-) -> Diagnostic {
-    let mut diagnostic = source(page, cell)
-        .failure(ExecutionFailureKind::OutputValidation, message)
-        .diagnostics
-        .remove(0);
-    diagnostic.code = code;
-    diagnostic.severity = Severity::Warning;
-    diagnostic
 }
 
 fn representation_media_type(representation: &OutputRepresentation) -> &str {

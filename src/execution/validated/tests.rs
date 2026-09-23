@@ -53,6 +53,29 @@ fn prepared() -> PreparedExecution {
     let (request, context) = inputs();
     PreparedExecution::checked(request, SOURCE.as_bytes().to_vec(), context).unwrap()
 }
+
+#[test]
+fn prepared_context_cannot_add_or_omit_authored_anchors() {
+    let (request, _) = inputs();
+    let forged = AuthoredOutputContext::new(
+        request.page.source.clone(),
+        request.page.collection.clone(),
+        BTreeSet::from(["injected".into()]),
+    );
+    assert!(PreparedExecution::checked(request, SOURCE.as_bytes().to_vec(), forged).is_err());
+
+    let source = format!("# Heading {{#known}}\n\n{SOURCE}");
+    let (request, empty) = inputs_from(&source);
+    assert!(
+        PreparedExecution::checked(request.clone(), source.as_bytes().to_vec(), empty).is_err()
+    );
+    let context = AuthoredOutputContext::new(
+        request.page.source.clone(),
+        request.page.collection.clone(),
+        BTreeSet::from(["known".into()]),
+    );
+    assert!(PreparedExecution::checked(request, source.into_bytes(), context).is_ok());
+}
 fn record(prepared: &PreparedExecution) -> PageExecutionRecord {
     let request = prepared.request();
     PageExecutionRecord {

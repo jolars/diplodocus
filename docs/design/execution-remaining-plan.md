@@ -35,6 +35,23 @@ asset set. They do not prove that a production engine executes, cleans up, or
 revalidates a page. The startup fix retains process-local port claims through
 supervised cleanup; unrelated external port races remain outside that guarantee.
 
+## Resumed timeout and watched-site work
+
+The later request to complete the compound timeout and watched-site item resumes
+the integration needed for that behavior. Monotonic deadlines now cover the
+internal session lifecycle. The reducer now invokes the live Markdown and HTML
+validators and retains their immutable evidence, typed warnings, canonical
+digests, and nested assets through display updates and clears. Preparation binds
+the complete authored anchor set to the original source. Protocol tests prove
+that a missing nested image in an unselected alternative stops the next cell,
+reaps the kernel, and rolls back staged assets. See the
+[output integration evidence](execution-output-integration-validation.md).
+
+The production engine, launch identity binding, post-cleanup input revalidation,
+provenance, and real snapshot/site publication and watching remain integration
+work. The timeout and watched-site checkbox remains open. This checkpoint does
+not establish M6-06 acceptance or change the cache and command gates below.
+
 ## Starting point
 
 The shared execution records, QMD preparation, Jupyter discovery and supervised
@@ -114,8 +131,10 @@ small integration change, not grounds for parallel edits to a shared entry point
 The concrete signatures, wire shapes, ownership decisions, and complete artifact
 fixture for these six items are in the
 [M6-01R integration contracts](execution-integration-contracts.md). The list
-below records why those decisions were needed; it does not claim the consumer
-implementations have landed.
+below records why those decisions were needed at the planning baseline. The
+resumed integration above implements the reducer portions of decisions 1–3 and
+the authored anchor checkpoint in decision 4. It does not establish complete
+consumer acceptance.
 
 M6-05 acceptance includes the now-integrated shared prepared/result records
 and private accessors, using its reviewed wrappers and accepted M6-04 types.
@@ -124,7 +143,7 @@ those records. Their existing M6-04/M6-05 dependency edges remain sufficient;
 both tasks remain unassigned at this closeout.
 
 1. **Keep validation evidence alive.** `AcceptedRepresentation` and `ReducedPage`
-   currently hold portable records; they cannot carry the planned private
+   originally held portable records; they could not carry the planned private
    `ValidatedMarkdown`/`ValidatedHtml` wrappers. Choose a nonserializable carrier
    with immutable bindings keyed to final cell, slot, and representation. Display
    updates and clears must replace or discard that evidence together with the
@@ -134,12 +153,12 @@ both tasks remain unassigned at this closeout.
    association before use. Mutating the currently public result record must not
    leave stale wrappers that appear to validate the changed content. Repeated
    update events can reuse a producer slot, so producer/slot alone is not a key.
-2. **Retain nested image assets.** `OutputReducer::finish` currently collects
+2. **Retain nested image assets.** `OutputReducer::finish` originally collected
    top-level `Asset` representations only. The final asset set must also include
    every image binding in surviving Markdown/HTML alternatives, including hidden
    output, and exclude superseded bindings. Assign the reducer adapter to the
    engine owner, with safety traversal supplied by M6-05.
-3. **Unify representation fingerprints.** The text adapter currently hashes raw
+3. **Unify representation fingerprints.** The text adapter originally hashed raw
    Markdown text. The cache contract requires a structured fragment digest that
    includes typed image references. Define one canonical content representation
    shared by live output and restoration, along with error and unsupported-output
@@ -160,7 +179,7 @@ both tasks remain unassigned at this closeout.
    depend on private session types or launch a kernel. Derive exact component
    versions from the build, not Cargo version ranges or synthetic vector values.
    Supply immutable authored link/anchor context to M6-05's live and restored
-   validators too: preparation currently discards its anchor map. Keep semantic
+   validators too: preparation originally discarded its anchor map. Keep semantic
    links unresolved until the current site context is available.
 5. **Freeze the remaining cache wire shapes.** `PageExecutionRecord` is not
    `execution-result-v1`. Specify nested fragment/image encodings, required nulls,

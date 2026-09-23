@@ -3,8 +3,8 @@ use super::*;
 /// Bound original source, prepared request, and authored output context.
 ///
 /// This token proves source/request agreement, not command authorization. The
-/// preparation adapter must supply its complete authored anchors; this checkpoint
-/// checks context identity but does not independently reconstruct that anchor set.
+/// original source is prepared again to check the request and complete authored
+/// anchor set. Generated output cannot introduce additional targets.
 ///
 /// ```compile_fail
 /// use diplodocus::execution::{PreparedExecution, PageExecutionRequest};
@@ -61,8 +61,11 @@ impl PreparedExecution {
         {
             return Err(RecordValidationError::Association);
         }
-        identity::validate_prepared(&request, &source)
+        let preparation = identity::validate_prepared(&request, &source)
             .map_err(|_| RecordValidationError::Association)?;
+        if context.anchors() != &preparation.authored_anchors {
+            return Err(RecordValidationError::Association);
+        }
         let parent = std::path::Path::new(request.page.source.path.as_str())
             .parent()
             .and_then(|p| p.to_str())

@@ -1,6 +1,6 @@
 //! QMD policy validation and preparation without execution or local paths.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use panache_parser::syntax::{
     AstNode, ChunkInfoItem, CodeBlock, SyntaxKind, SyntaxNode, YamlBlockMapKey, YamlFlowMapKey,
@@ -39,6 +39,8 @@ pub struct QmdPreparation {
     pub page_veto: bool,
     /// Every authored cell in source order, including disabled cells.
     pub cells: Vec<PreparedCell>,
+    /// Complete authored identifiers and cell labels, independent of generated output.
+    pub authored_anchors: BTreeSet<String>,
     /// Collection authority, no veto, and at least one `eval: true` cell.
     ///
     /// This is preliminary eligibility, not a request to discover a kernel.
@@ -100,6 +102,7 @@ pub fn prepare_collection_document(
     );
     context.blocks(&parsed.document.blocks, &defaults);
     context.check_anchors();
+    let authored_anchors = context.anchors.into_keys().collect();
     let cells = context.cells;
     let execution_eligible = collection.execution.mode == ExecutionMode::Execute
         && !page_veto
@@ -113,6 +116,7 @@ pub fn prepare_collection_document(
         defaults,
         page_veto,
         cells,
+        authored_anchors,
         execution_eligible,
     });
     Ok(PreparedDocument {

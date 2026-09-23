@@ -51,7 +51,10 @@ fn asis_joins_only_adjacent_stdout_and_keeps_other_output_literal() {
     assert!(matches!(markdown(&outputs[0]), [Block::Heading { .. }]));
     assert_eq!(
         outputs[0].representations[0].content_fingerprint,
-        fingerprint_bytes("# Café\n".as_bytes())
+        Fingerprint {
+            algorithm: "sha256".into(),
+            value: "848d972fb1a616e377e24946399cd14bc67afaacce0b164bfb2e1b7edc25c373".into(),
+        }
     );
     assert_eq!(text(&outputs[1]), "<script>stderr</script>\n");
     assert!(matches!(markdown(&outputs[2]), [Block::Paragraph { .. }]));
@@ -242,7 +245,37 @@ fn generated_fragments_are_isolated_inert_and_attributed_even_when_hidden() {
         let output = &result.cells[0].outputs[1];
         assert_eq!(output.output.representations[0], expected.representation);
         assert_eq!(output.output.provenance, [expected.provenance]);
-        assert_eq!(result.diagnostics, expected.diagnostics);
+        assert_eq!(
+            result
+                .diagnostics
+                .iter()
+                .map(|d| (d.code, d.span))
+                .collect::<Vec<_>>(),
+            expected
+                .diagnostics
+                .iter()
+                .map(|d| (d.code, d.span))
+                .collect::<Vec<_>>()
+        );
+        assert_eq!(
+            result
+                .execution_diagnostics
+                .iter()
+                .map(|d| match d {
+                    ExecutionDiagnostic::FragmentUnsupported {
+                        attribution,
+                        source_kind,
+                    } => {
+                        assert_eq!(attribution.slot, Some(1));
+                        assert_eq!(attribution.fragment.unwrap().ordinal, 0);
+                        assert_eq!(attribution.fragment.unwrap().byte_length, fragment.len());
+                        source_kind.as_str()
+                    }
+                    other => panic!("Expected a typed fragment warning, got {other:?}"),
+                })
+                .collect::<Vec<_>>(),
+            ["YAML_METADATA", "HTML_BLOCK"]
+        );
         assert!(!result.diagnostics.is_empty());
         assert_eq!(
             output.diagnostic_indices,
@@ -421,10 +454,10 @@ fn rejected_asis_markdown_retains_a_literal_fallback_and_its_warning() {
                 if candidate.media_type == "text/markdown" {
                     Ok(CandidateValidation {
                         accepted: None,
-                        diagnostics: vec![
-                            candidate
-                                .warning(DiagnosticCode::InvalidCellOutput, "Rejected fragment."),
-                        ],
+                        diagnostics: vec![ExecutionDiagnostic::InvalidTextPayload {
+                            attribution: candidate.attribution(),
+                            media_type: candidate.media_type.into(),
+                        }],
                     })
                 } else {
                     validate_text(candidate)

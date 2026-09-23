@@ -95,6 +95,60 @@ async fn asset_boundary_failure_stops_before_the_next_cell_and_reaps_the_kernel(
 }
 
 #[tokio::test]
+async fn nested_asset_failure_in_an_unselected_alternative_stops_execution_and_rolls_back() {
+    use super::super::output::images::validate_with_assets;
+    use crate::execution::assets::PageAssetStore;
+
+    for mode in [
+        "execute-generated-html-image",
+        "execute-generated-markdown-image",
+    ] {
+        let root = TempDir::new().unwrap();
+        let kernel = fixture_kernel(root.path(), mode).await;
+        let mut request = two_cells();
+        request.cells[0].options.execution.include.value = false;
+        let mut assets = PageAssetStore::new(
+            request.page.clone(),
+            root.path().into(),
+            root.path().join("staging"),
+        )
+        .unwrap();
+        let mut reducer =
+            OutputReducer::new(request.page.clone(), ErrorContext::new(root.path().into()));
+        let mut context = context(root.path());
+        let session = start_session(kernel, &mut context, source()).await.unwrap();
+        let failure = session
+            .execute_with(
+                request.cells.clone(),
+                &mut context.cancellation,
+                |mut completed| {
+                    let result = reducer.accept_cell(
+                        &request.cells[completed.ordinal],
+                        completed.outcome,
+                        std::mem::take(&mut completed.events),
+                        &mut |candidate| validate_with_assets(candidate, &mut assets),
+                    );
+                    ready(result.map(|()| completed))
+                },
+            )
+            .await
+            .unwrap_err();
+        assert_eq!(failure.kind, ExecutionFailureKind::AssetMissing, "{mode}");
+        assert!(failure.cleanup_diagnostics.is_empty());
+        assert_eq!(submitted(root.path()).len(), 1);
+        assert!(reducer.finish().is_err());
+        assets.rollback().unwrap();
+        assert_eq!(
+            std::fs::read_dir(root.path().join("staging"))
+                .unwrap()
+                .count(),
+            0
+        );
+        assert_cleaned(root.path()).await;
+    }
+}
+
+#[tokio::test]
 async fn figures_are_staged_incrementally_and_retained_after_kernel_cleanup() {
     use super::super::output::images::validate_with_assets;
     use crate::execution::assets::PageAssetStore;
