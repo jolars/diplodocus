@@ -1,14 +1,12 @@
 //! Own the process group and private connection file through bounded cleanup.
 
 use std::io::{ErrorKind, Write};
-use std::net::{IpAddr, Ipv4Addr};
 use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use std::time::Duration;
 
 use jupyter_protocol::{ConnectionInfo, Transport};
-use jupyter_zmq_client::peek_ports_with_listeners;
 use rustix::process::{Pid, Signal, kill_process_group, test_kill_process_group};
 use tempfile::TempDir;
 use tokio::fs;
@@ -24,11 +22,14 @@ use crate::execution::{
     ExecutionFailure, ExecutionFailureKind, ExecutionPhase, KernelInterruptMode,
 };
 
+mod ports;
+
 #[derive(Default)]
 pub(super) struct KernelProcess {
     pub child: Option<Child>,
     group: Option<Pid>,
     directory: Option<TempDir>,
+    ports: Option<ports::PortLease<'static>>,
 }
 
 impl KernelProcess {
@@ -77,13 +78,14 @@ impl KernelProcess {
             .expect("owned directory")
             .path()
             .join("connection.json");
-        let ip = IpAddr::V4(Ipv4Addr::LOCALHOST);
-        let (ports, listeners) = peek_ports_with_listeners(ip, 5)
+        let (lease, listeners) = ports::reserve()
             .await
             .map_err(|_| fail("Kernel loopback ports could not be reserved."))?;
+        self.ports = Some(lease);
+        let ports = self.ports.as_ref().expect("owned ports").ports();
         let connection = ConnectionInfo {
             transport: Transport::TCP,
-            ip: ip.to_string(),
+            ip: std::net::Ipv4Addr::LOCALHOST.to_string(),
             shell_port: ports[0],
             iopub_port: ports[1],
             stdin_port: ports[2],
@@ -121,7 +123,7 @@ impl KernelProcess {
             .stderr(Stdio::null())
             .process_group(0)
             .kill_on_drop(true);
-        // The kernel binds these ports itself; release reservations immediately before spawn.
+        // The child needs the listeners released, but its port lease lasts through cleanup.
         drop(listeners);
         let child = command
             .spawn()
@@ -218,6 +220,7 @@ impl KernelProcess {
         if self.exited().unwrap_or(false) {
             self.group = None;
             self.child = None;
+            self.ports = None;
         }
         *channels = None;
         if let Some(directory) = self.directory.take()
@@ -279,6 +282,7 @@ impl KernelProcess {
 impl Drop for KernelProcess {
     fn drop(&mut self) {
         // Normal cleanup reaps explicitly. This also covers a supervisor panic or runtime exit.
+        // Drop cannot await reaping; the port lease ends after this best-effort kill.
         let _ = self.signal(Signal::KILL);
     }
 }
