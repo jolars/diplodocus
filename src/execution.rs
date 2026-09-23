@@ -37,6 +37,7 @@ mod figures;
 )]
 mod jupyter;
 mod options;
+pub mod output_safety;
 mod records;
 
 pub use failure::*;
