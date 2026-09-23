@@ -445,9 +445,13 @@ command and watched-site guarantees, which require Milestones 7 through 9.
   deduplicates safely, and retains only referenced assets. Reducer and protocol
   fixtures cover MIME fallback, boundary failures before the next cell,
   cancellation, and cleanup.
-- [ ] Sanitize supported `text/html` into a distinct IR representation before
+- [x] Sanitize supported `text/html` into a distinct IR representation before
   rendering, prefer a safe alternative MIME representation when available,
   and diagnose output that has no faithful safe representation.
+  Reviewed HTML/Markdown validators and shared immutable result records bind
+  safe content, typed diagnostics, canonical hashes, and verified image assets.
+  The reducer supports MIME fallback; production engine and site-renderer
+  integration remain in their respective steps.
 - [ ] Add deterministic startup, idle, cell, and shutdown timeouts; interrupt
   failed execution, reap the kernel process, and preserve the last
   successful site during a watched-build failure.

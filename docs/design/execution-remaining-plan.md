@@ -1,6 +1,6 @@
 # Remaining Milestone 6 work
 
-This plan follows the repository at
+This plan was prepared against the repository at
 `b31b44cbf2f39fcc2d11c5ac6574f86023a9df0e` on September 23, 2026. It updates the
 scheduling in [the implementation design](execution-implementation.md), without
 changing the [output policy](../spikes/authored-execution-contract.md),
@@ -11,9 +11,29 @@ The planning pass delegated three source audits through Coterie run
 `cr-01M36CJ6S3PH09F9VXEKTD8JFG` and registered twelve follow-up tasks in group
 `m6-remaining`. Those tasks include two external evidence gates, M6-X7 and
 M6-X789; they are not assignments to implement entire later milestones.
-M6-01R now records the reviewed integration contracts and reference artifact;
-production implementation remains pending. The task descriptions record
-ownership, dependencies, acceptance, and coordinator handoffs.
+M6-01R records the reviewed integration contracts and reference artifact. The
+identity and output-safety foundations are now implemented, together with the
+shared validated records and startup port ownership. The task descriptions
+record ownership, dependencies, acceptance, and coordinator handoffs.
+
+## Closeout on September 23, 2026
+
+The user limited this run to finishing the work already underway. Identity
+(M6-04), output safety (M6-05), the shared prepared inputs and validated result
+records, and the startup port fix are integrated and accepted. No engine or
+cache implementation was launched. Milestone 6 remains open.
+
+A future run can implement M6-06 (the production engine) and M6-07 (cache
+storage) in parallel against these accepted interfaces. Their results must join
+in M6-08 before M6-09 can establish execution-core acceptance. M6-10a, M6-10b,
+and M6-11 retain the command and watched-site prerequisites below. This
+closeout does not authorize starting those tasks.
+
+The shared records preserve immutable validation evidence, exact canonical
+representation hashes, typed diagnostic associations, and the complete staged
+asset set. They do not prove that a production engine executes, cleans up, or
+revalidates a page. The startup fix retains process-local port claims through
+supervised cleanup; unrelated external port races remain outside that guarantee.
 
 ## Starting point
 
@@ -22,10 +42,11 @@ session runner, typed output reducer, inert fragment parser, and content-address
 image staging are implemented. Reuse their tests and extend them through the
 public engine. Do not schedule M6-01, M6-02, or M6-03 again.
 
-The production `ExecutionEngine` implementation, identity module, output-safety
-module, and cache module are absent. `check`, `build`, and `serve` still return
-not-implemented errors. Existing real Python/R tests prove startup and sequential
-state, but not public-engine rich output or cache restoration. Existing timeout,
+The production `ExecutionEngine` implementation and cache module are absent.
+The identity and output-safety modules and shared validated records are present.
+`check`, `build`, and `serve` still return not-implemented errors. Existing real
+Python/R tests prove startup and sequential state, but not public-engine rich
+output or cache restoration. Existing timeout,
 interruption, process-reaping, and staging tests do not prove watched-site
 preservation. These distinctions explain why several roadmap items remain open.
 
@@ -96,11 +117,11 @@ fixture for these six items are in the
 below records why those decisions were needed; it does not claim the consumer
 implementations have landed.
 
-M6-05 acceptance includes coordinator integration and validation of the shared
-prepared/result records and private accessors, using its reviewed wrappers and
-accepted M6-04 types. Close M6-05 only after that checkpoint, then release the
-engine and cache workers together against those shared records. Their existing
-M6-04/M6-05 dependency edges remain sufficient.
+M6-05 acceptance includes the now-integrated shared prepared/result records
+and private accessors, using its reviewed wrappers and accepted M6-04 types.
+A future resumed run may release engine and cache workers together against
+those records. Their existing M6-04/M6-05 dependency edges remain sufficient;
+both tasks remain unassigned at this closeout.
 
 1. **Keep validation evidence alive.** `AcceptedRepresentation` and `ReducedPage`
    currently hold portable records; they cannot carry the planned private
@@ -245,3 +266,34 @@ none of the three changed files contains trailing whitespace. Coterie
 implementation assignment. No development-environment entry or runtime test was
 needed for these documentation changes. No current environment-access claim is
 made from the historical validation ledger.
+
+## Closeout validation
+
+The combined implementation is committed as
+`36d93e0e19e5647d3749fc35888bb1d527c24e7f`, including identity, output safety,
+shared validated records, and the startup port fix. Independent reviews found
+no remaining material issues in the accepted scope. The coordinator verified
+that integration preserved all reviewed files and that the worktree was clean.
+
+Final checks ran in `/home/jola/projects/diplodocus`, using non-login Bash and
+separately authorized `require_escalated` access to the documented environment:
+
+```sh
+devenv shell -- bash -c 'cargo fmt --all -- --check && cargo clippy --locked --all-targets --all-features -- -D warnings && cargo test --locked --all-targets && cargo test --locked --doc && RUSTDOCFLAGS="-D warnings" cargo doc --locked --no-deps'
+```
+
+Every command passed. The all-target suite passed 533 tests, and all 27 doctests
+passed, with none failed or ignored. The log is
+`/tmp/diplodocus-m6-closeout-integrated-validation.log`. Formatting, Clippy, and
+rustdoc also passed. Documentation closeout uses local-link, whitespace, and
+diff checks; it does not change the validated implementation.
+
+The shared-record worker's earlier branch, before startup integration, had one
+startup protocol failure in its final suite. Its unchanged rerun passed 527
+tests and 27 doctests. Both outcomes remain recorded in the
+[shared-record ledger](execution-shared-records-validation.md) and durable
+Coterie reports; the cause of that particular failure is unproven. The final
+combined run above passed on its first attempt. The identity work's existing
+dependency-license policy failures remain recorded in its
+[validation ledger](execution-m6-04-validation.md); this closeout does not waive
+them or claim that `cargo deny check` passes.
