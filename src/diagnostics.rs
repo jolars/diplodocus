@@ -10,6 +10,18 @@ use crate::ir::SourceSpan;
 /// Stable diagnostic identifier.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DiagnosticCode {
+    /// Extraction targets disagree about a package or claim the same item.
+    #[serde(rename = "conflicting-extraction")]
+    ConflictingExtraction,
+    /// No built-in adapter implements an explicitly selected extractor.
+    #[serde(rename = "unsupported-extractor")]
+    UnsupportedExtractor,
+    /// An authored semantic name has no matching item.
+    #[serde(rename = "unresolved-item-reference")]
+    UnresolvedItemReference,
+    /// An authored semantic name identifies several items.
+    #[serde(rename = "ambiguous-item-reference")]
+    AmbiguousItemReference,
     /// A kernel message cannot be attributed or handled during execution.
     #[serde(rename = "unsupported-kernel-message")]
     UnsupportedKernelMessage,
@@ -257,6 +269,10 @@ impl DiagnosticCode {
             Self::ExecutionCancelled => "execution-cancelled",
             Self::ExecutionCleanupFailed => "execution-cleanup-failed",
             Self::ExecutionOutputFailed => "execution-output-failed",
+            Self::ConflictingExtraction => "conflicting-extraction",
+            Self::UnsupportedExtractor => "unsupported-extractor",
+            Self::UnresolvedItemReference => "unresolved-item-reference",
+            Self::AmbiguousItemReference => "ambiguous-item-reference",
             Self::GeneratedAssetOutsideBoundary => "generated-asset-outside-boundary",
             Self::GeneratedAssetMissing => "generated-asset-missing",
             Self::ExecutionAssetCollision => "execution-asset-collision",

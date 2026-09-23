@@ -490,6 +490,10 @@ layouts in the generation stage.
 - [ ] Assemble declared repositories, packages, extraction targets, authored
   collections and pages, diagnostics, and provenance into one workspace IR.
   Include authorized execution results when the engine is available.
+  The assembly library now combines these sources and explicitly authorized
+  execution. It owns staging across all pages and rejects changed inputs after
+  cleanup. Reference validation, snapshot publication, and command integration
+  remain below; see the workspace assembly validation record.
 - [ ] Merge all extraction-target fragments for a package deterministically and
   diagnose duplicate or conflicting identities.
 - [ ] Resolve package-qualified references such as

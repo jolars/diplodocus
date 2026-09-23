@@ -4,6 +4,7 @@
 #![deny(rustdoc::broken_intra_doc_links)]
 #![warn(missing_docs)]
 
+pub mod assembly;
 pub mod commands;
 pub mod configuration;
 pub mod configuration_validation;

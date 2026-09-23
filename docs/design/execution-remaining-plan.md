@@ -60,6 +60,13 @@ cover warnings, fatal validation, cancellation, drop, and phase deadlines. Real
 Python/R tests exercise state and validated rich output through the public trait.
 See the [engine integration evidence](execution-engine-validation.md).
 
+Workspace source assembly now combines configured Python/R fragments, authored
+preparation, concept identities, and portable provenance. Its explicit execution
+operation owns staging for the whole attempt, rolls back earlier pages after a
+later failure, and revalidates workspace inputs after all pages finish. See the
+[assembly evidence](workspace-assembly-validation.md). Document reference and
+relationship validation, checked-in assets, and snapshot storage remain work.
+
 Real snapshot/site publication and watching remain integration work, so the
 timeout and watched-site checkbox remains open. This engine checkpoint does not
 change the cache, command, or full milestone acceptance gates below.
