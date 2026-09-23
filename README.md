@@ -7,9 +7,10 @@ span multiple programming languages and repositories. The first release will
 support Python and R packages, authored Markdown, shared navigation, semantic
 cross-references, and workspace-wide search.
 
-Diplodocus is under active development. The command-line surface is present, but
-the build pipeline will arrive in the later milestones described in
-[`TODO.md`](TODO.md).
+Diplodocus is under active development. `diplodocus check` parses, extracts,
+resolves references, and validates declared sources without executing cells or
+writing output. Snapshot publication, site generation, and watched serving remain
+in the later milestones described in [`TODO.md`](TODO.md).
 
 The starter [project guide](docs/guide/index.md) and root `diplodocus.toml`
 form the project's own documentation corpus. The [quick start](docs/guide/quick-start.md)
@@ -41,8 +42,8 @@ parser provenance. Maintained stubs supply signatures while implementation
 docstrings retain their own source evidence.
 
 See the [Python extraction contract](docs/ir/python-extraction.md) for the
-supported surface and the component APIs. CLI pipeline integration remains in
-the later roadmap milestones.
+supported surface and the component APIs. The static `check` command uses this
+adapter.
 
 ## Static R extraction
 
@@ -55,7 +56,7 @@ signatures and documentation.
 See the [R extraction contract](docs/ir/r-extraction.md) for the supported
 subset and diagnostics. Rd nodes currently carry file-level attribution and
 one location warning per file; parser diagnostics retain their exact ranges.
-CLI pipeline integration remains in the later roadmap milestones.
+The static `check` command uses this adapter.
 
 ## Development
 

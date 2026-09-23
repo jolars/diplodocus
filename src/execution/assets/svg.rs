@@ -10,6 +10,14 @@ use super::AssetError;
 const SVG_NAMESPACE: &str = "http://www.w3.org/2000/svg";
 
 pub(super) fn validate(bytes: &[u8]) -> Result<(), AssetError> {
+    validate_with_accessibility(bytes, false)
+}
+
+pub(super) fn validate_authored(bytes: &[u8]) -> Result<(), AssetError> {
+    validate_with_accessibility(bytes, true)
+}
+
+fn validate_with_accessibility(bytes: &[u8], accessibility: bool) -> Result<(), AssetError> {
     let text = std::str::from_utf8(bytes).map_err(|_| AssetError::UnsafeSvg)?;
     if text.contains("<!DOCTYPE") || text.contains("<!ENTITY") {
         return Err(AssetError::UnsafeSvg);
@@ -55,7 +63,14 @@ pub(super) fn validate(bytes: &[u8]) -> Result<(), AssetError> {
             return Err(AssetError::UnsafeSvg);
         }
         for attribute in node.attributes() {
-            if attribute.namespace().is_some() || !value(attribute.name(), attribute.value().trim())
+            let accessible = accessibility
+                && !attribute.value().trim().is_empty()
+                && matches!(
+                    attribute.name(),
+                    "id" | "aria-label" | "aria-labelledby" | "aria-describedby"
+                );
+            if attribute.namespace().is_some()
+                || !(accessible || value(attribute.name(), attribute.value().trim()))
             {
                 return Err(AssetError::UnsafeSvg);
             }

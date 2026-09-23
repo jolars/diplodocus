@@ -39,11 +39,13 @@ and bytes of selected sources and declared environment inputs. This catches a
 later page changing an earlier executed source. It detects ordinary changes,
 not an operating-system snapshot of undeclared inputs or subsequent edits.
 
-This is source assembly, not final workspace validation. Document semantic and
+At this checkpoint, assembly did not provide final workspace validation. Document semantic and
 local references, relationship version constraints, checked-in asset collection,
 snapshot validation and publication, site generation, and watched command
 integration still need implementation. No command stub has been labeled as a
-working check, build, extract, generate, or serve operation.
+working check, build, extract, generate, or serve operation. The later
+[resolution checkpoint](workspace-resolution-validation.md) supplies references,
+relationships, assets, and the real static check command.
 
 ## Validation
 

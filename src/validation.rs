@@ -1,5 +1,13 @@
 //! Validation and semantic reference resolution.
 
+mod references;
+mod relationships;
+mod workspace;
+
+pub(crate) use references::in_package as resolve_package_item;
+pub use references::resolve_item;
+pub use workspace::*;
+
 use crate::configuration::{ContentConfiguration, ExecutionConfigurationError, ExecutionMode};
 use crate::diagnostics::{Diagnostic, DiagnosticCode, Severity};
 use crate::documents::AuthoredFormat;

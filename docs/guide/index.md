@@ -4,9 +4,10 @@ Diplodocus brings related Python and R packages into one documentation site.
 Authored guides, API references, navigation, conceptual API groups, and search
 share the same workspace.
 
-The project is under development. Authored parsing and static extraction and
-execution spikes work today. The site-building commands are still placeholders.
-The examples in this guide specify the intended MVP workflow.
+The project is under development. Static `check` works today, and the library
+can execute authorized Python and R pages. Site generation and watched serving
+remain unimplemented. The build and preview examples specify the intended MVP
+workflow.
 
 Start with the [quick start](quick-start.md), read about
 [workspace configuration](configuration.md), or consult the [commands](cli.md).

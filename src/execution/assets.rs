@@ -100,6 +100,19 @@ pub fn validate_image_bytes(media_type: &str, bytes: &[u8]) -> Result<(), AssetE
     raster::validate(format, bytes)
 }
 
+/// Validate checked-in image bytes, retaining inert SVG accessibility metadata.
+///
+/// Authored SVG may label its title and description with IDs and ARIA attributes.
+/// The generated-image policy remains unchanged; neither policy accepts scripts,
+/// external references, style attributes, or embedded HTML.
+pub fn validate_authored_image_bytes(media_type: &str, bytes: &[u8]) -> Result<(), AssetError> {
+    if media_type == "image/svg+xml" {
+        svg::validate_authored(bytes)
+    } else {
+        validate_image_bytes(media_type, bytes)
+    }
+}
+
 /// A single page's uncommitted figures. Dropping the owner discards its files.
 ///
 /// Construction creates no directories. Each first accepted image creates a

@@ -475,6 +475,7 @@ dependencies = [
  "jupyter-zmq-client",
  "markup5ever_rcdom",
  "panache-parser",
+ "pep440_rs",
  "percent-encoding",
  "png",
  "pydocstring",
@@ -486,6 +487,7 @@ dependencies = [
  "ruff_python_parser",
  "ruff_text_size",
  "rustix",
+ "semver",
  "serde",
  "serde_json",
  "sha2",
@@ -1972,6 +1974,12 @@ checksum = "f95d4cc3459db1e608946153c95cf20158af0b86131ae4ae451f90f54549e7d1"
 dependencies = [
  "saa",
 ]
+
+[[package]]
+name = "semver"
+version = "1.0.28"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8a7852d02fc848982e0c167ef163aaff9cd91dc640ba85e263cb1ce46fae51cd"
 
 [[package]]
 name = "serde"

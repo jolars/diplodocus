@@ -129,8 +129,16 @@ async fn acceptance_workspace_executes_only_the_four_authorized_python_and_r_pag
     assert!(output.contains("Python total: 12"));
     assert!(output.contains("R total: 12"));
     assert!(!output.contains(root.path().to_str().unwrap()));
+    let resolved = diplodocus::validation::resolve_executed_workspace(&result).unwrap();
+    assert!(resolved.assets().len() >= 2);
     result.discard().unwrap();
     assert_eq!(std::fs::read_dir(stage.path()).unwrap().count(), 0);
+    assert!(
+        resolved
+            .assets()
+            .values()
+            .all(|asset| !asset.bytes.is_empty())
+    );
 }
 
 #[tokio::test]

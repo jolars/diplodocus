@@ -2,7 +2,7 @@
   "document": {
     "span": {
       "start": 0,
-      "end": 1409
+      "end": 1560
     },
     "frontmatter": null,
     "blocks": [
@@ -33,54 +33,116 @@
         "type": "paragraph",
         "inlines": [
           {
-            "type": "text",
-            "value": "The command-line options are available today. The operations below describe",
+            "type": "code",
+            "value": "check",
             "span": {
               "start": 12,
-              "end": 87
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 87,
-              "end": 88
+              "end": 19
             }
           },
           {
             "type": "text",
-            "value": "their MVP behavior; the current binary reports that each operation is not yet",
+            "value": " is available today. It resolves semantic references, local page links,",
             "span": {
-              "start": 88,
-              "end": 165
+              "start": 19,
+              "end": 90
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 165,
-              "end": 166
+              "start": 90,
+              "end": 91
             }
           },
           {
             "type": "text",
-            "value": "implemented.",
+            "value": "and checked-in assets, validates known package relationship constraints, and",
             "span": {
-              "start": 166,
-              "end": 178
+              "start": 91,
+              "end": 167
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 178,
-              "end": 179
+              "start": 167,
+              "end": 168
+            }
+          },
+          {
+            "type": "text",
+            "value": "reports source diagnostics without executing cells or publishing output.",
+            "span": {
+              "start": 168,
+              "end": 240
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 240,
+              "end": 241
+            }
+          },
+          {
+            "type": "code",
+            "value": "build",
+            "span": {
+              "start": 241,
+              "end": 248
+            }
+          },
+          {
+            "type": "text",
+            "value": " and ",
+            "span": {
+              "start": 248,
+              "end": 253
+            }
+          },
+          {
+            "type": "code",
+            "value": "serve",
+            "span": {
+              "start": 253,
+              "end": 260
+            }
+          },
+          {
+            "type": "text",
+            "value": " remain unimplemented; their rows describe the intended MVP",
+            "span": {
+              "start": 260,
+              "end": 319
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 319,
+              "end": 320
+            }
+          },
+          {
+            "type": "text",
+            "value": "behavior.",
+            "span": {
+              "start": 320,
+              "end": 329
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 329,
+              "end": 330
             }
           }
         ],
         "span": {
           "start": 12,
-          "end": 179
+          "end": 330
         }
       },
       {
@@ -103,20 +165,20 @@
                         "type": "text",
                         "value": "Command",
                         "span": {
-                          "start": 182,
-                          "end": 189
+                          "start": 333,
+                          "end": 340
                         }
                       }
                     ],
                     "span": {
-                      "start": 182,
-                      "end": 189
+                      "start": 333,
+                      "end": 340
                     }
                   }
                 ],
                 "span": {
-                  "start": 182,
-                  "end": 189
+                  "start": 333,
+                  "end": 340
                 }
               },
               {
@@ -128,26 +190,26 @@
                         "type": "text",
                         "value": "Expected operation",
                         "span": {
-                          "start": 192,
-                          "end": 210
+                          "start": 343,
+                          "end": 361
                         }
                       }
                     ],
                     "span": {
-                      "start": 192,
-                      "end": 210
+                      "start": 343,
+                      "end": 361
                     }
                   }
                 ],
                 "span": {
-                  "start": 192,
-                  "end": 210
+                  "start": 343,
+                  "end": 361
                 }
               }
             ],
             "span": {
-              "start": 180,
-              "end": 213
+              "start": 331,
+              "end": 364
             }
           },
           {
@@ -162,20 +224,20 @@
                         "type": "code",
                         "value": "check",
                         "span": {
-                          "start": 248,
-                          "end": 255
+                          "start": 399,
+                          "end": 406
                         }
                       }
                     ],
                     "span": {
-                      "start": 248,
-                      "end": 255
+                      "start": 399,
+                      "end": 406
                     }
                   }
                 ],
                 "span": {
-                  "start": 248,
-                  "end": 255
+                  "start": 399,
+                  "end": 406
                 }
               },
               {
@@ -187,26 +249,26 @@
                         "type": "text",
                         "value": "Load, parse, extract, and validate without executing cells or writing a site.",
                         "span": {
-                          "start": 258,
-                          "end": 335
+                          "start": 409,
+                          "end": 486
                         }
                       }
                     ],
                     "span": {
-                      "start": 258,
-                      "end": 335
+                      "start": 409,
+                      "end": 486
                     }
                   }
                 ],
                 "span": {
-                  "start": 258,
-                  "end": 335
+                  "start": 409,
+                  "end": 486
                 }
               }
             ],
             "span": {
-              "start": 246,
-              "end": 338
+              "start": 397,
+              "end": 489
             }
           },
           {
@@ -221,20 +283,20 @@
                         "type": "code",
                         "value": "build",
                         "span": {
-                          "start": 340,
-                          "end": 347
+                          "start": 491,
+                          "end": 498
                         }
                       }
                     ],
                     "span": {
-                      "start": 340,
-                      "end": 347
+                      "start": 491,
+                      "end": 498
                     }
                   }
                 ],
                 "span": {
-                  "start": 340,
-                  "end": 347
+                  "start": 491,
+                  "end": 498
                 }
               },
               {
@@ -246,26 +308,26 @@
                         "type": "text",
                         "value": "Validate, run configured execution, and render a static site.",
                         "span": {
-                          "start": 350,
-                          "end": 411
+                          "start": 501,
+                          "end": 562
                         }
                       }
                     ],
                     "span": {
-                      "start": 350,
-                      "end": 411
+                      "start": 501,
+                      "end": 562
                     }
                   }
                 ],
                 "span": {
-                  "start": 350,
-                  "end": 411
+                  "start": 501,
+                  "end": 562
                 }
               }
             ],
             "span": {
-              "start": 338,
-              "end": 414
+              "start": 489,
+              "end": 565
             }
           },
           {
@@ -280,20 +342,20 @@
                         "type": "code",
                         "value": "serve",
                         "span": {
-                          "start": 416,
-                          "end": 423
+                          "start": 567,
+                          "end": 574
                         }
                       }
                     ],
                     "span": {
-                      "start": 416,
-                      "end": 423
+                      "start": 567,
+                      "end": 574
                     }
                   }
                 ],
                 "span": {
-                  "start": 416,
-                  "end": 423
+                  "start": 567,
+                  "end": 574
                 }
               },
               {
@@ -305,32 +367,32 @@
                         "type": "text",
                         "value": "Build, serve over HTTP, watch declared inputs, and rebuild safely.",
                         "span": {
-                          "start": 426,
-                          "end": 492
+                          "start": 577,
+                          "end": 643
                         }
                       }
                     ],
                     "span": {
-                      "start": 426,
-                      "end": 492
+                      "start": 577,
+                      "end": 643
                     }
                   }
                 ],
                 "span": {
-                  "start": 426,
-                  "end": 492
+                  "start": 577,
+                  "end": 643
                 }
               }
             ],
             "span": {
-              "start": 414,
-              "end": 495
+              "start": 565,
+              "end": 646
             }
           }
         ],
         "span": {
-          "start": 180,
-          "end": 495
+          "start": 331,
+          "end": 646
         }
       },
       {
@@ -340,212 +402,110 @@
             "type": "text",
             "value": "All three commands accept ",
             "span": {
-              "start": 496,
-              "end": 522
+              "start": 647,
+              "end": 673
             }
           },
           {
             "type": "code",
             "value": "--config",
             "span": {
-              "start": 522,
-              "end": 532
+              "start": 673,
+              "end": 683
             }
           },
           {
             "type": "text",
             "value": ", defaulting to ",
             "span": {
-              "start": 532,
-              "end": 548
+              "start": 683,
+              "end": 699
             }
           },
           {
             "type": "code",
             "value": "./diplodocus.toml",
             "span": {
-              "start": 548,
-              "end": 567
+              "start": 699,
+              "end": 718
             }
           },
           {
             "type": "text",
             "value": ".",
             "span": {
-              "start": 567,
-              "end": 568
+              "start": 718,
+              "end": 719
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 568,
-              "end": 569
+              "start": 719,
+              "end": 720
             }
           },
           {
             "type": "code",
             "value": "build",
             "span": {
-              "start": 569,
-              "end": 576
+              "start": 720,
+              "end": 727
             }
           },
           {
             "type": "text",
             "value": " and ",
             "span": {
-              "start": 576,
-              "end": 581
+              "start": 727,
+              "end": 732
             }
           },
           {
             "type": "code",
             "value": "serve",
             "span": {
-              "start": 581,
-              "end": 588
+              "start": 732,
+              "end": 739
             }
           },
           {
             "type": "text",
             "value": " accept ",
             "span": {
-              "start": 588,
-              "end": 596
+              "start": 739,
+              "end": 747
             }
           },
           {
             "type": "code",
             "value": "--output",
             "span": {
-              "start": 596,
-              "end": 606
+              "start": 747,
+              "end": 757
             }
           },
           {
             "type": "text",
             "value": ", defaulting to ",
             "span": {
-              "start": 606,
-              "end": 622
+              "start": 757,
+              "end": 773
             }
           },
           {
             "type": "code",
             "value": "./site",
             "span": {
-              "start": 622,
-              "end": 630
+              "start": 773,
+              "end": 781
             }
           },
           {
             "type": "text",
             "value": ".",
             "span": {
-              "start": 630,
-              "end": 631
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 631,
-              "end": 632
-            }
-          },
-          {
-            "type": "code",
-            "value": "serve",
-            "span": {
-              "start": 632,
-              "end": 639
-            }
-          },
-          {
-            "type": "text",
-            "value": " also accepts ",
-            "span": {
-              "start": 639,
-              "end": 653
-            }
-          },
-          {
-            "type": "code",
-            "value": "--host",
-            "span": {
-              "start": 653,
-              "end": 661
-            }
-          },
-          {
-            "type": "text",
-            "value": " and ",
-            "span": {
-              "start": 661,
-              "end": 666
-            }
-          },
-          {
-            "type": "code",
-            "value": "--port",
-            "span": {
-              "start": 666,
-              "end": 674
-            }
-          },
-          {
-            "type": "text",
-            "value": ", defaulting to ",
-            "span": {
-              "start": 674,
-              "end": 690
-            }
-          },
-          {
-            "type": "code",
-            "value": "127.0.0.1",
-            "span": {
-              "start": 690,
-              "end": 701
-            }
-          },
-          {
-            "type": "text",
-            "value": " and ",
-            "span": {
-              "start": 701,
-              "end": 706
-            }
-          },
-          {
-            "type": "code",
-            "value": "8000",
-            "span": {
-              "start": 706,
-              "end": 712
-            }
-          },
-          {
-            "type": "text",
-            "value": ".",
-            "span": {
-              "start": 712,
-              "end": 713
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 713,
-              "end": 714
-            }
-          },
-          {
-            "type": "text",
-            "value": "Relative command-line paths are resolved from the working directory.",
-            "span": {
-              "start": 714,
+              "start": 781,
               "end": 782
             }
           },
@@ -555,11 +515,113 @@
               "start": 782,
               "end": 783
             }
+          },
+          {
+            "type": "code",
+            "value": "serve",
+            "span": {
+              "start": 783,
+              "end": 790
+            }
+          },
+          {
+            "type": "text",
+            "value": " also accepts ",
+            "span": {
+              "start": 790,
+              "end": 804
+            }
+          },
+          {
+            "type": "code",
+            "value": "--host",
+            "span": {
+              "start": 804,
+              "end": 812
+            }
+          },
+          {
+            "type": "text",
+            "value": " and ",
+            "span": {
+              "start": 812,
+              "end": 817
+            }
+          },
+          {
+            "type": "code",
+            "value": "--port",
+            "span": {
+              "start": 817,
+              "end": 825
+            }
+          },
+          {
+            "type": "text",
+            "value": ", defaulting to ",
+            "span": {
+              "start": 825,
+              "end": 841
+            }
+          },
+          {
+            "type": "code",
+            "value": "127.0.0.1",
+            "span": {
+              "start": 841,
+              "end": 852
+            }
+          },
+          {
+            "type": "text",
+            "value": " and ",
+            "span": {
+              "start": 852,
+              "end": 857
+            }
+          },
+          {
+            "type": "code",
+            "value": "8000",
+            "span": {
+              "start": 857,
+              "end": 863
+            }
+          },
+          {
+            "type": "text",
+            "value": ".",
+            "span": {
+              "start": 863,
+              "end": 864
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 864,
+              "end": 865
+            }
+          },
+          {
+            "type": "text",
+            "value": "Relative command-line paths are resolved from the working directory.",
+            "span": {
+              "start": 865,
+              "end": 933
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 933,
+              "end": 934
+            }
           }
         ],
         "span": {
-          "start": 496,
-          "end": 783
+          "start": 647,
+          "end": 934
         }
       },
       {
@@ -569,66 +631,66 @@
             "type": "text",
             "value": "Warnings remain visible and permit a successful exit. Errors cause a nonzero",
             "span": {
-              "start": 784,
-              "end": 860
+              "start": 935,
+              "end": 1011
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 860,
-              "end": 861
+              "start": 1011,
+              "end": 1012
             }
           },
           {
             "type": "text",
             "value": "exit status. Failed builds do not replace a successful output tree. During",
             "span": {
-              "start": 861,
-              "end": 935
+              "start": 1012,
+              "end": 1086
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 935,
-              "end": 936
+              "start": 1086,
+              "end": 1087
             }
           },
           {
             "type": "text",
             "value": "preview, a failed rebuild prints its diagnostics while serving the last",
             "span": {
-              "start": 936,
-              "end": 1007
+              "start": 1087,
+              "end": 1158
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1007,
-              "end": 1008
+              "start": 1158,
+              "end": 1159
             }
           },
           {
             "type": "text",
             "value": "successful site. Correcting the input allows the next rebuild to succeed.",
             "span": {
-              "start": 1008,
-              "end": 1081
+              "start": 1159,
+              "end": 1232
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1081,
-              "end": 1082
+              "start": 1232,
+              "end": 1233
             }
           }
         ],
         "span": {
-          "start": 784,
-          "end": 1082
+          "start": 935,
+          "end": 1233
         }
       },
       {
@@ -638,51 +700,51 @@
             "type": "text",
             "value": "The watcher observes configuration, API and metadata sources, authored pages,",
             "span": {
-              "start": 1083,
-              "end": 1160
+              "start": 1234,
+              "end": 1311
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1160,
-              "end": 1161
+              "start": 1311,
+              "end": 1312
             }
           },
           {
             "type": "text",
             "value": "assets, and declared environment inputs. Output, execution-cache, and unrelated",
             "span": {
-              "start": 1161,
-              "end": 1240
+              "start": 1312,
+              "end": 1391
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1240,
-              "end": 1241
+              "start": 1391,
+              "end": 1392
             }
           },
           {
             "type": "text",
             "value": "file changes do not trigger rebuilds. Browser live reload is outside the MVP.",
             "span": {
-              "start": 1241,
-              "end": 1318
+              "start": 1392,
+              "end": 1469
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1318,
-              "end": 1319
+              "start": 1469,
+              "end": 1470
             }
           }
         ],
         "span": {
-          "start": 1083,
-          "end": 1319
+          "start": 1234,
+          "end": 1470
         }
       },
       {
@@ -692,8 +754,8 @@
             "type": "text",
             "value": "See the ",
             "span": {
-              "start": 1320,
-              "end": 1328
+              "start": 1471,
+              "end": 1479
             }
           },
           {
@@ -703,8 +765,8 @@
                 "type": "text",
                 "value": "quick start",
                 "span": {
-                  "start": 1329,
-                  "end": 1340
+                  "start": 1480,
+                  "end": 1491
                 }
               }
             ],
@@ -716,44 +778,44 @@
               "key_values": []
             },
             "span": {
-              "start": 1328,
-              "end": 1357
+              "start": 1479,
+              "end": 1508
             }
           },
           {
             "type": "text",
             "value": " for complete acceptance and project-site",
             "span": {
-              "start": 1357,
-              "end": 1398
+              "start": 1508,
+              "end": 1549
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1398,
-              "end": 1399
+              "start": 1549,
+              "end": 1550
             }
           },
           {
             "type": "text",
             "value": "commands.",
             "span": {
-              "start": 1399,
-              "end": 1408
+              "start": 1550,
+              "end": 1559
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1408,
-              "end": 1409
+              "start": 1559,
+              "end": 1560
             }
           }
         ],
         "span": {
-          "start": 1320,
-          "end": 1409
+          "start": 1471,
+          "end": 1560
         }
       }
     ]

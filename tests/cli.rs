@@ -52,10 +52,6 @@ fn commands_accept_their_explicit_options_and_reach_the_library() {
             "cli/build-not-implemented.stderr",
         ),
         (
-            vec!["check", "--config", "workspace.toml"],
-            "cli/check-not-implemented.stderr",
-        ),
-        (
             vec![
                 "serve",
                 "--config",

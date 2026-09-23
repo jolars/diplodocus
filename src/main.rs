@@ -60,6 +60,9 @@ fn main() -> ExitCode {
         Ok(()) => ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("error: {error}");
+            for diagnostic in error.diagnostics() {
+                eprintln!("{}", commands::format_diagnostic(diagnostic));
+            }
             ExitCode::FAILURE
         }
     }
@@ -73,6 +76,11 @@ fn dispatch(cli: Cli) -> Result<(), CommandError> {
         }),
         Command::Check(args) => commands::check(CheckOptions {
             config: args.config,
+        })
+        .map(|report| {
+            for diagnostic in &report.diagnostics {
+                eprintln!("{}", commands::format_diagnostic(diagnostic));
+            }
         }),
         Command::Serve(args) => commands::serve(ServeOptions {
             config: args.config,

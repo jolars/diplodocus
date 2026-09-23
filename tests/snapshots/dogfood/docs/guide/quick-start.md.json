@@ -2,7 +2,7 @@
   "document": {
     "span": {
       "start": 0,
-      "end": 2789
+      "end": 2829
     },
     "frontmatter": null,
     "blocks": [
@@ -34,53 +34,84 @@
         "inlines": [
           {
             "type": "text",
-            "value": "The build, check, and preview commands below describe the intended MVP workflow.",
+            "value": "The static ",
             "span": {
               "start": 15,
-              "end": 95
+              "end": 26
             }
           },
           {
-            "type": "soft-break",
+            "type": "code",
+            "value": "check",
             "span": {
-              "start": 95,
-              "end": 96
-            }
-          },
-          {
-            "type": "text",
-            "value": "They currently return a not-implemented error. Corpus checks and parser/kernel",
-            "span": {
-              "start": 96,
-              "end": 174
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 174,
-              "end": 175
+              "start": 26,
+              "end": 33
             }
           },
           {
             "type": "text",
-            "value": "tests can already be run from this checkout.",
+            "value": " command works today, including on the acceptance workspace",
             "span": {
-              "start": 175,
-              "end": 219
+              "start": 33,
+              "end": 92
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 219,
-              "end": 220
+              "start": 92,
+              "end": 93
+            }
+          },
+          {
+            "type": "text",
+            "value": "below. Build and preview still return a not-implemented error; those examples",
+            "span": {
+              "start": 93,
+              "end": 170
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 170,
+              "end": 171
+            }
+          },
+          {
+            "type": "text",
+            "value": "describe the intended MVP workflow. Parser and kernel tests also run from this",
+            "span": {
+              "start": 171,
+              "end": 249
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 249,
+              "end": 250
+            }
+          },
+          {
+            "type": "text",
+            "value": "checkout.",
+            "span": {
+              "start": 250,
+              "end": 259
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 259,
+              "end": 260
             }
           }
         ],
         "span": {
           "start": 15,
-          "end": 220
+          "end": 260
         }
       },
       {
@@ -96,14 +127,14 @@
             "type": "text",
             "value": "Prepare the declared environment",
             "span": {
-              "start": 224,
-              "end": 256
+              "start": 264,
+              "end": 296
             }
           }
         ],
         "span": {
-          "start": 221,
-          "end": 257
+          "start": 261,
+          "end": 297
         }
       },
       {
@@ -113,98 +144,98 @@
             "type": "text",
             "value": "Start in the repository root with the declared tools already installed. The",
             "span": {
-              "start": 258,
-              "end": 333
+              "start": 298,
+              "end": 373
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 333,
-              "end": 334
+              "start": 373,
+              "end": 374
             }
           },
           {
             "type": "text",
             "value": "devenv environment supplies the pinned Rust toolchain, Python with ipykernel,",
             "span": {
-              "start": 334,
-              "end": 411
+              "start": 374,
+              "end": 451
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 411,
-              "end": 412
+              "start": 451,
+              "end": 452
             }
           },
           {
             "type": "text",
             "value": "R with IRkernel, and the ",
             "span": {
-              "start": 412,
-              "end": 437
+              "start": 452,
+              "end": 477
             }
           },
           {
             "type": "code",
             "value": "python3",
             "span": {
-              "start": 437,
-              "end": 446
+              "start": 477,
+              "end": 486
             }
           },
           {
             "type": "text",
             "value": " and ",
             "span": {
-              "start": 446,
-              "end": 451
+              "start": 486,
+              "end": 491
             }
           },
           {
             "type": "code",
             "value": "ir",
             "span": {
-              "start": 451,
-              "end": 455
+              "start": 491,
+              "end": 495
             }
           },
           {
             "type": "text",
             "value": " kernelspecs. Provisioning that",
             "span": {
-              "start": 455,
-              "end": 486
+              "start": 495,
+              "end": 526
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 486,
-              "end": 487
+              "start": 526,
+              "end": 527
             }
           },
           {
             "type": "text",
             "value": "environment may require network access before beginning this workflow.",
             "span": {
-              "start": 487,
-              "end": 557
+              "start": 527,
+              "end": 597
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 557,
-              "end": 558
+              "start": 597,
+              "end": 598
             }
           }
         ],
         "span": {
-          "start": 258,
-          "end": 558
+          "start": 298,
+          "end": 598
         }
       },
       {
@@ -215,35 +246,35 @@
           {
             "text": "devenv shell",
             "span": {
-              "start": 570,
-              "end": 582
+              "start": 610,
+              "end": 622
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 582,
-              "end": 583
+              "start": 622,
+              "end": 623
             }
           },
           {
             "text": "cargo test --locked --all-targets",
             "span": {
-              "start": 583,
-              "end": 616
+              "start": 623,
+              "end": 656
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 616,
-              "end": 617
+              "start": 656,
+              "end": 657
             }
           }
         ],
         "span": {
-          "start": 559,
-          "end": 621
+          "start": 599,
+          "end": 661
         }
       },
       {
@@ -253,51 +284,51 @@
             "type": "text",
             "value": "Once the environment and Cargo dependencies are available, the documentation",
             "span": {
-              "start": 622,
-              "end": 698
+              "start": 662,
+              "end": 738
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 698,
-              "end": 699
+              "start": 738,
+              "end": 739
             }
           },
           {
             "type": "text",
             "value": "commands and deterministic examples require no network access. Diplodocus",
             "span": {
-              "start": 699,
-              "end": 772
+              "start": 739,
+              "end": 812
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 772,
-              "end": 773
+              "start": 812,
+              "end": 813
             }
           },
           {
             "type": "text",
             "value": "never installs a dependency or kernel for you.",
             "span": {
-              "start": 773,
-              "end": 819
+              "start": 813,
+              "end": 859
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 819,
-              "end": 820
+              "start": 859,
+              "end": 860
             }
           }
         ],
         "span": {
-          "start": 622,
-          "end": 820
+          "start": 662,
+          "end": 860
         }
       },
       {
@@ -313,14 +344,14 @@
             "type": "text",
             "value": "Build the acceptance site",
             "span": {
-              "start": 824,
-              "end": 849
+              "start": 864,
+              "end": 889
             }
           }
         ],
         "span": {
-          "start": 821,
-          "end": 850
+          "start": 861,
+          "end": 890
         }
       },
       {
@@ -330,51 +361,51 @@
             "type": "text",
             "value": "The acceptance workspace contains sibling core, Python, and R repositories.",
             "span": {
-              "start": 851,
-              "end": 926
+              "start": 891,
+              "end": 966
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 926,
-              "end": 927
+              "start": 966,
+              "end": 967
             }
           },
           {
             "type": "text",
             "value": "Its default configuration selects supported inputs. Diagnostic cases are",
             "span": {
-              "start": 927,
-              "end": 999
+              "start": 967,
+              "end": 1039
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 999,
-              "end": 1000
+              "start": 1039,
+              "end": 1040
             }
           },
           {
             "type": "text",
             "value": "separate overlays used only in disposable test workspaces.",
             "span": {
-              "start": 1000,
-              "end": 1058
+              "start": 1040,
+              "end": 1098
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1058,
-              "end": 1059
+              "start": 1098,
+              "end": 1099
             }
           }
         ],
         "span": {
-          "start": 851,
-          "end": 1059
+          "start": 891,
+          "end": 1099
         }
       },
       {
@@ -385,49 +416,49 @@
           {
             "text": "cargo run --locked -- check --config tests/fixtures/acceptance/workspace/diplodocus.toml",
             "span": {
-              "start": 1071,
-              "end": 1159
+              "start": 1111,
+              "end": 1199
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 1159,
-              "end": 1160
+              "start": 1199,
+              "end": 1200
             }
           },
           {
             "text": "cargo run --locked -- build --config tests/fixtures/acceptance/workspace/diplodocus.toml --output site/acceptance",
             "span": {
-              "start": 1160,
-              "end": 1273
+              "start": 1200,
+              "end": 1313
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 1273,
-              "end": 1274
+              "start": 1313,
+              "end": 1314
             }
           },
           {
             "text": "cargo run --locked -- serve --config tests/fixtures/acceptance/workspace/diplodocus.toml --output site/acceptance --host 127.0.0.1 --port 8000",
             "span": {
-              "start": 1274,
-              "end": 1416
+              "start": 1314,
+              "end": 1456
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 1416,
-              "end": 1417
+              "start": 1456,
+              "end": 1457
             }
           }
         ],
         "span": {
-          "start": 1060,
-          "end": 1421
+          "start": 1100,
+          "end": 1461
         }
       },
       {
@@ -437,67 +468,67 @@
             "type": "text",
             "value": "Open ",
             "span": {
-              "start": 1422,
-              "end": 1427
+              "start": 1462,
+              "end": 1467
             }
           },
           {
             "type": "code",
             "value": "http://127.0.0.1:8000/",
             "span": {
-              "start": 1427,
-              "end": 1451
+              "start": 1467,
+              "end": 1491
             }
           },
           {
             "type": "text",
             "value": ". The site combines the project guide, both package",
             "span": {
-              "start": 1451,
-              "end": 1502
+              "start": 1491,
+              "end": 1542
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1502,
-              "end": 1503
+              "start": 1542,
+              "end": 1543
             }
           },
           {
             "type": "text",
             "value": "APIs, shared concepts, and executable Python and R pages. Stop the preview with",
             "span": {
-              "start": 1503,
-              "end": 1582
+              "start": 1543,
+              "end": 1622
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1582,
-              "end": 1583
+              "start": 1622,
+              "end": 1623
             }
           },
           {
             "type": "text",
             "value": "Ctrl-C before starting the next one.",
             "span": {
-              "start": 1583,
-              "end": 1619
+              "start": 1623,
+              "end": 1659
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1619,
-              "end": 1620
+              "start": 1659,
+              "end": 1660
             }
           }
         ],
         "span": {
-          "start": 1422,
-          "end": 1620
+          "start": 1462,
+          "end": 1660
         }
       },
       {
@@ -513,14 +544,14 @@
             "type": "text",
             "value": "Build the project site",
             "span": {
-              "start": 1624,
-              "end": 1646
+              "start": 1664,
+              "end": 1686
             }
           }
         ],
         "span": {
-          "start": 1621,
-          "end": 1647
+          "start": 1661,
+          "end": 1687
         }
       },
       {
@@ -530,36 +561,36 @@
             "type": "text",
             "value": "The root configuration describes Diplodocus's own authored documentation. It",
             "span": {
-              "start": 1648,
-              "end": 1724
+              "start": 1688,
+              "end": 1764
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1724,
-              "end": 1725
+              "start": 1764,
+              "end": 1765
             }
           },
           {
             "type": "text",
             "value": "has no API extraction targets. From the repository root:",
             "span": {
-              "start": 1725,
-              "end": 1781
+              "start": 1765,
+              "end": 1821
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1781,
-              "end": 1782
+              "start": 1821,
+              "end": 1822
             }
           }
         ],
         "span": {
-          "start": 1648,
-          "end": 1782
+          "start": 1688,
+          "end": 1822
         }
       },
       {
@@ -570,49 +601,49 @@
           {
             "text": "cargo run --locked -- check",
             "span": {
-              "start": 1794,
-              "end": 1821
+              "start": 1834,
+              "end": 1861
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 1821,
-              "end": 1822
+              "start": 1861,
+              "end": 1862
             }
           },
           {
             "text": "cargo run --locked -- build",
             "span": {
-              "start": 1822,
-              "end": 1849
+              "start": 1862,
+              "end": 1889
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 1849,
-              "end": 1850
+              "start": 1889,
+              "end": 1890
             }
           },
           {
             "text": "cargo run --locked -- serve",
             "span": {
-              "start": 1850,
-              "end": 1877
+              "start": 1890,
+              "end": 1917
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 1877,
-              "end": 1878
+              "start": 1917,
+              "end": 1918
             }
           }
         ],
         "span": {
-          "start": 1783,
-          "end": 1882
+          "start": 1823,
+          "end": 1922
         }
       },
       {
@@ -622,90 +653,90 @@
             "type": "text",
             "value": "The default output directory is ",
             "span": {
-              "start": 1883,
-              "end": 1915
+              "start": 1923,
+              "end": 1955
             }
           },
           {
             "type": "code",
             "value": "site",
             "span": {
-              "start": 1915,
-              "end": 1921
+              "start": 1955,
+              "end": 1961
             }
           },
           {
             "type": "text",
             "value": ", and the default preview address is",
             "span": {
-              "start": 1921,
-              "end": 1957
+              "start": 1961,
+              "end": 1997
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1957,
-              "end": 1958
+              "start": 1997,
+              "end": 1998
             }
           },
           {
             "type": "code",
             "value": "http://127.0.0.1:8000/",
             "span": {
-              "start": 1958,
-              "end": 1982
+              "start": 1998,
+              "end": 2022
             }
           },
           {
             "type": "text",
             "value": ". Edit a page in this guide to exercise watched rebuilds.",
             "span": {
-              "start": 1982,
-              "end": 2039
+              "start": 2022,
+              "end": 2079
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2039,
-              "end": 2040
+              "start": 2079,
+              "end": 2080
             }
           },
           {
             "type": "text",
             "value": "A failed rebuild must leave the previous successful site available and print",
             "span": {
-              "start": 2040,
-              "end": 2116
+              "start": 2080,
+              "end": 2156
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2116,
-              "end": 2117
+              "start": 2156,
+              "end": 2157
             }
           },
           {
             "type": "text",
             "value": "the new diagnostics.",
             "span": {
-              "start": 2117,
-              "end": 2137
+              "start": 2157,
+              "end": 2177
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2137,
-              "end": 2138
+              "start": 2177,
+              "end": 2178
             }
           }
         ],
         "span": {
-          "start": 1883,
-          "end": 2138
+          "start": 1923,
+          "end": 2178
         }
       },
       {
@@ -721,14 +752,14 @@
             "type": "text",
             "value": "Understand execution authority",
             "span": {
-              "start": 2142,
-              "end": 2172
+              "start": 2182,
+              "end": 2212
             }
           }
         ],
         "span": {
-          "start": 2139,
-          "end": 2173
+          "start": 2179,
+          "end": 2213
         }
       },
       {
@@ -738,91 +769,91 @@
             "type": "code",
             "value": "check",
             "span": {
-              "start": 2174,
-              "end": 2181
+              "start": 2214,
+              "end": 2221
             }
           },
           {
             "type": "text",
             "value": " never executes cells. ",
             "span": {
-              "start": 2181,
-              "end": 2204
+              "start": 2221,
+              "end": 2244
             }
           },
           {
             "type": "code",
             "value": "build",
             "span": {
-              "start": 2204,
-              "end": 2211
+              "start": 2244,
+              "end": 2251
             }
           },
           {
             "type": "text",
             "value": " and ",
             "span": {
-              "start": 2211,
-              "end": 2216
+              "start": 2251,
+              "end": 2256
             }
           },
           {
             "type": "code",
             "value": "serve",
             "span": {
-              "start": 2216,
-              "end": 2223
+              "start": 2256,
+              "end": 2263
             }
           },
           {
             "type": "text",
             "value": " execute only QMD collections",
             "span": {
-              "start": 2223,
-              "end": 2252
+              "start": 2263,
+              "end": 2292
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2252,
-              "end": 2253
+              "start": 2292,
+              "end": 2293
             }
           },
           {
             "type": "text",
             "value": "enabled in configuration. GFM fences and collections without execution settings",
             "span": {
-              "start": 2253,
-              "end": 2332
+              "start": 2293,
+              "end": 2372
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2332,
-              "end": 2333
+              "start": 2372,
+              "end": 2373
             }
           },
           {
             "type": "text",
             "value": "remain display content.",
             "span": {
-              "start": 2333,
-              "end": 2356
+              "start": 2373,
+              "end": 2396
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2356,
-              "end": 2357
+              "start": 2396,
+              "end": 2397
             }
           }
         ],
         "span": {
-          "start": 2174,
-          "end": 2357
+          "start": 2214,
+          "end": 2397
         }
       },
       {
@@ -832,66 +863,66 @@
             "type": "text",
             "value": "Authorized code runs as arbitrary, unsandboxed code with your user permissions.",
             "span": {
-              "start": 2358,
-              "end": 2437
+              "start": 2398,
+              "end": 2477
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2437,
-              "end": 2438
+              "start": 2477,
+              "end": 2478
             }
           },
           {
             "type": "text",
             "value": "Review source and configuration before building an executing collection.",
             "span": {
-              "start": 2438,
-              "end": 2510
+              "start": 2478,
+              "end": 2550
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2510,
-              "end": 2511
+              "start": 2550,
+              "end": 2551
             }
           },
           {
             "type": "text",
             "value": "Document metadata cannot grant execution permission. The included examples use",
             "span": {
-              "start": 2511,
-              "end": 2589
+              "start": 2551,
+              "end": 2629
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2589,
-              "end": 2590
+              "start": 2629,
+              "end": 2630
             }
           },
           {
             "type": "text",
             "value": "deterministic local inputs and require no documented package to be installed.",
             "span": {
-              "start": 2590,
-              "end": 2667
+              "start": 2630,
+              "end": 2707
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2667,
-              "end": 2668
+              "start": 2707,
+              "end": 2708
             }
           }
         ],
         "span": {
-          "start": 2358,
-          "end": 2668
+          "start": 2398,
+          "end": 2708
         }
       },
       {
@@ -901,8 +932,8 @@
             "type": "text",
             "value": "See ",
             "span": {
-              "start": 2669,
-              "end": 2673
+              "start": 2709,
+              "end": 2713
             }
           },
           {
@@ -912,8 +943,8 @@
                 "type": "text",
                 "value": "configuration",
                 "span": {
-                  "start": 2674,
-                  "end": 2687
+                  "start": 2714,
+                  "end": 2727
                 }
               }
             ],
@@ -925,23 +956,23 @@
               "key_values": []
             },
             "span": {
-              "start": 2673,
-              "end": 2706
+              "start": 2713,
+              "end": 2746
             }
           },
           {
             "type": "text",
             "value": " for collection settings and",
             "span": {
-              "start": 2706,
-              "end": 2734
+              "start": 2746,
+              "end": 2774
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2734,
-              "end": 2735
+              "start": 2774,
+              "end": 2775
             }
           },
           {
@@ -951,8 +982,8 @@
                 "type": "text",
                 "value": "commands",
                 "span": {
-                  "start": 2736,
-                  "end": 2744
+                  "start": 2776,
+                  "end": 2784
                 }
               }
             ],
@@ -964,29 +995,29 @@
               "key_values": []
             },
             "span": {
-              "start": 2735,
-              "end": 2753
+              "start": 2775,
+              "end": 2793
             }
           },
           {
             "type": "text",
             "value": " for defaults and failure behavior.",
             "span": {
-              "start": 2753,
-              "end": 2788
+              "start": 2793,
+              "end": 2828
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2788,
-              "end": 2789
+              "start": 2828,
+              "end": 2829
             }
           }
         ],
         "span": {
-          "start": 2669,
-          "end": 2789
+          "start": 2709,
+          "end": 2829
         }
       }
     ]

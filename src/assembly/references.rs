@@ -1,10 +1,8 @@
 use super::*;
 use crate::diagnostics::DiagnosticEntity;
-use crate::ir::{
-    Concept, ItemLanguageData, ItemReference, PackageReference, PackageRelationship, Provenance,
-    ProvenanceActivity, PythonCallableRole, PythonDeclaration,
-};
+use crate::ir::{Concept, PackageReference, PackageRelationship, Provenance, ProvenanceActivity};
 use crate::provenance::builtin_tools;
+use crate::validation::resolve_package_item;
 use std::collections::BTreeSet;
 
 pub(super) fn concepts_and_relationships(
@@ -15,7 +13,7 @@ pub(super) fn concepts_and_relationships(
     for concept in &configuration.concepts {
         let mut members = BTreeSet::new();
         for member in &concept.members {
-            match resolve(workspace, &member.package, &member.item) {
+            match resolve_package_item(workspace, &member.package, &member.item) {
                 Ok(item) => {
                     members.insert(item);
                 }
@@ -77,39 +75,5 @@ pub(super) fn concepts_and_relationships(
                 tools: builtin_tools(),
             }],
         });
-    }
-}
-
-fn resolve(
-    workspace: &Workspace,
-    package: &str,
-    name: &str,
-) -> Result<ItemReference, DiagnosticCode> {
-    let Some(items) = workspace
-        .packages
-        .get(package)
-        .map(|package| &package.items)
-    else {
-        return Err(DiagnosticCode::UnresolvedItemReference);
-    };
-    if items.contains_key(name) {
-        return Ok(ItemReference {
-            package: package.into(),
-            item: name.into(),
-        });
-    }
-    let candidates: Vec<_> = items.iter().filter(|(_, item)| {
-        // Callable-family lookup must not become ambiguous with its overloads.
-        !matches!(&item.language_data, Some(ItemLanguageData::Python(data)) if matches!(&data.declaration,
-            PythonDeclaration::Callable { role: PythonCallableRole::Overload { .. }, .. }))
-        && (item.qualified_name == name || item.aliases.iter().any(|alias| alias.qualified_name == name))
-    }).collect();
-    match candidates.as_slice() {
-        [(id, _)] => Ok(ItemReference {
-            package: package.into(),
-            item: (*id).clone(),
-        }),
-        [] => Err(DiagnosticCode::UnresolvedItemReference),
-        _ => Err(DiagnosticCode::AmbiguousItemReference),
     }
 }

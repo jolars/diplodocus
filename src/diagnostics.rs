@@ -10,6 +10,15 @@ use crate::ir::SourceSpan;
 /// Stable diagnostic identifier.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DiagnosticCode {
+    /// An authored local page, asset, or anchor cannot be resolved safely.
+    #[serde(rename = "unresolved-document-reference")]
+    UnresolvedDocumentReference,
+    /// A present package violates a declared relationship constraint.
+    #[serde(rename = "incompatible-package-relationship")]
+    IncompatiblePackageRelationship,
+    /// A present relationship cannot be checked with the available version rules.
+    #[serde(rename = "indeterminate-package-relationship")]
+    IndeterminatePackageRelationship,
     /// Extraction targets disagree about a package or claim the same item.
     #[serde(rename = "conflicting-extraction")]
     ConflictingExtraction,
@@ -270,6 +279,9 @@ impl DiagnosticCode {
             Self::ExecutionCleanupFailed => "execution-cleanup-failed",
             Self::ExecutionOutputFailed => "execution-output-failed",
             Self::ConflictingExtraction => "conflicting-extraction",
+            Self::UnresolvedDocumentReference => "unresolved-document-reference",
+            Self::IncompatiblePackageRelationship => "incompatible-package-relationship",
+            Self::IndeterminatePackageRelationship => "indeterminate-package-relationship",
             Self::UnsupportedExtractor => "unsupported-extractor",
             Self::UnresolvedItemReference => "unresolved-item-reference",
             Self::AmbiguousItemReference => "ambiguous-item-reference",

@@ -1,8 +1,10 @@
 # Commands
 
-The command-line options are available today. The operations below describe
-their MVP behavior; the current binary reports that each operation is not yet
-implemented.
+`check` is available today. It resolves semantic references, local page links,
+and checked-in assets, validates known package relationship constraints, and
+reports source diagnostics without executing cells or publishing output.
+`build` and `serve` remain unimplemented; their rows describe the intended MVP
+behavior.
 
 | Command | Expected operation |
 |:--------|:-------------------|

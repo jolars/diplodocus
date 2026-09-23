@@ -487,29 +487,29 @@ layouts in the generation stage.
 
 - [ ] Add failing tests for fragment conflicts, references, relationships,
   concepts, storage, and publication before implementing each behavior.
-- [ ] Assemble declared repositories, packages, extraction targets, authored
+- [x] Assemble declared repositories, packages, extraction targets, authored
   collections and pages, diagnostics, and provenance into one workspace IR.
   Include authorized execution results when the engine is available.
   The assembly library now combines these sources and explicitly authorized
   execution. It owns staging across all pages and rejects changed inputs after
-  cleanup. Reference validation, snapshot publication, and command integration
-  remain below; see the workspace assembly validation record.
-- [ ] Merge all extraction-target fragments for a package deterministically and
+  cleanup. Static reference validation and `check` now consume this assembly.
+  Snapshot publication and build/serve integration remain below.
+- [x] Merge all extraction-target fragments for a package deterministically and
   diagnose duplicate or conflicting identities.
-- [ ] Resolve package-qualified references such as
+- [x] Resolve package-qualified references such as
   ``[`pyfoo::foo.FooModel.fit`]`` directly against semantic identities.
-- [ ] Resolve unqualified references first in the owning package and then in the
+- [x] Resolve unqualified references first in the owning package and then in the
   workspace only when the result is unique; diagnose ambiguity and absence.
-- [ ] Resolve concept authoring names to item or callable-family IDs and retain
+- [x] Resolve concept authoring names to item or callable-family IDs and retain
   the distinction between equivalent, analogous, and related concepts.
-- [ ] Validate package relationships and version constraints when both endpoints
+- [x] Validate package relationships and version constraints when both endpoints
   are present; report a known mismatch as an error and an indeterminate
   constraint as a warning.
-- [ ] Retain external relationship coordinates as provenance without treating a
+- [x] Retain external relationship coordinates as provenance without treating a
   missing external source repository as an error.
-- [ ] Resolve authored page and local asset references against declared sources
+- [x] Resolve authored page and local asset references against declared sources
   and retain portable targets for generation to map to URLs.
-- [ ] Wire `diplodocus check` through configuration, authored-content parsing,
+- [x] Wire `diplodocus check` through configuration, authored-content parsing,
   extraction, merging, reference resolution, and validation without
   executing a cell, publishing a snapshot, or creating the output directory.
 

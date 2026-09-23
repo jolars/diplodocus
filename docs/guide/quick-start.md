@@ -1,8 +1,9 @@
 # Quick start
 
-The build, check, and preview commands below describe the intended MVP workflow.
-They currently return a not-implemented error. Corpus checks and parser/kernel
-tests can already be run from this checkout.
+The static `check` command works today, including on the acceptance workspace
+below. Build and preview still return a not-implemented error; those examples
+describe the intended MVP workflow. Parser and kernel tests also run from this
+checkout.
 
 ## Prepare the declared environment
 

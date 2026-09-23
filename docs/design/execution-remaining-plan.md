@@ -64,8 +64,12 @@ Workspace source assembly now combines configured Python/R fragments, authored
 preparation, concept identities, and portable provenance. Its explicit execution
 operation owns staging for the whole attempt, rolls back earlier pages after a
 later failure, and revalidates workspace inputs after all pages finish. See the
-[assembly evidence](workspace-assembly-validation.md). Document reference and
-relationship validation, checked-in assets, and snapshot storage remain work.
+[assembly evidence](workspace-assembly-validation.md). Semantic and local
+reference resolution, relationship validation, and checked-in asset collection
+now feed the real static `check` command. Executed resolution also collects final
+generated assets and checks semantic references in generated Markdown. See the
+[resolution and check evidence](workspace-resolution-validation.md). Snapshot
+storage, generation, and watched publication remain work.
 
 Real snapshot/site publication and watching remain integration work, so the
 timeout and watched-site checkbox remains open. This engine checkpoint does not
