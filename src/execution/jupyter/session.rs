@@ -6,14 +6,17 @@ use std::time::Duration;
 
 use tokio::sync::{mpsc, oneshot};
 use tokio::task::JoinHandle;
+use tokio::time::Instant;
 
 use super::FailureSource;
-use super::deadline::within;
+use super::deadline::until;
 use super::discovery::SelectedKernel;
 use super::execution::execute_cells;
+use super::launch::{ResolvedKernel, with_discovery};
 use super::page::{ExecutedCell, ExecutedCells};
 use super::process::KernelProcess;
 use super::transport::Channels;
+use crate::execution::identity::LaunchIdentityInput;
 use crate::execution::{
     ExecutionCancellation, ExecutionContext, ExecutionDeadlines, ExecutionFailure,
     ExecutionFailureKind, ExecutionPhase, PreparedCell,
@@ -155,14 +158,48 @@ pub(super) async fn start_session(
     context: &mut ExecutionContext<'_>,
     source: FailureSource,
 ) -> Result<KernelSession, ExecutionFailure> {
-    tokio::select! {
+    let diagnostics = kernel.diagnostics.clone();
+    let deadline = startup_deadline(context.deadlines, &source)
+        .map_err(|failure| with_discovery(failure, &diagnostics))?;
+    let repositories = std::collections::BTreeMap::from([(
+        source.source.repository.clone(),
+        context.repository_root.clone(),
+    )]);
+    let resolving = ResolvedKernel::resolve(
+        kernel,
+        repositories,
+        &context.repository_root,
+        &context.page_path,
+        &source,
+    );
+    let resolved = tokio::select! {
         biased;
         _ = &mut context.cancellation => {
-            return Err(source.failure(ExecutionFailureKind::Cancelled, "Kernel startup was canceled."));
+            return Err(with_discovery(source.failure(ExecutionFailureKind::Cancelled, "Kernel startup was canceled."), &diagnostics));
         }
-        _ = ready(()) => {}
-    }
-    let limits = context.deadlines;
+        resolved = until(deadline, resolving) => resolved
+            .map_err(|_| with_discovery(source.failure(
+                ExecutionFailureKind::Timeout { phase: ExecutionPhase::Startup },
+                "Kernel launch resolution timed out.",
+            ), &diagnostics))??,
+    };
+    start_resolved_before(resolved, context, source, deadline).await
+}
+
+pub(super) async fn start_resolved_session(
+    resolved: ResolvedKernel,
+    context: &mut ExecutionContext<'_>,
+    source: FailureSource,
+) -> Result<KernelSession, ExecutionFailure> {
+    let deadline = startup_deadline(context.deadlines, &source)
+        .map_err(|failure| with_discovery(failure, resolved.diagnostics()))?;
+    start_resolved_before(resolved, context, source, deadline).await
+}
+
+fn startup_deadline(
+    limits: ExecutionDeadlines,
+    source: &FailureSource,
+) -> Result<Instant, ExecutionFailure> {
     if [
         limits.startup,
         limits.cell,
@@ -179,11 +216,37 @@ pub(super) async fn start_session(
             "Execution deadlines must be positive.",
         ));
     }
+    Instant::now()
+        .checked_add(Duration::from_millis(limits.startup))
+        .ok_or_else(|| {
+            source.failure(
+                ExecutionFailureKind::Startup,
+                "The startup deadline is too large.",
+            )
+        })
+}
+
+pub(super) async fn start_resolved_before(
+    resolved: ResolvedKernel,
+    context: &mut ExecutionContext<'_>,
+    source: FailureSource,
+    deadline: Instant,
+) -> Result<KernelSession, ExecutionFailure> {
+    tokio::select! {
+        biased;
+        _ = &mut context.cancellation => {
+            return Err(with_discovery(source.failure(ExecutionFailureKind::Cancelled, "Kernel startup was canceled."), resolved.diagnostics()));
+        }
+        _ = ready(()) => {}
+    }
+    let (kernel, launch) = resolved.into_parts();
     let inputs = SessionInputs {
         repository_root: context.repository_root.clone(),
         page_path: context.page_path.clone(),
-        deadlines: limits,
+        deadlines: context.deadlines,
+        startup_deadline: deadline,
         source: source.clone(),
+        launch,
     };
     let (stop, stopped) = oneshot::channel();
     let (ready, started) = oneshot::channel();
@@ -214,7 +277,9 @@ pub(super) struct SessionInputs {
     pub repository_root: PathBuf,
     pub page_path: PathBuf,
     pub deadlines: ExecutionDeadlines,
+    pub startup_deadline: Instant,
     pub source: FailureSource,
+    pub launch: LaunchIdentityInput,
 }
 
 async fn supervise(
@@ -227,14 +292,14 @@ async fn supervise(
     let mut process = KernelProcess::default();
     let mut channels = None;
     let startup = async {
-        let connection = process.launch(&kernel, &inputs).await?;
+        let connection = process.launch(&inputs).await?;
         let runtime = tokio::select! {
             _ = process.child.as_mut().expect("spawned child").wait() => {
                 return Err(inputs.source.failure(ExecutionFailureKind::Protocol, "The kernel exited during startup."));
             }
             result = async {
                 channels = Some(Channels::connect(&connection, &inputs.source).await?);
-                channels.as_mut().expect("connected channels").handshake(&kernel.language, &inputs.source).await
+                channels.as_mut().expect("connected channels").handshake(inputs.launch.language(), &inputs.source).await
             } => result?,
         };
         if process
@@ -260,7 +325,7 @@ async fn supervise(
     let outcome = tokio::select! {
         biased;
         _ = &mut stopped => Err(inputs.source.failure(ExecutionFailureKind::Cancelled, "Kernel startup was canceled.")),
-        result = within(Duration::from_millis(inputs.deadlines.startup), startup) => {
+        result = until(inputs.startup_deadline, startup) => {
             result.unwrap_or_else(|_| Err(inputs.source.failure(
                 ExecutionFailureKind::Timeout { phase: ExecutionPhase::Startup },
                 "Kernel startup timed out.")))
@@ -289,7 +354,7 @@ async fn supervise(
                             Ok(work) => {
                                 match execute_cells(
                                     work.cells,
-                                    &kernel.language,
+                                    inputs.launch.language(),
                                     channels.as_mut().expect("connected channels"),
                                     process.child.as_mut().expect("spawned child"),
                                     &mut stopped,
@@ -318,9 +383,7 @@ async fn supervise(
         if matches!(failure.kind, ExecutionFailureKind::Cancelled | ExecutionFailureKind::Timeout { .. }
             | ExecutionFailureKind::OutputValidation | ExecutionFailureKind::AssetOutsideBoundary
             | ExecutionFailureKind::AssetMissing | ExecutionFailureKind::AssetCollision));
-    let cleanup = process
-        .cleanup(&mut channels, &kernel, &inputs, interrupt)
-        .await;
+    let cleanup = process.cleanup(&mut channels, &inputs, interrupt).await;
     match outcome {
         Err(mut failure) => {
             failure.diagnostics.splice(0..0, kernel.diagnostics);
@@ -339,7 +402,7 @@ async fn supervise(
                 "The kernel session could not be fully cleaned up.",
             );
             failure.cleanup_diagnostics = cleanup;
-            Err(failure)
+            Err(with_discovery(failure, &kernel.diagnostics))
         }
     }
 }

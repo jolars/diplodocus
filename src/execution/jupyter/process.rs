@@ -1,8 +1,7 @@
 //! Own the process group and private connection file through bounded cleanup.
 
-use std::io::{ErrorKind, Write};
+use std::io::Write;
 use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
-use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use std::time::Duration;
 
@@ -12,9 +11,7 @@ use tempfile::TempDir;
 use tokio::fs;
 use tokio::process::{Child, Command};
 
-use super::FailureSource;
 use super::deadline::within;
-use super::discovery::SelectedKernel;
 use super::session::SessionInputs;
 use super::transport::{Channels, random_token};
 use crate::diagnostics::Diagnostic;
@@ -35,7 +32,6 @@ pub(super) struct KernelProcess {
 impl KernelProcess {
     pub async fn launch(
         &mut self,
-        kernel: &SelectedKernel,
         inputs: &SessionInputs,
     ) -> Result<ConnectionInfo, ExecutionFailure> {
         let fail = |message| {
@@ -64,7 +60,12 @@ impl KernelProcess {
         let working_directory = page
             .parent()
             .ok_or_else(|| fail("The authored page has no working directory."))?;
-        let executable = resolve_executable(kernel, working_directory, &inputs.source).await?;
+        if working_directory != inputs.launch.working_directory() {
+            return Err(inputs.source.failure(
+                ExecutionFailureKind::InputChanged,
+                "The kernel working directory changed after launch resolution.",
+            ));
+        }
         self.directory = Some(
             tempfile::Builder::new()
                 .prefix("diplodocus-kernel-")
@@ -93,7 +94,7 @@ impl KernelProcess {
             hb_port: ports[4],
             signature_scheme: "hmac-sha256".into(),
             key: random_token(&inputs.source)?,
-            kernel_name: Some(kernel.name.clone()),
+            kernel_name: Some(inputs.launch.selector()),
         };
         let bytes = serde_json::to_vec(&connection)
             .map_err(|_| fail("Kernel connection information could not be encoded."))?;
@@ -104,20 +105,21 @@ impl KernelProcess {
             .open(&connection_path)
             .and_then(|mut file| file.write_all(&bytes))
             .map_err(|_| fail("The private kernel connection file could not be written."))?;
-        let connection_path = connection_path
-            .to_str()
-            .ok_or_else(|| fail("The connection file path must be UTF-8."))?;
-        let mut command = Command::new(executable);
-        command
-            .args(
-                kernel
-                    .argv
-                    .iter()
-                    .skip(1)
-                    .map(|argument| argument.replace("{connection_file}", connection_path)),
+        let arguments = inputs
+            .launch
+            .arguments(&connection_path)
+            .map_err(|_| fail("The connection file could not be bound to kernel arguments."))?;
+        inputs.launch.revalidate().await.map_err(|_| {
+            inputs.source.failure(
+                ExecutionFailureKind::InputChanged,
+                "The kernel launch inputs changed before startup.",
             )
-            .envs(&kernel.env)
-            .current_dir(working_directory)
+        })?;
+        let mut command = Command::new(inputs.launch.executable());
+        command
+            .args(arguments.iter().skip(1))
+            .envs(inputs.launch.environment())
+            .current_dir(inputs.launch.working_directory())
             .stdin(Stdio::null())
             .stdout(Stdio::null())
             .stderr(Stdio::null())
@@ -139,14 +141,13 @@ impl KernelProcess {
     pub async fn cleanup(
         &mut self,
         channels: &mut Option<Channels>,
-        kernel: &SelectedKernel,
         inputs: &SessionInputs,
         interrupt: bool,
     ) -> Vec<Diagnostic> {
         let mut diagnostics = Vec::new();
         if interrupt && self.running().unwrap_or(true) {
             let _ = within(Duration::from_millis(inputs.deadlines.interrupt), async {
-                match kernel.interrupt_mode {
+                match inputs.launch.interrupt_mode() {
                     KernelInterruptMode::Message => {
                         if let Some(channels) = channels.as_mut() {
                             tokio::select! {
@@ -285,48 +286,4 @@ impl Drop for KernelProcess {
         // Drop cannot await reaping; the port lease ends after this best-effort kill.
         let _ = self.signal(Signal::KILL);
     }
-}
-
-async fn resolve_executable(
-    kernel: &SelectedKernel,
-    working_directory: &Path,
-    source: &FailureSource,
-) -> Result<PathBuf, ExecutionFailure> {
-    let declared = Path::new(&kernel.argv[0]);
-    let candidates: Vec<_> = if declared.components().count() == 1 && !declared.is_absolute() {
-        kernel
-            .executable_path
-            .as_ref()
-            .map(|paths| {
-                std::env::split_paths(paths)
-                    .map(|path| working_directory.join(path).join(declared))
-                    .collect()
-            })
-            .unwrap_or_default()
-    } else {
-        vec![working_directory.join(declared)]
-    };
-    for candidate in candidates {
-        match fs::metadata(&candidate).await {
-            Ok(metadata) if metadata.is_file() && metadata.permissions().mode() & 0o111 != 0 => {
-                return fs::canonicalize(candidate).await.map_err(|_| {
-                    source.failure(
-                        ExecutionFailureKind::Startup,
-                        "The kernel executable could not be resolved.",
-                    )
-                });
-            }
-            Ok(_) => {}
-            Err(error)
-                if matches!(
-                    error.kind(),
-                    ErrorKind::NotFound | ErrorKind::PermissionDenied | ErrorKind::NotADirectory
-                ) => {}
-            Err(_) => break,
-        }
-    }
-    Err(source.failure(
-        ExecutionFailureKind::Startup,
-        "The configured kernel executable is unavailable or not executable.",
-    ))
 }

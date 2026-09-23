@@ -3,6 +3,7 @@
 mod deadline;
 mod discovery;
 mod execution;
+mod launch;
 mod output;
 mod page;
 mod process;

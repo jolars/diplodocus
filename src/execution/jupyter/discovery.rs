@@ -15,6 +15,8 @@ use crate::execution::{
     ExecutionFailure, ExecutionFailureKind, KernelInterruptMode, KernelSearchClass,
     KernelSearchLocation,
 };
+use crate::ir::Fingerprint;
+use crate::provenance::fingerprint_bytes;
 
 /// A snapshot makes discovery independent of concurrent environment changes.
 pub(super) struct SearchEnvironment {
@@ -96,13 +98,13 @@ fn location(class: KernelSearchClass, ordinal: usize) -> KernelSearchLocation {
 pub(super) struct SelectedKernel {
     pub name: String,
     pub directory: PathBuf,
-    pub argv: Vec<String>,
     pub language: String,
     pub interrupt_mode: KernelInterruptMode,
     pub env: BTreeMap<String, String>,
     pub search: Vec<KernelSearchLocation>,
     pub diagnostics: Vec<Diagnostic>,
     pub executable_path: Option<OsString>,
+    pub spec_observation: Fingerprint,
 }
 
 pub(super) async fn discover_kernel(
@@ -164,8 +166,8 @@ pub(super) async fn discover_kernel(
         if let Some(name) = names.pop() {
             if selected.is_none() {
                 let directory = path.join("kernels").join(name);
-                let spec = read_spec(&directory, source).await?;
-                selected = Some((directory, spec));
+                let (spec, observation) = read_spec(&directory, source).await?;
+                selected = Some((directory, spec, observation));
                 location.selected = true;
             } else {
                 let mut diagnostic = ExecutionFailureKind::Startup
@@ -181,7 +183,7 @@ pub(super) async fn discover_kernel(
         }
         search.push(location);
     }
-    let (directory, spec) = selected
+    let (directory, spec, spec_observation) = selected
         .ok_or_else(|| fail("The configured kernel was not found in the search locations."))?;
     Ok(SelectedKernel {
         name: name.into(),
@@ -192,18 +194,18 @@ pub(super) async fn discover_kernel(
         } else {
             KernelInterruptMode::Signal
         },
-        argv: spec.argv,
         env: spec.env.unwrap_or_default().into_iter().collect(),
         search,
         diagnostics,
         executable_path: environment.path.clone(),
+        spec_observation,
     })
 }
 
 async fn read_spec(
     directory: &Path,
     source: &FailureSource,
-) -> Result<JupyterKernelspec, ExecutionFailure> {
+) -> Result<(JupyterKernelspec, Fingerprint), ExecutionFailure> {
     let fail = |message| source.failure(ExecutionFailureKind::Startup, message);
     let bytes = fs::read(directory.join("kernel.json"))
         .await
@@ -264,7 +266,7 @@ async fn read_spec(
             "The kernelspec environment requires valid names and literal values without variable expansion.",
         ));
     }
-    Ok(spec)
+    Ok((spec, fingerprint_bytes(&bytes)))
 }
 
 pub(super) fn normalize_language(language: &str) -> String {

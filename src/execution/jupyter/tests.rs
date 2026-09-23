@@ -10,6 +10,7 @@ use crate::execution::{ExecutionFailureKind, KernelInterruptMode, KernelSearchCl
 use crate::ir::SourceLocation;
 
 mod fixture;
+mod launch;
 mod pages;
 
 use super::session::start_session;
@@ -37,8 +38,11 @@ fn context(root: &Path) -> ExecutionContext<'static> {
 }
 
 async fn fixture_kernel(root: &Path, mode: &str) -> super::discovery::SelectedKernel {
+    // A small launcher keeps debug-symbol hashing out of protocol timing tests.
+    // Positional arguments preserve the fixture's argv without shell interpolation.
     let value = json!({
-        "argv": [std::env::current_exe().unwrap(), "--exact",
+        "argv": [std::fs::canonicalize("/bin/sh").unwrap(), "-c", "exec \"$@\"",
+            "diplodocus-fixture", std::env::current_exe().unwrap(), "--exact",
             "execution::jupyter::tests::fixture::kernel_process", "--nocapture",
             "--skip={connection_file}"],
         "display_name": "Fixture", "language": "python", "interrupt_mode": "message",
@@ -48,6 +52,20 @@ async fn fixture_kernel(root: &Path, mode: &str) -> super::discovery::SelectedKe
     });
     install(&root.join("first"), "fixture", &value);
     discover_kernel("fixture", &environment(root), &source())
+        .await
+        .unwrap()
+}
+
+async fn edit_kernel(
+    root: &Path,
+    kernel: &super::discovery::SelectedKernel,
+    edit: impl FnOnce(&mut Value),
+) -> super::discovery::SelectedKernel {
+    let path = kernel.directory.join("kernel.json");
+    let mut value: Value = serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
+    edit(&mut value);
+    std::fs::write(path, serde_json::to_vec(&value).unwrap()).unwrap();
+    discover_kernel(&kernel.name, &environment(root), &source())
         .await
         .unwrap()
 }
@@ -278,8 +296,11 @@ async fn startup_accepts_idle_before_reply_and_rejects_stdin() {
 #[tokio::test]
 async fn cancellation_uses_the_declared_signal_mode() {
     let root = TempDir::new().unwrap();
-    let mut kernel = fixture_kernel(root.path(), "normal").await;
-    kernel.interrupt_mode = KernelInterruptMode::Signal;
+    let kernel = fixture_kernel(root.path(), "normal").await;
+    let kernel = edit_kernel(root.path(), &kernel, |spec| {
+        spec["interrupt_mode"] = json!("signal");
+    })
+    .await;
     let session = start_session(kernel, &mut context(root.path()), source())
         .await
         .unwrap();
@@ -342,17 +363,18 @@ async fn shutdown_terminates_descendants_and_escalates_when_term_is_ignored() {
 #[tokio::test]
 async fn launch_resolves_path_before_applying_kernel_environment_overrides() {
     let root = TempDir::new().unwrap();
-    let mut kernel = fixture_kernel(root.path(), "normal").await;
+    let kernel = fixture_kernel(root.path(), "normal").await;
     std::fs::create_dir_all(root.path().join("bin")).unwrap();
     std::os::unix::fs::symlink(
-        std::env::current_exe().unwrap(),
+        std::fs::canonicalize("/bin/sh").unwrap(),
         root.path().join("bin/runtime"),
     )
     .unwrap();
-    kernel.argv[0] = "runtime".into();
-    kernel
-        .env
-        .insert("PATH".into(), "/not-a-runtime-directory".into());
+    let kernel = edit_kernel(root.path(), &kernel, |spec| {
+        spec["argv"][0] = json!("runtime");
+        spec["env"]["PATH"] = json!("/not-a-runtime-directory");
+    })
+    .await;
     start_session(kernel, &mut context(root.path()), source())
         .await
         .unwrap()
@@ -366,13 +388,19 @@ async fn launch_resolves_path_before_applying_kernel_environment_overrides() {
 async fn launch_rejects_missing_executables_invalid_limits_and_escaping_pages() {
     let root = TempDir::new().unwrap();
     let kernel = fixture_kernel(root.path(), "normal").await;
-    let mut invalid = kernel.clone();
-    invalid.argv[0] = "missing-executable".into();
-    let failure = start_session(invalid, &mut context(root.path()), source())
+    let invalid = edit_kernel(root.path(), &kernel, |spec| {
+        spec["argv"][0] = json!("missing-executable");
+    })
+    .await;
+    let failure = start_session(invalid.clone(), &mut context(root.path()), source())
         .await
         .err()
         .unwrap();
     assert_eq!(failure.kind, ExecutionFailureKind::Startup);
+    let kernel = edit_kernel(root.path(), &invalid, |spec| {
+        spec["argv"][0] = json!(std::fs::canonicalize("/bin/sh").unwrap());
+    })
+    .await;
     let mut zero = context(root.path());
     zero.deadlines.startup = 0;
     assert!(

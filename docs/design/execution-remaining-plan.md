@@ -47,10 +47,16 @@ that a missing nested image in an unselected alternative stops the next cell,
 reaps the kernel, and rolls back staged assets. See the
 [output integration evidence](execution-output-integration-validation.md).
 
-The production engine, launch identity binding, post-cleanup input revalidation,
-provenance, and real snapshot/site publication and watching remain integration
-work. The timeout and watched-site checkbox remains open. This checkpoint does
-not establish M6-06 acceptance or change the cache and command gates below.
+The supervisor now consumes the same immutable launch observation used for
+identity, including the resolved executable, arguments, environment, and working
+directory. It revalidates that observation immediately before spawning and keeps
+one startup deadline through resolution and readiness. See the
+[launch integration evidence](execution-launch-integration-validation.md).
+
+The production engine, post-cleanup input revalidation, provenance, and real
+snapshot/site publication and watching remain integration work. The timeout and
+watched-site checkbox remains open. These checkpoints do not establish M6-06
+acceptance or change the cache and command gates below.
 
 ## Starting point
 
@@ -133,8 +139,8 @@ fixture for these six items are in the
 [M6-01R integration contracts](execution-integration-contracts.md). The list
 below records why those decisions were needed at the planning baseline. The
 resumed integration above implements the reducer portions of decisions 1–3 and
-the authored anchor checkpoint in decision 4. It does not establish complete
-consumer acceptance.
+the authored anchor checkpoint and shared launch plan in decision 4. It does not
+establish complete consumer acceptance.
 
 M6-05 acceptance includes the now-integrated shared prepared/result records
 and private accessors, using its reviewed wrappers and accepted M6-04 types.
@@ -172,8 +178,8 @@ both tasks remain unassigned at this closeout.
    resolved launch identity, exact component/build/target observations, and stable
    source/environment bytes. Define their local owner and engine construction
    inputs. The engine projects private discovery/runtime data into identity
-   records. Hash and spawn from the same resolved launch plan: the current
-   process adapter resolves the executable during launch, and the selected
+   records. Hash and spawn from the same resolved launch plan: the original
+   process adapter resolved the executable during launch, and the selected
    kernel's `executable_path` is a captured search path, not the resolved binary.
    Check prepared source against the snapshot before execution. M6-04 must not
    depend on private session types or launch a kernel. Derive exact component
