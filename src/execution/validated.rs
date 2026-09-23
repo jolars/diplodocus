@@ -97,9 +97,12 @@ pub enum ValidatedRepresentationRef<'a> {
 }
 
 // Every final slot owns its values. Producer identities can repeat after updates.
-#[allow(
-    dead_code,
-    reason = "Engine and cache adapters will construct final slot evidence."
+#[cfg_attr(
+    not(target_os = "linux"),
+    allow(
+        dead_code,
+        reason = "The production engine is supported only on Linux."
+    )
 )]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum OwnedRepresentation {
@@ -319,9 +322,12 @@ impl PageExecutionResult {
         &self.staged_assets
     }
 
-    #[allow(
-        dead_code,
-        reason = "The engine will retain only after cleanup and input revalidation."
+    #[cfg_attr(
+        not(target_os = "linux"),
+        allow(
+            dead_code,
+            reason = "The production engine is supported only on Linux."
+        )
     )]
     pub(crate) fn retain(
         validated: ValidatedPage,

@@ -428,8 +428,8 @@ command and watched-site guarantees, which require Milestones 7 through 9.
   The internal incremental reducer retains stable slots, applies page-wide
   updates and clearing, orders validated MIME alternatives, and normalizes
   errors. Its validator boundary now retains safe Markdown/HTML and complete
-  image bindings. Public engine integration remains in the execution
-  implementation design.
+  image bindings. The public engine now composes this validation with supervised
+  cleanup, input revalidation, and portable provenance.
 - [x] Treat ordinary streams as escaped preformatted text. Parse
   `text/markdown`, and explicitly as-is stream output, as isolated document
   fragments with execution disabled.
@@ -452,8 +452,8 @@ command and watched-site guarantees, which require Milestones 7 through 9.
   Reviewed HTML/Markdown validators and shared immutable result records bind
   safe content, typed diagnostics, canonical hashes, and verified image assets.
   The reducer retains those wrappers and nested assets through MIME fallback,
-  display updates, and clearing. Production engine and site-renderer integration
-  remain in their respective steps.
+  display updates, and clearing. The public engine returns these validated
+  records; site-renderer integration remains in its own step.
 - [ ] Add deterministic startup, idle, cell, and shutdown timeouts; interrupt
   failed execution, reap the kernel process, and preserve the last
   successful site during a watched-build failure.

@@ -13,9 +13,10 @@ use tokio::time::Instant;
 use super::FailureSource;
 use super::deadline::{cell_wait, until};
 use super::page::{ExecutedCell, ExecutedCells, skip_reason};
-use super::session::{PendingCell, SessionInputs, Stop};
+use super::session::{PendingCell, SessionFailure, SessionInputs, Stop};
 use super::transport::Channels;
-use crate::diagnostics::{Diagnostic, DiagnosticCode, Severity};
+use crate::diagnostics::DiagnosticSource;
+use crate::execution::output_safety::{DiagnosticAttribution, ExecutionDiagnostic};
 use crate::execution::{
     CellOutcome, ExecutionDeadlines, ExecutionFailure, ExecutionFailureKind, ExecutionPhase,
     PreparedCell,
@@ -26,6 +27,7 @@ use crate::ir::StreamName;
 /// Display IDs and raw tracebacks stay inside this nonserializable adapter model.
 #[derive(Debug)]
 pub(super) enum CellEvent {
+    Warning(ExecutionDiagnostic),
     Stream {
         name: StreamName,
         text: String,
@@ -66,10 +68,12 @@ pub(super) async fn execute_cells(
     stopped: &mut oneshot::Receiver<Stop>,
     inputs: &SessionInputs,
     output: &mpsc::Sender<PendingCell>,
-) -> Result<ExecutedCells, ExecutionFailure> {
+) -> Result<ExecutedCells, SessionFailure> {
     let mut result = ExecutedCells::default();
     for cell in cells {
         let source = inputs.source.for_cell(&cell);
+        let mut current_warnings = Vec::new();
+        let mut consumer_failure = false;
         let execution = async {
             let completed = if let Some(reason) = skip_reason(&cell, language) {
                 ExecutedCell {
@@ -79,7 +83,7 @@ pub(super) async fn execute_cells(
                 }
             } else {
                 channels
-                    .execute_cell(&cell, inputs.deadlines, &source, &mut result.diagnostics)
+                    .execute_cell(&cell, inputs.deadlines, &source, &mut current_warnings)
                     .await?
             };
             let (accepted, response) = oneshot::channel();
@@ -95,12 +99,14 @@ pub(super) async fn execute_cells(
                         "The output consumer was dropped.",
                     )
                 })?;
-            response.await.map_err(|_| {
+            let accepted = response.await.map_err(|_| {
                 source.failure(
                     ExecutionFailureKind::Cancelled,
                     "The output consumer was dropped.",
                 )
-            })?
+            })?;
+            consumer_failure = accepted.is_err();
+            accepted
         };
         let outcome = tokio::select! {
             biased;
@@ -109,9 +115,22 @@ pub(super) async fn execute_cells(
             result = execution => result,
         };
         match outcome {
-            Ok(cell) => result.cells.push(cell),
-            Err(mut failure) => {
-                failure.diagnostics.splice(0..0, result.diagnostics);
+            Ok(cell) => {
+                result.cells.push(cell);
+                result.diagnostics.extend(
+                    current_warnings
+                        .iter()
+                        .map(|d| d.to_diagnostic(&inputs.source.collection)),
+                );
+                result.protocol_diagnostics.extend(current_warnings);
+            }
+            Err(failure) => {
+                let mut failure: SessionFailure = failure.into();
+                failure.previous = result.protocol_diagnostics;
+                failure.pending = current_warnings;
+                failure.cell = Some(cell.ordinal);
+                failure.consumer = consumer_failure;
+                failure.collection = inputs.source.collection.clone();
                 return Err(failure);
             }
         }
@@ -125,7 +144,7 @@ impl Channels {
         cell: &PreparedCell,
         deadlines: ExecutionDeadlines,
         source: &FailureSource,
-        diagnostics: &mut Vec<Diagnostic>,
+        diagnostics: &mut Vec<ExecutionDiagnostic>,
     ) -> Result<ExecutedCell, ExecutionFailure> {
         let cell_deadline = Instant::now() + Duration::from_millis(deadlines.cell);
         let timed_out = |phase| {
@@ -183,11 +202,11 @@ impl Channels {
                             "The kernel requested interactive input during cell execution.",
                         ));
                     }
-                    unsupported(diagnostics, source);
+                    unsupported(diagnostics, &mut events, source, cell.ordinal);
                 }
                 Incoming::Shell(message) => {
                     if !matches_parent(&message, &id) {
-                        unsupported(diagnostics, source);
+                        unsupported(diagnostics, &mut events, source, cell.ordinal);
                         continue;
                     }
                     let JupyterMessageContent::ExecuteReply(response) = message.content else {
@@ -206,7 +225,7 @@ impl Channels {
                             .is_some_and(|values| !values.is_empty())
                         || !message.buffers.is_empty()
                     {
-                        unsupported(diagnostics, source);
+                        unsupported(diagnostics, &mut events, source, cell.ordinal);
                     }
                     if response.status == ReplyStatus::Aborted {
                         return Err(source.failure(
@@ -222,11 +241,11 @@ impl Channels {
                 }
                 Incoming::IoPub(message) => {
                     if !matches_parent(&message, &id) || idle {
-                        unsupported(diagnostics, source);
+                        unsupported(diagnostics, &mut events, source, cell.ordinal);
                         continue;
                     }
                     if !message.buffers.is_empty() {
-                        unsupported(diagnostics, source);
+                        unsupported(diagnostics, &mut events, source, cell.ordinal);
                     }
                     match message.content {
                         JupyterMessageContent::Status(status) => match status.execution_state {
@@ -290,7 +309,7 @@ impl Channels {
                         JupyterMessageContent::ClearOutput(clear) => {
                             events.push(CellEvent::Clear { wait: clear.wait })
                         }
-                        _ => unsupported(diagnostics, source),
+                        _ => unsupported(diagnostics, &mut events, source, cell.ordinal),
                     }
                 }
             }
@@ -337,11 +356,25 @@ fn matches_parent(message: &JupyterMessage, id: &str) -> bool {
         .is_some_and(|parent| parent.msg_id == id)
 }
 
-fn unsupported(diagnostics: &mut Vec<Diagnostic>, source: &FailureSource) {
-    let mut diagnostic =
-        ExecutionFailureKind::Protocol.to_diagnostic(&source.collection, source.source.clone());
-    diagnostic.code = DiagnosticCode::UnsupportedKernelMessage;
-    diagnostic.severity = Severity::Warning;
-    diagnostic.message = "An unrelated, late, or unsupported kernel message was ignored.".into();
-    diagnostics.push(diagnostic);
+fn unsupported(
+    diagnostics: &mut Vec<ExecutionDiagnostic>,
+    events: &mut Vec<CellEvent>,
+    source: &FailureSource,
+    cell: usize,
+) {
+    let diagnostic = ExecutionDiagnostic::KernelMessageIgnored {
+        attribution: DiagnosticAttribution {
+            source: Some(DiagnosticSource::Repository {
+                repository: source.source.repository.clone(),
+                path: source.source.path.clone(),
+            }),
+            cell: Some(cell),
+            slot: None,
+            fragment: None,
+            span: source.source.span,
+            related_spans: vec![],
+        },
+    };
+    diagnostics.push(diagnostic.clone());
+    events.push(CellEvent::Warning(diagnostic));
 }

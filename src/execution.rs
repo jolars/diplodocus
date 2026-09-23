@@ -1,4 +1,4 @@
-//! Page-level authored execution contracts and an internal Jupyter runner.
+//! Page-level authored execution contracts and a supervised Jupyter engine.
 //!
 //! The internal Linux adapter executes prepared cells in one supervised session
 //! per page. An internal incremental reducer converts kernel events into typed
@@ -6,8 +6,9 @@
 //! and as-is stdout fragments. A page-scoped asset store validates and stages
 //! PNG, JPEG, and inert SVG figures. A supervised cell-consumption hook prevents
 //! further execution after a fatal output failure. Active HTML and fragment image
-//! validation feeds immutable shared record carriers. The production
-//! [`ExecutionEngine`] implementation remains future work.
+//! validation feeds immutable shared record carriers. On Linux, `JupyterEngine`
+//! implements [`ExecutionEngine`], revalidates inputs after cleanup, and returns
+//! portable provenance with validated output and retained staging files.
 //! [`crate::documents::prepare_collection_document`]
 //! validates collection authority and prepares QMD cells without I/O. Callers
 //! must also authorize the current command before dispatching execution.
@@ -33,10 +34,6 @@ mod failure;
 mod figures;
 pub mod identity;
 #[cfg(target_os = "linux")]
-#[allow(
-    dead_code,
-    reason = "The public engine awaits validated output conversion."
-)]
 mod jupyter;
 mod options;
 pub mod output_safety;
@@ -45,6 +42,8 @@ pub mod validated;
 
 pub use failure::*;
 pub use figures::*;
+#[cfg(target_os = "linux")]
+pub use jupyter::engine::JupyterEngine;
 pub use options::*;
 pub use records::*;
 pub use validated::{

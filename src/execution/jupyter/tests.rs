@@ -9,6 +9,7 @@ use crate::diagnostics::{DiagnosticCode, DiagnosticPath};
 use crate::execution::{ExecutionFailureKind, KernelInterruptMode, KernelSearchClass};
 use crate::ir::SourceLocation;
 
+mod engine;
 mod fixture;
 mod launch;
 mod pages;

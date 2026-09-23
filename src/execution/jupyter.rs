@@ -2,6 +2,7 @@
 
 mod deadline;
 mod discovery;
+pub(super) mod engine;
 mod execution;
 mod launch;
 mod output;

@@ -142,7 +142,7 @@ fn kernel_process() {
                         }
                         JupyterMessageContent::ShutdownRequest(_) => {
                             event(observation, "shutdown");
-                            if matches!(mode.as_str(), "ignore-shutdown" | "ignore-term") { continue; }
+                            if matches!(mode.as_str(), "ignore-shutdown" | "ignore-term" | "execute-ignore-shutdown") { continue; }
                             if mode == "execute-slow-shutdown" {
                                 tokio::time::sleep(std::time::Duration::from_millis(200)).await;
                             }
@@ -211,6 +211,13 @@ async fn execute(
             .unwrap();
         return true;
     }
+    if ordinal == 2 && matches!(mode, "execute-ledger-timeout" | "execute-image-then-hang") {
+        iopub
+            .send(jupyter_protocol::StreamContent::stdout("unrelated").into())
+            .await
+            .unwrap();
+        return true;
+    }
     if matches!(mode, "execute-no-terminal" | "execute-chatty-no-terminal") {
         return true;
     }
@@ -240,12 +247,49 @@ async fn execute(
         .unwrap();
         iopub.send(display.as_child_of(message)).await.unwrap();
     }
-    if mode == "execute-images" {
+    if matches!(
+        mode,
+        "execute-images"
+            | "execute-source-change"
+            | "execute-environment-change"
+            | "execute-image-then-hang"
+    ) {
         let display: jupyter_protocol::DisplayData = serde_json::from_value(json!({
             "data": {"image/svg+xml": "<svg xmlns='http://www.w3.org/2000/svg'><rect width='10' height='10'/></svg>", "text/plain": "a figure"},
             "metadata": {"filename": "../../ignored.svg"}
         })).unwrap();
         iopub.send(display.as_child_of(message)).await.unwrap();
+    }
+    if mode.starts_with("execute-ledger") {
+        for data in [
+            json!({"text/html":"<script>unsafe()</script>", "text/plain":"fallback"}),
+            json!({"text/markdown":"<div>inert</div>"}),
+        ] {
+            iopub
+                .send(jupyter_protocol::StreamContent::stdout("unrelated").into())
+                .await
+                .unwrap();
+            let display: jupyter_protocol::DisplayData =
+                serde_json::from_value(json!({"data":data,"metadata":{}})).unwrap();
+            iopub.send(display.as_child_of(message)).await.unwrap();
+        }
+        if mode == "execute-ledger-fatal" {
+            let display: jupyter_protocol::DisplayData = serde_json::from_value(json!({
+                "data":{"text/markdown":"![missing](absent.png)"},"metadata":{}
+            }))
+            .unwrap();
+            iopub.send(display.as_child_of(message)).await.unwrap();
+        }
+        iopub
+            .send(jupyter_protocol::StreamContent::stdout("unrelated tail").into())
+            .await
+            .unwrap();
+    }
+    if ordinal == 2 && mode == "execute-source-change" {
+        std::fs::write("example.qmd", "Changed while the kernel was running.\n").unwrap();
+    }
+    if ordinal == 2 && mode == "execute-environment-change" {
+        std::fs::write(observation.with_file_name("environment.txt"), "changed").unwrap();
     }
     if matches!(
         mode,
@@ -317,14 +361,16 @@ async fn execute(
     // A terminal event for another request must never advance this page.
     let mut unrelated = message.clone();
     unrelated.header.msg_id = "unrelated-request".into();
-    shell
-        .send(reply.clone().as_child_of(&unrelated))
-        .await
-        .unwrap();
-    iopub
-        .send(Status::idle().as_child_of(&unrelated))
-        .await
-        .unwrap();
+    if !mode.starts_with("execute-ledger") {
+        shell
+            .send(reply.clone().as_child_of(&unrelated))
+            .await
+            .unwrap();
+        iopub
+            .send(Status::idle().as_child_of(&unrelated))
+            .await
+            .unwrap();
+    }
     let idle_first = matches!(
         mode,
         "execute-idle-first" | "execute-no-reply" | "execute-chatty-no-reply"

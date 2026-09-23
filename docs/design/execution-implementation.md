@@ -5,22 +5,23 @@ This decision freezes the division of work after
 [execution interface](../ir/authored-execution.md),
 [output policy](../spikes/authored-execution-contract.md), and
 [cache contract](../spikes/page-execution-cache.md). Those contracts retain their
-requirements. The interfaces below describe implementation work, not completed
-validators or a public engine. The initial shared change adds the unsupported
-display view, missing diagnostic names, an input-change failure, and dependencies.
+requirements. The table below distinguishes implemented boundaries from their
+remaining consumers. The initial shared change added the unsupported display
+view, missing diagnostic names, an input-change failure, and dependencies.
 
 ## Evidence already in production code
 
 | Area | Existing implementation and tests | Remaining boundary |
 | --- | --- | --- |
-| Engine records | `src/execution.rs`, `records.rs`, `failure.rs`; `tests/execution_contract.rs` | The fake engine tests the API and serialization, not production dispatch. |
+| Engine records | `src/execution.rs`, `records.rs`, `failure.rs`; `tests/execution_contract.rs` | Portable records remain untrusted; the public engine returns immutable validated records and owned staging. Command dispatch and cache restoration remain separate. |
+| Public engine | `src/execution/jupyter/engine.rs`; `tests/engine.rs` | Preparation, independent input declarations, observed launch/build/runtime, supervised reduction, cleanup, post-cleanup revalidation, and retention are composed without cache storage. Commands and site publication remain work. |
 | QMD preparation | `documents::prepare_collection_document`; `tests/qmd_preparation.rs` | Reuse validation, origins, eligibility, source order, and exact source. Command authority remains separate. |
 | Discovery and readiness | `src/execution/jupyter/discovery.rs`, `session.rs`; `tests.rs` | Production tests cover explicit selection, malformed/shadowed specs, authentication, readiness ordering, cancellation, process groups, and bounded cleanup. |
-| Launch identity | `src/execution/jupyter/launch.rs`, `process.rs`; `tests/launch.rs` | Discovery binds the selected spec bytes to the immutable identity plan. The supervisor rechecks and spawns from that plan, preserving the original startup deadline. Public engine input snapshots and post-cleanup acceptance remain work. |
+| Launch identity | `src/execution/jupyter/launch.rs`, `process.rs`; `tests/launch.rs` | Discovery binds the selected spec bytes to the immutable identity plan. The supervisor rechecks and spawns from that plan. The public engine snapshots declared inputs before startup and revalidates after cleanup. |
 | Sequential execution | `src/execution/jupyter/execution.rs`, `page.rs`; `tests/pages.rs` | Production tests cover prepared bytes, terminal ordering, correlation, skipped/hidden cells, allowed errors, deadlines, and cleanup. Collected events are private and unvalidated. |
-| Output reduction | `src/execution/jupyter/output.rs` and child modules/tests | Incremental typed slots, page-wide updates and clearing, live Markdown/HTML safety, inline and nested images, normalized errors, typed diagnostics, and final figure validation are implemented. Immutable evidence survives with each final slot. Public engine composition remains work. |
+| Output reduction | `src/execution/jupyter/output.rs` and child modules/tests | Incremental typed slots, page-wide updates and clearing, live Markdown/HTML safety, inline and nested images, normalized errors, typed diagnostics, and final figure validation are implemented. The public engine preserves this evidence through checked final records and retention. |
 | Execution assets | `src/execution/assets.rs` and child modules/tests; `tests/execution_assets.rs` | Image validation, boundary checks, deterministic namespaces, collision detection, cache-byte validation, rollback, and retention are implemented. The session has a supervised cell-consumption hook with protocol tests for incremental staging and stopping on fatal asset failure. |
-| Real kernels | `declared_python_and_r_start_without_submitting_code` and `declared_python_and_r_retain_definitions_and_imports_only_within_a_page` | Both production tests run unconditionally for `python3` and `ir`; the latter executes each page twice. They do not yet prove typed rich output or cache restoration. |
+| Real kernels | Startup and page-state tests plus `jupyter/tests/engine.rs` | Unconditional `python3` and `ir` tests exercise state and validated rich output through the public engine. Cache restoration remains work. |
 | Fragment parsing | `documents::parse_markdown_fragment`; `tests/markdown_fragments.rs`; `jupyter/output/text.rs` | The reducer reuses inert parsing and attribution for Markdown MIME and adjacent as-is stdout, then validates URLs and stages nested images. Cache restoration remains a separate consumer. |
 | Presentation | `src/rendering.rs`, `execution/figures.rs`; `tests/cell_presentation.rs` | Reuse visibility and final selected-figure counting. Tests supply records; they do not prove reduction or site rendering. |
 
@@ -82,9 +83,8 @@ Local image bytes are validated and staged before later cells can overwrite or
 delete their source paths. The `execute_with` hook and asset protocol fixtures
 now prove that a fatal boundary violation in the first cell prevents submission
 of the second. Missing nested images in unselected Markdown/HTML alternatives
-also stop submission and roll back staged assets. M6-06 still composes this hook
-and the live validators into the public engine with input revalidation and
-provenance.
+also stop submission and roll back staged assets. The public engine composes
+this hook and the live validators with input revalidation and provenance.
 
 Keep monotonically increasing slot counters per owning cell. Updates replace all
 surviving registrations, including earlier cells, without changing slot, owning

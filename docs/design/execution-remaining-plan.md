@@ -53,10 +53,16 @@ directory. It revalidates that observation immediately before spawning and keeps
 one startup deadline through resolution and readiness. See the
 [launch integration evidence](execution-launch-integration-validation.md).
 
-The production engine, post-cleanup input revalidation, provenance, and real
-snapshot/site publication and watching remain integration work. The timeout and
-watched-site checkbox remains open. These checkpoints do not establish M6-06
-acceptance or change the cache and command gates below.
+The public Linux `JupyterEngine` now composes preparation checks, the shared
+launch observation, supervised incremental validation, post-cleanup input
+revalidation, portable provenance, and retained assets. Its protocol fixtures
+cover warnings, fatal validation, cancellation, drop, and phase deadlines. Real
+Python/R tests exercise state and validated rich output through the public trait.
+See the [engine integration evidence](execution-engine-validation.md).
+
+Real snapshot/site publication and watching remain integration work, so the
+timeout and watched-site checkbox remains open. This engine checkpoint does not
+change the cache, command, or full milestone acceptance gates below.
 
 ## Starting point
 
@@ -65,13 +71,12 @@ session runner, typed output reducer, inert fragment parser, and content-address
 image staging are implemented. Reuse their tests and extend them through the
 public engine. Do not schedule M6-01, M6-02, or M6-03 again.
 
-The production `ExecutionEngine` implementation and cache module are absent.
-The identity and output-safety modules and shared validated records are present.
-`check`, `build`, and `serve` still return not-implemented errors. Existing real
-Python/R tests prove startup and sequential state, but not public-engine rich
-output or cache restoration. Existing timeout,
-interruption, process-reaping, and staging tests do not prove watched-site
-preservation. These distinctions explain why several roadmap items remain open.
+The production `ExecutionEngine`, identity and output-safety modules, and shared
+validated records are present. The cache module is absent. `check`, `build`, and
+`serve` still return not-implemented errors. Real Python/R tests now prove public
+engine state and rich output, but not cache restoration. Timeout, interruption,
+process-reaping, and staging tests do not prove watched-site preservation. These
+distinctions explain why several roadmap items remain open.
 
 ## Dependencies and assignment order
 

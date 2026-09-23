@@ -418,6 +418,10 @@ are sorted, unique explicit overrides; inherited environment values stay out.
 Engine construction receives all declared canonical repository roots and a
 configuration directory; default cache root is that directory joined with
 `.diplodocus/cache/execution`. Caller staging remains a separate page boundary.
+The first public engine implements the storage-independent subset as
+`JupyterEngine::new(repositories, declared_files)`. It observes the running build
+itself. Configuration-directory and cache-root inputs belong to the later
+storage integration; the current constructor performs no I/O and has no cache.
 Store declared environment file identities separately from their snapshotted
 fingerprints; callers cannot authorize cached digest assertions by populating
 `request.declared_environment_inputs`. Snapshot reads the declared bytes itself

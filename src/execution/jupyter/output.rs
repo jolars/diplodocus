@@ -22,8 +22,7 @@ use crate::execution::{
     validate_figure_options,
 };
 use crate::ir::{
-    AssetReference, CellOutput, CellOutputKind, Fingerprint, OutputRepresentation, Provenance,
-    StreamName,
+    CellOutput, CellOutputKind, Fingerprint, OutputRepresentation, Provenance, StreamName,
 };
 use crate::provenance::fingerprint_bytes;
 
@@ -51,6 +50,13 @@ pub(super) struct OutputCandidate<'a> {
     pub slot: usize,
     pub media_type: &'a str,
     pub data: &'a Value,
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "Kernel metadata is available to validators but ignored by the active policy."
+        )
+    )]
     pub metadata: &'a Map<String, Value>,
     pub context: &'a AuthoredOutputContext,
     pub fragment_ordinal: usize,
@@ -95,7 +101,8 @@ pub(super) struct AcceptedRepresentation {
 pub(super) struct ReducedPage {
     pub cells: Vec<CellExecutionResult>,
     pub diagnostics: Vec<Diagnostic>,
-    pub retained_assets: Vec<AssetReference>,
+    #[cfg(test)]
+    pub retained_assets: Vec<crate::ir::AssetReference>,
     pub assets: Vec<ExecutionAsset>,
     pub slots: Vec<SlotEvidence>,
     pub execution_diagnostics: Vec<ExecutionDiagnostic>,
@@ -151,8 +158,24 @@ impl OutputReducer {
         events: Vec<CellEvent>,
         validator: &mut impl FnMut(OutputCandidate<'_>) -> Result<CandidateValidation, ExecutionFailure>,
     ) -> Result<(), ExecutionFailure> {
+        let protocol_warnings: Vec<_> = events
+            .iter()
+            .filter_map(|event| match event {
+                CellEvent::Warning(diagnostic) => Some(diagnostic.clone()),
+                _ => None,
+            })
+            .collect();
+        let first_diagnostic = self.diagnostics.len();
         let result = self.accept(prepared, outcome, events, validator);
         if let Err(mut failure) = result {
+            let visited = self.diagnostics[first_diagnostic..]
+                .iter()
+                .filter(|diagnostic| {
+                    matches!(diagnostic, ExecutionDiagnostic::KernelMessageIgnored { .. })
+                })
+                .count();
+            self.diagnostics
+                .extend(protocol_warnings.into_iter().skip(visited));
             self.failed = true;
             failure.diagnostics.splice(
                 0..0,
@@ -201,6 +224,10 @@ impl OutputReducer {
         let mut pending_clear = false;
         let mut events = events.into_iter().peekable();
         while let Some(event) = events.next() {
+            if let CellEvent::Warning(diagnostic) = event {
+                self.diagnostics.push(diagnostic);
+                continue;
+            }
             if let CellEvent::Clear { wait } = event {
                 pending_clear = wait;
                 if !wait {
@@ -247,20 +274,26 @@ impl OutputReducer {
                 } if prepared.options.execution.output.value == OutputVisibility::AsIs => {
                     // Transport chunks need not align with Markdown syntax. Only
                     // uninterrupted stdout belongs to the same fragment.
-                    while let Some(CellEvent::Stream {
-                        name: StreamName::Stdout,
-                        ..
-                    }) = events.peek()
-                    {
-                        let Some(CellEvent::Stream { text: next, .. }) = events.next() else {
-                            unreachable!()
-                        };
-                        text.push_str(&next);
+                    let mut warnings = Vec::new();
+                    while matches!(
+                        events.peek(),
+                        Some(
+                            CellEvent::Stream {
+                                name: StreamName::Stdout,
+                                ..
+                            } | CellEvent::Warning(_)
+                        )
+                    ) {
+                        match events.next().unwrap() {
+                            CellEvent::Stream { text: next, .. } => text.push_str(&next),
+                            CellEvent::Warning(diagnostic) => warnings.push(diagnostic),
+                            _ => unreachable!(),
+                        }
                     }
                     output.output.kind = CellOutputKind::Stream {
                         stream: StreamName::Stdout,
                     };
-                    self.rich_output(
+                    let result = self.rich_output(
                         prepared,
                         &mut output,
                         &mut evidence,
@@ -272,7 +305,9 @@ impl OutputReducer {
                             metadata: Map::new(),
                         },
                         validator,
-                    )?;
+                    );
+                    self.diagnostics.extend(warnings);
+                    result?;
                     if output.output.representations.is_empty() {
                         // Rejected fragments still have a faithful escaped-text
                         // fallback; streams cannot be display placeholders.
@@ -330,7 +365,7 @@ impl OutputReducer {
                     }
                     continue;
                 }
-                CellEvent::Clear { .. } => unreachable!(),
+                CellEvent::Clear { .. } | CellEvent::Warning(_) => unreachable!(),
             }
             if let Some(id) = register {
                 self.displays
@@ -486,6 +521,7 @@ impl OutputReducer {
                 .map(|d| d.to_diagnostic(&self.page.collection))
                 .collect(),
             execution_diagnostics: self.diagnostics,
+            #[cfg(test)]
             retained_assets: retained
                 .values()
                 .map(|asset| asset.reference.clone())
@@ -506,6 +542,17 @@ impl OutputReducer {
             },
             None,
         )
+    }
+
+    pub fn diagnostics(&self) -> Vec<Diagnostic> {
+        self.diagnostics
+            .iter()
+            .map(|d| d.to_diagnostic(&self.page.collection))
+            .collect()
+    }
+
+    pub fn cell_count(&self) -> usize {
+        self.cells.len()
     }
 }
 

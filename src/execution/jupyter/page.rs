@@ -1,18 +1,28 @@
 //! Run one prepared page; output validation and publishable records are separate.
 
+#[cfg(test)]
 use super::FailureSource;
+#[cfg(not(test))]
+use super::discovery::normalize_language;
+#[cfg(test)]
 use super::discovery::{SearchEnvironment, SelectedKernel, discover_kernel, normalize_language};
 use super::execution::CellEvent;
+#[cfg(test)]
 use super::session::{KernelRuntime, start_session};
+#[cfg(test)]
 use crate::configuration::ExecutionMode;
 use crate::diagnostics::Diagnostic;
+#[cfg(test)]
 use crate::documents::AuthoredFormat;
+use crate::execution::output_safety::ExecutionDiagnostic;
+use crate::execution::{CellOutcome, CellSkipReason, PreparedCell};
+#[cfg(test)]
 use crate::execution::{
-    CellOutcome, CellSkipReason, ExecutionContext, ExecutionFailure, ExecutionFailureKind,
-    PageExecutionRequest, PreparedCell,
+    ExecutionContext, ExecutionFailure, ExecutionFailureKind, PageExecutionRequest,
 };
 
 /// Local, unvalidated execution evidence, never a publishable page result.
+#[cfg(test)]
 pub(super) struct ExecutedPage {
     pub cells: Vec<ExecutedCell>,
     pub diagnostics: Vec<Diagnostic>,
@@ -31,8 +41,10 @@ pub(super) struct ExecutedCell {
 pub(super) struct ExecutedCells {
     pub cells: Vec<ExecutedCell>,
     pub diagnostics: Vec<Diagnostic>,
+    pub protocol_diagnostics: Vec<ExecutionDiagnostic>,
 }
 
+#[cfg(test)]
 pub(super) async fn execute_page(
     context: ExecutionContext<'_>,
     request: &PageExecutionRequest,
@@ -50,6 +62,7 @@ pub(super) async fn execute_page(
     execute_page_with_environment(context, request, &environment).await
 }
 
+#[cfg(test)]
 pub(super) async fn execute_page_with_environment(
     mut context: ExecutionContext<'_>,
     request: &PageExecutionRequest,
@@ -97,6 +110,7 @@ pub(super) async fn execute_page_with_environment(
     })
 }
 
+#[cfg(test)]
 fn page_source(request: &PageExecutionRequest) -> FailureSource {
     FailureSource {
         collection: request.page.collection.clone(),
@@ -104,6 +118,7 @@ fn page_source(request: &PageExecutionRequest) -> FailureSource {
     }
 }
 
+#[cfg(test)]
 fn validate_request(
     request: &PageExecutionRequest,
     source: &FailureSource,
@@ -152,6 +167,7 @@ pub(super) fn skip_reason(cell: &PreparedCell, language: &str) -> Option<CellSki
     }
 }
 
+#[cfg(test)]
 fn unexecuted(request: &PageExecutionRequest, kernel: Option<SelectedKernel>) -> ExecutedPage {
     let cells = request
         .cells

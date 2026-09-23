@@ -63,6 +63,39 @@ fn asis_joins_only_adjacent_stdout_and_keeps_other_output_literal() {
 }
 
 #[test]
+fn ignored_messages_preserve_asis_chunks_and_warning_order() {
+    let mut reducer = new_reducer();
+    accept_asis(
+        &mut reducer,
+        0,
+        vec![
+            stream(StreamName::Stdout, "<div>"),
+            ignored_message(0),
+            stream(StreamName::Stdout, "inert</div>\n"),
+            ignored_message(0),
+            stream(StreamName::Stderr, "literal"),
+        ],
+    );
+    let result = reducer.finish().unwrap();
+    let outputs = &result.cells[0].outputs;
+    assert_eq!(outputs.len(), 2);
+    assert_eq!(outputs[0].diagnostic_indices, [0]);
+    assert_eq!(text(&outputs[1]), "literal");
+    assert_eq!(
+        result
+            .diagnostics
+            .iter()
+            .map(|d| d.code)
+            .collect::<Vec<_>>(),
+        [
+            DiagnosticCode::UnsupportedAuthoredSyntax,
+            DiagnosticCode::UnsupportedKernelMessage,
+            DiagnosticCode::UnsupportedKernelMessage,
+        ]
+    );
+}
+
+#[test]
 fn every_non_stdout_event_breaks_an_asis_run() {
     for separator in [
         stream(StreamName::Stderr, "warning"),

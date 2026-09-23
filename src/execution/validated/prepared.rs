@@ -46,9 +46,12 @@ impl PreparedExecution {
         &self.context
     }
 
-    #[allow(
-        dead_code,
-        reason = "Preparation capture belongs to the future engine adapter."
+    #[cfg_attr(
+        not(target_os = "linux"),
+        allow(
+            dead_code,
+            reason = "The production engine is supported only on Linux."
+        )
     )]
     pub(crate) fn checked(
         request: PageExecutionRequest,

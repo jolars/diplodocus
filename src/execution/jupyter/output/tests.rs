@@ -4,7 +4,7 @@ use crate::configuration::ExecutionMode;
 use crate::diagnostics::{DiagnosticCode, DiagnosticPath};
 use crate::documents::{AuthoredFormat, prepare_collection_document};
 use crate::execution::{CellSkipReason, ExecutionDefaults, OutputVisibility};
-use crate::ir::{SourceLocation, SourceSpan, StreamName};
+use crate::ir::{AssetReference, SourceLocation, SourceSpan, StreamName};
 use serde_json::json;
 
 mod fragments;
@@ -56,6 +56,22 @@ fn stream(name: StreamName, text: &str) -> CellEvent {
         name,
         text: text.into(),
     }
+}
+
+fn ignored_message(ordinal: usize) -> CellEvent {
+    CellEvent::Warning(ExecutionDiagnostic::KernelMessageIgnored {
+        attribution: DiagnosticAttribution {
+            source: Some(crate::diagnostics::DiagnosticSource::Repository {
+                repository: page().source.repository,
+                path: page().source.path,
+            }),
+            cell: Some(ordinal),
+            slot: None,
+            fragment: None,
+            span: Some(cell(ordinal).cell.span),
+            related_spans: vec![],
+        },
+    })
 }
 
 fn bundle(data: Value) -> MimeBundle {
@@ -219,6 +235,7 @@ fn deferred_clear_waits_for_output_including_updates_and_expires_with_the_cell()
         vec![
             display(Some("shared"), "earlier"),
             CellEvent::Clear { wait: true },
+            ignored_message(0),
         ],
     );
     accept(
@@ -228,6 +245,7 @@ fn deferred_clear_waits_for_output_including_updates_and_expires_with_the_cell()
             display(Some("shared"), "clear me"),
             CellEvent::Clear { wait: true },
             CellEvent::Clear { wait: true },
+            ignored_message(1),
             update(Some("shared"), "new"),
             stream(StreamName::Stdout, "after"),
         ],
@@ -235,6 +253,7 @@ fn deferred_clear_waits_for_output_including_updates_and_expires_with_the_cell()
     let result = reducer.finish().unwrap();
     assert_eq!(text(&result.cells[0].outputs[0]), "new");
     assert_eq!(result.cells[1].outputs.len(), 1);
+    assert_eq!(result.diagnostics.len(), 2);
     assert_eq!(
         (
             result.cells[1].outputs[0].slot,

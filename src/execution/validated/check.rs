@@ -9,9 +9,12 @@ fn require(condition: bool) -> Result<(), RecordValidationError> {
 }
 impl ValidatedPage {
     /// Finalize output evidence while its page-scoped staging owner is still live.
-    #[allow(
-        dead_code,
-        reason = "Engine and cache adapters will finalize through this boundary."
+    #[cfg_attr(
+        not(target_os = "linux"),
+        allow(
+            dead_code,
+            reason = "The production engine is supported only on Linux."
+        )
     )]
     pub(crate) fn checked(
         prepared: &PreparedExecution,
