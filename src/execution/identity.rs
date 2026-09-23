@@ -11,3 +11,5 @@ pub use key::validate_key_input;
 pub use launch::*;
 pub use local::{BuildObservation, IdentityError, RepositoryFile};
 pub use snapshot::*;
+
+pub(crate) use snapshot::validate_prepared;

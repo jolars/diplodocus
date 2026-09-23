@@ -20,6 +20,7 @@ mod warnings;
 
 pub use diagnostics::*;
 pub use fragment::*;
+pub(crate) use html::restore_html_content;
 pub use html::{
     DecodedHtml, HtmlAttribute, HtmlNode, ValidatedHtml, restore_html, validate_html_live,
 };
@@ -179,6 +180,21 @@ pub struct VerifiedAssets {
 }
 
 impl VerifiedAssets {
+    /// Bind checked final records to the current page's live staging owner.
+    pub(crate) fn from_store(
+        store: &mut PageAssetStore,
+        page: &super::ExecutionPage,
+        expected: &[ExecutionAsset],
+    ) -> Result<Self, AssetError> {
+        store.verify_assets(page, expected)?;
+        Ok(Self {
+            assets: expected
+                .iter()
+                .map(|asset| (asset.reference.fingerprint.value.clone(), asset.clone()))
+                .collect(),
+        })
+    }
+
     /// Start an empty table; this grants no trust to any image.
     pub fn new() -> Self {
         Self::default()

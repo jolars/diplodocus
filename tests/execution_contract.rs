@@ -365,32 +365,6 @@ fn error_output() -> ExecutionOutput {
 }
 
 #[tokio::test]
-async fn trait_object_returns_a_complete_page_without_changing_prepared_input() {
-    let request = request();
-    let original = request.clone();
-    let mut record = record(&request);
-    record.cells[0].outputs.push(text_output(0, 0, "12\n"));
-    let expected = record.clone();
-    let engine: Box<dyn ExecutionEngine> = Box::new(FakeEngine {
-        reply: Mutex::new(Some(Ok(PageExecutionResult {
-            record,
-            staged_assets: Vec::new(),
-        }))),
-    });
-    let result = engine.execute_page(context(), &request).await.unwrap();
-    assert_eq!(result.record, expected);
-    assert_eq!(request, original);
-    assert_eq!(result.record.cells[1].outcome, CellOutcome::AllowedError);
-    assert!(result.record.diagnostics.is_empty());
-    assert!(result.record.cells[2].outputs.is_empty());
-    assert!(
-        result.record.cells[2]
-            .submitted_source_fingerprint
-            .is_none()
-    );
-}
-
-#[tokio::test]
 async fn primary_and_cleanup_failures_survive_the_async_boundary() {
     let mut expected = failure(ExecutionFailureKind::Timeout {
         phase: ExecutionPhase::Cell,
@@ -416,10 +390,7 @@ async fn primary_and_cleanup_failures_survive_the_async_boundary() {
 async fn cancellation_is_an_awaited_input_and_needs_no_production_runtime_type() {
     let request = request();
     let engine = FakeEngine {
-        reply: Mutex::new(Some(Ok(PageExecutionResult {
-            record: record(&request),
-            staged_assets: Vec::new(),
-        }))),
+        reply: Mutex::new(Some(Err(failure(ExecutionFailureKind::Protocol)))),
     };
     let mut context = context();
     context.cancellation = Box::pin(ready(()));
@@ -587,14 +558,11 @@ fn staging_paths_stay_out_of_portable_assets_and_provenance() {
     figure.offered_mime_types.insert("image/svg+xml".into());
     figure.selected_mime_type = Some("image/svg+xml".into());
     record.cells[0].outputs.push(figure);
-    let result = PageExecutionResult {
-        record,
-        staged_assets: vec![StagedExecutionAsset {
-            reference,
-            path: PathBuf::from("/private/session-123/figure.svg"),
-        }],
-    };
-    let bytes = serde_json::to_string(&result.record).unwrap();
+    let staged_assets = [StagedExecutionAsset {
+        reference,
+        path: PathBuf::from("/private/session-123/figure.svg"),
+    }];
+    let bytes = serde_json::to_string(&record).unwrap();
     for excluded in [
         "/private",
         "session-123",
@@ -606,10 +574,7 @@ fn staging_paths_stay_out_of_portable_assets_and_provenance() {
         assert!(!bytes.contains(excluded), "{excluded}");
     }
     let restored: PageExecutionRecord = serde_json::from_str(&bytes).unwrap();
-    assert_eq!(
-        restored.assets[0].reference,
-        result.staged_assets[0].reference
-    );
+    assert_eq!(restored.assets[0].reference, staged_assets[0].reference);
     assert_eq!(restored.assets[0].byte_size, 13);
 }
 

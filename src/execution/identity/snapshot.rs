@@ -183,7 +183,10 @@ fn sort_environment(environment: &mut [InputFingerprint]) {
         (&a.source.repository, &a.source.path).cmp(&(&b.source.repository, &b.source.path))
     });
 }
-fn validate_prepared(request: &PageExecutionRequest, source: &[u8]) -> Result<(), IdentityError> {
+pub(crate) fn validate_prepared(
+    request: &PageExecutionRequest,
+    source: &[u8],
+) -> Result<(), IdentityError> {
     if request.page.format != AuthoredFormat::Qmd
         || request.page.mode != ExecutionMode::Execute
         || request.page.page_veto

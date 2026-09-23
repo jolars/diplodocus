@@ -39,26 +39,6 @@ pub struct ExecutionPage {
     pub qmd_policy: String,
 }
 
-/// A completed page transformation and the assets awaiting caller publication.
-///
-/// This local envelope deliberately does not implement serialization. A successful
-/// session has closed its channels and reaped its kernel before returning these
-/// handles. The caller owns retained staging files and must publish or discard
-/// them. The record is evidence, not proof that untrusted assets are safe.
-///
-/// ```compile_fail
-/// use diplodocus::execution::PageExecutionResult;
-/// fn require_serializable<T: serde::Serialize>() {}
-/// require_serializable::<PageExecutionResult>();
-/// ```
-#[derive(Debug, PartialEq, Eq)]
-pub struct PageExecutionResult {
-    /// Portable result without staging paths or transient protocol identities.
-    pub record: PageExecutionRecord,
-    /// One local file per portable asset; order matches the record's asset table.
-    pub staged_assets: Vec<StagedExecutionAsset>,
-}
-
 /// A portable page result; not the canonical execution-cache artifact envelope.
 ///
 /// Producers preserve cell and output order, sort assets by digest, and fix

@@ -5,8 +5,9 @@
 //! outputs through a representation validator, including inert Markdown MIME
 //! and as-is stdout fragments. A page-scoped asset store validates and stages
 //! PNG, JPEG, and inert SVG figures. A supervised cell-consumption hook prevents
-//! further execution after a fatal output failure. HTML and fragment image
-//! safety and the [`ExecutionEngine`] implementation remain future work.
+//! further execution after a fatal output failure. Active HTML and fragment image
+//! validation feeds immutable shared record carriers. The production
+//! [`ExecutionEngine`] implementation remains future work.
 //! [`crate::documents::prepare_collection_document`]
 //! validates collection authority and prepares QMD cells without I/O. Callers
 //! must also authorize the current command before dispatching execution.
@@ -40,11 +41,15 @@ mod jupyter;
 mod options;
 pub mod output_safety;
 mod records;
+pub mod validated;
 
 pub use failure::*;
 pub use figures::*;
 pub use options::*;
 pub use records::*;
+pub use validated::{
+    PageExecutionResult, PreparedExecution, ValidatedPage, ValidatedRepresentationRef,
+};
 
 /// Completion of a page session, including its bounded cleanup.
 pub type ExecutionFuture<'a> =

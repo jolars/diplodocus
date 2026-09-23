@@ -442,6 +442,15 @@ pub fn restore_html(
     if origin.fragment.is_some() || origin.cell_span.start > origin.cell_span.end {
         return Err(RestoreRejection::Structure);
     }
+    restore_html_content(decoded, context, assets)
+}
+
+/// Revalidate content whose caller separately checks current producer attribution.
+pub(crate) fn restore_html_content(
+    decoded: DecodedHtml,
+    context: &AuthoredOutputContext,
+    assets: &VerifiedAssets,
+) -> Result<ValidatedHtml, RestoreRejection> {
     let value =
         validate(&decoded.markup, context, Images::Restore(assets)).map_err(
             |error| match error {

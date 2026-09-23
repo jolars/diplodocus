@@ -130,6 +130,48 @@ pub struct RetainedExecutionAssets {
 }
 
 impl PageAssetStore {
+    /// Check final metadata and bytes without transferring the staging owner.
+    pub(crate) fn verify_assets(
+        &mut self,
+        page: &ExecutionPage,
+        expected: &[ExecutionAsset],
+    ) -> Result<(), AssetError> {
+        let result = (|| {
+            self.require_healthy()?;
+            if page != &self.page {
+                return Err(AssetError::Collision);
+            }
+            if expected.windows(2).any(|pair| {
+                pair[0].reference.fingerprint.value >= pair[1].reference.fingerprint.value
+            }) {
+                return Err(AssetError::Collision);
+            }
+            for asset in expected {
+                if self.assets.get(&asset.reference.fingerprint.value) != Some(asset) {
+                    return Err(AssetError::Collision);
+                }
+            }
+            if expected.is_empty() {
+                return Ok(());
+            }
+            let directory = self.staging_directory()?;
+            for asset in expected {
+                let bytes = files::read_staged(
+                    &directory.join(&asset.reference.fingerprint.value),
+                    &directory,
+                )?;
+                if fingerprint_bytes(&bytes) != asset.reference.fingerprint
+                    || bytes.len() as u64 != asset.byte_size
+                {
+                    return Err(AssetError::Collision);
+                }
+                validate_image_bytes(&asset.media_type, &bytes)?;
+            }
+            Ok(())
+        })();
+        self.remember(result)
+    }
+
     /// Prepare an owner using a canonical repository and absolute output boundary.
     /// The page's normalized source path supplies its working directory and identity.
     pub fn new(
