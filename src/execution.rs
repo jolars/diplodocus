@@ -30,6 +30,7 @@ use crate::ir::{CodeCell, InputFingerprint};
 pub mod assets;
 mod failure;
 mod figures;
+pub mod identity;
 #[cfg(target_os = "linux")]
 #[allow(
     dead_code,
