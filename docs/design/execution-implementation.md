@@ -52,13 +52,14 @@ need no subprocess fixture. New protocol modes are integrated one at a time by
 the engine owner. The Jupyter client's `test-kernel` feature remains a
 development dependency; no additional production fixture transport is needed.
 
-After M6-01 acceptance, start M6-02, M6-03, and M6-04 in the three worker slots.
-M6-05 follows M6-03. M6-06 and M6-07 can run together after the reducer, assets,
-identity, and safety boundaries are accepted: they consume the same records and
-validators, but only M6-06 edits the session. M6-08 joins them, then M6-09 proves
-the public execution core. M6-10 and M6-11 remain blocked on real later command
-and publication implementations. Submission is not acceptance; the lead reviews,
-integrates, validates, and closes each task.
+M6-01, M6-02, and M6-03 have landed. Follow the
+[remaining-work plan](execution-remaining-plan.md) for the current schedule and
+additional shared-interface decisions. M6-04 and M6-05 can proceed in parallel,
+then M6-06 and M6-07 can run together after identity and safety acceptance. Only
+the engine owner edits the session. M6-08 joins them, then M6-09 proves the public
+execution core. M6-10a and M6-10b require real later command and publication
+implementations before M6-11 can close the full gate. Submission is not
+acceptance; the lead reviews, integrates, validates, and closes each task.
 
 ## Output reduction and validation
 
@@ -271,12 +272,14 @@ have a distinct fatal `ExecutionFailureKind::InputChanged`. Existing asset and
 cleanup failure kinds retain their meanings. Specific HTML/SVG warnings survive
 safe fallback; source-asset boundary and missing-file errors never fall back.
 
-## Remaining-checkbox acceptance map
+## Execution acceptance map
 
-The rows follow the unchecked items in TODO.md Milestone 6, in order. No row is
-checked by this decision.
+The rows map implementation to acceptance for TODO.md Milestone 6. Reducer,
+fragment parsing, and asset implementation are now checked in that roadmap;
+their public-engine acceptance remains part of the later tasks. This table does
+not mark the full milestone complete.
 
-| Remaining checkbox | Implementation | Required acceptance |
+| Roadmap requirement | Implementation | Required acceptance |
 | --- | --- | --- |
 | Typed streams/errors/displays/updates/results | M6-02, M6-06 | Protocol-order and cross-cell reducer tests, then public engine snapshots in M6-09 |
 | Escaped streams and isolated Markdown/as-is | M6-02, M6-05 | Adjacent stdout boundaries, inert fragments, URL/image checks, M6-09 snapshots |

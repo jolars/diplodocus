@@ -397,6 +397,11 @@ Keep execution separate from parsing and rendering. Tests should use the
 smallest deterministic kernels and cells that exercise the Jupyter protocol and
 Diplodocus's document transformation.
 
+Follow the [remaining-work plan](docs/design/execution-remaining-plan.md) for
+dependencies, ownership, and acceptance. Identity and output safety precede the
+parallel engine and cache work. The execution-core gate can pass before the
+command and watched-site guarantees, which require Milestones 7 through 9.
+
 - [x] Define the internal `ExecutionEngine` interface, execution context,
   capabilities, requirements, result, diagnostics, assets, and provenance.
 - [x] Implement the Jupyter discovery and startup foundation with
