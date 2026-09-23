@@ -11,9 +11,9 @@ use rustix::process::{Pid, Signal, kill_process_group, test_kill_process_group};
 use tempfile::TempDir;
 use tokio::fs;
 use tokio::process::{Child, Command};
-use tokio::time::timeout;
 
 use super::FailureSource;
+use super::deadline::within;
 use super::discovery::SelectedKernel;
 use super::session::SessionInputs;
 use super::transport::{Channels, random_token};
@@ -145,7 +145,7 @@ impl KernelProcess {
     ) -> Vec<Diagnostic> {
         let mut diagnostics = Vec::new();
         if interrupt && self.running().unwrap_or(true) {
-            let _ = timeout(Duration::from_millis(inputs.deadlines.interrupt), async {
+            let _ = within(Duration::from_millis(inputs.deadlines.interrupt), async {
                 match kernel.interrupt_mode {
                     KernelInterruptMode::Message => {
                         if let Some(channels) = channels.as_mut() {
@@ -178,7 +178,7 @@ impl KernelProcess {
         if self.running().unwrap_or(true)
             && let Some(channels) = channels.as_mut()
         {
-            let _ = timeout(Duration::from_millis(inputs.deadlines.shutdown), async {
+            let _ = within(Duration::from_millis(inputs.deadlines.shutdown), async {
                 channels.shutdown().await?;
                 self.child
                     .as_mut()
@@ -193,7 +193,7 @@ impl KernelProcess {
         if !self.exited().unwrap_or(false) {
             let terminated = self.signal(Signal::TERM).is_ok()
                 && matches!(
-                    timeout(
+                    within(
                         Duration::from_millis(inputs.deadlines.termination),
                         self.wait_for_exit()
                     )
@@ -203,7 +203,7 @@ impl KernelProcess {
             if !terminated {
                 let killed = self.signal(Signal::KILL).is_ok()
                     && matches!(
-                        timeout(
+                        within(
                             Duration::from_millis(inputs.deadlines.forced_exit),
                             self.wait_for_exit()
                         )

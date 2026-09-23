@@ -338,6 +338,11 @@ extend a stalled cell's deadline. Every channel send/read is bounded by its
 current phase. Timeout diagnostics identify the phase and producing source, not
 elapsed wall-clock measurements.
 
+An expired deadline takes precedence over work that becomes ready before its
+next poll. When the cell and terminal-synchronization limits have both elapsed,
+report the earlier deadline; a tie belongs to the cell limit. Synchronous work
+cannot be preempted, but a poll that finishes after its deadline cannot succeed.
+
 On timeout or cancellation, interrupt using the kernelspec's declared mode:
 control-channel `interrupt_request` for `message`, or SIGINT to the owned
 process group for `signal` (the default). Then run the same bounded shutdown

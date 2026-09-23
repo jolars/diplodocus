@@ -70,8 +70,15 @@ fn kernel_process() {
         let mut heartbeat = create_kernel_heartbeat_connection(&info).await.unwrap();
         let mut probes = 0;
         let mut executions = 0;
+        let mut active_request = None;
+        let mut activity = tokio::time::interval(std::time::Duration::from_millis(10));
         loop {
             tokio::select! {
+                _ = activity.tick(), if mode.starts_with("execute-chatty-") && active_request.is_some() => {
+                    let request = active_request.as_ref().unwrap();
+                    iopub.send(jupyter_protocol::StreamContent::stdout("still running\n").as_child_of(request)).await.unwrap();
+                    event(observation, "activity");
+                }
                 message = shell.read() => {
                     let Ok(message) = message else {
                         if mode == "wrong-key" {
@@ -83,6 +90,7 @@ fn kernel_process() {
                     };
                     if matches!(message.content, JupyterMessageContent::ExecuteRequest(_)) && mode.starts_with("execute-") {
                         executions += 1;
+                        active_request = Some(message.clone());
                         if !execute(&mode, observation, executions, &message, &mut shell, &mut iopub, &mut stdin).await {
                             break;
                         }
@@ -203,7 +211,7 @@ async fn execute(
             .unwrap();
         return true;
     }
-    if mode == "execute-no-terminal" {
+    if matches!(mode, "execute-no-terminal" | "execute-chatty-no-terminal") {
         return true;
     }
     if mode == "execute-streams" {
@@ -300,7 +308,10 @@ async fn execute(
         .send(Status::idle().as_child_of(&unrelated))
         .await
         .unwrap();
-    let idle_first = matches!(mode, "execute-idle-first" | "execute-no-reply");
+    let idle_first = matches!(
+        mode,
+        "execute-idle-first" | "execute-no-reply" | "execute-chatty-no-reply"
+    );
     if idle_first {
         iopub
             .send(Status::idle().as_child_of(message))
@@ -323,7 +334,13 @@ async fn execute(
         }
     })
     .await;
-    if mode == "execute-no-idle" || mode == "execute-no-reply" {
+    if matches!(
+        mode,
+        "execute-no-idle"
+            | "execute-no-reply"
+            | "execute-chatty-no-idle"
+            | "execute-chatty-no-reply"
+    ) {
         return true;
     }
     if idle_first {

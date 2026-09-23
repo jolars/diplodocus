@@ -6,9 +6,9 @@ use std::time::Duration;
 
 use tokio::sync::{mpsc, oneshot};
 use tokio::task::JoinHandle;
-use tokio::time::timeout;
 
 use super::FailureSource;
+use super::deadline::within;
 use super::discovery::SelectedKernel;
 use super::execution::execute_cells;
 use super::page::{ExecutedCell, ExecutedCells};
@@ -260,7 +260,7 @@ async fn supervise(
     let outcome = tokio::select! {
         biased;
         _ = &mut stopped => Err(inputs.source.failure(ExecutionFailureKind::Cancelled, "Kernel startup was canceled.")),
-        result = timeout(Duration::from_millis(inputs.deadlines.startup), startup) => {
+        result = within(Duration::from_millis(inputs.deadlines.startup), startup) => {
             result.unwrap_or_else(|_| Err(inputs.source.failure(
                 ExecutionFailureKind::Timeout { phase: ExecutionPhase::Startup },
                 "Kernel startup timed out.")))

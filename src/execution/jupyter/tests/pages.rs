@@ -571,6 +571,75 @@ async fn failures_stop_submission_and_are_attributed_to_the_active_cell() {
 }
 
 #[tokio::test]
+async fn ongoing_output_cannot_extend_cell_or_terminal_deadlines() {
+    for (mode, phase) in [
+        ("execute-chatty-no-terminal", ExecutionPhase::Cell),
+        ("execute-chatty-no-idle", ExecutionPhase::TerminalSync),
+        ("execute-chatty-no-reply", ExecutionPhase::TerminalSync),
+    ] {
+        let root = TempDir::new().unwrap();
+        let kernel = fixture_kernel(root.path(), mode).await;
+        let mut context = context(root.path());
+        context.deadlines.cell = 500;
+        context.deadlines.terminal_sync = 200;
+        let session = start_session(kernel, &mut context, source()).await.unwrap();
+        let failure = tokio::time::timeout(
+            Duration::from_secs(3),
+            session.execute(two_cells().cells, &mut context.cancellation),
+        )
+        .await
+        .expect("Ongoing output must not extend the deadline or cleanup.")
+        .unwrap_err();
+        assert_eq!(
+            failure.kind,
+            ExecutionFailureKind::Timeout { phase },
+            "{mode}"
+        );
+        assert!(failure.cleanup_diagnostics.is_empty(), "{failure:?}");
+        assert_eq!(submitted(root.path()).len(), 1);
+        assert_cleaned(root.path()).await;
+        let events = std::fs::read_to_string(root.path().join("events")).unwrap();
+        let events: Vec<_> = events.lines().collect();
+        assert!(events.contains(&"activity"), "{mode}");
+        let interrupt = events
+            .iter()
+            .position(|event| *event == "interrupt")
+            .unwrap();
+        let shutdown = events
+            .iter()
+            .position(|event| *event == "shutdown")
+            .unwrap();
+        assert!(interrupt < shutdown, "{mode}");
+    }
+}
+
+#[tokio::test]
+async fn the_remaining_cell_deadline_bounds_either_terminal_order() {
+    for mode in ["execute-no-idle", "execute-no-reply"] {
+        let root = TempDir::new().unwrap();
+        let kernel = fixture_kernel(root.path(), mode).await;
+        let mut context = context(root.path());
+        context.deadlines.cell = 200;
+        context.deadlines.terminal_sync = 1_000;
+        let session = start_session(kernel, &mut context, source()).await.unwrap();
+        let failure = session
+            .execute(two_cells().cells, &mut context.cancellation)
+            .await
+            .unwrap_err();
+        assert_eq!(
+            failure.kind,
+            ExecutionFailureKind::Timeout {
+                phase: ExecutionPhase::Cell
+            },
+            "{mode}"
+        );
+        assert_eq!(submitted(root.path()).len(), 1);
+        assert!(failure.cleanup_diagnostics.is_empty());
+        assert_cleaned(root.path()).await;
+    }
+}
+
+#[tokio::test]
 async fn allowed_language_errors_keep_the_same_session_alive() {
     for mode in [
         "execute-error",

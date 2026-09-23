@@ -8,9 +8,10 @@ use jupyter_protocol::{
 use serde_json::{Map, Value};
 use tokio::process::Child;
 use tokio::sync::{mpsc, oneshot};
-use tokio::time::{Instant, sleep_until, timeout};
+use tokio::time::Instant;
 
 use super::FailureSource;
+use super::deadline::{cell_wait, until};
 use super::page::{ExecutedCell, ExecutedCells, skip_reason};
 use super::session::{PendingCell, SessionInputs, Stop};
 use super::transport::Channels;
@@ -77,24 +78,9 @@ pub(super) async fn execute_cells(
                     events: Vec::new(),
                 }
             } else {
-                timeout(
-                    Duration::from_millis(inputs.deadlines.cell),
-                    channels.execute_cell(
-                        &cell,
-                        inputs.deadlines,
-                        &source,
-                        &mut result.diagnostics,
-                    ),
-                )
-                .await
-                .unwrap_or_else(|_| {
-                    Err(source.failure(
-                        ExecutionFailureKind::Timeout {
-                            phase: ExecutionPhase::Cell,
-                        },
-                        "Cell execution timed out.",
-                    ))
-                })?
+                channels
+                    .execute_cell(&cell, inputs.deadlines, &source, &mut result.diagnostics)
+                    .await?
             };
             let (accepted, response) = oneshot::channel();
             output
@@ -141,6 +127,16 @@ impl Channels {
         source: &FailureSource,
         diagnostics: &mut Vec<Diagnostic>,
     ) -> Result<ExecutedCell, ExecutionFailure> {
+        let cell_deadline = Instant::now() + Duration::from_millis(deadlines.cell);
+        let timed_out = |phase| {
+            source.failure(
+                ExecutionFailureKind::Timeout { phase },
+                match phase {
+                    ExecutionPhase::TerminalSync => "Cell terminal synchronization timed out.",
+                    _ => "Cell execution timed out.",
+                },
+            )
+        };
         let protocol_failure = || {
             source.failure(
                 ExecutionFailureKind::Protocol,
@@ -157,9 +153,9 @@ impl Channels {
         }
         .into();
         let id = request.header.msg_id.clone();
-        self.shell
-            .send(request)
+        until(cell_deadline, self.shell.send(request))
             .await
+            .map_err(|_| timed_out(ExecutionPhase::Cell))?
             .map_err(|_| protocol_failure())?;
         let mut reply = None;
         let mut idle = false;
@@ -167,77 +163,133 @@ impl Channels {
         let mut events = Vec::new();
         let mut language_error = false;
         while reply.is_none() || !idle {
-            tokio::select! {
-                biased;
-                _ = async {
-                    if let Some(deadline) = terminal_deadline { sleep_until(deadline).await; }
-                    else { std::future::pending::<()>().await; }
-                } => return Err(source.failure(ExecutionFailureKind::Timeout { phase: ExecutionPhase::TerminalSync }, "Cell terminal synchronization timed out.")),
-                message = self.stdin.read() => {
-                    let message = message.map_err(|_| protocol_failure())?;
+            let (deadline, phase) = cell_wait(cell_deadline, terminal_deadline);
+            let message = until(deadline, async {
+                tokio::select! {
+                    biased;
+                    message = self.stdin.read() => message.map(Incoming::Stdin),
+                    message = self.shell.read() => message.map(Incoming::Shell),
+                    message = self.iopub.read() => message.map(Incoming::IoPub),
+                }
+            })
+            .await
+            .map_err(|_| timed_out(phase))?
+            .map_err(|_| protocol_failure())?;
+            match message {
+                Incoming::Stdin(message) => {
                     if matches!(message.content, JupyterMessageContent::InputRequest(_)) {
-                        return Err(source.failure(ExecutionFailureKind::InputRequested, "The kernel requested interactive input during cell execution."));
+                        return Err(source.failure(
+                            ExecutionFailureKind::InputRequested,
+                            "The kernel requested interactive input during cell execution.",
+                        ));
                     }
                     unsupported(diagnostics, source);
                 }
-                message = self.shell.read() => {
-                    let message = message.map_err(|_| protocol_failure())?;
+                Incoming::Shell(message) => {
                     if !matches_parent(&message, &id) {
                         unsupported(diagnostics, source);
                         continue;
                     }
-                    let JupyterMessageContent::ExecuteReply(response) = message.content else { return Err(protocol_failure()); };
-                    if reply.is_some() || (response.status == ReplyStatus::Error && response.error.is_none())
-                        || (response.status == ReplyStatus::Ok && response.error.is_some()) {
+                    let JupyterMessageContent::ExecuteReply(response) = message.content else {
+                        return Err(protocol_failure());
+                    };
+                    if reply.is_some()
+                        || (response.status == ReplyStatus::Error && response.error.is_none())
+                        || (response.status == ReplyStatus::Ok && response.error.is_some())
+                    {
                         return Err(protocol_failure());
                     }
-                    if !response.payload.is_empty() || response.user_expressions.as_ref().is_some_and(|values| !values.is_empty()) || !message.buffers.is_empty() {
+                    if !response.payload.is_empty()
+                        || response
+                            .user_expressions
+                            .as_ref()
+                            .is_some_and(|values| !values.is_empty())
+                        || !message.buffers.is_empty()
+                    {
                         unsupported(diagnostics, source);
                     }
                     if response.status == ReplyStatus::Aborted {
-                        return Err(source.failure(ExecutionFailureKind::CellError, "The kernel aborted the cell."));
+                        return Err(source.failure(
+                            ExecutionFailureKind::CellError,
+                            "The kernel aborted the cell.",
+                        ));
                     }
                     language_error |= response.status == ReplyStatus::Error;
                     reply = Some(response);
-                    terminal_deadline.get_or_insert_with(|| Instant::now() + Duration::from_millis(deadlines.terminal_sync));
+                    terminal_deadline.get_or_insert_with(|| {
+                        Instant::now() + Duration::from_millis(deadlines.terminal_sync)
+                    });
                 }
-                message = self.iopub.read() => {
-                    let message = message.map_err(|_| protocol_failure())?;
+                Incoming::IoPub(message) => {
                     if !matches_parent(&message, &id) || idle {
                         unsupported(diagnostics, source);
                         continue;
                     }
-                    if !message.buffers.is_empty() { unsupported(diagnostics, source); }
+                    if !message.buffers.is_empty() {
+                        unsupported(diagnostics, source);
+                    }
                     match message.content {
                         JupyterMessageContent::Status(status) => match status.execution_state {
                             ExecutionState::Idle => {
                                 idle = true;
-                                terminal_deadline.get_or_insert_with(|| Instant::now() + Duration::from_millis(deadlines.terminal_sync));
+                                terminal_deadline.get_or_insert_with(|| {
+                                    Instant::now() + Duration::from_millis(deadlines.terminal_sync)
+                                });
                             }
-                            ExecutionState::Busy => {},
+                            ExecutionState::Busy => {}
                             _ => return Err(protocol_failure()),
                         },
-                        JupyterMessageContent::ExecuteInput(_) => {},
-                        JupyterMessageContent::StreamContent(stream) => events.push(CellEvent::Stream {
-                            name: match stream.name { Stdio::Stdout => StreamName::Stdout, Stdio::Stderr => StreamName::Stderr }, text: stream.text,
-                        }),
-                        JupyterMessageContent::DisplayData(display) => events.push(CellEvent::Display {
-                            bundle: MimeBundle { data: serde_json::to_value(display.data).map_err(|_| protocol_failure())?, metadata: display.metadata },
-                            display_id: display.transient.and_then(|value| value.display_id),
-                        }),
-                        JupyterMessageContent::UpdateDisplayData(display) => events.push(CellEvent::UpdateDisplay {
-                            bundle: MimeBundle { data: serde_json::to_value(display.data).map_err(|_| protocol_failure())?, metadata: display.metadata },
-                            display_id: display.transient.display_id,
-                        }),
-                        JupyterMessageContent::ExecuteResult(display) => events.push(CellEvent::Result {
-                            bundle: MimeBundle { data: serde_json::to_value(display.data).map_err(|_| protocol_failure())?, metadata: display.metadata },
-                            display_id: display.transient.and_then(|value| value.display_id),
-                        }),
+                        JupyterMessageContent::ExecuteInput(_) => {}
+                        JupyterMessageContent::StreamContent(stream) => {
+                            events.push(CellEvent::Stream {
+                                name: match stream.name {
+                                    Stdio::Stdout => StreamName::Stdout,
+                                    Stdio::Stderr => StreamName::Stderr,
+                                },
+                                text: stream.text,
+                            })
+                        }
+                        JupyterMessageContent::DisplayData(display) => {
+                            events.push(CellEvent::Display {
+                                bundle: MimeBundle {
+                                    data: serde_json::to_value(display.data)
+                                        .map_err(|_| protocol_failure())?,
+                                    metadata: display.metadata,
+                                },
+                                display_id: display.transient.and_then(|value| value.display_id),
+                            })
+                        }
+                        JupyterMessageContent::UpdateDisplayData(display) => {
+                            events.push(CellEvent::UpdateDisplay {
+                                bundle: MimeBundle {
+                                    data: serde_json::to_value(display.data)
+                                        .map_err(|_| protocol_failure())?,
+                                    metadata: display.metadata,
+                                },
+                                display_id: display.transient.display_id,
+                            })
+                        }
+                        JupyterMessageContent::ExecuteResult(display) => {
+                            events.push(CellEvent::Result {
+                                bundle: MimeBundle {
+                                    data: serde_json::to_value(display.data)
+                                        .map_err(|_| protocol_failure())?,
+                                    metadata: display.metadata,
+                                },
+                                display_id: display.transient.and_then(|value| value.display_id),
+                            })
+                        }
                         JupyterMessageContent::ErrorOutput(error) => {
                             language_error = true;
-                            events.push(CellEvent::Error { name: error.ename, message: error.evalue, traceback: error.traceback });
+                            events.push(CellEvent::Error {
+                                name: error.ename,
+                                message: error.evalue,
+                                traceback: error.traceback,
+                            });
                         }
-                        JupyterMessageContent::ClearOutput(clear) => events.push(CellEvent::Clear { wait: clear.wait }),
+                        JupyterMessageContent::ClearOutput(clear) => {
+                            events.push(CellEvent::Clear { wait: clear.wait })
+                        }
                         _ => unsupported(diagnostics, source),
                     }
                 }
@@ -270,6 +322,12 @@ impl Channels {
             events,
         })
     }
+}
+
+enum Incoming {
+    Stdin(JupyterMessage),
+    Shell(JupyterMessage),
+    IoPub(JupyterMessage),
 }
 
 fn matches_parent(message: &JupyterMessage, id: &str) -> bool {

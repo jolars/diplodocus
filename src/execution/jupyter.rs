@@ -1,5 +1,6 @@
 //! Linux kernel selection and supervised execution of prepared pages.
 
+mod deadline;
 mod discovery;
 mod execution;
 mod output;
