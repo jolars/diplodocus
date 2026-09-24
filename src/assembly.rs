@@ -118,6 +118,21 @@ impl WorkspaceSources {
         &self.paths
     }
 
+    /// Exact selected source files, metadata, and declared environment inputs.
+    /// These local paths are used for output protection and preview watching.
+    pub fn input_paths(&self) -> impl Iterator<Item = PathBuf> + '_ {
+        self.evidence.inputs.iter().flat_map(|(repository, files)| {
+            let root = &self
+                .paths
+                .repositories
+                .iter()
+                .find(|r| &r.id == repository)
+                .expect("observed repository")
+                .path;
+            files.keys().map(move |path| root.join(path.as_str()))
+        })
+    }
+
     /// Reread selected bytes and containment before accepting a later operation.
     ///
     /// This detects ordinary edits, including a later page changing an earlier

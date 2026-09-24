@@ -9,6 +9,11 @@ use crate::assembly::{AssemblyError, assemble_workspace};
 use crate::diagnostics::{Diagnostic, DiagnosticSource, Severity};
 use crate::validation::{ResolutionError, resolve_workspace};
 
+mod pipeline;
+mod preview;
+pub use pipeline::extract_with;
+pub use preview::serve_with;
+
 /// Options for checking a documentation workspace.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CheckOptions {
@@ -42,25 +47,48 @@ pub struct ServeOptions {
 #[derive(Debug, Error)]
 #[non_exhaustive]
 pub enum CommandError {
-    /// Building is not available in the infrastructure milestone.
-    #[error("`diplodocus build` is not implemented yet")]
-    BuildNotImplemented,
     /// Static source assembly failed.
     #[error(transparent)]
     Assembly(#[from] AssemblyError),
     /// Semantic or local reference validation failed.
     #[error(transparent)]
     Resolution(#[from] ResolutionError),
-    /// Serving is not available in the infrastructure milestone.
-    #[error("`diplodocus serve` is not implemented yet")]
-    ServeNotImplemented,
+    /// Portable snapshot publication or loading failed.
+    #[error(transparent)]
+    Snapshot(#[from] crate::snapshots::SnapshotError),
+    /// Site construction, rendering, or publication failed.
+    #[error(transparent)]
+    Site(#[from] crate::site::SiteError),
+    /// Command I/O failed.
+    #[error("command I/O failed: {0}")]
+    Io(#[from] std::io::Error),
+    /// An output would replace declared source inputs or the input snapshot.
+    #[error("output overlaps a declared input")]
+    InputOverlap,
+    /// No execution backend is available on this platform.
+    #[error("authored execution is unsupported on this platform")]
+    UnsupportedExecution,
 }
 
 impl CommandError {
+    /// Cleanup failures that accompany the primary execution failure.
+    pub fn cleanup_diagnostics(&self) -> &[Diagnostic] {
+        fn cleanup(error: &AssemblyError) -> &[Diagnostic] {
+            match error {
+                AssemblyError::Execution(failure) => &failure.cleanup_diagnostics,
+                AssemblyError::Cleanup { cause, .. } => cleanup(cause),
+                _ => &[],
+            }
+        }
+        match self {
+            Self::Assembly(error) => cleanup(error),
+            _ => &[],
+        }
+    }
     /// Portable source diagnostics when the operation reached source validation.
     pub fn diagnostics(&self) -> &[Diagnostic] {
         match self {
-            Self::Assembly(AssemblyError::Diagnostics(diagnostics)) => diagnostics,
+            Self::Assembly(error) => assembly_diagnostics(error),
             Self::Resolution(error) => error.diagnostics(),
             _ => &[],
         }
@@ -75,8 +103,13 @@ pub struct CheckReport {
 }
 
 /// Build a static documentation site.
-pub fn build(_options: BuildOptions) -> Result<(), CommandError> {
-    Err(CommandError::BuildNotImplemented)
+pub fn build(options: BuildOptions) -> Result<(), CommandError> {
+    pipeline::runtime()?.block_on(pipeline::build_attempt(
+        &options,
+        crate::execution::ExecutionDeadlines::default(),
+        Box::pin(preview::termination()),
+    ))?;
+    Ok(())
 }
 
 /// Check a documentation workspace without writing a site.
@@ -122,6 +155,50 @@ pub fn format_diagnostic(diagnostic: &Diagnostic) -> String {
 }
 
 /// Build and serve a documentation site locally.
-pub fn serve(_options: ServeOptions) -> Result<(), CommandError> {
-    Err(CommandError::ServeNotImplemented)
+pub fn serve(options: ServeOptions) -> Result<(), CommandError> {
+    pipeline::runtime()?.block_on(serve_with(
+        options,
+        crate::execution::ExecutionDeadlines::default(),
+        Box::pin(preview::termination()),
+    ))
+}
+
+/// Options for extracting a portable SQLite snapshot.
+#[derive(Debug, Clone)]
+pub struct ExtractOptions {
+    /// Workspace configuration file.
+    pub config: PathBuf,
+    /// Explicit destination, or the configuration-relative default.
+    pub output: Option<PathBuf>,
+}
+/// Options for generating a site without source checkouts or execution.
+#[derive(Debug, Clone)]
+pub struct GenerateOptions {
+    /// Completed portable SQLite snapshot.
+    pub input: PathBuf,
+    /// Destination site directory.
+    pub output: PathBuf,
+}
+/// Execute configured extraction and atomically publish its snapshot.
+pub fn extract(options: ExtractOptions) -> Result<(), CommandError> {
+    pipeline::runtime()?.block_on(extract_with(
+        options,
+        crate::execution::ExecutionDeadlines::default(),
+        Box::pin(preview::termination()),
+    ))?;
+    Ok(())
+}
+/// Generate and atomically publish a site using only a completed snapshot.
+pub fn generate(options: GenerateOptions) -> Result<(), CommandError> {
+    pipeline::generate_attempt(&options.input, &options.output, true)?;
+    Ok(())
+}
+
+fn assembly_diagnostics(error: &AssemblyError) -> &[Diagnostic] {
+    match error {
+        AssemblyError::Diagnostics(diagnostics) => diagnostics,
+        AssemblyError::Execution(failure) => &failure.diagnostics,
+        AssemblyError::Cleanup { cause, .. } => assembly_diagnostics(cause),
+        _ => &[],
+    }
 }

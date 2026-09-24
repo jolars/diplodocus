@@ -1,0 +1,8 @@
+Generate a site using only a completed snapshot
+
+Usage: diplodocus generate [OPTIONS] --input <PATH>
+
+Options:
+      --input <PATH>   Completed SQLite documentation snapshot
+      --output <PATH>  Directory in which to write the generated site [default: ./site]
+  -h, --help           Print help

@@ -24,6 +24,8 @@ fn subcommand_help_is_stable() {
         ("build", "cli/build-help.stdout"),
         ("check", "cli/check-help.stdout"),
         ("serve", "cli/serve-help.stdout"),
+        ("extract", "cli/extract-help.stdout"),
+        ("generate", "cli/generate-help.stdout"),
     ] {
         diplodocus()
             .args([command, "--help"])
@@ -46,32 +48,42 @@ fn version_matches_package_metadata() {
 
 #[test]
 fn commands_accept_their_explicit_options_and_reach_the_library() {
-    for (arguments, snapshot) in [
-        (
-            vec!["build", "--config", "workspace.toml", "--output", "public"],
-            "cli/build-not-implemented.stderr",
-        ),
-        (
-            vec![
-                "serve",
-                "--config",
-                "workspace.toml",
-                "--output",
-                "public",
-                "--host",
-                "0.0.0.0",
-                "--port",
-                "9000",
-            ],
-            "cli/serve-not-implemented.stderr",
-        ),
+    let workspace = support::TestWorkspace::new();
+    for arguments in [
+        vec!["build", "--config", "workspace.toml", "--output", "public"],
+        vec![
+            "serve",
+            "--config",
+            "workspace.toml",
+            "--output",
+            "public",
+            "--host",
+            "127.0.0.1",
+            "--port",
+            "0",
+        ],
+        vec![
+            "extract",
+            "--config",
+            "workspace.toml",
+            "--output",
+            "documentation.sqlite",
+        ],
     ] {
-        diplodocus()
+        let output = std::process::Command::new(cargo_bin("diplodocus"))
             .args(arguments)
-            .assert()
-            .code(1)
-            .stdout_eq("")
-            .stderr_eq(golden(snapshot));
+            .current_dir(workspace.path())
+            .output()
+            .unwrap();
+        assert_eq!(output.status.code(), Some(1));
+        assert!(output.stdout.is_empty());
+        assert!(
+            String::from_utf8(output.stderr)
+                .unwrap()
+                .contains("workspace.toml")
+        );
+        assert!(!workspace.path().join("public").exists());
+        assert!(!workspace.path().join("documentation.sqlite").exists());
     }
 }
 

@@ -128,7 +128,8 @@ pub(crate) struct SlotEvidence {
 ///
 /// A cache record can omit a producer slot for non-Markdown output. The carrier
 /// preserves that absence and merges only known wrapper and diagnostic facts.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct OutputProducer {
     /// Current producing cell, after any display update.
     pub cell: usize,

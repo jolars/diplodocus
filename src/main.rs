@@ -3,7 +3,9 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 
 use clap::{Args, Parser, Subcommand};
-use diplodocus::commands::{self, BuildOptions, CheckOptions, CommandError, ServeOptions};
+use diplodocus::commands::{
+    self, BuildOptions, CheckOptions, CommandError, ExtractOptions, GenerateOptions, ServeOptions,
+};
 
 #[derive(Debug, Parser)]
 #[command(name = "diplodocus", version, about = env!("CARGO_PKG_DESCRIPTION"))]
@@ -18,6 +20,10 @@ enum Command {
     Build(BuildArgs),
     /// Check documentation without writing a site.
     Check(CheckArgs),
+    /// Extract a portable SQLite documentation snapshot.
+    Extract(ExtractArgs),
+    /// Generate a site using only a completed snapshot.
+    Generate(GenerateArgs),
     /// Build and serve a site, rebuilding when declared inputs change.
     Serve(ServeArgs),
 }
@@ -37,6 +43,26 @@ struct CheckArgs {
     /// Path to the workspace configuration file.
     #[arg(long, value_name = "PATH", default_value = "./diplodocus.toml")]
     config: PathBuf,
+}
+
+#[derive(Debug, Args)]
+struct ExtractArgs {
+    /// Path to the workspace configuration file.
+    #[arg(long, value_name = "PATH", default_value = "./diplodocus.toml")]
+    config: PathBuf,
+    /// Snapshot destination (defaults to .diplodocus/documentation.sqlite beside the configuration).
+    #[arg(long, value_name = "PATH")]
+    output: Option<PathBuf>,
+}
+
+#[derive(Debug, Args)]
+struct GenerateArgs {
+    /// Completed SQLite documentation snapshot.
+    #[arg(long, value_name = "PATH")]
+    input: PathBuf,
+    /// Directory in which to write the generated site.
+    #[arg(long, value_name = "PATH", default_value = "./site")]
+    output: PathBuf,
 }
 
 #[derive(Debug, Args)]
@@ -60,7 +86,11 @@ fn main() -> ExitCode {
         Ok(()) => ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("error: {error}");
-            for diagnostic in error.diagnostics() {
+            for diagnostic in error
+                .diagnostics()
+                .iter()
+                .chain(error.cleanup_diagnostics())
+            {
                 eprintln!("{}", commands::format_diagnostic(diagnostic));
             }
             ExitCode::FAILURE
@@ -81,6 +111,14 @@ fn dispatch(cli: Cli) -> Result<(), CommandError> {
             for diagnostic in &report.diagnostics {
                 eprintln!("{}", commands::format_diagnostic(diagnostic));
             }
+        }),
+        Command::Extract(args) => commands::extract(ExtractOptions {
+            config: args.config,
+            output: args.output,
+        }),
+        Command::Generate(args) => commands::generate(GenerateOptions {
+            input: args.input,
+            output: args.output,
         }),
         Command::Serve(args) => commands::serve(ServeOptions {
             config: args.config,

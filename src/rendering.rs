@@ -1,5 +1,11 @@
 //! Rendering of validated site models into static output.
 
+mod html;
+mod publish;
+mod signatures;
+pub use html::render_site;
+pub use publish::{RenderedFile, RenderedSite};
+
 use crate::configuration::ExecutionMode;
 use crate::execution::{
     CellExecutionResult, EffectiveCellOptions, ExecutionFailure, ExecutionOutput, ExecutionPage,

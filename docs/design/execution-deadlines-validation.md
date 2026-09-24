@@ -1,6 +1,8 @@
 # Execution deadline validation
 
-The active request is the compound timeout and watched-site item in `TODO.md`.
+This historical checkpoint covered the compound timeout and watched-site item
+in `TODO.md`. The later [watched-site integration](execution-watched-validation.md)
+provides its command and publication acceptance.
 This change tightens the existing internal Jupyter lifecycle implementation.
 The item remains open: the public production engine and real snapshot, site
 publication, and watched command paths still need implementation and acceptance.

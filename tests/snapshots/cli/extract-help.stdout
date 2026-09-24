@@ -1,0 +1,8 @@
+Extract a portable SQLite documentation snapshot
+
+Usage: diplodocus extract [OPTIONS]
+
+Options:
+      --config <PATH>  Path to the workspace configuration file [default: ./diplodocus.toml]
+      --output <PATH>  Snapshot destination (defaults to .diplodocus/documentation.sqlite beside the configuration)
+  -h, --help           Print help

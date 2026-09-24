@@ -1,6 +1,6 @@
 use super::*;
 
-pub(super) fn references(
+pub(crate) fn references(
     blocks: &[Block],
     generated: Option<SourceSpan>,
     visit: &mut impl FnMut(ReferenceKind, &str, SourceSpan, bool),
@@ -97,7 +97,7 @@ fn inlines_references(
     }
 }
 
-pub(super) fn anchors(blocks: &[Block]) -> BTreeSet<String> {
+pub(crate) fn anchors(blocks: &[Block]) -> BTreeSet<String> {
     let mut anchors = BTreeSet::new();
     collect_anchors(blocks, &mut anchors);
     anchors

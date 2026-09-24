@@ -23,6 +23,33 @@ impl ValidatedPage {
         diagnostics: impl Into<DiagnosticEvidence>,
         store: &mut PageAssetStore,
     ) -> Result<Self, RecordValidationError> {
+        Self::checked_with_assets(prepared, record, evidence, diagnostics, |record| {
+            Ok(VerifiedAssets::from_store(
+                store,
+                &record.page,
+                &record.assets,
+            )?)
+        })
+    }
+
+    /// Recheck all record associations using snapshot bytes verified in memory.
+    pub(crate) fn restored(
+        prepared: &PreparedExecution,
+        record: PageExecutionRecord,
+        evidence: Vec<SlotEvidence>,
+        diagnostics: DiagnosticEvidence,
+        verified: VerifiedAssets,
+    ) -> Result<Self, RecordValidationError> {
+        Self::checked_with_assets(prepared, record, evidence, diagnostics, |_| Ok(verified))
+    }
+
+    fn checked_with_assets(
+        prepared: &PreparedExecution,
+        record: PageExecutionRecord,
+        evidence: Vec<SlotEvidence>,
+        diagnostics: impl Into<DiagnosticEvidence>,
+        verify: impl FnOnce(&PageExecutionRecord) -> Result<VerifiedAssets, RecordValidationError>,
+    ) -> Result<Self, RecordValidationError> {
         let DiagnosticEvidence {
             before,
             execution: diagnostics,
@@ -97,7 +124,7 @@ impl ValidatedPage {
             }
         }
         require(record.assets == assets.into_values().collect::<Vec<_>>())?;
-        let verified = VerifiedAssets::from_store(store, &record.page, &record.assets)?;
+        let verified = verify(&record)?;
         let mut slot_facts: BTreeMap<_, _> = fragment_claims
             .iter()
             .map(|(key, (_, slot))| (SlotFact::Fragment(key.0, key.1), *slot))

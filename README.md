@@ -9,13 +9,16 @@ cross-references, and workspace-wide search.
 
 Diplodocus is under active development. `diplodocus check` parses, extracts,
 resolves references, and validates declared sources without executing cells or
-writing output. Snapshot publication, site generation, and watched serving remain
-in the later milestones described in [`TODO.md`](TODO.md).
+writing output. `extract` publishes a portable SQLite snapshot, and `generate`
+renders that snapshot without source checkouts or language runtimes. `build`
+combines those stages. `serve` watches declared inputs and retains the last
+successful site after a failed rebuild. Remaining work is tracked in
+[`TODO.md`](TODO.md).
 
 The starter [project guide](docs/guide/index.md) and root `diplodocus.toml`
 form the project's own documentation corpus. The [quick start](docs/guide/quick-start.md)
-records the intended build and preview workflow while those commands are
-implemented.
+describes the build and preview workflow. The [snapshot schema](docs/design/snapshot-schema.md)
+documents the portable handoff between extraction and generation.
 
 ## Authored documents
 

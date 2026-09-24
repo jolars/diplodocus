@@ -1,9 +1,8 @@
 # Quick start
 
-The static `check` command works today, including on the acceptance workspace
-below. Build and preview still return a not-implemented error; those examples
-describe the intended MVP workflow. Parser and kernel tests also run from this
-checkout.
+Use `check` to validate declared inputs, `build` to generate a site, and `serve`
+to preview changes. All three commands work on the acceptance workspace and the
+project documentation below.
 
 ## Prepare the declared environment
 
@@ -50,12 +49,12 @@ cargo run --locked -- serve
 
 The default output directory is `site`, and the default preview address is
 `http://127.0.0.1:8000/`. Edit a page in this guide to exercise watched rebuilds.
-A failed rebuild must leave the previous successful site available and print
+A failed rebuild leaves the previous successful site available and prints
 the new diagnostics.
 
 ## Understand execution authority
 
-`check` never executes cells. `build` and `serve` execute only QMD collections
+`check` never executes cells. `extract`, `build`, and `serve` execute only QMD collections
 enabled in configuration. GFM fences and collections without execution settings
 remain display content.
 

@@ -89,7 +89,8 @@ impl AuthoredOutputContext {
 }
 
 /// Identity allocated while the producing fragment's exact bytes are available.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct FragmentIdentity {
     /// Monotonic per-producing-cell ordinal, including replaced outputs.
     pub ordinal: usize,
@@ -98,7 +99,8 @@ pub struct FragmentIdentity {
 }
 
 /// Producing cell and output slot; never a final owning-slot authority key.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct OutputOrigin {
     /// Producing cell ordinal.
     pub cell: usize,
@@ -128,7 +130,8 @@ pub enum Validation<T> {
 }
 
 /// Untrusted, path-independent image metadata used in canonical content.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct AssetUse {
     /// SHA-256 of the exact image bytes.
     pub digest: Fingerprint,
@@ -198,6 +201,31 @@ impl VerifiedAssets {
     /// Start an empty table; this grants no trust to any image.
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Verify snapshot image bytes in memory without creating execution staging.
+    ///
+    /// The owning page supplies the portable namespace. Serialized metadata alone
+    /// cannot establish trust, even when a database fingerprint matches.
+    pub fn verify_bytes(
+        &mut self,
+        context: &AuthoredOutputContext,
+        expected: &ExecutionAsset,
+        bytes: &[u8],
+    ) -> Result<(), RestoreRejection> {
+        if !context.owns_asset(expected)
+            || expected.reference.fingerprint != crate::provenance::fingerprint_bytes(bytes)
+            || expected.byte_size != bytes.len() as u64
+            || super::assets::validate_image_bytes(&expected.media_type, bytes).is_err()
+        {
+            return Err(RestoreRejection::AssetMismatch);
+        }
+        let digest = &expected.reference.fingerprint.value;
+        if self.assets.get(digest).is_some_and(|old| old != expected) {
+            return Err(RestoreRejection::AssetMismatch);
+        }
+        self.assets.insert(digest.clone(), expected.clone());
+        Ok(())
     }
 
     /// Validate digest, namespace, media, size, and bytes through the staging owner.

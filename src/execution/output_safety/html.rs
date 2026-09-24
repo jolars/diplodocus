@@ -8,7 +8,8 @@ use std::cell::Cell;
 use std::collections::BTreeMap;
 
 /// Untrusted canonical HTML payload read by a cache adapter.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct DecodedHtml {
     /// Markup that must pass active validation and an exact canonical comparison.
     pub markup: String,

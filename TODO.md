@@ -421,8 +421,8 @@ command and watched-site guarantees, which require Milestones 7 through 9.
   execution and rendering; validate subcaption counts against final figures.
   The runner consumes prepared evaluation and error options; shared presentation
   views enforce visibility without deleting evidence. Final-output validation
-  checks subcaptions before hiding output. Output conversion and site renderer
-  integration follow in their respective steps.
+  checks subcaptions before hiding output. The site renderer consumes these
+  shared presentation views.
 - [x] Collect stdout, stderr, execution errors, display data, display updates,
   and result MIME bundles into typed `CellOutput` nodes in protocol order.
   The internal incremental reducer retains stable slots, applies page-wide
@@ -453,10 +453,14 @@ command and watched-site guarantees, which require Milestones 7 through 9.
   safe content, typed diagnostics, canonical hashes, and verified image assets.
   The reducer retains those wrappers and nested assets through MIME fallback,
   display updates, and clearing. The public engine returns these validated
-  records; site-renderer integration remains in its own step.
-- [ ] Add deterministic startup, idle, cell, and shutdown timeouts; interrupt
+  records, and snapshot loading revalidates them before site rendering.
+- [x] Add deterministic startup, idle, cell, and shutdown timeouts; interrupt
   failed execution, reap the kernel process, and preserve the last
   successful site during a watched-build failure.
+  Real snapshot publication, site generation, and watched HTTP serving now
+  connect the supervised engine to this failure boundary. See the
+  [timeout and watched-site evidence](docs/design/execution-watched-validation.md)
+  for deadline, cleanup, preservation, and recovery checks.
 - [ ] Implement a page-level execution cache keyed by authored source,
   normalized options, engine and kernel identity, relevant toolchain
   versions, and declared environment fingerprints. Validate cached assets

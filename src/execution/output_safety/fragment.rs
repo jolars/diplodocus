@@ -1,16 +1,19 @@
 //! Storage-independent, untrusted generated Markdown trees.
 use super::AssetUse;
 use crate::ir::{Attributes, CalloutKind, SourceSegment, SourceSpan, TableAlignment};
+use serde::{Deserialize, Serialize};
 
 /// Decoded canonical Markdown content; construction grants no rendering trust.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct DecodedMarkdown {
     /// Inert output blocks with typed, still unverified image uses.
     pub blocks: Vec<FragmentBlock>,
 }
 
 /// A block in an authored document.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum FragmentBlock {
     /// Paragraph content.
     Paragraph {
@@ -96,7 +99,8 @@ pub enum FragmentBlock {
 }
 
 /// One list item.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct FragmentListItem {
     /// Task state when the item has a checkbox.
     pub checked: Option<bool>,
@@ -107,7 +111,8 @@ pub struct FragmentListItem {
 }
 
 /// One table row.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct FragmentTableRow {
     /// Whether this is a header row.
     pub header: bool,
@@ -118,7 +123,8 @@ pub struct FragmentTableRow {
 }
 
 /// One table cell.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct FragmentTableCell {
     /// Cell content as blocks.
     pub blocks: Vec<FragmentBlock>,
@@ -127,7 +133,8 @@ pub struct FragmentTableCell {
 }
 
 /// FragmentInline authored content.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum FragmentInline {
     /// Decoded text.
     Text {

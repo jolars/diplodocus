@@ -3,10 +3,12 @@ Build coherent documentation websites for polyglot software projects.
 Usage: diplodocus <COMMAND>
 
 Commands:
-  build  Build a static documentation site
-  check  Check documentation without writing a site
-  serve  Build and serve a site, rebuilding when declared inputs change
-  help   Print this message or the help of the given subcommand(s)
+  build     Build a static documentation site
+  check     Check documentation without writing a site
+  extract   Extract a portable SQLite documentation snapshot
+  generate  Generate a site using only a completed snapshot
+  serve     Build and serve a site, rebuilding when declared inputs change
+  help      Print this message or the help of the given subcommand(s)
 
 Options:
   -h, --help     Print help

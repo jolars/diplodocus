@@ -69,11 +69,15 @@ reference resolution, relationship validation, and checked-in asset collection
 now feed the real static `check` command. Executed resolution also collects final
 generated assets and checks semantic references in generated Markdown. See the
 [resolution and check evidence](workspace-resolution-validation.md). Snapshot
-storage, generation, and watched publication remain work.
+storage, generation, and watched publication were still missing at that checkpoint.
 
-Real snapshot/site publication and watching remain integration work, so the
-timeout and watched-site checkbox remains open. This engine checkpoint does not
-change the cache, command, or full milestone acceptance gates below.
+The resumed integration now provides real SQLite snapshot publication, safe
+source-independent generation, and watched HTTP preview. A live Python timeout
+test verifies unchanged snapshot and site bytes, continued HTTP serving, kernel
+reaping, connection cleanup, and recovery on the next valid edit. See the
+[watched-site evidence](execution-watched-validation.md) and
+[snapshot schema](snapshot-schema.md). This completes the compound timeout and
+watched-site behavior without claiming the cache or full milestone exit gates.
 
 ## Starting point
 
@@ -82,12 +86,13 @@ session runner, typed output reducer, inert fragment parser, and content-address
 image staging are implemented. Reuse their tests and extend them through the
 public engine. Do not schedule M6-01, M6-02, or M6-03 again.
 
-The production `ExecutionEngine`, identity and output-safety modules, and shared
-validated records are present. The cache module is absent. `check`, `build`, and
-`serve` still return not-implemented errors. Real Python/R tests now prove public
-engine state and rich output, but not cache restoration. Timeout, interruption,
-process-reaping, and staging tests do not prove watched-site preservation. These
-distinctions explain why several roadmap items remain open.
+At the planning baseline, the production `ExecutionEngine`, identity and
+output-safety modules, and shared validated records were present, while the cache
+and command implementations were absent. The resumed integration above records
+the later command implementation. The cache module remains absent. Real Python/R
+tests prove public engine state and rich output, but not cache restoration.
+Watched-site preservation now has separate integration evidence, described
+above. The cache and full milestone acceptance gates remain open.
 
 ## Dependencies and assignment order
 

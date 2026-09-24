@@ -14,6 +14,7 @@ use crate::ir::*;
 use crate::provenance::fingerprint_bytes;
 
 mod walk;
+pub(crate) use walk::{anchors as document_anchors, references as document_references};
 
 /// A document's semantic owner, independent of its rendered URL.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]

@@ -41,6 +41,7 @@ pyproject-toml = "=0.13.7"
 rd-ast = { version = "=0.4.0", default-features = false }
 rd-source = "=0.4.0"
 roxmltree = "=0.21.1"
+rusqlite = { version = "=0.40.2", default-features = false, features = ["bundled"] }
 ruff_python_ast = "=0.0.14"
 ruff_python_parser = "=0.0.14"
 ruff_text_size = "=0.0.14"
@@ -51,7 +52,7 @@ sha2 = "0.11"
 svgtypes = "=0.16.1"
 tempfile = "3.27"
 thiserror = "2.0"
-tokio = { version = "1.36", features = ["fs", "macros", "net", "process", "rt", "sync", "time"] }
+tokio = { version = "1.36", features = ["fs", "macros", "net", "process", "rt-multi-thread", "sync", "time", "signal", "io-util"] }
 toml = "=1.1.6"
 url = "=2.5.8"
 zune-core = "=0.5.3"

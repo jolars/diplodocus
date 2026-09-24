@@ -6,7 +6,8 @@ use crate::diagnostics::{
 use crate::ir::SourceSpan;
 
 /// Portable attribution in either authored-page or generated-fragment coordinates.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct DiagnosticAttribution {
     /// Authored page for page/cell diagnostics, absent for generated fragments.
     pub source: Option<DiagnosticSource>,
@@ -47,7 +48,8 @@ impl DiagnosticAttribution {
 }
 
 /// Why an HTML candidate failed the active policy.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub enum HtmlRejectionReason {
     /// Unsupported element or namespace.
     Element,
@@ -61,7 +63,8 @@ pub enum HtmlRejectionReason {
     Structure,
 }
 /// Why a Markdown candidate failed the active policy.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub enum MarkdownRejectionReason {
     /// Forbidden or malformed URL.
     Url,
@@ -72,7 +75,8 @@ pub enum MarkdownRejectionReason {
 }
 
 /// Closed producing-warning catalog shared by live output and cache projection.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub enum ExecutionDiagnostic {
     /// The kernel sent an unsupported message.
     KernelMessageIgnored {

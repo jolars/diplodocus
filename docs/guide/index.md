@@ -4,10 +4,10 @@ Diplodocus brings related Python and R packages into one documentation site.
 Authored guides, API references, navigation, conceptual API groups, and search
 share the same workspace.
 
-The project is under development. Static `check` works today, and the library
-can execute authorized Python and R pages. Site generation and watched serving
-remain unimplemented. The build and preview examples specify the intended MVP
-workflow.
+The project is under development. `check` validates sources without execution.
+`build` executes authorized Python and R pages, publishes a portable SQLite
+snapshot, and generates the site. `serve` watches declared inputs and keeps the
+last successful site available if a rebuild fails.
 
 Start with the [quick start](quick-start.md), read about
 [workspace configuration](configuration.md), or consult the [commands](cli.md).
