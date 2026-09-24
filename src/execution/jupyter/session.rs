@@ -44,6 +44,54 @@ pub(super) struct KernelSession {
 }
 
 impl KernelSession {
+    /// Keep cancellation and the process supervisor live while read-only cache
+    /// work runs. Join the worker before returning a failure or starting cells.
+    pub async fn supervise<T, F>(
+        mut self,
+        work: F,
+        cancellation: &mut ExecutionCancellation<'_>,
+    ) -> Result<(Self, T), ExecutionFailure>
+    where
+        F: Future<Output = T>,
+    {
+        tokio::pin!(work);
+        tokio::select! {
+            biased;
+            _ = cancellation => {
+                self.handle.stop(Stop::Cancel);
+                let _ = work.await;
+                let result = self.handle.finish().await;
+                Err(result.err().unwrap_or_else(|| self.handle.source.failure(ExecutionFailureKind::Cancelled, "Page execution was canceled.")))
+            }
+            result = &mut self.handle.task => {
+                let _ = work.await;
+                Err(match result {
+                    Ok(Err(failure)) => failure.into_failure(),
+                    _ => self.handle.source.failure(ExecutionFailureKind::Protocol, "The kernel stopped during cache validation."),
+                })
+            }
+            result = &mut work => Ok((self, result)),
+        }
+    }
+
+    pub async fn shutdown_with_cancellation(
+        mut self,
+        cancellation: &mut ExecutionCancellation<'_>,
+    ) -> Result<(), ExecutionFailure> {
+        self.handle.stop(Stop::Shutdown);
+        tokio::select! {
+            biased;
+            _ = cancellation => {
+                let mut failure = self.handle.source.failure(ExecutionFailureKind::Cancelled, "Page execution was canceled.");
+                if let Err(cleanup) = self.handle.finish().await {
+                    failure.cleanup_diagnostics.extend(cleanup.diagnostics);
+                    failure.cleanup_diagnostics.extend(cleanup.cleanup_diagnostics);
+                }
+                Err(failure)
+            }
+            result = self.handle.finish() => result,
+        }
+    }
     #[cfg(test)]
     pub async fn execute(
         self,

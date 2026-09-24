@@ -30,6 +30,8 @@ use serde::{Deserialize, Serialize};
 use crate::ir::{CodeCell, InputFingerprint};
 
 pub mod assets;
+#[cfg(target_os = "linux")]
+mod cache;
 mod failure;
 mod figures;
 pub mod identity;

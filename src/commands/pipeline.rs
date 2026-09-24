@@ -157,6 +157,16 @@ fn protect_sources(
     output: &Path,
 ) -> Result<(), CommandError> {
     reject_overlap(output, config)?;
+    let cache = sources
+        .paths()
+        .configuration_directory
+        .join(".diplodocus/cache/execution");
+    // The cache rejects symlinked roots itself. Compare its reserved location
+    // without inspecting cache storage on disabled execution paths.
+    let destination = absolute(output)?;
+    if destination.starts_with(&cache) || cache.starts_with(&destination) {
+        return Err(CommandError::InputOverlap);
+    }
     for input in sources
         .input_paths()
         .chain(resolved.input_paths().map(Path::to_owned))

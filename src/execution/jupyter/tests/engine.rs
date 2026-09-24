@@ -553,3 +553,295 @@ async fn public_engine_rejects_ineligible_pages_before_reading_source_or_discove
         assert!(!root.path().join("assets").exists());
     }
 }
+
+#[tokio::test]
+async fn cache_hit_restores_assets_without_submitting_cells() {
+    let root = TempDir::new().unwrap();
+    fixture_kernel(root.path(), "execute-images").await;
+    let engine = engine(root.path()).with_cache_root(root.path().join("cache"));
+    let (context, input) = request(root.path(), SOURCE);
+    let first = engine.execute_page(context, &input).await.unwrap();
+    let submitted = std::fs::read(root.path().join("requests")).unwrap();
+    let bytes = std::fs::read(&first.staged_assets()[0].path).unwrap();
+    std::fs::remove_dir_all(root.path().join("assets")).unwrap();
+    let (context, input) = request(root.path(), SOURCE);
+    let second = engine.execute_page(context, &input).await.unwrap();
+    assert_eq!(
+        std::fs::read(root.path().join("requests")).unwrap(),
+        submitted
+    );
+    assert_eq!(
+        std::fs::read(&second.staged_assets()[0].path).unwrap(),
+        bytes
+    );
+    let mut expected = serde_json::to_value(first.validated().record()).unwrap();
+    let actual = serde_json::to_value(second.validated().record()).unwrap();
+    // Only activity origin changes when the complete producing result is restored.
+    fn mark_cached(value: &mut Value) {
+        match value {
+            Value::Object(fields) => {
+                if fields.get("origin") == Some(&json!("executed")) {
+                    fields.insert("origin".into(), json!("cache"));
+                }
+                fields.values_mut().for_each(mark_cached);
+            }
+            Value::Array(values) => values.iter_mut().for_each(mark_cached),
+            _ => {}
+        }
+    }
+    mark_cached(&mut expected);
+    assert_eq!(actual, expected);
+    assert_reaped(root.path()).await;
+}
+
+fn cache_manifest(root: &Path) -> PathBuf {
+    let mut entries = std::fs::read_dir(root.join("cache/v1/sha256")).unwrap();
+    entries
+        .next()
+        .unwrap()
+        .unwrap()
+        .path()
+        .join("manifest.json")
+}
+
+#[tokio::test]
+async fn cache_rejection_reexecutes_once_and_never_falls_back_on_failure() {
+    for fails in [false, true] {
+        let root = TempDir::new().unwrap();
+        fixture_kernel(root.path(), "execute-images").await;
+        let engine = engine(root.path()).with_cache_root(root.path().join("cache"));
+        let (context, input) = request(root.path(), SOURCE);
+        let first = engine.execute_page(context, &input).await.unwrap();
+        let manifest = cache_manifest(root.path());
+        let value: Value = serde_json::from_slice(&std::fs::read(&manifest).unwrap()).unwrap();
+        let asset = manifest.parent().unwrap().join("assets/sha256").join(
+            value["result"]["assets"][0]["digest"]
+                .as_str()
+                .unwrap()
+                .strip_prefix("sha256:")
+                .unwrap(),
+        );
+        write(&asset, "corrupt asset");
+        std::fs::remove_dir_all(root.path().join("assets")).unwrap();
+        if fails {
+            write(root.path().join("fail-execution"), "fail");
+        }
+        let (context, input) = request(root.path(), SOURCE);
+        let result = engine.execute_page(context, &input).await;
+        let diagnostics = if fails {
+            let failure = result.unwrap_err();
+            assert_eq!(failure.kind, ExecutionFailureKind::Protocol);
+            assert_eq!(std::fs::read(&asset).unwrap(), b"corrupt asset");
+            failure.diagnostics
+        } else {
+            let result = result.unwrap();
+            let mut actual = result.validated().portable_record();
+            assert_eq!(
+                actual.diagnostics.remove(0).code,
+                DiagnosticCode::InvalidExecutionCache
+            );
+            // Current warnings shift references, but never enter the cache ledger.
+            for cell in &mut actual.cells {
+                for output in &mut cell.outputs {
+                    for index in &mut output.diagnostic_indices {
+                        *index -= 1;
+                    }
+                }
+            }
+            assert_eq!(&actual, first.validated().record());
+            result.validated().record().diagnostics.clone()
+        };
+        assert_eq!(
+            diagnostics
+                .iter()
+                .filter(|d| d.code == DiagnosticCode::InvalidExecutionCache)
+                .count(),
+            1
+        );
+        assert_eq!(
+            std::fs::read_to_string(root.path().join("requests"))
+                .unwrap()
+                .lines()
+                .count(),
+            if fails { 3 } else { 4 }
+        );
+        assert_reaped(root.path()).await;
+    }
+}
+
+#[tokio::test]
+async fn cache_hit_replays_warnings_with_current_discovery_offset() {
+    let root = TempDir::new().unwrap();
+    let kernel = fixture_kernel(root.path(), "execute-ledger-order").await;
+    let spec: Value =
+        serde_json::from_slice(&std::fs::read(kernel.directory.join("kernel.json")).unwrap())
+            .unwrap();
+    install(&root.path().join("second"), "fixture", &spec);
+    let engine = engine(root.path()).with_cache_root(root.path().join("cache"));
+    let (context, input) = request(root.path(), SOURCE);
+    let first = engine.execute_page(context, &input).await.unwrap();
+    let (context, input) = request(root.path(), SOURCE);
+    let second = engine.execute_page(context, &input).await.unwrap();
+    assert_eq!(
+        first.validated().diagnostics(),
+        second.validated().diagnostics()
+    );
+    assert_eq!(
+        first.validated().record().cells,
+        second.validated().record().cells
+    );
+    assert_eq!(
+        first.validated().record().diagnostics,
+        second.validated().record().diagnostics
+    );
+    assert_eq!(second.validated().execution_diagnostic_offset(), 1);
+    assert_eq!(
+        std::fs::read_to_string(root.path().join("requests"))
+            .unwrap()
+            .lines()
+            .count(),
+        2
+    );
+    assert_reaped(root.path()).await;
+}
+
+#[tokio::test]
+async fn cache_invalidates_prose_runtime_and_declared_environment() {
+    let root = TempDir::new().unwrap();
+    fixture_kernel(root.path(), "execute-images").await;
+    write(root.path().join("environment.txt"), "first");
+    let engine = JupyterEngine::new(
+        BTreeMap::from([("docs".into(), root.path().to_owned())]),
+        vec![RepositoryFile::new("docs", Path::new("environment.txt")).unwrap()],
+    )
+    .with_search_environment(environment(root.path()))
+    .with_cache_root(root.path().join("cache"));
+    for round in 0..5 {
+        if round == 2 {
+            write(root.path().join("runtime-version"), "3.1");
+        }
+        if round == 3 {
+            write(root.path().join("environment.txt"), "second");
+        }
+        let source = if round == 0 {
+            SOURCE.into()
+        } else {
+            format!("Edited prose.\n\n{SOURCE}")
+        };
+        let (context, mut input) = request(root.path(), &source);
+        input.declared_environment_inputs.push(InputFingerprint {
+            source: SourceLocation {
+                repository: "docs".into(),
+                path: "environment.txt".try_into().unwrap(),
+                span: None,
+            },
+            fingerprint: fingerprint_bytes(
+                &std::fs::read(root.path().join("environment.txt")).unwrap(),
+            ),
+        });
+        let result = engine.execute_page(context, &input).await.unwrap();
+        assert!(
+            result
+                .validated()
+                .record()
+                .diagnostics
+                .iter()
+                .all(|d| d.code != DiagnosticCode::ExecutionCacheUnavailable)
+        );
+        let expected = if round == 4 { 8 } else { (round + 1) * 2 };
+        assert_eq!(
+            std::fs::read_to_string(root.path().join("requests"))
+                .unwrap()
+                .lines()
+                .count(),
+            expected
+        );
+    }
+    assert_reaped(root.path()).await;
+}
+
+#[tokio::test]
+async fn cache_work_remains_supervised_and_is_joined_before_failure() {
+    use std::sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    };
+    for cancel in [true, false] {
+        let root = TempDir::new().unwrap();
+        let kernel = fixture_kernel(root.path(), "normal").await;
+        let mut context = context(root.path());
+        let session = start_session(kernel, &mut context, super::source())
+            .await
+            .unwrap();
+        let completed = Arc::new(AtomicBool::new(false));
+        let flag = completed.clone();
+        let work = async move {
+            tokio::time::sleep(Duration::from_millis(100)).await;
+            flag.store(true, Ordering::SeqCst);
+        };
+        if cancel {
+            context.cancellation = Box::pin(async {
+                tokio::time::sleep(Duration::from_millis(10)).await;
+            });
+        } else {
+            let observed = observation(root.path());
+            let pid =
+                rustix::process::Pid::from_raw(observed["pid"].as_i64().unwrap() as i32).unwrap();
+            rustix::process::kill_process(pid, rustix::process::Signal::KILL).unwrap();
+        }
+        let result = session.supervise(work, &mut context.cancellation).await;
+        let failure = match result {
+            Err(failure) => failure,
+            Ok(_) => panic!("cache work survived cancellation or child death"),
+        };
+        assert_eq!(
+            failure.kind,
+            if cancel {
+                ExecutionFailureKind::Cancelled
+            } else {
+                ExecutionFailureKind::Protocol
+            }
+        );
+        assert!(completed.load(Ordering::SeqCst));
+        assert!(!root.path().join("requests").exists());
+        assert_reaped(root.path()).await;
+    }
+}
+
+#[tokio::test]
+async fn cache_hit_requires_current_inputs_and_successful_asset_staging() {
+    for change_source in [true, false] {
+        let root = TempDir::new().unwrap();
+        fixture_kernel(root.path(), "execute-images").await;
+        let engine = engine(root.path()).with_cache_root(root.path().join("cache"));
+        let (context, input) = request(root.path(), SOURCE);
+        engine.execute_page(context, &input).await.unwrap();
+        let manifest = cache_manifest(root.path());
+        let original = std::fs::read(&manifest).unwrap();
+        std::fs::remove_dir_all(root.path().join("assets")).unwrap();
+        if change_source {
+            write(root.path().join("mutate-on-shutdown"), "change");
+        } else {
+            write(root.path().join("assets"), "sentinel");
+        }
+        let (context, input) = request(root.path(), SOURCE);
+        let failure = engine.execute_page(context, &input).await.unwrap_err();
+        if change_source {
+            assert_eq!(failure.kind, ExecutionFailureKind::InputChanged);
+        } else {
+            assert_eq!(
+                std::fs::read(root.path().join("assets")).unwrap(),
+                b"sentinel"
+            );
+        }
+        assert_eq!(
+            std::fs::read_to_string(root.path().join("requests"))
+                .unwrap()
+                .lines()
+                .count(),
+            2
+        );
+        assert_eq!(std::fs::read(&manifest).unwrap(), original);
+        assert_reaped(root.path()).await;
+    }
+}

@@ -11,8 +11,9 @@ execution and cross-cell display updates.
 This is the Milestone 2 cache decision. It extends the [authored-execution
 contract](authored-execution-contract.md), whose authority, output-safety, and
 cleanup rules apply on hits as well as misses. Milestone 3 will implement the
-serialized types; Milestone 6 will implement storage and restore. No execution
-cache exists in the current CLI.
+serialized types. Milestone 6 now implements storage and restore through the
+public Jupyter engine and executing commands; see the
+[implementation evidence](../design/execution-cache-validation.md).
 
 Use key schema `page-execution-key-v1`, artifact schema
 `page-execution-artifact-v1`, and canonical encoding `execution-json-v1`.

@@ -461,10 +461,14 @@ command and watched-site guarantees, which require Milestones 7 through 9.
   connect the supervised engine to this failure boundary. See the
   [timeout and watched-site evidence](docs/design/execution-watched-validation.md)
   for deadline, cleanup, preservation, and recovery checks.
-- [ ] Implement a page-level execution cache keyed by authored source,
+- [x] Implement a page-level execution cache keyed by authored source,
   normalized options, engine and kernel identity, relevant toolchain
   versions, and declared environment fingerprints. Validate cached assets
   before reuse.
+  The public engine and executing commands now restore complete validated page
+  artifacts after a current kernel handshake. Immutable atomic publication,
+  corruption rejection, warning replay, and Python/R restoration are covered by
+  the [cache validation evidence](docs/design/execution-cache-validation.md).
 - [ ] Record whether each page was executed or restored from cache without
   leaking connection files, ports, temporary paths, process IDs, timestamps,
   or absolute checkout paths into portable provenance.

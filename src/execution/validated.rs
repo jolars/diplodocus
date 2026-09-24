@@ -165,6 +165,24 @@ impl From<Vec<ExecutionDiagnostic>> for DiagnosticEvidence {
 }
 
 impl ValidatedPage {
+    #[cfg(target_os = "linux")]
+    pub(crate) fn accept_cache(&mut self, before: Vec<crate::diagnostics::Diagnostic>) {
+        for cell in &mut self.record.cells {
+            for output in &mut cell.outputs {
+                for index in &mut output.diagnostic_indices {
+                    *index += before.len();
+                }
+            }
+        }
+        self.diagnostic_offset = before.len();
+        self.record.diagnostics.splice(0..0, before);
+        if let Some(provenance) = &mut self.record.provenance
+            && let crate::ir::ProvenanceActivity::Execution { origin, .. } =
+                &mut provenance.execution.activity
+        {
+            *origin = crate::ir::ExecutionOrigin::Cache;
+        }
+    }
     /// Borrow portable evidence without granting mutable access to the carrier.
     pub fn record(&self) -> &PageExecutionRecord {
         &self.record
@@ -314,6 +332,10 @@ pub struct PageExecutionResult {
     staged_assets: Vec<StagedExecutionAsset>,
 }
 impl PageExecutionResult {
+    #[cfg(target_os = "linux")]
+    pub(crate) fn append_cache_warnings(&mut self, warnings: Vec<crate::diagnostics::Diagnostic>) {
+        self.validated.record.diagnostics.extend(warnings);
+    }
     /// Validated output evidence suitable for trusted consumers.
     pub fn validated(&self) -> &ValidatedPage {
         &self.validated

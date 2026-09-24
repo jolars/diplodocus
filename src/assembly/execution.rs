@@ -51,7 +51,11 @@ impl WorkspaceSources {
                             .map_err(|_| AssemblyError::InputsChanged)
                     })
                     .collect::<Result<Vec<_>, _>>()?;
-                let engine = JupyterEngine::new(repositories.clone(), declared);
+                let engine = JupyterEngine::new(repositories.clone(), declared).with_cache_root(
+                    self.paths
+                        .configuration_directory
+                        .join(".diplodocus/cache/execution"),
+                );
                 let request = PageExecutionRequest {
                     page: ExecutionPage {
                         source: page.location.clone(),

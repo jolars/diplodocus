@@ -14,6 +14,7 @@ use crate::configuration::{ExecutionEngine as EngineKind, ExecutionMode};
 use crate::diagnostics::{Diagnostic, DiagnosticSource};
 use crate::documents::AuthoredFormat;
 use crate::execution::assets::PageAssetStore;
+use crate::execution::cache::{self, Lookup};
 use crate::execution::identity::{
     BuildObservation, IdentityInputs, LaunchIdentityInput, RepositoryFile, RuntimeObservation,
     snapshot_inputs, validate_prepared,
@@ -39,6 +40,7 @@ pub struct JupyterEngine {
     repositories: BTreeMap<String, PathBuf>,
     declared_files: Vec<RepositoryFile>,
     environment: Option<SearchEnvironment>,
+    cache_root: Option<PathBuf>,
 }
 
 impl std::fmt::Debug for JupyterEngine {
@@ -57,7 +59,14 @@ impl JupyterEngine {
             repositories,
             declared_files,
             environment: None,
+            cache_root: None,
         }
+    }
+
+    /// Enable the private local page cache at the supplied root, without I/O.
+    pub fn with_cache_root(mut self, root: PathBuf) -> Self {
+        self.cache_root = Some(root);
+        self
     }
 
     #[cfg(test)]
@@ -114,7 +123,9 @@ impl JupyterEngine {
             _ = &mut context.cancellation => return Err(cancelled(&source)),
             result = discover_kernel(&request.kernel, environment, &source) => result?,
         };
-        let before = kernel.diagnostics.clone();
+        let mut before = kernel.diagnostics.clone();
+        let mut cache_identity = None;
+        let mut cache_hit = false;
         let mut reducer = OutputReducer::with_context(
             request.page.clone(),
             ErrorContext::new(context.repository_root.clone()),
@@ -220,15 +231,53 @@ impl JupyterEngine {
                 language_version: runtime.language_version.clone(),
                 protocol_version: runtime.protocol_version.clone(),
             };
-            if let Err(mut failure) = snapshot.identity(&observed, request, &context.deadlines) {
-                if let Err(cleanup) = session.shutdown().await {
-                    failure.cleanup_diagnostics.extend(cleanup.diagnostics);
-                    failure
-                        .cleanup_diagnostics
-                        .extend(cleanup.cleanup_diagnostics);
+            let identity = match snapshot.identity(&observed, request, &context.deadlines) {
+                Ok(identity) => identity,
+                Err(mut failure) => {
+                    if let Err(cleanup) = session.shutdown().await {
+                        failure.cleanup_diagnostics.extend(cleanup.diagnostics);
+                        failure.cleanup_diagnostics.extend(cleanup.cleanup_diagnostics);
+                    }
+                    return Err(with_discovery(failure, &before));
                 }
-                return Err(with_discovery(failure, &before));
-            }
+            };
+            cache_identity = Some(identity.clone());
+            let mut cache_warning = None;
+            let session = if let Some(root) = &self.cache_root {
+                let work = cache::lookup(root.clone(), identity, prepared.clone());
+                let (session, lookup) = session.supervise(work, &mut context.cancellation).await?;
+                match lookup {
+                    Lookup::Hit(mut candidate) => {
+                        let mut warnings = before.clone();
+                        warnings.extend(candidate.page.record().diagnostics.iter().cloned());
+                        session.shutdown_with_cancellation(&mut context.cancellation).await.map_err(|mut failure| {
+                            if failure.diagnostics.starts_with(&before) {
+                                failure.diagnostics.drain(..before.len());
+                            }
+                            failure.diagnostics.splice(0..0, warnings.iter().cloned());
+                            failure
+                        })?;
+                        tokio::select! {
+                            biased;
+                            _ = &mut context.cancellation => return Err(with_discovery(cancelled(&source), &warnings)),
+                            result = snapshot.revalidate(&launch) => result.map_err(|failure| with_discovery(failure, &warnings))?,
+                        }
+                        for asset in &candidate.page.record().assets {
+                            assets.stage_cached(asset, &candidate.assets[&asset.reference.fingerprint.value]).map_err(|error| with_discovery(source.failure(error.failure_kind().unwrap_or(ExecutionFailureKind::OutputValidation), &error.to_string()), &warnings))?;
+                        }
+                        candidate.page.accept_cache(before);
+                        cache_hit = true;
+                        return Ok(candidate.page);
+                    }
+                    Lookup::Rejected => {
+                        let warning = cache::warning(&request.page, crate::diagnostics::DiagnosticCode::InvalidExecutionCache);
+                        before.push(warning.clone());
+                        cache_warning = Some(warning);
+                    }
+                    Lookup::Miss => {}
+                }
+                session
+            } else { session };
             let execution = session
                 .execute_detailed(
                     request.cells.clone(),
@@ -245,7 +294,11 @@ impl JupyterEngine {
                 )
                 .await;
             if let Err(failure) = execution {
-                return Err(failure.with_reduction(&reducer));
+                let mut failure = failure.with_reduction(&reducer);
+                if let Some(warning) = cache_warning {
+                    failure.diagnostics.insert(before.len() - 1, warning);
+                }
+                return Err(failure);
             }
             let reduced = reducer
                 .finish()
@@ -273,11 +326,26 @@ impl JupyterEngine {
             )
         }
         .await;
+        let result = match result {
+            Ok(validated) => tokio::select! {
+                biased;
+                _ = &mut context.cancellation => Err(with_discovery(cancelled(&source), &validated.record().diagnostics)),
+                _ = ready(()) => Ok(validated),
+            },
+            Err(failure) => Err(failure),
+        };
         match result {
             Ok(validated) => {
                 let warnings = validated.record().diagnostics.clone();
-                PageExecutionResult::retain(validated, assets)
-                    .map_err(|failure| with_discovery(failure, &warnings))
+                let mut result = PageExecutionResult::retain(validated, assets)
+                    .map_err(|failure| with_discovery(failure, &warnings))?;
+                if !cache_hit
+                    && let (Some(root), Some(identity)) = (&self.cache_root, cache_identity)
+                {
+                    let warnings = cache::publish(root.clone(), identity, prepared, &result).await;
+                    result.append_cache_warnings(warnings);
+                }
+                Ok(result)
             }
             Err(mut failure) => {
                 if let Err(error) = assets.rollback() {

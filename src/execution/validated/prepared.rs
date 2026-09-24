@@ -26,7 +26,7 @@ use super::*;
 /// use diplodocus::execution::PreparedExecution;
 /// let _: PreparedExecution = serde_json::from_str("{}").unwrap();
 /// ```
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PreparedExecution {
     request: PageExecutionRequest,
     source: Vec<u8>,

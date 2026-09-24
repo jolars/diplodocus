@@ -125,3 +125,42 @@ fn failure_preserves_published_snapshot_and_site_and_guards_inputs() {
     assert_ne!(std::fs::read(database).unwrap(), snapshot);
     assert_eq!(std::fs::read(output.join("index.html")).unwrap(), html);
 }
+
+#[test]
+fn output_cannot_replace_or_enter_the_execution_cache() {
+    let root = static_workspace();
+    let config = root.path().join("diplodocus.toml");
+    for relative in [
+        ".diplodocus/cache/execution",
+        ".diplodocus/cache/execution/site",
+    ] {
+        let output = root.path().join(relative);
+        assert!(
+            commands::build(BuildOptions {
+                config: config.clone(),
+                output: output.clone()
+            })
+            .is_err()
+        );
+        assert!(
+            commands::extract(ExtractOptions {
+                config: config.clone(),
+                output: Some(output)
+            })
+            .is_err()
+        );
+    }
+    assert!(!root.path().join(".diplodocus/cache").exists());
+}
+
+#[test]
+fn disabled_execution_does_not_inspect_the_cache() {
+    let root = static_workspace();
+    root.write(".diplodocus/cache", "unusable cache sentinel");
+    commands::build(BuildOptions {
+        config: root.path().join("diplodocus.toml"),
+        output: root.path().join("site"),
+    })
+    .unwrap();
+    assert_eq!(root.read(".diplodocus/cache"), "unusable cache sentinel");
+}

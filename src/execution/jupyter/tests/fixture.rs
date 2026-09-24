@@ -111,6 +111,9 @@ fn kernel_process() {
                         "implementation_version": "1.0", "language_info": {"name": "Python3", "version": "3.0"},
                         "banner": "", "help_links": []
                     })).unwrap();
+                    if let Ok(version) = std::fs::read_to_string(observation.with_file_name("runtime-version")) {
+                        reply.language_info.version = version;
+                    }
                     match mode.as_str() {
                         "wrong-major" => reply.protocol_version = "6.0".into(),
                         "wrong-language" => reply.language_info.name = "R".into(),
@@ -142,6 +145,11 @@ fn kernel_process() {
                         }
                         JupyterMessageContent::ShutdownRequest(_) => {
                             event(observation, "shutdown");
+                            if observation.with_file_name("mutate-on-shutdown").exists() {
+                                let page = observation.with_file_name("guide").join("example.qmd");
+                                let mut file = std::fs::OpenOptions::new().append(true).open(page).unwrap();
+                                writeln!(file, "Changed during cleanup.").unwrap();
+                            }
                             if matches!(mode.as_str(), "ignore-shutdown" | "ignore-term" | "execute-ignore-shutdown") { continue; }
                             if mode == "execute-slow-shutdown" {
                                 tokio::time::sleep(std::time::Duration::from_millis(200)).await;
@@ -185,6 +193,9 @@ async fn execute(
         .open(observation.with_file_name("requests"))
         .unwrap();
     writeln!(file, "{}", serde_json::to_string(request).unwrap()).unwrap();
+    if observation.with_file_name("fail-execution").exists() {
+        return false;
+    }
     assert_eq!(
         request.code.trim() == "define",
         ordinal == 1,

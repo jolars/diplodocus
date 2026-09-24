@@ -79,6 +79,15 @@ reaping, connection cleanup, and recovery on the next valid edit. See the
 [snapshot schema](snapshot-schema.md). This completes the compound timeout and
 watched-site behavior without claiming the cache or full milestone exit gates.
 
+## Page-cache integration
+
+The later page-cache request implements the artifact codec, immutable local
+storage, and supervised engine integration described by M6-07 and M6-08.
+Real Python and R builds now prove complete restoration, identical rendered
+sites, relocation, and invalidation after declared environment edits. See the
+[cache validation evidence](execution-cache-validation.md). The separate
+command-authority and full milestone acceptance gates remain open.
+
 ## Starting point
 
 The shared execution records, QMD preparation, Jupyter discovery and supervised
@@ -89,10 +98,10 @@ public engine. Do not schedule M6-01, M6-02, or M6-03 again.
 At the planning baseline, the production `ExecutionEngine`, identity and
 output-safety modules, and shared validated records were present, while the cache
 and command implementations were absent. The resumed integration above records
-the later command implementation. The cache module remains absent. Real Python/R
-tests prove public engine state and rich output, but not cache restoration.
+the later command implementation. The subsequent cache integration now proves
+Python/R restoration as described above.
 Watched-site preservation now has separate integration evidence, described
-above. The cache and full milestone acceptance gates remain open.
+above. The full milestone acceptance gate remains open.
 
 ## Dependencies and assignment order
 

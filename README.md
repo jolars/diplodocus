@@ -15,6 +15,13 @@ combines those stages. `serve` watches declared inputs and retains the last
 successful site after a failed rebuild. Remaining work is tracked in
 [`TODO.md`](TODO.md).
 
+Authorized QMD execution caches complete page results in
+`.diplodocus/cache/execution` beside the configuration file. A hit verifies the
+current kernel identity and all cached outputs and assets, then skips cell
+execution. Source, effective options, toolchain, runtime, and declared environment
+changes invalidate the entry. Remove this directory to force fresh execution.
+See the [cache implementation and validation](docs/design/execution-cache-validation.md).
+
 The starter [project guide](docs/guide/index.md) and root `diplodocus.toml`
 form the project's own documentation corpus. The [quick start](docs/guide/quick-start.md)
 describes the build and preview workflow. The [snapshot schema](docs/design/snapshot-schema.md)
