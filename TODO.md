@@ -469,12 +469,15 @@ command and watched-site guarantees, which require Milestones 7 through 9.
   artifacts after a current kernel handshake. Immutable atomic publication,
   corruption rejection, warning replay, and Python/R restoration are covered by
   the [cache validation evidence](docs/design/execution-cache-validation.md).
-- [ ] Record whether each page was executed or restored from cache without
+- [x] Record whether each page was executed or restored from cache without
   leaking connection files, ports, temporary paths, process IDs, timestamps,
   or absolute checkout paths into portable provenance.
-- [ ] Prove that `execution.mode = "never"` and every `diplodocus check` path
+- [x] Prove that `execution.mode = "never"` and every `diplodocus check` path
   avoid kernel discovery, startup, source execution, cache mutation, and
-  execution- asset writes.
+  execution-asset writes.
+  Per-page Python/R origin checks, relocation checks, and filesystem event
+  monitors establish these boundaries. See the
+  [provenance and command-authority evidence](docs/design/execution-authority-validation.md).
 - [ ] Add unit tests with a controllable protocol fixture and end-to-end tests
   with the declared Python and R kernels for success, state retention, rich
   output, timeout, interruption, missing kernels, unsupported MIME types,

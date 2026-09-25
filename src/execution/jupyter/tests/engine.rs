@@ -554,6 +554,75 @@ async fn public_engine_rejects_ineligible_pages_before_reading_source_or_discove
     }
 }
 
+fn assert_private_data_absent(record: &crate::execution::PageExecutionRecord, root: &Path) {
+    let observed = observation(root);
+    let connection = &observed["connection"];
+    let forbidden_numbers = [
+        observed["pid"].as_u64().unwrap(),
+        connection["shell_port"].as_u64().unwrap(),
+        connection["iopub_port"].as_u64().unwrap(),
+        connection["stdin_port"].as_u64().unwrap(),
+        connection["control_port"].as_u64().unwrap(),
+        connection["hb_port"].as_u64().unwrap(),
+    ];
+    fn inspect(value: &Value, numbers: &[u64]) {
+        match value {
+            Value::Object(fields) => {
+                for (key, value) in fields {
+                    assert!(
+                        !matches!(
+                            key.as_str(),
+                            "connection"
+                                | "connection_file"
+                                | "pid"
+                                | "process_id"
+                                | "port"
+                                | "shell_port"
+                                | "iopub_port"
+                                | "stdin_port"
+                                | "control_port"
+                                | "hb_port"
+                                | "timestamp"
+                                | "date"
+                                | "created_at"
+                                | "started_at"
+                                | "finished_at"
+                        ),
+                        "private field: {key}"
+                    );
+                    if key != "deadlines_ms" {
+                        inspect(value, numbers);
+                    }
+                }
+            }
+            Value::Array(values) => values.iter().for_each(|value| inspect(value, numbers)),
+            Value::Number(number) => {
+                assert!(!number.as_u64().is_some_and(|n| numbers.contains(&n)))
+            }
+            Value::String(text) => assert!(!numbers.iter().any(|n| text == &n.to_string())),
+            _ => {}
+        }
+    }
+    let provenance = serde_json::to_value(record.provenance.as_ref().unwrap()).unwrap();
+    inspect(&provenance, &forbidden_numbers);
+    let serialized = provenance.to_string();
+    let executable = std::env::current_exe().unwrap();
+    let connection_path = Path::new(observed["connection_file"].as_str().unwrap());
+    for private in [
+        root.to_str().unwrap(),
+        executable.to_str().unwrap(),
+        connection_path.parent().unwrap().to_str().unwrap(),
+        connection["key"].as_str().unwrap(),
+        observed["literal"].as_str().unwrap(),
+    ] {
+        assert!(!private.is_empty());
+        assert!(
+            !serialized.contains(private),
+            "private data in provenance: {private}"
+        );
+    }
+}
+
 #[tokio::test]
 async fn cache_hit_restores_assets_without_submitting_cells() {
     let root = TempDir::new().unwrap();
@@ -561,6 +630,8 @@ async fn cache_hit_restores_assets_without_submitting_cells() {
     let engine = engine(root.path()).with_cache_root(root.path().join("cache"));
     let (context, input) = request(root.path(), SOURCE);
     let first = engine.execute_page(context, &input).await.unwrap();
+    assert_private_data_absent(first.validated().record(), root.path());
+    let first_observation = observation(root.path());
     let submitted = std::fs::read(root.path().join("requests")).unwrap();
     let bytes = std::fs::read(&first.staged_assets()[0].path).unwrap();
     std::fs::remove_dir_all(root.path().join("assets")).unwrap();
@@ -574,13 +645,20 @@ async fn cache_hit_restores_assets_without_submitting_cells() {
         std::fs::read(&second.staged_assets()[0].path).unwrap(),
         bytes
     );
+    assert_private_data_absent(second.validated().record(), root.path());
+    assert_ne!(
+        first_observation["connection_file"],
+        observation(root.path())["connection_file"]
+    );
     let mut expected = serde_json::to_value(first.validated().record()).unwrap();
     let actual = serde_json::to_value(second.validated().record()).unwrap();
     // Only activity origin changes when the complete producing result is restored.
     fn mark_cached(value: &mut Value) {
         match value {
             Value::Object(fields) => {
-                if fields.get("origin") == Some(&json!("executed")) {
+                if fields.get("kind") == Some(&json!("execution"))
+                    && fields.get("origin") == Some(&json!("executed"))
+                {
                     fields.insert("origin".into(), json!("cache"));
                 }
                 fields.values_mut().for_each(mark_cached);
@@ -591,6 +669,14 @@ async fn cache_hit_restores_assets_without_submitting_cells() {
     }
     mark_cached(&mut expected);
     assert_eq!(actual, expected);
+    assert_reaped(root.path()).await;
+
+    // Independent execution must not acquire fresh timestamps or session identifiers.
+    std::fs::remove_dir_all(root.path().join("cache")).unwrap();
+    let (context, input) = request(root.path(), SOURCE);
+    let fresh = engine.execute_page(context, &input).await.unwrap();
+    assert_private_data_absent(fresh.validated().record(), root.path());
+    assert_eq!(fresh.validated().record(), first.validated().record());
     assert_reaped(root.path()).await;
 }
 

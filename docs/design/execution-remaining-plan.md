@@ -85,8 +85,10 @@ The later page-cache request implements the artifact codec, immutable local
 storage, and supervised engine integration described by M6-07 and M6-08.
 Real Python and R builds now prove complete restoration, identical rendered
 sites, relocation, and invalidation after declared environment edits. See the
-[cache validation evidence](execution-cache-validation.md). The separate
-command-authority and full milestone acceptance gates remain open.
+[cache validation evidence](execution-cache-validation.md). The subsequent
+[portable-origin and command-authority validation](execution-authority-validation.md)
+checks each page in builds with fresh and restored results and directly observes the disabled
+and check-only boundaries. The full milestone acceptance gate remains open.
 
 ## Starting point
 

@@ -96,6 +96,7 @@ cargo test --locked --test execution_identity --test execution_artifact_contract
 cargo test --locked --test commands
 ```
 
-The independent command-authority and full Milestone 6 acceptance TODOs remain
-separate gates. The cache does not provide offline reuse, remote sharing,
+The [command-authority and portable-origin checks](execution-authority-validation.md)
+now establish those separate gates. The full Milestone 6 acceptance TODO remains
+open. The cache does not provide offline reuse, remote sharing,
 per-cell reuse, or a fingerprint of undeclared dependencies.
