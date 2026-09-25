@@ -142,6 +142,28 @@ references can share one asset row. `SourceLocation` is
 `{"repository": ID, "path": relative_path, "span": span}`. Source locations
 provide evidence and never require generation to open files.
 
+### Asset retention
+
+Checked-in images, local downloads, and generated figures share the `assets`
+table. The digest hashes the exact bytes, without transcoding. Identical bytes
+occupy one row even when references come from different files, pages, or
+execution results. A download uses `application/octet-stream`; if the same
+bytes also appear as a validated image, the row retains the image's media type.
+
+Resolved document references use `content-assets/sha256/<digest>` for
+checked-in files and retain any link fragment separately. Execution references
+use `execution-assets/<page>/sha256/<digest>`. These paths identify portable
+references, not source or cache files. Both forms recover their bytes by joining
+`fingerprint.value` to `assets.digest`. Execution records also retain media type,
+byte size, and the association with each output representation, including
+hidden output and unselected MIME alternatives.
+
+`Snapshot::from_sources` and `Snapshot::from_executed` own the collected bytes.
+After construction, the source checkout, execution cache, and staging directory
+can be removed. Publication writes the bytes into the database, and loading
+recovers them through `Snapshot::assets` without those directories. Generation
+maps the retained references to local asset URLs and writes the original bytes.
+
 ## JSON shapes
 
 The field tables describe canonical writer output. Strings, booleans, integers,
@@ -431,12 +453,17 @@ against a published Python/R workspace, check every stored entity against its IR
 map key and fields, and round-trip the JSON examples through their typed IR
 decoders. [Storage tests](../../tests/snapshots_storage.rs) cover portable
 reads, version rejection, corruption, refreshes, and execution restoration.
+[Asset handoff tests](../../tests/snapshot_assets.rs) check exact SQLite bytes,
+deduplication across checked-in and generated assets, download fragments, and
+PNG, JPEG, and SVG recovery from a copied database after removing the checkout,
+execution cache, and staging directory. They also restore hidden figure
+alternatives from a confirmed cache hit and render the recovered assets.
 [Validation tests](../../tests/snapshot_validation.rs) recompute record and
 snapshot fingerprints after introducing malformed records, dangling references,
 invalid paths, and missing assets, so checksum failures cannot mask validation
 gaps. They also verify read-only loading and version rejection before record
 decoding, without migration. Run these checks with
-`cargo test --locked --test snapshot_schema --test snapshots_storage --test snapshot_validation`
+`cargo test --locked --test snapshot_schema --test snapshots_storage --test snapshot_assets --test snapshot_validation`
 in the project's devenv shell, which supplies the execution test's Python kernel.
 
 ## Generation boundary
