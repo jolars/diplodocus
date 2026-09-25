@@ -1,7 +1,7 @@
 mod support;
 
 use diplodocus::assembly::assemble_workspace;
-use diplodocus::snapshots::Snapshot;
+use diplodocus::snapshots::{Snapshot, SnapshotError};
 use diplodocus::validation::resolve_workspace;
 
 fn snapshot() -> Snapshot {
@@ -13,14 +13,24 @@ fn snapshot() -> Snapshot {
 
 #[test]
 fn portable_snapshot_round_trip_needs_no_sources_or_sidecars() {
-    let snapshot = snapshot();
+    let root = support::acceptance_workspace();
+    let sources = assemble_workspace(root.path().join("workspace/diplodocus.toml")).unwrap();
+    let resolved = resolve_workspace(&sources).unwrap();
+    let mut workspace = sources.workspace().clone();
+    workspace.diagnostics = resolved.diagnostics().clone();
+    let documents = resolved.records().to_vec();
+    let assets = resolved.assets().clone();
+    let snapshot = Snapshot::from_sources(&sources, &resolved).unwrap();
+    let source_path = root.path().to_owned();
+    drop((sources, resolved, root));
+    assert!(!source_path.exists());
     let target = tempfile::tempdir().unwrap();
     let path = target.path().join("documentation.sqlite");
     snapshot.publish(&path).unwrap();
     let loaded = Snapshot::load(&path).unwrap();
-    assert_eq!(loaded.workspace(), snapshot.workspace());
-    assert_eq!(loaded.documents(), snapshot.documents());
-    assert_eq!(loaded.assets(), snapshot.assets());
+    assert_eq!(loaded.workspace(), &workspace);
+    assert_eq!(loaded.documents(), documents);
+    assert_eq!(loaded.assets(), &assets);
     assert_eq!(
         loaded.canonical_export().unwrap(),
         snapshot.canonical_export().unwrap()
@@ -46,27 +56,88 @@ fn portable_snapshot_round_trip_needs_no_sources_or_sidecars() {
 }
 
 #[test]
-fn rejects_unsupported_versions_missing_records_and_corrupt_assets() {
-    for sql in [
-        "UPDATE manifest SET storage_version = 1",
-        "UPDATE manifest SET storage_version = 3",
-        "UPDATE manifest SET ir_version = 2",
-        "UPDATE manifest SET encoding_version = 2",
-        "DELETE FROM records WHERE kind = 'workspace'",
-        "DELETE FROM records WHERE kind = 'package'",
-        "DELETE FROM records WHERE kind = 'document'",
-        "DELETE FROM assets",
-        "UPDATE assets SET bytes = X'00'",
-        "UPDATE records SET fingerprint = 'bad' WHERE kind = 'page'",
-        "UPDATE records SET content = '{}' WHERE kind = 'page'",
+fn rejects_record_asset_and_manifest_fingerprint_mismatches() {
+    let snapshot = snapshot();
+    for (sql, expected) in [
+        ("DELETE FROM assets", "snapshot fingerprint"),
+        (
+            "DELETE FROM records WHERE kind = 'document'",
+            "snapshot fingerprint",
+        ),
+        ("UPDATE assets SET bytes = X'00'", "asset fingerprint"),
+        (
+            "UPDATE assets SET bytes = zeroblob(length(bytes))",
+            "asset fingerprint",
+        ),
+        (
+            "UPDATE assets SET bytes = substr(bytes, 1, length(bytes) - 1)",
+            "asset fingerprint",
+        ),
+        (
+            "UPDATE assets SET digest = upper(digest)",
+            "asset fingerprint",
+        ),
+        (
+            "UPDATE assets SET media_type = 'image/png'",
+            "snapshot fingerprint",
+        ),
+        (
+            "UPDATE records SET fingerprint = 'bad' WHERE kind = 'page'",
+            "record fingerprint",
+        ),
+        (
+            "UPDATE records SET content = '{}' WHERE kind = 'page'",
+            "record fingerprint",
+        ),
+        (
+            "UPDATE manifest SET content_fingerprint = 'bad'",
+            "snapshot fingerprint",
+        ),
+        (
+            "UPDATE manifest SET producer = 'another-producer'",
+            "snapshot fingerprint",
+        ),
     ] {
         let root = tempfile::tempdir().unwrap();
         let path = root.path().join("snapshot.sqlite");
-        snapshot().publish(&path).unwrap();
+        snapshot.publish(&path).unwrap();
         let db = rusqlite::Connection::open(&path).unwrap();
         db.execute_batch(sql).unwrap();
         drop(db);
-        assert!(Snapshot::load(&path).is_err(), "accepted {sql}");
+        let before = std::fs::read(&path).unwrap();
+        let result = Snapshot::load(&path);
+        assert!(
+            matches!(result, Err(SnapshotError::Invalid(message)) if message == expected),
+            "{sql}: {result:?}"
+        );
+        assert_eq!(std::fs::read(&path).unwrap(), before);
+    }
+}
+
+#[test]
+fn rejects_malformed_json_before_record_fingerprint_validation() {
+    let snapshot = snapshot();
+    for content in ["", "{", "{\"name\":", "{\"name\": NaN}", "{} trailing"] {
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join("snapshot.sqlite");
+        snapshot.publish(&path).unwrap();
+        let db = rusqlite::Connection::open(&path).unwrap();
+        assert!(
+            db.execute(
+                "UPDATE records SET content = ?1 WHERE kind = 'page'",
+                [content],
+            )
+            .unwrap()
+                > 0
+        );
+        drop(db);
+        let before = std::fs::read(&path).unwrap();
+        let result = Snapshot::load(&path);
+        assert!(
+            matches!(result, Err(SnapshotError::Encoding(_))),
+            "{content:?}: {result:?}"
+        );
+        assert_eq!(std::fs::read(&path).unwrap(), before);
     }
 }
 
@@ -239,7 +310,8 @@ fn replace_record(
     change(&mut record["content"]);
     let key =
         serde_json::json!({"kind": record["kind"], "owner": record["owner"], "id": record["id"]});
-    let value = serde_json::json!(["diplodocus/snapshot-record-v1", key, record["content"]]);
+    let mut value = serde_json::json!(["diplodocus/snapshot-record-v1", key, record["content"]]);
+    value.sort_all_objects();
     let digest =
         diplodocus::provenance::fingerprint_bytes(&serde_json::to_vec(&value).unwrap()).value;
     record["fingerprint"] = digest.clone().into();
@@ -259,6 +331,7 @@ fn replace_record(
     for asset in manifest["assets"].as_array_mut().unwrap() {
         asset.as_object_mut().unwrap().remove("bytes_base64");
     }
+    manifest.sort_all_objects();
     let digest =
         diplodocus::provenance::fingerprint_bytes(&serde_json::to_vec(&manifest).unwrap()).value;
     db.execute("UPDATE manifest SET content_fingerprint=?1", [digest])

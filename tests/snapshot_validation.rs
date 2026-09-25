@@ -2,8 +2,11 @@ mod support;
 
 use base64::Engine;
 use diplodocus::assembly::assemble_workspace;
+use diplodocus::ir::WORKSPACE_SCHEMA_VERSION;
 use diplodocus::provenance::fingerprint_bytes;
-use diplodocus::snapshots::{Snapshot, SnapshotError};
+use diplodocus::snapshots::{
+    RECORD_ENCODING_VERSION, STORAGE_SCHEMA_VERSION, Snapshot, SnapshotError,
+};
 use diplodocus::validation::resolve_workspace;
 use rusqlite::{Connection, params};
 use serde_json::{Value, json};
@@ -15,21 +18,22 @@ fn snapshot() -> Snapshot {
     Snapshot::from_sources(&sources, &resolved).unwrap()
 }
 
+fn canonical_fingerprint(mut value: Value) -> String {
+    value.sort_all_objects();
+    fingerprint_bytes(&serde_json::to_vec(&value).unwrap()).value
+}
+
 // Recompute every digest so these tests exercise validation beyond corruption detection.
 fn rewrite(path: &std::path::Path, export: &mut Value) {
     let db = Connection::open(path).unwrap();
     db.execute("DELETE FROM records", []).unwrap();
     for record in export["records"].as_array_mut().unwrap() {
         let key = json!({"kind": record["kind"], "owner": record["owner"], "id": record["id"]});
-        record["fingerprint"] = fingerprint_bytes(
-            &serde_json::to_vec(&json!([
-                "diplodocus/snapshot-record-v1",
-                key,
-                record["content"]
-            ]))
-            .unwrap(),
-        )
-        .value
+        record["fingerprint"] = canonical_fingerprint(json!([
+            "diplodocus/snapshot-record-v1",
+            key,
+            record["content"]
+        ]))
         .into();
         db.execute(
             "INSERT INTO records VALUES (?1, ?2, ?3, ?4, ?5)",
@@ -61,7 +65,7 @@ fn rewrite(path: &std::path::Path, export: &mut Value) {
     for asset in logical["assets"].as_array_mut().unwrap() {
         asset.as_object_mut().unwrap().remove("bytes_base64");
     }
-    let digest = fingerprint_bytes(&serde_json::to_vec(&logical).unwrap()).value;
+    let digest = canonical_fingerprint(logical);
     db.execute(
         "UPDATE manifest SET content_fingerprint=?1, producer=?2",
         params![digest, export["producer"].as_str().unwrap()],
@@ -88,7 +92,19 @@ fn changed(
     let mut export = serde_json::from_str(&snapshot.canonical_export().unwrap()).unwrap();
     change(&mut export);
     rewrite(&path, &mut export);
-    Snapshot::load(path)
+    let before = std::fs::read(&path).unwrap();
+    let result = Snapshot::load(&path);
+    assert_eq!(std::fs::read(&path).unwrap(), before);
+    assert!(
+        !matches!(
+            result,
+            Err(SnapshotError::Invalid(
+                "record fingerprint" | "snapshot fingerprint"
+            ))
+        ),
+        "fingerprint rejection masked record validation: {result:?}"
+    );
+    result
 }
 
 #[test]
@@ -281,6 +297,8 @@ fn rejects_malformed_records_paths_and_keys() {
         "missing-workspace",
         "missing-document",
         "missing-repository",
+        "missing-package",
+        "missing-collection",
         "missing-target",
         "unknown-kind",
         "empty-id",
@@ -297,7 +315,8 @@ fn rejects_malformed_records_paths_and_keys() {
         "mount",
     ] {
         let result = changed(&snapshot, |export| match case {
-            "missing-workspace" | "missing-document" | "missing-repository" | "missing-target" => {
+            "missing-workspace" | "missing-document" | "missing-repository" | "missing-package"
+            | "missing-collection" | "missing-target" => {
                 let kind = case.strip_prefix("missing-").unwrap();
                 export["records"]
                     .as_array_mut()
@@ -385,24 +404,32 @@ fn loading_is_read_only_and_never_creates_a_missing_database() {
 
 #[test]
 fn each_version_is_rejected_before_decoding_records_without_migration() {
+    let snapshot = snapshot();
     for (field, version) in [
-        ("storage_version", 1),
-        ("storage_version", 3),
-        ("ir_version", 2),
-        ("encoding_version", 2),
+        ("storage_version", 0),
+        ("storage_version", STORAGE_SCHEMA_VERSION - 1),
+        ("storage_version", STORAGE_SCHEMA_VERSION + 1),
+        ("ir_version", 0),
+        ("ir_version", WORKSPACE_SCHEMA_VERSION + 1),
+        ("encoding_version", 0),
+        ("encoding_version", RECORD_ENCODING_VERSION + 1),
     ] {
         let target = tempfile::tempdir().unwrap();
         let path = target.path().join("snapshot.sqlite");
-        snapshot().publish(&path).unwrap();
+        snapshot.publish(&path).unwrap();
         let db = Connection::open(&path).unwrap();
         db.execute_batch(&format!(
-            "UPDATE manifest SET {field} = {version}; DROP TABLE records;"
+            "UPDATE manifest SET {field} = {version}; DROP TABLE records; DROP TABLE assets;"
         ))
         .unwrap();
         drop(db);
         let before = std::fs::read(&path).unwrap();
-        assert!(matches!(Snapshot::load(&path), Err(SnapshotError::Version)));
+        assert!(
+            matches!(Snapshot::load(&path), Err(SnapshotError::Version)),
+            "{field} = {version}"
+        );
         assert_eq!(std::fs::read(&path).unwrap(), before);
+        assert_eq!(std::fs::read_dir(target.path()).unwrap().count(), 1);
     }
 }
 
@@ -464,6 +491,68 @@ fn validates_asset_bytes_and_references_independently_of_record_fingerprints() {
             matches!(result, Err(SnapshotError::Invalid(message)) if message == expected),
             "{case}: {result:?}"
         );
+    }
+}
+
+#[test]
+fn rejects_invalid_image_contents_even_with_recomputed_asset_digests() {
+    let snapshot = snapshot();
+    assert_eq!(snapshot.assets().len(), 1);
+    let valid_svg = b"<svg xmlns='http://www.w3.org/2000/svg'><circle r='3'/></svg>";
+    for (case, media, bytes) in [
+        ("valid control", "image/svg+xml", valid_svg.as_slice()),
+        ("truncated SVG", "image/svg+xml", b"<svg><circle".as_slice()),
+        (
+            "truncated PNG",
+            "image/png",
+            b"\x89PNG\r\n\x1a\n".as_slice(),
+        ),
+        (
+            "truncated JPEG",
+            "image/jpeg",
+            b"\xff\xd8\xff\xe0".as_slice(),
+        ),
+        ("wrong media", "image/png", valid_svg.as_slice()),
+        ("unsupported media", "image/gif", valid_svg.as_slice()),
+        (
+            "active SVG",
+            "image/svg+xml",
+            b"<svg><script>alert(1)</script></svg>".as_slice(),
+        ),
+    ] {
+        let result = changed(&snapshot, |export| {
+            let digest = fingerprint_bytes(bytes).value;
+            export["assets"][0] = json!({
+                "digest": digest,
+                "media_type": media,
+                "byte_size": bytes.len(),
+                "bytes_base64": base64::engine::general_purpose::STANDARD.encode(bytes),
+            });
+            for reference in export["records"]
+                .as_array_mut()
+                .unwrap()
+                .iter_mut()
+                .filter(|r| r["kind"] == "document")
+                .flat_map(|r| r["content"]["references"].as_array_mut().unwrap())
+                .filter(|r| r["target"]["kind"] == "asset")
+            {
+                let asset = &mut reference["target"]["asset"];
+                asset["fingerprint"]["value"] = digest.clone().into();
+                asset["path"] = format!("content-assets/sha256/{digest}").into();
+            }
+        });
+        if case == "valid control" {
+            let loaded = result.unwrap();
+            assert_eq!(
+                loaded.assets()[&fingerprint_bytes(bytes).value].bytes,
+                bytes
+            );
+        } else {
+            assert!(
+                matches!(result, Err(SnapshotError::Invalid("asset media"))),
+                "{case}: {result:?}"
+            );
+        }
     }
 }
 

@@ -48,7 +48,10 @@ fn reverse_object_keys(value: &Value) -> String {
 #[test]
 fn export_and_fingerprints_ignore_sqlite_layout_and_json_object_order() {
     let root = support::acceptance_workspace();
+    root.write("core/docs/layout.bin", b"\0\xfflayout\n");
+    root.write("core/docs/layout.md", "[Download](layout.bin)\n");
     let snapshot = snapshot(&root);
+    assert_eq!(snapshot.assets().len(), 2);
     let expected = snapshot.canonical_export().unwrap();
     let target = tempfile::tempdir().unwrap();
     let path = target.path().join("snapshot.sqlite");
@@ -83,15 +86,25 @@ fn export_and_fingerprints_ignore_sqlite_layout_and_json_object_order() {
     db.execute_batch("VACUUM; PRAGMA user_version = 123;")
         .unwrap();
     let export: Value = serde_json::from_str(&expected).unwrap();
+    db.execute("DELETE FROM records", []).unwrap();
     for record in export["records"].as_array().unwrap().iter().rev() {
         db.execute(
-            "UPDATE records SET content=?1 WHERE kind=?2 AND owner=?3 AND id=?4",
+            "INSERT INTO records (content, kind, owner, id, fingerprint) VALUES (?1, ?2, ?3, ?4, ?5)",
             params![
                 reverse_object_keys(&record["content"]),
                 record["kind"].as_str().unwrap(),
                 record["owner"].as_str().unwrap(),
                 record["id"].as_str().unwrap(),
+                record["fingerprint"].as_str().unwrap(),
             ],
+        )
+        .unwrap();
+    }
+    db.execute("DELETE FROM assets", []).unwrap();
+    for (digest, asset) in snapshot.assets().iter().rev() {
+        db.execute(
+            "INSERT INTO assets VALUES (?1, ?2, ?3)",
+            params![digest, asset.media_type, asset.bytes],
         )
         .unwrap();
     }

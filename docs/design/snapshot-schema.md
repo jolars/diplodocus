@@ -550,8 +550,9 @@ encoding and `hashlib.sha256`, as well as the readable export fixture. They
 check identity binding, Unicode and control characters, array order, unordered
 collections, and isolated entity changes. [Canonical export
 tests](../../tests/snapshot_canonical.rs) retain binary asset bytes and compare
-exports after changing SQLite page size and rewriting JSON object order and
-whitespace without updating stored fingerprints. Run both JSON map backends:
+exports after changing SQLite page size, reinserting records and assets in
+reverse order, and rewriting JSON object order and whitespace without updating
+stored fingerprints. Run both JSON map backends:
 
 ```sh
 cargo test --locked --lib snapshots::canonical::tests
@@ -563,8 +564,11 @@ cargo test --locked --test snapshot_canonical --features serde_json/preserve_ord
 [Schema contract tests](../../tests/snapshot_schema.rs) run the queries above
 against a published Python/R workspace, check every stored entity against its IR
 map key and fields, and round-trip the JSON examples through their typed IR
-decoders. [Storage tests](../../tests/snapshots_storage.rs) cover portable
-reads, version rejection, corruption, refreshes, and execution restoration.
+decoders. [Storage tests](../../tests/snapshots_storage.rs) compare loaded IR,
+resolved documents, and assets with the original assembly and resolution results
+after removing the source checkout. They distinguish malformed JSON from record,
+asset, and manifest fingerprint failures, and cover refreshes and execution
+restoration.
 [Asset handoff tests](../../tests/snapshot_assets.rs) check exact SQLite bytes,
 deduplication across checked-in and generated assets, download fragments, and
 PNG, JPEG, and SVG recovery from a copied database after removing the checkout,
@@ -573,10 +577,22 @@ alternatives from a confirmed cache hit and render the recovered assets.
 [Validation tests](../../tests/snapshot_validation.rs) recompute record and
 snapshot fingerprints after introducing malformed records, dangling references,
 invalid paths, and missing assets, so checksum failures cannot mask validation
-gaps. They also verify read-only loading and version rejection before record
-decoding, without migration. Run these checks with
-`cargo test --locked --test snapshot_schema --test snapshots_storage --test snapshot_assets --test snapshot_validation`
-in the project's devenv shell, which supplies the execution test's Python kernel.
+gaps. Image tests also recompute asset digests and references before testing
+truncated SVG, PNG, and JPEG contents, mismatched media types, and active SVG
+content. A valid replacement image verifies that the mutation helper preserves
+loadable records. Rejected loads leave database bytes unchanged. Version tests
+reject old and future storage, IR, and encoding versions before reading records
+or assets, without migration. Run the full snapshot suite with:
+
+```sh
+cargo test --locked --test snapshot_schema --test snapshots_storage \
+  --test snapshot_assets --test snapshot_validation --test snapshot_metadata \
+  --test snapshot_canonical
+```
+
+Use the project's devenv shell, which supplies the execution tests' Python
+kernel. CI also runs this suite with `--features serde_json/preserve_order` to
+exercise validation and round trips with insertion-ordered JSON maps.
 
 ## Generation boundary
 

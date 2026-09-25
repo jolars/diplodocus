@@ -178,22 +178,27 @@ fn documented_sql_examples_query_published_records() {
         );
 
         let mut documents = db.prepare(example("Resolved documents", "sql")).unwrap();
-        let rows: Vec<(String, String)> = documents
-            .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))
+        let rows: Vec<_> = documents
+            .query_map([], |row| {
+                Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+            })
             .unwrap()
-            .collect::<Result<_, _>>()
-            .unwrap();
+            .map(|row| {
+                let (id, references) = row.unwrap();
+                (id, serde_json::from_str::<Value>(&references).unwrap())
+            })
+            .collect();
         let mut expected: Vec<_> = snapshot
             .documents()
             .iter()
             .map(|document| {
                 (
                     serde_json::to_string(&document.document).unwrap(),
-                    json!(document.references).to_string(),
+                    json!(document.references),
                 )
             })
             .collect();
-        expected.sort();
+        expected.sort_by(|a, b| a.0.cmp(&b.0));
         assert_eq!(rows, expected);
 
         let mut assets = db.prepare(example("Asset lookup", "sql")).unwrap();

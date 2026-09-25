@@ -548,7 +548,7 @@ layouts in the generation stage.
 - [x] Define versioned canonical record encodings and per-entity content
   fingerprints. Add a canonical text export for readable fixtures and
   logical snapshot comparisons, independent of SQLite file layout.
-- [ ] Test semantic IR and asset round trips, deterministic fingerprints,
+- [x] Test semantic IR and asset round trips, deterministic fingerprints,
   unsupported schema versions, malformed records, missing assets, and
   corrupted asset contents.
 - [ ] Publish a complete workspace atomically as a standalone database with no
