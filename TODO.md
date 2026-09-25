@@ -545,7 +545,7 @@ layouts in the generation stage.
   source checkouts or execution caches.
 - [x] Include presentation defaults, slugs, content mounts, source-link
   information, diagnostics, and portable producer and repository provenance.
-- [ ] Define versioned canonical record encodings and per-entity content
+- [x] Define versioned canonical record encodings and per-entity content
   fingerprints. Add a canonical text export for readable fixtures and
   logical snapshot comparisons, independent of SQLite file layout.
 - [ ] Test semantic IR and asset round trips, deterministic fingerprints,

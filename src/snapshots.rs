@@ -11,6 +11,7 @@ use crate::configuration::PresentationDefaults;
 use crate::ir::Workspace;
 use crate::validation::{ContentAsset, ResolvedDocument, ResolvedWorkspace};
 
+mod canonical;
 mod outputs;
 mod storage;
 mod validation;
@@ -18,6 +19,10 @@ mod validation;
 /// Independent SQLite storage schema version.
 pub const STORAGE_SCHEMA_VERSION: u32 = 2;
 /// Canonical record encoding version, independent of database layout.
+///
+/// Version 1 sorts JSON object keys recursively, preserves semantic array
+/// order, and hashes compact UTF-8 JSON with SHA-256. See the snapshot schema
+/// contract for the record envelope and logical snapshot encoding.
 pub const RECORD_ENCODING_VERSION: u32 = 1;
 
 /// A complete portable snapshot, with immutable validated records and bytes.
@@ -114,7 +119,12 @@ impl Snapshot {
         storage::publish(self, path.as_ref())
     }
     /// Canonical readable records and asset bytes, independent of SQLite layout.
+    ///
+    /// The versioned JSON export includes per-record fingerprints and base64
+    /// asset bytes. It uses two-space indentation and one trailing newline.
+    /// Comparing exports compares all portable records, including provenance
+    /// and producer versions; it does not compare only rendered content.
     pub fn canonical_export(&self) -> Result<String, SnapshotError> {
-        storage::canonical_export(self)
+        canonical::canonical_export(self)
     }
 }

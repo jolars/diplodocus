@@ -46,6 +46,10 @@ jobs:
           key: test
       - name: Run tests
         run: devenv shell -- cargo test --locked --all-targets
+      - name: Check snapshot encoding with insertion-ordered JSON maps
+        run: |
+          devenv shell -- cargo test --locked --lib snapshots::canonical::tests --features serde_json/preserve_order
+          devenv shell -- cargo test --locked --test snapshot_canonical --features serde_json/preserve_order
 
   docs:
     name: rustdoc

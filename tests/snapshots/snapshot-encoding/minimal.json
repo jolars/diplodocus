@@ -1,0 +1,45 @@
+{
+  "assets": [],
+  "encoding_version": 1,
+  "ir_version": 1,
+  "producer": "canonical-fixture",
+  "records": [
+    {
+      "content": {
+        "description": null,
+        "title": "Canonical café"
+      },
+      "fingerprint": "2d37832c264aa2932e3cf22bcc96f9e340367c5912fae1f78ad39df06bc6914c",
+      "id": "",
+      "kind": "presentation",
+      "owner": ""
+    },
+    {
+      "content": {
+        "canonical_url": "https://example.org/docs",
+        "declared_input_fingerprint": null,
+        "dirty": false,
+        "revision": "v1",
+        "source_link_template": null
+      },
+      "fingerprint": "4fed45d2c79e0a31adea6285b6f6b46f2cbeb052ea39953df16b2dae5e760b22",
+      "id": "docs",
+      "kind": "repository",
+      "owner": ""
+    },
+    {
+      "content": {
+        "diagnostics": [],
+        "name": "Canonical café",
+        "provenance": [],
+        "relationships": [],
+        "schema_version": 1
+      },
+      "fingerprint": "20eafdb53567078ac9c9e3e81831128ed183b13903e47f53e9c7a17597674f79",
+      "id": "",
+      "kind": "workspace",
+      "owner": ""
+    }
+  ],
+  "storage_version": 2
+}

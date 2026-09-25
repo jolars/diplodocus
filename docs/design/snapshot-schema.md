@@ -457,25 +457,84 @@ FROM assets ORDER BY digest;
 
 ## Canonical encodings
 
-A record fingerprint hashes the compact UTF-8 JSON encoding of
+The [canonical encoder](../../src/snapshots/canonical.rs) implements
+`encoding_version = 1` for both the database and text export. The following
+rules are part of that version:
+
+- Sort JSON object keys recursively by their unescaped UTF-8 string order,
+  including objects nested in arrays. This does not depend on the JSON map
+  implementation or insertion order.
+- Serialize typed maps and sets in their IR-defined order. String maps and sets
+  use lexical order, concept members use `(package, item)`, and diagnostics use
+  the [common diagnostic ordering](../../src/diagnostics.rs). Sets do not retain
+  insertion order or duplicate entries.
+- Preserve arrays representing meaningful order, including document nodes,
+  signatures, parameters, child items, aliases, relationships, references,
+  provenance, execution events, and MIME alternatives. Do not sort arbitrary
+  JSON arrays; typed sets already supply their canonical order.
+- Preserve strings without Unicode normalization, newline conversion, or
+  interpretation as embedded JSON. This includes opaque semantic IDs and a
+  document record's serialized ID. Absent fields and explicit `null` values
+  retain the distinction specified by their typed record shapes.
+- Use `serde_json`'s compact UTF-8 serialization of the sorted JSON value for
+  hashing, with no byte-order mark, padding, or trailing newline. Strings escape
+  quotes, backslashes, and control characters; other Unicode characters remain
+  UTF-8. Integers use decimal notation. The exact serialization, including any
+  future change to number or string formatting, belongs to the encoding version.
+- Encode SHA-256 digests as 64 lowercase hexadecimal characters.
+
+A record fingerprint hashes the compact JSON array
 `["diplodocus/snapshot-record-v1", key, content]`. The key object contains
-`kind`, `owner`, and `id`. Object keys sort lexicographically, while arrays
-preserve semantic order. The snapshot fingerprint covers the version numbers,
-producer, ordered records and their fingerprints, and asset digests, media
-types, and byte sizes. Asset digests separately cover the exact stored bytes.
-Neither digest includes SQLite page layout, checkout roots, or journal state.
+`kind`, `owner`, and `id`; `content` is the complete record object from the
+table above. The digest excludes its own `fingerprint` field. Including the
+domain tag and key distinguishes otherwise identical content belonging to
+different entities. For example, the following exact UTF-8 bytes, without the
+code block's final newline, hash to
+`2d37832c264aa2932e3cf22bcc96f9e340367c5912fae1f78ad39df06bc6914c`:
 
-Records sort by `(kind, owner, id)` and assets by digest. Object-key sorting
-applies recursively to JSON objects, but never rewrites opaque strings such as a
-document record's serialized ID. The versioned canonical encoding uses
-`serde_json`'s compact serialization of the sorted JSON value; pretty-printing
-the same object is not a fingerprint input.
+```json
+["diplodocus/snapshot-record-v1",{"id":"","kind":"presentation","owner":""},{"description":null,"title":"Canonical café"}]
+```
 
-`Snapshot::canonical_export` returns readable JSON with the same records and
-asset metadata, plus base64 asset bytes. Comparing this export establishes
-logical equivalence independently of physical database layout. Fingerprints
-provide integrity checks, not authentication: loading also checks record sets,
-semantic references, anchors, paths, asset media, and active output policies.
+Each entity's fingerprint covers its own row, not the transitive contents of
+referenced entities. For example, editing an item changes its `item` fingerprint
+without changing its owning `package` fingerprint. A future incremental
+generator must follow dependencies separately. Portable provenance is part of
+the record: revisions, dirty state, tool versions, and fresh/cache execution
+origin can change a fingerprint even when rendered documentation stays the same.
+
+The logical snapshot object has exactly `storage_version`, `ir_version`,
+`encoding_version`, `producer`, `records`, and `assets`. Records contain `kind`,
+`owner`, `id`, `content`, and `fingerprint`, sorted by `(kind, owner, id)`.
+Assets contain `digest`, `media_type`, and integer `byte_size`, sorted by digest.
+The manifest's `content_fingerprint` hashes this entire object with the compact
+encoding above. It has no additional domain prefix or self-referential digest
+field. An asset's `digest` separately hashes its exact bytes without an envelope.
+SQLite page size, row insertion order, JSON whitespace in SQL values, indexes,
+journal state, and local checkout roots do not enter these hashes.
+
+`Snapshot::canonical_export` returns the same logical object with one extra
+`bytes_base64` field on each asset. It uses the standard padded base64 alphabet
+without line wrapping, recursively sorted object keys, two-space JSON
+indentation, LF line endings, and exactly one trailing newline. This is a
+readable export, not an import format. For example:
+
+```rust
+let snapshot = diplodocus::snapshots::Snapshot::load("documentation.sqlite")?;
+std::fs::write("documentation.json", snapshot.canonical_export()?)?;
+```
+
+Comparing exports establishes logical equivalence, including portable metadata
+and producer version, independently of physical database layout. Removing each
+asset's `bytes_base64` field and applying the compact encoding recovers the
+manifest's fingerprint input; hashing the pretty export does not. The
+[minimal export fixture](../../tests/snapshots/snapshot-encoding/minimal.json)
+pins this format and has logical snapshot fingerprint
+`a573096448832e533ef78a5f1dcef56a388dd7735eb08955438f6e3403bf504f`.
+
+Fingerprints provide integrity checks, not authentication: loading also checks
+record sets, semantic references, anchors, paths, asset media, and active output
+policies.
 Reference validation includes nested signature expressions, Python and R
 language records, source evidence, and provenance. Source repository and
 extraction-target IDs must resolve within the snapshot, but source files are
@@ -484,6 +543,22 @@ entities. Cell-option declaration indices must select options with the same
 canonical key before document anchors or execution outputs are traversed.
 
 ## Contract checks
+
+[Canonical encoding tests](../../src/snapshots/canonical/tests.rs) pin record
+and snapshot digests computed independently with Python's sorted compact JSON
+encoding and `hashlib.sha256`, as well as the readable export fixture. They
+check identity binding, Unicode and control characters, array order, unordered
+collections, and isolated entity changes. [Canonical export
+tests](../../tests/snapshot_canonical.rs) retain binary asset bytes and compare
+exports after changing SQLite page size and rewriting JSON object order and
+whitespace without updating stored fingerprints. Run both JSON map backends:
+
+```sh
+cargo test --locked --lib snapshots::canonical::tests
+cargo test --locked --test snapshot_canonical
+cargo test --locked --lib snapshots::canonical::tests --features serde_json/preserve_order
+cargo test --locked --test snapshot_canonical --features serde_json/preserve_order
+```
 
 [Schema contract tests](../../tests/snapshot_schema.rs) run the queries above
 against a published Python/R workspace, check every stored entity against its IR
