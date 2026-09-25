@@ -114,6 +114,7 @@ impl Snapshot {
         workspace.diagnostics = resolved.diagnostics().clone();
         let mut snapshot = Self {
             workspace,
+            presentation: executed.sources().configuration().presentation.clone(),
             documents: resolved.records().to_vec(),
             assets: resolved.assets().clone(),
             producer: env!("CARGO_PKG_VERSION").into(),

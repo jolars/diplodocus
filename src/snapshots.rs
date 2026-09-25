@@ -7,6 +7,7 @@ use std::collections::BTreeMap;
 use std::path::Path;
 
 use crate::assembly::{AssemblyError, WorkspaceSources};
+use crate::configuration::PresentationDefaults;
 use crate::ir::Workspace;
 use crate::validation::{ContentAsset, ResolvedDocument, ResolvedWorkspace};
 
@@ -15,7 +16,7 @@ mod storage;
 mod validation;
 
 /// Independent SQLite storage schema version.
-pub const STORAGE_SCHEMA_VERSION: u32 = 1;
+pub const STORAGE_SCHEMA_VERSION: u32 = 2;
 /// Canonical record encoding version, independent of database layout.
 pub const RECORD_ENCODING_VERSION: u32 = 1;
 
@@ -23,6 +24,7 @@ pub const RECORD_ENCODING_VERSION: u32 = 1;
 #[derive(Debug)]
 pub struct Snapshot {
     workspace: Workspace,
+    presentation: PresentationDefaults,
     documents: Vec<ResolvedDocument>,
     assets: BTreeMap<String, ContentAsset>,
     producer: String,
@@ -68,6 +70,7 @@ impl Snapshot {
         workspace.diagnostics = resolved.diagnostics().clone();
         let mut snapshot = Self {
             workspace,
+            presentation: sources.configuration().presentation.clone(),
             documents: resolved.records().to_vec(),
             assets: resolved.assets().clone(),
             producer: env!("CARGO_PKG_VERSION").into(),
@@ -81,6 +84,14 @@ impl Snapshot {
     /// Portable semantic records; no runtime checkout paths are stored.
     pub fn workspace(&self) -> &Workspace {
         &self.workspace
+    }
+    /// Recorded site defaults, available without the original configuration.
+    pub fn presentation(&self) -> &PresentationDefaults {
+        &self.presentation
+    }
+    /// Diplodocus version that originally produced this snapshot.
+    pub fn producer(&self) -> &str {
+        &self.producer
     }
     /// Resolved references and authored anchor sets in semantic document order.
     pub fn documents(&self) -> &[ResolvedDocument] {

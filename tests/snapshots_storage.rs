@@ -48,7 +48,8 @@ fn portable_snapshot_round_trip_needs_no_sources_or_sidecars() {
 #[test]
 fn rejects_unsupported_versions_missing_records_and_corrupt_assets() {
     for sql in [
-        "UPDATE manifest SET storage_version = 2",
+        "UPDATE manifest SET storage_version = 1",
+        "UPDATE manifest SET storage_version = 3",
         "UPDATE manifest SET ir_version = 2",
         "UPDATE manifest SET encoding_version = 2",
         "DELETE FROM records WHERE kind = 'workspace'",
@@ -126,6 +127,13 @@ async fn executed_snapshot_restores_all_safe_alternatives_without_staging() {
     let root = support::TestWorkspace::new();
     root.write("diplodocus.toml", "[project]\nname='Snapshots'\n[[repository]]\nid='docs'\npath='.'\n[[content]]\nid='guide'\nowner='project'\nrepository='docs'\npath='guide'\nmount='guide'\nformat='qmd'\n[content.execution]\nmode='execute'\nengine='jupyter'\nkernel='python3'\n");
     root.write(
+        "diplodocus.toml",
+        format!(
+            "{}\n[presentation]\ntitle='Executed results'\ndescription='Portable execution'\n",
+            root.read("diplodocus.toml")
+        ),
+    );
+    root.write(
         "guide/picture.svg",
         "<svg xmlns='http://www.w3.org/2000/svg'><circle r='3'/></svg>",
     );
@@ -151,6 +159,14 @@ async fn executed_snapshot_restores_all_safe_alternatives_without_staging() {
     assert_eq!(std::fs::read_dir(stage.path()).unwrap().count(), 0);
     let loaded = Snapshot::load(&path).unwrap();
     assert_eq!(std::fs::read_dir(target.path()).unwrap().count(), 1);
+    assert_eq!(
+        loaded.presentation().title.as_deref(),
+        Some("Executed results")
+    );
+    assert_eq!(
+        loaded.presentation().description.as_deref(),
+        Some("Portable execution")
+    );
     assert_eq!(
         loaded.canonical_export().unwrap(),
         snapshot.canonical_export().unwrap()

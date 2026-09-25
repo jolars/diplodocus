@@ -25,8 +25,16 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
         let mut html = String::from(
             "<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">",
         );
-        write!(html, "<title>{} · {}</title><link rel=\"stylesheet\" href=\"{}\"><script defer src=\"{}\"></script></head><body><a class=\"skip-link\" href=\"#main\">Skip to content</a>", escape(&page.title), escape(&site.workspace.name), escape(&relative_url(route, "assets/site.css")), escape(&relative_url(route, "assets/search.js"))).unwrap();
-        write!(html, "<header><a class=\"brand\" href=\"{}\">{}</a><form role=\"search\"><label for=\"search\">Search documentation</label><input id=\"search\" type=\"search\" autocomplete=\"off\"><ul id=\"search-results\" aria-live=\"polite\"></ul></form></header><div class=\"layout\"><nav aria-label=\"Documentation\"><ul>", escape(&relative_url(route, "index.html")), escape(&site.workspace.name)).unwrap();
+        if let Some(description) = &site.presentation.description {
+            write!(
+                html,
+                "<meta name=\"description\" content=\"{}\">",
+                escape(description)
+            )
+            .unwrap();
+        }
+        write!(html, "<title>{} · {}</title><link rel=\"stylesheet\" href=\"{}\"><script defer src=\"{}\"></script></head><body><a class=\"skip-link\" href=\"#main\">Skip to content</a>", escape(&page.title), escape(site.title()), escape(&relative_url(route, "assets/site.css")), escape(&relative_url(route, "assets/search.js"))).unwrap();
+        write!(html, "<header><a class=\"brand\" href=\"{}\">{}</a><form role=\"search\"><label for=\"search\">Search documentation</label><input id=\"search\" type=\"search\" autocomplete=\"off\"><ul id=\"search-results\" aria-live=\"polite\"></ul></form></header><div class=\"layout\"><nav aria-label=\"Documentation\"><ul>", escape(&relative_url(route, "index.html")), escape(site.title())).unwrap();
         for (destination, candidate) in &site.pages {
             if !candidate.visible {
                 continue;

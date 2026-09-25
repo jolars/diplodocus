@@ -68,6 +68,14 @@ fn records(snapshot: &Snapshot) -> Result<Vec<Record>, SnapshotError> {
     }
     values.insert(
         Key {
+            kind: "presentation".into(),
+            owner: String::new(),
+            id: String::new(),
+        },
+        serde_json::to_value(&snapshot.presentation)?,
+    );
+    values.insert(
+        Key {
             kind: "workspace".into(),
             owner: String::new(),
             id: String::new(),
@@ -294,6 +302,7 @@ fn decode(
     producer: String,
 ) -> Result<Snapshot, SnapshotError> {
     let mut workspace = None;
+    let mut presentation = None;
     let mut entities: BTreeMap<&str, serde_json::Map<String, Value>> = BTreeMap::new();
     let mut nested = Vec::new();
     let mut documents = Vec::new();
@@ -301,6 +310,10 @@ fn decode(
     for record in records {
         let Key { kind, owner, id } = &record.key;
         let field = match kind.as_str() {
+            "presentation" if owner.is_empty() && id.is_empty() && presentation.is_none() => {
+                presentation = Some(serde_json::from_value(record.content.clone())?);
+                continue;
+            }
             "workspace" if owner.is_empty() && id.is_empty() && workspace.is_none() => {
                 workspace = Some(record.content.clone());
                 continue;
@@ -397,6 +410,7 @@ fn decode(
     documents.sort_by(|a, b| a.document.cmp(&b.document));
     Ok(Snapshot {
         workspace: serde_json::from_value(workspace)?,
+        presentation: presentation.ok_or(SnapshotError::Invalid("missing presentation"))?,
         documents,
         assets,
         producer,

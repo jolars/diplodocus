@@ -2,7 +2,7 @@
 
 use std::collections::BTreeMap;
 
-use crate::configuration::{ExecutionMode, PackageVisibility};
+use crate::configuration::{ExecutionMode, PackageVisibility, PresentationDefaults};
 use crate::diagnostics::DiagnosticPath;
 use crate::documents::prepare_collection_document;
 use crate::execution::{PreparedCell, ValidatedPage};
@@ -30,6 +30,7 @@ pub enum SiteError {
 /// Complete generation inputs, independent of databases and source checkouts.
 pub struct Site<'a> {
     pub(crate) workspace: &'a Workspace,
+    pub(crate) presentation: &'a PresentationDefaults,
     pub(crate) pages: BTreeMap<String, PageModel<'a>>,
     pub(crate) routes: BTreeMap<DocumentIdentity, String>,
     pub(crate) assets: &'a BTreeMap<String, ContentAsset>,
@@ -70,6 +71,7 @@ impl<'a> Site<'a> {
         let workspace = snapshot.workspace();
         let mut site = Self {
             workspace,
+            presentation: snapshot.presentation(),
             pages: BTreeMap::new(),
             routes: BTreeMap::new(),
             assets: snapshot.assets(),
@@ -208,10 +210,16 @@ impl<'a> Site<'a> {
         if !site.pages.contains_key("index.html") {
             site.insert(
                 "index.html".into(),
-                PageModel::empty(workspace.name.clone(), None, true),
+                PageModel::empty(site.title().to_owned(), None, true),
             )?;
         }
         Ok(site)
+    }
+    pub(crate) fn title(&self) -> &str {
+        self.presentation
+            .title
+            .as_deref()
+            .unwrap_or(&self.workspace.name)
     }
     fn insert(&mut self, route: String, page: PageModel<'a>) -> Result<(), SiteError> {
         if DiagnosticPath::try_from(route.clone()).is_err()

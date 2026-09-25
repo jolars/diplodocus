@@ -28,6 +28,9 @@ use crate::ir::SourceSpan;
 pub struct WorkspaceConfiguration {
     /// Project-wide identity.
     pub project: ProjectConfiguration,
+    /// Portable defaults used when generating a site from the snapshot.
+    #[serde(default, skip_serializing_if = "PresentationDefaults::is_default")]
+    pub presentation: PresentationDefaults,
     /// Explicit local source repositories; omission declares none.
     #[serde(default, rename = "repository", skip_serializing_if = "Vec::is_empty")]
     pub repositories: Vec<RepositoryConfiguration>,
@@ -55,6 +58,25 @@ pub struct WorkspaceConfiguration {
 pub struct ProjectConfiguration {
     /// Display name of the project.
     pub name: String,
+}
+
+/// Portable site metadata, independent of extraction and execution policy.
+///
+/// The built-in theme renders these values as escaped text. No local theme
+/// paths, output directories, or execution authority belong in these defaults.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct PresentationDefaults {
+    /// Site title and branding; `None` uses the workspace's project name.
+    pub title: Option<String>,
+    /// Site-wide HTML description; `None` omits the description metadata.
+    pub description: Option<String>,
+}
+
+impl PresentationDefaults {
+    fn is_default(&self) -> bool {
+        self == &Self::default()
+    }
 }
 
 /// An explicitly supplied local source repository.

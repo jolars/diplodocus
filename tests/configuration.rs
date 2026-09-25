@@ -13,6 +13,31 @@ const COMPLETE: &str = include_str!("fixtures/configuration/complete.toml");
 const ACCEPTANCE: &str = include_str!("fixtures/acceptance/workspace/diplodocus.toml");
 
 #[test]
+fn presentation_settings_accept_only_portable_display_metadata() {
+    for settings in [
+        "title = 42",
+        "description = false",
+        "theme_path = '/tmp/theme'",
+        "execute = true",
+    ] {
+        assert!(
+            parse_configuration(&format!(
+                "[project]\nname='Docs'\n[presentation]\n{settings}\n"
+            ))
+            .is_err()
+        );
+    }
+    let config = parse_configuration(
+        "[project]\nname='Docs'\n[presentation]\ntitle='Documentation'\ndescription='A guide'\n",
+    )
+    .unwrap();
+    assert_eq!(
+        parse_configuration(&toml::to_string(&config).unwrap()).unwrap(),
+        config
+    );
+}
+
+#[test]
 fn parses_every_configuration_section_and_retains_declared_values() {
     let config = parse_configuration(COMPLETE).unwrap();
     assert_eq!(config.project.name, "Foo");

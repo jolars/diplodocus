@@ -62,8 +62,11 @@ fn rewrite(path: &std::path::Path, export: &mut Value) {
         asset.as_object_mut().unwrap().remove("bytes_base64");
     }
     let digest = fingerprint_bytes(&serde_json::to_vec(&logical).unwrap()).value;
-    db.execute("UPDATE manifest SET content_fingerprint=?1", [digest])
-        .unwrap();
+    db.execute(
+        "UPDATE manifest SET content_fingerprint=?1, producer=?2",
+        params![digest, export["producer"].as_str().unwrap()],
+    )
+    .unwrap();
 }
 
 fn record<'a>(export: &'a mut Value, kind: &str) -> &'a mut Value {
@@ -86,6 +89,49 @@ fn changed(
     change(&mut export);
     rewrite(&path, &mut export);
     Snapshot::load(path)
+}
+
+#[test]
+fn rejects_missing_or_malformed_presentation_even_with_valid_fingerprints() {
+    let snapshot = snapshot();
+    for case in [
+        "missing", "owner", "id", "shape", "field", "unknown", "type",
+    ] {
+        let result = changed(&snapshot, |export| {
+            let records = export["records"].as_array_mut().unwrap();
+            if case == "missing" {
+                records.retain(|r| r["kind"] != "presentation");
+                return;
+            }
+            let record = records
+                .iter_mut()
+                .find(|r| r["kind"] == "presentation")
+                .unwrap();
+            match case {
+                "owner" => record["owner"] = "project".into(),
+                "id" => record["id"] = "defaults".into(),
+                "shape" => record["content"] = json!([]),
+                "field" => {
+                    record["content"].as_object_mut().unwrap().remove("title");
+                }
+                "unknown" => record["content"]["theme_path"] = "/tmp/theme".into(),
+                "type" => record["content"]["title"] = true.into(),
+                _ => unreachable!(),
+            }
+        });
+        assert!(result.is_err(), "accepted {case}");
+    }
+}
+
+#[test]
+fn loading_and_republishing_preserve_the_original_producer_version() {
+    let snapshot = snapshot();
+    let loaded = changed(&snapshot, |export| export["producer"] = "0.0.1".into()).unwrap();
+    assert_eq!(loaded.producer(), "0.0.1");
+    let target = tempfile::tempdir().unwrap();
+    let path = target.path().join("snapshot.sqlite");
+    loaded.publish(&path).unwrap();
+    assert_eq!(Snapshot::load(&path).unwrap().producer(), "0.0.1");
 }
 
 #[test]
@@ -339,13 +385,18 @@ fn loading_is_read_only_and_never_creates_a_missing_database() {
 
 #[test]
 fn each_version_is_rejected_before_decoding_records_without_migration() {
-    for field in ["storage_version", "ir_version", "encoding_version"] {
+    for (field, version) in [
+        ("storage_version", 1),
+        ("storage_version", 3),
+        ("ir_version", 2),
+        ("encoding_version", 2),
+    ] {
         let target = tempfile::tempdir().unwrap();
         let path = target.path().join("snapshot.sqlite");
         snapshot().publish(&path).unwrap();
         let db = Connection::open(&path).unwrap();
         db.execute_batch(&format!(
-            "UPDATE manifest SET {field} = 2; DROP TABLE records;"
+            "UPDATE manifest SET {field} = {version}; DROP TABLE records;"
         ))
         .unwrap();
         drop(db);

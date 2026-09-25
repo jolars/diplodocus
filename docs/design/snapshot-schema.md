@@ -1,4 +1,4 @@
-# SQLite snapshot schema 1
+# SQLite snapshot schema 2
 
 This is the storage contract for a standalone Diplodocus snapshot. The [table
 definitions](../../src/snapshots/schema.sql) are executable SQL used directly by
@@ -10,7 +10,7 @@ IR into separate rows.
 
   | Manifest field     | Current value | Governs                                                                                                                                        |
   | ---                | ---           | ---                                                                                                                                            |
-  | `storage_version`  | `1`           | SQLite tables, columns, keys, record kinds, splitting entities into rows, and storage-specific envelopes. Defined by `STORAGE_SCHEMA_VERSION`. |
+  | `storage_version`  | `2`           | SQLite tables, columns, keys, record kinds, splitting entities into rows, and storage-specific envelopes. Defined by `STORAGE_SCHEMA_VERSION`. |
   | `ir_version`       | `1`           | Semantic IR field shapes and meaning, including nested documents, signatures, and language extensions. Defined by `WORKSPACE_SCHEMA_VERSION`.  |
   | `encoding_version` | `1`           | Canonical record encoding, fingerprint inputs, and text export. Defined by `RECORD_ENCODING_VERSION`.                                          |
 
@@ -18,8 +18,12 @@ These versions are independent: a table-layout change requires a storage version
 change; an incompatible signature or language-extension change requires an IR
 version change even if the SQL tables stay the same. Changing canonical hashing
 or export rules requires an encoding version change. A change may affect more
-than one version. The current reader accepts only `(1, 1, 1)` and rejects any
+than one version. The current reader accepts only `(2, 1, 1)` and rejects any
 unsupported component; it does not migrate snapshots automatically.
+
+Storage version 2 adds the required `presentation` record. Version 1 snapshots
+must be extracted again. The semantic IR and canonical encoding remain at
+version 1 because presentation defaults are storage metadata outside the IR.
 
 The workspace record also carries `schema_version: 1`, which must agree with
 `manifest.ir_version`. Nested JSON inherits the containing snapshot's versions;
@@ -73,6 +77,7 @@ The `records` kinds are:
   | Kind         | Owner      | ID                            | Content                                                                                                                                              |
   | ---          | ---        | ---                           | ---                                                                                                                                                  |
   | `workspace`  | Empty      | Empty                         | `schema_version`, `name`, `relationships`, `diagnostics`, `provenance`                                                                               |
+  | `presentation` | Empty    | Empty                         | `title`, `description`                                                                                                                            |
   | `repository` | Empty      | Repository ID                 | `canonical_url`, `source_link_template`, `revision`, `dirty`, `declared_input_fingerprint`                                                           |
   | `package`    | Empty      | Package ID                    | `slug`, `name`, `ecosystem`, `version`, `repository`, `path`, `metadata_path`, `kind`, `visibility`                                                  |
   | `target`     | Package ID | Target ID                     | `extractor`, `path`, `role`                                                                                                                          |
@@ -83,12 +88,14 @@ The `records` kinds are:
   | `document`   | Empty      | Serialized `DocumentIdentity` | `document`, `collection_path`, `anchors`, `references`                                                                                               |
   | `execution`  | Empty      | Page ID                       | `record`, `diagnostics`, `diagnostic_offset`, `slots`                                                                                                |
 
-There is exactly one `workspace` record. Every entity map entry becomes one row,
-with its map key in `id`; the JSON content does not duplicate that ID. The
+There is exactly one `workspace` record and one `presentation` record. Every
+entity map entry becomes one row, with its map key in `id`; the JSON content
+does not duplicate that ID. The
 workspace row omits `repositories`, `packages`, `content_collections`, `pages`,
 and `concepts`. Package rows omit `items` and `extraction_targets`. Loading
 rebuilds those maps from their rows, including empty maps. All entity IDs and
-package owners must be nonempty; only the workspace ID is empty.
+package owners must be nonempty; only the workspace and presentation IDs are
+empty.
 
 Each page has exactly one `document` row. An item or concept has one precisely
 when its `documentation` is non-null. This row stores resolution metadata; the
@@ -173,6 +180,36 @@ omits `item.language_data` when absent, `item.aliases` when empty, and code-cell
 `outputs` when empty. Diagnostic omissions are described below. Other fields in
 the record table remain present. Decoding alone can accept some omitted optional
 fields; the loader's canonical re-encoding check requires the writer's shape.
+
+### Presentation defaults
+
+The `presentation` singleton retains the optional `[presentation]` configuration
+independently of semantic workspace identities:
+
+```json
+{"title": "Foo documentation", "description": "Documentation for Foo."}
+```
+
+Both fields are nullable strings and are always present in storage, even when
+configuration omits the table. A null `title` uses `workspace.name`; a null
+`description` omits HTML description metadata. The title supplies site branding,
+the page-title suffix, and the generated project overview title. Authored page
+titles remain part of their documents. Generation treats these values as text
+and escapes them for HTML. The initial generator uses its built-in theme.
+Local theme paths, output directories, checkout roots, and execution authority
+are not presentation defaults. Unknown fields and malformed values are rejected.
+
+`Snapshot::presentation()` exposes these defaults, and `Snapshot::producer()`
+returns the original manifest producer version without replacing it with the
+loading binary's version. Repository URLs, source-link templates, revision,
+dirty state, and input fingerprints remain in repository records. Unknown Git
+observations remain null; configured revisions take precedence over observed
+HEAD. Diagnostic messages, entities, relative source paths, spans, and related
+spans stay in the workspace record. Producer-specific parser versions and input
+fingerprints remain in each record's provenance. Loading needs none of the
+original repositories or configuration files.
+
+### Semantic records
 
 The [workspace types](../../src/ir/workspace.rs) define all entity fields.
 Repository metadata fields are nullable strings, except `dirty` (nullable

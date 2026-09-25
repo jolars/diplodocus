@@ -543,7 +543,7 @@ layouts in the generation stage.
 - [x] Store checked-in images and downloads and generated figure bytes by
   content fingerprint, with all references needed to recover them without
   source checkouts or execution caches.
-- [ ] Include presentation defaults, slugs, content mounts, source-link
+- [x] Include presentation defaults, slugs, content mounts, source-link
   information, diagnostics, and portable producer and repository provenance.
 - [ ] Define versioned canonical record encodings and per-entity content
   fingerprints. Add a canonical text export for readable fixtures and

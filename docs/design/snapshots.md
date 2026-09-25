@@ -22,6 +22,13 @@ repository-relative evidence, not files generation must open. Built-in theme
 assets ship with Diplodocus. A future custom-theme facility must specify how its
 assets travel with the snapshot before claiming the same portability.
 
+The snapshot also retains a required presentation record containing the site's
+optional title and description defaults. Generation reads those defaults without
+the original configuration. Package slugs and collection mounts stay with their
+semantic records; source-link templates and revision evidence stay with each
+repository. Diagnostics and producer provenance retain their portable source
+locations and tool versions.
+
 The storage schema has an explicit version alongside the IR schema. Readers and
 writers reject unsupported versions with a diagnostic; the initial
 implementation does not migrate old snapshots automatically. Generation

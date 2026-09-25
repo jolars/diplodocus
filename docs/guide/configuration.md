@@ -69,6 +69,22 @@ Identity and relationship validation, general metadata and cell-option
 validation, and command integration remain under development. Neither parsing
 nor path resolution authorizes execution.
 
+## Presentation defaults
+
+An optional table records site metadata for generation:
+
+```toml
+[presentation]
+title = "Foo documentation"
+description = "Guides and API documentation for Foo."
+```
+
+The title controls site branding, the page-title suffix, and the generated
+project overview title. It defaults to `project.name`. The description supplies
+HTML description metadata and is omitted by default. Both values are plain text
+rendered with HTML escaping. They travel with the snapshot, so generation does
+not need the original configuration. Diplodocus uses its built-in theme.
+
 ## Repositories and ownership
 
 Each path has an explicit base and boundary:
