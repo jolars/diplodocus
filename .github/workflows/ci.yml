@@ -48,10 +48,11 @@ jobs:
         run: devenv shell -- cargo test --locked --all-targets
       - name: Check snapshots with insertion-ordered JSON maps
         run: |
-          devenv shell -- cargo test --locked --lib snapshots::canonical::tests --features serde_json/preserve_order
+          devenv shell -- cargo test --locked --lib snapshots:: --features serde_json/preserve_order
           devenv shell -- cargo test --locked --features serde_json/preserve_order \
             --test snapshot_canonical --test snapshot_schema --test snapshot_metadata \
-            --test snapshots_storage --test snapshot_assets --test snapshot_validation
+            --test snapshots_storage --test snapshot_assets --test snapshot_validation \
+            --test snapshot_publication
 
   docs:
     name: rustdoc

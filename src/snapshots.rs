@@ -112,8 +112,11 @@ impl Snapshot {
     }
     /// Atomically replace a snapshot with a completed, closed database.
     ///
-    /// The caller must protect declared input paths before selecting the target.
-    /// A failure before replacement leaves an existing destination untouched.
+    /// Errors leave an existing destination untouched. SQLite journal, WAL, or
+    /// shared-memory sidecars at the destination prevent replacement.
+    ///
+    /// The caller must protect declared input paths before selecting the target
+    /// and prevent external SQLite writers from modifying it during publication.
     pub fn publish(&self, path: impl AsRef<Path>) -> Result<(), SnapshotError> {
         self.validate()?;
         storage::publish(self, path.as_ref())

@@ -8,7 +8,11 @@ use super::canonical::{Key, Record, content_fingerprint, fingerprint, records};
 use crate::ir::{Fingerprint, WORKSPACE_SCHEMA_VERSION};
 use crate::provenance::fingerprint_bytes;
 
+#[cfg(test)]
+mod tests;
+
 pub(super) fn publish(snapshot: &Snapshot, path: &Path) -> Result<(), SnapshotError> {
+    ensure_no_sidecars(path)?;
     let parent = path
         .parent()
         .filter(|p| !p.as_os_str().is_empty())
@@ -58,8 +62,34 @@ pub(super) fn publish(snapshot: &Snapshot, path: &Path) -> Result<(), SnapshotEr
     connection.close().map_err(|(_, error)| error)?;
     temporary.as_file().sync_all()?;
     // Close and validate the standalone artifact before the publication point.
+    ensure_no_sidecars(temporary.path())?;
     load(temporary.path())?;
+    ensure_no_sidecars(path)?;
     temporary.persist(path).map_err(|error| error.error)?;
+    Ok(())
+}
+
+fn ensure_no_sidecars(path: &Path) -> Result<(), SnapshotError> {
+    // SQLite names recovery files after the destination. Leaving one beside a
+    // replacement could apply the previous database's state to the new file.
+    for suffix in ["-journal", "-wal", "-shm"] {
+        let mut companion = path.as_os_str().to_owned();
+        companion.push(suffix);
+        match fs::symlink_metadata(&companion) {
+            Ok(_) => {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::AlreadyExists,
+                    format!(
+                        "SQLite sidecar exists at {}; close SQLite writers and resolve their recovery files before publishing",
+                        Path::new(&companion).display()
+                    ),
+                )
+                .into());
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => return Err(error.into()),
+        }
+    }
     Ok(())
 }
 

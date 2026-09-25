@@ -551,7 +551,7 @@ layouts in the generation stage.
 - [x] Test semantic IR and asset round trips, deterministic fingerprints,
   unsupported schema versions, malformed records, missing assets, and
   corrupted asset contents.
-- [ ] Publish a complete workspace atomically as a standalone database with no
+- [x] Publish a complete workspace atomically as a standalone database with no
   dependency on a live journal or write-ahead log. A failed refresh
   preserves the previous successful snapshot.
 - [ ] Test repeated refreshes, stable IDs for retained entities, removal of

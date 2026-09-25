@@ -34,12 +34,21 @@ Consumers must read the manifest before interpreting a detached record.
 `extract` replaces the complete snapshot, so deleted entities and unused assets
 disappear on the next refresh.
 
-The standalone database uses SQLite's rollback journal mode. Publication writes
-a temporary sibling database in one transaction, closes it, validates the
-completed artifact, and replaces the destination with a rename. Failed
-extraction, validation, or writing preserves the previous database. Generation
-opens the database read-only and requires no source files, execution cache, or
-language runtime.
+The standalone database uses SQLite's `DELETE` rollback journal mode.
+Publication writes a temporary sibling database in one transaction, commits and
+closes it, synchronizes its contents, validates the completed artifact, and
+replaces the destination with an atomic rename. Readers holding the previous
+file can finish reading it, while new readers open the replacement. Failed
+extraction, validation, writing, or replacement preserves the previous database.
+Generation opens the database read-only and requires no source files, execution
+cache, or language runtime.
+
+Publication rejects a destination with a `-journal`, `-wal`, or `-shm` sidecar,
+leaving both the database and sidecars untouched. Recovery state from a previous
+database must never be applied to its replacement. Callers must close external
+SQLite writers before publishing and keep them closed during publication. The
+sidecar checks detect existing recovery files; they do not lock out an external
+writer that starts concurrently.
 
 ## Tables
 
@@ -569,6 +578,11 @@ resolved documents, and assets with the original assembly and resolution results
 after removing the source checkout. They distinguish malformed JSON from record,
 asset, and manifest fingerprint failures, and cover refreshes and execution
 restoration.
+[Publication tests](../../tests/snapshot_publication.rs) verify standalone copies,
+readers retaining the previous complete database across replacement, and failed
+refreshes with existing sidecars or active SQLite transactions. A storage unit
+test verifies that rejection of a completed staging database leaves the previous
+snapshot intact and removes the temporary file.
 [Asset handoff tests](../../tests/snapshot_assets.rs) check exact SQLite bytes,
 deduplication across checked-in and generated assets, download fragments, and
 PNG, JPEG, and SVG recovery from a copied database after removing the checkout,
@@ -585,9 +599,10 @@ reject old and future storage, IR, and encoding versions before reading records
 or assets, without migration. Run the full snapshot suite with:
 
 ```sh
+cargo test --locked --lib snapshots::
 cargo test --locked --test snapshot_schema --test snapshots_storage \
   --test snapshot_assets --test snapshot_validation --test snapshot_metadata \
-  --test snapshot_canonical
+  --test snapshot_canonical --test snapshot_publication
 ```
 
 Use the project's devenv shell, which supplies the execution tests' Python
