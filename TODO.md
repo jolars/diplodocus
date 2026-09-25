@@ -530,11 +530,13 @@ layouts in the generation stage.
 
 ### Snapshot storage and extraction
 
-- [ ] Specify and document the SQLite tables, keys, relationships, serialized
+- [x] Specify and document the SQLite tables, keys, relationships, serialized
   field shapes, and independent storage and IR schema versions. Make
   top-level entities queryable by semantic ID; use versioned serialized
   values for nested documents, signatures, and language extensions where
-  appropriate.
+  appropriate. The [schema contract](docs/design/snapshot-schema.md) defines the
+  shared SQL schema and JSON shapes; contract tests verify semantic-ID queries
+  and the serialized examples.
 - [ ] Implement snapshot writing and read-only loading with rejection of
   unsupported storage or IR versions. Validate required records, identities,
   paths, references, and asset fingerprints; defer automatic migrations.

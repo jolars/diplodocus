@@ -12,6 +12,10 @@ semantic ID; nested documents, signatures, and language extensions may use
 versioned serialized values instead of a table for every syntax node. A
 canonical text export supports golden fixtures and readable comparisons.
 
+The [SQLite schema contract](snapshot-schema.md) specifies the tables, semantic
+keys, record relationships, JSON field shapes, and version boundaries. Its
+[table definitions](../../src/snapshots/schema.sql) are also used by the writer.
+
 Store local asset bytes by content fingerprint and reference them from the IR.
 Generation writes those assets to the output tree. Source locations remain
 repository-relative evidence, not files generation must open. Built-in theme
