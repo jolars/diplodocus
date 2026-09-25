@@ -537,7 +537,7 @@ layouts in the generation stage.
   appropriate. The [schema contract](docs/design/snapshot-schema.md) defines the
   shared SQL schema and JSON shapes; contract tests verify semantic-ID queries
   and the serialized examples.
-- [ ] Implement snapshot writing and read-only loading with rejection of
+- [x] Implement snapshot writing and read-only loading with rejection of
   unsupported storage or IR versions. Validate required records, identities,
   paths, references, and asset fingerprints; defer automatic migrations.
 - [ ] Store checked-in images and downloads and generated figure bytes by

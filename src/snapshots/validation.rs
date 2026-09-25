@@ -10,6 +10,8 @@ use crate::validation::{
     resolve_item,
 };
 
+mod links;
+
 pub(super) fn require(condition: bool, message: &'static str) -> Result<(), SnapshotError> {
     condition
         .then_some(())
@@ -20,6 +22,7 @@ impl Snapshot {
     pub(super) fn validate(
         &self,
     ) -> Result<BTreeMap<String, crate::execution::ValidatedPage>, SnapshotError> {
+        links::validate(&self.workspace)?;
         let outputs = self.restore_outputs()?;
         let workspace = &self.workspace;
         require(!self.producer.is_empty(), "missing producer")?;
@@ -199,7 +202,9 @@ impl Snapshot {
                             kind == ReferenceKind::Link && workspace.pages.contains_key(page),
                             "page reference",
                         )?;
-                        if let Some(fragment) = fragment {
+                        if let Some(fragment) = fragment
+                            && !fragment.is_empty()
+                        {
                             require(
                                 records[&DocumentIdentity::Page { page: page.clone() }]
                                     .anchors

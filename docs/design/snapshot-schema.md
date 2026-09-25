@@ -128,7 +128,7 @@ require a repository or package row.
   | `TargetReference {package, target}` in extraction provenance               | `('target', package, target)`                                                                                                  |
   | `workspace.relationships[].from` and `.to`                                 | `{"kind":"workspace","package":ID}` joins a package; `{"kind":"external","ecosystem":E,"name":N}` retains external coordinates |
   | `document.document`                                                        | Owning page, item, or concept with a structured document                                                                       |
-  | `ReferenceTarget` with `kind: "item"` or `kind: "page"`                    | Referenced item or page; a non-null page `fragment` names an authored anchor                                                   |
+  | `ReferenceTarget` with `kind: "item"` or `kind: "page"`                    | Referenced item or page; a nonempty page `fragment` names an authored anchor                                                   |
   | `ReferenceTarget` with `kind: "anchor"`                                    | `fragment` names an anchor in the containing document                                                                          |
   | `ReferenceTarget` with `kind: "asset"`                                     | `asset.fingerprint.value` joins `assets.digest`; `fragment` is nullable                                                        |
   | `ReferenceTarget` with `kind: "external"`                                  | `url` is an accepted external hyperlink, not a local entity                                                                    |
@@ -166,6 +166,10 @@ Collection `format` is `qmd` or `gfm`. Its `execution` object has `mode`
 (`never` or `execute`), nullable `engine` (`jupyter`), nullable `kernel`
 (string), and `declared_environment_inputs` (sorted repository-relative paths).
 These are declarations, not authority to execute during loading or generation.
+
+Package slugs and nonempty content mounts must also be normalized relative
+paths. They cannot contain control characters or URL query, fragment, or
+percent-encoding delimiters. An empty mount places content at its owner's root.
 
 Concept `kind` is `equivalent`, `analogous`, or `related`; `members` is a
 sorted, unique array of `{package, item}` objects. A package relationship
@@ -413,6 +417,12 @@ asset metadata, plus base64 asset bytes. Comparing this export establishes
 logical equivalence independently of physical database layout. Fingerprints
 provide integrity checks, not authentication: loading also checks record sets,
 semantic references, anchors, paths, asset media, and active output policies.
+Reference validation includes nested signature expressions, Python and R
+language records, source evidence, and provenance. Source repository and
+extraction-target IDs must resolve within the snapshot, but source files are
+never opened. External package and R generic coordinates do not require local
+entities. Cell-option declaration indices must select options with the same
+canonical key before document anchors or execution outputs are traversed.
 
 ## Contract checks
 
@@ -420,10 +430,14 @@ semantic references, anchors, paths, asset media, and active output policies.
 against a published Python/R workspace, check every stored entity against its IR
 map key and fields, and round-trip the JSON examples through their typed IR
 decoders. [Storage tests](../../tests/snapshots_storage.rs) cover portable
-reads, version rejection, corruption, refreshes, and execution restoration. Run
-them with `cargo test --locked --test snapshot_schema --test snapshots_storage`
-in the project's devenv shell, which supplies the execution test's Python
-kernel.
+reads, version rejection, corruption, refreshes, and execution restoration.
+[Validation tests](../../tests/snapshot_validation.rs) recompute record and
+snapshot fingerprints after introducing malformed records, dangling references,
+invalid paths, and missing assets, so checksum failures cannot mask validation
+gaps. They also verify read-only loading and version rejection before record
+decoding, without migration. Run these checks with
+`cargo test --locked --test snapshot_schema --test snapshots_storage --test snapshot_validation`
+in the project's devenv shell, which supplies the execution test's Python kernel.
 
 ## Generation boundary
 
