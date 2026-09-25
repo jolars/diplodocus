@@ -27,7 +27,8 @@ fn context(root: &Path) -> ExecutionContext<'static> {
         page_path: page,
         asset_staging_directory: root.join("assets"),
         deadlines: ExecutionDeadlines {
-            startup: 3_000,
+            // Parallel subprocess tests need scheduling time; deadline tests override this.
+            startup: 10_000,
             shutdown: 500,
             interrupt: 100,
             termination: 100,

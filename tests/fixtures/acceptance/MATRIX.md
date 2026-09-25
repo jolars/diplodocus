@@ -152,6 +152,23 @@ The following invariants apply to every row:
 | Case `unsafe-kernel-html`, overlay `../acceptance-cases/unsafe-kernel-html/python/execution/unsafe-html.qmd`: `python/execution/unsafe-html.qmd`: script-only kernel HTML | Unsanitized `text/html` never enters document IR; retain a visible safe fallback or unsupported-output placeholder | Warning `unsafe-kernel-html`; this is the additional diagnostic for this case | Execute one cell; sanitization occurs before rendering and never runs the script | Diagnostic records MIME type and cell `unsafe-html` without embedding trusted script markup | `/packages/python/execution/unsafe-html/` for a warning-tolerant build | Normal Python execution page with visible output warning | Script cannot create links or DOM targets | None | Authored title and prose are searchable; rejected HTML is not |
 | Case `generated-asset-outside-boundary`, overlay `../acceptance-cases/generated-asset-outside-boundary/python/execution/asset-boundary-escape.qmd`: `python/execution/asset-boundary-escape.qmd`: Markdown image path into sibling repository | Isolated Markdown retains a rejected-image placeholder, never bytes from `core` and never an execution asset outside its boundary | Error `generated-asset-outside-boundary`; this is the additional diagnostic for this case | Execute one cell, reject the traversal during output validation, and emit no escaped asset | Diagnostic points to cell `asset-boundary-escape`, attempted path, and declared Python execution boundary without absolute paths | No page or asset is emitted by the focused failed build | No navigation is emitted by the focused failed build | Attempted sibling path does not resolve or become a rendered link | None | No search entry is emitted by the focused failed build |
 
+## Execution-kernel regression corpus
+
+The focused [Python and R pages](../execution-kernels) supplement the workspace
+corpus above. `tests/milestone_six.rs` runs them through CLI builds and checks
+their complete structured outputs against `tests/snapshots/milestone-six/`.
+Both kernels must retain state across cells and an allowed error, emit streams,
+HTML, Markdown, and SVG, diagnose JavaScript-only output, select a plain-text
+fallback when present, and skip cells with `eval: false`. A second build must
+restore identical records, assets, and site files without executing the source.
+
+The same test target exercises real Python/R timeouts, cancellation, dropped
+execution, disallowed errors, and missing selectors. It checks interruption,
+process reaping, connection cleanup, removal of earlier staged figures, and
+suppression of later cells. The [execution acceptance report](../../../docs/design/execution-acceptance-validation.md)
+maps these cases to the controllable protocol fixture and the related authority,
+cache, and watched-site tests.
+
 ## MVP completion coverage
 
 Every criterion in `TODO.md` has a stable ID and maps to concrete scenarios.

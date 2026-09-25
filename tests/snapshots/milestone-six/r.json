@@ -1,0 +1,1141 @@
+{
+  "assets": [
+    {
+      "byte_size": 74,
+      "media_type": "image/svg+xml",
+      "reference": {
+        "fingerprint": {
+          "algorithm": "sha256",
+          "value": "0dcd7e9ed2939bf723b1e5ad37035bfbec150e9631b29762a6d77bc94d2d73c8"
+        },
+        "path": "execution-assets/fa55e1f903be216bbf1e0a9d5533de7a0f2ca638d635927ed009118ed3e8b7d6/sha256/0dcd7e9ed2939bf723b1e5ad37035bfbec150e9631b29762a6d77bc94d2d73c8"
+      }
+    }
+  ],
+  "cells": [
+    {
+      "language": "r",
+      "options": {
+        "execution": {
+          "echo": {
+            "origin": {
+              "kind": "document",
+              "span": {
+                "end": 27,
+                "start": 15
+              }
+            },
+            "value": false
+          },
+          "error": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": false
+          },
+          "eval": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "include": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "output": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": "show"
+          }
+        },
+        "fig_alt": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_cap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_subcap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": []
+        },
+        "label": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        }
+      },
+      "ordinal": 0,
+      "outcome": {
+        "kind": "ok"
+      },
+      "outputs": [],
+      "source_segments": [
+        {
+          "span": {
+            "end": 92,
+            "start": 65
+          },
+          "text": "stopifnot(!exists('total'))"
+        },
+        {
+          "span": {
+            "end": 93,
+            "start": 92
+          },
+          "text": "\n"
+        },
+        {
+          "span": {
+            "end": 186,
+            "start": 93
+          },
+          "text": "writeLines(c(as.character(Sys.getpid()), commandArgs(trailingOnly = TRUE)[1]), 'process.txt')"
+        },
+        {
+          "span": {
+            "end": 187,
+            "start": 186
+          },
+          "text": "\n"
+        },
+        {
+          "span": {
+            "end": 238,
+            "start": 187
+          },
+          "text": "cat('executed\\n', file = 'runs.txt', append = TRUE)"
+        },
+        {
+          "span": {
+            "end": 239,
+            "start": 238
+          },
+          "text": "\n"
+        },
+        {
+          "span": {
+            "end": 263,
+            "start": 239
+          },
+          "text": "total <- sum(c(2, 4, 6))"
+        },
+        {
+          "span": {
+            "end": 264,
+            "start": 263
+          },
+          "text": "\n"
+        }
+      ],
+      "span": {
+        "end": 268,
+        "start": 58
+      },
+      "submitted_source_fingerprint": {
+        "algorithm": "sha256",
+        "value": "442eea9052459cfe87553cc0649b201f090a6b60a108cfc1e5db1439eb3c3eca"
+      }
+    },
+    {
+      "language": "r",
+      "options": {
+        "execution": {
+          "echo": {
+            "origin": {
+              "kind": "document",
+              "span": {
+                "end": 27,
+                "start": 15
+              }
+            },
+            "value": false
+          },
+          "error": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": false
+          },
+          "eval": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "include": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "output": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": "show"
+          }
+        },
+        "fig_alt": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_cap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_subcap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": []
+        },
+        "label": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        }
+      },
+      "ordinal": 1,
+      "outcome": {
+        "kind": "ok"
+      },
+      "outputs": [
+        {
+          "diagnostic_indices": [],
+          "offered_mime_types": [
+            "text/plain"
+          ],
+          "output": {
+            "kind": {
+              "stream": "stdout",
+              "type": "stream"
+            },
+            "provenance": [],
+            "representations": [
+              {
+                "kind": "plain-text",
+                "media_type": "text/plain",
+                "text": "total = 12\n"
+              }
+            ]
+          },
+          "owning_cell": 1,
+          "producing_cell": 1,
+          "representations": [
+            {
+              "content_fingerprint": {
+                "algorithm": "sha256",
+                "value": "20f1bbef265bbc93baa1a4ed3d620655f8f1358159c09401f817c41285d70570"
+              },
+              "policy": null,
+              "producing_cell": 1
+            }
+          ],
+          "selected_mime_type": "text/plain",
+          "slot": 0,
+          "updating_cell": null
+        },
+        {
+          "diagnostic_indices": [],
+          "offered_mime_types": [
+            "text/plain"
+          ],
+          "output": {
+            "kind": {
+              "stream": "stderr",
+              "type": "stream"
+            },
+            "provenance": [],
+            "representations": [
+              {
+                "kind": "plain-text",
+                "media_type": "text/plain",
+                "text": "intentional stderr\n\n"
+              }
+            ]
+          },
+          "owning_cell": 1,
+          "producing_cell": 1,
+          "representations": [
+            {
+              "content_fingerprint": {
+                "algorithm": "sha256",
+                "value": "c7f06d2680df77849ef0c4fc9f9b3d993de93c63110072ab5dd4465d2ceddac4"
+              },
+              "policy": null,
+              "producing_cell": 1
+            }
+          ],
+          "selected_mime_type": "text/plain",
+          "slot": 1,
+          "updating_cell": null
+        },
+        {
+          "diagnostic_indices": [],
+          "offered_mime_types": [
+            "text/html",
+            "text/plain"
+          ],
+          "output": {
+            "kind": {
+              "type": "display"
+            },
+            "provenance": [],
+            "representations": [
+              {
+                "html": "<strong>safe html</strong>",
+                "kind": "sanitized-html",
+                "media_type": "text/html",
+                "policy": "html-mvp-v1",
+                "sanitizer": {
+                  "name": "diplodocus-html-sanitizer",
+                  "version": "0.1.0"
+                }
+              },
+              {
+                "kind": "plain-text",
+                "media_type": "text/plain",
+                "text": "html fallback"
+              }
+            ]
+          },
+          "owning_cell": 1,
+          "producing_cell": 1,
+          "representations": [
+            {
+              "content_fingerprint": {
+                "algorithm": "sha256",
+                "value": "843f41f6bc9914d7dc5f46a9a0b277cd2102ffc208b9693ef8b03defafbc8787"
+              },
+              "policy": "html-mvp-v1",
+              "producing_cell": 1
+            },
+            {
+              "content_fingerprint": {
+                "algorithm": "sha256",
+                "value": "a7af4bf4c3ab6adfb2e4e43ece0e0ff83c9af293352d5cfaa15b164148170612"
+              },
+              "policy": null,
+              "producing_cell": 1
+            }
+          ],
+          "selected_mime_type": "text/html",
+          "slot": 2,
+          "updating_cell": null
+        },
+        {
+          "diagnostic_indices": [],
+          "offered_mime_types": [
+            "text/markdown",
+            "text/plain"
+          ],
+          "output": {
+            "kind": {
+              "type": "display"
+            },
+            "provenance": [
+              {
+                "activity": {
+                  "cell": 1,
+                  "collection": "guide",
+                  "kind": "generated-markdown",
+                  "output": 3
+                },
+                "source": {
+                  "kind": "repository",
+                  "path": "guide/index.qmd",
+                  "repository": "docs"
+                },
+                "span": {
+                  "end": 733,
+                  "start": 269
+                },
+                "tools": {
+                  "diplodocus": "0.1.0",
+                  "panache-parser": "0.29.2"
+                }
+              }
+            ],
+            "representations": [
+              {
+                "blocks": [
+                  {
+                    "inlines": [
+                      {
+                        "inlines": [
+                          {
+                            "span": {
+                              "end": 8,
+                              "start": 2
+                            },
+                            "type": "text",
+                            "value": "total:"
+                          }
+                        ],
+                        "span": {
+                          "end": 10,
+                          "start": 0
+                        },
+                        "type": "strong"
+                      },
+                      {
+                        "span": {
+                          "end": 11,
+                          "start": 10
+                        },
+                        "type": "text",
+                        "value": " "
+                      },
+                      {
+                        "span": {
+                          "end": 15,
+                          "start": 11
+                        },
+                        "type": "code",
+                        "value": "12"
+                      }
+                    ],
+                    "span": {
+                      "end": 15,
+                      "start": 0
+                    },
+                    "type": "paragraph"
+                  }
+                ],
+                "kind": "markdown-blocks",
+                "media_type": "text/markdown"
+              },
+              {
+                "kind": "plain-text",
+                "media_type": "text/plain",
+                "text": "markdown fallback"
+              }
+            ]
+          },
+          "owning_cell": 1,
+          "producing_cell": 1,
+          "representations": [
+            {
+              "content_fingerprint": {
+                "algorithm": "sha256",
+                "value": "d2dce32b5b8fc492dc32769a4663ab42dfb62a249c7e1b99a997b33271384e1d"
+              },
+              "policy": "qmd-mvp-v1",
+              "producing_cell": 1
+            },
+            {
+              "content_fingerprint": {
+                "algorithm": "sha256",
+                "value": "53ca9d964e27b9be3d1471ffce0555bf93614076d8e69776a7f87848dfccbce7"
+              },
+              "policy": null,
+              "producing_cell": 1
+            }
+          ],
+          "selected_mime_type": "text/markdown",
+          "slot": 3,
+          "updating_cell": null
+        },
+        {
+          "diagnostic_indices": [],
+          "offered_mime_types": [
+            "image/svg+xml",
+            "text/plain"
+          ],
+          "output": {
+            "kind": {
+              "type": "display"
+            },
+            "provenance": [],
+            "representations": [
+              {
+                "asset": {
+                  "fingerprint": {
+                    "algorithm": "sha256",
+                    "value": "0dcd7e9ed2939bf723b1e5ad37035bfbec150e9631b29762a6d77bc94d2d73c8"
+                  },
+                  "path": "execution-assets/fa55e1f903be216bbf1e0a9d5533de7a0f2ca638d635927ed009118ed3e8b7d6/sha256/0dcd7e9ed2939bf723b1e5ad37035bfbec150e9631b29762a6d77bc94d2d73c8"
+                },
+                "kind": "asset",
+                "media_type": "image/svg+xml"
+              },
+              {
+                "kind": "plain-text",
+                "media_type": "text/plain",
+                "text": "figure fallback"
+              }
+            ]
+          },
+          "owning_cell": 1,
+          "producing_cell": 1,
+          "representations": [
+            {
+              "content_fingerprint": {
+                "algorithm": "sha256",
+                "value": "0dcd7e9ed2939bf723b1e5ad37035bfbec150e9631b29762a6d77bc94d2d73c8"
+              },
+              "policy": "svg-mvp-v1",
+              "producing_cell": 1
+            },
+            {
+              "content_fingerprint": {
+                "algorithm": "sha256",
+                "value": "5f92d7fee40b2b0812fed6838a49ba301c94397578e90b38763be6d14dc40285"
+              },
+              "policy": null,
+              "producing_cell": 1
+            }
+          ],
+          "selected_mime_type": "image/svg+xml",
+          "slot": 4,
+          "updating_cell": null
+        }
+      ],
+      "source_segments": [
+        {
+          "span": {
+            "end": 311,
+            "start": 276
+          },
+          "text": "cat(sprintf('total = %d\\n', total))"
+        },
+        {
+          "span": {
+            "end": 312,
+            "start": 311
+          },
+          "text": "\n"
+        },
+        {
+          "span": {
+            "end": 341,
+            "start": 312
+          },
+          "text": "message('intentional stderr')"
+        },
+        {
+          "span": {
+            "end": 342,
+            "start": 341
+          },
+          "text": "\n"
+        },
+        {
+          "span": {
+            "end": 453,
+            "start": 342
+          },
+          "text": "IRdisplay::publish_mimebundle(list('text/html' = '<strong>safe html</strong>', 'text/plain' = 'html fallback'))"
+        },
+        {
+          "span": {
+            "end": 454,
+            "start": 453
+          },
+          "text": "\n"
+        },
+        {
+          "span": {
+            "end": 562,
+            "start": 454
+          },
+          "text": "IRdisplay::publish_mimebundle(list('text/markdown' = '**total:** `12`', 'text/plain' = 'markdown fallback'))"
+        },
+        {
+          "span": {
+            "end": 563,
+            "start": 562
+          },
+          "text": "\n"
+        },
+        {
+          "span": {
+            "end": 728,
+            "start": 563
+          },
+          "text": "IRdisplay::publish_mimebundle(list('image/svg+xml' = '<svg xmlns=\"http://www.w3.org/2000/svg\"><text x=\"0\" y=\"20\">12</text></svg>', 'text/plain' = 'figure fallback'))"
+        },
+        {
+          "span": {
+            "end": 729,
+            "start": 728
+          },
+          "text": "\n"
+        }
+      ],
+      "span": {
+        "end": 733,
+        "start": 269
+      },
+      "submitted_source_fingerprint": {
+        "algorithm": "sha256",
+        "value": "ef8142fd097e9c4791b92bd1c8d66aa29f1eb1c949bf94f8a6f2bc3aa12c281f"
+      }
+    },
+    {
+      "language": "r",
+      "options": {
+        "execution": {
+          "echo": {
+            "origin": {
+              "kind": "document",
+              "span": {
+                "end": 27,
+                "start": 15
+              }
+            },
+            "value": false
+          },
+          "error": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": false
+          },
+          "eval": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "include": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "output": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": "show"
+          }
+        },
+        "fig_alt": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_cap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_subcap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": []
+        },
+        "label": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        }
+      },
+      "ordinal": 2,
+      "outcome": {
+        "kind": "ok"
+      },
+      "outputs": [
+        {
+          "diagnostic_indices": [
+            0
+          ],
+          "offered_mime_types": [
+            "application/javascript"
+          ],
+          "output": {
+            "kind": {
+              "type": "display"
+            },
+            "provenance": [],
+            "representations": []
+          },
+          "owning_cell": 2,
+          "producing_cell": 2,
+          "representations": [],
+          "selected_mime_type": null,
+          "slot": 0,
+          "updating_cell": null
+        },
+        {
+          "diagnostic_indices": [],
+          "offered_mime_types": [
+            "application/javascript",
+            "text/plain"
+          ],
+          "output": {
+            "kind": {
+              "type": "display"
+            },
+            "provenance": [],
+            "representations": [
+              {
+                "kind": "plain-text",
+                "media_type": "text/plain",
+                "text": "safe fallback"
+              }
+            ]
+          },
+          "owning_cell": 2,
+          "producing_cell": 2,
+          "representations": [
+            {
+              "content_fingerprint": {
+                "algorithm": "sha256",
+                "value": "d00ec7e14bd453ccf446a75926f4030b2cccaeb3f503097715cc8c1580b05a35"
+              },
+              "policy": null,
+              "producing_cell": 2
+            }
+          ],
+          "selected_mime_type": "text/plain",
+          "slot": 1,
+          "updating_cell": null
+        }
+      ],
+      "source_segments": [
+        {
+          "span": {
+            "end": 823,
+            "start": 741
+          },
+          "text": "IRdisplay::publish_mimebundle(list('application/javascript' = 'rejected payload'))"
+        },
+        {
+          "span": {
+            "end": 824,
+            "start": 823
+          },
+          "text": "\n"
+        },
+        {
+          "span": {
+            "end": 938,
+            "start": 824
+          },
+          "text": "IRdisplay::publish_mimebundle(list('application/javascript' = 'rejected payload', 'text/plain' = 'safe fallback'))"
+        },
+        {
+          "span": {
+            "end": 939,
+            "start": 938
+          },
+          "text": "\n"
+        }
+      ],
+      "span": {
+        "end": 943,
+        "start": 734
+      },
+      "submitted_source_fingerprint": {
+        "algorithm": "sha256",
+        "value": "0a5484b9352eb56a325096e27468c7510ba2ef6b4158bfbf0237daaf956d7383"
+      }
+    },
+    {
+      "language": "r",
+      "options": {
+        "execution": {
+          "echo": {
+            "origin": {
+              "kind": "document",
+              "span": {
+                "end": 27,
+                "start": 15
+              }
+            },
+            "value": false
+          },
+          "error": {
+            "origin": {
+              "kind": "hashpipe",
+              "span": {
+                "end": 966,
+                "start": 954
+              }
+            },
+            "value": true
+          },
+          "eval": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "include": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "output": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": "show"
+          }
+        },
+        "fig_alt": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_cap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_subcap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": []
+        },
+        "label": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        }
+      },
+      "ordinal": 3,
+      "outcome": {
+        "kind": "allowed-error"
+      },
+      "outputs": [
+        {
+          "diagnostic_indices": [],
+          "offered_mime_types": [],
+          "output": {
+            "kind": {
+              "message": "Error: allowed error\n",
+              "name": "ERROR",
+              "traceback": [
+                "Error: allowed error\nTraceback:\n",
+                "1. .handleSimpleError(function (cnd) \n . {\n .     watcher$capture_plot_and_output()\n .     cnd <- sanitize_call(cnd)\n .     watcher$push(cnd)\n .     switch(on_error, continue = invokeRestart(\"eval_continue\"), \n .         stop = invokeRestart(\"eval_stop\"), error = NULL)\n . }, \"allowed error\", base::quote(eval(expr, envir)))"
+              ],
+              "type": "error"
+            },
+            "provenance": [],
+            "representations": []
+          },
+          "owning_cell": 3,
+          "producing_cell": 3,
+          "representations": [],
+          "selected_mime_type": null,
+          "slot": 0,
+          "updating_cell": null
+        }
+      ],
+      "source_segments": [
+        {
+          "span": {
+            "end": 987,
+            "start": 966
+          },
+          "text": "stop('allowed error')"
+        },
+        {
+          "span": {
+            "end": 988,
+            "start": 987
+          },
+          "text": "\n"
+        }
+      ],
+      "span": {
+        "end": 992,
+        "start": 944
+      },
+      "submitted_source_fingerprint": {
+        "algorithm": "sha256",
+        "value": "2f844342a06cb4087574af916fb24f433534ca75466c5bbba274a4530adb7e97"
+      }
+    },
+    {
+      "language": "r",
+      "options": {
+        "execution": {
+          "echo": {
+            "origin": {
+              "kind": "document",
+              "span": {
+                "end": 27,
+                "start": 15
+              }
+            },
+            "value": false
+          },
+          "error": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": false
+          },
+          "eval": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "include": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "output": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": "show"
+          }
+        },
+        "fig_alt": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_cap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_subcap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": []
+        },
+        "label": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        }
+      },
+      "ordinal": 4,
+      "outcome": {
+        "kind": "ok"
+      },
+      "outputs": [
+        {
+          "diagnostic_indices": [],
+          "offered_mime_types": [
+            "text/plain"
+          ],
+          "output": {
+            "kind": {
+              "stream": "stdout",
+              "type": "stream"
+            },
+            "provenance": [],
+            "representations": [
+              {
+                "kind": "plain-text",
+                "media_type": "text/plain",
+                "text": "state survived the error\n"
+              }
+            ]
+          },
+          "owning_cell": 4,
+          "producing_cell": 4,
+          "representations": [
+            {
+              "content_fingerprint": {
+                "algorithm": "sha256",
+                "value": "f3d6463057bc16c96952ecc653ca869a9c602f51a7589fe37f6a419bad536be5"
+              },
+              "policy": null,
+              "producing_cell": 4
+            }
+          ],
+          "selected_mime_type": "text/plain",
+          "slot": 0,
+          "updating_cell": null
+        }
+      ],
+      "source_segments": [
+        {
+          "span": {
+            "end": 1022,
+            "start": 1000
+          },
+          "text": "stopifnot(total == 12)"
+        },
+        {
+          "span": {
+            "end": 1023,
+            "start": 1022
+          },
+          "text": "\n"
+        },
+        {
+          "span": {
+            "end": 1056,
+            "start": 1023
+          },
+          "text": "cat('state survived the error\\n')"
+        },
+        {
+          "span": {
+            "end": 1057,
+            "start": 1056
+          },
+          "text": "\n"
+        }
+      ],
+      "span": {
+        "end": 1061,
+        "start": 993
+      },
+      "submitted_source_fingerprint": {
+        "algorithm": "sha256",
+        "value": "d9a223b310f256da0d476ed028a1f17fae2d9c7f5b7b10bd295c48984d158abb"
+      }
+    },
+    {
+      "language": "r",
+      "options": {
+        "execution": {
+          "echo": {
+            "origin": {
+              "kind": "document",
+              "span": {
+                "end": 27,
+                "start": 15
+              }
+            },
+            "value": false
+          },
+          "error": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": false
+          },
+          "eval": {
+            "origin": {
+              "kind": "hashpipe",
+              "span": {
+                "end": 1084,
+                "start": 1072
+              }
+            },
+            "value": false
+          },
+          "include": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "output": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": "show"
+          }
+        },
+        "fig_alt": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_cap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_subcap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": []
+        },
+        "label": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        }
+      },
+      "ordinal": 5,
+      "outcome": {
+        "kind": "skipped",
+        "reason": "eval-false"
+      },
+      "outputs": [],
+      "source_segments": [
+        {
+          "span": {
+            "end": 1107,
+            "start": 1084
+          },
+          "text": "stop('must be skipped')"
+        },
+        {
+          "span": {
+            "end": 1108,
+            "start": 1107
+          },
+          "text": "\n"
+        }
+      ],
+      "span": {
+        "end": 1112,
+        "start": 1062
+      },
+      "submitted_source_fingerprint": null
+    }
+  ],
+  "diagnostics": [
+    {
+      "code": "unsupported-cell-output",
+      "message": "No supported output representation was accepted.",
+      "related_entity": {
+        "id": "guide",
+        "kind": "content"
+      },
+      "severity": "warning",
+      "source": {
+        "kind": "repository",
+        "path": "guide/index.qmd",
+        "repository": "docs"
+      },
+      "span": {
+        "end": 943,
+        "start": 734
+      }
+    }
+  ]
+}

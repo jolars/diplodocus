@@ -1,0 +1,1227 @@
+{
+  "assets": [
+    {
+      "byte_size": 74,
+      "media_type": "image/svg+xml",
+      "reference": {
+        "fingerprint": {
+          "algorithm": "sha256",
+          "value": "0dcd7e9ed2939bf723b1e5ad37035bfbec150e9631b29762a6d77bc94d2d73c8"
+        },
+        "path": "execution-assets/fa55e1f903be216bbf1e0a9d5533de7a0f2ca638d635927ed009118ed3e8b7d6/sha256/0dcd7e9ed2939bf723b1e5ad37035bfbec150e9631b29762a6d77bc94d2d73c8"
+      }
+    }
+  ],
+  "cells": [
+    {
+      "language": "python",
+      "options": {
+        "execution": {
+          "echo": {
+            "origin": {
+              "kind": "document",
+              "span": {
+                "end": 27,
+                "start": 15
+              }
+            },
+            "value": false
+          },
+          "error": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": false
+          },
+          "eval": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "include": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "output": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": "show"
+          }
+        },
+        "fig_alt": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_cap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_subcap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": []
+        },
+        "label": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        }
+      },
+      "ordinal": 0,
+      "outcome": {
+        "kind": "ok"
+      },
+      "outputs": [],
+      "source_segments": [
+        {
+          "span": {
+            "end": 84,
+            "start": 75
+          },
+          "text": "import os"
+        },
+        {
+          "span": {
+            "end": 85,
+            "start": 84
+          },
+          "text": "\n"
+        },
+        {
+          "span": {
+            "end": 109,
+            "start": 85
+          },
+          "text": "from pathlib import Path"
+        },
+        {
+          "span": {
+            "end": 110,
+            "start": 109
+          },
+          "text": "\n"
+        },
+        {
+          "span": {
+            "end": 159,
+            "start": 110
+          },
+          "text": "from ipykernel.connect import get_connection_file"
+        },
+        {
+          "span": {
+            "end": 160,
+            "start": 159
+          },
+          "text": "\n"
+        },
+        {
+          "span": {
+            "end": 195,
+            "start": 160
+          },
+          "text": "from IPython.display import display"
+        },
+        {
+          "span": {
+            "end": 196,
+            "start": 195
+          },
+          "text": "\n"
+        },
+        {
+          "span": {
+            "end": 227,
+            "start": 196
+          },
+          "text": "assert 'total' not in globals()"
+        },
+        {
+          "span": {
+            "end": 228,
+            "start": 227
+          },
+          "text": "\n"
+        },
+        {
+          "span": {
+            "end": 303,
+            "start": 228
+          },
+          "text": "Path('process.txt').write_text(f'{os.getpid()}\\n{get_connection_file()}\\n')"
+        },
+        {
+          "span": {
+            "end": 304,
+            "start": 303
+          },
+          "text": "\n"
+        },
+        {
+          "span": {
+            "end": 344,
+            "start": 304
+          },
+          "text": "with Path('runs.txt').open('a') as runs:"
+        },
+        {
+          "span": {
+            "end": 345,
+            "start": 344
+          },
+          "text": "\n"
+        },
+        {
+          "span": {
+            "end": 373,
+            "start": 345
+          },
+          "text": "    runs.write('executed\\n')"
+        },
+        {
+          "span": {
+            "end": 374,
+            "start": 373
+          },
+          "text": "\n"
+        },
+        {
+          "span": {
+            "end": 396,
+            "start": 374
+          },
+          "text": "total = sum([2, 4, 6])"
+        },
+        {
+          "span": {
+            "end": 397,
+            "start": 396
+          },
+          "text": "\n"
+        }
+      ],
+      "span": {
+        "end": 401,
+        "start": 63
+      },
+      "submitted_source_fingerprint": {
+        "algorithm": "sha256",
+        "value": "91b36030ec9593c7fbff446fa4f0cf0bb84ec459d50a7928f950749660d3d947"
+      }
+    },
+    {
+      "language": "python",
+      "options": {
+        "execution": {
+          "echo": {
+            "origin": {
+              "kind": "document",
+              "span": {
+                "end": 27,
+                "start": 15
+              }
+            },
+            "value": false
+          },
+          "error": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": false
+          },
+          "eval": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "include": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "output": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": "show"
+          }
+        },
+        "fig_alt": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_cap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_subcap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": []
+        },
+        "label": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        }
+      },
+      "ordinal": 1,
+      "outcome": {
+        "kind": "ok"
+      },
+      "outputs": [
+        {
+          "diagnostic_indices": [],
+          "offered_mime_types": [
+            "text/plain"
+          ],
+          "output": {
+            "kind": {
+              "stream": "stdout",
+              "type": "stream"
+            },
+            "provenance": [],
+            "representations": [
+              {
+                "kind": "plain-text",
+                "media_type": "text/plain",
+                "text": "total = 12\n"
+              }
+            ]
+          },
+          "owning_cell": 1,
+          "producing_cell": 1,
+          "representations": [
+            {
+              "content_fingerprint": {
+                "algorithm": "sha256",
+                "value": "20f1bbef265bbc93baa1a4ed3d620655f8f1358159c09401f817c41285d70570"
+              },
+              "policy": null,
+              "producing_cell": 1
+            }
+          ],
+          "selected_mime_type": "text/plain",
+          "slot": 0,
+          "updating_cell": null
+        },
+        {
+          "diagnostic_indices": [],
+          "offered_mime_types": [
+            "text/plain"
+          ],
+          "output": {
+            "kind": {
+              "stream": "stderr",
+              "type": "stream"
+            },
+            "provenance": [],
+            "representations": [
+              {
+                "kind": "plain-text",
+                "media_type": "text/plain",
+                "text": "intentional stderr\n"
+              }
+            ]
+          },
+          "owning_cell": 1,
+          "producing_cell": 1,
+          "representations": [
+            {
+              "content_fingerprint": {
+                "algorithm": "sha256",
+                "value": "fae95b28cf631631cb65ffd04af75dc1bc014f99631bfe46696bcc291e736a8e"
+              },
+              "policy": null,
+              "producing_cell": 1
+            }
+          ],
+          "selected_mime_type": "text/plain",
+          "slot": 1,
+          "updating_cell": null
+        },
+        {
+          "diagnostic_indices": [],
+          "offered_mime_types": [
+            "text/html",
+            "text/plain"
+          ],
+          "output": {
+            "kind": {
+              "type": "display"
+            },
+            "provenance": [],
+            "representations": [
+              {
+                "html": "<strong>safe html</strong>",
+                "kind": "sanitized-html",
+                "media_type": "text/html",
+                "policy": "html-mvp-v1",
+                "sanitizer": {
+                  "name": "diplodocus-html-sanitizer",
+                  "version": "0.1.0"
+                }
+              },
+              {
+                "kind": "plain-text",
+                "media_type": "text/plain",
+                "text": "html fallback"
+              }
+            ]
+          },
+          "owning_cell": 1,
+          "producing_cell": 1,
+          "representations": [
+            {
+              "content_fingerprint": {
+                "algorithm": "sha256",
+                "value": "843f41f6bc9914d7dc5f46a9a0b277cd2102ffc208b9693ef8b03defafbc8787"
+              },
+              "policy": "html-mvp-v1",
+              "producing_cell": 1
+            },
+            {
+              "content_fingerprint": {
+                "algorithm": "sha256",
+                "value": "a7af4bf4c3ab6adfb2e4e43ece0e0ff83c9af293352d5cfaa15b164148170612"
+              },
+              "policy": null,
+              "producing_cell": 1
+            }
+          ],
+          "selected_mime_type": "text/html",
+          "slot": 2,
+          "updating_cell": null
+        },
+        {
+          "diagnostic_indices": [],
+          "offered_mime_types": [
+            "text/markdown",
+            "text/plain"
+          ],
+          "output": {
+            "kind": {
+              "type": "display"
+            },
+            "provenance": [
+              {
+                "activity": {
+                  "cell": 1,
+                  "collection": "guide",
+                  "kind": "generated-markdown",
+                  "output": 3
+                },
+                "source": {
+                  "kind": "repository",
+                  "path": "guide/index.qmd",
+                  "repository": "docs"
+                },
+                "span": {
+                  "end": 857,
+                  "start": 402
+                },
+                "tools": {
+                  "diplodocus": "0.1.0",
+                  "panache-parser": "0.29.2"
+                }
+              }
+            ],
+            "representations": [
+              {
+                "blocks": [
+                  {
+                    "inlines": [
+                      {
+                        "inlines": [
+                          {
+                            "span": {
+                              "end": 8,
+                              "start": 2
+                            },
+                            "type": "text",
+                            "value": "total:"
+                          }
+                        ],
+                        "span": {
+                          "end": 10,
+                          "start": 0
+                        },
+                        "type": "strong"
+                      },
+                      {
+                        "span": {
+                          "end": 11,
+                          "start": 10
+                        },
+                        "type": "text",
+                        "value": " "
+                      },
+                      {
+                        "span": {
+                          "end": 15,
+                          "start": 11
+                        },
+                        "type": "code",
+                        "value": "12"
+                      }
+                    ],
+                    "span": {
+                      "end": 15,
+                      "start": 0
+                    },
+                    "type": "paragraph"
+                  }
+                ],
+                "kind": "markdown-blocks",
+                "media_type": "text/markdown"
+              },
+              {
+                "kind": "plain-text",
+                "media_type": "text/plain",
+                "text": "markdown fallback"
+              }
+            ]
+          },
+          "owning_cell": 1,
+          "producing_cell": 1,
+          "representations": [
+            {
+              "content_fingerprint": {
+                "algorithm": "sha256",
+                "value": "d2dce32b5b8fc492dc32769a4663ab42dfb62a249c7e1b99a997b33271384e1d"
+              },
+              "policy": "qmd-mvp-v1",
+              "producing_cell": 1
+            },
+            {
+              "content_fingerprint": {
+                "algorithm": "sha256",
+                "value": "53ca9d964e27b9be3d1471ffce0555bf93614076d8e69776a7f87848dfccbce7"
+              },
+              "policy": null,
+              "producing_cell": 1
+            }
+          ],
+          "selected_mime_type": "text/markdown",
+          "slot": 3,
+          "updating_cell": null
+        },
+        {
+          "diagnostic_indices": [],
+          "offered_mime_types": [
+            "image/svg+xml",
+            "text/plain"
+          ],
+          "output": {
+            "kind": {
+              "type": "display"
+            },
+            "provenance": [],
+            "representations": [
+              {
+                "asset": {
+                  "fingerprint": {
+                    "algorithm": "sha256",
+                    "value": "0dcd7e9ed2939bf723b1e5ad37035bfbec150e9631b29762a6d77bc94d2d73c8"
+                  },
+                  "path": "execution-assets/fa55e1f903be216bbf1e0a9d5533de7a0f2ca638d635927ed009118ed3e8b7d6/sha256/0dcd7e9ed2939bf723b1e5ad37035bfbec150e9631b29762a6d77bc94d2d73c8"
+                },
+                "kind": "asset",
+                "media_type": "image/svg+xml"
+              },
+              {
+                "kind": "plain-text",
+                "media_type": "text/plain",
+                "text": "figure fallback"
+              }
+            ]
+          },
+          "owning_cell": 1,
+          "producing_cell": 1,
+          "representations": [
+            {
+              "content_fingerprint": {
+                "algorithm": "sha256",
+                "value": "0dcd7e9ed2939bf723b1e5ad37035bfbec150e9631b29762a6d77bc94d2d73c8"
+              },
+              "policy": "svg-mvp-v1",
+              "producing_cell": 1
+            },
+            {
+              "content_fingerprint": {
+                "algorithm": "sha256",
+                "value": "5f92d7fee40b2b0812fed6838a49ba301c94397578e90b38763be6d14dc40285"
+              },
+              "policy": null,
+              "producing_cell": 1
+            }
+          ],
+          "selected_mime_type": "image/svg+xml",
+          "slot": 4,
+          "updating_cell": null
+        }
+      ],
+      "source_segments": [
+        {
+          "span": {
+            "end": 424,
+            "start": 414
+          },
+          "text": "import sys"
+        },
+        {
+          "span": {
+            "end": 425,
+            "start": 424
+          },
+          "text": "\n"
+        },
+        {
+          "span": {
+            "end": 462,
+            "start": 425
+          },
+          "text": "print(f'total = {total}', flush=True)"
+        },
+        {
+          "span": {
+            "end": 463,
+            "start": 462
+          },
+          "text": "\n"
+        },
+        {
+          "span": {
+            "end": 519,
+            "start": 463
+          },
+          "text": "print('intentional stderr', file=sys.stderr, flush=True)"
+        },
+        {
+          "span": {
+            "end": 520,
+            "start": 519
+          },
+          "text": "\n"
+        },
+        {
+          "span": {
+            "end": 613,
+            "start": 520
+          },
+          "text": "display({'text/html': '<strong>safe html</strong>', 'text/plain': 'html fallback'}, raw=True)"
+        },
+        {
+          "span": {
+            "end": 614,
+            "start": 613
+          },
+          "text": "\n"
+        },
+        {
+          "span": {
+            "end": 704,
+            "start": 614
+          },
+          "text": "display({'text/markdown': '**total:** `12`', 'text/plain': 'markdown fallback'}, raw=True)"
+        },
+        {
+          "span": {
+            "end": 705,
+            "start": 704
+          },
+          "text": "\n"
+        },
+        {
+          "span": {
+            "end": 852,
+            "start": 705
+          },
+          "text": "display({'image/svg+xml': '<svg xmlns=\"http://www.w3.org/2000/svg\"><text x=\"0\" y=\"20\">12</text></svg>', 'text/plain': 'figure fallback'}, raw=True)"
+        },
+        {
+          "span": {
+            "end": 853,
+            "start": 852
+          },
+          "text": "\n"
+        }
+      ],
+      "span": {
+        "end": 857,
+        "start": 402
+      },
+      "submitted_source_fingerprint": {
+        "algorithm": "sha256",
+        "value": "412ccd1a6a63f4a9eb640f0cd3b2257cb8539da1baf073897bde497f7f64152f"
+      }
+    },
+    {
+      "language": "python",
+      "options": {
+        "execution": {
+          "echo": {
+            "origin": {
+              "kind": "document",
+              "span": {
+                "end": 27,
+                "start": 15
+              }
+            },
+            "value": false
+          },
+          "error": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": false
+          },
+          "eval": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "include": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "output": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": "show"
+          }
+        },
+        "fig_alt": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_cap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_subcap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": []
+        },
+        "label": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        }
+      },
+      "ordinal": 2,
+      "outcome": {
+        "kind": "ok"
+      },
+      "outputs": [
+        {
+          "diagnostic_indices": [
+            0
+          ],
+          "offered_mime_types": [
+            "application/javascript"
+          ],
+          "output": {
+            "kind": {
+              "type": "display"
+            },
+            "provenance": [],
+            "representations": []
+          },
+          "owning_cell": 2,
+          "producing_cell": 2,
+          "representations": [],
+          "selected_mime_type": null,
+          "slot": 0,
+          "updating_cell": null
+        },
+        {
+          "diagnostic_indices": [],
+          "offered_mime_types": [
+            "application/javascript",
+            "text/plain"
+          ],
+          "output": {
+            "kind": {
+              "type": "display"
+            },
+            "provenance": [],
+            "representations": [
+              {
+                "kind": "plain-text",
+                "media_type": "text/plain",
+                "text": "safe fallback"
+              }
+            ]
+          },
+          "owning_cell": 2,
+          "producing_cell": 2,
+          "representations": [
+            {
+              "content_fingerprint": {
+                "algorithm": "sha256",
+                "value": "d00ec7e14bd453ccf446a75926f4030b2cccaeb3f503097715cc8c1580b05a35"
+              },
+              "policy": null,
+              "producing_cell": 2
+            }
+          ],
+          "selected_mime_type": "text/plain",
+          "slot": 1,
+          "updating_cell": null
+        }
+      ],
+      "source_segments": [
+        {
+          "span": {
+            "end": 935,
+            "start": 870
+          },
+          "text": "display({'application/javascript': 'rejected payload'}, raw=True)"
+        },
+        {
+          "span": {
+            "end": 936,
+            "start": 935
+          },
+          "text": "\n"
+        },
+        {
+          "span": {
+            "end": 1032,
+            "start": 936
+          },
+          "text": "display({'application/javascript': 'rejected payload', 'text/plain': 'safe fallback'}, raw=True)"
+        },
+        {
+          "span": {
+            "end": 1033,
+            "start": 1032
+          },
+          "text": "\n"
+        }
+      ],
+      "span": {
+        "end": 1037,
+        "start": 858
+      },
+      "submitted_source_fingerprint": {
+        "algorithm": "sha256",
+        "value": "bf35b2e3387878d7f5fba76ff82266d2f36b424ea37fb78e0f5c9af70a160f8b"
+      }
+    },
+    {
+      "language": "python",
+      "options": {
+        "execution": {
+          "echo": {
+            "origin": {
+              "kind": "document",
+              "span": {
+                "end": 27,
+                "start": 15
+              }
+            },
+            "value": false
+          },
+          "error": {
+            "origin": {
+              "kind": "hashpipe",
+              "span": {
+                "end": 1065,
+                "start": 1053
+              }
+            },
+            "value": true
+          },
+          "eval": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "include": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "output": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": "show"
+          }
+        },
+        "fig_alt": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_cap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_subcap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": []
+        },
+        "label": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        }
+      },
+      "ordinal": 3,
+      "outcome": {
+        "kind": "allowed-error"
+      },
+      "outputs": [
+        {
+          "diagnostic_indices": [],
+          "offered_mime_types": [],
+          "output": {
+            "kind": {
+              "message": "allowed error",
+              "name": "ValueError",
+              "traceback": [
+                "---------------------------------------------------------------------------",
+                "ValueError                                Traceback (most recent call last)",
+                "Cell <cell>, line 1\n----> 1 raise ValueError('allowed error')\n",
+                "ValueError: allowed error"
+              ],
+              "type": "error"
+            },
+            "provenance": [],
+            "representations": []
+          },
+          "owning_cell": 3,
+          "producing_cell": 3,
+          "representations": [],
+          "selected_mime_type": null,
+          "slot": 0,
+          "updating_cell": null
+        }
+      ],
+      "source_segments": [
+        {
+          "span": {
+            "end": 1098,
+            "start": 1065
+          },
+          "text": "raise ValueError('allowed error')"
+        },
+        {
+          "span": {
+            "end": 1099,
+            "start": 1098
+          },
+          "text": "\n"
+        }
+      ],
+      "span": {
+        "end": 1103,
+        "start": 1038
+      },
+      "submitted_source_fingerprint": {
+        "algorithm": "sha256",
+        "value": "888addb900b2269ee0d008a06f9e149ee2f6716f73bebbd841e4b3f0ffb130cb"
+      }
+    },
+    {
+      "language": "python",
+      "options": {
+        "execution": {
+          "echo": {
+            "origin": {
+              "kind": "document",
+              "span": {
+                "end": 27,
+                "start": 15
+              }
+            },
+            "value": false
+          },
+          "error": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": false
+          },
+          "eval": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "include": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "output": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": "show"
+          }
+        },
+        "fig_alt": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_cap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_subcap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": []
+        },
+        "label": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        }
+      },
+      "ordinal": 4,
+      "outcome": {
+        "kind": "ok"
+      },
+      "outputs": [
+        {
+          "diagnostic_indices": [],
+          "offered_mime_types": [
+            "text/plain"
+          ],
+          "output": {
+            "kind": {
+              "stream": "stdout",
+              "type": "stream"
+            },
+            "provenance": [],
+            "representations": [
+              {
+                "kind": "plain-text",
+                "media_type": "text/plain",
+                "text": "state survived the error\n"
+              }
+            ]
+          },
+          "owning_cell": 4,
+          "producing_cell": 4,
+          "representations": [
+            {
+              "content_fingerprint": {
+                "algorithm": "sha256",
+                "value": "f3d6463057bc16c96952ecc653ca869a9c602f51a7589fe37f6a419bad536be5"
+              },
+              "policy": null,
+              "producing_cell": 4
+            }
+          ],
+          "selected_mime_type": "text/plain",
+          "slot": 0,
+          "updating_cell": null
+        }
+      ],
+      "source_segments": [
+        {
+          "span": {
+            "end": 1134,
+            "start": 1116
+          },
+          "text": "assert total == 12"
+        },
+        {
+          "span": {
+            "end": 1135,
+            "start": 1134
+          },
+          "text": "\n"
+        },
+        {
+          "span": {
+            "end": 1168,
+            "start": 1135
+          },
+          "text": "print('state survived the error')"
+        },
+        {
+          "span": {
+            "end": 1169,
+            "start": 1168
+          },
+          "text": "\n"
+        }
+      ],
+      "span": {
+        "end": 1173,
+        "start": 1104
+      },
+      "submitted_source_fingerprint": {
+        "algorithm": "sha256",
+        "value": "890dbf5b3fe46d0e8526693e47cda61098ce0e58efd415e5f9327b08f85d5fb6"
+      }
+    },
+    {
+      "language": "python",
+      "options": {
+        "execution": {
+          "echo": {
+            "origin": {
+              "kind": "document",
+              "span": {
+                "end": 27,
+                "start": 15
+              }
+            },
+            "value": false
+          },
+          "error": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": false
+          },
+          "eval": {
+            "origin": {
+              "kind": "hashpipe",
+              "span": {
+                "end": 1201,
+                "start": 1189
+              }
+            },
+            "value": false
+          },
+          "include": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": true
+          },
+          "output": {
+            "origin": {
+              "kind": "default"
+            },
+            "value": "show"
+          }
+        },
+        "fig_alt": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_cap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        },
+        "fig_subcap": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": []
+        },
+        "label": {
+          "origin": {
+            "kind": "default"
+          },
+          "value": null
+        }
+      },
+      "ordinal": 5,
+      "outcome": {
+        "kind": "skipped",
+        "reason": "eval-false"
+      },
+      "outputs": [],
+      "source_segments": [
+        {
+          "span": {
+            "end": 1238,
+            "start": 1201
+          },
+          "text": "raise RuntimeError('must be skipped')"
+        },
+        {
+          "span": {
+            "end": 1239,
+            "start": 1238
+          },
+          "text": "\n"
+        }
+      ],
+      "span": {
+        "end": 1243,
+        "start": 1174
+      },
+      "submitted_source_fingerprint": null
+    }
+  ],
+  "diagnostics": [
+    {
+      "code": "unsupported-cell-output",
+      "message": "No supported output representation was accepted.",
+      "related_entity": {
+        "id": "guide",
+        "kind": "content"
+      },
+      "severity": "warning",
+      "source": {
+        "kind": "repository",
+        "path": "guide/index.qmd",
+        "repository": "docs"
+      },
+      "span": {
+        "end": 1037,
+        "start": 858
+      }
+    }
+  ]
+}

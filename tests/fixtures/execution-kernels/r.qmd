@@ -1,0 +1,41 @@
+---
+execute:
+  echo: false
+---
+
+# R execution acceptance
+
+```{r}
+stopifnot(!exists('total'))
+writeLines(c(as.character(Sys.getpid()), commandArgs(trailingOnly = TRUE)[1]), 'process.txt')
+cat('executed\n', file = 'runs.txt', append = TRUE)
+total <- sum(c(2, 4, 6))
+```
+
+```{r}
+cat(sprintf('total = %d\n', total))
+message('intentional stderr')
+IRdisplay::publish_mimebundle(list('text/html' = '<strong>safe html</strong>', 'text/plain' = 'html fallback'))
+IRdisplay::publish_mimebundle(list('text/markdown' = '**total:** `12`', 'text/plain' = 'markdown fallback'))
+IRdisplay::publish_mimebundle(list('image/svg+xml' = '<svg xmlns="http://www.w3.org/2000/svg"><text x="0" y="20">12</text></svg>', 'text/plain' = 'figure fallback'))
+```
+
+```{r}
+IRdisplay::publish_mimebundle(list('application/javascript' = 'rejected payload'))
+IRdisplay::publish_mimebundle(list('application/javascript' = 'rejected payload', 'text/plain' = 'safe fallback'))
+```
+
+```{r}
+#| error: true
+stop('allowed error')
+```
+
+```{r}
+stopifnot(total == 12)
+cat('state survived the error\n')
+```
+
+```{r}
+#| eval: false
+stop('must be skipped')
+```

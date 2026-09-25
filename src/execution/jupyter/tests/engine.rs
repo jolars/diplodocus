@@ -9,6 +9,8 @@ use crate::ir::{InputFingerprint, SourceLocation};
 use crate::provenance::{PANACHE_VERSION, fingerprint_bytes};
 use std::collections::BTreeMap;
 
+mod acceptance;
+
 const SOURCE: &str = "```{python}\ndefine\n```\n\n```{python}\nuse\n```\n";
 
 fn request(root: &Path, source: &str) -> (ExecutionContext<'static>, PageExecutionRequest) {

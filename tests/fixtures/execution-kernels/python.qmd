@@ -1,0 +1,47 @@
+---
+execute:
+  echo: false
+---
+
+# Python execution acceptance
+
+```{python}
+import os
+from pathlib import Path
+from ipykernel.connect import get_connection_file
+from IPython.display import display
+assert 'total' not in globals()
+Path('process.txt').write_text(f'{os.getpid()}\n{get_connection_file()}\n')
+with Path('runs.txt').open('a') as runs:
+    runs.write('executed\n')
+total = sum([2, 4, 6])
+```
+
+```{python}
+import sys
+print(f'total = {total}', flush=True)
+print('intentional stderr', file=sys.stderr, flush=True)
+display({'text/html': '<strong>safe html</strong>', 'text/plain': 'html fallback'}, raw=True)
+display({'text/markdown': '**total:** `12`', 'text/plain': 'markdown fallback'}, raw=True)
+display({'image/svg+xml': '<svg xmlns="http://www.w3.org/2000/svg"><text x="0" y="20">12</text></svg>', 'text/plain': 'figure fallback'}, raw=True)
+```
+
+```{python}
+display({'application/javascript': 'rejected payload'}, raw=True)
+display({'application/javascript': 'rejected payload', 'text/plain': 'safe fallback'}, raw=True)
+```
+
+```{python}
+#| error: true
+raise ValueError('allowed error')
+```
+
+```{python}
+assert total == 12
+print('state survived the error')
+```
+
+```{python}
+#| eval: false
+raise RuntimeError('must be skipped')
+```

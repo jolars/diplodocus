@@ -478,10 +478,14 @@ command and watched-site guarantees, which require Milestones 7 through 9.
   Per-page Python/R origin checks, relocation checks, and filesystem event
   monitors establish these boundaries. See the
   [provenance and command-authority evidence](docs/design/execution-authority-validation.md).
-- [ ] Add unit tests with a controllable protocol fixture and end-to-end tests
+- [x] Add unit tests with a controllable protocol fixture and end-to-end tests
   with the declared Python and R kernels for success, state retention, rich
   output, timeout, interruption, missing kernels, unsupported MIME types,
   and deterministic cleanup.
+  The protocol fixture and real Python/R tests cover the complete matrix,
+  including CLI output snapshots, cache restoration, observed interruption,
+  process reaping, and rollback of earlier figures. See the
+  [execution acceptance evidence](docs/design/execution-acceptance-validation.md).
 
 **Exit gate:** Explicitly enabled Python and R QMD pages execute in source order
 and produce reviewed structured-output snapshots; disabled and check-only paths

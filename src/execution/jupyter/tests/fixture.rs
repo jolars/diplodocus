@@ -240,6 +240,16 @@ async fn execute(
             iopub.send(stream.as_child_of(message)).await.unwrap();
         }
     }
+    if mode == "execute-unsupported-mime" {
+        for data in [
+            json!({"application/javascript": "rejected payload"}),
+            json!({"application/javascript": "rejected payload", "text/plain": "safe fallback"}),
+        ] {
+            let display: jupyter_protocol::DisplayData =
+                serde_json::from_value(json!({"data": data, "metadata": {}})).unwrap();
+            iopub.send(display.as_child_of(message)).await.unwrap();
+        }
+    }
     if mode == "execute-markdown" {
         for stream in [
             jupyter_protocol::StreamContent::stdout("# Gener"),
@@ -372,7 +382,7 @@ async fn execute(
     // A terminal event for another request must never advance this page.
     let mut unrelated = message.clone();
     unrelated.header.msg_id = "unrelated-request".into();
-    if !mode.starts_with("execute-ledger") {
+    if !mode.starts_with("execute-ledger") && mode != "execute-unsupported-mime" {
         shell
             .send(reply.clone().as_child_of(&unrelated))
             .await
