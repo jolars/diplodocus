@@ -14,9 +14,9 @@ The full MVP still includes authorized authored execution.
 
 ## How to use this roadmap
 
-- Follow milestone dependencies. The static snapshot handoff in Milestone 7
-  may precede Milestone 6, and generation work in Milestone 8 may begin against
-  that artifact. A milestone is complete only when its full exit gate passes.
+- Follow milestone dependencies. The static snapshot handoff in Milestone 7 may
+  precede Milestone 6, and generation work in Milestone 8 may begin against that
+  artifact. A milestone is complete only when its full exit gate passes.
 - Add a failing test or fixture before implementing each observable behavior.
 - Keep the acceptance workspace as the source of truth for polyglot behavior and
   Diplodocus's own site as the source of truth for authored-documentation
@@ -32,8 +32,8 @@ The full MVP still includes authorized authored execution.
 
 The MVP is complete when all of the following are true:
 
-- [ ] **MVP-01:** One `diplodocus.toml` can describe local repositories,
-  Python and R packages, extraction targets, authored content profiles and
+- [ ] **MVP-01:** One `diplodocus.toml` can describe local repositories, Python
+  and R packages, extraction targets, authored content profiles and
   execution, package relationships, and conceptual API groups.
 - [ ] **MVP-02:** Rust-native static extraction documents Python and R public
   APIs without starting a language runtime, importing a Python package, or
@@ -50,15 +50,16 @@ The MVP is complete when all of the following are true:
   source links, semantic references, concept switchers, and workspace-wide
   search.
 - [ ] **MVP-06:** `check`, `extract`, `generate`, `build`, and `serve` satisfy
-  the command contract below. Extraction publishes a versioned, self-contained
-  SQLite snapshot; generation needs only that snapshot and the generator.
+  the command contract below. Extraction publishes a versioned,
+  self-contained SQLite snapshot; generation needs only that snapshot and
+  the generator.
 - [ ] **MVP-07:** Repeated builds of the deterministic acceptance cells from
   identical declared sources, environments, kernels, and toolchains are
   byte-for-byte identical in site output and logically identical in snapshot
-  records and asset contents. Neither contains machine-specific checkout paths;
-  SQLite file bytes need not match.
-- [ ] **MVP-08:** Diplodocus neither installs dependencies nor performs
-  implicit network access; authored execution is configuration-authorized and
+  records and asset contents. Neither contains machine-specific checkout
+  paths; SQLite file bytes need not match.
+- [ ] **MVP-08:** Diplodocus neither installs dependencies nor performs implicit
+  network access; authored execution is configuration-authorized and
   documented as arbitrary, unsandboxed code execution.
 - [ ] **MVP-09:** The acceptance corpus passes formatting, linting, unit,
   golden, integration, link, and end-to-end tests.
@@ -72,25 +73,25 @@ The MVP is complete when all of the following are true:
 
 ### Commands
 
-| Command | MVP behavior |
-| --- | --- |
-| `diplodocus check` | Load, parse, extract, and validate without executing cells or publishing a snapshot or site. |
-| `diplodocus extract` | Parse and extract, run authorized execution, resolve references, validate, collect assets, and publish a SQLite snapshot. |
-| `diplodocus generate` | Read and validate a snapshot, then build the site model and render the static site. |
-| `diplodocus build` | Run extraction followed by generation with the same behavior as the separate commands. |
-| `diplodocus serve` | Build, serve, watch declared inputs, and rebuild safely. |
+  | Command               | MVP behavior                                                                                                              |
+  | ---                   | ---                                                                                                                       |
+  | `diplodocus check`    | Load, parse, extract, and validate without executing cells or publishing a snapshot or site.                              |
+  | `diplodocus extract`  | Parse and extract, run authorized execution, resolve references, validate, collect assets, and publish a SQLite snapshot. |
+  | `diplodocus generate` | Read and validate a snapshot, then build the site model and render the static site.                                       |
+  | `diplodocus build`    | Run extraction followed by generation with the same behavior as the separate commands.                                    |
+  | `diplodocus serve`    | Build, serve, watch declared inputs, and rebuild safely.                                                                  |
 
 `check`, `extract`, `build`, and `serve` accept `--config`, which defaults to
-`./diplodocus.toml`. `extract --output` selects the snapshot path; its default is
-`.diplodocus/documentation.sqlite` relative to the configuration directory.
+`./diplodocus.toml`. `extract --output` selects the snapshot path; its default
+is `.diplodocus/documentation.sqlite` relative to the configuration directory.
 `build` and `serve` use that default snapshot location.
 
-`generate` requires an explicit `--input` snapshot. It uses recorded presentation
-defaults and explicit presentation overrides without reading source checkouts,
-workspace configuration, or execution caches, and never starts a language
-runtime. `generate`, `build`, and `serve` accept `--output`, defaulting to
-`./site`. `serve` also accepts `--host` and `--port`, defaulting to `127.0.0.1`
-and `8000`.
+`generate` requires an explicit `--input` snapshot. It uses recorded
+presentation defaults and explicit presentation overrides without reading source
+checkouts, workspace configuration, or execution caches, and never starts a
+language runtime. `generate`, `build`, and `serve` accept `--output`, defaulting
+to `./site`. `serve` also accepts `--host` and `--port`, defaulting to
+`127.0.0.1` and `8000`.
 
 Errors produce a nonzero exit status. Warnings remain visible but do not fail a
 command. A failed extraction leaves the previous snapshot intact; `build` and
@@ -185,13 +186,13 @@ criterion, each deliberately invalid variant has one documented expected failure
 rather than several accidental failures, and all fixture tests run in the devenv
 shell and GitHub Actions.
 
-Corpus evidence is tracked in the
-[case and scenario registry](tests/fixtures/acceptance/CASES.json) and
-[acceptance matrix](tests/fixtures/acceptance/MATRIX.md). At this gate,
-coverage means concrete inputs and expected outcomes for every criterion;
-fixture isolation and available parser/kernel checks run now. Full command
-behavior remains assigned to its implementation milestone. The project-site
-seed is part of the corpus, not a claim that Milestone 10 is complete.
+Corpus evidence is tracked in the [case and scenario
+registry](tests/fixtures/acceptance/CASES.json) and [acceptance
+matrix](tests/fixtures/acceptance/MATRIX.md). At this gate, coverage means
+concrete inputs and expected outcomes for every criterion; fixture isolation and
+available parser/kernel checks run now. Full command behavior remains assigned
+to its implementation milestone. The project-site seed is part of the corpus,
+not a claim that Milestone 10 is complete.
 
 ## Milestone 2: Spike extraction, parsing, and execution
 
@@ -295,8 +296,8 @@ before implementing the model.
     declared-input and environment fingerprints, and built-in tool versions.
   - [x] Provide typed producer interfaces for extraction and execution evidence.
   - [x] Wire actual Python extractor/parser observations in Milestone 4.
-  - [ ] Wire actual R extractor/parser observations in Milestone 5 and
-    execution toolchain/kernel observations in Milestone 6.
+  - [ ] Wire actual R extractor/parser observations in Milestone 5 and execution
+    toolchain/kernel observations in Milestone 6.
 - [x] Translate the supported GFM and QMD profiles from Panache's typed syntax
   views into document IR, including semantic references, code cells, source
   ranges, and visible placeholders for unsupported constructs.
@@ -316,10 +317,10 @@ bytes and no absolute paths.
 The [integration tests](tests/milestone_three.rs) lock the acceptance
 configuration and static evidence in a reviewed golden, check authored documents
 and diagnostics across relocated workspaces, and reverse declared-input order.
-Existing authored-document goldens cover the supported syntax trees. The
-[item identity contract](docs/ir/item-identity.md) defines canonical identity and
+Existing authored-document goldens cover the supported syntax trees. The [item
+identity contract](docs/ir/item-identity.md) defines canonical identity and
 alias handling; source/stub and export reconciliation remains extractor work.
-Live producer provenance and HTML sanitization remain in Milestones 4–6.
+Live producer provenance and HTML sanitization remain in Milestones 4--6.
 
 ## Milestone 4: Implement the Python extractor
 
@@ -353,10 +354,10 @@ acceptance case, remains unchanged when imports would have side effects, and
 reports every unsupported case without silently dropping public information.
 
 The [integrated Python tests](tests/milestone_four.rs) lock the complete
-acceptance fragment, compare relocated workspaces, verify the sole dynamic-export
-warning, and exercise inputs that must never be imported or built. The
-[Python extraction contract](docs/ir/python-extraction.md) documents the library
-entry point, supported surface, and source-attribution rules.
+acceptance fragment, compare relocated workspaces, verify the sole
+dynamic-export warning, and exercise inputs that must never be imported or
+built. The [Python extraction contract](docs/ir/python-extraction.md) documents
+the library entry point, supported surface, and source-attribution rules.
 
 ## Milestone 5: Implement the R extractor
 
@@ -386,8 +387,8 @@ unsupported or incomplete semantic information visible through diagnostics.
 
 The [integrated R tests](tests/r_extraction.rs) lock the seven acceptance items,
 shared Rd documentation, four baseline location warnings, and the additional
-dynamic-Rd warning. They compare relocated workspaces and verify extraction
-with no runtime on `PATH`. The [R extraction contract](docs/ir/r-extraction.md)
+dynamic-Rd warning. They compare relocated workspaces and verify extraction with
+no runtime on `PATH`. The [R extraction contract](docs/ir/r-extraction.md)
 documents the library entry point, supported subset, and file-level Rd
 attribution. CLI integration and workspace merging remain later milestones.
 
@@ -406,86 +407,87 @@ command and watched-site guarantees, which require Milestones 7 through 9.
   capabilities, requirements, result, diagnostics, assets, and provenance.
 - [x] Implement the Jupyter discovery and startup foundation with
   `jupyter-zmq-client` and `jupyter-protocol`; discover and start only the
-  explicitly configured kernel without requiring a Jupyter server.
-  The internal adapter validates readiness and supervises bounded cleanup.
+  explicitly configured kernel without requiring a Jupyter server. The
+  internal adapter validates readiness and supervises bounded cleanup.
 - [x] Execute the `CodeCell` nodes of one page sequentially in one page-scoped
-  kernel session so definitions and imports persist between cells.
-  The internal runner consumes prepared cells and waits for both terminal
+  kernel session so definitions and imports persist between cells. The
+  internal runner consumes prepared cells and waits for both terminal
   messages before advancing. Protocol fixtures and real Python and R tests
   verify retained state, separate page sessions, and cleanup. Public
   `ExecutionEngine` dispatch awaits output validation.
 - [x] Validate the supported QMD metadata and option subset, including disabled
-  and overridden declarations; prepare cells in source order with typed options,
-  declaration ranges, and execution eligibility without kernel discovery or I/O.
-- [x] Apply prepared evaluation, echo, output, include, and error behavior during
-  execution and rendering; validate subcaption counts against final figures.
-  The runner consumes prepared evaluation and error options; shared presentation
-  views enforce visibility without deleting evidence. Final-output validation
-  checks subcaptions before hiding output. The site renderer consumes these
-  shared presentation views.
+  and overridden declarations; prepare cells in source order with typed
+  options, declaration ranges, and execution eligibility without kernel
+  discovery or I/O.
+- [x] Apply prepared evaluation, echo, output, include, and error behavior
+  during execution and rendering; validate subcaption counts against final
+  figures. The runner consumes prepared evaluation and error options; shared
+  presentation views enforce visibility without deleting evidence.
+  Final-output validation checks subcaptions before hiding output. The site
+  renderer consumes these shared presentation views.
 - [x] Collect stdout, stderr, execution errors, display data, display updates,
   and result MIME bundles into typed `CellOutput` nodes in protocol order.
   The internal incremental reducer retains stable slots, applies page-wide
   updates and clearing, orders validated MIME alternatives, and normalizes
   errors. Its validator boundary now retains safe Markdown/HTML and complete
-  image bindings. The public engine now composes this validation with supervised
-  cleanup, input revalidation, and portable provenance.
+  image bindings. The public engine now composes this validation with
+  supervised cleanup, input revalidation, and portable provenance.
 - [x] Treat ordinary streams as escaped preformatted text. Parse
   `text/markdown`, and explicitly as-is stream output, as isolated document
-  fragments with execution disabled.
-  The reducer parses Markdown MIME and adjacent as-is stdout runs, preserving
-  fragment attribution and diagnostics. Literal output has an escaped
-  preformatted rendering primitive. Reducer and protocol tests cover inert
-  generated fences, stream boundaries, hidden output, and MIME fallbacks.
-  The live adapter validates URLs and stages nested images before the next
-  cell. Full site rendering remains its own step.
+  fragments with execution disabled. The reducer parses Markdown MIME and
+  adjacent as-is stdout runs, preserving fragment attribution and
+  diagnostics. Literal output has an escaped preformatted rendering
+  primitive. Reducer and protocol tests cover inert generated fences, stream
+  boundaries, hidden output, and MIME fallbacks. The live adapter validates
+  URLs and stages nested images before the next cell. Full site rendering
+  remains its own step.
 - [x] Store binary figures as content-addressed assets beneath an execution-
   output boundary; reject unsupported media, path traversal, and asset
-  collisions deterministically.
-  The page asset owner validates PNG, JPEG, and inert SVG, checks cached bytes,
-  deduplicates safely, and retains only referenced assets. Reducer and protocol
-  fixtures cover MIME fallback, boundary failures before the next cell,
-  cancellation, and cleanup.
+  collisions deterministically. The page asset owner validates PNG, JPEG,
+  and inert SVG, checks cached bytes, deduplicates safely, and retains only
+  referenced assets. Reducer and protocol fixtures cover MIME fallback,
+  boundary failures before the next cell, cancellation, and cleanup.
 - [x] Sanitize supported `text/html` into a distinct IR representation before
   rendering, prefer a safe alternative MIME representation when available,
-  and diagnose output that has no faithful safe representation.
-  Reviewed HTML/Markdown validators and shared immutable result records bind
-  safe content, typed diagnostics, canonical hashes, and verified image assets.
-  The reducer retains those wrappers and nested assets through MIME fallback,
-  display updates, and clearing. The public engine returns these validated
-  records, and snapshot loading revalidates them before site rendering.
+  and diagnose output that has no faithful safe representation. Reviewed
+  HTML/Markdown validators and shared immutable result records bind safe
+  content, typed diagnostics, canonical hashes, and verified image assets.
+  The reducer retains those wrappers and nested assets through MIME
+  fallback, display updates, and clearing. The public engine returns these
+  validated records, and snapshot loading revalidates them before site
+  rendering.
 - [x] Add deterministic startup, idle, cell, and shutdown timeouts; interrupt
   failed execution, reap the kernel process, and preserve the last
-  successful site during a watched-build failure.
-  Real snapshot publication, site generation, and watched HTTP serving now
-  connect the supervised engine to this failure boundary. See the
-  [timeout and watched-site evidence](docs/design/execution-watched-validation.md)
-  for deadline, cleanup, preservation, and recovery checks.
+  successful site during a watched-build failure. Real snapshot publication,
+  site generation, and watched HTTP serving now connect the supervised
+  engine to this failure boundary. See the [timeout and watched-site
+  evidence](docs/design/execution-watched-validation.md) for deadline,
+  cleanup, preservation, and recovery checks.
 - [x] Implement a page-level execution cache keyed by authored source,
   normalized options, engine and kernel identity, relevant toolchain
   versions, and declared environment fingerprints. Validate cached assets
-  before reuse.
-  The public engine and executing commands now restore complete validated page
-  artifacts after a current kernel handshake. Immutable atomic publication,
-  corruption rejection, warning replay, and Python/R restoration are covered by
-  the [cache validation evidence](docs/design/execution-cache-validation.md).
+  before reuse. The public engine and executing commands now restore
+  complete validated page artifacts after a current kernel handshake.
+  Immutable atomic publication, corruption rejection, warning replay, and
+  Python/R restoration are covered by the [cache validation
+  evidence](docs/design/execution-cache-validation.md).
 - [x] Record whether each page was executed or restored from cache without
   leaking connection files, ports, temporary paths, process IDs, timestamps,
   or absolute checkout paths into portable provenance.
 - [x] Prove that `execution.mode = "never"` and every `diplodocus check` path
   avoid kernel discovery, startup, source execution, cache mutation, and
-  execution-asset writes.
-  Per-page Python/R origin checks, relocation checks, and filesystem event
-  monitors establish these boundaries. See the
-  [provenance and command-authority evidence](docs/design/execution-authority-validation.md).
+  execution-asset writes. Per-page Python/R origin checks, relocation
+  checks, and filesystem event monitors establish these boundaries. See the
+  [provenance and command-authority
+  evidence](docs/design/execution-authority-validation.md).
 - [x] Add unit tests with a controllable protocol fixture and end-to-end tests
   with the declared Python and R kernels for success, state retention, rich
   output, timeout, interruption, missing kernels, unsupported MIME types,
-  and deterministic cleanup.
-  The protocol fixture and real Python/R tests cover the complete matrix,
-  including CLI output snapshots, cache restoration, observed interruption,
-  process reaping, and rollback of earlier figures. See the
-  [execution acceptance evidence](docs/design/execution-acceptance-validation.md).
+  and deterministic cleanup. The protocol fixture and real Python/R tests
+  cover the complete matrix, including CLI output snapshots, cache
+  restoration, observed interruption, process reaping, and rollback of
+  earlier figures. See the [execution acceptance
+  evidence](docs/design/execution-acceptance-validation.md).
 
 **Exit gate:** Explicitly enabled Python and R QMD pages execute in source order
 and produce reviewed structured-output snapshots; disabled and check-only paths
@@ -500,15 +502,13 @@ layouts in the generation stage.
 
 ### Workspace assembly and checking
 
-- [ ] Add failing tests for fragment conflicts, references, relationships,
-  concepts, storage, and publication before implementing each behavior.
 - [x] Assemble declared repositories, packages, extraction targets, authored
   collections and pages, diagnostics, and provenance into one workspace IR.
-  Include authorized execution results when the engine is available.
-  The assembly library now combines these sources and explicitly authorized
-  execution. It owns staging across all pages and rejects changed inputs after
-  cleanup. Static reference validation and `check` now consume this assembly.
-  Snapshot publication and build/serve integration remain below.
+  Include authorized execution results when the engine is available. The
+  assembly library now combines these sources and explicitly authorized
+  execution. It owns staging across all pages and rejects changed inputs
+  after cleanup. Static reference validation and `check` now consume this
+  assembly. Snapshot publication and build/serve integration remain below.
 - [x] Merge all extraction-target fragments for a package deterministically and
   diagnose duplicate or conflicting identities.
 - [x] Resolve package-qualified references such as
@@ -531,9 +531,10 @@ layouts in the generation stage.
 ### Snapshot storage and extraction
 
 - [ ] Specify and document the SQLite tables, keys, relationships, serialized
-  field shapes, and independent storage and IR schema versions. Make top-level
-  entities queryable by semantic ID; use versioned serialized values for nested
-  documents, signatures, and language extensions where appropriate.
+  field shapes, and independent storage and IR schema versions. Make
+  top-level entities queryable by semantic ID; use versioned serialized
+  values for nested documents, signatures, and language extensions where
+  appropriate.
 - [ ] Implement snapshot writing and read-only loading with rejection of
   unsupported storage or IR versions. Validate required records, identities,
   paths, references, and asset fingerprints; defer automatic migrations.
@@ -543,42 +544,43 @@ layouts in the generation stage.
 - [ ] Include presentation defaults, slugs, content mounts, source-link
   information, diagnostics, and portable producer and repository provenance.
 - [ ] Define versioned canonical record encodings and per-entity content
-  fingerprints. Add a canonical text export for readable fixtures and logical
-  snapshot comparisons, independent of SQLite file layout.
+  fingerprints. Add a canonical text export for readable fixtures and
+  logical snapshot comparisons, independent of SQLite file layout.
 - [ ] Test semantic IR and asset round trips, deterministic fingerprints,
-  unsupported schema versions, malformed records, missing assets, and corrupted
-  asset contents.
+  unsupported schema versions, malformed records, missing assets, and
+  corrupted asset contents.
 - [ ] Publish a complete workspace atomically as a standalone database with no
-  dependency on a live journal or write-ahead log. A failed refresh preserves
-  the previous successful snapshot.
+  dependency on a live journal or write-ahead log. A failed refresh
+  preserves the previous successful snapshot.
 - [ ] Test repeated refreshes, stable IDs for retained entities, removal of
   stale records and unreferenced assets, and publication failure recovery.
   Refresh from source inputs without preserving manual database edits or
   accumulating historical snapshots.
 - [ ] Wire `diplodocus extract` through assembly, configured execution,
-  resolution, validation, asset collection, and snapshot publication. Implement
-  the documented default path and `--output` override, and reject destinations
-  that would overwrite declared inputs.
+  resolution, validation, asset collection, and snapshot publication.
+  Implement the documented default path and `--output` override, and reject
+  destinations that would overwrite declared inputs.
 - [ ] Exclude generated snapshots and temporary storage files from source
   discovery and input fingerprints.
 - [ ] Extend the acceptance registry and matrix with snapshot portability,
-  refresh, validation, and failure scenarios, plus the separate `extract` and
-  `generate` workflow.
+  refresh, validation, and failure scenarios, plus the separate `extract`
+  and `generate` workflow.
 
 ### Contributor handoff checkpoint
 
 - [ ] Provide a reproducible R/Python monorepo fixture with authored pages,
-  semantic references, concepts, and a local asset. Configure its collections
-  with `mode = "never"` so export needs no authored execution engine or runtime.
+  semantic references, concepts, and a local asset. Configure its
+  collections with `mode = "never"` so export needs no authored execution
+  engine or runtime.
 - [ ] Export that fixture through the real `extract` command and supply the
-  database, its canonical text export, schema documentation, and example queries
-  for packages, items, documents, references, and assets.
+  database, its canonical text export, schema documentation, and example
+  queries for packages, items, documents, references, and assets.
 - [ ] Document the generator's input contract and the boundary between snapshot
-  loading, site-model construction, and rendering, so frontend work can proceed
-  independently of extraction.
+  loading, site-model construction, and rendering, so frontend work can
+  proceed independently of extraction.
 - [ ] Copy the database to a directory without source checkouts and verify that
-  the loader recovers the complete IR and asset bytes. Keep this artifact as a
-  generation fixture for Milestone 8.
+  the loader recovers the complete IR and asset bytes. Keep this artifact as
+  a generation fixture for Milestone 8.
 
 This checkpoint may precede production authored execution. Until that engine is
 available, `extract` must report an error for collections requesting execution;
@@ -595,8 +597,9 @@ stale-record removal, schema validation, and failed-publication recovery pass.
 ## Milestone 8: Generate the coherent site from a snapshot
 
 - [ ] Wire `diplodocus generate --input` through read-only snapshot loading and
-  validation, site-model construction, and rendering. Use recorded presentation
-  defaults and explicit overrides without consulting source configuration.
+  validation, site-model construction, and rendering. Use recorded
+  presentation defaults and explicit overrides without consulting source
+  configuration.
 - [ ] Validate stored HTML against the active sanitizer policy before exposing
   it as renderable markup; deserialization alone grants no rendering trust.
 - [ ] Add failing tests for routes, mount collisions, navigation, and visibility
@@ -643,16 +646,17 @@ stale-record removal, schema validation, and failed-publication recovery pass.
 - [ ] Restore content assets from the snapshot and combine them with the
   generator's bundled theme assets without reading source files.
 - [ ] Render into a temporary sibling directory and replace the output only
-  after successful generation. Reject an output path that would overwrite the
-  input snapshot, and leave the snapshot unchanged on success or failure.
+  after successful generation. Reject an output path that would overwrite
+  the input snapshot, and leave the snapshot unchanged on success or
+  failure.
 - [ ] Generate from copied databases without source checkouts, source
-  configuration, execution caches, or language runtimes. Compare the resulting
-  site files with generation beside the original sources.
+  configuration, execution caches, or language runtimes. Compare the
+  resulting site files with generation beside the original sources.
 
 **Exit gate:** `generate` produces the complete site from a copied SQLite
 snapshot alone, leaving the input unchanged and preserving the previous site on
-failure. Reviewed HTML snapshots cover both ecosystems and authored content;
-all generated internal links resolve; search returns the expected cross-package
+failure. Reviewed HTML snapshots cover both ecosystems and authored content; all
+generated internal links resolve; search returns the expected cross-package
 results; and no rendered page requires a network resource.
 
 ## Milestone 9: Complete `build` and `serve`
@@ -675,8 +679,9 @@ results; and no rendered page requires a network resource.
 - [ ] Make `diplodocus serve` perform an initial build, bind only to its
   configured local address, and serve the successful output tree.
 - [ ] Watch the configuration file and declared extraction, metadata, content,
-  environment, and asset inputs; ignore generated snapshots, temporary storage
-  files, output and execution-cache directories, and unrelated repository files.
+  environment, and asset inputs; ignore generated snapshots, temporary
+  storage files, output and execution-cache directories, and unrelated
+  repository files.
 - [ ] Debounce related filesystem events into one rebuild and keep the previous
   successful output available when parsing, execution, validation, or
   rendering fails.
@@ -720,8 +725,8 @@ deferred until a Rust extractor exists.
   snapshot representative pages and the search index, and validate every
   local link and asset.
 - [ ] Ensure the configured output directory and generated snapshot files are
-  ignored and excluded from declared inputs so self-documentation builds cannot
-  recurse into themselves.
+  ignored and excluded from declared inputs so self-documentation builds
+  cannot recurse into themselves.
 - [ ] Use `diplodocus serve` as the documented local preview workflow for
   changes under `docs/`.
 - [ ] Add `.github/workflows/docs.yml`, modeled on Basin's website workflow, to
@@ -749,13 +754,14 @@ that generated tree without invoking another documentation generator.
 - [ ] Run the complete acceptance workspace through `check`, `extract`,
   `generate`, `build`, and `serve` in end-to-end tests.
 - [ ] Build the same declared inputs twice in different absolute directories and
-  with fresh execution caches, then compare every site output path and byte and
-  the snapshots' canonical records, fingerprints, and asset contents.
+  with fresh execution caches, then compare every site output path and byte
+  and the snapshots' canonical records, fingerprints, and asset contents.
 - [ ] Verify that `build` matches separate extraction and generation, including
   generation from a copied snapshot after removing its source checkout and
   execution cache from the disposable test workspace.
 - [ ] Scan portable IR, snapshot records and assets, provenance, HTML, search
-  data, and diagnostics for leaked absolute paths and nondeterministic metadata.
+  data, and diagnostics for leaked absolute paths and nondeterministic
+  metadata.
 - [ ] Run normal command tests with network access disabled, fixtures whose API
   package imports or load hooks would fail if executed, and deterministic
   authored cells that require no network.
@@ -763,9 +769,9 @@ that generated tree without invoking another documentation generator.
   navigation target, concept target, and indexed result.
 - [ ] Exercise missing tools and kernels, malformed configuration and sources,
   unsupported constructs, cell timeouts and failures, unsafe and unsupported
-  output, unsupported storage and IR versions, corrupted snapshots and assets,
-  version mismatches, ambiguous references, publication failures, and output
-  write failures.
+  output, unsupported storage and IR versions, corrupted snapshots and
+  assets, version mismatches, ambiguous references, publication failures,
+  and output write failures.
 - [ ] Review generated pages at narrow and wide viewport sizes and verify
   keyboard access, focus indication, heading order, labels, and color
   contrast.
