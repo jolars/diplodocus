@@ -10,7 +10,28 @@ fn fixture() -> (
         Path::new(env!("CARGO_MANIFEST_DIR")).join("docs/spikes/fixtures/execution-artifact-v1");
     let source = std::fs::read(root.join("source.qmd")).unwrap();
     let manifest = std::fs::read(root.join("manifest.json")).unwrap();
-    let value: serde_json::Value = serde_json::from_slice(&manifest).unwrap();
+    let mut value: serde_json::Value = serde_json::from_slice(&manifest).unwrap();
+    // Cache entries are build-specific, while the checked-in encoding vector is immutable.
+    for pointer in ["/key_input", "/result/provenance"] {
+        let identity = value.pointer_mut(pointer).unwrap();
+        identity["engine"]["version"] = serde_json::json!(env!("CARGO_PKG_VERSION"));
+        for component in identity["components"].as_array_mut().unwrap() {
+            bind_build_version(component);
+        }
+    }
+    for cell in value["result"]["cells"].as_array_mut().unwrap() {
+        for output in cell["outputs"].as_array_mut().unwrap() {
+            for representation in output["representations"].as_array_mut().unwrap() {
+                bind_build_version(&mut representation["producer"]);
+            }
+        }
+    }
+    let key = CanonicalValue::from_json(value["key_input"].clone()).unwrap();
+    value["key"] = serde_json::json!(
+        identity::domain_digest("diplodocus/page-execution-key-v1", &key).unwrap()
+    );
+    rehash(&mut value);
+    let manifest = canonical(value);
     let config = toml::from_str("id='guide'\nowner='project'\nrepository='python'\npath='docs'\nmount='guide'\nformat='qmd'\n[execution]\nmode='execute'\nengine='jupyter'\nkernel='python3'\n").unwrap();
     let preparation = crate::documents::prepare_collection_document(
         std::str::from_utf8(&source).unwrap(),
@@ -56,16 +77,24 @@ fn fixture() -> (
             )
         })
         .collect();
-    (
-        prepared,
-        CanonicalValue::from_json(value["key_input"].clone()).unwrap(),
-        manifest,
-        assets,
-    )
+    (prepared, key, manifest, assets)
+}
+
+fn bind_build_version(component: &mut serde_json::Value) {
+    if matches!(
+        component["name"].as_str(),
+        Some(
+            "diplodocus-html-sanitizer"
+                | "diplodocus-svg-validator"
+                | "diplodocus-raster-validator"
+        )
+    ) {
+        component["version"] = serde_json::json!(env!("CARGO_PKG_VERSION"));
+    }
 }
 
 #[test]
-fn exact_reference_artifact_restores_every_alternative_and_round_trips() {
+fn reference_artifact_with_build_versions_restores_every_alternative_and_round_trips() {
     let (prepared, key, bytes, assets) = fixture();
     let page = codec::restore(&bytes, &key, &prepared, &assets).unwrap();
     assert_eq!(codec::encode(&prepared, &key, &page).unwrap(), bytes);
@@ -93,6 +122,7 @@ fn forged_results_fail_even_with_recomputed_digests() {
     use serde_json::json;
     let (prepared, key, bytes, assets) = fixture();
     let original: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    assert!(codec::restore(&bytes, &key, &prepared, &assets).is_ok());
     let mutations: Vec<(&str, serde_json::Value)> = vec![
         ("/result/cells/0/ordinal", json!(99)),
         ("/result/cells/0/span/start", json!(1)),
@@ -105,6 +135,14 @@ fn forged_results_fail_even_with_recomputed_digests() {
         (
             "/result/cells/0/outputs/1/representations/0/content_digest",
             json!(format!("sha256:{}", "0".repeat(64))),
+        ),
+        (
+            "/result/cells/0/outputs/1/representations/0/producer/version",
+            json!(format!("{}-forged", env!("CARGO_PKG_VERSION"))),
+        ),
+        (
+            "/result/cells/0/outputs/1/representations/2/producer/version",
+            json!(format!("{}-forged", env!("CARGO_PKG_VERSION"))),
         ),
         (
             "/result/cells/0/outputs/1/representations/2/content/markup",

@@ -793,6 +793,10 @@ async fn snapshot_projection_matches_the_complete_immutable_key_vector() {
     use diplodocus::execution::{ExecutionComponent, ExecutionDeadlines};
     let mut setup = snapshots::setup().await;
     let fixture = fixture();
+    setup.inputs.build.engine_version = fixture["key_input"]["engine"]["version"]
+        .as_str()
+        .unwrap()
+        .into();
     setup.inputs.build.components = fixture["key_input"]["components"]
         .as_array()
         .unwrap()

@@ -41,8 +41,9 @@ options, eligibility, warning references, output slots, MIME alternatives,
 figure options, active HTML and Markdown policies, and the complete asset set.
 Re-encoding the validated candidate must reproduce every manifest byte. This
 also rejects unknown fields, omitted nulls, forged producer metadata, and
-noncanonical sets at every depth. The original synthetic artifact round-trips
-without changing its schema or fixture bytes.
+noncanonical sets at every depth. Cache tests bind a copy of the synthetic artifact
+to the current build version and recompute its key and result digests. Independent
+contract tests retain the original fixture bytes and digest vectors.
 
 All alternatives are validated, including hidden content and unselected MIME
 representations. Cached images enter through digest, size, format, and active
@@ -68,9 +69,9 @@ and reports `execution-cache-unavailable`.
 
 The focused tests cover:
 
-- The exact reference artifact, all representation kinds, hidden images,
-  cross-cell display updates, slot gaps, warnings, allowed errors, and skipped
-  cells.
+- The reference artifact adapted to the current build, all representation kinds,
+  hidden images, cross-cell display updates, slot gaps, warnings, allowed errors,
+  and skipped cells.
 - Forged source, options, attribution, digests, diagnostics, and assets, including
   mutations with recomputed result digests. Every reference-fixture object is
   tested for unknown fields and every nullable field for omission.

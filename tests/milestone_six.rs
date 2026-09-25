@@ -13,7 +13,7 @@ use diplodocus::execution::{
     CellOutcome, CellSkipReason, ExecutionContext, ExecutionDeadlines, ExecutionEngine,
     ExecutionFailureKind, ExecutionPage, ExecutionPhase, JupyterEngine, PageExecutionRequest,
 };
-use diplodocus::ir::{ExecutionOrigin, ProvenanceActivity, SourceLocation};
+use diplodocus::ir::{ExecutionOrigin, OutputRepresentation, ProvenanceActivity, SourceLocation};
 use diplodocus::provenance::{PANACHE_VERSION, fingerprint_bytes};
 use diplodocus::snapshots::Snapshot;
 use serde_json::{Value, json};
@@ -190,10 +190,24 @@ fn python_and_r_cli_builds_match_reviewed_outputs_and_restore_complete_results()
                 ..
             }
         ));
-        // Build and runtime identities are checked by the provenance suite; this oracle
-        // keeps all authored cells, structured outputs, diagnostics, and asset evidence.
+        // Verify build versions before making the output oracle independent of releases.
+        let mut cells = record.cells.clone();
+        for cell in &mut cells {
+            for output in &mut cell.outputs {
+                for provenance in &mut output.output.provenance {
+                    support::normalize_build_tool_versions(&mut provenance.tools, &["diplodocus"]);
+                }
+                for representation in &mut output.output.representations {
+                    if let OutputRepresentation::HtmlCandidate { sanitizer, .. } = representation {
+                        assert_eq!(sanitizer.name, "diplodocus-html-sanitizer");
+                        assert_eq!(sanitizer.version, env!("CARGO_PKG_VERSION"));
+                        sanitizer.version = "[DIPLODOCUS_VERSION]".into();
+                    }
+                }
+            }
+        }
         support::assert_json_golden(
-            &json!({"cells":record.cells, "diagnostics":record.diagnostics, "assets":record.assets}),
+            &json!({"cells":cells, "diagnostics":record.diagnostics, "assets":record.assets}),
             format!("milestone-six/{}.json", kernel.language()),
         );
         let html = root.read("fresh/index.html");

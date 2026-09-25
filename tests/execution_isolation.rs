@@ -27,6 +27,9 @@ impl Monitor {
     }
 
     fn watch(&mut self, path: &Path, flags: WatchFlags) {
+        // Setup directory handles can close after a watch is installed. Opens and
+        // reads detect discovery without counting those delayed closes as execution.
+        let flags = flags & !WatchFlags::CLOSE_NOWRITE;
         let wd = inotify::add_watch(&self.fd, path, flags | WatchFlags::MASK_ADD).unwrap();
         self.paths.insert(wd, path.to_owned());
     }
@@ -76,6 +79,24 @@ fn writes() -> WatchFlags {
         | WatchFlags::MOVED_FROM
         | WatchFlags::MOVED_TO
         | WatchFlags::MOVE_SELF
+}
+
+#[test]
+fn monitors_ignore_closing_directories_opened_before_watching() {
+    let root = support::TestWorkspace::new();
+    let directory = std::fs::read_dir(root.path()).unwrap();
+    let mut monitor = Monitor::new();
+    monitor.watch(root.path(), WatchFlags::ALL_EVENTS);
+    drop(directory);
+    monitor.assert_quiet();
+
+    drop(std::fs::read_dir(root.path()).unwrap());
+    assert!(
+        monitor
+            .events()
+            .iter()
+            .any(|(_, flags)| flags.contains(ReadFlags::OPEN))
+    );
 }
 
 struct Isolation {

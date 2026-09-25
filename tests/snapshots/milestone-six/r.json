@@ -307,7 +307,7 @@
                 "policy": "html-mvp-v1",
                 "sanitizer": {
                   "name": "diplodocus-html-sanitizer",
-                  "version": "0.1.0"
+                  "version": "[DIPLODOCUS_VERSION]"
                 }
               },
               {
@@ -369,7 +369,7 @@
                   "start": 269
                 },
                 "tools": {
-                  "diplodocus": "0.1.0",
+                  "diplodocus": "[DIPLODOCUS_VERSION]",
                   "panache-parser": "0.29.2"
                 }
               }
