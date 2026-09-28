@@ -14,6 +14,13 @@ __pycache__/
 /lcov.info
 /cobertura.xml
 
+# Browser development tools and review artifacts.
+/node_modules/
+/artifacts/
+/.playwright-cli/
+/playwright-report/
+/test-results/
+
 # Devenv, direnv, and generated pre-commit configuration.
 /.devenv*
 /.direnv/

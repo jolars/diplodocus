@@ -112,6 +112,12 @@ Pre-commit hooks installed by devenv run rustfmt and all-target, all-feature
 Clippy with warnings denied. Intentional CLI golden-file changes can be accepted
 with `SNAPSHOTS=overwrite cargo test --test cli` after reviewing the diff.
 
+For browser development, run `npm ci --ignore-scripts` in the devenv shell, then
+use `site-dev` to preview the monorepo example, `site-test` to run browser tests,
+or `site-capture` to test and save desktop and mobile screenshots. The
+[browser workflow](docs/development/browser.md) covers agent inspection with
+`playwright-cli`, failure traces, and reproducible browser dependencies.
+
 ## Releases
 
 Conventional commits determine releases. Versionary opens and maintains the

@@ -54,6 +54,33 @@ jobs:
             --test snapshots_storage --test snapshot_assets --test snapshot_validation \
             --test snapshot_publication --test snapshot_refresh
 
+  browser:
+    name: browser
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: cachix/install-nix-action@v31
+      - uses: cachix/cachix-action@v17
+        with:
+          name: devenv
+      - name: Install devenv
+        run: nix profile add nixpkgs#devenv
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: browser
+      - name: Install browser tooling
+        run: devenv shell -- npm ci --ignore-scripts
+      - name: Test and capture the example site
+        run: devenv shell -- site-capture
+      - name: Upload browser reports, screenshots, and failure traces
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: browser-artifacts
+          path: artifacts/browser/
+          if-no-files-found: ignore
+          retention-days: 14
+
   docs:
     name: rustdoc
     runs-on: ubuntu-latest
@@ -69,7 +96,7 @@ jobs:
   versionary:
     name: versionary
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [fmt, clippy, test, docs]
+    needs: [fmt, clippy, test, browser, docs]
     runs-on: ubuntu-latest
     permissions:
       contents: write
