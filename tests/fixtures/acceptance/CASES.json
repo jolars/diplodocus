@@ -12,11 +12,13 @@
       "own-docs-parse"
     ],
     "MVP-04": [
-      "structured-execution"
+      "structured-execution",
+      "snapshot-executed-portability"
     ],
     "MVP-05": [
       "site-navigation-search",
-      "authority-and-output"
+      "authority-and-output",
+      "generate-validation-failure"
     ],
     "MVP-06": [
       "command-options",
@@ -26,16 +28,37 @@
       "serve-source-edit",
       "serve-environment-edit",
       "serve-ignored-edits",
-      "serve-failure-recovery"
+      "serve-failure-recovery",
+      "extract-options",
+      "snapshot-static-portability",
+      "snapshot-executed-portability",
+      "snapshot-refresh",
+      "snapshot-version-validation",
+      "snapshot-record-asset-validation",
+      "snapshot-publication-failure",
+      "extract-failure-recovery",
+      "extract-input-protection",
+      "snapshot-source-exclusion",
+      "extract-generate-workflow",
+      "generate-validation-failure",
+      "stage-failure-recovery"
     ],
     "MVP-07": [
       "portable-repeat-builds",
-      "own-docs-portability"
+      "own-docs-portability",
+      "snapshot-static-portability",
+      "snapshot-executed-portability",
+      "snapshot-logical-equivalence",
+      "snapshot-refresh",
+      "snapshot-source-exclusion",
+      "extract-generate-workflow"
     ],
     "MVP-08": [
       "offline-static-boundary",
       "authority-and-output",
-      "new-user-quick-start"
+      "new-user-quick-start",
+      "extract-input-protection",
+      "extract-generate-workflow"
     ],
     "MVP-09": [
       "acceptance-test-stack"
@@ -47,7 +70,8 @@
       "own-docs-publication"
     ],
     "MVP-11": [
-      "new-user-quick-start"
+      "new-user-quick-start",
+      "extract-generate-workflow"
     ]
   },
   "cases": [
@@ -751,8 +775,8 @@
       "inputs": [
         "tests/fixtures/acceptance/workspace/diplodocus.toml"
       ],
-      "action": "Run check, build, and serve from the configuration directory with defaults, then from another directory with explicit --config, --output, --host, and --port where supported.",
-      "expected": "Defaults use ./diplodocus.toml, ./site, and 127.0.0.1:8000; explicit options take precedence and all commands address the same declared workspace.",
+      "action": "Run check, extract, generate, build, and serve with defaults where allowed, then from another directory with explicit --config, --input, --output, --host, and --port where supported.",
+      "expected": "Source commands default to ./diplodocus.toml; extract defaults to .diplodocus/documentation.sqlite beside that file, generate requires --input, site output defaults to ./site, and serve binds 127.0.0.1:8000. Explicit options take precedence; generate requires no source configuration.",
       "milestone": 9
     },
     {
@@ -775,7 +799,7 @@
         "tests/fixtures/acceptance/workspace/diplodocus.toml"
       ],
       "action": "Run check for every case with kernels unavailable and no site or cache directory, then repeat with a preexisting cache.",
-      "expected": "Diagnostics match each check array; warnings exit zero and errors nonzero; no kernel discovery, runtime launch, network request, cache access/mutation, execution assets, or site writes occur.",
+      "expected": "Diagnostics match each check array; warnings exit zero and errors nonzero; no kernel discovery, runtime launch, network request, cache access/mutation, execution assets, snapshot publication, or site writes occur.",
       "milestone": 7
     },
     {
@@ -799,6 +823,190 @@
       ],
       "action": "Build each case in a fresh temporary workspace, then repeat error cases with an existing successful output tree.",
       "expected": "Diagnostics match each build array; warnings succeed and remain visible, errors exit nonzero without a partial site or escaped asset, and a previous successful output is byte-identical after failure.",
+      "milestone": 9
+    },
+    {
+      "id": "extract-options",
+      "cases": [
+        "baseline"
+      ],
+      "inputs": [
+        "tests/fixtures/acceptance/workspace/diplodocus.toml",
+        "tests/extract_command.rs"
+      ],
+      "action": "Set every collection to mode = never in a temporary baseline; run extract from the configuration directory and another working directory, using default, relative, and absolute output paths with runtimes unavailable.",
+      "expected": "The default snapshot is .diplodocus/documentation.sqlite beside the configuration; an explicit --output is relative to the working directory or absolute. Every snapshot has the same canonical content, warnings remain visible, and no site or execution cache is created.",
+      "milestone": 7
+    },
+    {
+      "id": "snapshot-static-portability",
+      "cases": [
+        "baseline"
+      ],
+      "inputs": [
+        "tests/fixtures/acceptance/workspace/diplodocus.toml",
+        "tests/extract_command.rs",
+        "tests/snapshot_metadata.rs",
+        "tests/snapshot_assets.rs",
+        "tests/snapshot_schema.rs"
+      ],
+      "action": "Extract the temporary baseline and focused metadata and asset variants with every collection set to mode = never, copy only each database to an unrelated directory, delete the producing workspace, and load and query the copy read-only.",
+      "expected": "Recover both packages, semantic IDs, documents, references, concepts, checked-in images and downloads, presentation defaults, slugs, mounts, source links, diagnostics, and producer provenance. Asset bytes and canonical records match; no checkout paths, source reads, runtimes, caches, or SQLite sidecars are needed.",
+      "milestone": 7
+    },
+    {
+      "id": "snapshot-executed-portability",
+      "cases": [
+        "baseline"
+      ],
+      "inputs": [
+        "tests/fixtures/acceptance/workspace/diplodocus.toml",
+        "tests/fixtures/acceptance/python/execution/stateful.qmd",
+        "tests/fixtures/acceptance/r/execution/stateful.qmd",
+        "tests/extract_command.rs",
+        "tests/snapshot_assets.rs"
+      ],
+      "action": "Run extract with the baseline Python and R kernels enabled, copy only the completed database, delete sources, execution caches, and staged figures, and load the copy.",
+      "expected": "Recover all four executed pages, ordered structured outputs, execution provenance, two generated figures, and checked-in assets from the snapshot alone. Every asset fingerprint and byte count matches; extraction creates no site.",
+      "milestone": 7
+    },
+    {
+      "id": "snapshot-logical-equivalence",
+      "cases": [
+        "baseline"
+      ],
+      "inputs": [
+        "tests/fixtures/acceptance/workspace/diplodocus.toml",
+        "tests/snapshot_canonical.rs",
+        "src/snapshots/canonical/tests.rs",
+        "tests/snapshots/snapshot-encoding/minimal.json"
+      ],
+      "action": "Publish equivalent semantic data from relocated workspaces and different map insertion orders; change SQLite page layout and JSON object key order, then compare canonical exports and per-entity fingerprints.",
+      "expected": "Equivalent records and asset bytes have identical canonical exports and fingerprints despite different SQLite file bytes. Meaningful sequence order and binary bytes survive; editing one entity changes its fingerprint without changing unrelated entity fingerprints.",
+      "milestone": 7
+    },
+    {
+      "id": "snapshot-refresh",
+      "cases": [],
+      "inputs": [
+        "tests/snapshot_refresh.rs"
+      ],
+      "action": "Repeatedly extract the focused refresh workspace; edit retained items and pages, remove a package, target, collection, concept, relationship, and page, change assets and generated figures, disable execution, and repeat after manual database edits.",
+      "expected": "Retained entities keep their semantic IDs and receive current source content; deleted records, obsolete execution output, and unreferenced assets disappear while shared assets remain. Repeated refreshes are logically identical, manual edits and added tables are discarded, and no history or duplicate records accumulate.",
+      "milestone": 7
+    },
+    {
+      "id": "snapshot-version-validation",
+      "cases": [],
+      "inputs": [
+        "tests/snapshot_validation.rs",
+        "docs/design/snapshot-schema.md"
+      ],
+      "action": "Load copies with independently unsupported storage, IR, and canonical encoding versions, including copies whose record tables cannot be decoded; also load a read-only valid database and a missing path.",
+      "expected": "Reject unsupported versions before decoding records, without migration or mutation. Loading a valid snapshot leaves its bytes and modification time unchanged; loading a missing path fails without creating a database or sidecars.",
+      "milestone": 7
+    },
+    {
+      "id": "snapshot-record-asset-validation",
+      "cases": [
+        "baseline"
+      ],
+      "inputs": [
+        "tests/snapshot_validation.rs",
+        "tests/snapshots_storage.rs"
+      ],
+      "action": "Mutate isolated snapshots to remove required records or assets, corrupt JSON and asset bytes, alter fingerprints, introduce invalid identities, owners, paths, or dangling nested references, and forge invalid image contents; repeat structural mutations with recomputed fingerprints.",
+      "expected": "The loader rejects each malformed snapshot without changing its bytes or panicking. Valid fingerprints do not excuse invalid records, unsafe paths, dangling references, or invalid assets; supported external references remain valid without source files.",
+      "milestone": 7
+    },
+    {
+      "id": "snapshot-publication-failure",
+      "cases": [],
+      "inputs": [
+        "tests/snapshot_publication.rs",
+        "tests/snapshot_refresh.rs",
+        "src/snapshots/storage/tests.rs"
+      ],
+      "action": "Publish and replace complete snapshots while retaining an open reader; attempt publication with an active SQLite transaction, recovery sidecars, invalid records, and an occupied destination, then remove each obstruction and retry.",
+      "expected": "Readers see a complete old or new snapshot. Publication failures preserve the prior database, destination sentinels, and recovery files byte-for-byte, remove temporary storage, and permit a later refresh from current sources. Successful publication leaves one independently readable database without a journal or WAL dependency.",
+      "milestone": 7
+    },
+    {
+      "id": "extract-failure-recovery",
+      "cases": [
+        "baseline"
+      ],
+      "inputs": [
+        "tests/extract_command.rs",
+        "tests/snapshot_refresh.rs"
+      ],
+      "action": "After successful extraction, introduce invalid configuration, an unresolved source reference, an unavailable kernel, a disallowed cell error after a figure, an unresolved generated reference, and a publication obstruction in separate temporary attempts; repair the inputs and retry.",
+      "expected": "Each failed extract exits nonzero with its configuration, validation, execution, or publication error and preserves the previous snapshot bytes. No partial snapshot or earlier failed-cell figure is published, temporary storage is removed, and the repaired extraction publishes current content and assets.",
+      "milestone": 7
+    },
+    {
+      "id": "extract-input-protection",
+      "cases": [
+        "baseline"
+      ],
+      "inputs": [
+        "tests/extract_command.rs",
+        "tests/commands.rs"
+      ],
+      "action": "Request extract destinations overlapping configuration, package metadata, API sources, authored pages, local assets, declared environment inputs, input directories, or the execution cache, including symlink aliases and a download referenced only by generated Markdown.",
+      "expected": "Reject every overlapping destination without overwriting inputs. Known source conflicts fail before execution; generated-only asset conflicts fail after reference resolution but before publication. An explicitly linked snapshot download remains an input and cannot be replaced.",
+      "milestone": 7
+    },
+    {
+      "id": "snapshot-source-exclusion",
+      "cases": [
+        "baseline"
+      ],
+      "inputs": [
+        "tests/extract_command.rs"
+      ],
+      "action": "Extract repeatedly into declared source trees using authored and API source extensions; add temporary storage, old-version snapshots, recovery sidecars, and in-boundary symlink aliases, then assemble, check, and revalidate the original input set.",
+      "expected": "Generated snapshots and storage never enter source discovery or declared-input fingerprints; repeated extraction has equal canonical content. Recovery files remain untouched, cross-boundary aliases still fail, and explicitly referenced database downloads remain inputs.",
+      "milestone": 7
+    },
+    {
+      "id": "extract-generate-workflow",
+      "cases": [
+        "baseline"
+      ],
+      "inputs": [
+        "tests/fixtures/acceptance/workspace/diplodocus.toml",
+        "tests/commands.rs",
+        "tests/extract_command.rs",
+        "tests/site_generation.rs"
+      ],
+      "action": "In fresh workspace copies with identical declared environments, run extract followed by generate --input and compare with build; repeat with mode = never and with authorized deterministic execution. Copy only the database to a clean directory, remove sources and caches, disable runtimes, and generate twice with default and explicit output paths, recorded presentation defaults, and explicit presentation overrides.",
+      "expected": "Generation uses only the snapshot and generator, never reads workspace configuration or executes cells, and leaves input bytes unchanged. For matching presentation settings, separate stages and build have logically equal snapshots and identical site paths and bytes, including API pages, semantic links, concepts, search, and assets; repeated generation is identical.",
+      "milestone": 8
+    },
+    {
+      "id": "generate-validation-failure",
+      "cases": [],
+      "inputs": [
+        "tests/snapshot_validation.rs",
+        "tests/snapshots_storage.rs",
+        "tests/commands.rs",
+        "docs/design/snapshots.md"
+      ],
+      "action": "Run generate --input on missing, unsupported-version, malformed-record, dangling-reference, and corrupt-asset snapshots, first without a site and then with a successful site; try an output overlapping the input and stored HTML that violates the active sanitizer policy.",
+      "expected": "Generation validates before publication, rejects invalid inputs with a nonzero exit, and creates no partial site. The input database and prior site remain unchanged; stored HTML receives no trust from deserialization and only markup accepted by the active policy can render.",
+      "milestone": 8
+    },
+    {
+      "id": "stage-failure-recovery",
+      "cases": [],
+      "inputs": [
+        "tests/commands.rs",
+        "tests/preview.rs",
+        "tests/snapshot_refresh.rs"
+      ],
+      "action": "Build and serve a successful site; fail extraction after changing sources, then allow extraction but introduce a route collision or site publication failure. Repair the fault and retry generation or a watched rebuild.",
+      "expected": "A failed extraction preserves the previous snapshot and site and never generates from stale records. A failed generation preserves the newly extracted snapshot and last successful site; retrying generation needs no extraction, and serve recovers on the same server.",
       "milestone": 9
     },
     {
@@ -873,7 +1081,7 @@
         "tests/fixtures/acceptance/workspace/diplodocus.toml"
       ],
       "action": "Copy the workspace to two different absolute directories; build each with fresh caches, then rebuild from cache.",
-      "expected": "Compare every output path and byte and portable IR; no checkout paths, temporary paths, timestamps, ports, or process IDs leak. Fresh and cached outputs have equal portable content under the cache contract.",
+      "expected": "Compare every site path and byte and canonical snapshot records and asset contents, not SQLite file bytes; no checkout paths, temporary paths, timestamps, ports, or process IDs leak. Fresh and cached outputs have equal portable content under the cache contract.",
       "milestone": 11
     },
     {
@@ -962,8 +1170,8 @@
         "diplodocus.toml",
         "tests/fixtures/acceptance/workspace/diplodocus.toml"
       ],
-      "action": "From a clean checkout with declared tools installed, follow the checked-in instructions to check, build, and preview the acceptance site and the real project site.",
-      "expected": "Commands reproduce both sites using the declared configuration and kernels; the guide explains explicit unsandboxed execution and requires no dependency installation or network access by Diplodocus.",
+      "action": "From a clean checkout with declared tools installed, follow the checked-in instructions to check, build, and preview the acceptance site and the real project site, then extract a snapshot and generate the same site separately.",
+      "expected": "Both workflows reproduce the sites using the declared configuration and kernels for extraction and only the snapshot for generation; the guide explains explicit unsandboxed execution and requires no dependency installation or network access by Diplodocus.",
       "milestone": 11
     }
   ]

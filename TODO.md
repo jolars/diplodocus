@@ -564,7 +564,7 @@ layouts in the generation stage.
   destinations that would overwrite declared inputs.
 - [x] Exclude generated snapshots and temporary storage files from source
   discovery and input fingerprints.
-- [ ] Extend the acceptance registry and matrix with snapshot portability,
+- [x] Extend the acceptance registry and matrix with snapshot portability,
   refresh, validation, and failure scenarios, plus the separate `extract`
   and `generate` workflow.
 

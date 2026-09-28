@@ -44,6 +44,38 @@ fn acceptance_registry_covers_all_mvp_criteria() {
     validate_registry(&support::acceptance_registry());
 }
 
+#[test]
+fn acceptance_registry_covers_snapshot_and_separate_command_contracts() {
+    let registry = support::acceptance_registry();
+    for (id, criterion, milestone) in [
+        ("extract-options", "MVP-06", 7),
+        ("snapshot-static-portability", "MVP-07", 7),
+        ("snapshot-executed-portability", "MVP-04", 7),
+        ("snapshot-logical-equivalence", "MVP-07", 7),
+        ("snapshot-refresh", "MVP-07", 7),
+        ("snapshot-version-validation", "MVP-06", 7),
+        ("snapshot-record-asset-validation", "MVP-06", 7),
+        ("snapshot-publication-failure", "MVP-06", 7),
+        ("extract-failure-recovery", "MVP-06", 7),
+        ("extract-input-protection", "MVP-08", 7),
+        ("snapshot-source-exclusion", "MVP-07", 7),
+        ("extract-generate-workflow", "MVP-11", 8),
+        ("generate-validation-failure", "MVP-05", 8),
+        ("stage-failure-recovery", "MVP-06", 9),
+    ] {
+        assert!(
+            registry.criteria[criterion].iter().any(|value| value == id),
+            "{criterion} must cover {id}"
+        );
+        let scenario = registry
+            .scenarios
+            .iter()
+            .find(|scenario| scenario.id == id)
+            .unwrap_or_else(|| panic!("missing snapshot scenario: {id}"));
+        assert_eq!(scenario.milestone, milestone, "{id}");
+    }
+}
+
 fn validate_registry(registry: &AcceptanceRegistry) {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"));
     let roadmap = fs::read_to_string(root.join("TODO.md")).unwrap();
@@ -68,6 +100,20 @@ fn validate_registry(registry: &AcceptanceRegistry) {
         assert!(matrix.contains(&format!("| `{id}`:")));
         let ids = &registry.criteria[&id];
         assert!(!ids.is_empty(), "uncovered {id}");
+        let prefix = format!("| `{id}`:");
+        let rows: Vec<_> = matrix
+            .lines()
+            .filter(|line| line.starts_with(&prefix))
+            .collect();
+        assert_eq!(rows.len(), 1, "duplicate criterion {id}");
+        assert_eq!(
+            rows[0].split('|').nth(2).unwrap().trim(),
+            ids.iter()
+                .map(|id| format!("`{id}`"))
+                .collect::<Vec<_>>()
+                .join(", "),
+            "criterion mapping differs for {id}"
+        );
         for scenario in ids {
             assert!(
                 scenarios.contains(scenario.as_str()),
@@ -83,9 +129,28 @@ fn validate_registry(registry: &AcceptanceRegistry) {
         assert!(!scenario.action.is_empty());
         assert!(!scenario.expected.is_empty());
         assert!((1..=11).contains(&scenario.milestone));
-        assert!(matrix.contains(&format!("| `{}` |", scenario.id)));
-        assert!(matrix.contains(&scenario.action));
-        assert!(matrix.contains(&scenario.expected));
+        let inputs = scenario
+            .cases
+            .iter()
+            .chain(&scenario.inputs)
+            .map(|input| format!("`{input}`"))
+            .collect::<Vec<_>>()
+            .join(", ");
+        let expected_row = format!(
+            "| `{}` | {inputs} | {} | {} | {} |",
+            scenario.id, scenario.action, scenario.expected, scenario.milestone
+        );
+        let prefix = format!("| `{}` |", scenario.id);
+        let rows: Vec<_> = matrix
+            .lines()
+            .filter(|line| line.starts_with(&prefix))
+            .collect();
+        assert_eq!(
+            rows,
+            [expected_row.as_str()],
+            "scenario differs: {}",
+            scenario.id
+        );
         for input in &scenario.inputs {
             assert!(support::is_relative_input(input));
             assert!(
@@ -148,6 +213,30 @@ fn registry_rejects_missing_coverage_and_unreachable_inputs() {
     registry.scenarios[0]
         .inputs
         .push("missing-fixture.toml".into());
+    assert!(std::panic::catch_unwind(|| validate_registry(&registry)).is_err());
+}
+
+#[test]
+fn registry_rejects_matrix_drift_in_scenario_inputs_milestones_and_criteria() {
+    let mut registry = support::acceptance_registry();
+    registry.scenarios[0].inputs.clear();
+    registry.scenarios[0].inputs.push("Cargo.toml".into());
+    assert!(std::panic::catch_unwind(|| validate_registry(&registry)).is_err());
+
+    let mut registry = support::acceptance_registry();
+    registry.scenarios[0].milestone = 11;
+    assert!(std::panic::catch_unwind(|| validate_registry(&registry)).is_err());
+
+    let mut registry = support::acceptance_registry();
+    registry.scenarios[0].cases.pop();
+    assert!(std::panic::catch_unwind(|| validate_registry(&registry)).is_err());
+
+    let mut registry = support::acceptance_registry();
+    registry
+        .criteria
+        .get_mut("MVP-01")
+        .unwrap()
+        .push("static-apis".into());
     assert!(std::panic::catch_unwind(|| validate_registry(&registry)).is_err());
 }
 
