@@ -31,8 +31,10 @@ there is no additional version wrapper on every syntax node or signature.
 Consumers must read the manifest before interpreting a detached record.
 `producer` is the Diplodocus package version, not a schema discriminator.
 
-`extract` replaces the complete snapshot, so deleted entities and unused assets
-disappear on the next refresh.
+`extract` rebuilds the complete snapshot from source files and configuration.
+Retained entities keep their semantic IDs, while deleted entities and unused
+assets disappear on the next refresh. Manual database edits are discarded, and
+refreshes do not append historical records or retain backup snapshots.
 
 The standalone database uses SQLite's `DELETE` rollback journal mode.
 Publication writes a temporary sibling database in one transaction, commits and
@@ -583,6 +585,12 @@ readers retaining the previous complete database across replacement, and failed
 refreshes with existing sidecars or active SQLite transactions. A storage unit
 test verifies that rejection of a completed staging database leaves the previous
 snapshot intact and removes the temporary file.
+[Refresh tests](../../tests/snapshot_refresh.rs) exercise `extract` repeatedly,
+checking stable IDs and updated contents, removal of obsolete entities and
+unreferenced assets, replacement of generated figures and execution records,
+and restoration from source after manual database edits. They also check retry
+after resolution and publication failures and verify that no history tables,
+backup snapshots, or staging files accumulate.
 [Asset handoff tests](../../tests/snapshot_assets.rs) check exact SQLite bytes,
 deduplication across checked-in and generated assets, download fragments, and
 PNG, JPEG, and SVG recovery from a copied database after removing the checkout,

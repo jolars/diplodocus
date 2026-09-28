@@ -554,7 +554,7 @@ layouts in the generation stage.
 - [x] Publish a complete workspace atomically as a standalone database with no
   dependency on a live journal or write-ahead log. A failed refresh
   preserves the previous successful snapshot.
-- [ ] Test repeated refreshes, stable IDs for retained entities, removal of
+- [x] Test repeated refreshes, stable IDs for retained entities, removal of
   stale records and unreferenced assets, and publication failure recovery.
   Refresh from source inputs without preserving manual database edits or
   accumulating historical snapshots.
