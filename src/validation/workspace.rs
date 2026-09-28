@@ -495,7 +495,9 @@ impl Resolver<'_> {
             }
             return Ok(ReferenceTarget::Anchor { fragment });
         }
-        if generated {
+        // Execution has already replaced image targets with staged asset paths.
+        // Links still use the owning page's source context for pages and downloads.
+        if generated && kind == ReferenceKind::Image {
             let path = DiagnosticPath::try_from(file.as_ref()).map_err(|_| invalid)?;
             let asset = self.generated.get(&path).ok_or(invalid)?;
             if fragment.is_some() {

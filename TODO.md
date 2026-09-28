@@ -558,7 +558,7 @@ layouts in the generation stage.
   stale records and unreferenced assets, and publication failure recovery.
   Refresh from source inputs without preserving manual database edits or
   accumulating historical snapshots.
-- [ ] Wire `diplodocus extract` through assembly, configured execution,
+- [x] Wire `diplodocus extract` through assembly, configured execution,
   resolution, validation, asset collection, and snapshot publication.
   Implement the documented default path and `--output` override, and reject
   destinations that would overwrite declared inputs.
