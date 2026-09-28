@@ -72,7 +72,19 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
             )
             .unwrap();
         }
-        write!(html, "<h1>{}</h1>", escape(&page.title)).unwrap();
+        // Keep the authored heading's formatting and anchor when it supplies the title.
+        let authored_title = page.item.is_none()
+            && page.concept.is_none()
+            && page.document.is_some_and(|document| {
+                matches!(
+                    document.document.blocks.first(),
+                    Some(Block::Heading { level: 1, inlines, .. })
+                        if plain(inlines) == page.title
+                )
+            });
+        if !authored_title {
+            write!(html, "<h1>{}</h1>", escape(&page.title)).unwrap();
+        }
         if let Some(item) = page.item {
             let ecosystem = page
                 .owner

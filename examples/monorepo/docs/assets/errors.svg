@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="150" viewBox="0 0 600 150" role="img" aria-labelledby="title description">
+  <title id="title">Mean squared error for two predictions</title>
+  <desc id="description">The squared errors are zero and one. Their average is 0.5.</desc>
+  <rect width="600" height="150" rx="8" fill="#edf1f0" />
+  <g fill="#202c38" font-family="sans-serif" text-anchor="middle">
+    <g font-size="16">
+      <text x="110" y="40">Observation 1</text>
+      <text x="110" y="66">Prediction 1</text>
+      <text x="310" y="40">Observation 2</text>
+      <text x="310" y="66">Prediction 3</text>
+      <text x="500" y="53">Average</text>
+    </g>
+    <g font-size="24" font-weight="bold">
+      <text x="110" y="112">0</text>
+      <text x="210" y="112">+</text>
+      <text x="310" y="112">1</text>
+      <text x="500" y="112">0.5</text>
+    </g>
+  </g>
+  <path d="M395 94 H430 M420 86 L430 94 L420 102" fill="none" stroke="#165c7c" stroke-width="2" />
+</svg>

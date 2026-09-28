@@ -27,6 +27,10 @@ form the project's own documentation corpus. The [quick start](docs/guide/quick-
 describes the build and preview workflow. The [snapshot schema](docs/design/snapshot-schema.md)
 documents the portable handoff between extraction and generation.
 
+For a small working example, see the [R/Python monorepo](examples/monorepo/README.md).
+It combines two package APIs, a shared guide, and cross-language links with
+execution disabled.
+
 ## Authored documents
 
 The library parses authored `.md` and `.qmd` content in-process through

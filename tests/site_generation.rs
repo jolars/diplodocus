@@ -5,6 +5,43 @@ use diplodocus::snapshots::Snapshot;
 use diplodocus::validation::resolve_workspace;
 
 #[test]
+fn authored_titles_reuse_matching_headings_and_preserve_their_anchors() {
+    for (source, heading_count, preserved) in [
+        (
+            "# **Guide** {#overview}\n\n[Top](#overview)\n",
+            1,
+            "<h1 id=\"overview\"><strong>Guide</strong></h1>",
+        ),
+        (
+            "---\ntitle: Guide\n---\n\n# Guide {#overview}\n",
+            1,
+            "<h1 id=\"overview\">Guide</h1>",
+        ),
+        ("---\ntitle: Guide\n---\n\nWelcome.\n", 1, "<h1>Guide</h1>"),
+        (
+            "---\ntitle: Guide\n---\n\n# Different heading\n",
+            2,
+            "<h1>Guide</h1>",
+        ),
+        ("## Guide {#guide}\n", 1, "<h2 id=\"guide\">Guide</h2>"),
+    ] {
+        let root = support::TestWorkspace::new();
+        root.write("diplodocus.toml", "[project]\nname='Titles'\n[[repository]]\nid='docs'\npath='.'\n[[content]]\nid='guide'\nowner='project'\nrepository='docs'\npath='docs'\nmount=''\nformat='qmd'\n");
+        root.write("docs/index.qmd", source);
+        let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+        let snapshot =
+            Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+        let rendered =
+            diplodocus::rendering::render_site(&diplodocus::site::Site::new(&snapshot).unwrap())
+                .unwrap();
+        let html = std::str::from_utf8(&rendered.files()["index.html"].bytes).unwrap();
+        assert_eq!(html.matches("<h1").count(), heading_count, "{source}");
+        assert!(html.contains(preserved), "{html}");
+        assert!(html.contains("<title>Guide · Titles</title>"));
+    }
+}
+
+#[test]
 fn static_site_uses_only_snapshot_bytes_and_preserves_output_on_failure() {
     let root = support::acceptance_workspace();
     let sources = assemble_workspace(root.path().join("workspace/diplodocus.toml")).unwrap();

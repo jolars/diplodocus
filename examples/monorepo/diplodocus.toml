@@ -1,0 +1,52 @@
+[project]
+name = "Tiny Stats"
+
+[presentation]
+description = "A shared guide and API reference for Tiny Stats in Python and R."
+
+[[repository]]
+id = "tinystats"
+path = "."
+
+[[package]]
+id = "pystats"
+name = "Tiny Stats for Python"
+slug = "python"
+ecosystem = "python"
+repository = "tinystats"
+path = "python"
+metadata_path = "pyproject.toml"
+targets = [
+  { id = "api", extractor = "python", path = "src/tinystats", role = "public-api" },
+]
+
+[[package]]
+id = "rstats"
+name = "Tiny Stats for R"
+slug = "r"
+ecosystem = "r"
+repository = "tinystats"
+path = "r"
+metadata_path = "DESCRIPTION"
+targets = [
+  { id = "api", extractor = "r", path = ".", role = "public-api" },
+]
+
+[[content]]
+id = "guide"
+owner = "project"
+repository = "tinystats"
+path = "docs"
+mount = ""
+format = "gfm"
+
+[content.execution]
+mode = "never"
+
+[[concept]]
+id = "mean-squared-error"
+kind = "equivalent"
+members = [
+  { package = "pystats", item = "tinystats.mean_squared_error" },
+  { package = "rstats", item = "mean_squared_error" },
+]

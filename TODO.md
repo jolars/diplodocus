@@ -570,10 +570,11 @@ layouts in the generation stage.
 
 ### Contributor handoff checkpoint
 
-- [ ] Provide a reproducible R/Python monorepo fixture with authored pages,
+- [x] Provide a reproducible R/Python monorepo fixture with authored pages,
   semantic references, concepts, and a local asset. Configure its
   collections with `mode = "never"` so export needs no authored execution
-  engine or runtime.
+  engine or runtime. See [the example](examples/monorepo/README.md) and its
+  [command and portability test](tests/monorepo_example.rs).
 - [ ] Export that fixture through the real `extract` command and supply the
   database, its canonical text export, schema documentation, and example
   queries for packages, items, documents, references, and assets.

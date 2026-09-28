@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tinystats"
+version = "0.1.0"
+description = "A small Python package for the Diplodocus monorepo example."
+requires-python = ">=3.10"
+
+[tool.setuptools.packages.find]
+where = ["src"]

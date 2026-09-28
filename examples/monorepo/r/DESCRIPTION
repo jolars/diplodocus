@@ -1,0 +1,12 @@
+Package: tinystats
+Type: Package
+Title: A Small Statistics Example
+Version: 0.1.0
+Authors@R: person("Diplodocus", "Contributors", role = c("aut", "cre"),
+    email = "maintainers@example.com")
+Author: Diplodocus Contributors [aut, cre]
+Maintainer: Diplodocus Contributors <maintainers@example.com>
+Description: A small R package for the Diplodocus monorepo example. Computes
+    mean squared error to compare observed responses and predictions.
+License: MIT + file LICENSE
+Encoding: UTF-8
