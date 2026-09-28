@@ -19,7 +19,7 @@ pub(super) fn publish(snapshot: &Snapshot, path: &Path) -> Result<(), SnapshotEr
         .unwrap_or(Path::new("."));
     fs::create_dir_all(parent)?;
     let temporary = tempfile::Builder::new()
-        .prefix(".diplodocus-snapshot-")
+        .prefix(crate::generated_storage::SNAPSHOT_TEMP_PREFIX)
         .suffix(".sqlite")
         .tempfile_in(parent)?;
     let mut connection = Connection::open_with_flags(
@@ -28,6 +28,11 @@ pub(super) fn publish(snapshot: &Snapshot, path: &Path) -> Result<(), SnapshotEr
     )?;
     connection.execute_batch(
         "PRAGMA journal_mode = DELETE; PRAGMA synchronous = FULL; PRAGMA trusted_schema = OFF;",
+    )?;
+    connection.pragma_update(
+        None,
+        "application_id",
+        crate::generated_storage::SNAPSHOT_APPLICATION_ID,
     )?;
     let transaction = connection.transaction()?;
     transaction.execute_batch(include_str!("schema.sql"))?;

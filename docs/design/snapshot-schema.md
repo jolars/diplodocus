@@ -31,6 +31,14 @@ there is no additional version wrapper on every syntax node or signature.
 Consumers must read the manifest before interpreting a detached record.
 `producer` is the Diplodocus package version, not a schema discriminator.
 
+New snapshots set SQLite's `application_id` header field to `0x4449504c`
+(`DIPL`). Source discovery uses this marker to recognize generated snapshots
+regardless of their filename or schema version. Older snapshots with a zero
+application ID are recognized by the columns of their `manifest`, `records`,
+and `assets` tables, inspected through an immutable read-only connection. This
+inspection never recovers journals or creates sidecars. The marker does not
+change the logical encoding or replace validation when loading a snapshot.
+
 `extract` rebuilds the complete snapshot from source files and configuration.
 Retained entities keep their semantic IDs, while deleted entities and unused
 assets disappear on the next refresh. Manual database edits are discarded, and
@@ -51,6 +59,16 @@ database must never be applied to its replacement. Callers must close external
 SQLite writers before publishing and keep them closed during publication. The
 sidecar checks detect existing recovery files; they do not lock out an external
 writer that starts concurrently.
+
+Source discovery and preview watching skip `.diplodocus` directories,
+`.diplodocus-snapshot-*` temporary paths, recognized snapshot files, and their
+SQLite sidecars. These files do not enter the source selections used for input
+fingerprints, including when `--output` places a snapshot inside an authored or
+package source tree with a source extension. Contained file aliases receive the
+same exclusions after boundary validation. An explicit asset reference or
+environment declaration still makes that file an input, so publication cannot
+overwrite it. Unrelated SQLite files are not classified as snapshots merely by
+their extension.
 
 ## Tables
 

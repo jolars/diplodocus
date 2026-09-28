@@ -12,6 +12,7 @@ pub mod diagnostics;
 pub mod documents;
 pub mod execution;
 pub mod extractors;
+mod generated_storage;
 pub mod ir;
 pub mod paths;
 pub mod provenance;

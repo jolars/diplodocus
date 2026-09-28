@@ -209,6 +209,10 @@ fn read_input(
             return;
         }
     };
+    if matches!(kind, "r-source" | "rd") && crate::generated_storage::is_generated_file(&canonical)
+    {
+        return;
+    }
     let source = match repository.source_location(&canonical, None) {
         Ok(source) => source,
         Err(error) => {
@@ -311,6 +315,9 @@ fn discover(
     kind: &str,
     result: &mut RExtraction,
 ) {
+    if crate::generated_storage::is_reserved(path) {
+        return;
+    }
     let metadata = match fs::symlink_metadata(path) {
         Ok(metadata) => metadata,
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => return,

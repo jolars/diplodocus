@@ -146,8 +146,12 @@ impl WorkspaceSources {
             return Err(AssemblyError::InputsChanged);
         }
         for (index, collection) in self.configuration.content.iter().enumerate() {
-            if authored::discover(&paths.content[index].path, collection.format)?
-                != self.selections.content[&collection.id]
+            let content = &paths.content[index];
+            if authored::discover(
+                &content.path,
+                collection.format,
+                &paths.repositories[content.repository_index],
+            )? != self.selections.content[&collection.id]
             {
                 return Err(AssemblyError::InputsChanged);
             }

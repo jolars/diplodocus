@@ -434,10 +434,8 @@ fn discover(
     accept: &impl Fn(&Path) -> bool,
 ) {
     if root.starts_with(output)
-        || matches!(
-            root.file_name().and_then(|s| s.to_str()),
-            Some(".git" | ".diplodocus")
-        )
+        || root.file_name().is_some_and(|name| name == ".git")
+        || crate::generated_storage::is_reserved(root)
     {
         return;
     }
@@ -467,6 +465,11 @@ fn discover(
                 .unwrap_or_default(),
         );
     } else if accept(root) {
+        if let Ok(path) = fs::canonicalize(root)
+            && crate::generated_storage::is_generated_file(&path)
+        {
+            return;
+        }
         observe(root, observed);
         selected.push(root.into());
     }
@@ -475,6 +478,36 @@ fn discover(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn generated_storage_does_not_trigger_rebuilds_but_source_edits_do() {
+        let root = tempfile::tempdir().unwrap();
+        let config = root.path().join("diplodocus.toml");
+        fs::write(&config, "[project]\nname='Observe'\n[[repository]]\nid='repo'\npath='.'\n[[content]]\nid='guide'\nowner='project'\nrepository='repo'\npath='.'\nmount='guide'\nformat='gfm'\n").unwrap();
+        let page = root.path().join("index.md");
+        fs::write(&page, "# Guide\n").unwrap();
+        let sources = assemble_workspace(&config).unwrap();
+        let snapshot = crate::snapshots::Snapshot::from_sources(
+            &sources,
+            &resolve_workspace(&sources).unwrap(),
+        )
+        .unwrap();
+        let mut observer = Observer::new(&config, &root.path().join("site")).unwrap();
+        let before = observer.capture();
+        let output = root.path().join("export.md");
+        snapshot.publish(&output).unwrap();
+        let temporary = root.path().join(".diplodocus-snapshot-pending.md");
+        fs::write(&temporary, b"\xffpartial").unwrap();
+        assert_eq!(observer.capture(), before);
+        fs::write(&temporary, b"\xffchanged").unwrap();
+        snapshot.publish(&output).unwrap();
+        assert_eq!(observer.capture(), before);
+        fs::remove_file(output).unwrap();
+        fs::remove_file(temporary).unwrap();
+        assert_eq!(observer.capture(), before);
+        fs::write(page, "# Updated guide\n").unwrap();
+        assert_ne!(observer.capture(), before);
+    }
 
     #[test]
     fn watches_assets_referenced_only_from_api_documentation() {

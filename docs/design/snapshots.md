@@ -51,6 +51,12 @@ authoritative. Manual database edits are not preserved, and refreshes do not
 append historical snapshots. The initial implementation may replace the whole
 snapshot; skipping unchanged extraction work is a later optimization.
 
+Generated snapshots and temporary storage stay outside source discovery and
+declared-input fingerprints. This applies to custom output paths within source
+trees as well as the default `.diplodocus` directory. The
+[schema contract](snapshot-schema.md#versions) specifies how discovery recognizes
+snapshots and storage paths without opening recovery files.
+
 ## Publication
 
 A refresh publishes the complete workspace atomically, using a transaction or

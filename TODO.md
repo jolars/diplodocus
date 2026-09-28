@@ -562,7 +562,7 @@ layouts in the generation stage.
   resolution, validation, asset collection, and snapshot publication.
   Implement the documented default path and `--output` override, and reject
   destinations that would overwrite declared inputs.
-- [ ] Exclude generated snapshots and temporary storage files from source
+- [x] Exclude generated snapshots and temporary storage files from source
   discovery and input fingerprints.
 - [ ] Extend the acceptance registry and matrix with snapshot portability,
   refresh, validation, and failure scenarios, plus the separate `extract`

@@ -120,6 +120,182 @@ fn cli_paths_and_static_snapshot_match_the_contract_without_runtimes() {
 }
 
 #[test]
+fn generated_snapshots_never_become_sources_or_change_input_fingerprints() {
+    let root = static_workspace();
+    let config = root.path().join(CONFIG);
+    let original = assemble_workspace(&config).unwrap();
+    let expected_inputs: Vec<_> = original.input_paths().collect();
+    let expected = Snapshot::from_sources(&original, &resolve_workspace(&original).unwrap())
+        .unwrap()
+        .canonical_export()
+        .unwrap();
+
+    // Output names are unrestricted, including extensions understood by extractors.
+    for output in [
+        DEFAULT_OUTPUT,
+        "core/docs/export.md",
+        "python/docs/export.qmd",
+        "python/python/foo/export.py",
+        "python/python/foo/export.pyi",
+        "r/R/export.R",
+        "r/man/export.Rd",
+    ] {
+        for _ in 0..2 {
+            success(&extract(root.path(), Some(Path::new(output)), true));
+            assert_eq!(
+                Snapshot::load(root.path().join(output))
+                    .unwrap()
+                    .canonical_export()
+                    .unwrap(),
+                expected,
+                "{output}"
+            );
+            let current = assemble_workspace(&config).unwrap();
+            assert_eq!(current.input_paths().collect::<Vec<_>>(), expected_inputs);
+            assert_eq!(current.workspace(), original.workspace());
+            original.revalidate().unwrap();
+        }
+    }
+    let result = Command::new(env!("CARGO_BIN_EXE_diplodocus"))
+        .current_dir(root.path())
+        .args(["check", "--config", CONFIG])
+        .env("PATH", "")
+        .output()
+        .unwrap();
+    success(&result);
+}
+
+#[test]
+fn temporary_storage_does_not_enter_discovery_or_revalidation() {
+    let root = static_workspace();
+    let config = root.path().join(CONFIG);
+    let original = assemble_workspace(&config).unwrap();
+    let expected_inputs: Vec<_> = original.input_paths().collect();
+    for directory in [
+        "core/docs",
+        "python/docs",
+        "python/python/foo",
+        "r/R",
+        "r/man",
+    ] {
+        for extension in ["md", "qmd", "py", "pyi", "R", "Rd"] {
+            for name in [
+                format!(".diplodocus-snapshot-leftover.{extension}"),
+                format!(".diplodocus-snapshot-leftover.sqlite-wal/page.{extension}"),
+                format!(".diplodocus/nested/page.{extension}"),
+            ] {
+                root.write(format!("{directory}/{name}"), b"\xff\0incomplete storage");
+            }
+        }
+    }
+    original.revalidate().unwrap();
+    let current = assemble_workspace(&config).unwrap();
+    assert_eq!(current.input_paths().collect::<Vec<_>>(), expected_inputs);
+    assert_eq!(current.workspace(), original.workspace());
+    success(&extract(root.path(), None, true));
+}
+
+#[test]
+fn older_snapshots_are_excluded_without_touching_their_recovery_files() {
+    let root = static_workspace();
+    let config = root.path().join(CONFIG);
+    let original = assemble_workspace(&config).unwrap();
+    // URI punctuation must remain part of the filename during read-only inspection.
+    let output = Path::new("core/docs/older ?#%.md");
+    success(&extract(root.path(), Some(output), true));
+    let path = root.path().join(output);
+    assert_eq!(&fs::read(&path).unwrap()[68..72], b"DIPL");
+    let database = rusqlite::Connection::open(&path).unwrap();
+    database.pragma_update(None, "application_id", 0).unwrap();
+    database
+        .execute("UPDATE manifest SET storage_version = 1", [])
+        .unwrap();
+    database.close().unwrap();
+    for suffix in ["-journal", "-wal", "-shm"] {
+        root.write(format!("{}{suffix}", output.display()), "recovery sentinel");
+    }
+    let files = support::files_under(root.path());
+    let bytes: Vec<_> = files
+        .iter()
+        .map(|file| fs::read(root.path().join(file)).unwrap())
+        .collect();
+    let current = assemble_workspace(&config).unwrap();
+    assert_eq!(current.workspace(), original.workspace());
+    original.revalidate().unwrap();
+    assert_eq!(support::files_under(root.path()), files);
+    for (file, expected) in files.iter().zip(bytes) {
+        assert_eq!(fs::read(root.path().join(file)).unwrap(), expected);
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn source_aliases_to_snapshots_and_storage_are_excluded_within_the_boundary() {
+    use std::os::unix::fs::symlink;
+
+    let root = static_workspace();
+    let config = root.path().join(CONFIG);
+    let original = assemble_workspace(&config).unwrap();
+    for (output, alias) in [
+        ("core/export.sqlite", "core/docs/alias.md"),
+        ("python/export.sqlite", "python/python/foo/alias.py"),
+        ("r/export.sqlite", "r/R/alias.R"),
+    ] {
+        success(&extract(root.path(), Some(Path::new(output)), true));
+        symlink(root.path().join(output), root.path().join(alias)).unwrap();
+    }
+    root.write("core/.diplodocus/staging", b"\xffpartial storage");
+    symlink(
+        root.path().join("core/.diplodocus/staging"),
+        root.path().join("core/docs/staging.md"),
+    )
+    .unwrap();
+    for suffix in ["-journal", "-wal", "-shm"] {
+        let sidecar = format!("core/export.sqlite{suffix}");
+        root.write(&sidecar, b"\xffrecovery data");
+        symlink(
+            root.path().join(sidecar),
+            root.path().join(format!("core/docs/sidecar{suffix}.md")),
+        )
+        .unwrap();
+    }
+    assert_eq!(
+        assemble_workspace(&config).unwrap().workspace(),
+        original.workspace()
+    );
+    original.revalidate().unwrap();
+
+    symlink(
+        root.path().join("python/export.sqlite"),
+        root.path().join("core/docs/escape.md"),
+    )
+    .unwrap();
+    assert!(assemble_workspace(&config).is_err());
+}
+
+#[test]
+fn explicit_database_downloads_remain_inputs_and_cannot_be_overwritten() {
+    let root = static_workspace();
+    let config = root.path().join(CONFIG);
+    let output = Path::new("core/docs/download.sqlite");
+    success(&extract(root.path(), Some(output), true));
+    let bytes = fs::read(root.path().join(output)).unwrap();
+    let document = root.read("core/docs/index.md");
+    root.write(
+        "core/docs/index.md",
+        format!("{document}\n[Download snapshot](download.sqlite)\n"),
+    );
+    let sources = assemble_workspace(&config).unwrap();
+    let resolved = resolve_workspace(&sources).unwrap();
+    assert!(resolved.assets().values().any(|asset| asset.bytes == bytes));
+    failure(
+        &extract(root.path(), Some(output), true),
+        "output overlaps a declared input",
+    );
+    assert_eq!(fs::read(root.path().join(output)).unwrap(), bytes);
+}
+
+#[test]
 fn cli_rejects_every_kind_of_declared_input_before_execution() {
     let root = support::acceptance_workspace();
     let config = root.read(CONFIG).replace(

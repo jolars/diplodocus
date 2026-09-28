@@ -210,6 +210,9 @@ fn read_input(
             return None;
         }
     };
+    if kind != PythonInputKind::Metadata && crate::generated_storage::is_generated_file(&path) {
+        return None;
+    }
     let source = match repository.source_location(&path, None) {
         Ok(source) => source,
         Err(error) => {
@@ -277,6 +280,9 @@ fn read_input(
 }
 
 fn discover(path: &Path, files: &mut Vec<PathBuf>, diagnostics: &mut Vec<Diagnostic>) {
+    if crate::generated_storage::is_reserved(path) {
+        return;
+    }
     let failure = |diagnostics: &mut Vec<Diagnostic>, message: &str| {
         diagnostics.push(Diagnostic::new(
             DiagnosticCode::PythonSourceRead,

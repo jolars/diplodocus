@@ -53,7 +53,7 @@ pub(super) fn assemble(
                 },
             },
         );
-        let files = discover(&resolved.path, collection.format)?;
+        let files = discover(&resolved.path, collection.format, repository)?;
         for relative in &files {
             let declared = resolved.path.join(relative);
             let location = repository.source_location(&declared, None)?;
@@ -122,17 +122,25 @@ pub(super) fn assemble(
     Ok(pages)
 }
 
-pub(super) fn discover(root: &Path, format: AuthoredFormat) -> Result<Vec<PathBuf>, AssemblyError> {
+pub(super) fn discover(
+    root: &Path,
+    format: AuthoredFormat,
+    repository: &crate::paths::ResolvedRepositoryPaths,
+) -> Result<Vec<PathBuf>, AssemblyError> {
     fn visit(
         root: &Path,
         directory: &Path,
         extension: &str,
+        repository: &crate::paths::ResolvedRepositoryPaths,
         files: &mut Vec<PathBuf>,
     ) -> Result<(), AssemblyError> {
+        if crate::generated_storage::is_reserved(directory) {
+            return Ok(());
+        }
         let mut entries = fs::read_dir(directory)?.collect::<Result<Vec<_>, _>>()?;
         entries.sort_by_key(fs::DirEntry::file_name);
         for entry in entries {
-            if matches!(entry.file_name().to_str(), Some(".git" | ".diplodocus")) {
+            if entry.file_name() == ".git" || crate::generated_storage::is_reserved(&entry.path()) {
                 continue;
             }
             let path = entry.path();
@@ -147,13 +155,18 @@ pub(super) fn discover(root: &Path, format: AuthoredFormat) -> Result<Vec<PathBu
                 }
             }
             if kind.is_dir() {
-                visit(root, &path, extension, files)?;
+                visit(root, &path, extension, repository, files)?;
             } else if path.extension().and_then(|s| s.to_str()) == Some(extension) {
                 if !fs::metadata(&path)?.is_file() {
                     return Err(AssemblyError::Diagnostics(vec![diagnostic(
                         DiagnosticCode::SourcePathWrongType,
                         "An authored page must be a regular file.",
                     )]));
+                }
+                let location = repository.source_location(&path, None)?;
+                let canonical = repository.path.join(location.path.as_str());
+                if crate::generated_storage::is_generated_file(&canonical) {
+                    continue;
                 }
                 files.push(
                     path.strip_prefix(root)
@@ -172,6 +185,7 @@ pub(super) fn discover(root: &Path, format: AuthoredFormat) -> Result<Vec<PathBu
             AuthoredFormat::Gfm => "md",
             AuthoredFormat::Qmd => "qmd",
         },
+        repository,
         &mut files,
     )?;
     files.sort();
