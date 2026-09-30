@@ -29,7 +29,7 @@ fn request(authored: &str) -> PageExecutionRequest {
             format: AuthoredFormat::Qmd,
             mode: ExecutionMode::Execute,
             page_veto: prepared.page_veto,
-            parser_version: "0.29.2".into(),
+            parser_version: crate::provenance::PANACHE_VERSION.into(),
             qmd_policy: "qmd-mvp-v1".into(),
         },
         kernel: "fixture".into(),

@@ -29,7 +29,7 @@ pub use fingerprints::fingerprint_bytes;
 pub use observations::*;
 
 /// Exact in-process Panache dependency version, checked against the manifest.
-pub const PANACHE_VERSION: &str = "0.29.2";
+pub const PANACHE_VERSION: &str = "0.30.0";
 
 /// Component identities available to the authored adapter in this build.
 ///

@@ -208,7 +208,7 @@
         },
         "tools": {
           "diplodocus": "[DIPLODOCUS_VERSION]",
-          "panache-parser": "0.29.2",
+          "panache-parser": "0.30.0",
           "pydocstring": "0.4.1"
         }
       }

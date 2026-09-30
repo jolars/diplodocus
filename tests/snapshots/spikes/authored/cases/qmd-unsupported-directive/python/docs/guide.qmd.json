@@ -282,7 +282,7 @@
             "key": "echo",
             "resolution": {
               "type": "resolved",
-              "declaration": 0
+              "declaration": 1
             }
           },
           {

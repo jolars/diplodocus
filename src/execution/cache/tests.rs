@@ -26,6 +26,8 @@ fn fixture() -> (
             }
         }
     }
+    value["result"]["provenance"]["preparation"]["parser_version"] =
+        serde_json::json!(crate::provenance::PANACHE_VERSION);
     let key = CanonicalValue::from_json(value["key_input"].clone()).unwrap();
     value["key"] = serde_json::json!(
         identity::domain_digest("diplodocus/page-execution-key-v1", &key).unwrap()
@@ -81,15 +83,18 @@ fn fixture() -> (
 }
 
 fn bind_build_version(component: &mut serde_json::Value) {
-    if matches!(
-        component["name"].as_str(),
+    match component["name"].as_str() {
+        Some("panache-parser") => {
+            component["version"] = serde_json::json!(crate::provenance::PANACHE_VERSION);
+        }
         Some(
             "diplodocus-html-sanitizer"
-                | "diplodocus-svg-validator"
-                | "diplodocus-raster-validator"
-        )
-    ) {
-        component["version"] = serde_json::json!(env!("CARGO_PKG_VERSION"));
+            | "diplodocus-svg-validator"
+            | "diplodocus-raster-validator",
+        ) => {
+            component["version"] = serde_json::json!(env!("CARGO_PKG_VERSION"));
+        }
+        _ => {}
     }
 }
 
