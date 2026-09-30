@@ -1,0 +1,13 @@
+version: '3'
+
+tasks:
+  preview:
+    desc: Build and serve the R/Python monorepo example.
+    cmds:
+      - >-
+        cargo run --locked -- serve
+        --config "${DIPLODOCUS_EXAMPLE_CONFIG:-examples/monorepo/diplodocus.toml}"
+        --output "${DIPLODOCUS_SITE_OUTPUT:-site/monorepo}"
+        --host 127.0.0.1
+        --port "${DIPLODOCUS_SITE_PORT:-0}"
+        --live-reload

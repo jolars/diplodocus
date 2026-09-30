@@ -41,6 +41,8 @@ pub struct ServeOptions {
     pub host: IpAddr,
     /// Port on which to serve the generated site.
     pub port: u16,
+    /// Refresh open browser pages after successful rebuilds.
+    pub live_reload: bool,
 }
 
 /// An error returned by a Diplodocus command operation.

@@ -20,6 +20,11 @@ defaulting to `127.0.0.1` and `8000`. Relative command-line paths resolve from
 the working directory. Output destinations must not replace declared inputs;
 site destinations must be empty or contain an earlier Diplodocus site.
 
+Pass `--live-reload` to `serve` to refresh open browser pages after a successful
+rebuild. The refresh script appears only in preview responses; generated site
+files stay unchanged. A failed rebuild leaves the page open at the last
+successful version.
+
 ```text
 diplodocus extract --output documentation.sqlite
 diplodocus generate --input documentation.sqlite --output site
@@ -37,7 +42,6 @@ successful site. Correcting the input allows the next rebuild to succeed.
 The watcher observes configuration, API and metadata sources, authored pages,
 assets, and declared environment inputs. Output, execution-cache, and unrelated
 file changes do not trigger rebuilds. The watcher polls content fingerprints and debounces edits for 200 milliseconds.
-Browser live reload is outside the MVP.
 
 Execution has a 30-second startup limit, a 60-second cell limit, and a 5-second
 limit for synchronizing a reply with idle status. Output activity does not

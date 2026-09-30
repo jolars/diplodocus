@@ -24,19 +24,28 @@ monorepo/
 
 ## Build and preview
 
-Run these commands from the **Diplodocus repository root**, using its Rust
-toolchain (`devenv shell` supplies it):
+From the **Diplodocus repository root**, enter `devenv shell` and run:
+
+```console
+task preview
+```
+
+This builds Diplodocus, builds the example site at `site/monorepo`, and serves it
+on an available local port. Open the `Serving http://127.0.0.1:...` URL printed
+in the terminal. Edit a guide page to try watched rebuilds; the browser refreshes
+after a successful rebuild. Stop the server with Ctrl-C. To choose a port, run
+`DIPLODOCUS_SITE_PORT=8001 task preview`.
+
+The equivalent commands without go-task are:
 
 ```console
 cargo run --locked -- check --config examples/monorepo/diplodocus.toml
 cargo run --locked -- build --config examples/monorepo/diplodocus.toml --output site/monorepo
-cargo run --locked -- serve --config examples/monorepo/diplodocus.toml --output site/monorepo
+cargo run --locked -- serve --config examples/monorepo/diplodocus.toml --output site/monorepo --port 0 --live-reload
 ```
 
-Open <http://127.0.0.1:8000/>. Browse the guide and both package references, then
-search for `mean_squared_error` or follow **Same API in** on a function page.
-Edit a guide page to try watched rebuilds; refresh the browser to see the change.
-Stop the server with Ctrl-C.
+Browse the guide and both package references, then search for
+`mean_squared_error` or follow **Same API in** on a function page.
 
 The collection explicitly sets `mode = "never"`. Once Diplodocus is built, these
 commands need no Python, R, Jupyter kernels, or package installation. Python

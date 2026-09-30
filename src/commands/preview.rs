@@ -1,4 +1,5 @@
 use super::*;
+use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -59,8 +60,16 @@ async fn run(
         Err(error) if *stop.borrow() && clean_cancellation(&error) => return Ok(()),
         Err(error) => return Err(error),
     };
-    let current = Arc::new(RwLock::new(Arc::new(initial)));
-    let http = tokio::spawn(http(listener, current.clone(), stop.clone()));
+    let current = Arc::new(RwLock::new(Arc::new(ServedGeneration {
+        site: initial,
+        revision: 0,
+    })));
+    let http = tokio::spawn(http(
+        listener,
+        current.clone(),
+        options.live_reload,
+        stop.clone(),
+    ));
     let mut http = AbortOnDrop(http);
     eprintln!("Serving http://{address}");
     let mut pending = attempted.clone();
@@ -87,7 +96,11 @@ async fn run(
                 let result = pipeline::build_attempt(&build, deadlines, Box::pin(cancelled(stop.clone()))).await;
                 match result {
                     Ok(site) => {
-                        *current.write().expect("preview generation lock") = Arc::new(site);
+                        let mut current = current.write().expect("preview generation lock");
+                        *current = Arc::new(ServedGeneration {
+                            site,
+                            revision: current.revision + 1,
+                        });
                         eprintln!("Rebuilt documentation.");
                     }
                     Err(error) => {
@@ -108,6 +121,10 @@ async fn run(
     result
 }
 struct AbortOnDrop<T>(tokio::task::JoinHandle<T>);
+struct ServedGeneration {
+    site: RenderedSite,
+    revision: u64,
+}
 impl<T> Drop for AbortOnDrop<T> {
     fn drop(&mut self) {
         self.0.abort();
@@ -140,7 +157,8 @@ pub(super) async fn termination() {
 
 async fn http(
     listener: TcpListener,
-    site: Arc<RwLock<Arc<RenderedSite>>>,
+    site: Arc<RwLock<Arc<ServedGeneration>>>,
+    live_reload: bool,
     stop: watch::Receiver<bool>,
 ) -> std::io::Result<()> {
     let mut requests = tokio::task::JoinSet::new();
@@ -150,13 +168,17 @@ async fn http(
             accepted = listener.accept() => {
                 let (socket, _) = accepted?;
                 let site = site.read().expect("preview generation lock").clone();
-                requests.spawn(async move { let _ = tokio::time::timeout(Duration::from_secs(5), response(socket, &site)).await; });
+                requests.spawn(async move { let _ = tokio::time::timeout(Duration::from_secs(5), response(socket, &site, live_reload)).await; });
             }
             _ = requests.join_next(), if !requests.is_empty() => {}
         }
     }
 }
-async fn response(mut socket: TcpStream, site: &RenderedSite) -> std::io::Result<()> {
+async fn response(
+    mut socket: TcpStream,
+    generation: &ServedGeneration,
+    live_reload: bool,
+) -> std::io::Result<()> {
     let mut bytes = Vec::new();
     let mut buffer = [0; 2048];
     while !bytes.windows(4).any(|w| w == b"\r\n\r\n") {
@@ -189,28 +211,55 @@ async fn response(mut socket: TcpStream, site: &RenderedSite) -> std::io::Result
     let file = path
         .as_ref()
         .filter(|p| crate::diagnostics::DiagnosticPath::try_from(p.as_str()).is_ok())
-        .and_then(|p| site.files().get(p));
+        .and_then(|p| generation.site.files().get(p));
     let (status, media, content) = if !matches!(method, "GET" | "HEAD") {
         (
             "405 Method Not Allowed",
             "text/plain; charset=utf-8",
-            b"Method not allowed\n".as_slice(),
+            Cow::Borrowed(b"Method not allowed\n".as_slice()),
+        )
+    } else if live_reload && path.as_deref() == Some("__diplodocus/revision") {
+        (
+            "200 OK",
+            "text/plain; charset=utf-8",
+            Cow::Owned(generation.revision.to_string().into_bytes()),
         )
     } else if let Some(file) = file {
-        ("200 OK", file.media_type.as_str(), file.bytes.as_slice())
+        let content = if live_reload && file.media_type.starts_with("text/html") {
+            Cow::Owned(with_live_reload(&file.bytes, generation.revision))
+        } else {
+            Cow::Borrowed(file.bytes.as_slice())
+        };
+        ("200 OK", file.media_type.as_str(), content)
     } else {
         (
             "404 Not Found",
             "text/plain; charset=utf-8",
-            b"Not found\n".as_slice(),
+            Cow::Borrowed(b"Not found\n".as_slice()),
         )
     };
     socket.write_all(format!("HTTP/1.1 {status}\r\nContent-Type: {media}\r\nContent-Length: {}\r\nCache-Control: no-cache\r\nX-Content-Type-Options: nosniff\r\nConnection: close\r\n\r\n", content.len()).as_bytes()).await?;
     if method != "HEAD" {
-        socket.write_all(content).await?;
+        socket.write_all(&content).await?;
     }
     socket.shutdown().await
 }
+fn with_live_reload(html: &[u8], revision: u64) -> Vec<u8> {
+    let marker = b"</body>";
+    let Some(position) = html
+        .windows(marker.len())
+        .rposition(|window| window == marker)
+    else {
+        return html.to_vec();
+    };
+    let script = LIVE_RELOAD.replace("__REVISION__", &revision.to_string());
+    let mut content = Vec::with_capacity(html.len() + script.len());
+    content.extend_from_slice(&html[..position]);
+    content.extend_from_slice(script.as_bytes());
+    content.extend_from_slice(&html[position..]);
+    content
+}
+const LIVE_RELOAD: &str = r#"<script>(()=>{const served=__REVISION__;async function check(){try{const response=await fetch('/__diplodocus/revision',{cache:'no-store'});if(response.ok&&Number(await response.text())!==served){location.reload();return}}catch{}setTimeout(check,1000)}setTimeout(check,1000)})()</script>"#;
 
 type Observation = BTreeMap<PathBuf, String>;
 struct Observer {

@@ -73,6 +73,7 @@ in
     cargo-llvm-cov
     cargo-msrv
     nodejs
+    go-task
   ];
 
   languages = {

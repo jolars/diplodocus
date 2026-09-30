@@ -2,7 +2,7 @@
   "document": {
     "span": {
       "start": 0,
-      "end": 2645
+      "end": 2857
     },
     "frontmatter": null,
     "blocks": [
@@ -840,6 +840,107 @@
         }
       },
       {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Pass ",
+            "span": {
+              "start": 1152,
+              "end": 1157
+            }
+          },
+          {
+            "type": "code",
+            "value": "--live-reload",
+            "span": {
+              "start": 1157,
+              "end": 1172
+            }
+          },
+          {
+            "type": "text",
+            "value": " to ",
+            "span": {
+              "start": 1172,
+              "end": 1176
+            }
+          },
+          {
+            "type": "code",
+            "value": "serve",
+            "span": {
+              "start": 1176,
+              "end": 1183
+            }
+          },
+          {
+            "type": "text",
+            "value": " to refresh open browser pages after a successful",
+            "span": {
+              "start": 1183,
+              "end": 1232
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1232,
+              "end": 1233
+            }
+          },
+          {
+            "type": "text",
+            "value": "rebuild. The refresh script appears only in preview responses; generated site",
+            "span": {
+              "start": 1233,
+              "end": 1310
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1310,
+              "end": 1311
+            }
+          },
+          {
+            "type": "text",
+            "value": "files stay unchanged. A failed rebuild leaves the page open at the last",
+            "span": {
+              "start": 1311,
+              "end": 1382
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1382,
+              "end": 1383
+            }
+          },
+          {
+            "type": "text",
+            "value": "successful version.",
+            "span": {
+              "start": 1383,
+              "end": 1402
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1402,
+              "end": 1403
+            }
+          }
+        ],
+        "span": {
+          "start": 1152,
+          "end": 1403
+        }
+      },
+      {
         "type": "code-block",
         "language": "text",
         "source": "diplodocus extract --output documentation.sqlite\ndiplodocus generate --input documentation.sqlite --output site\n",
@@ -847,35 +948,35 @@
           {
             "text": "diplodocus extract --output documentation.sqlite",
             "span": {
-              "start": 1160,
-              "end": 1208
+              "start": 1412,
+              "end": 1460
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 1208,
-              "end": 1209
+              "start": 1460,
+              "end": 1461
             }
           },
           {
             "text": "diplodocus generate --input documentation.sqlite --output site",
             "span": {
-              "start": 1209,
-              "end": 1271
+              "start": 1461,
+              "end": 1523
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 1271,
-              "end": 1272
+              "start": 1523,
+              "end": 1524
             }
           }
         ],
         "span": {
-          "start": 1152,
-          "end": 1276
+          "start": 1404,
+          "end": 1528
         }
       },
       {
@@ -885,51 +986,51 @@
             "type": "text",
             "value": "A copied snapshot contains the structured documentation, provenance, and local",
             "span": {
-              "start": 1277,
-              "end": 1355
+              "start": 1529,
+              "end": 1607
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1355,
-              "end": 1356
+              "start": 1607,
+              "end": 1608
             }
           },
           {
             "type": "text",
             "value": "asset bytes required for generation. Generation validates stored records and",
             "span": {
-              "start": 1356,
-              "end": 1432
+              "start": 1608,
+              "end": 1684
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1432,
-              "end": 1433
+              "start": 1684,
+              "end": 1685
             }
           },
           {
             "type": "text",
             "value": "output against the active policies before publishing.",
             "span": {
-              "start": 1433,
-              "end": 1486
+              "start": 1685,
+              "end": 1738
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1486,
-              "end": 1487
+              "start": 1738,
+              "end": 1739
             }
           }
         ],
         "span": {
-          "start": 1277,
-          "end": 1487
+          "start": 1529,
+          "end": 1739
         }
       },
       {
@@ -939,66 +1040,66 @@
             "type": "text",
             "value": "Warnings remain visible and permit a successful exit. Errors cause a nonzero",
             "span": {
-              "start": 1488,
-              "end": 1564
+              "start": 1740,
+              "end": 1816
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1564,
-              "end": 1565
+              "start": 1816,
+              "end": 1817
             }
           },
           {
             "type": "text",
             "value": "exit status. Failed builds do not replace a successful output tree. During",
             "span": {
-              "start": 1565,
-              "end": 1639
+              "start": 1817,
+              "end": 1891
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1639,
-              "end": 1640
+              "start": 1891,
+              "end": 1892
             }
           },
           {
             "type": "text",
             "value": "preview, a failed rebuild prints its diagnostics while serving the last",
             "span": {
-              "start": 1640,
-              "end": 1711
+              "start": 1892,
+              "end": 1963
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1711,
-              "end": 1712
+              "start": 1963,
+              "end": 1964
             }
           },
           {
             "type": "text",
             "value": "successful site. Correcting the input allows the next rebuild to succeed.",
             "span": {
-              "start": 1712,
-              "end": 1785
+              "start": 1964,
+              "end": 2037
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1785,
-              "end": 1786
+              "start": 2037,
+              "end": 2038
             }
           }
         ],
         "span": {
-          "start": 1488,
-          "end": 1786
+          "start": 1740,
+          "end": 2038
         }
       },
       {
@@ -1008,66 +1109,51 @@
             "type": "text",
             "value": "The watcher observes configuration, API and metadata sources, authored pages,",
             "span": {
-              "start": 1787,
-              "end": 1864
+              "start": 2039,
+              "end": 2116
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1864,
-              "end": 1865
+              "start": 2116,
+              "end": 2117
             }
           },
           {
             "type": "text",
             "value": "assets, and declared environment inputs. Output, execution-cache, and unrelated",
             "span": {
-              "start": 1865,
-              "end": 1944
+              "start": 2117,
+              "end": 2196
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1944,
-              "end": 1945
+              "start": 2196,
+              "end": 2197
             }
           },
           {
             "type": "text",
             "value": "file changes do not trigger rebuilds. The watcher polls content fingerprints and debounces edits for 200 milliseconds.",
             "span": {
-              "start": 1945,
-              "end": 2063
+              "start": 2197,
+              "end": 2315
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2063,
-              "end": 2064
-            }
-          },
-          {
-            "type": "text",
-            "value": "Browser live reload is outside the MVP.",
-            "span": {
-              "start": 2064,
-              "end": 2103
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 2103,
-              "end": 2104
+              "start": 2315,
+              "end": 2316
             }
           }
         ],
         "span": {
-          "start": 1787,
-          "end": 2104
+          "start": 2039,
+          "end": 2316
         }
       },
       {
@@ -1077,104 +1163,104 @@
             "type": "text",
             "value": "Execution has a 30-second startup limit, a 60-second cell limit, and a 5-second",
             "span": {
-              "start": 2105,
-              "end": 2184
+              "start": 2317,
+              "end": 2396
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2184,
-              "end": 2185
+              "start": 2396,
+              "end": 2397
             }
           },
           {
             "type": "text",
             "value": "limit for synchronizing a reply with idle status. Output activity does not",
             "span": {
-              "start": 2185,
-              "end": 2259
+              "start": 2397,
+              "end": 2471
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2259,
-              "end": 2260
+              "start": 2471,
+              "end": 2472
             }
           },
           {
             "type": "text",
             "value": "extend these deadlines. Interruption, shutdown, termination, and forced reaping",
             "span": {
-              "start": 2260,
-              "end": 2339
+              "start": 2472,
+              "end": 2551
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2339,
-              "end": 2340
+              "start": 2551,
+              "end": 2552
             }
           },
           {
             "type": "text",
             "value": "each have a 5-second limit. The library accepts explicit ",
             "span": {
-              "start": 2340,
-              "end": 2397
+              "start": 2552,
+              "end": 2609
             }
           },
           {
             "type": "code",
             "value": "ExecutionDeadlines",
             "span": {
-              "start": 2397,
-              "end": 2417
+              "start": 2609,
+              "end": 2629
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2417,
-              "end": 2418
+              "start": 2629,
+              "end": 2630
             }
           },
           {
             "type": "text",
             "value": "for callers that need different limits. During preview, Ctrl-C or SIGTERM",
             "span": {
-              "start": 2418,
-              "end": 2491
+              "start": 2630,
+              "end": 2703
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2491,
-              "end": 2492
+              "start": 2703,
+              "end": 2704
             }
           },
           {
             "type": "text",
             "value": "requests cancellation and waits for supervised kernel cleanup.",
             "span": {
-              "start": 2492,
-              "end": 2554
+              "start": 2704,
+              "end": 2766
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2554,
-              "end": 2555
+              "start": 2766,
+              "end": 2767
             }
           }
         ],
         "span": {
-          "start": 2105,
-          "end": 2555
+          "start": 2317,
+          "end": 2767
         }
       },
       {
@@ -1184,8 +1270,8 @@
             "type": "text",
             "value": "See the ",
             "span": {
-              "start": 2556,
-              "end": 2564
+              "start": 2768,
+              "end": 2776
             }
           },
           {
@@ -1195,8 +1281,8 @@
                 "type": "text",
                 "value": "quick start",
                 "span": {
-                  "start": 2565,
-                  "end": 2576
+                  "start": 2777,
+                  "end": 2788
                 }
               }
             ],
@@ -1208,44 +1294,44 @@
               "key_values": []
             },
             "span": {
-              "start": 2564,
-              "end": 2593
+              "start": 2776,
+              "end": 2805
             }
           },
           {
             "type": "text",
             "value": " for complete acceptance and project-site",
             "span": {
-              "start": 2593,
-              "end": 2634
+              "start": 2805,
+              "end": 2846
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2634,
-              "end": 2635
+              "start": 2846,
+              "end": 2847
             }
           },
           {
             "type": "text",
             "value": "commands.",
             "span": {
-              "start": 2635,
-              "end": 2644
+              "start": 2847,
+              "end": 2856
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2644,
-              "end": 2645
+              "start": 2856,
+              "end": 2857
             }
           }
         ],
         "span": {
-          "start": 2556,
-          "end": 2645
+          "start": 2768,
+          "end": 2857
         }
       }
     ]

@@ -7,4 +7,5 @@ Options:
       --output <PATH>   Directory in which to write the generated site [default: ./site]
       --host <ADDRESS>  Address on which to serve the generated site [default: 127.0.0.1]
       --port <PORT>     Port on which to serve the generated site [default: 8000]
+      --live-reload     Refresh open browser pages after successful rebuilds
   -h, --help            Print help

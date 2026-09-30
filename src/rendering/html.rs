@@ -33,30 +33,32 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
             )
             .unwrap();
         }
-        write!(html, "<title>{} · {}</title><link rel=\"stylesheet\" href=\"{}\"><script defer src=\"{}\"></script></head><body><a class=\"skip-link\" href=\"#main\">Skip to content</a>", escape(&page.title), escape(site.title()), escape(&relative_url(route, "assets/site.css")), escape(&relative_url(route, "assets/search.js"))).unwrap();
-        write!(html, "<header><a class=\"brand\" href=\"{}\">{}</a><form role=\"search\"><label for=\"search\">Search documentation</label><input id=\"search\" type=\"search\" autocomplete=\"off\"><ul id=\"search-results\" aria-live=\"polite\"></ul></form></header><div class=\"layout\"><nav aria-label=\"Documentation\"><ul>", escape(&relative_url(route, "index.html")), escape(site.title())).unwrap();
-        for (destination, candidate) in &site.pages {
-            if !candidate.visible {
-                continue;
-            }
-            // Item lists stay with their package instead of overwhelming project navigation.
-            if candidate.item.is_some() && candidate.owner != page.owner {
-                continue;
-            }
-            let active = if destination == route {
-                " aria-current=\"page\""
-            } else {
-                ""
-            };
-            write!(
-                html,
-                "<li><a href=\"{}\"{active}>{}</a></li>",
-                escape(&relative_url(route, destination)),
-                escape(&candidate.title)
-            )
-            .unwrap();
-        }
-        html.push_str("</ul></nav><main id=\"main\">");
+        write!(html, "<title>{} · {}</title><link rel=\"stylesheet\" href=\"{}\"><script defer src=\"{}\"></script><script defer src=\"{}\"></script></head><body><a class=\"skip-link\" href=\"#main\">Skip to content</a>", escape(&page.title), escape(site.title()), escape(&relative_url(route, "assets/site.css")), escape(&relative_url(route, "assets/search.js")), escape(&relative_url(route, "assets/nav.js"))).unwrap();
+        write!(html, "<header><a class=\"brand\" href=\"{}\">{}</a><form role=\"search\"><label for=\"search\">Search documentation</label><input id=\"search\" type=\"search\" autocomplete=\"off\"><ul id=\"search-results\" aria-live=\"polite\"></ul></form></header><div class=\"layout\"><nav aria-label=\"Documentation\"><details class=\"nav-disclosure\" open><summary>Browse documentation</summary>", escape(&relative_url(route, "index.html")), escape(site.title())).unwrap();
+        let mut documentation = vec![("index.html".to_owned(), "Overview".to_owned())];
+        documentation.extend(
+            site.pages
+                .iter()
+                .filter(|(destination, candidate)| {
+                    *destination != "index.html"
+                        && candidate.visible
+                        && candidate.owner.is_none()
+                        && candidate.document.is_some()
+                        && candidate.concept.is_none()
+                })
+                .map(|(destination, candidate)| (destination.clone(), candidate.title.clone())),
+        );
+        nav_group(&mut html, route, "Documentation", &documentation);
+
+        nav_packages(&mut html, site, route);
+        let concepts: Vec<_> = site
+            .pages
+            .iter()
+            .filter(|(_, candidate)| candidate.visible && candidate.concept.is_some())
+            .map(|(destination, candidate)| (destination.clone(), candidate.title.clone()))
+            .collect();
+        nav_group(&mut html, route, "Shared concepts", &concepts);
+        html.push_str("</details></nav><main id=\"main\">");
         if let Some(owner) = &page.owner {
             let package = &site.workspace.packages[owner];
             write!(
@@ -156,11 +158,21 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
     }
     files.insert(
         "assets/site.css".into(),
-        file(STYLE.as_bytes().to_vec(), "text/css; charset=utf-8"),
+        file(
+            [STYLE, NAV_STYLE].concat().into_bytes(),
+            "text/css; charset=utf-8",
+        ),
     );
     files.insert(
         "assets/search.js".into(),
         file(SEARCH.as_bytes().to_vec(), "text/javascript; charset=utf-8"),
+    );
+    files.insert(
+        "assets/nav.js".into(),
+        file(
+            NAV_SCRIPT.as_bytes().to_vec(),
+            "text/javascript; charset=utf-8",
+        ),
     );
     files.insert(
         "assets/search.json".into(),
@@ -197,6 +209,107 @@ fn id(attributes: &Attributes) -> String {
         .map(|s| format!(" id=\"{}\"", escape(&s.value)))
         .unwrap_or_default()
 }
+fn nav_group(html: &mut String, route: &str, label: &str, links: &[(String, String)]) {
+    if links.is_empty() {
+        return;
+    }
+    write!(
+        html,
+        "<section class=\"nav-group\" role=\"group\" aria-label=\"{}\"><h2>{}</h2><ul>",
+        escape(label),
+        escape(label)
+    )
+    .unwrap();
+    for (destination, title) in links {
+        nav_link(html, route, destination, title);
+    }
+    html.push_str("</ul></section>");
+}
+fn nav_packages(html: &mut String, site: &Site<'_>, route: &str) {
+    let packages: Vec<_> = site
+        .workspace
+        .packages
+        .iter()
+        .filter(|(_, package)| {
+            package.visibility != crate::configuration::PackageVisibility::Hidden
+        })
+        .collect();
+    if packages.is_empty() {
+        return;
+    }
+    html.push_str(
+        "<section class=\"nav-group\" role=\"group\" aria-label=\"Packages\"><h2>Packages</h2><ul>",
+    );
+    for (id, package) in packages {
+        let unique_ecosystem = site
+            .workspace
+            .packages
+            .values()
+            .filter(|other| {
+                other.visibility != crate::configuration::PackageVisibility::Hidden
+                    && other.ecosystem == package.ecosystem
+            })
+            .count()
+            == 1;
+        let label = if unique_ecosystem {
+            match package.ecosystem.as_str() {
+                "python" => "Python",
+                "r" => "R",
+                _ => package.name.as_str(),
+            }
+        } else {
+            package.name.as_str()
+        };
+        let open = if site.pages[route].owner.as_ref() == Some(id) {
+            " open"
+        } else {
+            ""
+        };
+        html.push_str("<li class=\"nav-package\">");
+        write!(
+            html,
+            "<details class=\"package-disclosure\"{open}><summary>{}</summary><ul>",
+            escape(label)
+        )
+        .unwrap();
+        let overview = format!("packages/{}/index.html", package.slug);
+        nav_link(html, route, &overview, "Overview");
+        let pages: Vec<_> = site
+            .pages
+            .iter()
+            .filter(|(destination, candidate)| {
+                *destination != &overview
+                    && candidate.visible
+                    && candidate.owner.as_ref() == Some(id)
+                    && (candidate.item.is_some() || candidate.document.is_some())
+            })
+            .collect();
+        for (destination, candidate) in pages {
+            nav_link(html, route, destination, &candidate.title);
+        }
+        html.push_str("</ul></details></li>");
+    }
+    html.push_str("</ul></section>");
+}
+fn nav_link(html: &mut String, route: &str, destination: &str, title: &str) {
+    html.push_str("<li>");
+    nav_anchor(html, route, destination, title);
+    html.push_str("</li>");
+}
+fn nav_anchor(html: &mut String, route: &str, destination: &str, title: &str) {
+    let active = if destination == route {
+        " aria-current=\"page\""
+    } else {
+        ""
+    };
+    write!(
+        html,
+        "<a href=\"{}\"{active}>{}</a>",
+        escape(&relative_url(route, destination)),
+        escape(title)
+    )
+    .unwrap();
+}
 fn concept_links(site: &Site<'_>, route: &str, concept: &Concept) -> Result<String, SiteError> {
     let label = if concept.kind == ConceptKind::Equivalent {
         "Same API in"
@@ -209,6 +322,9 @@ fn concept_links(site: &Site<'_>, route: &str, concept: &Concept) -> Result<Stri
             .routes
             .get(&DocumentIdentity::Item { item: item.clone() })
             .ok_or(SiteError::Evidence)?;
+        if target == route {
+            continue;
+        }
         let package = &site.workspace.packages[&item.package];
         write!(
             html,
@@ -545,4 +661,6 @@ fn plain(nodes: &[Inline]) -> String {
         .collect()
 }
 const STYLE: &str = "body{margin:0;color:#202c38;background:#fafbf9;font:17px/1.65 system-ui,sans-serif}a{color:#165c7c}a:focus-visible,input:focus-visible{outline:3px solid #a04605;outline-offset:3px}header{padding:1.5rem 3rem;border-bottom:1px solid #d6dedc;display:flex;gap:2rem;justify-content:space-between;align-items:start}.brand{font-size:1.5rem;font-weight:700;text-decoration:none}form label{display:block;font-size:.8rem}input[type=search]{padding:.5rem;font:inherit;max-width:100%;box-sizing:border-box}.layout{display:grid;grid-template-columns:minmax(12rem,19rem) minmax(0,1fr);max-width:90rem;margin:auto}nav{padding:2rem;border-right:1px solid #d6dedc;font-size:.9rem}nav ul{list-style:none;padding:0}nav li{margin:.4rem 0;overflow-wrap:anywhere}[aria-current=page]{font-weight:700}main{padding:2.5rem 4rem;max-width:54rem;min-width:0;overflow-wrap:anywhere}h1,h2,h3{line-height:1.25;letter-spacing:-.02em}h1{font-size:2.3rem}.package{font-size:.85rem;color:#4d606b}pre{padding:1rem;background:#edf1f0;overflow:auto;border-radius:.25rem}code{font-size:.9em}img{max-width:100%;height:auto}figure{margin:1.5rem 0}.caption,figcaption{font-size:.9rem;color:#4d606b}table{border-collapse:collapse;display:block;overflow:auto}th,td{border:1px solid #bbc9c5;padding:.3rem .7rem}blockquote,.callout{border-left:4px solid #688b84;padding:.2rem 1rem;margin:1rem 0}.unsupported{border-left:4px solid #a04605;padding-left:1rem}.skip-link{position:absolute;left:-10000px}.skip-link:focus{left:1rem;top:1rem;background:white;padding:1rem}#search-results{max-width:24rem;font-size:.85rem}@media(max-width:760px){header{padding:1rem;display:block}.layout{display:block}nav{border-right:0;border-bottom:1px solid #d6dedc;padding:1rem}nav ul{max-height:12rem;overflow:auto}main{padding:1.5rem}h1{font-size:1.9rem}}";
+const NAV_STYLE: &str = ".nav-disclosure>summary{cursor:pointer;color:#165c7c;font-weight:700}.nav-group+.nav-group{margin-top:1.5rem;padding-top:1.25rem;border-top:1px solid #d6dedc}.nav-group h2{margin:0 0 .7rem;color:#4d606b;font-size:.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase}.nav-group ul{margin:0}.nav-group li{margin:.35rem 0}.nav-package+.nav-package{margin-top:.7rem}.package-disclosure>summary{cursor:pointer;color:#165c7c}.package-disclosure[open]>summary{font-weight:700}.package-disclosure>ul{border-left:1px solid #d6dedc;margin:.45rem 0 0 .45rem;padding-left:.8rem}.package-disclosure>ul li{font-size:.85rem}@media(min-width:1000px){.layout{grid-template-columns:minmax(12rem,21rem) minmax(0,1fr)}}@media(min-width:761px){.nav-disclosure>summary{display:none}}@media(max-width:760px){.nav-disclosure[open]>summary{margin-bottom:1rem}}";
+const NAV_SCRIPT: &str = "(()=>{const disclosure=document.querySelector('.nav-disclosure');const narrow=matchMedia('(max-width:760px)');if(narrow.matches)disclosure.open=false;narrow.addEventListener('change',event=>{disclosure.open=!event.matches})})();";
 const SEARCH: &str = "(()=>{const script=document.currentScript;const root=new URL('../',script.src);const input=document.querySelector('#search');const results=document.querySelector('#search-results');let entries=[];fetch(new URL('search.json',script.src)).then(r=>r.json()).then(v=>{entries=v}).catch(()=>{});input.form.addEventListener('submit',e=>e.preventDefault());input.addEventListener('input',()=>{results.replaceChildren();const q=input.value.trim().toLowerCase();if(!q)return;for(const entry of entries.filter(e=>(e.title+' '+e.text+' '+(e.package||'')).toLowerCase().includes(q)).slice(0,12)){const li=document.createElement('li');const a=document.createElement('a');a.href=new URL(entry.path,root);a.textContent=entry.title+(entry.package?' · '+entry.package:'');li.append(a);results.append(li)}})})();";

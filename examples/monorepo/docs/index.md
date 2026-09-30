@@ -1,15 +1,21 @@
 # Tiny Stats
 
-Tiny Stats compares observations and predictions in Python and R. Both packages
-live in one repository and share this guide.
+Tiny Stats provides the same small prediction-error calculation in Python and
+R. This site brings the two package references together with a shared guide, so
+you can learn the idea once and then use it in either language.
 
-Start with [Comparing predictions](comparing-predictions.md) for a worked
-example, or open the API reference for your language:
+## Start with the guide
 
-| Language | Function |
-|:---------|:---------|
-| Python | [`pystats::tinystats.mean_squared_error`] |
-| R | [`rstats::mean_squared_error`] |
+[Comparing predictions](comparing-predictions.md) explains mean squared error
+with a worked example and shows the corresponding Python and R calls.
 
-Each function page includes a **Same API in** link to its counterpart. Search
-for `mean_squared_error` to find both implementations.
+## Choose a language
+
+Each package has its own API reference. Start with the function for your language:
+
+- **Python:** [`pystats::tinystats.mean_squared_error`]
+- **R:** [`rstats::mean_squared_error`]
+
+Each function page links to its counterpart under **Same API in**. The sidebar
+keeps shared documentation separate from the package references, and search
+finds both implementations of `mean_squared_error`.

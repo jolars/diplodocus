@@ -89,6 +89,7 @@ async fn watched_timeout_keeps_serving_the_complete_site_and_recovers() {
         output: root.path().join("site"),
         host: std::net::Ipv4Addr::LOCALHOST.into(),
         port,
+        live_reload: false,
     };
     let deadlines = ExecutionDeadlines {
         cell: 1500,
@@ -112,6 +113,18 @@ async fn watched_timeout_keeps_serving_the_complete_site_and_recovers() {
             .is_some_and(|s| s.contains("first generation"))
     })
     .await;
+    let served = request(port, "/").await.unwrap();
+    assert!(!served.contains("/__diplodocus/revision"));
+    assert_eq!(
+        served.split_once("\r\n\r\n").unwrap().1.as_bytes(),
+        std::fs::read(root.path().join("site/index.html")).unwrap()
+    );
+    assert!(
+        request(port, "/__diplodocus/revision")
+            .await
+            .unwrap()
+            .starts_with("HTTP/1.1 404")
+    );
     let first_process = process(root.path()).unwrap();
     assert!(gone(&first_process));
     let previous = files(&root.path().join("site"));
@@ -208,6 +221,7 @@ async fn preview_tracks_missing_assets_and_configuration_changes() {
             output: root.path().join("site"),
             host: std::net::Ipv4Addr::LOCALHOST.into(),
             port,
+            live_reload: true,
         },
         ExecutionDeadlines::default(),
         Box::pin(async {
@@ -220,10 +234,33 @@ async fn preview_tracks_missing_assets_and_configuration_changes() {
             .is_some_and(|s| s.contains("Original"))
     })
     .await;
+    assert!(
+        request(port, "/")
+            .await
+            .unwrap()
+            .contains("/__diplodocus/revision")
+    );
+    assert!(
+        request(port, "/__diplodocus/revision")
+            .await
+            .unwrap()
+            .ends_with("\r\n\r\n0")
+    );
+    assert!(
+        !root
+            .read("site/index.html")
+            .contains("/__diplodocus/revision")
+    );
     let previous = files(&root.path().join("site"));
     root.write("guide/index.md", "# Added asset\n\n![New](new.svg)\n");
     tokio::time::sleep(Duration::from_millis(600)).await;
     assert!(request(port, "/").await.unwrap().contains("Original"));
+    assert!(
+        request(port, "/__diplodocus/revision")
+            .await
+            .unwrap()
+            .ends_with("\r\n\r\n0")
+    );
     assert_eq!(files(&root.path().join("site")), previous);
     root.write(
         "guide/new.svg",
@@ -235,6 +272,12 @@ async fn preview_tracks_missing_assets_and_configuration_changes() {
             .is_some_and(|s| s.contains("Added asset"))
     })
     .await;
+    assert!(
+        request(port, "/__diplodocus/revision")
+            .await
+            .unwrap()
+            .ends_with("\r\n\r\n1")
+    );
     root.write(
         "guide/new.svg",
         "<svg xmlns='http://www.w3.org/2000/svg'><circle r='5'/></svg>",

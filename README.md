@@ -28,8 +28,8 @@ describes the build and preview workflow. The [snapshot schema](docs/design/snap
 documents the portable handoff between extraction and generation.
 
 For a small working example, see the [R/Python monorepo](examples/monorepo/README.md).
-It combines two package APIs, a shared guide, and cross-language links with
-execution disabled.
+Run `task preview` in the devenv shell to build and serve its two package APIs,
+shared guide, and cross-language links with execution disabled.
 
 ## Authored documents
 

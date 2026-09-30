@@ -60,6 +60,7 @@ if (mode === "serve-test") {
       "serve", "--config", join(workspace, "diplodocus.toml"),
       "--output", join(workspace, "site"),
       "--host", "127.0.0.1", "--port", process.env.DIPLODOCUS_BROWSER_PORT ?? "0",
+      "--live-reload",
     ]);
   } finally {
     rmSync(workspace, { recursive: true, force: true });
@@ -69,6 +70,7 @@ if (mode === "serve-test") {
     "serve", "--config", "examples/monorepo/diplodocus.toml",
     "--output", process.env.DIPLODOCUS_SITE_OUTPUT ?? "site/monorepo",
     "--host", "127.0.0.1", "--port", process.env.DIPLODOCUS_SITE_PORT ?? "8000",
+    "--live-reload",
     ...args,
   ]);
 } else if (mode === "test" || mode === "capture") {

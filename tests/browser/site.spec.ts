@@ -74,14 +74,50 @@ test("search finds both APIs and follows a result", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("tinystats.mean_squared_error");
 });
 
+test("package accordions keep navigation stable across pages", async ({ page }, info) => {
+  await page.goto("/");
+  const navigation = page.getByRole("navigation", { name: "Documentation" });
+  const documentation = navigation.getByRole("group", { name: "Documentation" });
+  const packages = navigation.getByRole("group", { name: "Packages" });
+  if (info.project.name === "mobile") {
+    await expect(navigation.getByText("Browse documentation", { exact: true })).toBeVisible();
+    await expect(documentation.getByRole("link", { name: "Overview" })).not.toBeVisible();
+    await navigation.getByText("Browse documentation", { exact: true }).click();
+  }
+  await expect(documentation.getByRole("link", { name: "Overview" })).toBeVisible();
+  await expect(documentation.getByRole("link", { name: "Comparing predictions" })).toBeVisible();
+  const python = packages.getByText("Python", { exact: true }).locator("..");
+  const r = packages.getByText("R", { exact: true }).locator("..");
+  await expect(python.getByRole("link", { name: "Overview" })).not.toBeVisible();
+  await expect(r.getByRole("link", { name: "Overview" })).not.toBeVisible();
+  await python.locator("summary").click();
+  await expect(python.getByRole("link", { name: "tinystats.mean_squared_error" })).toBeVisible();
+  await expect(r.getByRole("link", { name: "mean_squared_error", exact: true })).not.toBeVisible();
+  await python.locator("summary").click();
+  await expect(python.getByRole("link", { name: "Overview" })).not.toBeVisible();
+  await r.locator("summary").click();
+  await expect(r.getByRole("link", { name: "mean_squared_error", exact: true })).toBeVisible();
+  await expect(page.getByRole("main").getByRole("heading", { name: "Start with the guide" })).toBeVisible();
+
+  await r.getByRole("link", { name: "Overview" }).click();
+  if (info.project.name === "mobile") {
+    await navigation.getByText("Browse documentation", { exact: true }).click();
+  }
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Tiny Stats for R");
+  await expect(r.getByRole("link", { name: "Overview" })).toBeVisible();
+  await expect(r.getByRole("link", { name: "mean_squared_error", exact: true })).toBeVisible();
+  await expect(python.getByRole("link", { name: "Overview" })).not.toBeVisible();
+});
+
 test("equivalent APIs link in both directions", async ({ page }, info) => {
   await page.goto("/comparing-predictions.html");
   await page.getByRole("main").getByRole("link", { name: "pystats::tinystats.mean_squared_error", exact: true }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("tinystats.mean_squared_error");
   await fitsViewport(page);
   await capture(page, info, "python-api");
-  await page.locator("section").filter({ has: page.getByRole("heading", { name: "Same API in", exact: true }) })
-    .getByRole("link", { name: "Tiny Stats for R: mean_squared_error", exact: true }).click();
+  const sameApi = page.locator("section").filter({ has: page.getByRole("heading", { name: "Same API in", exact: true }) });
+  await expect(sameApi.getByRole("link")).toHaveCount(1);
+  await sameApi.getByRole("link", { name: "Tiny Stats for R: mean_squared_error", exact: true }).click();
   await expect(page.getByRole("heading", { level: 1, name: "mean_squared_error", exact: true })).toBeVisible();
   await fitsViewport(page);
   await capture(page, info, "r-api");
@@ -104,4 +140,18 @@ test("search and result navigation work with the keyboard", async ({ page }) => 
   await expect(result).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(destination!);
+});
+
+test("preview reloads the page when its revision advances", async ({ page }) => {
+  let revision = 0;
+  await page.route("**/__diplodocus/revision", async route => {
+    const body = String(revision);
+    if (revision === 1) revision = 0;
+    await route.fulfill({ status: 200, contentType: "text/plain", body });
+  });
+  await page.goto("/");
+  let reloads = 0;
+  page.on("load", () => reloads++);
+  revision = 1;
+  await expect.poll(() => reloads, { timeout: 5000 }).toBe(1);
 });

@@ -25,8 +25,9 @@ site-dev
 ```
 
 Open <http://127.0.0.1:8000/>. Editing the example's documentation triggers a
-rebuild; refresh the browser afterward. Restart this command after changing
-Rust so the preview uses the new renderer. Stop the server with Ctrl-C.
+rebuild and refreshes open pages after a successful build. Restart this command
+after changing Rust so the preview uses the new renderer. Stop the server with
+Ctrl-C.
 
 ```console
 site-test

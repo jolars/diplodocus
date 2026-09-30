@@ -79,6 +79,9 @@ struct ServeArgs {
     /// Port on which to serve the generated site.
     #[arg(long, value_name = "PORT", default_value_t = 8000)]
     port: u16,
+    /// Refresh open browser pages after successful rebuilds.
+    #[arg(long)]
+    live_reload: bool,
 }
 
 fn main() -> ExitCode {
@@ -125,6 +128,7 @@ fn dispatch(cli: Cli) -> Result<(), CommandError> {
             output: args.output,
             host: args.host,
             port: args.port,
+            live_reload: args.live_reload,
         }),
     }
 }
@@ -162,5 +166,6 @@ mod tests {
         assert_eq!(args.output, PathBuf::from("./site"));
         assert_eq!(args.host, IpAddr::from([127, 0, 0, 1]));
         assert_eq!(args.port, 8000);
+        assert!(!args.live_reload);
     }
 }
