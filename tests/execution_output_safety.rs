@@ -25,7 +25,7 @@ fn page() -> ExecutionPage {
         format: AuthoredFormat::Qmd,
         mode: ExecutionMode::Execute,
         page_veto: false,
-        parser_version: "0.29.2".into(),
+        parser_version: diplodocus::provenance::PANACHE_VERSION.into(),
         qmd_policy: "qmd-mvp-v1".into(),
     }
 }

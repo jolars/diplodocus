@@ -118,7 +118,7 @@ fn qmd_profile_extracts_frontmatter_cells_and_callouts() {
         .expect("echo resolution");
     assert!(matches!(
         echo.resolution,
-        CellOptionResolution::Resolved { .. }
+        CellOptionResolution::Resolved { declaration: 1 }
     ));
 }
 

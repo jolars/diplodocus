@@ -152,7 +152,7 @@ fn complete_python_extraction_matches_portable_acceptance_ir() {
         panic!("extraction");
     };
     assert_eq!(parsers["pydocstring"].version, "0.4.1");
-    assert_eq!(parsers["panache-parser"].version, "0.29.2");
+    assert_eq!(parsers["panache-parser"].version, "0.30.0");
     assert!(capabilities.contains("python.docs.numpy"));
     assert_eq!(inputs["python"].len(), 8);
     assert!(
