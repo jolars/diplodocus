@@ -17,6 +17,9 @@
     "@playwright/cli": {
       "playwright": "1.61.1",
       "playwright-core": "1.61.1"
+    },
+    "miniflare": {
+      "sharp": "0.35.5"
     }
   }
 }
