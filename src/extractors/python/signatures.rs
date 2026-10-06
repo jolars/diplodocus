@@ -94,6 +94,9 @@ impl Expressions<'_> {
             Expr::StringLiteral(value) => E::Literal {
                 text: string_literal(value.value.to_str()),
             },
+            Expr::BytesLiteral(value) => E::Literal {
+                text: bytes_literal(value.value.bytes()),
+            },
             Expr::NumberLiteral(value) => E::Literal {
                 text: match &value.value {
                     Number::Int(value) => value.to_string(),
@@ -220,9 +223,15 @@ impl Expressions<'_> {
                 raw,
             ),
             _ => {
-                self.diagnostics.push(diagnostic(DiagnosticCode::PythonUnsupportedSyntax, Severity::Error,
-                    "This signature expression is outside the supported static subset; its source is retained.",
-                    &located(self.source, value.range())));
+                self.diagnostics.push(diagnostic(
+                    DiagnosticCode::PythonUnsupportedSyntax,
+                    Severity::Error,
+                    format!(
+                        "Unsupported Python {} expression; its source is retained.",
+                        unsupported_expression_kind(value)
+                    ),
+                    &located(self.source, value.range()),
+                ));
                 node("unsupported", vec![], raw)
             }
         }
@@ -294,4 +303,59 @@ fn string_literal(value: &str) -> String {
     }
     text.push('"');
     text
+}
+
+fn bytes_literal(bytes: impl Iterator<Item = u8>) -> String {
+    let mut text = String::from("b\"");
+    for byte in bytes {
+        match byte {
+            b'"' => text.push_str("\\\""),
+            b'\\' => text.push_str("\\\\"),
+            b'\n' => text.push_str("\\n"),
+            b'\r' => text.push_str("\\r"),
+            b'\t' => text.push_str("\\t"),
+            0x20..=0x7e => text.push(char::from(byte)),
+            _ => text.push_str(&format!("\\x{byte:02x}")),
+        }
+    }
+    text.push('"');
+    text
+}
+
+fn unsupported_expression_kind(value: &Expr) -> &'static str {
+    match value {
+        Expr::BoolOp(_) => "boolean operation",
+        Expr::Named(_) => "assignment",
+        Expr::Lambda(_) => "lambda",
+        Expr::If(_) => "conditional",
+        Expr::ListComp(_) => "list comprehension",
+        Expr::SetComp(_) => "set comprehension",
+        Expr::DictComp(_) => "dict comprehension",
+        Expr::Generator(_) => "generator",
+        Expr::Await(_) => "await",
+        Expr::Yield(_) => "yield",
+        Expr::YieldFrom(_) => "yield-from",
+        Expr::Compare(_) => "comparison",
+        Expr::FString(_) => "formatted string",
+        Expr::TString(_) => "template string",
+        Expr::IpyEscapeCommand(_) => "IPython escape command",
+        Expr::BinOp(_)
+        | Expr::UnaryOp(_)
+        | Expr::Dict(_)
+        | Expr::Set(_)
+        | Expr::List(_)
+        | Expr::Tuple(_)
+        | Expr::Call(_)
+        | Expr::StringLiteral(_)
+        | Expr::BytesLiteral(_)
+        | Expr::NumberLiteral(_)
+        | Expr::BooleanLiteral(_)
+        | Expr::NoneLiteral(_)
+        | Expr::EllipsisLiteral(_)
+        | Expr::Attribute(_)
+        | Expr::Subscript(_)
+        | Expr::Starred(_)
+        | Expr::Name(_)
+        | Expr::Slice(_) => unreachable!("supported expressions have their own parser branches"),
+    }
 }

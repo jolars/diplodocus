@@ -453,6 +453,70 @@ fn empty_container_defaults_have_semantic_overload_identities() {
 }
 
 #[test]
+fn bytes_literals_are_static_values_and_unsupported_expressions_name_the_construct() {
+    use diplodocus::ir::SignatureExpression as E;
+    let workspace = support::TestWorkspace::from_fixture("acceptance/python");
+    let source = "MAGIC = b\"DMCF\"\nESCAPED = b'\\x00\\xff'\nJOINED = b'DM' b'CF'\ndef read(prefix=b'DMCF'): ...\nDYNAMIC = lambda: 1\n";
+    workspace.write("python/foo/canonical.py", source);
+    let result = parse(&workspace);
+    let module = result
+        .modules
+        .iter()
+        .find(|module| module.name == "foo.canonical")
+        .unwrap();
+    for (declaration, expected) in
+        module
+            .declarations
+            .iter()
+            .take(3)
+            .zip(["b\"DMCF\"", "b\"\\x00\\xff\"", "b\"DMCF\""])
+    {
+        let Signature::Value {
+            value: Some(value), ..
+        } = &declaration.signature.as_ref().unwrap().signature
+        else {
+            panic!("value")
+        };
+        assert_eq!(
+            value,
+            &E::Literal {
+                text: expected.into()
+            }
+        );
+    }
+    let Signature::Callable { parameters, .. } =
+        &module.declarations[3].signature.as_ref().unwrap().signature
+    else {
+        panic!("callable")
+    };
+    assert_eq!(
+        parameters[0].default,
+        Some(E::Literal {
+            text: "b\"DMCF\"".into()
+        })
+    );
+    let unsupported: Vec<_> = result
+        .diagnostics
+        .iter()
+        .filter(|d| d.code.as_str() == "python-unsupported-syntax")
+        .collect();
+    assert_eq!(unsupported.len(), 1, "{unsupported:?}");
+    assert!(
+        unsupported[0].message.contains("lambda expression"),
+        "{}",
+        unsupported[0].message
+    );
+    let start = source.find("lambda: 1").unwrap();
+    assert_eq!(
+        unsupported[0].span,
+        Some(diplodocus::ir::SourceSpan {
+            start,
+            end: start + "lambda: 1".len()
+        })
+    );
+}
+
+#[test]
 fn rebinding_an_import_does_not_keep_its_decorator_semantics() {
     use diplodocus::ir::SignatureExpression as E;
     let workspace = support::TestWorkspace::from_fixture("acceptance/python");

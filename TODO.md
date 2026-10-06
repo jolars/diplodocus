@@ -100,7 +100,7 @@ devenv shell -- cargo run --locked -- check --config ../datamonger/documentation
   Define how unsupported internal declarations affect extraction of the
   public surface, and handle supported context-manager patterns statically
   without assuming arbitrary decorators preserve signatures.
-- [ ] Investigate `python-unsupported-syntax` in `_canonical.py`. The initial
+- [x] Investigate `python-unsupported-syntax` in `_canonical.py`. The initial
   diagnostic points to the `b"DMCF"` constant but describes a signature
   expression. Cover bytes literals and make the diagnostic describe the
   actual unsupported construct.
