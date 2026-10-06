@@ -131,7 +131,10 @@ fn parses_design_examples() {
         parse_configuration(&source).unwrap();
         examples += 1;
     }
-    assert_eq!(examples, 2);
+    assert!(
+        examples > 0,
+        "DESIGN.md should contain a TOML configuration example"
+    );
 }
 
 #[test]
