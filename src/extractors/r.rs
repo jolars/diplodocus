@@ -178,7 +178,12 @@ pub fn extract_target(
         &namespace,
         &mut result.diagnostics,
     );
-    rd::attach(&mut result.items, &topics, &mut result.diagnostics);
+    rd::attach(
+        &package.id,
+        &mut result.items,
+        &topics,
+        &mut result.diagnostics,
+    );
     result.diagnostics.sort();
     result.diagnostics.dedup();
     finish_provenance(&mut result);

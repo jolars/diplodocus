@@ -8,15 +8,17 @@ use rd_ast::{RdListItem, RdListKind, RdNode, RdPath, RdPathSegment, RdShapeError
 
 use crate::diagnostics::{Diagnostic, DiagnosticCode, Severity};
 use crate::ir::{
-    Attributes, Block, Document, DocumentFormat, Inline, Item, ItemAlias, ItemAliasKind,
-    ItemLanguageData, ListItem, Parameter, ParameterKind, RDeclaration, RGenericReference,
-    Signature, SignatureExpression, SourceEvidence, SourceLocation, SourceRole, SourceSpan,
-    SourcedDocument,
+    Attributes, Block, Document, DocumentFormat, IdentityRegistry, Inline, Item, ItemAlias,
+    ItemAliasKind, ItemKind, ItemLanguageData, ListItem, Parameter, ParameterKind, RDeclaration,
+    RGenericReference, SemanticIdentity, Signature, SignatureExpression, SourceEvidence,
+    SourceLocation, SourceRole, SourceSpan, SourcedDocument,
 };
 
 use super::{diagnostic, located, provenance, source};
 
 pub(super) struct Topic {
+    name: String,
+    package: bool,
     aliases: Vec<String>,
     parts: Vec<Part>,
     usages: Vec<Usage>,
@@ -117,25 +119,32 @@ pub(super) fn parse(
         document.inspect_note(),
         document.inspect_see_also(),
         document.inspect_author(),
+        document.inspect_doc_type(),
     ] {
         if let Err(error) = view {
             context.shape(error);
             valid = false;
         }
     }
-    if document
+    let name = document
         .inspect_name()
         .ok()
         .flatten()
         .and_then(plain)
-        .is_none_or(|name| name.trim().is_empty())
-    {
+        .unwrap_or_default();
+    if name.trim().is_empty() {
         context.error(
             DiagnosticCode::RRdInformationLoss,
             "Rd requires a static topic name.",
         );
         valid = false;
     }
+    let package = document
+        .inspect_doc_type()
+        .ok()
+        .flatten()
+        .and_then(plain)
+        .is_some_and(|kind| kind.trim() == "package");
     let mut aliases = vec![];
     for alias in document.inspect_aliases() {
         match alias {
@@ -218,6 +227,7 @@ pub(super) fn parse(
         };
         match tagged.tag() {
             RdTag::Name | RdTag::Alias => {}
+            RdTag::DocType if package => {}
             RdTag::Usage => {
                 let parsed = context.usages(tagged.children(), &path);
                 if parsed.is_empty() && !tagged.children().is_empty() {
@@ -231,7 +241,7 @@ pub(super) fn parse(
             }
             RdTag::Arguments => parts.push(Part::Arguments(arguments.clone())),
             RdTag::Title => parts.push(Part::Blocks(vec![Block::Heading {
-                level: 1,
+                level: 2,
                 attributes: Attributes::default(),
                 inlines: context.inlines(tagged.children(), &path),
                 span: context.span(),
@@ -275,6 +285,8 @@ pub(super) fn parse(
         }
     }
     Some(Topic {
+        name: name.trim().into(),
+        package,
         aliases,
         parts,
         usages,
@@ -689,19 +701,123 @@ impl Context<'_> {
 }
 
 pub(super) fn attach(
+    package: &str,
     items: &mut BTreeMap<String, Item>,
     topics: &[Topic],
     diagnostics: &mut Vec<Diagnostic>,
 ) {
+    let mut package_topic_seen = false;
+    for topic in topics.iter().filter(|topic| topic.valid && topic.package) {
+        if package_topic_seen {
+            diagnostics.push(diagnostic(
+                DiagnosticCode::RConflictingSurface,
+                Severity::Error,
+                "Multiple package Rd topics claim the same package.",
+                &topic.source,
+            ));
+            continue;
+        }
+        package_topic_seen = true;
+        if topic.aliases.iter().any(|alias| {
+            items.values().any(|item| {
+                item.qualified_name == *alias
+                    || item
+                        .aliases
+                        .iter()
+                        .any(|item_alias| item_alias.qualified_name == *alias)
+            })
+        }) {
+            diagnostics.push(diagnostic(
+                DiagnosticCode::RConflictingSurface,
+                Severity::Error,
+                "A package Rd alias also names a public API declaration.",
+                &topic.source,
+            ));
+        }
+        let Ok(identity) = SemanticIdentity::r_package(&topic.name) else {
+            continue;
+        };
+        let id = IdentityRegistry::new(package)
+            .and_then(|mut registry| registry.register(&identity))
+            .expect("configured package ID")
+            .item;
+        if items.contains_key(&id) {
+            diagnostics.push(diagnostic(
+                DiagnosticCode::RConflictingSurface,
+                Severity::Error,
+                format!("Multiple package Rd topics document `{}`.", topic.name),
+                &topic.source,
+            ));
+            continue;
+        }
+        let span = SourceSpan {
+            start: 0,
+            end: topic.raw.len(),
+        };
+        let blocks = topic
+            .parts
+            .iter()
+            .filter_map(|part| match part {
+                Part::Blocks(blocks) => Some(blocks.clone()),
+                _ => None,
+            })
+            .flatten()
+            .collect();
+        let document = SourcedDocument {
+            document: Document {
+                span,
+                frontmatter: None,
+                blocks,
+            },
+            source_format: DocumentFormat::Extracted { name: "rd".into() },
+            source_location: Some(topic.source.clone()),
+            raw_source: Some(topic.raw.clone()),
+            provenance: vec![provenance(&topic.source, true)],
+        };
+        items.insert(
+            id,
+            Item {
+                kind: ItemKind::Namespace,
+                name: topic.name.clone(),
+                qualified_name: topic.name.clone(),
+                language_data: None,
+                aliases: topic
+                    .aliases
+                    .iter()
+                    .map(|alias| ItemAlias {
+                        qualified_name: alias.clone(),
+                        kind: ItemAliasKind::RdAlias,
+                        sources: vec![SourceEvidence {
+                            source: topic.source.clone(),
+                            role: SourceRole::Documentation,
+                            parsers: BTreeSet::from(["rd-source".into(), "rd-ast".into()]),
+                        }],
+                    })
+                    .collect(),
+                signatures: vec![],
+                documentation: Some(document),
+                source_location: Some(topic.source.clone()),
+                children: vec![],
+                provenance: vec![provenance(&topic.source, true)],
+            },
+        );
+    }
     let mut names = BTreeMap::<String, String>::new();
     for (id, item) in items.iter() {
+        if item.kind == ItemKind::Namespace {
+            continue;
+        }
         names.insert(item.qualified_name.clone(), id.clone());
         for alias in &item.aliases {
             names.insert(alias.qualified_name.clone(), id.clone());
         }
     }
     let mut candidates = BTreeMap::<String, Vec<(usize, Vec<String>)>>::new();
-    for (index, topic) in topics.iter().enumerate().filter(|(_, topic)| topic.valid) {
+    for (index, topic) in topics
+        .iter()
+        .enumerate()
+        .filter(|(_, topic)| topic.valid && !topic.package)
+    {
         for usage in &topic.usages {
             if !items
                 .iter()
@@ -790,6 +906,9 @@ pub(super) fn attach(
         }
     }
     for (id, item) in items {
+        if item.kind == ItemKind::Namespace {
+            continue;
+        }
         let Some(candidates) = candidates.get(id) else {
             if let Some(source) = &item.source_location {
                 diagnostics.push(diagnostic(

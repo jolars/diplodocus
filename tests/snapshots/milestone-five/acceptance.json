@@ -170,7 +170,7 @@
                   "value": "Experimental Numeric Summary"
                 }
               ],
-              "level": 1,
+              "level": 2,
               "span": {
                 "end": 479,
                 "start": 0
@@ -644,7 +644,7 @@
                   "value": "Create and Use a Foo Model"
                 }
               ],
-              "level": 1,
+              "level": 2,
               "span": {
                 "end": 972,
                 "start": 0
@@ -1265,7 +1265,7 @@
                   "value": "Mean Squared Error"
                 }
               ],
-              "level": 1,
+              "level": 2,
               "span": {
                 "end": 506,
                 "start": 0
@@ -1788,7 +1788,7 @@
                   "value": "Fit a Foo Model"
                 }
               ],
-              "level": 1,
+              "level": 2,
               "span": {
                 "end": 1508,
                 "start": 0
@@ -2518,7 +2518,7 @@
                   "value": "Fit a Foo Model"
                 }
               ],
-              "level": 1,
+              "level": 2,
               "span": {
                 "end": 1508,
                 "start": 0
@@ -3504,7 +3504,7 @@
                   "value": "Fit a Foo Model"
                 }
               ],
-              "level": 1,
+              "level": 2,
               "span": {
                 "end": 1508,
                 "start": 0
@@ -4457,7 +4457,7 @@
                   "value": "Create and Use a Foo Model"
                 }
               ],
-              "level": 1,
+              "level": 2,
               "span": {
                 "end": 972,
                 "start": 0

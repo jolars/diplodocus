@@ -141,6 +141,11 @@ impl SemanticIdentity {
         Self::r_named(name, "function")
     }
 
+    /// Build a package documentation topic key without a source declaration.
+    pub fn r_package(name: &str) -> Result<Self, IdentityError> {
+        Self::r_named(name, "package")
+    }
+
     /// Build an S3 generic's key; the generic is also its callable family.
     pub fn r_s3_generic(name: &str) -> Result<Self, IdentityError> {
         Self::r_named(name, "s3-generic")

@@ -59,6 +59,40 @@ fn item<'a>(result: &'a RExtraction, name: &str) -> &'a Item {
         .unwrap()
 }
 
+#[test]
+fn base_s3_generics_resolve_without_explicit_imports() {
+    let result = extract(&small(
+        "print.foo <- function(x, ...) x",
+        "S3method(print, foo)",
+        &topic("print.foo", "\\method{print}{foo}(x, ...)"),
+    ));
+    assert!(!codes(&result).contains(&"r-unresolved-definition"));
+    let Some(ItemLanguageData::R(data)) = &item(&result, "print.foo").language_data else {
+        panic!()
+    };
+    assert!(
+        matches!(&data.declaration, RDeclaration::S3Method { generic: RGenericReference::External { package, name }, .. } if package == "base" && name == "print")
+    );
+}
+
+#[test]
+fn package_rd_topic_is_documented_without_a_function() {
+    let rd = r"\name{rfoo-package}\alias{rfoo}\alias{rfoo-package}\title{R Foo}\description{Package description.}\docType{package}";
+    let result = extract(&small("", "", rd));
+    assert!(!codes(&result).contains(&"r-unresolved-definition"));
+    assert!(!codes(&result).contains(&"unsupported-rd"));
+    let package = item(&result, "rfoo-package");
+    assert!(matches!(package.kind, diplodocus::ir::ItemKind::Namespace));
+    assert!(package.signatures.is_empty());
+    assert!(package.documentation.is_some());
+    assert!(
+        package
+            .aliases
+            .iter()
+            .any(|alias| alias.qualified_name == "rfoo")
+    );
+}
+
 fn normalize_versions(value: &mut serde_json::Value) {
     match value {
         serde_json::Value::Object(object) => {

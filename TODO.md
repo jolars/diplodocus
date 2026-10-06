@@ -107,15 +107,15 @@ devenv shell -- cargo run --locked -- check --config ../datamonger/documentation
 - [x] Support static R namespace declarations such as
   `useDynLib(datamonger, .registration = TRUE, .fixes = "C_")` without
   loading the library. This currently produces `r-unsupported-namespace`.
-- [ ] Recheck R definition resolution after fixing namespace parsing. Exported
+- [x] Recheck R definition resolution after fixing namespace parsing. Exported
   functions such as `fetch_data`, `cache_info`, and `resolve_registry` have
   maintained definitions, but their Rd aliases and usage entries produce
   `r-unresolved-definition` and cascading `r-rd-information-loss` errors.
   Determine which failures share a cause and cover grouped Rd topics.
-- [ ] Handle package-level Rd topics with `\docType{package}` and package
+- [x] Handle package-level Rd topics with `\docType{package}` and package
   aliases without requiring a function declaration. Preserve the package
   documentation and distinguish it from an unresolved API alias.
-- [ ] Once extraction succeeds, verify the nine Python/R equivalence concepts
+- [x] Once extraction succeeds, verify the nine Python/R equivalence concepts
   in Datamonger's experimental configuration, then check, build, and inspect
   the generated API pages, signatures, documentation, links, and search on
   desktop and mobile. Enable extraction in Datamonger's default configuration

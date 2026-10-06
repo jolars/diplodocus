@@ -38,7 +38,9 @@ namespace input without loading a native library or inferring registered symbols
 A package-wide `import` is retained in the original input, but does not
 establish which names it imports. Resolving an external S3 generic therefore
 requires `importFrom` or a qualified registration such as
-`S3method(stats::predict, foo_model)`. Conditional directives, computed names,
+`S3method(stats::predict, foo_model)`. The base generics `print`, `format`, and
+`dim` also resolve without explicit imports when no maintained or imported
+binding shadows them. Conditional directives, computed names,
 `exportPattern`, and other directives produce errors. An invalid namespace
 cannot establish a public surface.
 
@@ -88,6 +90,9 @@ Usage supports ordinary calls and typed `\method` or `\S3method` syntax;
 maintained source remains authoritative for signatures. Conflicting usage,
 unknown declarations, and arguments with no matching formal produce errors.
 Additional help aliases can refer to a single unambiguous topic target.
+Package topics with `\docType{package}` create a documented namespace item
+without a maintained function or signature. Their aliases remain separate
+from callable aliases, and conflicting package topics or aliases are errors.
 
 Examples, including `\dontrun`, `\donttest`, and `\dontdiff` content, are
 display-only `CodeBlock` nodes. They never become executable `CodeCell` nodes.

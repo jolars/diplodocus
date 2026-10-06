@@ -118,6 +118,17 @@ pub(super) fn reconcile(
                     package: packages.first().unwrap().clone(),
                     name: method.generic.clone(),
                 })
+                .or_else(|| {
+                    if namespace.imports.contains_key(&method.generic) {
+                        return None;
+                    }
+                    ["print", "format", "dim"]
+                        .contains(&method.generic.as_str())
+                        .then(|| RGenericReference::External {
+                            package: "base".into(),
+                            name: method.generic.clone(),
+                        })
+                })
         };
         let Some(generic) = generic else {
             diagnostics.push(diagnostic(DiagnosticCode::RUnresolvedDefinition, Severity::Error, format!("Cannot resolve the S3 generic `{}` statically; use an explicit import or qualified registration.", method.generic), &method.source));
