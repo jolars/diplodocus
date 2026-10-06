@@ -60,8 +60,8 @@ The `Documentation` workflow checks and builds this repository's Diplodocus
 site on pull requests and `main`. A `v*` tag, or a manual dispatch on `main`,
 also deploys the generated site as static assets on Cloudflare Workers. It uses
 the `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN` repository secrets. The
-Worker serves [diplodocus.cc](https://diplodocus.cc/) and a `workers.dev`
-address. The project-site test checks links and search paths at the domain root.
+Worker serves [diplodocus.cc](https://diplodocus.cc/). The project-site test
+checks links and search paths at the domain root.
 
 ## Releases
 
