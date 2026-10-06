@@ -10,7 +10,7 @@ what still needs attention.
 
 ## Start here
 
-The [Diplodocus guide](https://jolars.github.io/diplodocus/) is built from this
+The [Diplodocus guide](https://diplodocus.cc/) is built from this
 repository with Diplodocus. The [small R/Python monorepo](examples/monorepo/README.md)
 is the quickest way to build a complete package site locally. From the
 repository root:
@@ -58,10 +58,10 @@ cargo run --locked -- --help
 
 The `Documentation` workflow checks and builds this repository's Diplodocus
 site on pull requests and `main`. A `v*` tag, or a manual dispatch on `main`,
-also deploys the generated site to GitHub Pages. In the repository's Pages
-settings, select **GitHub Actions** as the publishing source before the first
-deployment. The site is served beneath `/diplodocus/`; the project-site test
-checks its links and search paths under that prefix.
+also deploys the generated site as static assets on Cloudflare Workers. It uses
+the `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN` repository secrets. The
+Worker serves [diplodocus.cc](https://diplodocus.cc/) and a `workers.dev`
+address. The project-site test checks links and search paths at the domain root.
 
 ## Releases
 

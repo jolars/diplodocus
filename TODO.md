@@ -89,7 +89,7 @@ site byte for byte with the original site.
   inputs.
 - [ ] Add the documentation publishing workflow. Build the project site on pull
   requests and `main`; deploy the Diplodocus-generated tree from version tags
-  or an explicit manual dispatch. Check the `/diplodocus/` Pages prefix.
+  or an explicit manual dispatch to Cloudflare Workers at `diplodocus.cc`.
 
 ### Release
 

@@ -33,33 +33,17 @@ jobs:
       - name: Check source documentation
         run: devenv shell -- cargo run --locked -- check
       - name: Build the deployable site
-        run: devenv shell -- cargo run --locked -- build --output site
-      - name: Upload Pages artifact
+        run: devenv shell -- cargo run --locked -- build --output site/docs
+      - name: Install deployment dependencies
         if: >-
           startsWith(github.ref, 'refs/tags/v') ||
           (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: site
-
-  deploy:
-    if: >-
-      startsWith(github.ref, 'refs/tags/v') ||
-      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
-    needs: build
-    runs-on: ubuntu-latest
-    concurrency:
-      group: documentation-pages
-      cancel-in-progress: false
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - uses: actions/configure-pages@v5
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+        run: devenv shell -- npm ci --ignore-scripts
+      - name: Deploy to Cloudflare Workers
+        if: >-
+          startsWith(github.ref, 'refs/tags/v') ||
+          (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+        run: devenv shell -- npx --no-install wrangler deploy
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

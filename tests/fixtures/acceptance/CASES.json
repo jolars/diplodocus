@@ -1162,10 +1162,11 @@
       "cases": [],
       "inputs": [
         "diplodocus.toml",
-        ".github/workflows/documentation.yml"
+        ".github/workflows/documentation.yml",
+        "wrangler.toml"
       ],
       "action": "In Milestone 10, exercise the docs workflow on a PR, main, a v* tag, and a manual dispatch.",
-      "expected": "PR and main builds validate only; v* tags and manual dispatches on main or v* tags deploy the validated Diplodocus output via github-pages with minimal Pages permissions. No other generator runs.",
+      "expected": "PR and main builds validate only; v* tag runs and manual dispatches on main or v* tags deploy the validated Diplodocus output as Cloudflare Workers static assets at diplodocus.cc. No other generator runs.",
       "milestone": 10
     },
     {

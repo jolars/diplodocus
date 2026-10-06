@@ -25,7 +25,7 @@ fn collect_urls(node: &Handle, urls: &mut Vec<String>, ids: &mut BTreeSet<String
 }
 
 #[test]
-fn real_project_site_builds_and_resolves_under_its_pages_prefix() {
+fn real_project_site_builds_and_resolves_at_its_domain_root() {
     let workspace = support::own_documentation_workspace();
     let config = workspace.path().join("diplodocus.toml");
     let output = workspace.path().join("site");
@@ -64,17 +64,14 @@ fn real_project_site_builds_and_resolves_under_its_pages_prefix() {
     }
 
     for (route, (urls, _)) in &pages {
-        let base =
-            url::Url::parse(&format!("https://jolars.github.io/diplodocus/{route}")).unwrap();
+        let base = url::Url::parse(&format!("https://diplodocus.cc/{route}")).unwrap();
         for reference in urls {
             let target = base.join(reference).unwrap();
-            if target.host_str() != Some("jolars.github.io") {
+            if target.host_str() != Some("diplodocus.cc") {
                 continue;
             }
-            let path = target
-                .path()
-                .strip_prefix("/diplodocus/")
-                .unwrap_or_else(|| panic!("{route} -> {reference} escapes the Pages prefix"));
+            let path = target.path().strip_prefix('/').unwrap();
+            let path = if path.is_empty() { "index.html" } else { path };
             let path = percent_encoding::percent_decode_str(path)
                 .decode_utf8()
                 .unwrap();
