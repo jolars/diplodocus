@@ -251,6 +251,46 @@ fn namespace_uncertainty_never_publishes_recovered_exports() {
 }
 
 #[test]
+fn static_native_library_directives_do_not_require_loading_a_library() {
+    for directive in [
+        "useDynLib(foo)",
+        "useDynLib(foo, .registration = TRUE, .fixes = \"C_\")",
+        "useDynLib(\"foo\", native_entry, .registration = FALSE)",
+        "useDynLib(foo, native_alias = native_entry, .fixes = \"\")",
+    ] {
+        let namespace = format!("export(f)\n{directive}\n");
+        let result = extract(&small(
+            "f <- function(x) x",
+            &namespace,
+            &topic("f", "f(x)"),
+        ));
+        assert_eq!(codes(&result), ["r-rd-source-attribution"], "{directive}");
+        assert_eq!(result.items.len(), 1, "{directive}");
+        assert_eq!(item(&result, "f").qualified_name, "f");
+    }
+}
+
+#[test]
+fn dynamic_or_malformed_native_library_directives_invalidate_the_namespace() {
+    for directive in [
+        "useDynLib(foo, .registration = flag)",
+        "useDynLib(foo, .fixes = paste0('C', '_'))",
+        "useDynLib(foo, .unknown = TRUE)",
+        "useDynLib(foo, .registration = TRUE, .registration = FALSE)",
+        "useDynLib()",
+    ] {
+        let namespace = format!("export(f)\n{directive}\n");
+        let result = extract(&small("f <- function(x) x", &namespace, ""));
+        assert!(result.items.is_empty(), "{directive}");
+        assert!(
+            codes(&result).contains(&"r-unsupported-namespace"),
+            "{directive}: {:?}",
+            result.diagnostics
+        );
+    }
+}
+
+#[test]
 fn source_recovery_and_dynamic_definitions_are_not_authoritative() {
     for source in [
         "f <- function(x) x\ng <-",

@@ -104,7 +104,7 @@ devenv shell -- cargo run --locked -- check --config ../datamonger/documentation
   diagnostic points to the `b"DMCF"` constant but describes a signature
   expression. Cover bytes literals and make the diagnostic describe the
   actual unsupported construct.
-- [ ] Support static R namespace declarations such as
+- [x] Support static R namespace declarations such as
   `useDynLib(datamonger, .registration = TRUE, .fixes = "C_")` without
   loading the library. This currently produces `r-unsupported-namespace`.
 - [ ] Recheck R definition resolution after fixing namespace parsing. Exported

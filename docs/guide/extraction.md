@@ -32,8 +32,9 @@ declarations are reexported.
 
 R extraction reads `DESCRIPTION`, `NAMESPACE`, maintained `R/` source, and
 checked-in `man/` Rd files. Supported static namespace declarations include
-`export`, `import`, `importFrom`, and `S3method`. It connects exports and S3
-registrations to direct source definitions, then attaches supported Rd topics,
+`export`, `import`, `importFrom`, `S3method`, and literal `useDynLib` declarations.
+It connects exports and S3 registrations to direct source definitions, then
+attaches supported Rd topics,
 aliases, usage, arguments, and prose. Rd examples remain display-only.
 
 Computed names, conditional namespace directives, dynamic construction,

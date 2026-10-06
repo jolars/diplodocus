@@ -30,8 +30,12 @@ produce errors and exclude the metadata fragment. Folded values and exact
 field, dependency, and constraint ranges retain separate evidence.
 
 Supported namespace directives are unconditional `export`, `import`,
-`importFrom`, and two- or three-argument `S3method` declarations with static
-names. A package-wide `import` is retained in the original input, but does not
+`importFrom`, two- or three-argument `S3method` declarations with static names,
+and literal `useDynLib` declarations. For `useDynLib`, the library and any
+named or positional symbols must have static names. `.registration` accepts
+`TRUE` or `FALSE`, and `.fixes` accepts a string literal. Extraction retains the
+namespace input without loading a native library or inferring registered symbols.
+A package-wide `import` is retained in the original input, but does not
 establish which names it imports. Resolving an external S3 generic therefore
 requires `importFrom` or a qualified registration such as
 `S3method(stats::predict, foo_model)`. Conditional directives, computed names,

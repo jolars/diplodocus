@@ -58,6 +58,17 @@ pub(super) fn parse(
             ));
             continue;
         }
+        if directive.kind() == DirectiveKind::UseDynLib {
+            if !static_dynlib(text, &directive) {
+                diagnostics.push(diagnostic(
+                    DiagnosticCode::RUnsupportedNamespace,
+                    Severity::Error,
+                    "`useDynLib` requires a literal library name, symbol names, and supported static options.",
+                    &location,
+                ));
+            }
+            continue;
+        }
         let arguments: Option<Vec<String>> = directive
             .arguments()
             .map(|argument| {
@@ -136,4 +147,59 @@ pub(super) fn parse(
     }
     result.valid = diagnostics.len() == before;
     result
+}
+
+fn static_dynlib(text: &str, directive: &namespace::Directive) -> bool {
+    let mut arguments = directive.arguments();
+    let Some(library) = arguments.next() else {
+        return false;
+    };
+    if library.name().is_some()
+        || !argument_expr(text, &library).is_some_and(|value| native_name(&value))
+    {
+        return false;
+    }
+    let mut seen = BTreeSet::<String>::new();
+    for argument in arguments {
+        let name = argument.name().map(|name| name.to_string());
+        let Some(value) = argument_expr(text, &argument) else {
+            return false;
+        };
+        match name.as_deref() {
+            None if native_name(&value) => {}
+            Some(".registration") if seen.insert(".registration".into()) => {
+                if !matches!(value, Expr::Name(ref name) if matches!(name.name(), "TRUE" | "FALSE"))
+                {
+                    return false;
+                }
+            }
+            Some(".fixes") if seen.insert(".fixes".into()) => {
+                if !matches!(value, Expr::StringLiteral(_)) {
+                    return false;
+                }
+            }
+            Some(name)
+                if !name.starts_with('.') && seen.insert(name.into()) && native_name(&value) => {}
+            _ => return false,
+        }
+    }
+    true
+}
+
+fn argument_expr(text: &str, argument: &namespace::Argument) -> Option<Expr> {
+    let range = argument.value_range()?;
+    let value = &text[usize::from(range.start())..usize::from(range.end())];
+    let parsed = arity_parser::parser::parse(value);
+    if !parsed.diagnostics.is_empty() {
+        return None;
+    }
+    parsed.cst.children_with_tokens().find_map(Expr::cast)
+}
+
+fn native_name(value: &Expr) -> bool {
+    match value {
+        Expr::Name(name) => !name.is_reserved_constant(),
+        Expr::StringLiteral(name) => name.unquote().is_some_and(|name| !name.is_empty()),
+        _ => false,
+    }
 }
