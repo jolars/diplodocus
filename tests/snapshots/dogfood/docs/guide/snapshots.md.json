@@ -1,0 +1,420 @@
+{
+  "document": {
+    "span": {
+      "start": 0,
+      "end": 1335
+    },
+    "frontmatter": null,
+    "blocks": [
+      {
+        "type": "heading",
+        "level": 1,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Portable snapshots",
+            "span": {
+              "start": 2,
+              "end": 20
+            }
+          }
+        ],
+        "span": {
+          "start": 0,
+          "end": 21
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "code",
+            "value": "extract",
+            "span": {
+              "start": 22,
+              "end": 31
+            }
+          },
+          {
+            "type": "text",
+            "value": " writes a self-contained SQLite snapshot containing the structured",
+            "span": {
+              "start": 31,
+              "end": 97
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 97,
+              "end": 98
+            }
+          },
+          {
+            "type": "text",
+            "value": "documentation, presentation settings, provenance, diagnostics, and validated",
+            "span": {
+              "start": 98,
+              "end": 174
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 174,
+              "end": 175
+            }
+          },
+          {
+            "type": "text",
+            "value": "local assets. ",
+            "span": {
+              "start": 175,
+              "end": 189
+            }
+          },
+          {
+            "type": "code",
+            "value": "generate",
+            "span": {
+              "start": 189,
+              "end": 199
+            }
+          },
+          {
+            "type": "text",
+            "value": " reads a completed snapshot and writes the site",
+            "span": {
+              "start": 199,
+              "end": 246
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 246,
+              "end": 247
+            }
+          },
+          {
+            "type": "text",
+            "value": "without the original source checkout, language runtimes, or Jupyter kernels.",
+            "span": {
+              "start": 247,
+              "end": 323
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 323,
+              "end": 324
+            }
+          },
+          {
+            "type": "code",
+            "value": "build",
+            "span": {
+              "start": 324,
+              "end": 331
+            }
+          },
+          {
+            "type": "text",
+            "value": " combines these two stages. See the ",
+            "span": {
+              "start": 331,
+              "end": 367
+            }
+          },
+          {
+            "type": "link",
+            "inlines": [
+              {
+                "type": "text",
+                "value": "command reference",
+                "span": {
+                  "start": 368,
+                  "end": 385
+                }
+              }
+            ],
+            "target": "cli.md",
+            "title": null,
+            "attributes": {
+              "identifier": null,
+              "classes": [],
+              "key_values": []
+            },
+            "span": {
+              "start": 367,
+              "end": 394
+            }
+          },
+          {
+            "type": "text",
+            "value": " for",
+            "span": {
+              "start": 394,
+              "end": 398
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 398,
+              "end": 399
+            }
+          },
+          {
+            "type": "text",
+            "value": "paths and options.",
+            "span": {
+              "start": 399,
+              "end": 417
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 417,
+              "end": 418
+            }
+          }
+        ],
+        "span": {
+          "start": 22,
+          "end": 418
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "The snapshot manifest has separate storage, documentation IR, and record",
+            "span": {
+              "start": 419,
+              "end": 491
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 491,
+              "end": 492
+            }
+          },
+          {
+            "type": "text",
+            "value": "encoding versions. The current reader accepts storage version 2, IR version 1,",
+            "span": {
+              "start": 492,
+              "end": 570
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 570,
+              "end": 571
+            }
+          },
+          {
+            "type": "text",
+            "value": "and encoding version 1. It rejects other combinations rather than migrating",
+            "span": {
+              "start": 571,
+              "end": 646
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 646,
+              "end": 647
+            }
+          },
+          {
+            "type": "text",
+            "value": "them. If a newer Diplodocus cannot read an older snapshot, extract a new one",
+            "span": {
+              "start": 647,
+              "end": 723
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 723,
+              "end": 724
+            }
+          },
+          {
+            "type": "text",
+            "value": "from the original sources before generating the site. The producer's package",
+            "span": {
+              "start": 724,
+              "end": 800
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 800,
+              "end": 801
+            }
+          },
+          {
+            "type": "text",
+            "value": "version is recorded, but is not itself the compatibility rule.",
+            "span": {
+              "start": 801,
+              "end": 863
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 863,
+              "end": 864
+            }
+          }
+        ],
+        "span": {
+          "start": 419,
+          "end": 864
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Extraction replaces the complete snapshot. It keeps stable semantic IDs for",
+            "span": {
+              "start": 865,
+              "end": 940
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 940,
+              "end": 941
+            }
+          },
+          {
+            "type": "text",
+            "value": "retained entities and drops removed entities and unused assets. A failed",
+            "span": {
+              "start": 941,
+              "end": 1013
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1013,
+              "end": 1014
+            }
+          },
+          {
+            "type": "text",
+            "value": "extraction or publication leaves the previous completed snapshot in place.",
+            "span": {
+              "start": 1014,
+              "end": 1088
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1088,
+              "end": 1089
+            }
+          },
+          {
+            "type": "text",
+            "value": "Treat a copied snapshot as a build artifact; do not edit its records by hand.",
+            "span": {
+              "start": 1089,
+              "end": 1166
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1166,
+              "end": 1167
+            }
+          },
+          {
+            "type": "text",
+            "value": "The ",
+            "span": {
+              "start": 1167,
+              "end": 1171
+            }
+          },
+          {
+            "type": "link",
+            "inlines": [
+              {
+                "type": "text",
+                "value": "storage schema",
+                "span": {
+                  "start": 1172,
+                  "end": 1186
+                }
+              }
+            ],
+            "target": "https://github.com/jolars/diplodocus/blob/main/docs/design/snapshot-schema.md",
+            "title": null,
+            "attributes": {
+              "identifier": null,
+              "classes": [],
+              "key_values": []
+            },
+            "span": {
+              "start": 1171,
+              "end": 1266
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1266,
+              "end": 1267
+            }
+          },
+          {
+            "type": "text",
+            "value": "in the source repository describes its tables and validation rules.",
+            "span": {
+              "start": 1267,
+              "end": 1334
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1334,
+              "end": 1335
+            }
+          }
+        ],
+        "span": {
+          "start": 865,
+          "end": 1335
+        }
+      }
+    ]
+  },
+  "diagnostics": []
+}

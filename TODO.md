@@ -79,11 +79,11 @@ site byte for byte with the original site.
 
 ### Project documentation
 
-- [ ] Finish the dogfooded user guide: installation, supported GFM and QMD
+- [x] Finish the dogfooded user guide: installation, supported GFM and QMD
   syntax, Python and R extraction limits, diagnostics, snapshot compatibility,
   and the security model for unsandboxed authored execution. Keep user guidance
   separate from design decisions and dated test reports.
-- [ ] Add and verify an in-tree project-site check covering local links,
+- [x] Add and verify an in-tree project-site check covering local links,
   fragments, assets, and search. Confirm that a content-only workspace works
   without API extraction targets and that generated outputs are outside watched
   inputs.

@@ -1116,10 +1116,17 @@
       "cases": [],
       "inputs": [
         "diplodocus.toml",
+        "devenv.lock",
         "docs/guide/index.md",
+        "docs/guide/installation.md",
         "docs/guide/quick-start.md",
         "docs/guide/configuration.md",
         "docs/guide/cli.md",
+        "docs/guide/authoring.md",
+        "docs/guide/extraction.md",
+        "docs/guide/execution.md",
+        "docs/guide/diagnostics.md",
+        "docs/guide/snapshots.md",
         "docs/guide/assets/workspace.svg",
         "docs/examples/stateful.qmd"
       ],
@@ -1132,7 +1139,8 @@
       "cases": [],
       "inputs": [
         "diplodocus.toml",
-        "docs/examples/stateful.qmd"
+        "docs/examples/stateful.qmd",
+        "tests/project_site.rs"
       ],
       "action": "Build and check the real project site, then preview with serve and edit a guide page.",
       "expected": "Use the in-tree binary and the shared renderer; navigation, source links, search, local assets, and deterministic Python outputs are present, and the preview updates without another site generator.",
@@ -1153,10 +1161,11 @@
       "id": "own-docs-publication",
       "cases": [],
       "inputs": [
-        "diplodocus.toml"
+        "diplodocus.toml",
+        ".github/workflows/documentation.yml"
       ],
       "action": "In Milestone 10, exercise the docs workflow on a PR, main, a v* tag, and a manual dispatch.",
-      "expected": "PR and main builds validate only; tags/manual dispatch deploy exactly the validated Diplodocus output plus .nojekyll via github-pages with minimal Pages permissions. No other generator runs.",
+      "expected": "PR and main builds validate only; v* tags and manual dispatches on main or v* tags deploy the validated Diplodocus output via github-pages with minimal Pages permissions. No other generator runs.",
       "milestone": 10
     },
     {

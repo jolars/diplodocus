@@ -1,0 +1,428 @@
+{
+  "document": {
+    "span": {
+      "start": 0,
+      "end": 1026
+    },
+    "frontmatter": null,
+    "blocks": [
+      {
+        "type": "heading",
+        "level": 1,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Installation",
+            "span": {
+              "start": 2,
+              "end": 14
+            }
+          }
+        ],
+        "span": {
+          "start": 0,
+          "end": 15
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Diplodocus is under active development. Until its first crate release, build",
+            "span": {
+              "start": 16,
+              "end": 92
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 92,
+              "end": 93
+            }
+          },
+          {
+            "type": "text",
+            "value": "the CLI from a source checkout with the pinned Rust toolchain and dependencies:",
+            "span": {
+              "start": 93,
+              "end": 172
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 172,
+              "end": 173
+            }
+          }
+        ],
+        "span": {
+          "start": 16,
+          "end": 173
+        }
+      },
+      {
+        "type": "code-block",
+        "language": "console",
+        "source": "git clone https://github.com/jolars/diplodocus.git\ncd diplodocus\ndevenv shell\ncargo build --locked --bin diplodocus\ncargo run --locked -- --help\n",
+        "source_segments": [
+          {
+            "text": "git clone https://github.com/jolars/diplodocus.git",
+            "span": {
+              "start": 185,
+              "end": 235
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 235,
+              "end": 236
+            }
+          },
+          {
+            "text": "cd diplodocus",
+            "span": {
+              "start": 236,
+              "end": 249
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 249,
+              "end": 250
+            }
+          },
+          {
+            "text": "devenv shell",
+            "span": {
+              "start": 250,
+              "end": 262
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 262,
+              "end": 263
+            }
+          },
+          {
+            "text": "cargo build --locked --bin diplodocus",
+            "span": {
+              "start": 263,
+              "end": 300
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 300,
+              "end": 301
+            }
+          },
+          {
+            "text": "cargo run --locked -- --help",
+            "span": {
+              "start": 301,
+              "end": 329
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 329,
+              "end": 330
+            }
+          }
+        ],
+        "span": {
+          "start": 174,
+          "end": 334
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "The ",
+            "span": {
+              "start": 335,
+              "end": 339
+            }
+          },
+          {
+            "type": "code",
+            "value": "devenv",
+            "span": {
+              "start": 339,
+              "end": 347
+            }
+          },
+          {
+            "type": "text",
+            "value": " shell also provides Python, R, Jupyter kernels, and browser tools",
+            "span": {
+              "start": 347,
+              "end": 413
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 413,
+              "end": 414
+            }
+          },
+          {
+            "type": "text",
+            "value": "used by the project examples and tests. A workspace that only contains",
+            "span": {
+              "start": 414,
+              "end": 484
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 484,
+              "end": 485
+            }
+          },
+          {
+            "type": "text",
+            "value": "Markdown or static Python and R API extraction does not need those language",
+            "span": {
+              "start": 485,
+              "end": 560
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 560,
+              "end": 561
+            }
+          },
+          {
+            "type": "text",
+            "value": "runtimes to build its site. Executable QMD pages need the selected Jupyter",
+            "span": {
+              "start": 561,
+              "end": 635
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 635,
+              "end": 636
+            }
+          },
+          {
+            "type": "text",
+            "value": "kernel already installed and discoverable. Diplodocus never installs a",
+            "span": {
+              "start": 636,
+              "end": 706
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 706,
+              "end": 707
+            }
+          },
+          {
+            "type": "text",
+            "value": "workspace's dependencies or kernels.",
+            "span": {
+              "start": 707,
+              "end": 743
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 743,
+              "end": 744
+            }
+          }
+        ],
+        "span": {
+          "start": 335,
+          "end": 744
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "After the crate is published, ",
+            "span": {
+              "start": 745,
+              "end": 775
+            }
+          },
+          {
+            "type": "code",
+            "value": "cargo install diplodocus --locked",
+            "span": {
+              "start": 775,
+              "end": 810
+            }
+          },
+          {
+            "type": "text",
+            "value": " will install",
+            "span": {
+              "start": 810,
+              "end": 823
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 823,
+              "end": 824
+            }
+          },
+          {
+            "type": "text",
+            "value": "the CLI from crates.io. Until then, run it with ",
+            "span": {
+              "start": 824,
+              "end": 872
+            }
+          },
+          {
+            "type": "code",
+            "value": "cargo run --locked --",
+            "span": {
+              "start": 872,
+              "end": 895
+            }
+          },
+          {
+            "type": "text",
+            "value": " from",
+            "span": {
+              "start": 895,
+              "end": 900
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 900,
+              "end": 901
+            }
+          },
+          {
+            "type": "text",
+            "value": "this checkout, or invoke the compiled binary at ",
+            "span": {
+              "start": 901,
+              "end": 949
+            }
+          },
+          {
+            "type": "code",
+            "value": "target/debug/diplodocus",
+            "span": {
+              "start": 949,
+              "end": 974
+            }
+          },
+          {
+            "type": "text",
+            "value": ".",
+            "span": {
+              "start": 974,
+              "end": 975
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 975,
+              "end": 976
+            }
+          }
+        ],
+        "span": {
+          "start": 745,
+          "end": 976
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Continue with the ",
+            "span": {
+              "start": 977,
+              "end": 995
+            }
+          },
+          {
+            "type": "link",
+            "inlines": [
+              {
+                "type": "text",
+                "value": "quick start",
+                "span": {
+                  "start": 996,
+                  "end": 1007
+                }
+              }
+            ],
+            "target": "quick-start.md",
+            "title": null,
+            "attributes": {
+              "identifier": null,
+              "classes": [],
+              "key_values": []
+            },
+            "span": {
+              "start": 995,
+              "end": 1024
+            }
+          },
+          {
+            "type": "text",
+            "value": ".",
+            "span": {
+              "start": 1024,
+              "end": 1025
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1025,
+              "end": 1026
+            }
+          }
+        ],
+        "span": {
+          "start": 977,
+          "end": 1026
+        }
+      }
+    ]
+  },
+  "diagnostics": []
+}

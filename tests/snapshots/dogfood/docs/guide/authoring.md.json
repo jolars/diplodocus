@@ -1,0 +1,892 @@
+{
+  "document": {
+    "span": {
+      "start": 0,
+      "end": 1979
+    },
+    "frontmatter": null,
+    "blocks": [
+      {
+        "type": "heading",
+        "level": 1,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Authored pages",
+            "span": {
+              "start": 2,
+              "end": 16
+            }
+          }
+        ],
+        "span": {
+          "start": 0,
+          "end": 17
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Declare each source directory as a ",
+            "span": {
+              "start": 18,
+              "end": 53
+            }
+          },
+          {
+            "type": "code",
+            "value": "[[content]]",
+            "span": {
+              "start": 53,
+              "end": 66
+            }
+          },
+          {
+            "type": "text",
+            "value": " collection in",
+            "span": {
+              "start": 66,
+              "end": 80
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 80,
+              "end": 81
+            }
+          },
+          {
+            "type": "link",
+            "inlines": [
+              {
+                "type": "text",
+                "value": "workspace configuration",
+                "span": {
+                  "start": 82,
+                  "end": 105
+                }
+              }
+            ],
+            "target": "configuration.md",
+            "title": null,
+            "attributes": {
+              "identifier": null,
+              "classes": [],
+              "key_values": []
+            },
+            "span": {
+              "start": 81,
+              "end": 124
+            }
+          },
+          {
+            "type": "text",
+            "value": ". Set ",
+            "span": {
+              "start": 124,
+              "end": 130
+            }
+          },
+          {
+            "type": "code",
+            "value": "format = \"gfm\"",
+            "span": {
+              "start": 130,
+              "end": 146
+            }
+          },
+          {
+            "type": "text",
+            "value": " for ",
+            "span": {
+              "start": 146,
+              "end": 151
+            }
+          },
+          {
+            "type": "code",
+            "value": ".md",
+            "span": {
+              "start": 151,
+              "end": 156
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 156,
+              "end": 157
+            }
+          },
+          {
+            "type": "text",
+            "value": "files or ",
+            "span": {
+              "start": 157,
+              "end": 166
+            }
+          },
+          {
+            "type": "code",
+            "value": "format = \"qmd\"",
+            "span": {
+              "start": 166,
+              "end": 182
+            }
+          },
+          {
+            "type": "text",
+            "value": " for ",
+            "span": {
+              "start": 182,
+              "end": 187
+            }
+          },
+          {
+            "type": "code",
+            "value": ".qmd",
+            "span": {
+              "start": 187,
+              "end": 193
+            }
+          },
+          {
+            "type": "text",
+            "value": " files. A collection's ",
+            "span": {
+              "start": 193,
+              "end": 216
+            }
+          },
+          {
+            "type": "code",
+            "value": "mount",
+            "span": {
+              "start": 216,
+              "end": 223
+            }
+          },
+          {
+            "type": "text",
+            "value": " determines",
+            "span": {
+              "start": 223,
+              "end": 234
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 234,
+              "end": 235
+            }
+          },
+          {
+            "type": "text",
+            "value": "its URL prefix; an empty mount places its ",
+            "span": {
+              "start": 235,
+              "end": 277
+            }
+          },
+          {
+            "type": "code",
+            "value": "index.md",
+            "span": {
+              "start": 277,
+              "end": 287
+            }
+          },
+          {
+            "type": "text",
+            "value": " at the site root. The",
+            "span": {
+              "start": 287,
+              "end": 309
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 309,
+              "end": 310
+            }
+          },
+          {
+            "type": "code",
+            "value": "owner",
+            "span": {
+              "start": 310,
+              "end": 317
+            }
+          },
+          {
+            "type": "text",
+            "value": " determines whether pages appear in project or package navigation.",
+            "span": {
+              "start": 317,
+              "end": 383
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 383,
+              "end": 384
+            }
+          }
+        ],
+        "span": {
+          "start": 18,
+          "end": 384
+        }
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Supported writing surface",
+            "span": {
+              "start": 388,
+              "end": 413
+            }
+          }
+        ],
+        "span": {
+          "start": 385,
+          "end": 414
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "GFM pages support headings, paragraphs, emphasis, links, images, lists,",
+            "span": {
+              "start": 415,
+              "end": 486
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 486,
+              "end": 487
+            }
+          },
+          {
+            "type": "text",
+            "value": "quotes, tables, thematic breaks, and display-only code fences. QMD pages add",
+            "span": {
+              "start": 487,
+              "end": 563
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 563,
+              "end": 564
+            }
+          },
+          {
+            "type": "text",
+            "value": "YAML front matter, callouts, and braced code cells. The supported document",
+            "span": {
+              "start": 564,
+              "end": 638
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 638,
+              "end": 639
+            }
+          },
+          {
+            "type": "text",
+            "value": "metadata includes ",
+            "span": {
+              "start": 639,
+              "end": 657
+            }
+          },
+          {
+            "type": "code",
+            "value": "title",
+            "span": {
+              "start": 657,
+              "end": 664
+            }
+          },
+          {
+            "type": "text",
+            "value": ", ",
+            "span": {
+              "start": 664,
+              "end": 666
+            }
+          },
+          {
+            "type": "code",
+            "value": "audience",
+            "span": {
+              "start": 666,
+              "end": 676
+            }
+          },
+          {
+            "type": "text",
+            "value": ", and execution settings. Supported cell",
+            "span": {
+              "start": 676,
+              "end": 716
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 716,
+              "end": 717
+            }
+          },
+          {
+            "type": "text",
+            "value": "options include ",
+            "span": {
+              "start": 717,
+              "end": 733
+            }
+          },
+          {
+            "type": "code",
+            "value": "eval",
+            "span": {
+              "start": 733,
+              "end": 739
+            }
+          },
+          {
+            "type": "text",
+            "value": ", ",
+            "span": {
+              "start": 739,
+              "end": 741
+            }
+          },
+          {
+            "type": "code",
+            "value": "echo",
+            "span": {
+              "start": 741,
+              "end": 747
+            }
+          },
+          {
+            "type": "text",
+            "value": ", ",
+            "span": {
+              "start": 747,
+              "end": 749
+            }
+          },
+          {
+            "type": "code",
+            "value": "include",
+            "span": {
+              "start": 749,
+              "end": 758
+            }
+          },
+          {
+            "type": "text",
+            "value": ", ",
+            "span": {
+              "start": 758,
+              "end": 760
+            }
+          },
+          {
+            "type": "code",
+            "value": "output",
+            "span": {
+              "start": 760,
+              "end": 768
+            }
+          },
+          {
+            "type": "text",
+            "value": ", ",
+            "span": {
+              "start": 768,
+              "end": 770
+            }
+          },
+          {
+            "type": "code",
+            "value": "error",
+            "span": {
+              "start": 770,
+              "end": 777
+            }
+          },
+          {
+            "type": "text",
+            "value": ", ",
+            "span": {
+              "start": 777,
+              "end": 779
+            }
+          },
+          {
+            "type": "code",
+            "value": "label",
+            "span": {
+              "start": 779,
+              "end": 786
+            }
+          },
+          {
+            "type": "text",
+            "value": ", ",
+            "span": {
+              "start": 786,
+              "end": 788
+            }
+          },
+          {
+            "type": "code",
+            "value": "fig-alt",
+            "span": {
+              "start": 788,
+              "end": 797
+            }
+          },
+          {
+            "type": "text",
+            "value": ",",
+            "span": {
+              "start": 797,
+              "end": 798
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 798,
+              "end": 799
+            }
+          },
+          {
+            "type": "code",
+            "value": "fig-cap",
+            "span": {
+              "start": 799,
+              "end": 808
+            }
+          },
+          {
+            "type": "text",
+            "value": ", and ",
+            "span": {
+              "start": 808,
+              "end": 814
+            }
+          },
+          {
+            "type": "code",
+            "value": "fig-subcap",
+            "span": {
+              "start": 814,
+              "end": 826
+            }
+          },
+          {
+            "type": "text",
+            "value": ". Cell options may appear in a fence's info string",
+            "span": {
+              "start": 826,
+              "end": 876
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 876,
+              "end": 877
+            }
+          },
+          {
+            "type": "text",
+            "value": "or in ",
+            "span": {
+              "start": 877,
+              "end": 883
+            }
+          },
+          {
+            "type": "code",
+            "value": "#|",
+            "span": {
+              "start": 883,
+              "end": 887
+            }
+          },
+          {
+            "type": "text",
+            "value": " lines; the latter take precedence.",
+            "span": {
+              "start": 887,
+              "end": 922
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 922,
+              "end": 923
+            }
+          }
+        ],
+        "span": {
+          "start": 415,
+          "end": 923
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Diplodocus implements these selected profiles, not the full Quarto or Pandoc",
+            "span": {
+              "start": 924,
+              "end": 1000
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1000,
+              "end": 1001
+            }
+          },
+          {
+            "type": "text",
+            "value": "languages. Unsupported constructs remain visible as placeholders and produce",
+            "span": {
+              "start": 1001,
+              "end": 1077
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1077,
+              "end": 1078
+            }
+          },
+          {
+            "type": "text",
+            "value": "diagnostics. Raw authored HTML, TeX math, footnotes, and arbitrary directives",
+            "span": {
+              "start": 1078,
+              "end": 1155
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1155,
+              "end": 1156
+            }
+          },
+          {
+            "type": "text",
+            "value": "are outside the current supported surface. Run ",
+            "span": {
+              "start": 1156,
+              "end": 1203
+            }
+          },
+          {
+            "type": "code",
+            "value": "diplodocus check",
+            "span": {
+              "start": 1203,
+              "end": 1221
+            }
+          },
+          {
+            "type": "text",
+            "value": " after editing",
+            "span": {
+              "start": 1221,
+              "end": 1235
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1235,
+              "end": 1236
+            }
+          },
+          {
+            "type": "text",
+            "value": "a page to see parser and link diagnostics before any cell executes.",
+            "span": {
+              "start": 1236,
+              "end": 1303
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1303,
+              "end": 1304
+            }
+          }
+        ],
+        "span": {
+          "start": 924,
+          "end": 1304
+        }
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Links and assets",
+            "span": {
+              "start": 1308,
+              "end": 1324
+            }
+          }
+        ],
+        "span": {
+          "start": 1305,
+          "end": 1325
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Use ordinary relative links between declared pages, including links across",
+            "span": {
+              "start": 1326,
+              "end": 1400
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1400,
+              "end": 1401
+            }
+          },
+          {
+            "type": "text",
+            "value": "collections. For example, ",
+            "span": {
+              "start": 1401,
+              "end": 1427
+            }
+          },
+          {
+            "type": "code",
+            "value": "[Commands](cli.md)",
+            "span": {
+              "start": 1427,
+              "end": 1447
+            }
+          },
+          {
+            "type": "text",
+            "value": " targets a page in this guide.",
+            "span": {
+              "start": 1447,
+              "end": 1477
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1477,
+              "end": 1478
+            }
+          },
+          {
+            "type": "text",
+            "value": "Local fragment links must name an existing heading anchor. Keep images and",
+            "span": {
+              "start": 1478,
+              "end": 1552
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1552,
+              "end": 1553
+            }
+          },
+          {
+            "type": "text",
+            "value": "other local assets inside a declared source boundary and link to them with",
+            "span": {
+              "start": 1553,
+              "end": 1627
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1627,
+              "end": 1628
+            }
+          },
+          {
+            "type": "text",
+            "value": "relative paths. Diplodocus validates local destinations and copies accepted",
+            "span": {
+              "start": 1628,
+              "end": 1703
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1703,
+              "end": 1704
+            }
+          },
+          {
+            "type": "text",
+            "value": "assets into the generated site. External HTTP links remain external.",
+            "span": {
+              "start": 1704,
+              "end": 1772
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1772,
+              "end": 1773
+            }
+          }
+        ],
+        "span": {
+          "start": 1326,
+          "end": 1773
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Code fences in GFM and API documentation are always display-only. QMD cells",
+            "span": {
+              "start": 1774,
+              "end": 1849
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1849,
+              "end": 1850
+            }
+          },
+          {
+            "type": "text",
+            "value": "run only when their collection explicitly authorizes execution; see",
+            "span": {
+              "start": 1850,
+              "end": 1917
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1917,
+              "end": 1918
+            }
+          },
+          {
+            "type": "link",
+            "inlines": [
+              {
+                "type": "text",
+                "value": "execution and security",
+                "span": {
+                  "start": 1919,
+                  "end": 1941
+                }
+              }
+            ],
+            "target": "execution.md",
+            "title": null,
+            "attributes": {
+              "identifier": null,
+              "classes": [],
+              "key_values": []
+            },
+            "span": {
+              "start": 1918,
+              "end": 1956
+            }
+          },
+          {
+            "type": "text",
+            "value": " before enabling them.",
+            "span": {
+              "start": 1956,
+              "end": 1978
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1978,
+              "end": 1979
+            }
+          }
+        ],
+        "span": {
+          "start": 1774,
+          "end": 1979
+        }
+      }
+    ]
+  },
+  "diagnostics": []
+}

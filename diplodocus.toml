@@ -1,6 +1,9 @@
 [project]
 name = "Diplodocus"
 
+[presentation]
+description = "Guides for building Python and R documentation with Diplodocus."
+
 [[repository]]
 id = "diplodocus"
 path = "."
@@ -11,7 +14,7 @@ id = "guide"
 owner = "project"
 repository = "diplodocus"
 path = "docs/guide"
-mount = "guide"
+mount = ""
 format = "gfm"
 
 [[content]]

@@ -1,0 +1,617 @@
+{
+  "document": {
+    "span": {
+      "start": 0,
+      "end": 1666
+    },
+    "frontmatter": null,
+    "blocks": [
+      {
+        "type": "heading",
+        "level": 1,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "text",
+            "value": "QMD execution and security",
+            "span": {
+              "start": 2,
+              "end": 28
+            }
+          }
+        ],
+        "span": {
+          "start": 0,
+          "end": 29
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Execution is disabled by default. To run cells, declare a QMD collection with",
+            "span": {
+              "start": 30,
+              "end": 107
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 107,
+              "end": 108
+            }
+          },
+          {
+            "type": "code",
+            "value": "mode = \"execute\"",
+            "span": {
+              "start": 108,
+              "end": 126
+            }
+          },
+          {
+            "type": "text",
+            "value": ", ",
+            "span": {
+              "start": 126,
+              "end": 128
+            }
+          },
+          {
+            "type": "code",
+            "value": "engine = \"jupyter\"",
+            "span": {
+              "start": 128,
+              "end": 148
+            }
+          },
+          {
+            "type": "text",
+            "value": ", and a kernel name in",
+            "span": {
+              "start": 148,
+              "end": 170
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 170,
+              "end": 171
+            }
+          },
+          {
+            "type": "link",
+            "inlines": [
+              {
+                "type": "code",
+                "value": "diplodocus.toml",
+                "span": {
+                  "start": 172,
+                  "end": 189
+                }
+              }
+            ],
+            "target": "configuration.md",
+            "title": null,
+            "attributes": {
+              "identifier": null,
+              "classes": [],
+              "key_values": []
+            },
+            "span": {
+              "start": 171,
+              "end": 208
+            }
+          },
+          {
+            "type": "text",
+            "value": ". The kernel must already be installed.",
+            "span": {
+              "start": 208,
+              "end": 247
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 247,
+              "end": 248
+            }
+          },
+          {
+            "type": "text",
+            "value": "Document metadata may turn execution off for a page, but cannot grant it to a",
+            "span": {
+              "start": 248,
+              "end": 325
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 325,
+              "end": 326
+            }
+          },
+          {
+            "type": "text",
+            "value": "collection where it is disabled. ",
+            "span": {
+              "start": 326,
+              "end": 359
+            }
+          },
+          {
+            "type": "code",
+            "value": "check",
+            "span": {
+              "start": 359,
+              "end": 366
+            }
+          },
+          {
+            "type": "text",
+            "value": " never starts a kernel; ",
+            "span": {
+              "start": 366,
+              "end": 390
+            }
+          },
+          {
+            "type": "code",
+            "value": "extract",
+            "span": {
+              "start": 390,
+              "end": 399
+            }
+          },
+          {
+            "type": "text",
+            "value": ",",
+            "span": {
+              "start": 399,
+              "end": 400
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 400,
+              "end": 401
+            }
+          },
+          {
+            "type": "code",
+            "value": "build",
+            "span": {
+              "start": 401,
+              "end": 408
+            }
+          },
+          {
+            "type": "text",
+            "value": ", and ",
+            "span": {
+              "start": 408,
+              "end": 414
+            }
+          },
+          {
+            "type": "code",
+            "value": "serve",
+            "span": {
+              "start": 414,
+              "end": 421
+            }
+          },
+          {
+            "type": "text",
+            "value": " may run authorized cells.",
+            "span": {
+              "start": 421,
+              "end": 447
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 447,
+              "end": 448
+            }
+          }
+        ],
+        "span": {
+          "start": 30,
+          "end": 448
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Each page uses one kernel session, so later cells can use values defined by",
+            "span": {
+              "start": 449,
+              "end": 524
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 524,
+              "end": 525
+            }
+          },
+          {
+            "type": "text",
+            "value": "earlier cells on that page. Supported options control whether a cell runs,",
+            "span": {
+              "start": 525,
+              "end": 599
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 599,
+              "end": 600
+            }
+          },
+          {
+            "type": "text",
+            "value": "shows its source or output, permits an ordinary language error, and labels a",
+            "span": {
+              "start": 600,
+              "end": 676
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 676,
+              "end": 677
+            }
+          },
+          {
+            "type": "text",
+            "value": "figure. See the ",
+            "span": {
+              "start": 677,
+              "end": 693
+            }
+          },
+          {
+            "type": "link",
+            "inlines": [
+              {
+                "type": "text",
+                "value": "authored-pages guide",
+                "span": {
+                  "start": 694,
+                  "end": 714
+                }
+              }
+            ],
+            "target": "authoring.md",
+            "title": null,
+            "attributes": {
+              "identifier": null,
+              "classes": [],
+              "key_values": []
+            },
+            "span": {
+              "start": 693,
+              "end": 729
+            }
+          },
+          {
+            "type": "text",
+            "value": " for the option names and",
+            "span": {
+              "start": 729,
+              "end": 754
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 754,
+              "end": 755
+            }
+          },
+          {
+            "type": "text",
+            "value": "the ",
+            "span": {
+              "start": 755,
+              "end": 759
+            }
+          },
+          {
+            "type": "link",
+            "inlines": [
+              {
+                "type": "text",
+                "value": "working example",
+                "span": {
+                  "start": 760,
+                  "end": 775
+                }
+              }
+            ],
+            "target": "../examples/stateful.qmd",
+            "title": null,
+            "attributes": {
+              "identifier": null,
+              "classes": [],
+              "key_values": []
+            },
+            "span": {
+              "start": 759,
+              "end": 802
+            }
+          },
+          {
+            "type": "text",
+            "value": " for a complete QMD page.",
+            "span": {
+              "start": 802,
+              "end": 827
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 827,
+              "end": 828
+            }
+          }
+        ],
+        "span": {
+          "start": 449,
+          "end": 828
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "inlines": [
+              {
+                "type": "text",
+                "value": "Authorized cells run with the privileges of the user or CI job that builds",
+                "span": {
+                  "start": 831,
+                  "end": 905
+                }
+              },
+              {
+                "type": "soft-break",
+                "span": {
+                  "start": 905,
+                  "end": 906
+                }
+              },
+              {
+                "type": "text",
+                "value": "the site.",
+                "span": {
+                  "start": 906,
+                  "end": 915
+                }
+              }
+            ],
+            "span": {
+              "start": 829,
+              "end": 917
+            }
+          },
+          {
+            "type": "text",
+            "value": " They can read and change files and use the network. Output",
+            "span": {
+              "start": 917,
+              "end": 976
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 976,
+              "end": 977
+            }
+          },
+          {
+            "type": "text",
+            "value": "sanitization protects generated HTML; it does not sandbox code execution.",
+            "span": {
+              "start": 977,
+              "end": 1050
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1050,
+              "end": 1051
+            }
+          },
+          {
+            "type": "text",
+            "value": "Review a workspace's source and execution settings before running a build,",
+            "span": {
+              "start": 1051,
+              "end": 1125
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1125,
+              "end": 1126
+            }
+          },
+          {
+            "type": "text",
+            "value": "especially for contributions from another person. Run ",
+            "span": {
+              "start": 1126,
+              "end": 1180
+            }
+          },
+          {
+            "type": "code",
+            "value": "check",
+            "span": {
+              "start": 1180,
+              "end": 1187
+            }
+          },
+          {
+            "type": "text",
+            "value": " first when you",
+            "span": {
+              "start": 1187,
+              "end": 1202
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1202,
+              "end": 1203
+            }
+          },
+          {
+            "type": "text",
+            "value": "need source validation without execution.",
+            "span": {
+              "start": 1203,
+              "end": 1244
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1244,
+              "end": 1245
+            }
+          }
+        ],
+        "span": {
+          "start": 829,
+          "end": 1245
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Diplodocus validates cell output before including it in a site. Ordinary",
+            "span": {
+              "start": 1246,
+              "end": 1318
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1318,
+              "end": 1319
+            }
+          },
+          {
+            "type": "text",
+            "value": "stdout, stderr, and tracebacks remain text. Supported images become local",
+            "span": {
+              "start": 1319,
+              "end": 1392
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1392,
+              "end": 1393
+            }
+          },
+          {
+            "type": "text",
+            "value": "assets; unsafe HTML or SVG is rejected. A page cache can reuse a successful",
+            "span": {
+              "start": 1393,
+              "end": 1468
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1468,
+              "end": 1469
+            }
+          },
+          {
+            "type": "text",
+            "value": "execution when its source, effective options, selected kernel, toolchain, and",
+            "span": {
+              "start": 1469,
+              "end": 1546
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1546,
+              "end": 1547
+            }
+          },
+          {
+            "type": "text",
+            "value": "declared environment inputs still match. The configured kernel is still",
+            "span": {
+              "start": 1547,
+              "end": 1618
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1618,
+              "end": 1619
+            }
+          },
+          {
+            "type": "text",
+            "value": "started to verify its identity on a cache hit.",
+            "span": {
+              "start": 1619,
+              "end": 1665
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1665,
+              "end": 1666
+            }
+          }
+        ],
+        "span": {
+          "start": 1246,
+          "end": 1666
+        }
+      }
+    ]
+  },
+  "diagnostics": []
+}

@@ -401,9 +401,8 @@ fn validate_configuration(workspace: &TestWorkspace, config: &str) {
         for collection in collections {
             assert!(ids.insert(collection["id"].as_str().unwrap()));
             assert!(owners.contains(collection["owner"].as_str().unwrap()));
-            assert!(support::is_relative_input(
-                collection["mount"].as_str().unwrap()
-            ));
+            let mount = collection["mount"].as_str().unwrap();
+            assert!(mount.is_empty() || support::is_relative_input(mount));
             let repository = &repositories[collection["repository"].as_str().unwrap()];
             let path = repository
                 .join(collection["path"].as_str().unwrap())

@@ -1,9 +1,10 @@
 # Quick start
 
-Build the small R/Python monorepo in `examples/monorepo/`
-first. It has two package APIs, a shared guide, search, and links between the
-Python and R versions of the same function. Its execution mode is `never`, so
-the site does not need Python, R, or Jupyter kernels at build time.
+Follow [installation](installation.md) to get the CLI and project checkout.
+Then build the small R/Python monorepo in `examples/monorepo/`. It has two
+package APIs, a shared guide, search, and links between the Python and R
+versions of the same function. Its execution mode is `never`, so the site does
+not need Python, R, or Jupyter kernels at build time.
 
 From the Diplodocus repository root:
 
@@ -26,11 +27,14 @@ cargo run --locked -- serve --config examples/monorepo/diplodocus.toml --output 
 `check` validates sources without writing a site. `build` writes the site, and
 `serve` builds and watches it. See the [command reference](cli.md) for the
 snapshot commands and defaults. Diplodocus does not install dependencies or
-kernels for a workspace.
+kernels for a workspace. To adapt the example, read the
+[workspace configuration](configuration.md) and [authored-pages](authoring.md)
+guides.
 
 ## Build Diplodocus's own documentation
 
-The root `diplodocus.toml` builds this guide and an executable Python example.
+The root `diplodocus.toml` builds this guide as the homepage and an executable
+Python example.
 The devenv shell supplies its `python3` kernel. From the repository root:
 
 ```console
@@ -39,7 +43,7 @@ cargo run --locked -- build
 cargo run --locked -- serve
 ```
 
-The site goes to `site/`, and the preview listens at
+The generated homepage is `site/index.html`, and the preview listens at
 `http://127.0.0.1:8000/` by default. `check` never executes cells; `build`
 and `serve` execute cells only in collections that the configuration authorizes.
 
@@ -56,5 +60,5 @@ cargo run --locked -- build --config tests/fixtures/acceptance/workspace/diplodo
 ```
 
 Authorized cells run with your user permissions. Review a workspace's sources
-and [execution settings](configuration.md) before building it.
+and [execution settings](execution.md) before building it.
 Document metadata cannot grant execution authority.

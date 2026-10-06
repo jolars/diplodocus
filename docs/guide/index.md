@@ -1,17 +1,21 @@
 # Diplodocus
 
-Diplodocus brings related Python and R packages into one documentation site.
-Authored guides, API references, navigation, conceptual API groups, and search
-share an explicitly configured workspace.
+Diplodocus builds one site for related Python and R packages. It combines
+statically extracted API references with authored guides, shared navigation,
+cross-references, and search. This guide is built by Diplodocus from the
+project's own `diplodocus.toml`.
 
-Start with the [small R/Python example](quick-start.md), then read about
-[workspace configuration](configuration.md) and [commands](cli.md). The
-[executable example](../examples/stateful.qmd) belongs to Diplodocus's own
-documentation site and requires the configured Python kernel.
+Start with [installation](installation.md) and the [quick start](quick-start.md).
+Then configure your [workspace](configuration.md), write [authored pages](authoring.md),
+and use the [command reference](cli.md) as you build. The
+[executable example](../examples/stateful.qmd) shows a Python QMD page built
+with the project's configured kernel.
 
 ![A documentation workspace with Python and R packages](assets/workspace.svg)
 
-Python and R APIs are parsed statically without importing or loading the
-documented packages. Authored QMD cells run only when their collection enables
-execution and the selected Jupyter kernel is installed. Diplodocus uses local
-assets and does not install dependencies for a workspace.
+Python and R APIs are parsed without importing or loading the packages. Read
+the [extraction guide](extraction.md) for the supported surfaces, the
+[execution guide](execution.md) before enabling QMD cells, and the
+[diagnostics guide](diagnostics.md) when a build reports a problem. A
+[portable SQLite snapshot](snapshots.md) lets you generate the site separately
+from extraction.

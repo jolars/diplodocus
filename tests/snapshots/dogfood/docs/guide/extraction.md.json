@@ -1,0 +1,803 @@
+{
+  "document": {
+    "span": {
+      "start": 0,
+      "end": 2014
+    },
+    "frontmatter": null,
+    "blocks": [
+      {
+        "type": "heading",
+        "level": 1,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Python and R API extraction",
+            "span": {
+              "start": 2,
+              "end": 29
+            }
+          }
+        ],
+        "span": {
+          "start": 0,
+          "end": 30
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Diplodocus reads configured API targets statically. It does not import a Python",
+            "span": {
+              "start": 31,
+              "end": 110
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 110,
+              "end": 111
+            }
+          },
+          {
+            "type": "text",
+            "value": "package, load an R package, run a build backend, or install dependencies.",
+            "span": {
+              "start": 111,
+              "end": 184
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 184,
+              "end": 185
+            }
+          },
+          {
+            "type": "text",
+            "value": "Targets must point to maintained files inside their declared package and",
+            "span": {
+              "start": 185,
+              "end": 257
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 257,
+              "end": 258
+            }
+          },
+          {
+            "type": "text",
+            "value": "repository boundaries. The ",
+            "span": {
+              "start": 258,
+              "end": 285
+            }
+          },
+          {
+            "type": "link",
+            "inlines": [
+              {
+                "type": "text",
+                "value": "workspace guide",
+                "span": {
+                  "start": 286,
+                  "end": 301
+                }
+              }
+            ],
+            "target": "configuration.md",
+            "title": null,
+            "attributes": {
+              "identifier": null,
+              "classes": [],
+              "key_values": []
+            },
+            "span": {
+              "start": 285,
+              "end": 320
+            }
+          },
+          {
+            "type": "text",
+            "value": " shows how to",
+            "span": {
+              "start": 320,
+              "end": 333
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 333,
+              "end": 334
+            }
+          },
+          {
+            "type": "text",
+            "value": "declare a target.",
+            "span": {
+              "start": 334,
+              "end": 351
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 351,
+              "end": 352
+            }
+          }
+        ],
+        "span": {
+          "start": 31,
+          "end": 352
+        }
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Python",
+            "span": {
+              "start": 356,
+              "end": 362
+            }
+          }
+        ],
+        "span": {
+          "start": 353,
+          "end": 363
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Python extraction reads ",
+            "span": {
+              "start": 364,
+              "end": 388
+            }
+          },
+          {
+            "type": "code",
+            "value": "pyproject.toml",
+            "span": {
+              "start": 388,
+              "end": 404
+            }
+          },
+          {
+            "type": "text",
+            "value": " metadata and maintained ",
+            "span": {
+              "start": 404,
+              "end": 429
+            }
+          },
+          {
+            "type": "code",
+            "value": ".py",
+            "span": {
+              "start": 429,
+              "end": 434
+            }
+          },
+          {
+            "type": "text",
+            "value": " and",
+            "span": {
+              "start": 434,
+              "end": 438
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 438,
+              "end": 439
+            }
+          },
+          {
+            "type": "code",
+            "value": ".pyi",
+            "span": {
+              "start": 439,
+              "end": 445
+            }
+          },
+          {
+            "type": "text",
+            "value": " files. It recognizes statically visible functions, classes, methods,",
+            "span": {
+              "start": 445,
+              "end": 514
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 514,
+              "end": 515
+            }
+          },
+          {
+            "type": "text",
+            "value": "properties, constants, fields, type aliases, overloads, and supported",
+            "span": {
+              "start": 515,
+              "end": 584
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 584,
+              "end": 585
+            }
+          },
+          {
+            "type": "text",
+            "value": "decorators. A statically resolvable ",
+            "span": {
+              "start": 585,
+              "end": 621
+            }
+          },
+          {
+            "type": "code",
+            "value": "__all__",
+            "span": {
+              "start": 621,
+              "end": 630
+            }
+          },
+          {
+            "type": "text",
+            "value": " controls exports; otherwise,",
+            "span": {
+              "start": 630,
+              "end": 659
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 659,
+              "end": 660
+            }
+          },
+          {
+            "type": "text",
+            "value": "public definitions and explicit aliases form the visible surface. Maintained",
+            "span": {
+              "start": 660,
+              "end": 736
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 736,
+              "end": 737
+            }
+          },
+          {
+            "type": "text",
+            "value": "stubs supply public signatures, while implementation docstrings supply prose.",
+            "span": {
+              "start": 737,
+              "end": 814
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 814,
+              "end": 815
+            }
+          },
+          {
+            "type": "text",
+            "value": "PEP 257 and NumPy-style docstrings provide structured documentation, and",
+            "span": {
+              "start": 815,
+              "end": 887
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 887,
+              "end": 888
+            }
+          },
+          {
+            "type": "text",
+            "value": "simple ",
+            "span": {
+              "start": 888,
+              "end": 895
+            }
+          },
+          {
+            "type": "code",
+            "value": ":func:",
+            "span": {
+              "start": 895,
+              "end": 903
+            }
+          },
+          {
+            "type": "text",
+            "value": " roles can become cross-references.",
+            "span": {
+              "start": 903,
+              "end": 938
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 938,
+              "end": 939
+            }
+          }
+        ],
+        "span": {
+          "start": 364,
+          "end": 939
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Computed exports, conditional definitions, opaque signatures, unsupported",
+            "span": {
+              "start": 940,
+              "end": 1013
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1013,
+              "end": 1014
+            }
+          },
+          {
+            "type": "text",
+            "value": "decorators, and other dynamic behavior cannot be inferred safely. Diplodocus",
+            "span": {
+              "start": 1014,
+              "end": 1090
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1090,
+              "end": 1091
+            }
+          },
+          {
+            "type": "text",
+            "value": "reports the limit instead of executing package code or guessing an API.",
+            "span": {
+              "start": 1091,
+              "end": 1162
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1162,
+              "end": 1163
+            }
+          }
+        ],
+        "span": {
+          "start": 940,
+          "end": 1163
+        }
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "text",
+            "value": "R",
+            "span": {
+              "start": 1167,
+              "end": 1168
+            }
+          }
+        ],
+        "span": {
+          "start": 1164,
+          "end": 1169
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "R extraction reads ",
+            "span": {
+              "start": 1170,
+              "end": 1189
+            }
+          },
+          {
+            "type": "code",
+            "value": "DESCRIPTION",
+            "span": {
+              "start": 1189,
+              "end": 1202
+            }
+          },
+          {
+            "type": "text",
+            "value": ", ",
+            "span": {
+              "start": 1202,
+              "end": 1204
+            }
+          },
+          {
+            "type": "code",
+            "value": "NAMESPACE",
+            "span": {
+              "start": 1204,
+              "end": 1215
+            }
+          },
+          {
+            "type": "text",
+            "value": ", maintained ",
+            "span": {
+              "start": 1215,
+              "end": 1228
+            }
+          },
+          {
+            "type": "code",
+            "value": "R/",
+            "span": {
+              "start": 1228,
+              "end": 1232
+            }
+          },
+          {
+            "type": "text",
+            "value": " source, and",
+            "span": {
+              "start": 1232,
+              "end": 1244
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1244,
+              "end": 1245
+            }
+          },
+          {
+            "type": "text",
+            "value": "checked-in ",
+            "span": {
+              "start": 1245,
+              "end": 1256
+            }
+          },
+          {
+            "type": "code",
+            "value": "man/",
+            "span": {
+              "start": 1256,
+              "end": 1262
+            }
+          },
+          {
+            "type": "text",
+            "value": " Rd files. Supported static namespace declarations include",
+            "span": {
+              "start": 1262,
+              "end": 1320
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1320,
+              "end": 1321
+            }
+          },
+          {
+            "type": "code",
+            "value": "export",
+            "span": {
+              "start": 1321,
+              "end": 1329
+            }
+          },
+          {
+            "type": "text",
+            "value": ", ",
+            "span": {
+              "start": 1329,
+              "end": 1331
+            }
+          },
+          {
+            "type": "code",
+            "value": "import",
+            "span": {
+              "start": 1331,
+              "end": 1339
+            }
+          },
+          {
+            "type": "text",
+            "value": ", ",
+            "span": {
+              "start": 1339,
+              "end": 1341
+            }
+          },
+          {
+            "type": "code",
+            "value": "importFrom",
+            "span": {
+              "start": 1341,
+              "end": 1353
+            }
+          },
+          {
+            "type": "text",
+            "value": ", and ",
+            "span": {
+              "start": 1353,
+              "end": 1359
+            }
+          },
+          {
+            "type": "code",
+            "value": "S3method",
+            "span": {
+              "start": 1359,
+              "end": 1369
+            }
+          },
+          {
+            "type": "text",
+            "value": ". It connects exports and S3",
+            "span": {
+              "start": 1369,
+              "end": 1397
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1397,
+              "end": 1398
+            }
+          },
+          {
+            "type": "text",
+            "value": "registrations to direct source definitions, then attaches supported Rd topics,",
+            "span": {
+              "start": 1398,
+              "end": 1476
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1476,
+              "end": 1477
+            }
+          },
+          {
+            "type": "text",
+            "value": "aliases, usage, arguments, and prose. Rd examples remain display-only.",
+            "span": {
+              "start": 1477,
+              "end": 1547
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1547,
+              "end": 1548
+            }
+          }
+        ],
+        "span": {
+          "start": 1170,
+          "end": 1548
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Computed names, conditional namespace directives, dynamic construction,",
+            "span": {
+              "start": 1549,
+              "end": 1620
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1620,
+              "end": 1621
+            }
+          },
+          {
+            "type": "text",
+            "value": "roxygen generation, and unsupported Rd markup are not evaluated. Unsupported",
+            "span": {
+              "start": 1621,
+              "end": 1697
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1697,
+              "end": 1698
+            }
+          },
+          {
+            "type": "text",
+            "value": "markup stays visible with a diagnostic. For exact parser and identity rules,",
+            "span": {
+              "start": 1698,
+              "end": 1774
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1774,
+              "end": 1775
+            }
+          },
+          {
+            "type": "text",
+            "value": "see the ",
+            "span": {
+              "start": 1775,
+              "end": 1783
+            }
+          },
+          {
+            "type": "link",
+            "inlines": [
+              {
+                "type": "text",
+                "value": "Python extraction contract",
+                "span": {
+                  "start": 1784,
+                  "end": 1810
+                }
+              }
+            ],
+            "target": "https://github.com/jolars/diplodocus/blob/main/docs/ir/python-extraction.md",
+            "title": null,
+            "attributes": {
+              "identifier": null,
+              "classes": [],
+              "key_values": []
+            },
+            "span": {
+              "start": 1783,
+              "end": 1888
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1888,
+              "end": 1889
+            }
+          },
+          {
+            "type": "text",
+            "value": "or ",
+            "span": {
+              "start": 1889,
+              "end": 1892
+            }
+          },
+          {
+            "type": "link",
+            "inlines": [
+              {
+                "type": "text",
+                "value": "R extraction contract",
+                "span": {
+                  "start": 1893,
+                  "end": 1914
+                }
+              }
+            ],
+            "target": "https://github.com/jolars/diplodocus/blob/main/docs/ir/r-extraction.md",
+            "title": null,
+            "attributes": {
+              "identifier": null,
+              "classes": [],
+              "key_values": []
+            },
+            "span": {
+              "start": 1892,
+              "end": 1987
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1987,
+              "end": 1988
+            }
+          },
+          {
+            "type": "text",
+            "value": "in the source repository.",
+            "span": {
+              "start": 1988,
+              "end": 2013
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2013,
+              "end": 2014
+            }
+          }
+        ],
+        "span": {
+          "start": 1549,
+          "end": 2014
+        }
+      }
+    ]
+  },
+  "diagnostics": []
+}

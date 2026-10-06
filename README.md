@@ -10,8 +10,10 @@ what still needs attention.
 
 ## Start here
 
-The [small R/Python monorepo](examples/monorepo/README.md) is the quickest way
-to see a complete site. From the repository root:
+The [Diplodocus guide](https://jolars.github.io/diplodocus/) is built from this
+repository with Diplodocus. The [small R/Python monorepo](examples/monorepo/README.md)
+is the quickest way to build a complete package site locally. From the
+repository root:
 
 ```console
 devenv shell
@@ -51,6 +53,15 @@ To inspect the CLI from this checkout:
 ```console
 cargo run --locked -- --help
 ```
+
+## Documentation publishing
+
+The `Documentation` workflow checks and builds this repository's Diplodocus
+site on pull requests and `main`. A `v*` tag, or a manual dispatch on `main`,
+also deploys the generated site to GitHub Pages. In the repository's Pages
+settings, select **GitHub Actions** as the publishing source before the first
+deployment. The site is served beneath `/diplodocus/`; the project-site test
+checks its links and search paths under that prefix.
 
 ## Releases
 
