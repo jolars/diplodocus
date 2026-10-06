@@ -34,6 +34,11 @@ jobs:
         run: devenv shell -- cargo run --locked -- check
       - name: Build the deployable site
         run: devenv shell -- cargo run --locked -- build --output site/docs
+      - name: Add Diplodocus site icons
+        run: |
+          cp assets/brand/favicon.ico site/docs/favicon.ico
+          cp assets/brand/favicon.svg site/docs/favicon.svg
+          cp assets/brand/apple-touch-icon.png site/docs/apple-touch-icon.png
       - name: Install deployment dependencies
         if: >-
           startsWith(github.ref, 'refs/tags/v') ||

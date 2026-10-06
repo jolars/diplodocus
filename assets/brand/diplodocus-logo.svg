@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+     width="1360" height="650" viewBox="90 185 1360 650"
+     role="img" aria-labelledby="title description">
+  <title id="title">Diplodocus writing in a book</title>
+  <desc id="description">A long-necked dinosaur writes in an open book with a pencil held in its mouth.</desc>
+
+  <g inkscape:groupmode="layer" inkscape:label="Book" id="book">
+    <path id="book-cover" fill="#202c38"
+          d="M 115,714 C 161,684 215,683 266,701 C 316,689 358,704 390,725 C 441,690 527,696 581,781 C 520,774 457,775 397,798 C 378,804 368,801 354,793 C 314,774 268,773 227,797 C 213,805 199,802 187,790 C 162,766 134,753 115,746 Z"/>
+    <path id="left-page" fill="#fafbf9"
+          d="M 129,714 C 173,686 226,687 274,704 C 319,697 357,715 382,764 C 335,739 279,739 236,774 C 202,737 164,719 129,714 Z"/>
+    <path id="right-page" fill="#fafbf9"
+          d="M 395,729 C 445,697 512,696 569,769 C 509,749 443,751 388,778 C 368,746 340,722 306,711 C 337,713 366,720 395,729 Z"/>
+    <path id="book-fold" fill="none" stroke="#202c38" stroke-width="10" stroke-linecap="round"
+          d="M 383,769 C 390,776 393,782 397,798"/>
+    <path id="writing-line-one" fill="none" stroke="#202c38" stroke-width="8" stroke-linecap="round"
+          d="M 193,716 C 232,703 270,709 291,717"/>
+    <path id="writing-line-two" fill="none" stroke="#202c38" stroke-width="8" stroke-linecap="round"
+          d="M 224,738 C 254,728 284,729 308,737"/>
+  </g>
+
+  <g inkscape:groupmode="layer" inkscape:label="Dinosaur legs" id="legs" fill="#688b84">
+    <path id="front-leg" d="M 676,567 C 707,571 734,589 752,613 C 736,661 712,717 711,761 Q 711,789 689,790 L 614,790 Q 593,790 598,770 C 608,720 647,651 661,607 Z"/>
+    <path id="middle-front-leg" d="M 763,597 C 794,604 836,613 860,607 L 878,768 Q 881,789 861,790 L 780,790 Q 761,790 761,771 C 769,717 761,647 763,597 Z"/>
+    <path id="middle-rear-leg" d="M 915,605 C 951,622 984,628 1010,621 C 1001,665 1016,720 1033,767 Q 1040,789 1017,790 L 941,790 Q 919,790 926,769 C 946,721 946,676 915,605 Z"/>
+    <path id="rear-leg" d="M 1065,578 C 1107,589 1133,612 1148,644 L 1158,768 Q 1162,790 1138,790 L 1071,790 Q 1050,790 1055,769 C 1065,717 1038,648 1065,578 Z"/>
+  </g>
+
+  <g inkscape:groupmode="layer" inkscape:label="Dinosaur body" id="body">
+    <path id="belly-and-tail-shadow" fill="#202c38"
+          d="M 685,531 C 773,604 889,627 1003,608 C 1104,593 1153,629 1233,643 C 1337,660 1382,598 1410,541 C 1392,631 1321,686 1246,690 C 1185,694 1142,678 1106,654 C 1030,688 934,694 850,677 C 773,659 716,616 685,531 Z"/>
+    <path id="dinosaur-silhouette" fill="#688b84"
+          d="M 311,496 C 310,445 318,374 349,316 C 387,242 446,211 519,215 C 587,219 632,275 695,340 C 732,377 769,383 824,370 C 912,348 989,388 1059,448 C 1132,512 1169,571 1232,573 C 1306,577 1354,516 1351,445 C 1347,364 1305,283 1248,239 C 1334,273 1409,352 1418,450 C 1428,548 1379,618 1293,649 C 1228,674 1173,657 1107,626 C 1020,662 889,680 759,622 C 697,610 654,554 611,471 C 570,390 544,316 498,293 C 449,268 410,298 394,355 C 381,399 384,452 406,494 C 423,527 429,563 416,596 C 402,636 373,659 338,660 C 297,662 279,644 281,616 C 282,586 297,562 294,542 C 287,528 294,510 311,496 Z"/>
+    <path id="head" fill="#688b84"
+          d="M 312,489 C 349,467 396,481 415,522 C 437,570 408,624 366,649 C 338,669 297,658 283,636 C 272,614 289,568 293,542 C 287,526 296,501 312,489 Z"/>
+    <g id="back-spots" fill="#202c38">
+      <ellipse id="spot-one" cx="856" cy="398" rx="18" ry="11"/>
+      <ellipse id="spot-two" cx="927" cy="406" rx="30" ry="18" transform="rotate(12 927 406)"/>
+      <ellipse id="spot-three" cx="1008" cy="434" rx="29" ry="19" transform="rotate(31 1008 434)"/>
+      <ellipse id="spot-four" cx="1082" cy="499" rx="21" ry="14" transform="rotate(41 1082 499)"/>
+      <ellipse id="spot-five" cx="1134" cy="540" rx="15" ry="10" transform="rotate(49 1134 540)"/>
+    </g>
+    <g id="face" fill="none" stroke="#202c38" stroke-linecap="round">
+      <path id="eye" stroke-width="11" d="M 334,574 C 329,554 345,551 358,563"/>
+      <path id="nostril" stroke-width="10" d="M 306,633 L 306,634"/>
+      <path id="smile" stroke-width="6" d="M 331,649 Q 348,658 361,644"/>
+    </g>
+    <g id="toes" fill="#202c38">
+      <path id="front-toes" d="M 609,787 C 608,769 618,758 627,765 C 635,771 635,780 635,790 Z M 637,790 C 637,770 649,756 660,763 C 671,771 668,785 668,790 Z"/>
+      <path id="middle-front-toes" d="M 765,790 C 765,769 777,758 787,764 C 795,769 797,782 797,790 Z M 800,790 C 799,769 814,757 825,764 C 834,770 833,782 834,790 Z"/>
+      <path id="middle-rear-toes" d="M 929,790 C 929,770 943,758 953,766 C 962,773 960,784 960,790 Z M 964,790 C 964,770 978,758 988,765 C 998,772 996,783 996,790 Z"/>
+      <path id="rear-toes" d="M 1058,790 C 1058,770 1072,758 1081,766 C 1090,773 1088,785 1088,790 Z M 1092,790 C 1092,771 1107,757 1117,766 C 1126,774 1124,784 1124,790 Z"/>
+    </g>
+  </g>
+
+  <g inkscape:groupmode="layer" inkscape:label="Pencil" id="pencil">
+    <path id="pencil-body" fill="#a04605" d="M 350,611 L 365,623 L 324,705 L 307,699 Z"/>
+    <path id="pencil-highlight" fill="#c36a18" d="M 354,617 L 361,623 L 318,700 L 312,698 Z"/>
+    <path id="pencil-wood" fill="#fafbf9" d="M 307,699 L 324,705 L 311,730 Z"/>
+    <path id="pencil-point" fill="#202c38" d="M 311,730 L 311,714 L 319,715 Z"/>
+    <path id="pencil-top" fill="#202c38" d="M 350,611 L 365,623 L 361,629 L 346,618 Z"/>
+  </g>
+</svg>
