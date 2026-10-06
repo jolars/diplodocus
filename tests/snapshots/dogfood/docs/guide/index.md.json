@@ -2,7 +2,7 @@
   "document": {
     "span": {
       "start": 0,
-      "end": 1311
+      "end": 863
     },
     "frontmatter": null,
     "blocks": [
@@ -64,132 +64,23 @@
           },
           {
             "type": "text",
-            "value": "share the same workspace.",
+            "value": "share an explicitly configured workspace.",
             "span": {
               "start": 170,
-              "end": 195
+              "end": 211
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 195,
-              "end": 196
+              "start": 211,
+              "end": 212
             }
           }
         ],
         "span": {
           "start": 14,
-          "end": 196
-        }
-      },
-      {
-        "type": "paragraph",
-        "inlines": [
-          {
-            "type": "text",
-            "value": "The project is under development. ",
-            "span": {
-              "start": 197,
-              "end": 231
-            }
-          },
-          {
-            "type": "code",
-            "value": "check",
-            "span": {
-              "start": 231,
-              "end": 238
-            }
-          },
-          {
-            "type": "text",
-            "value": " validates sources without execution.",
-            "span": {
-              "start": 238,
-              "end": 275
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 275,
-              "end": 276
-            }
-          },
-          {
-            "type": "code",
-            "value": "build",
-            "span": {
-              "start": 276,
-              "end": 283
-            }
-          },
-          {
-            "type": "text",
-            "value": " executes authorized Python and R pages, publishes a portable SQLite",
-            "span": {
-              "start": 283,
-              "end": 351
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 351,
-              "end": 352
-            }
-          },
-          {
-            "type": "text",
-            "value": "snapshot, and generates the site. ",
-            "span": {
-              "start": 352,
-              "end": 386
-            }
-          },
-          {
-            "type": "code",
-            "value": "serve",
-            "span": {
-              "start": 386,
-              "end": 393
-            }
-          },
-          {
-            "type": "text",
-            "value": " watches declared inputs and keeps the",
-            "span": {
-              "start": 393,
-              "end": 431
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 431,
-              "end": 432
-            }
-          },
-          {
-            "type": "text",
-            "value": "last successful site available if a rebuild fails.",
-            "span": {
-              "start": 432,
-              "end": 482
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 482,
-              "end": 483
-            }
-          }
-        ],
-        "span": {
-          "start": 197,
-          "end": 483
+          "end": 212
         }
       },
       {
@@ -199,8 +90,8 @@
             "type": "text",
             "value": "Start with the ",
             "span": {
-              "start": 484,
-              "end": 499
+              "start": 213,
+              "end": 228
             }
           },
           {
@@ -208,10 +99,10 @@
             "inlines": [
               {
                 "type": "text",
-                "value": "quick start",
+                "value": "small R/Python example",
                 "span": {
-                  "start": 500,
-                  "end": 511
+                  "start": 229,
+                  "end": 251
                 }
               }
             ],
@@ -223,23 +114,23 @@
               "key_values": []
             },
             "span": {
-              "start": 499,
-              "end": 528
+              "start": 228,
+              "end": 268
             }
           },
           {
             "type": "text",
-            "value": ", read about",
+            "value": ", then read about",
             "span": {
-              "start": 528,
-              "end": 540
+              "start": 268,
+              "end": 285
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 540,
-              "end": 541
+              "start": 285,
+              "end": 286
             }
           },
           {
@@ -249,8 +140,8 @@
                 "type": "text",
                 "value": "workspace configuration",
                 "span": {
-                  "start": 542,
-                  "end": 565
+                  "start": 287,
+                  "end": 310
                 }
               }
             ],
@@ -262,16 +153,16 @@
               "key_values": []
             },
             "span": {
-              "start": 541,
-              "end": 584
+              "start": 286,
+              "end": 329
             }
           },
           {
             "type": "text",
-            "value": ", or consult the ",
+            "value": " and ",
             "span": {
-              "start": 584,
-              "end": 601
+              "start": 329,
+              "end": 334
             }
           },
           {
@@ -281,8 +172,8 @@
                 "type": "text",
                 "value": "commands",
                 "span": {
-                  "start": 602,
-                  "end": 610
+                  "start": 335,
+                  "end": 343
                 }
               }
             ],
@@ -294,31 +185,23 @@
               "key_values": []
             },
             "span": {
-              "start": 601,
-              "end": 619
+              "start": 334,
+              "end": 352
             }
           },
           {
             "type": "text",
-            "value": ".",
+            "value": ". The",
             "span": {
-              "start": 619,
-              "end": 620
+              "start": 352,
+              "end": 357
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 620,
-              "end": 621
-            }
-          },
-          {
-            "type": "text",
-            "value": "The ",
-            "span": {
-              "start": 621,
-              "end": 625
+              "start": 357,
+              "end": 358
             }
           },
           {
@@ -328,8 +211,8 @@
                 "type": "text",
                 "value": "executable example",
                 "span": {
-                  "start": 626,
-                  "end": 644
+                  "start": 359,
+                  "end": 377
                 }
               }
             ],
@@ -341,44 +224,44 @@
               "key_values": []
             },
             "span": {
-              "start": 625,
-              "end": 671
+              "start": 358,
+              "end": 404
             }
           },
           {
             "type": "text",
-            "value": " provides a small deterministic",
+            "value": " belongs to Diplodocus's own",
             "span": {
-              "start": 671,
-              "end": 702
+              "start": 404,
+              "end": 432
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 702,
-              "end": 703
+              "start": 432,
+              "end": 433
             }
           },
           {
             "type": "text",
-            "value": "document for testing the project's own site.",
+            "value": "documentation site and requires the configured Python kernel.",
             "span": {
-              "start": 703,
-              "end": 747
+              "start": 433,
+              "end": 494
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 747,
-              "end": 748
+              "start": 494,
+              "end": 495
             }
           }
         ],
         "span": {
-          "start": 484,
-          "end": 748
+          "start": 213,
+          "end": 495
         }
       },
       {
@@ -391,8 +274,8 @@
                 "type": "text",
                 "value": "A documentation workspace with Python and R packages",
                 "span": {
-                  "start": 751,
-                  "end": 803
+                  "start": 498,
+                  "end": 550
                 }
               }
             ],
@@ -404,44 +287,21 @@
               "key_values": []
             },
             "span": {
-              "start": 749,
-              "end": 826
+              "start": 496,
+              "end": 573
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 826,
-              "end": 827
+              "start": 573,
+              "end": 574
             }
           }
         ],
         "span": {
-          "start": 749,
-          "end": 827
-        }
-      },
-      {
-        "type": "heading",
-        "level": 2,
-        "attributes": {
-          "identifier": null,
-          "classes": [],
-          "key_values": []
-        },
-        "inlines": [
-          {
-            "type": "text",
-            "value": "One explicit workspace",
-            "span": {
-              "start": 831,
-              "end": 853
-            }
-          }
-        ],
-        "span": {
-          "start": 828,
-          "end": 854
+          "start": 496,
+          "end": 574
         }
       },
       {
@@ -449,122 +309,68 @@
         "inlines": [
           {
             "type": "text",
-            "value": "A configuration declares repository roots, packages, authored collections, and",
+            "value": "Python and R APIs are parsed statically without importing or loading the",
             "span": {
-              "start": 855,
-              "end": 933
+              "start": 575,
+              "end": 647
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 933,
-              "end": 934
+              "start": 647,
+              "end": 648
             }
           },
           {
             "type": "text",
-            "value": "relationships. Python and R APIs are parsed statically without importing or",
+            "value": "documented packages. Authored QMD cells run only when their collection enables",
             "span": {
-              "start": 934,
-              "end": 1009
+              "start": 648,
+              "end": 726
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1009,
-              "end": 1010
+              "start": 726,
+              "end": 727
             }
           },
           {
             "type": "text",
-            "value": "loading the documented packages. Executing authored examples requires an",
+            "value": "execution and the selected Jupyter kernel is installed. Diplodocus uses local",
             "span": {
-              "start": 1010,
-              "end": 1082
+              "start": 727,
+              "end": 804
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1082,
-              "end": 1083
+              "start": 804,
+              "end": 805
             }
           },
           {
             "type": "text",
-            "value": "explicitly enabled QMD collection and an installed Jupyter kernel.",
+            "value": "assets and does not install dependencies for a workspace.",
             "span": {
-              "start": 1083,
-              "end": 1149
+              "start": 805,
+              "end": 862
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1149,
-              "end": 1150
+              "start": 862,
+              "end": 863
             }
           }
         ],
         "span": {
-          "start": 855,
-          "end": 1150
-        }
-      },
-      {
-        "type": "paragraph",
-        "inlines": [
-          {
-            "type": "text",
-            "value": "Diplodocus does not install dependencies or implicitly access the network.",
-            "span": {
-              "start": 1151,
-              "end": 1225
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 1225,
-              "end": 1226
-            }
-          },
-          {
-            "type": "text",
-            "value": "Generated sites use local assets and portable, repository-relative source",
-            "span": {
-              "start": 1226,
-              "end": 1299
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 1299,
-              "end": 1300
-            }
-          },
-          {
-            "type": "text",
-            "value": "locations.",
-            "span": {
-              "start": 1300,
-              "end": 1310
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 1310,
-              "end": 1311
-            }
-          }
-        ],
-        "span": {
-          "start": 1151,
-          "end": 1311
+          "start": 575,
+          "end": 863
         }
       }
     ]

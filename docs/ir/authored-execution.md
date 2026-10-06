@@ -1,21 +1,13 @@
 # Authored execution interface
 
 The `diplodocus::execution` module defines the Rust library boundary for authored
-page execution. It implements the interface, kernel startup, and sequential
-session portions of Milestone 6 and follows the
-[authored-execution policy](../spikes/authored-execution-contract.md). It
-includes an internal Linux adapter for static kernel discovery, authenticated
-startup, sequential submission of prepared cells, and bounded shutdown. The
+page execution. On Linux, the public `JupyterEngine` implements this boundary
+with supervised kernel sessions, validated outputs, and a whole-page cache. The
 `diplodocus::documents` module validates QMD options and prepares cells without
-I/O. Shared presentation views apply visibility options, and final-output
-validation checks figure counts. An internal incremental reducer collects typed
-outputs through a representation validator. Rich-output validators, supervised
-reducer integration, the public `ExecutionEngine` implementation, site rendering,
-and caching remain later work.
-
-The [Milestone 6 implementation boundaries](../design/execution-implementation.md)
-freeze module ownership, validation and cache seams, dependency choices, and the
-remaining acceptance gates. They distinguish planned APIs from implemented code.
+I/O. Commands authorize execution, publish snapshots, and render sites. The
+[authored-execution policy](../spikes/authored-execution-contract.md) defines the
+rules; the [implementation map](../design/execution.md) points to the current
+pipeline and tests.
 
 ## Engine and caller responsibilities
 
@@ -110,7 +102,7 @@ termination and kill when needed. The supervisor reaps the kernel, closes the
 channels, and removes the connection directory before completing. Cleanup errors
 remain separate from the original failure. Dropping a handle wakes the supervisor
 instead of abandoning the child. No execution assets or cache entries are created
-by this adapter, and CLI commands do not dispatch to it yet.
+by this session adapter; the public engine and commands own those stages.
 
 The [session tests](../../src/execution/jupyter/tests.rs) cover injected discovery
 environments, a controllable subprocess protocol fixture, cancellation and dropped
@@ -143,9 +135,7 @@ These records contain unvalidated MIME data, display IDs, and raw error details.
 They cannot serve as `PageExecutionResult` or renderer input. Unrelated and late
 messages produce source-attributed `unsupported-kernel-message` warnings instead
 of being attached to the active cell. The reducer described below converts these
-events into typed `CellOutput` nodes. Wiring it into supervised execution,
-producing portable provenance, and implementing the public `ExecutionEngine`
-boundary remain subsequent work.
+events into typed `CellOutput` nodes inside the public engine.
 
 The [page tests](../../src/execution/jupyter/tests/pages.rs) use the QMD preparer
 and check exact submitted bytes, nested source order, skipped cells, both terminal
@@ -186,7 +176,7 @@ disabled. Generated fences remain display code, frontmatter cannot change page
 options, and raw HTML remains unsupported source. Each fragment retains its
 producing page, cell, and slot, parser versions, and fragment-relative diagnostic
 ranges. The text content fingerprint covers the concatenated UTF-8 payload;
-the later cache codec owns canonical structured-content digests.
+the cache codec owns canonical structured-content digests.
 
 Ordinary streams retain their literal bytes as preformatted text. With
 `output: asis`, only adjacent stdout events within one cell concatenate into a
@@ -196,8 +186,8 @@ validator boundary as Markdown MIME output, including when hidden or cleared
 later. A rejected run retains a literal-text fallback and its warnings; a fatal
 validation failure still stops reduction. Stderr and plain-text MIME results
 keep their ordinary semantics. Markdown parsing does not validate links or
-images or grant rendering trust. The fragment image bridge and HTML validator
-remain later work; the image-byte validator and staging owner are implemented.
+images or grant rendering trust. The output safety layer validates fragments and
+HTML, while the asset store validates image bytes and owns staging.
 
 Errors lose terminal controls, known checkout frame paths become
 repository-relative, and external frame paths and IPython execution counts use
@@ -208,12 +198,12 @@ before reduction.
 Finalization checks figure options before presentation and returns the surviving
 asset references. Clearing and replacement never erase validation warnings.
 The returned cells and diagnostics are internal reduction results, not a
-publishable page. The internal session's `execute_with` hook now lets a caller
+publishable page. The internal session's `execute_with` hook lets a caller
 reduce each completed cell before the supervisor submits another. While it
 waits for the caller's fallible response, the supervisor watches cancellation
 and kernel exit. A fatal output failure interrupts and cleans up the session.
-The public engine must still compose these operations with HTML and fragment
-safety, input revalidation, and execution provenance.
+The public engine composes these operations with HTML and fragment safety, input
+revalidation, and execution provenance.
 
 The [reducer tests](../../src/execution/jupyter/output/tests.rs) cover ordering,
 cross-cell updates, clearing, MIME preference and fallback, malformed payloads,
@@ -325,8 +315,7 @@ grants rendering trust or replaces MIME, asset, HTML, or record validation.
 `rendering::render_preformatted_text(text)` escapes literal output into
 `<pre><code>` HTML, preserving whitespace and leaving Markdown syntax literal.
 Escaping happens at the HTML boundary, so portable plain-text records retain
-their original bytes. This rendering primitive is tested independently; full
-site renderer integration remains later work.
+their original bytes.
 
 `execution::validate_figure_options(page, cells)` checks final output slots before
 publication. A nonempty `fig-subcap` list must match the number of selected SVG,
@@ -339,9 +328,9 @@ Mismatches return `ExecutionFailureKind::OutputValidation` with one
 `invalid-figure-options` error per cell, in supplied cell order. Each diagnostic
 points to the winning declaration and relates it to the owning cell, even if
 another cell updated that output. `present_cell` runs the same validation before
-applying visibility, so hidden output cannot conceal a mismatch. The future
-output converter must also call the page-wide validator after applying all
-updates and clearing, before constructing a successful page result.
+applying visibility, so hidden output cannot conceal a mismatch. The engine
+calls the page-wide validator after applying updates and clearing, before
+constructing a successful page result.
 
 The [presentation tests](../../tests/cell_presentation.rs) cover option precedence,
 visibility combinations, skipped cells, unchanged evidence, selected figures,

@@ -1,5 +1,12 @@
 # Diplodocus: Design
 
+This document records the product architecture and intended boundaries. The
+[status page](TODO.md) tracks remaining release work, the
+[collaborator handoff](docs/development/handoff.md) maps the current code, and
+the [acceptance matrix](tests/fixtures/acceptance/MATRIX.md) specifies expected
+product behavior. Future-tense statements here describe design intent, not an
+implementation status report.
+
 ## Purpose
 
 Diplodocus is a documentation generator for polyglot software projects,
@@ -467,117 +474,26 @@ resolution, and search index.
 
 ## Workspace configuration
 
-A workspace has one root configuration file. It may live in a dedicated
-documentation repository or in any one of the source repositories:
+A workspace configuration explicitly names local repository roots, packages,
+extraction targets, authored collections, concepts, and package relationships.
+The [configuration guide](docs/guide/configuration.md) explains the supported
+fields; the [small example](examples/monorepo/diplodocus.toml) shows a complete
+Python/R site.
 
-```text
-diplodocus.toml
-```
+Repository roots may be sibling checkouts. Package paths are relative to their
+declared repository; metadata and targets are relative to the package; content
+and declared environment inputs are relative to their repository. Resolution
+rejects paths that cross these boundaries. Diplodocus does not discover
+packages or fetch repositories implicitly.
 
-For example:
-
-```toml
-[project]
-name = "Foo"
-
-[[repository]]
-id = "core"
-path = "../foo-core"
-url = "https://github.com/example/foo-core"
-
-[[repository]]
-id = "python"
-path = "../foo-python"
-url = "https://github.com/example/foo-python"
-
-[[repository]]
-id = "r"
-path = "../foo-r"
-url = "https://github.com/example/foo-r"
-
-[[package]]
-id = "pyfoo"
-name = "Foo for Python"
-slug = "python"
-ecosystem = "python"
-repository = "python"
-path = "."
-metadata_path = "pyproject.toml"
-targets = [
-  { id = "api", extractor = "python", path = "python/foo", role = "public-api" },
-]
-
-[[package]]
-id = "rfoo"
-name = "Foo for R"
-slug = "r"
-ecosystem = "r"
-repository = "r"
-path = "."
-metadata_path = "DESCRIPTION"
-targets = [
-  { id = "api", extractor = "r", path = ".", role = "public-api" },
-]
-
-[[content]]
-id = "guide"
-owner = "project"
-repository = "core"
-path = "docs"
-mount = "guide"
-format = "gfm"
-
-[content.execution]
-mode = "never"
-
-[[content]]
-id = "python-tutorials"
-owner = "pyfoo"
-repository = "python"
-path = "docs/tutorials"
-mount = "tutorials"
-format = "qmd"
-
-[content.execution]
-mode = "execute"
-engine = "jupyter"
-kernel = "python3"
-declared_environment_inputs = ["uv.lock"]
-```
-
-Repository paths may point outside the directory containing `diplodocus.toml`.
-Package paths are relative to their repository roots; metadata and
-extraction-target paths are relative to their package roots; content paths are
-relative to their repository roots. All must remain within their declared
-repository after normalization. This allows explicit sibling checkouts without
-making an arbitrary relative path an undeclared source root.
-
-The repository URL identifies the canonical source origin. An optional source
-link template controls forge-specific revision, path, and line URLs; Diplodocus
-may infer standard templates for known forges. It may read local version-control
-metadata for provenance. Configuration or the build environment may supply the
-revision when the source is not a version-control checkout.
-
-The package `id` is the stable identity used by references and relationships.
-The `slug` controls its URL and must be unique within the site. Neither is
-derived from the package's ecosystem, so a workspace may contain several Python
-or R packages, and packages in different ecosystems may share the same published
-name. `kind` defaults to `package`, and `visibility` defaults to `public`. The
-reserved content owner `project` denotes project-level material; any other owner
-is a package ID.
-
-The content `format` selects the [authored
-documentation](#authored-documentation) profile. Execution follows the
-[workspace authorization policy](#explicit-authored-execution); frontmatter may
-configure supported presentation and cell behavior within that authority.
-
-Declared environment inputs are paths relative to the content collection's
-repository and obey the same traversal and symlink restrictions as other
-declared inputs. They commonly include lockfiles or environment manifests. Their
-contents participate in provenance and execution-cache keys, but Diplodocus does
-not interpret them or install the environment they describe.
-
-Configuration remains authoritative; automatic package discovery is deferred.
+A package ID is its stable reference and relationship identity. Its slug
+controls its site URL, independently of ecosystem and display name. Content
+has either a project owner or a package owner; ownership controls navigation
+and semantic-reference context, independently of where the source file lives.
+A collection selects the `gfm` or `qmd` profile. QMD execution requires
+collection-level authority, a Jupyter engine, and an explicit kernel;
+frontmatter cannot grant authority. Declared environment files contribute to
+execution provenance and cache identity, but Diplodocus does not install them.
 
 --------------------------------------------------------------------------------
 
@@ -797,41 +713,12 @@ proposed manifest and invalidation behavior.
 
 ## CLI
 
-The CLI exposes both stages and a convenient combined workflow:
-
-```text
-diplodocus build
-diplodocus serve
-diplodocus check
-diplodocus extract --output documentation.sqlite
-diplodocus generate --input documentation.sqlite --output site
-```
-
-`extract` runs the [extraction pipeline](#architecture). Its default output is
-`.diplodocus/documentation.sqlite` relative to the workspace configuration;
-`--output` selects another snapshot path.
-
-`generate` requires an explicit `--input` snapshot and renders it to `--output`,
-which defaults to `./site`. It uses recorded defaults and explicit presentation
-overrides. Both stages report diagnostics and return a nonzero exit status on
-errors.
-
-`build` runs extraction into the default snapshot location followed by
-generation. It must have the same behavior as running the two stages separately.
-`serve` builds, serves, and watches declared inputs, retaining the last
-successful site when a rebuild fails. A failed generation also leaves the last
-successful site intact; a successfully extracted snapshot remains usable for
-another generation attempt.
-
-`check` should validate configuration, source roots, unresolved references,
-duplicate identifiers, missing package metadata, incompatible package
-relationships, unsupported content constructs and cell options, execution
-configuration, and similar documentation problems without executing cells,
-publishing a snapshot, or producing a site. It shares parsing, extraction, and
-validation components with `extract` but cannot validate references introduced
-only by execution results that do not yet exist.
-
-`diplodocus init` may be added later.
+`check` validates declared inputs without execution or publication. `extract`
+publishes a portable snapshot, and `generate` renders a site from that snapshot
+without the source checkout or a language runtime. `build` combines the two
+stages. `serve` builds, serves, and watches, retaining the last successful site
+after a failed rebuild. The [command guide](docs/guide/cli.md) specifies
+options, defaults, and failure behavior.
 
 --------------------------------------------------------------------------------
 
@@ -874,36 +761,6 @@ ExecutionResult
 Engines return document IR and assets without modifying source files or emitting
 page HTML. Both interfaces can initially live in the main repository; stable
 external plugin APIs are deferred until the internal contracts have matured.
-
---------------------------------------------------------------------------------
-
-## Implementation strategy
-
-Implement a vertical slice through related Python and R packages in separate
-repositories. Diplodocus's CLI, core, renderer, extractors, content adapter, and
-Jupyter client will use Rust, providing one binary for the complete pipeline.
-The [roadmap](TODO.md) tracks milestones and fixtures; the architectural
-sequence is:
-
-1. Build an acceptance corpus covering Python functions, classes, re-exports,
-   maintained and native-extension stubs, R functions and S3 methods, GFM,
-   executable QMD, unsupported constructs, and equivalent and analogous APIs.
-2. Spike extraction, authored parsing, and execution to expose information loss,
-   then define the structured IR and identity rules from that evidence.
-3. Implement both extractors test-first against golden IR fixtures, followed by
-   content adapters, execution, semantic resolution, and `check` diagnostics.
-4. Implement snapshot storage and `extract`. Test IR and asset round trips,
-   schema validation, idempotence, stale-record removal, and failure recovery.
-   Include stable IDs, fingerprints, and canonical text exports from the outset.
-5. Implement `generate`, shared navigation, search, and concept switchers.
-   Verify generation from a copied database without sources, caches, or
-   runtimes.
-6. Verify deterministic end-to-end output, including deterministic executable
-   cells, and equivalence of `build` with separate `extract` and `generate`.
-
-Incremental processing, custom themes, historical release assembly, and further
-ecosystems follow this complete workflow. A C extractor is optional: authored
-reference content and an internal component can initially represent a C ABI.
 
 --------------------------------------------------------------------------------
 

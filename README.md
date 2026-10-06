@@ -2,121 +2,55 @@
 
 [![CI](https://github.com/jolars/diplodocus/actions/workflows/ci.yml/badge.svg)](https://github.com/jolars/diplodocus/actions/workflows/ci.yml)
 
-Diplodocus builds one coherent documentation website for software projects that
-span multiple programming languages and repositories. The first release will
-support Python and R packages, authored Markdown, shared navigation, semantic
-cross-references, and workspace-wide search.
+Diplodocus builds one documentation site for related Python and R packages.
+It combines statically extracted APIs with authored Markdown and QMD guides,
+shared navigation, semantic cross-references, and search. The project is under
+active development; the [current status and remaining work](TODO.md) describe
+what still needs attention.
 
-Diplodocus is under active development. `diplodocus check` parses, extracts,
-resolves references, and validates declared sources without executing cells or
-writing output. `extract` publishes a portable SQLite snapshot, and `generate`
-renders that snapshot without source checkouts or language runtimes. `build`
-combines those stages. `serve` watches declared inputs and retains the last
-successful site after a failed rebuild. Remaining work is tracked in
-[`TODO.md`](TODO.md).
+## Start here
 
-Authorized QMD execution caches complete page results in
-`.diplodocus/cache/execution` beside the configuration file. A hit verifies the
-current kernel identity and all cached outputs and assets, then skips cell
-execution. Source, effective options, toolchain, runtime, and declared environment
-changes invalidate the entry. Remove this directory to force fresh execution.
-See the [cache implementation and validation](docs/design/execution-cache-validation.md).
-
-The starter [project guide](docs/guide/index.md) and root `diplodocus.toml`
-form the project's own documentation corpus. The [quick start](docs/guide/quick-start.md)
-describes the build and preview workflow. The [snapshot schema](docs/design/snapshot-schema.md)
-documents the portable handoff between extraction and generation.
-
-For a small working example, see the [R/Python monorepo](examples/monorepo/README.md).
-Run `task preview` in the devenv shell to build and serve its two package APIs,
-shared guide, and cross-language links with execution disabled.
-
-## Authored documents
-
-The library parses authored `.md` and `.qmd` content in-process through
-`panache-parser`. Use `documents::parse_authored_document` with the `Gfm` or
-`Qmd` profile to obtain Diplodocus's serializable document IR and source-ordered
-diagnostics. The current QMD adapter extracts executable cells and their
-options, but does not execute them.
-
-The supported authored subset covers prose, headings, lists, links and images,
-pipe tables, GFM alerts, QMD frontmatter, QMD callouts, and executable fences
-with hashpipe YAML. A code-only unresolved reference such as
-`` [`package::item`] `` becomes a semantic reference. Other unsupported syntax
-is retained as an explicit IR node and produces a warning rather than being
-silently discarded.
-
-## Static Python extraction
-
-The library's `extractors::python::extract_target` reads a configured Python
-target and its `pyproject.toml` without importing package code or invoking a
-build backend. Its portable result contains canonical API items, structured
-signatures and NumPy-style documentation, ordered diagnostics, and input and
-parser provenance. Maintained stubs supply signatures while implementation
-docstrings retain their own source evidence.
-
-See the [Python extraction contract](docs/ir/python-extraction.md) for the
-supported surface and the component APIs. The static `check` command uses this
-adapter.
-
-## Static R extraction
-
-The library's `extractors::r::extract_target` reads `DESCRIPTION`, `NAMESPACE`,
-maintained R source, and checked-in Rd documentation without starting R or
-evaluating package code. It reconciles exports, assignment and help aliases,
-S3 generics, methods, and constructors into canonical items with structured
-signatures and documentation.
-
-See the [R extraction contract](docs/ir/r-extraction.md) for the supported
-subset and diagnostics. Rd nodes currently carry file-level attribution and
-one location warning per file; parser diagnostics retain their exact ranges.
-The static `check` command uses this adapter.
-
-## Development
-
-Enter the reproducible development shell:
+The [small R/Python monorepo](examples/monorepo/README.md) is the quickest way
+to see a complete site. From the repository root:
 
 ```console
 devenv shell
+task preview
 ```
 
-The shell supplies the pinned Rust toolchain, Python, R, and the project-wide
-development tools. Run the local checks with:
+Open the local URL printed by the command. This example builds without Python,
+R, or Jupyter kernels at runtime. The [quick start](docs/guide/quick-start.md)
+shows direct CLI commands, Diplodocus's own documentation site, and the broader
+acceptance workspace.
 
-```console
-cargo fmt --all -- --check
-cargo clippy --locked --all-targets --all-features -- -D warnings
-cargo test --locked --all-targets
-RUSTDOCFLAGS="-D warnings" cargo doc --locked --no-deps
-cargo audit
-cargo deny check
-actionlint .github/workflows/*.yml
-```
+## How it works
 
-Generate a coverage report with:
+A `diplodocus.toml` file declares the repositories, packages, and authored
+collections in a workspace. `check` validates declared sources without
+executing cells. `extract` publishes a portable SQLite snapshot, `generate`
+renders a site from a completed snapshot, and `build` combines those stages.
+`serve` watches declared inputs and keeps the last successful site available
+when a rebuild fails. QMD execution requires explicit collection authority and
+an installed kernel.
 
-```console
-cargo llvm-cov --locked --all-targets
-```
+Read the [configuration guide](docs/guide/configuration.md), [command
+reference](docs/guide/cli.md), or [snapshot schema](docs/design/snapshot-schema.md)
+for details. The [Python](docs/ir/python-extraction.md) and
+[R](docs/ir/r-extraction.md) contracts describe the static extraction surface.
 
-Inspect the command-line interface from the checkout with:
+## Development
+
+Use `devenv shell` for the pinned Rust, Python, R, Node, and browser tools. Run
+`npm ci --ignore-scripts` after checkout or a change to `package-lock.json`.
+The [contributor instructions](AGENTS.md) give the code map and verification
+commands. The [browser workflow](docs/development/browser.md) covers `site-dev`,
+`site-test`, and `site-capture`.
+
+To inspect the CLI from this checkout:
 
 ```console
 cargo run --locked -- --help
-cargo run --locked -- build --help
-cargo run --locked -- check --help
-cargo run --locked -- serve --help
 ```
-
-Pre-commit hooks installed by devenv run rustfmt and all-target, all-feature
-Clippy with warnings denied. Intentional CLI golden-file changes can be accepted
-with `SNAPSHOTS=overwrite cargo test --test cli` after reviewing the diff.
-
-For browser development, run `npm ci --ignore-scripts` in the devenv shell, then
-use `site-dev` to preview the monorepo example, `site-test` to run browser tests,
-or `site-capture` to test and save desktop and mobile screenshots. The
-[browser workflow](docs/development/browser.md) covers agent inspection with
-`playwright-cli`, failure traces, and reproducible browser dependencies.
 
 ## Releases
 

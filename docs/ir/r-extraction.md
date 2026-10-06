@@ -3,8 +3,8 @@
 `extractors::r::extract_target(repository, package, target)` reads a resolved R
 package directory and returns a portable `RExtraction`. It never installs,
 attaches, loads, or sources a package, starts R, or evaluates documentation.
-CLI pipeline integration, workspace merging, and rendering remain later
-milestones.
+Workspace assembly, reference resolution, and CLI commands consume this fragment;
+their boundaries are described in the [implementation map](../design/execution.md).
 
 The result contains validated `DESCRIPTION` metadata, canonical items with
 independent signatures and documentation, ordered diagnostics, and extraction

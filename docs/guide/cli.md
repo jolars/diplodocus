@@ -1,54 +1,37 @@
 # Commands
 
-The commands share validation and publication stages:
-
 | Command | Operation |
 |:--------|:----------|
-| `check` | Load, parse, extract, and validate without executing cells or publishing output. |
-| `extract` | Run configured execution and publish a portable SQLite snapshot. |
+| `check` | Validate declared sources without executing cells or publishing output. |
+| `extract` | Extract sources, run authorized cells, and publish a portable SQLite snapshot. |
 | `generate` | Render a completed snapshot without source checkouts or language runtimes. |
-| `build` | Extract a snapshot, then generate a static site from it. |
-| `serve` | Build, serve over HTTP, watch declared inputs, and rebuild safely. |
+| `build` | Extract a snapshot, then generate a static site. |
+| `serve` | Build, serve over HTTP, and rebuild when declared inputs change. |
 
-`check`, `extract`, `build`, and `serve` accept `--config`, defaulting to
-`./diplodocus.toml`. Extraction publishes `.diplodocus/documentation.sqlite`
-beside the configuration file. `extract --output PATH` overrides that location.
+`check`, `extract`, `build`, and `serve` use `./diplodocus.toml` unless given
+`--config PATH`. Extraction writes `.diplodocus/documentation.sqlite` beside
+that configuration; `extract --output PATH` changes the snapshot destination.
+`generate` requires `--input PATH`. `generate`, `build`, and `serve` write to
+`./site` unless given `--output PATH`. Relative command-line paths resolve from
+the working directory.
 
-`generate` requires `--input PATH`. `generate`, `build`, and `serve` accept
-`--output`, defaulting to `./site`. `serve` also accepts `--host` and `--port`,
-defaulting to `127.0.0.1` and `8000`. Relative command-line paths resolve from
-the working directory. Output destinations must not replace declared inputs;
-site destinations must be empty or contain an earlier Diplodocus site.
+For example, extract once and generate from the completed snapshot:
 
-Pass `--live-reload` to `serve` to refresh open browser pages after a successful
-rebuild. The refresh script appears only in preview responses; generated site
-files stay unchanged. A failed rebuild leaves the page open at the last
-successful version.
-
-```text
+```console
 diplodocus extract --output documentation.sqlite
 diplodocus generate --input documentation.sqlite --output site
 ```
 
-A copied snapshot contains the structured documentation, provenance, and local
-asset bytes required for generation. Generation validates stored records and
-output against the active policies before publishing.
+The snapshot includes structured documentation, provenance, and local assets.
+Generation validates its records and output before publication. A copied
+snapshot can be generated without the original source files or language
+runtimes.
 
-Warnings remain visible and permit a successful exit. Errors cause a nonzero
-exit status. Failed builds do not replace a successful output tree. During
-preview, a failed rebuild prints its diagnostics while serving the last
-successful site. Correcting the input allows the next rebuild to succeed.
+`serve` listens on `127.0.0.1:8000` by default. Use `--host` and `--port` to
+change the address, and `--live-reload` to refresh open pages after a successful
+rebuild. A failed rebuild prints diagnostics and keeps serving the last
+successful site. Warnings permit a successful exit; errors cause a nonzero exit
+status. Output destinations cannot replace declared inputs.
 
-The watcher observes configuration, API and metadata sources, authored pages,
-assets, and declared environment inputs. Output, execution-cache, and unrelated
-file changes do not trigger rebuilds. The watcher polls content fingerprints and debounces edits for 200 milliseconds.
-
-Execution has a 30-second startup limit, a 60-second cell limit, and a 5-second
-limit for synchronizing a reply with idle status. Output activity does not
-extend these deadlines. Interruption, shutdown, termination, and forced reaping
-each have a 5-second limit. The library accepts explicit `ExecutionDeadlines`
-for callers that need different limits. During preview, Ctrl-C or SIGTERM
-requests cancellation and waits for supervised kernel cleanup.
-
-See the [quick start](quick-start.md) for complete acceptance and project-site
-commands.
+Start with the [small example](quick-start.md) or see its
+[workspace configuration](configuration.md).

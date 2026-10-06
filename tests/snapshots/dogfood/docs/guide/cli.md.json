@@ -2,7 +2,7 @@
   "document": {
     "span": {
       "start": 0,
-      "end": 2857
+      "end": 1796
     },
     "frontmatter": null,
     "blocks": [
@@ -30,30 +30,6 @@
         }
       },
       {
-        "type": "paragraph",
-        "inlines": [
-          {
-            "type": "text",
-            "value": "The commands share validation and publication stages:",
-            "span": {
-              "start": 12,
-              "end": 65
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 65,
-              "end": 66
-            }
-          }
-        ],
-        "span": {
-          "start": 12,
-          "end": 66
-        }
-      },
-      {
         "type": "table",
         "caption": [],
         "alignments": [
@@ -73,20 +49,20 @@
                         "type": "text",
                         "value": "Command",
                         "span": {
-                          "start": 69,
-                          "end": 76
+                          "start": 14,
+                          "end": 21
                         }
                       }
                     ],
                     "span": {
-                      "start": 69,
-                      "end": 76
+                      "start": 14,
+                      "end": 21
                     }
                   }
                 ],
                 "span": {
-                  "start": 69,
-                  "end": 76
+                  "start": 14,
+                  "end": 21
                 }
               },
               {
@@ -98,26 +74,26 @@
                         "type": "text",
                         "value": "Operation",
                         "span": {
-                          "start": 79,
-                          "end": 88
+                          "start": 24,
+                          "end": 33
                         }
                       }
                     ],
                     "span": {
-                      "start": 79,
-                      "end": 88
+                      "start": 24,
+                      "end": 33
                     }
                   }
                 ],
                 "span": {
-                  "start": 79,
-                  "end": 88
+                  "start": 24,
+                  "end": 33
                 }
               }
             ],
             "span": {
-              "start": 67,
-              "end": 91
+              "start": 12,
+              "end": 36
             }
           },
           {
@@ -132,20 +108,20 @@
                         "type": "code",
                         "value": "check",
                         "span": {
-                          "start": 117,
-                          "end": 124
+                          "start": 62,
+                          "end": 69
                         }
                       }
                     ],
                     "span": {
-                      "start": 117,
-                      "end": 124
+                      "start": 62,
+                      "end": 69
                     }
                   }
                 ],
                 "span": {
-                  "start": 117,
-                  "end": 124
+                  "start": 62,
+                  "end": 69
                 }
               },
               {
@@ -155,28 +131,28 @@
                     "inlines": [
                       {
                         "type": "text",
-                        "value": "Load, parse, extract, and validate without executing cells or publishing output.",
+                        "value": "Validate declared sources without executing cells or publishing output.",
                         "span": {
-                          "start": 127,
-                          "end": 207
+                          "start": 72,
+                          "end": 143
                         }
                       }
                     ],
                     "span": {
-                      "start": 127,
-                      "end": 207
+                      "start": 72,
+                      "end": 143
                     }
                   }
                 ],
                 "span": {
-                  "start": 127,
-                  "end": 207
+                  "start": 72,
+                  "end": 143
                 }
               }
             ],
             "span": {
-              "start": 115,
-              "end": 210
+              "start": 60,
+              "end": 146
             }
           },
           {
@@ -191,20 +167,20 @@
                         "type": "code",
                         "value": "extract",
                         "span": {
-                          "start": 212,
-                          "end": 221
+                          "start": 148,
+                          "end": 157
                         }
                       }
                     ],
                     "span": {
-                      "start": 212,
-                      "end": 221
+                      "start": 148,
+                      "end": 157
                     }
                   }
                 ],
                 "span": {
-                  "start": 212,
-                  "end": 221
+                  "start": 148,
+                  "end": 157
                 }
               },
               {
@@ -214,28 +190,28 @@
                     "inlines": [
                       {
                         "type": "text",
-                        "value": "Run configured execution and publish a portable SQLite snapshot.",
+                        "value": "Extract sources, run authorized cells, and publish a portable SQLite snapshot.",
                         "span": {
-                          "start": 224,
-                          "end": 288
+                          "start": 160,
+                          "end": 238
                         }
                       }
                     ],
                     "span": {
-                      "start": 224,
-                      "end": 288
+                      "start": 160,
+                      "end": 238
                     }
                   }
                 ],
                 "span": {
-                  "start": 224,
-                  "end": 288
+                  "start": 160,
+                  "end": 238
                 }
               }
             ],
             "span": {
-              "start": 210,
-              "end": 291
+              "start": 146,
+              "end": 241
             }
           },
           {
@@ -250,20 +226,20 @@
                         "type": "code",
                         "value": "generate",
                         "span": {
-                          "start": 293,
-                          "end": 303
+                          "start": 243,
+                          "end": 253
                         }
                       }
                     ],
                     "span": {
-                      "start": 293,
-                      "end": 303
+                      "start": 243,
+                      "end": 253
                     }
                   }
                 ],
                 "span": {
-                  "start": 293,
-                  "end": 303
+                  "start": 243,
+                  "end": 253
                 }
               },
               {
@@ -275,26 +251,26 @@
                         "type": "text",
                         "value": "Render a completed snapshot without source checkouts or language runtimes.",
                         "span": {
-                          "start": 306,
-                          "end": 380
+                          "start": 256,
+                          "end": 330
                         }
                       }
                     ],
                     "span": {
-                      "start": 306,
-                      "end": 380
+                      "start": 256,
+                      "end": 330
                     }
                   }
                 ],
                 "span": {
-                  "start": 306,
-                  "end": 380
+                  "start": 256,
+                  "end": 330
                 }
               }
             ],
             "span": {
-              "start": 291,
-              "end": 383
+              "start": 241,
+              "end": 333
             }
           },
           {
@@ -309,20 +285,20 @@
                         "type": "code",
                         "value": "build",
                         "span": {
-                          "start": 385,
-                          "end": 392
+                          "start": 335,
+                          "end": 342
                         }
                       }
                     ],
                     "span": {
-                      "start": 385,
-                      "end": 392
+                      "start": 335,
+                      "end": 342
                     }
                   }
                 ],
                 "span": {
-                  "start": 385,
-                  "end": 392
+                  "start": 335,
+                  "end": 342
                 }
               },
               {
@@ -332,28 +308,28 @@
                     "inlines": [
                       {
                         "type": "text",
-                        "value": "Extract a snapshot, then generate a static site from it.",
+                        "value": "Extract a snapshot, then generate a static site.",
                         "span": {
-                          "start": 395,
-                          "end": 451
+                          "start": 345,
+                          "end": 393
                         }
                       }
                     ],
                     "span": {
-                      "start": 395,
-                      "end": 451
+                      "start": 345,
+                      "end": 393
                     }
                   }
                 ],
                 "span": {
-                  "start": 395,
-                  "end": 451
+                  "start": 345,
+                  "end": 393
                 }
               }
             ],
             "span": {
-              "start": 383,
-              "end": 454
+              "start": 333,
+              "end": 396
             }
           },
           {
@@ -368,20 +344,20 @@
                         "type": "code",
                         "value": "serve",
                         "span": {
-                          "start": 456,
-                          "end": 463
+                          "start": 398,
+                          "end": 405
                         }
                       }
                     ],
                     "span": {
-                      "start": 456,
-                      "end": 463
+                      "start": 398,
+                      "end": 405
                     }
                   }
                 ],
                 "span": {
-                  "start": 456,
-                  "end": 463
+                  "start": 398,
+                  "end": 405
                 }
               },
               {
@@ -391,34 +367,34 @@
                     "inlines": [
                       {
                         "type": "text",
-                        "value": "Build, serve over HTTP, watch declared inputs, and rebuild safely.",
+                        "value": "Build, serve over HTTP, and rebuild when declared inputs change.",
                         "span": {
-                          "start": 466,
-                          "end": 532
+                          "start": 408,
+                          "end": 472
                         }
                       }
                     ],
                     "span": {
-                      "start": 466,
-                      "end": 532
+                      "start": 408,
+                      "end": 472
                     }
                   }
                 ],
                 "span": {
-                  "start": 466,
-                  "end": 532
+                  "start": 408,
+                  "end": 472
                 }
               }
             ],
             "span": {
-              "start": 454,
-              "end": 535
+              "start": 396,
+              "end": 475
             }
           }
         ],
         "span": {
-          "start": 67,
-          "end": 535
+          "start": 12,
+          "end": 475
         }
       },
       {
@@ -428,415 +404,304 @@
             "type": "code",
             "value": "check",
             "span": {
-              "start": 536,
-              "end": 543
+              "start": 476,
+              "end": 483
             }
           },
           {
             "type": "text",
             "value": ", ",
             "span": {
-              "start": 543,
-              "end": 545
+              "start": 483,
+              "end": 485
             }
           },
           {
             "type": "code",
             "value": "extract",
             "span": {
-              "start": 545,
-              "end": 554
+              "start": 485,
+              "end": 494
             }
           },
           {
             "type": "text",
             "value": ", ",
             "span": {
-              "start": 554,
-              "end": 556
+              "start": 494,
+              "end": 496
             }
           },
           {
             "type": "code",
             "value": "build",
             "span": {
-              "start": 556,
-              "end": 563
+              "start": 496,
+              "end": 503
             }
           },
           {
             "type": "text",
             "value": ", and ",
             "span": {
-              "start": 563,
-              "end": 569
+              "start": 503,
+              "end": 509
             }
           },
           {
             "type": "code",
             "value": "serve",
             "span": {
-              "start": 569,
-              "end": 576
+              "start": 509,
+              "end": 516
             }
           },
           {
             "type": "text",
-            "value": " accept ",
+            "value": " use ",
             "span": {
-              "start": 576,
-              "end": 584
-            }
-          },
-          {
-            "type": "code",
-            "value": "--config",
-            "span": {
-              "start": 584,
-              "end": 594
-            }
-          },
-          {
-            "type": "text",
-            "value": ", defaulting to",
-            "span": {
-              "start": 594,
-              "end": 609
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 609,
-              "end": 610
+              "start": 516,
+              "end": 521
             }
           },
           {
             "type": "code",
             "value": "./diplodocus.toml",
             "span": {
-              "start": 610,
-              "end": 629
+              "start": 521,
+              "end": 540
             }
           },
           {
             "type": "text",
-            "value": ". Extraction publishes ",
+            "value": " unless given",
             "span": {
-              "start": 629,
-              "end": 652
+              "start": 540,
+              "end": 553
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 553,
+              "end": 554
+            }
+          },
+          {
+            "type": "code",
+            "value": "--config PATH",
+            "span": {
+              "start": 554,
+              "end": 569
+            }
+          },
+          {
+            "type": "text",
+            "value": ". Extraction writes ",
+            "span": {
+              "start": 569,
+              "end": 589
             }
           },
           {
             "type": "code",
             "value": ".diplodocus/documentation.sqlite",
             "span": {
-              "start": 652,
-              "end": 686
+              "start": 589,
+              "end": 623
+            }
+          },
+          {
+            "type": "text",
+            "value": " beside",
+            "span": {
+              "start": 623,
+              "end": 630
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 686,
-              "end": 687
+              "start": 630,
+              "end": 631
             }
           },
           {
             "type": "text",
-            "value": "beside the configuration file. ",
+            "value": "that configuration; ",
             "span": {
-              "start": 687,
-              "end": 718
+              "start": 631,
+              "end": 651
             }
           },
           {
             "type": "code",
             "value": "extract --output PATH",
             "span": {
-              "start": 718,
-              "end": 741
+              "start": 651,
+              "end": 674
             }
           },
           {
             "type": "text",
-            "value": " overrides that location.",
+            "value": " changes the snapshot destination.",
             "span": {
-              "start": 741,
-              "end": 766
+              "start": 674,
+              "end": 708
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 766,
-              "end": 767
+              "start": 708,
+              "end": 709
             }
-          }
-        ],
-        "span": {
-          "start": 536,
-          "end": 767
-        }
-      },
-      {
-        "type": "paragraph",
-        "inlines": [
+          },
           {
             "type": "code",
             "value": "generate",
             "span": {
-              "start": 768,
-              "end": 778
+              "start": 709,
+              "end": 719
             }
           },
           {
             "type": "text",
             "value": " requires ",
             "span": {
-              "start": 778,
-              "end": 788
+              "start": 719,
+              "end": 729
             }
           },
           {
             "type": "code",
             "value": "--input PATH",
             "span": {
-              "start": 788,
-              "end": 802
+              "start": 729,
+              "end": 743
             }
           },
           {
             "type": "text",
             "value": ". ",
             "span": {
-              "start": 802,
-              "end": 804
+              "start": 743,
+              "end": 745
             }
           },
           {
             "type": "code",
             "value": "generate",
             "span": {
-              "start": 804,
-              "end": 814
+              "start": 745,
+              "end": 755
             }
           },
           {
             "type": "text",
             "value": ", ",
             "span": {
-              "start": 814,
-              "end": 816
+              "start": 755,
+              "end": 757
             }
           },
           {
             "type": "code",
             "value": "build",
             "span": {
-              "start": 816,
-              "end": 823
+              "start": 757,
+              "end": 764
             }
           },
           {
             "type": "text",
             "value": ", and ",
             "span": {
-              "start": 823,
-              "end": 829
+              "start": 764,
+              "end": 770
             }
           },
           {
             "type": "code",
             "value": "serve",
             "span": {
-              "start": 829,
-              "end": 836
+              "start": 770,
+              "end": 777
             }
           },
           {
             "type": "text",
-            "value": " accept",
+            "value": " write to",
             "span": {
-              "start": 836,
-              "end": 843
+              "start": 777,
+              "end": 786
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 843,
-              "end": 844
-            }
-          },
-          {
-            "type": "code",
-            "value": "--output",
-            "span": {
-              "start": 844,
-              "end": 854
-            }
-          },
-          {
-            "type": "text",
-            "value": ", defaulting to ",
-            "span": {
-              "start": 854,
-              "end": 870
+              "start": 786,
+              "end": 787
             }
           },
           {
             "type": "code",
             "value": "./site",
             "span": {
-              "start": 870,
-              "end": 878
+              "start": 787,
+              "end": 795
             }
           },
           {
             "type": "text",
-            "value": ". ",
+            "value": " unless given ",
             "span": {
-              "start": 878,
-              "end": 880
+              "start": 795,
+              "end": 809
             }
           },
           {
             "type": "code",
-            "value": "serve",
+            "value": "--output PATH",
             "span": {
-              "start": 880,
-              "end": 887
-            }
-          },
-          {
-            "type": "text",
-            "value": " also accepts ",
-            "span": {
-              "start": 887,
-              "end": 901
-            }
-          },
-          {
-            "type": "code",
-            "value": "--host",
-            "span": {
-              "start": 901,
-              "end": 909
-            }
-          },
-          {
-            "type": "text",
-            "value": " and ",
-            "span": {
-              "start": 909,
-              "end": 914
-            }
-          },
-          {
-            "type": "code",
-            "value": "--port",
-            "span": {
-              "start": 914,
-              "end": 922
-            }
-          },
-          {
-            "type": "text",
-            "value": ",",
-            "span": {
-              "start": 922,
-              "end": 923
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 923,
-              "end": 924
-            }
-          },
-          {
-            "type": "text",
-            "value": "defaulting to ",
-            "span": {
-              "start": 924,
-              "end": 938
-            }
-          },
-          {
-            "type": "code",
-            "value": "127.0.0.1",
-            "span": {
-              "start": 938,
-              "end": 949
-            }
-          },
-          {
-            "type": "text",
-            "value": " and ",
-            "span": {
-              "start": 949,
-              "end": 954
-            }
-          },
-          {
-            "type": "code",
-            "value": "8000",
-            "span": {
-              "start": 954,
-              "end": 960
+              "start": 809,
+              "end": 824
             }
           },
           {
             "type": "text",
             "value": ". Relative command-line paths resolve from",
             "span": {
-              "start": 960,
-              "end": 1002
+              "start": 824,
+              "end": 866
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1002,
-              "end": 1003
+              "start": 866,
+              "end": 867
             }
           },
           {
             "type": "text",
-            "value": "the working directory. Output destinations must not replace declared inputs;",
+            "value": "the working directory.",
             "span": {
-              "start": 1003,
-              "end": 1079
+              "start": 867,
+              "end": 889
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1079,
-              "end": 1080
-            }
-          },
-          {
-            "type": "text",
-            "value": "site destinations must be empty or contain an earlier Diplodocus site.",
-            "span": {
-              "start": 1080,
-              "end": 1150
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 1150,
-              "end": 1151
+              "start": 889,
+              "end": 890
             }
           }
         ],
         "span": {
-          "start": 768,
-          "end": 1151
+          "start": 476,
+          "end": 890
         }
       },
       {
@@ -844,56 +709,102 @@
         "inlines": [
           {
             "type": "text",
-            "value": "Pass ",
+            "value": "For example, extract once and generate from the completed snapshot:",
             "span": {
-              "start": 1152,
-              "end": 1157
-            }
-          },
-          {
-            "type": "code",
-            "value": "--live-reload",
-            "span": {
-              "start": 1157,
-              "end": 1172
-            }
-          },
-          {
-            "type": "text",
-            "value": " to ",
-            "span": {
-              "start": 1172,
-              "end": 1176
-            }
-          },
-          {
-            "type": "code",
-            "value": "serve",
-            "span": {
-              "start": 1176,
-              "end": 1183
-            }
-          },
-          {
-            "type": "text",
-            "value": " to refresh open browser pages after a successful",
-            "span": {
-              "start": 1183,
-              "end": 1232
+              "start": 891,
+              "end": 958
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1232,
-              "end": 1233
+              "start": 958,
+              "end": 959
+            }
+          }
+        ],
+        "span": {
+          "start": 891,
+          "end": 959
+        }
+      },
+      {
+        "type": "code-block",
+        "language": "console",
+        "source": "diplodocus extract --output documentation.sqlite\ndiplodocus generate --input documentation.sqlite --output site\n",
+        "source_segments": [
+          {
+            "text": "diplodocus extract --output documentation.sqlite",
+            "span": {
+              "start": 971,
+              "end": 1019
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 1019,
+              "end": 1020
+            }
+          },
+          {
+            "text": "diplodocus generate --input documentation.sqlite --output site",
+            "span": {
+              "start": 1020,
+              "end": 1082
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 1082,
+              "end": 1083
+            }
+          }
+        ],
+        "span": {
+          "start": 960,
+          "end": 1087
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "The snapshot includes structured documentation, provenance, and local assets.",
+            "span": {
+              "start": 1088,
+              "end": 1165
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1165,
+              "end": 1166
             }
           },
           {
             "type": "text",
-            "value": "rebuild. The refresh script appears only in preview responses; generated site",
+            "value": "Generation validates its records and output before publication. A copied",
             "span": {
-              "start": 1233,
+              "start": 1166,
+              "end": 1238
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1238,
+              "end": 1239
+            }
+          },
+          {
+            "type": "text",
+            "value": "snapshot can be generated without the original source files or language",
+            "span": {
+              "start": 1239,
               "end": 1310
             }
           },
@@ -906,361 +817,179 @@
           },
           {
             "type": "text",
-            "value": "files stay unchanged. A failed rebuild leaves the page open at the last",
+            "value": "runtimes.",
             "span": {
               "start": 1311,
-              "end": 1382
+              "end": 1320
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1382,
-              "end": 1383
-            }
-          },
-          {
-            "type": "text",
-            "value": "successful version.",
-            "span": {
-              "start": 1383,
-              "end": 1402
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 1402,
-              "end": 1403
+              "start": 1320,
+              "end": 1321
             }
           }
         ],
         "span": {
-          "start": 1152,
-          "end": 1403
-        }
-      },
-      {
-        "type": "code-block",
-        "language": "text",
-        "source": "diplodocus extract --output documentation.sqlite\ndiplodocus generate --input documentation.sqlite --output site\n",
-        "source_segments": [
-          {
-            "text": "diplodocus extract --output documentation.sqlite",
-            "span": {
-              "start": 1412,
-              "end": 1460
-            }
-          },
-          {
-            "text": "\n",
-            "span": {
-              "start": 1460,
-              "end": 1461
-            }
-          },
-          {
-            "text": "diplodocus generate --input documentation.sqlite --output site",
-            "span": {
-              "start": 1461,
-              "end": 1523
-            }
-          },
-          {
-            "text": "\n",
-            "span": {
-              "start": 1523,
-              "end": 1524
-            }
-          }
-        ],
-        "span": {
-          "start": 1404,
-          "end": 1528
+          "start": 1088,
+          "end": 1321
         }
       },
       {
         "type": "paragraph",
         "inlines": [
           {
-            "type": "text",
-            "value": "A copied snapshot contains the structured documentation, provenance, and local",
+            "type": "code",
+            "value": "serve",
             "span": {
-              "start": 1529,
-              "end": 1607
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 1607,
-              "end": 1608
+              "start": 1322,
+              "end": 1329
             }
           },
           {
             "type": "text",
-            "value": "asset bytes required for generation. Generation validates stored records and",
+            "value": " listens on ",
             "span": {
-              "start": 1608,
-              "end": 1684
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 1684,
-              "end": 1685
-            }
-          },
-          {
-            "type": "text",
-            "value": "output against the active policies before publishing.",
-            "span": {
-              "start": 1685,
-              "end": 1738
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 1738,
-              "end": 1739
-            }
-          }
-        ],
-        "span": {
-          "start": 1529,
-          "end": 1739
-        }
-      },
-      {
-        "type": "paragraph",
-        "inlines": [
-          {
-            "type": "text",
-            "value": "Warnings remain visible and permit a successful exit. Errors cause a nonzero",
-            "span": {
-              "start": 1740,
-              "end": 1816
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 1816,
-              "end": 1817
-            }
-          },
-          {
-            "type": "text",
-            "value": "exit status. Failed builds do not replace a successful output tree. During",
-            "span": {
-              "start": 1817,
-              "end": 1891
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 1891,
-              "end": 1892
-            }
-          },
-          {
-            "type": "text",
-            "value": "preview, a failed rebuild prints its diagnostics while serving the last",
-            "span": {
-              "start": 1892,
-              "end": 1963
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 1963,
-              "end": 1964
-            }
-          },
-          {
-            "type": "text",
-            "value": "successful site. Correcting the input allows the next rebuild to succeed.",
-            "span": {
-              "start": 1964,
-              "end": 2037
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 2037,
-              "end": 2038
-            }
-          }
-        ],
-        "span": {
-          "start": 1740,
-          "end": 2038
-        }
-      },
-      {
-        "type": "paragraph",
-        "inlines": [
-          {
-            "type": "text",
-            "value": "The watcher observes configuration, API and metadata sources, authored pages,",
-            "span": {
-              "start": 2039,
-              "end": 2116
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 2116,
-              "end": 2117
-            }
-          },
-          {
-            "type": "text",
-            "value": "assets, and declared environment inputs. Output, execution-cache, and unrelated",
-            "span": {
-              "start": 2117,
-              "end": 2196
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 2196,
-              "end": 2197
-            }
-          },
-          {
-            "type": "text",
-            "value": "file changes do not trigger rebuilds. The watcher polls content fingerprints and debounces edits for 200 milliseconds.",
-            "span": {
-              "start": 2197,
-              "end": 2315
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 2315,
-              "end": 2316
-            }
-          }
-        ],
-        "span": {
-          "start": 2039,
-          "end": 2316
-        }
-      },
-      {
-        "type": "paragraph",
-        "inlines": [
-          {
-            "type": "text",
-            "value": "Execution has a 30-second startup limit, a 60-second cell limit, and a 5-second",
-            "span": {
-              "start": 2317,
-              "end": 2396
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 2396,
-              "end": 2397
-            }
-          },
-          {
-            "type": "text",
-            "value": "limit for synchronizing a reply with idle status. Output activity does not",
-            "span": {
-              "start": 2397,
-              "end": 2471
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 2471,
-              "end": 2472
-            }
-          },
-          {
-            "type": "text",
-            "value": "extend these deadlines. Interruption, shutdown, termination, and forced reaping",
-            "span": {
-              "start": 2472,
-              "end": 2551
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 2551,
-              "end": 2552
-            }
-          },
-          {
-            "type": "text",
-            "value": "each have a 5-second limit. The library accepts explicit ",
-            "span": {
-              "start": 2552,
-              "end": 2609
+              "start": 1329,
+              "end": 1341
             }
           },
           {
             "type": "code",
-            "value": "ExecutionDeadlines",
+            "value": "127.0.0.1:8000",
             "span": {
-              "start": 2609,
-              "end": 2629
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 2629,
-              "end": 2630
+              "start": 1341,
+              "end": 1357
             }
           },
           {
             "type": "text",
-            "value": "for callers that need different limits. During preview, Ctrl-C or SIGTERM",
+            "value": " by default. Use ",
             "span": {
-              "start": 2630,
-              "end": 2703
+              "start": 1357,
+              "end": 1374
             }
           },
           {
-            "type": "soft-break",
+            "type": "code",
+            "value": "--host",
             "span": {
-              "start": 2703,
-              "end": 2704
+              "start": 1374,
+              "end": 1382
             }
           },
           {
             "type": "text",
-            "value": "requests cancellation and waits for supervised kernel cleanup.",
+            "value": " and ",
             "span": {
-              "start": 2704,
-              "end": 2766
+              "start": 1382,
+              "end": 1387
+            }
+          },
+          {
+            "type": "code",
+            "value": "--port",
+            "span": {
+              "start": 1387,
+              "end": 1395
+            }
+          },
+          {
+            "type": "text",
+            "value": " to",
+            "span": {
+              "start": 1395,
+              "end": 1398
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2766,
-              "end": 2767
+              "start": 1398,
+              "end": 1399
+            }
+          },
+          {
+            "type": "text",
+            "value": "change the address, and ",
+            "span": {
+              "start": 1399,
+              "end": 1423
+            }
+          },
+          {
+            "type": "code",
+            "value": "--live-reload",
+            "span": {
+              "start": 1423,
+              "end": 1438
+            }
+          },
+          {
+            "type": "text",
+            "value": " to refresh open pages after a successful",
+            "span": {
+              "start": 1438,
+              "end": 1479
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1479,
+              "end": 1480
+            }
+          },
+          {
+            "type": "text",
+            "value": "rebuild. A failed rebuild prints diagnostics and keeps serving the last",
+            "span": {
+              "start": 1480,
+              "end": 1551
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1551,
+              "end": 1552
+            }
+          },
+          {
+            "type": "text",
+            "value": "successful site. Warnings permit a successful exit; errors cause a nonzero exit",
+            "span": {
+              "start": 1552,
+              "end": 1631
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1631,
+              "end": 1632
+            }
+          },
+          {
+            "type": "text",
+            "value": "status. Output destinations cannot replace declared inputs.",
+            "span": {
+              "start": 1632,
+              "end": 1691
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1691,
+              "end": 1692
             }
           }
         ],
         "span": {
-          "start": 2317,
-          "end": 2767
+          "start": 1322,
+          "end": 1692
         }
       },
       {
@@ -1268,10 +997,10 @@
         "inlines": [
           {
             "type": "text",
-            "value": "See the ",
+            "value": "Start with the ",
             "span": {
-              "start": 2768,
-              "end": 2776
+              "start": 1693,
+              "end": 1708
             }
           },
           {
@@ -1279,10 +1008,10 @@
             "inlines": [
               {
                 "type": "text",
-                "value": "quick start",
+                "value": "small example",
                 "span": {
-                  "start": 2777,
-                  "end": 2788
+                  "start": 1709,
+                  "end": 1722
                 }
               }
             ],
@@ -1294,44 +1023,68 @@
               "key_values": []
             },
             "span": {
-              "start": 2776,
-              "end": 2805
+              "start": 1708,
+              "end": 1739
             }
           },
           {
             "type": "text",
-            "value": " for complete acceptance and project-site",
+            "value": " or see its",
             "span": {
-              "start": 2805,
-              "end": 2846
+              "start": 1739,
+              "end": 1750
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2846,
-              "end": 2847
+              "start": 1750,
+              "end": 1751
+            }
+          },
+          {
+            "type": "link",
+            "inlines": [
+              {
+                "type": "text",
+                "value": "workspace configuration",
+                "span": {
+                  "start": 1752,
+                  "end": 1775
+                }
+              }
+            ],
+            "target": "configuration.md",
+            "title": null,
+            "attributes": {
+              "identifier": null,
+              "classes": [],
+              "key_values": []
+            },
+            "span": {
+              "start": 1751,
+              "end": 1794
             }
           },
           {
             "type": "text",
-            "value": "commands.",
+            "value": ".",
             "span": {
-              "start": 2847,
-              "end": 2856
+              "start": 1794,
+              "end": 1795
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2856,
-              "end": 2857
+              "start": 1795,
+              "end": 1796
             }
           }
         ],
         "span": {
-          "start": 2768,
-          "end": 2857
+          "start": 1693,
+          "end": 1796
         }
       }
     ]

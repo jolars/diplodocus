@@ -10,10 +10,9 @@ execution and cross-cell display updates.
 
 This is the Milestone 2 cache decision. It extends the [authored-execution
 contract](authored-execution-contract.md), whose authority, output-safety, and
-cleanup rules apply on hits as well as misses. Milestone 3 will implement the
-serialized types. Milestone 6 now implements storage and restore through the
-public Jupyter engine and executing commands; see the
-[implementation evidence](../design/execution-cache-validation.md).
+cleanup rules apply on hits as well as misses. Milestone 6 implemented storage
+and restore through the public Jupyter engine and executing commands; see the
+[implementation map](../design/execution.md).
 
 Use key schema `page-execution-key-v1`, artifact schema
 `page-execution-artifact-v1`, and canonical encoding `execution-json-v1`.
@@ -66,7 +65,7 @@ as `H("diplodocus/execution-representation-v1", {kind, content})`.
 inputs, the complete canonical UTF-8 string, and the expected page key. Its
 component versions are examples, not additional dependency selections. The
 included encoding vector exercises key ordering, Unicode, control characters,
-nulls, and arrays. These are reference data for the later Rust implementation.
+nulls, and arrays. These are reference data for the Rust implementation.
 
 ## Key input
 
@@ -232,8 +231,8 @@ manifest controls later publication. `manifest.json` contains exactly
 authored executions can produce different bytes for the same inputs.
 
 `result` has exactly `{ir_schema, provenance, cells, diagnostics, assets}`.
-`ir_schema` is `"execution-result-v1"`, a Diplodocus-owned schema to implement
-in Milestone 3. It serializes the complete logical fields in the execution
+`ir_schema` is `"execution-result-v1"`, a Diplodocus-owned schema. It serializes
+the complete logical fields in the execution
 contract under these constraints:
 
   | Field         | Stored form and invariants                                                                                                                                                                                                                                                                                                                                                                                                                            |
@@ -276,8 +275,8 @@ Portable IR contains no floating-point numbers or arbitrary metadata objects;
 authored literals stay strings. Fragment-local ranges point to the producing
 cell and fragment, without synthetic files. Store no resolved site URLs,
 rendered pages, raw source/staging paths, or trusted HTML constructor state.
-Exact Rust enum definitions and the shared fragment/diagnostic wire types belong
-to Milestone 3; changes incompatible with these invariants require a new schema.
+Exact Rust enum definitions and the shared fragment/diagnostic wire types live in
+the source. Changes incompatible with these invariants require a new schema.
 
 ### Validation and restoration
 
@@ -339,7 +338,7 @@ only when the whole build succeeds, and `serve` retains the last successful site
 after failure. Cache origin and cache-storage warnings belong to build
 provenance/diagnostics; they must not make rendered page bytes differ on a hit.
 
-## Alternatives and implementation gates
+## Alternatives
 
 Reject per-cell caches because later cells depend on the same session and may
 update earlier outputs. Reject source-only or kernelspec-only keys because they
@@ -354,26 +353,3 @@ dumps as artifacts: they lose typed provenance, bake in site state, or expose
 runtime-dependent and unsafe representations. Use inspectable canonical JSON and
 separately hashed assets. Do not cache failures or reconstruct kernel memory;
 cached output cannot reproduce filesystem or network side effects.
-
-Before marking the Milestone 6 cache implemented, write failing tests for:
-
-- The reference vectors, object-order independence, configuration-default
-  normalization, input-list reordering, and checkout relocation; source bytes,
-  ordered cells/lists, paths/IDs, every option, executable/spec/env change,
-  runtime/component/policy/schema version, platform, and deadlines must each
-  exercise key invalidation.
-- Authority bypasses with zero discovery, startup, cache access, or asset
-  writes; startup/cleanup on hits with zero submitted cells; runtime upgrades
-  under the same spec; complete stateful Python and R result restoration.
-- Updates to earlier cells, clearing, allowed errors, skipped and hidden cells,
-  warning replay, and safe MIME alternatives/figures surviving source-asset
-  deletion; site-context changes resolving links again without re-execution.
-- Truncated or noncanonical manifests, wrong hashes/versions, forged ordinals,
-  missing/extra/corrupt assets, symlink escapes, unsafe HTML/SVG/Markdown, and
-  rejected candidates followed by successful or failed fresh execution.
-- Changed inputs during execution, cancellation and every cleanup failure,
-  interrupted staging writes, concurrent readers/writers, storage failure,
-  nondeterministic same-key results, and preservation of the last good site.
-
-The encoding vectors and this contract define expected behavior; they are not
-evidence that the future cache or its safety boundaries have been implemented.

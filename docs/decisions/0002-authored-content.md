@@ -32,8 +32,8 @@ The implemented [document adapter](../../src/documents.rs) and its
 [tests](../../tests/documents.rs) exercise this typed surface. The
 [authored-execution contract](../spikes/authored-execution-contract.md) fixes
 the supported metadata/options, precedence, authority diagnostics, and
-presentation behavior. Its remaining policy enforcement belongs to the later
-configuration and execution milestones.
+presentation behavior. The [implementation map](../design/execution.md) points
+to the command path and production tests.
 
 ### Execution authority and lifecycle
 
@@ -45,7 +45,7 @@ Diplodocus owns discovery policy, the process, request matching, output
 collection, deadlines, interruption, and cleanup.
 
 Only explicitly configured `mode = "execute"` QMD collections with an engine and
-kernel can discover or start a kernel for `build` or `serve`. Omission means
+kernel can discover or start a kernel for `extract`, `build`, or `serve`. Omission means
 `never`. Document metadata may restrict existing authority but cannot grant it.
 `check` and `never` paths avoid discovery, runtime probes, execution cache
 access, and execution-asset writes. API examples remain display-only.
@@ -113,19 +113,16 @@ benchmark was performed for this decision.
 
 ## Evidence and consequences
 
-[Document goldens](../spikes/golden-fixtures.md) preserve the complete parse
-output of all 13 authored acceptance pages, including display-only/safety pages
-and unsupported syntax. The [Jupyter spike](../spikes/jupyter-execution.md)
-records capability selection and the policy work the client crates leave to
-Diplodocus. Its tests preserve deterministic canned Python/R messages, MIME
+[Document goldens](../../tests/snapshots/spikes/authored) preserve the parse
+output of the authored acceptance pages, including display-only/safety pages
+and unsupported syntax. The [Jupyter spike tests](../../tests/jupyter_execution_spike.rs)
+preserve deterministic canned Python/R messages, MIME
 alternatives, display-update relationships, and separately observed real
 Python/R outputs in [execution goldens](../../tests/snapshots/spikes/execution).
 The real snapshots retain kernel-reported versions and successful cell results,
 including language errors, after a verified shutdown.
 
-These observations do not implement MIME selection, sanitization, the page
-cache, or the full failure state machine. Milestones 3 and 6 must enforce the
-contracts with focused failing tests. Keep wire observations as regression
-evidence while production tests assert Diplodocus-owned output types. A parser
+Keep wire observations as regression evidence while production tests assert
+Diplodocus-owned output types and the safety rules in this decision. A parser
 upgrade, new MIME type, or wider QMD compatibility requires an explicit policy
 and fixture update, not an implicit expansion of execution authority.

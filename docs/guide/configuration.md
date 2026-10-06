@@ -1,133 +1,49 @@
 # Workspace configuration
 
-The root `diplodocus.toml` is an authored-only example of the intended MVP
-configuration. The library parses the `project`, `repository`, `package`,
-`content`, `concept`, and `relationship` sections into typed declarations:
+A `diplodocus.toml` file declares the repositories, packages, and authored
+content that belong in one site. Diplodocus does not discover nearby packages
+or documents. Start from the working `examples/monorepo/diplodocus.toml`
+configuration and adapt its paths and names. The root `diplodocus.toml`
+shows an authored documentation site without API packages.
 
-```rust
-let config = diplodocus::configuration::load_configuration("diplodocus.toml")?;
-```
+## Repositories and packages
 
-Use `configuration::parse_configuration` to parse a TOML string. Both entry
-points reject unknown fields, missing required fields, incorrect types, and
-unsupported enum values. They also validate each collection's execution settings
-together. Load errors include the configuration path and the
-underlying read or parse error; TOML errors retain source ranges when available.
-Omitted collections are empty, package kind defaults to `package`, visibility
-defaults to `public`, and execution mode defaults to `never`.
+Each repository path is relative to the configuration directory; it may point
+to a sibling checkout. A package names its repository and gives a path within
+it. Package metadata and extraction targets are relative to the package. Declare
+`targets = []` for a package with no API extraction.
 
-Repositories and packages are documented only when explicitly declared; loading
-a configuration never discovers them from nearby source files. Documentation-only
-workspaces may omit packages. Every declared package requires a `targets` list:
-`targets = []` explicitly declares no API extraction.
+Python extraction reads source and package metadata without importing code. R
+extraction reads source, package metadata, and checked-in Rd files without
+starting R. Their supported inputs and diagnostics are documented in
+`docs/ir/python-extraction.md` and `docs/ir/r-extraction.md`.
 
-Execution requires `format = "qmd"`, `mode = "execute"`, `engine = "jupyter"`,
-and an explicit kernel selector. Kernel selectors contain only ASCII letters,
-digits, `-`, `.`, or `_`; empty names, `.` and `..`, and paths are rejected.
-The `never` mode accepts no engine, kernel, or nonempty environment-input list.
-Omitting the mode never enables execution, even when a kernel is specified.
+## Authored content
 
-Environment inputs must declare individual repository-relative files. Parsing
-rejects empty paths, absolute paths, repository escapes, directory references,
-glob patterns, and duplicate paths after lexical normalization. It preserves
-the declared spelling, including the kernel selector's case, without reading
-inputs or discovering kernels. Programmatically modified collections can repeat
-these checks with `ContentConfiguration::validate_execution`.
+Each `[[content]]` collection names a repository, source directory, mount,
+format, and owner. The `project` owner puts pages in project navigation; a
+package ID puts them under `/packages/<slug>/`. GFM collections read `.md` files.
+QMD collections read `.qmd` files and can include executable cells. Checked-in
+assets can live beside the pages that use them.
 
-Use `documents::parse_collection_document(source, &collection)` to parse an
-authored page and check its execution declarations against its owning collection.
-Invalid collection settings return an error. Document violations appear as
-error-severity entries in `DocumentParse::diagnostics`, which callers must inspect
-before proceeding. `validation::validate_document_execution` checks an already
-parsed document; `documents::parse_authored_document` provides syntax parsing alone.
-Authority validation performs no kernel discovery or execution.
+The monorepo example has one shared
+GFM guide and two statically extracted packages. The root configuration has a
+GFM guide and a QMD example collection.
 
-In a `never` collection, document `execute: true` and execution selectors produce
-one `document-execution-not-authorized` error with related source ranges. Document
-selectors are also rejected in authorized collections as
-`unsupported-qmd-metadata`. Supported restrictions, such as `execute: false`, and
-cell defaults remain in the document without granting collection authority.
-YAML merge keys are rejected in document and `execute` mappings. Malformed or
-duplicate YAML retains its parser error.
+## Execution
 
-Parsing retains declared paths, owners, concept members, and relationship
-endpoints. Resolve filesystem inputs explicitly after parsing:
-
-```rust
-let config_path = std::path::Path::new("diplodocus.toml");
-let config = diplodocus::configuration::load_configuration(config_path)?;
-let paths = diplodocus::paths::resolve_workspace_paths(config_path, &config)?;
-```
-
-The resolver returns canonical absolute paths in declaration order without
-changing the configuration. These runtime records are separate from portable
-configuration and IR. It checks declared inputs without discovering sources,
-reading their contents, or starting kernels. Resolution errors identify the
-configuration, declaration, field, and failed path.
-
-Identity and relationship validation, general metadata and cell-option
-validation, and command integration remain under development. Neither parsing
-nor path resolution authorizes execution.
-
-## Presentation defaults
-
-An optional table records site metadata for generation:
+Execution defaults to `never`. To allow it, set the collection to QMD and
+declare a Jupyter engine and kernel explicitly:
 
 ```toml
-[presentation]
-title = "Foo documentation"
-description = "Guides and API documentation for Foo."
-```
+[[content]]
+id = "examples"
+owner = "project"
+repository = "diplodocus"
+path = "docs/examples"
+mount = "examples"
+format = "qmd"
 
-The title controls site branding, the page-title suffix, and the generated
-project overview title. It defaults to `project.name`. The description supplies
-HTML description metadata and is omitted by default. Both values are plain text
-rendered with HTML escaping. They travel with the snapshot, so generation does
-not need the original configuration. Diplodocus uses its built-in theme.
-
-## Repositories and ownership
-
-Each path has an explicit base and boundary:
-
-| Declared path | Base and containment boundary |
-|:--------------|:------------------------------|
-| Repository | Configuration directory; sibling checkouts are allowed |
-| Package | Named repository |
-| Metadata or extraction target | Owning package |
-| Content or declared environment input | Named repository |
-
-The resolver uses the supplied configuration path's directory as the repository
-base. Relative configuration paths are interpreted from the working directory.
-A symlinked configuration file keeps the supplied location as its base. Content
-ownership does not change path resolution. The resolver does not reread the
-configuration file. Repository, package, and content roots must be
-directories; metadata and environment inputs must be regular files; extraction
-targets may be files or directories. Missing paths and incorrect types fail
-resolution.
-
-Paths inside repositories and packages must be relative. The resolver checks the
-canonical result of each declared path prefix and rejects any prefix outside
-the applicable boundary, even if later components would return inside. Symlinks
-whose canonical targets stay within the boundary are allowed.
-An unknown or ambiguous repository reference also fails resolution.
-
-The `project` owner places content in project navigation. A package ID gives a
-collection package ownership and that package's reference-resolution context.
-Package documentation lives under `/packages/<slug>/`.
-
-## The project site
-
-This configuration declares one repository and two project-owned collections:
-
-| Collection | Source | Mount | Profile | Execution |
-|:-----------|:-------|:------|:--------|:----------|
-| Guide | `docs/guide` | `guide` | GFM | Never |
-| Examples | `docs/examples` | `examples` | QMD | Python |
-
-The guide's omitted execution settings default to `never`. The examples
-collection explicitly declares:
-
-```toml
 [content.execution]
 mode = "execute"
 engine = "jupyter"
@@ -135,20 +51,24 @@ kernel = "python3"
 declared_environment_inputs = ["devenv.lock"]
 ```
 
-The declared lockfile contributes to provenance and execution-cache keys.
-Diplodocus does not interpret it as an installation instruction. One page uses
-one kernel session, with its cells run in source order.
+Declared environment inputs are individual files relative to the repository.
+They contribute to provenance and execution cache keys; Diplodocus does not
+install or interpret them. Document metadata can restrict execution but cannot
+enable it when the collection forbids it. `check` never runs cells. `extract`,
+`build`, and `serve` may run authorized cells with your user permissions.
 
-## Profiles and assets
+## Presentation
 
-GFM collections discover `.md` files. QMD collections discover `.qmd` files and
-support executable fences, hashpipe options, and callouts. Unsupported syntax
-produces a visible diagnostic. Raw authored HTML is escaped or represented by
-an unsupported node.
+An optional table controls the site name and HTML description:
 
-Keep checked-in assets beside their owning content. Generated figures become
-local content-addressed assets, and generated output cannot read assets outside
-its declared boundary. Output directories and execution caches are not inputs
-to watched builds.
+```toml
+[presentation]
+title = "Foo documentation"
+description = "Guides and API documentation for Foo."
+```
 
-Return to the [overview](index.md) or try the [quick start](quick-start.md).
+The title defaults to `project.name`. Diplodocus uses its built-in theme.
+Generated sites and portable snapshots keep the presentation metadata, so
+`generate` does not need the original configuration.
+
+Return to the [quick start](quick-start.md) or see the [commands](cli.md).

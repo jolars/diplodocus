@@ -7,23 +7,13 @@ One page owns one kernel session. Parsing, option validation, output conversion,
 and rendering remain Diplodocus operations, with no Quarto, Pandoc, or Jupyter
 server in the pipeline.
 
-This is the logical contract for the Milestone 2 policy decision. It extends the
-[Jupyter spike](jupyter-execution.md) and the [acceptance
-matrix](../../tests/fixtures/acceptance/MATRIX.md). Milestone 3 will define
-serialized execution types, and Milestone 6 will implement this policy. The
-syntax reader retains declarations and ranges; collection parsing and preparation
-now enforce the QMD option policy. Full runtime policy enforcement remains later work.
-The [page execution-cache contract](page-execution-cache.md)
-specifies key encoding and artifact layout; this document defines the
-information that those artifacts must preserve.
-
-The [Rust execution interface](../ir/authored-execution.md) now defines the
-Milestone 6 engine boundary, supporting records, and an internal Linux kernel
-discovery and session adapter. The internal runner executes prepared cells
-sequentially in a fresh page session. Collection document preparation implements
-option validation and precedence. Shared presentation views now apply visibility
-options and validate subcaption counts against final output slots. Public engine
-dispatch, validated output conversion, and site rendering remain subsequent work.
+This is the logical contract for the Milestone 2 policy decision and the
+[acceptance matrix](../../tests/fixtures/acceptance/MATRIX.md). The
+[page execution-cache contract](page-execution-cache.md) specifies key encoding
+and artifact layout; this document defines the information those artifacts must
+preserve. The [Rust execution interface](../ir/authored-execution.md) describes
+the public engine boundary, and the [implementation map](../design/execution.md)
+points to the current command path and tests.
 
 Policy identifiers are `qmd-mvp-v1`, `mime-mvp-v1`, `html-mvp-v1`, `svg-mvp-v1`,
 and `execution-mvp-v1`. Changing a default, supported value, selection order, or
@@ -32,7 +22,7 @@ dependency versions are recorded separately.
 
 ## Authority and page selection
 
-Only `build` and `serve`, with collection `format = "qmd"` and an explicit
+Only `extract`, `build`, and `serve`, with collection `format = "qmd"` and an explicit
 `[content.execution]` containing `mode = "execute"`, `engine = "jupyter"`, and a
 nonempty kernel name, may discover or launch a kernel. Omitted execution
 configuration means `mode = "never"`. `execute` on a GFM collection is an error.
@@ -460,18 +450,3 @@ tracebacks to repository-relative source references and replace other machine
 paths with a stable external-frame marker; strip terminal control sequences.
 Kernel-authored arbitrary text is not silently rewritten as deterministic
 content. Its reproducibility remains the author's responsibility.
-
-## Evidence and implementation gates
-
-  | Contract area          | Current evidence                                                                                                                                                                                                 | Required enforcement in later milestones                                                                                                                                                       |
-  | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-  | Metadata and options   | [Document tests](../../tests/documents.rs) retain frontmatter, inline/hashpipe precedence, structured `fig-subcap`, spans, and ambiguity; guide and safety fixtures supply concrete inputs.                      | Test every accepted type, default, override, duplicate, unsupported key, page veto, skipped cell, and authority diagnostic before implementing validation.                                     |
-  | MIME and fragments     | [Protocol spike](../../tests/jupyter_execution_spike.rs) retains MIME alternatives and display IDs; generated-Markdown and stdout fixtures define the fragment boundary.                                         | Prove ranking is independent of bundle order, as-is stream grouping, inert generated fences, and fallback/placeholder behavior.                                                                |
-  | HTML and assets        | Unsafe-HTML and boundary-escape fixtures fix the diagnostic codes and severity; both stateful pages supply inert SVG.                                                                                            | Test allowlists, encoded unsafe URLs, SVG active content, hidden outputs, symlink escapes, missing assets, collisions, and sanitizer revalidation on cache hits.                               |
-  | Failures and lifecycle | Protocol tests exercise interruption messages, read cancellation, updates, and shutdown; [real-kernel tests](../../tests/jupyter_real_kernels.rs) verify actual error replies and clean successful process exit. | Test allowed errors followed by another cell, every timeout phase, failed startup, stdin rejection, clear/update ordering, process-tree cleanup, and preservation of the last successful site. |
-  | Toolchain              | The declared devenv and CI probes execute both stateful pages without a server or installation during tests.                                                                                                     | Test exact search precedence, malformed/shadowed specs, language mismatch, unsupported interrupt modes, and absence of discovery on `never` and `check` paths.                                 |
-  | Provenance             | Existing fixtures require portable source attribution and observed kernel versions.                                                                                                                              | Golden-test normalized options and complete provenance, fresh/cache parity, path redaction, and exclusion of transient protocol fields.                                                        |
-
-These are production implementation gates, not claims that the exploratory tests
-already enforce the new policy. Production enforcement remains on the existing
-milestone checklist.

@@ -3,9 +3,9 @@
 `extractors::python::extract_target` consumes one resolved repository, package,
 and extraction target. It returns a schema-versioned `PythonExtraction`
 fragment containing metadata, canonical items, diagnostics, and provenance.
-The caller must reject error-bearing fragments before building a site.
-Workspace merging, reference resolution, routes, and CLI integration remain
-later pipeline stages.
+The caller must reject error-bearing fragments before building a site. Workspace
+assembly, reference resolution, routes, and CLI commands consume this fragment;
+their boundaries are described in the [implementation map](../design/execution.md).
 
 The implementation composes three independently testable passes:
 

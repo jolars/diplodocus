@@ -1,45 +1,37 @@
 # Quick start
 
-Use `check` to validate declared inputs, `build` to generate a site, and `serve`
-to preview changes. All three commands work on the acceptance workspace and the
-project documentation below.
+Build the small R/Python monorepo in `examples/monorepo/`
+first. It has two package APIs, a shared guide, search, and links between the
+Python and R versions of the same function. Its execution mode is `never`, so
+the site does not need Python, R, or Jupyter kernels at build time.
 
-## Prepare the declared environment
-
-Start in the repository root with the declared tools already installed. The
-devenv environment supplies the pinned Rust toolchain, Python with ipykernel,
-R with IRkernel, and the `python3` and `ir` kernelspecs. Provisioning that
-environment may require network access before beginning this workflow.
+From the Diplodocus repository root:
 
 ```console
 devenv shell
-cargo test --locked --all-targets
+task preview
 ```
 
-Once the environment and Cargo dependencies are available, the documentation
-commands and deterministic examples require no network access. Diplodocus
-never installs a dependency or kernel for you.
-
-## Build the acceptance site
-
-The acceptance workspace contains sibling core, Python, and R repositories.
-Its default configuration selects supported inputs. Diagnostic cases are
-separate overlays used only in disposable test workspaces.
+`task preview` builds Diplodocus and serves the example. Open the local URL
+printed in the terminal. Edit a page under `examples/monorepo/docs` to try a
+watched rebuild; successful rebuilds refresh the browser. Stop the server with
+Ctrl-C. The equivalent direct commands are:
 
 ```console
-cargo run --locked -- check --config tests/fixtures/acceptance/workspace/diplodocus.toml
-cargo run --locked -- build --config tests/fixtures/acceptance/workspace/diplodocus.toml --output site/acceptance
-cargo run --locked -- serve --config tests/fixtures/acceptance/workspace/diplodocus.toml --output site/acceptance --host 127.0.0.1 --port 8000
+cargo run --locked -- check --config examples/monorepo/diplodocus.toml
+cargo run --locked -- build --config examples/monorepo/diplodocus.toml --output site/monorepo
+cargo run --locked -- serve --config examples/monorepo/diplodocus.toml --output site/monorepo --port 0 --live-reload
 ```
 
-Open `http://127.0.0.1:8000/`. The site combines the project guide, both package
-APIs, shared concepts, and executable Python and R pages. Stop the preview with
-Ctrl-C before starting the next one.
+`check` validates sources without writing a site. `build` writes the site, and
+`serve` builds and watches it. See the [command reference](cli.md) for the
+snapshot commands and defaults. Diplodocus does not install dependencies or
+kernels for a workspace.
 
-## Build the project site
+## Build Diplodocus's own documentation
 
-The root configuration describes Diplodocus's own authored documentation. It
-has no API extraction targets. From the repository root:
+The root `diplodocus.toml` builds this guide and an executable Python example.
+The devenv shell supplies its `python3` kernel. From the repository root:
 
 ```console
 cargo run --locked -- check
@@ -47,21 +39,22 @@ cargo run --locked -- build
 cargo run --locked -- serve
 ```
 
-The default output directory is `site`, and the default preview address is
-`http://127.0.0.1:8000/`. Edit a page in this guide to exercise watched rebuilds.
-A failed rebuild leaves the previous successful site available and prints
-the new diagnostics.
+The site goes to `site/`, and the preview listens at
+`http://127.0.0.1:8000/` by default. `check` never executes cells; `build`
+and `serve` execute cells only in collections that the configuration authorizes.
 
-## Understand execution authority
+## Exercise the full acceptance workspace
 
-`check` never executes cells. `extract`, `build`, and `serve` execute only QMD collections
-enabled in configuration. GFM fences and collections without execution settings
-remain display content.
+The acceptance workspace at `tests/fixtures/acceptance/workspace/diplodocus.toml`
+uses sibling core, Python, and R repositories, plus executable Python and R
+pages. The devenv shell supplies both kernels. This workspace is for broader
+validation after the small example and project site:
 
-Authorized code runs as arbitrary, unsandboxed code with your user permissions.
-Review source and configuration before building an executing collection.
-Document metadata cannot grant execution permission. The included examples use
-deterministic local inputs and require no documented package to be installed.
+```console
+cargo run --locked -- check --config tests/fixtures/acceptance/workspace/diplodocus.toml
+cargo run --locked -- build --config tests/fixtures/acceptance/workspace/diplodocus.toml --output site/acceptance
+```
 
-See [configuration](configuration.md) for collection settings and
-[commands](cli.md) for defaults and failure behavior.
+Authorized cells run with your user permissions. Review a workspace's sources
+and [execution settings](configuration.md) before building it.
+Document metadata cannot grant execution authority.

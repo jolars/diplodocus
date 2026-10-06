@@ -5,8 +5,8 @@ newline. Together with `assets/sha256/*`, it is one complete synthetic cache
 entry. Copy only those paths into a cache entry; this README, `source.qmd`,
 `fragment.md`, `hidden-fragment.md`, and `cleared-fragment.md` are test inputs outside the entry.
 
-The [integration contract](../../../design/execution-integration-contracts.md)
-defines the exact nested shapes. The original
+The [cache contract](../../page-execution-cache.md#artifact-format) defines the
+artifact invariants; `manifest.json` is the complete canonical shape. The original
 [key vector](../execution-cache-key-v1.json) remains unchanged. This fixture
 reuses its synthetic engine, launch, and runtime observations; component names
 and parser versions describe the representation adapters used here. They are

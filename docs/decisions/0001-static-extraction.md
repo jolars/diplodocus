@@ -51,8 +51,9 @@ roxygen and installed help databases are outside the selected input boundary.
 
 ### Failure and provenance rules
 
-The [failure-mode report](../spikes/static-extraction-failure-modes.md) defines
-native evidence, severity, recovery, and information-loss cases. A malformed
+The [extractor contract](../spikes/static-extractor-contract.md) and the
+[Python](../ir/python-extraction.md) and [R](../ir/r-extraction.md) references
+define diagnostic and provenance behavior. A malformed
 input cannot contribute an authoritative fragment merely because the parser
 recovers some nodes. Independent inputs may still be inspected. Unknown or
 dynamic semantics produce visible diagnostics instead of guessed facts.
@@ -74,9 +75,8 @@ invent exact ranges from a structural path or substring search.
 
 ## Alternatives
 
-The [Python comparison](../spikes/python-static-extraction.md) records the
-candidate investigation and acceptance results. These are decisions for the
-pinned spike, not a claim that every rejected parser lacks useful capabilities.
+These alternatives were evaluated for the pinned parser versions. Their
+rejection does not claim that every parser lacks useful capabilities.
 
   | Alternative                                                                           | Decision and reason                                                                                                                                                                                                                                                    |
   | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -107,14 +107,11 @@ fixture module's declarations, exports, aliases, annotations, documentation, and
 the spike's stub/implementation reconciliation. The [R
 golden](../../tests/snapshots/spikes/r.json) preserves metadata, dependency
 constraints, namespace declarations, maintained functions/formals, and all four
-Rd trees without flattening markup. Their [capture
-guide](../spikes/golden-fixtures.md) distinguishes observations from the future
-portable API schema.
+Rd trees without flattening markup. These snapshots record parser observations;
+the production record shapes live in the extractor references.
 
-This accepts the parsing and semantic boundaries; it does not claim production
-extractors exist. Milestone 3 defines the serialized model and diagnostics, and
-Milestones 4 and 5 implement adapters and semantic passes. Keep the spike
-goldens during that replacement, compare the same facts through the production
-adapter, and retire a spike only after its evidence has equivalent coverage.
-Upstream changes or newly encountered constructs require focused regression
-fixtures and an explicit capability/diagnostic decision, not a runtime fallback.
+The production adapters and semantic passes implement this decision. Keep the
+exploratory goldens as parser evidence and compare the same facts through the
+production adapters. Upstream changes or newly encountered constructs require
+focused regression fixtures and an explicit capability or diagnostic decision,
+not a runtime fallback.

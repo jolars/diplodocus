@@ -7,10 +7,10 @@ publish a deterministic manifest containing their version, static extraction
 mode, capabilities, parser stack, target, and inputs. Facts emitted by either
 extractor carry source provenance separately from this target-level manifest.
 
-This document fixes the logical contract discovered by the extraction spikes.
-Milestone 3 will define its serialized IR shape; Milestones 4 and 5 will
-implement the adapters. The native parser types and diagnostic messages are not
-part of the contract.
+This document fixes the logical extractor contract. The production record shapes
+are described in the [Python](../ir/python-extraction.md) and
+[R](../ir/r-extraction.md) references. Native parser types and diagnostic
+messages are not part of the contract.
 
 ## Common contract
 
@@ -49,7 +49,7 @@ complete, lexicographically sorted set. The two common capabilities are:
 
 | Capability | Guarantee |
 | --- | --- |
-| `diagnostics.unsupported-visible` | Malformed, dynamic, unsupported, or lossy public input is rejected or represented with a visible diagnostic according to the failure-mode contract; it is not silently discarded. |
+| `diagnostics.unsupported-visible` | Malformed, dynamic, unsupported, or lossy public input is rejected or represented with a visible diagnostic; it is not silently discarded. |
 | `provenance.source` | Every emitted fact is traceable to one or more repository-relative inputs, with the strongest source range the adapter can prove. |
 
 Adding, removing, or changing the meaning of an identifier is a compatibility
@@ -97,8 +97,10 @@ to no implicit capabilities:
 
 The manifest does not claim arbitrary decorator evaluation, arbitrary constant
 evaluation, import execution, build-backend metadata, or exact docstring ranges
-when decoded text cannot be mapped back to its literal. Those cases follow
-[`static-extraction-failure-modes.md`](static-extraction-failure-modes.md).
+when decoded text cannot be mapped back to its literal. An error excludes the
+affected input when identity, visibility, or signature is uncertain; a warning
+may preserve a known item with incomplete documentation or provenance. The
+extractor retains raw input and never invents a source range it cannot prove.
 
 ## R extractor
 
@@ -188,11 +190,11 @@ uses them nor can serialize them portably.
 
 ## Evidence
 
-The selected Python stack and its represented surface are recorded in
-[`python-static-extraction.md`](python-static-extraction.md). The executable
-probes in
+The selected Python stack and its represented surface are recorded in the
+[accepted decision](../decisions/0001-static-extraction.md) and the
+[Python extractor reference](../ir/python-extraction.md). The executable probes in
 [`tests/python_extraction_spike.rs`](../../tests/python_extraction_spike.rs) and
 [`tests/r_extraction_spike.rs`](../../tests/r_extraction_spike.rs) verify the
 parser modes, semantic inputs, source ranges, and no-evaluation boundary. The
-diagnostic and provenance fallbacks are fixed in
-[`static-extraction-failure-modes.md`](static-extraction-failure-modes.md).
+production diagnostic and provenance behavior is described in the
+[Python](../ir/python-extraction.md) and [R](../ir/r-extraction.md) references.

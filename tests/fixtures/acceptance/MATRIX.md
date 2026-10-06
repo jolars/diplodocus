@@ -177,18 +177,15 @@ restore identical records, assets, and site files without executing the source.
 The same test target exercises real Python/R timeouts, cancellation, dropped
 execution, disallowed errors, and missing selectors. It checks interruption,
 process reaping, connection cleanup, removal of earlier staged figures, and
-suppression of later cells. The [execution acceptance report](../../../docs/design/execution-acceptance-validation.md)
-maps these cases to the controllable protocol fixture and the related authority,
-cache, and watched-site tests.
+suppression of later cells. The [execution implementation map](../../../docs/design/execution.md)
+points to the protocol fixture and the related authority, cache, and watched-site
+tests.
 
 ## MVP completion coverage
 
 Every criterion in `TODO.md` has a stable ID and maps to concrete scenarios.
-Registry entries are specifications, not evidence that a future command already
-works. Milestone 1 verifies corpus completeness, configuration/input integrity,
-case isolation, and the available parser and kernel probes. Later milestones
-must execute their scenario actions and compare the specified results before
-claiming those product behaviors.
+Registry entries specify expected behavior; the release gate requires scenario
+checks against the current implementation.
 
 | MVP criterion | Required scenarios |
 | --- | --- |

@@ -4,16 +4,10 @@ Use `devenv shell` for the pinned Rust, Python, R, Node, and browser environment
 Run `npm ci --ignore-scripts` after checkout or changes to `package-lock.json`.
 Devenv supplies Chromium; no `playwright install` step is needed.
 
-## Where to work
-
-- `src/extractors/`: static Python and R extraction.
-- `src/documents.rs` and `src/documents/`: authored Markdown and QMD parsing.
-- `src/assembly/`, `src/validation/`, and `src/snapshots/`: workspace assembly,
-  reference resolution, and the portable SQLite snapshot.
-- `src/site.rs` and `src/rendering/`: site routes, HTML, CSS, and search.
-- `src/commands/`: command pipeline and watched preview server.
-- `examples/monorepo/`: small static R/Python site for browser development.
-- `tests/fixtures/acceptance/`: broader extraction and execution corpus.
+The [contributor handoff](docs/development/handoff.md) maps the build pipeline,
+source modules, and focused test targets. The small example is in
+`examples/monorepo/`; the broader extraction and execution corpus is in
+`tests/fixtures/acceptance/`.
 
 ## Verification
 
@@ -33,17 +27,6 @@ fixtures. Keep generated artifacts out of version control.
 
 ## Browser workflow
 
-- `site-dev` builds the current Rust binary and serves the monorepo example at
-  `http://127.0.0.1:8000/`. Stop it with Ctrl-C.
-- Restart `site-dev` after changing Rust. The preview watcher observes
-  documentation inputs, not the renderer's Rust source. Refresh the browser
-  after watched documentation rebuilds.
-- `site-test` runs Playwright against isolated sources and an automatically
-  assigned port. `site-capture` also saves screenshots of representative pages.
-- Both commands print the run's artifact directory under `artifacts/browser/`.
-- `playwright-cli` is the repository wrapper for interactive inspection. Use a
-  named session and close that session when finished. Its official skill is in
-  `.agents/skills/playwright-cli/`.
-
-See [the browser workflow](docs/development/browser.md) for command arguments,
-port and output overrides, and dependency updates.
+See [the browser workflow](docs/development/browser.md) for preview commands,
+test artifacts, interactive inspection, and dependency updates. Restart
+`site-dev` after changing Rust; its watcher observes documentation inputs.
