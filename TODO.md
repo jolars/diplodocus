@@ -87,7 +87,7 @@ site byte for byte with the original site.
   fragments, assets, and search. Confirm that a content-only workspace works
   without API extraction targets and that generated outputs are outside watched
   inputs.
-- [ ] Add the documentation publishing workflow. Build the project site on pull
+- [x] Add the documentation publishing workflow. Build the project site on pull
   requests and `main`; deploy the Diplodocus-generated tree from version tags
   or an explicit manual dispatch to Cloudflare Workers at `diplodocus.cc`.
 
