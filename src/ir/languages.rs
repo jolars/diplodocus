@@ -241,6 +241,8 @@ pub enum PythonDecoratorSemantics {
     ClassMethod,
     /// Supported `dataclasses.dataclass` options.
     Dataclass,
+    /// `contextlib.contextmanager` on a generator callable.
+    ContextManager,
     /// Syntax retained without claiming its runtime semantics.
     Unknown,
 }

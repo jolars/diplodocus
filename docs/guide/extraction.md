@@ -20,6 +20,13 @@ simple `:func:` roles can become cross-references.
 Computed exports, conditional definitions, opaque signatures, unsupported
 decorators, and other dynamic behavior cannot be inferred safely. Diplodocus
 reports the limit instead of executing package code or guessing an API.
+For a public function decorated with `contextlib.contextmanager`, it preserves
+the parameters and renders a generator's `Iterator[T]` or `Generator[T, ...]`
+return annotation as `AbstractContextManager[T]`. An unsupported decorator on
+a public declaration produces a diagnostic, and its callable signature is
+omitted because the wrapper may change it. Unsupported decorators on internal
+declarations do not prevent extraction of the public surface unless those
+declarations are reexported.
 
 ## R
 

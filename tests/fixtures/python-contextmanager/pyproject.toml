@@ -1,0 +1,4 @@
+[project]
+name = "context-fixture"
+version = "1.0"
+requires-python = ">=3.11"

@@ -421,6 +421,33 @@ pub fn reconcile(package: &ParsedPythonPackage) -> PythonSurface {
             python_mut(item).visibility = *visibility;
         }
     }
+    let unsupported_decorators: Vec<_> = builder
+        .items
+        .iter()
+        .filter_map(|(id, item)| {
+            (visible.get(id) == Some(&PythonVisibility::Public)).then_some(item)
+        })
+        .flat_map(|item| {
+            python(item)
+                .decorators
+                .iter()
+                .filter(|decorator| decorator.semantics == PythonDecoratorSemantics::Unknown)
+                .flat_map(|decorator| {
+                    decorator
+                        .sources
+                        .iter()
+                        .map(|evidence| (item.qualified_name.clone(), evidence.source.clone()))
+                })
+        })
+        .collect();
+    for (name, source) in unsupported_decorators {
+        builder.diagnostic(
+            DiagnosticCode::PythonUnsupportedSurface,
+            Severity::Error,
+            format!("Unsupported decorator semantics for {name}."),
+            &source,
+        );
+    }
     builder.items.retain(|id, _| visible.contains_key(id));
     builder.docstrings.retain(|id, _| visible.contains_key(id));
     let retained: BTreeSet<_> = builder.items.keys().cloned().collect();

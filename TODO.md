@@ -95,7 +95,7 @@ devenv shell -- cargo run --locked -- check --config ../datamonger/documentation
 - [ ] Add minimal, maintained regression fixtures for the failures below before
   changing the extractors. Tests must use temporary source copies and must not
   depend on the sibling checkout or import or load Datamonger.
-- [ ] Investigate Python `python-unsupported-surface` errors for
+- [x] Investigate Python `python-unsupported-surface` errors for
   `@contextmanager` in `_api.py` and `_cache.py`, including private helpers.
   Define how unsupported internal declarations affect extraction of the
   public surface, and handle supported context-manager patterns statically

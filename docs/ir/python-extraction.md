@@ -47,10 +47,16 @@ have individually addressable signature-based identities. The
 
 The supported surface includes functions, classes, methods, constructors,
 properties, constants, fields, explicit type aliases, and the supported
-overload, property, static/class method, and dataclass decorators. Signatures
-retain parameters, calling conventions, annotations, defaults, returns, and
-async state. Unsupported decorators, conditional declarations, generic type
-parameters, and opaque signature expressions produce diagnostics.
+overload, property, static/class method, dataclass, and
+`contextlib.contextmanager` decorators. Signatures retain parameters, calling
+conventions, annotations, defaults, returns, and async state. A supported
+context manager maps a generator's `Iterator[T]` or `Generator[T, ...]` return
+to `AbstractContextManager[T]`. An unfamiliar generator return annotation
+becomes an unparameterized context manager. Unknown decorators on public
+declarations produce diagnostics and leave callable signatures unspecified;
+unknown decorators on internal declarations do not fail the public surface
+unless those declarations are reexported. Conditional declarations, generic
+type parameters, and opaque signature expressions produce diagnostics.
 
 ## Documentation and evidence
 

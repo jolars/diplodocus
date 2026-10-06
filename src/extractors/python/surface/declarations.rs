@@ -331,7 +331,20 @@ impl Builder<'_> {
                         signature.sources.extend(original.sources.clone());
                     }
                 }
-                item.signatures.push(signature);
+                if !python(&item)
+                    .decorators
+                    .iter()
+                    .any(|d| d.semantics == PythonDecoratorSemantics::Unknown)
+                {
+                    if python(&item)
+                        .decorators
+                        .iter()
+                        .any(|d| d.semantics == PythonDecoratorSemantics::ContextManager)
+                    {
+                        context_manager_signature(&mut signature.signature);
+                    }
+                    item.signatures.push(signature);
+                }
             }
             if preferred.kind == DeclarationKind::Class {
                 item.children = self.declarations(
@@ -427,6 +440,16 @@ impl Builder<'_> {
                     "dataclasses.dataclass" if valid_dataclass(&decorator.expression) => {
                         PythonDecoratorSemantics::Dataclass
                     }
+                    "contextlib.contextmanager"
+                        if declaration.kind == DeclarationKind::Function
+                            && !declaration.is_async
+                            && matches!(
+                                &decorator.expression,
+                                SignatureExpression::Name { .. }
+                            ) =>
+                    {
+                        PythonDecoratorSemantics::ContextManager
+                    }
                     name if name == format!("{}.setter", declaration.name) => {
                         PythonDecoratorSemantics::PropertySetter
                     }
@@ -435,14 +458,6 @@ impl Builder<'_> {
                     }
                     _ => PythonDecoratorSemantics::Unknown,
                 };
-                if semantics == PythonDecoratorSemantics::Unknown {
-                    self.diagnostic(
-                        DiagnosticCode::PythonUnsupportedSurface,
-                        Severity::Error,
-                        format!("Unsupported decorator semantics for {}.", declaration.name),
-                        &decorator.source,
-                    );
-                }
                 PythonDecorator {
                     expression: decorator.expression.clone(),
                     semantics,
@@ -451,6 +466,58 @@ impl Builder<'_> {
             })
             .collect()
     }
+}
+
+fn context_manager_signature(signature: &mut Signature) {
+    let Signature::Callable {
+        returns: Some(returns),
+        ..
+    } = signature
+    else {
+        return;
+    };
+    let yielded = match returns {
+        SignatureExpression::Apply {
+            constructor,
+            arguments,
+        } => match constructor.as_ref() {
+            SignatureExpression::Name { name, .. }
+                if matches!(
+                    name.as_str(),
+                    "contextlib.AbstractContextManager" | "typing.ContextManager"
+                ) =>
+            {
+                return;
+            }
+            SignatureExpression::Name { name, .. }
+                if matches!(
+                    name.as_str(),
+                    "typing.Iterator"
+                        | "collections.abc.Iterator"
+                        | "typing.Iterable"
+                        | "collections.abc.Iterable"
+                        | "typing.Generator"
+                        | "collections.abc.Generator"
+                ) =>
+            {
+                arguments.first().cloned()
+            }
+            _ => None,
+        },
+        _ => None,
+    };
+    *returns = yielded
+        .map(|yielded| SignatureExpression::Apply {
+            constructor: Box::new(SignatureExpression::Name {
+                name: "contextlib.AbstractContextManager".into(),
+                target: None,
+            }),
+            arguments: vec![yielded],
+        })
+        .unwrap_or(SignatureExpression::Name {
+            name: "contextlib.AbstractContextManager".into(),
+            target: None,
+        });
 }
 
 fn qualify(name: &str, parent: &str, imports: &BTreeMap<String, Vec<Binding>>) -> String {
