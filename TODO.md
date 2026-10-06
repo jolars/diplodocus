@@ -82,46 +82,6 @@ site byte for byte with the original site.
   navigation, focus, headings, labels, contrast, links, and search. Use
   `site-capture` and inspect its screenshots and failure traces.
 
-### Datamonger extraction compatibility
-
-The sibling Datamonger prototype builds with authored guides, but static API
-extraction fails. Fix the extractor gaps here rather than adapting Datamonger's
-client implementations to the parser. From this repository, reproduce with:
-
-```console
-devenv shell -- cargo run --locked -- check --config ../datamonger/documentation/diplodocus-api.toml
-```
-
-- [ ] Add minimal, maintained regression fixtures for the failures below before
-  changing the extractors. Tests must use temporary source copies and must not
-  depend on the sibling checkout or import or load Datamonger.
-- [x] Investigate Python `python-unsupported-surface` errors for
-  `@contextmanager` in `_api.py` and `_cache.py`, including private helpers.
-  Define how unsupported internal declarations affect extraction of the
-  public surface, and handle supported context-manager patterns statically
-  without assuming arbitrary decorators preserve signatures.
-- [x] Investigate `python-unsupported-syntax` in `_canonical.py`. The initial
-  diagnostic points to the `b"DMCF"` constant but describes a signature
-  expression. Cover bytes literals and make the diagnostic describe the
-  actual unsupported construct.
-- [x] Support static R namespace declarations such as
-  `useDynLib(datamonger, .registration = TRUE, .fixes = "C_")` without
-  loading the library. This currently produces `r-unsupported-namespace`.
-- [x] Recheck R definition resolution after fixing namespace parsing. Exported
-  functions such as `fetch_data`, `cache_info`, and `resolve_registry` have
-  maintained definitions, but their Rd aliases and usage entries produce
-  `r-unresolved-definition` and cascading `r-rd-information-loss` errors.
-  Determine which failures share a cause and cover grouped Rd topics.
-- [x] Handle package-level Rd topics with `\docType{package}` and package
-  aliases without requiring a function declaration. Preserve the package
-  documentation and distinguish it from an unresolved API alias.
-- [x] Once extraction succeeds, verify the nine Python/R equivalence concepts
-  in Datamonger's experimental configuration, then check, build, and inspect
-  the generated API pages, signatures, documentation, links, and search on
-  desktop and mobile. Enable extraction in Datamonger's default configuration
-  only after this passes. Julia and Rust extraction remain outside this work;
-  their authored guides are sufficient for the prototype.
-
 ### Project documentation
 
 - [x] Finish the dogfooded user guide: installation, supported GFM and QMD
