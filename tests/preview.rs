@@ -206,7 +206,7 @@ async fn watched_timeout_keeps_serving_the_complete_site_and_recovers() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn preview_tracks_missing_assets_and_configuration_changes() {
     let root = support::TestWorkspace::new();
-    let config = "[project]\nname='Static preview'\n[[repository]]\nid='docs'\npath='.'\n[[content]]\nid='guide'\nowner='project'\nrepository='docs'\npath='guide'\nmount=''\nformat='gfm'\n";
+    let config = "[project]\nname='Static preview'\n[presentation]\nsite_url='https://example.test/docs'\ncanonical_url_style='clean'\n[[repository]]\nid='docs'\npath='.'\n[[content]]\nid='guide'\nowner='project'\nrepository='docs'\npath='guide'\nmount=''\nformat='gfm'\n";
     root.write("diplodocus.toml", config);
     root.write("guide/index.md", "# Original\n");
     let port = std::net::TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0))
@@ -234,6 +234,20 @@ async fn preview_tracks_missing_assets_and_configuration_changes() {
             .is_some_and(|s| s.contains("Original"))
     })
     .await;
+    let sitemap = request(port, "/sitemap.xml").await.unwrap();
+    assert!(sitemap.starts_with("HTTP/1.1 200"));
+    assert!(sitemap.contains("Content-Type: application/xml; charset=utf-8\r\n"));
+    assert!(sitemap.contains("<loc>https://example.test/docs/</loc>"));
+    assert!(!sitemap.contains("/__diplodocus/revision"));
+    let robots = request(port, "/robots.txt").await.unwrap();
+    assert!(robots.contains("Content-Type: text/plain; charset=utf-8\r\n"));
+    assert!(robots.ends_with("Sitemap: https://example.test/docs/sitemap.xml\n"));
+    assert!(
+        request(port, "/")
+            .await
+            .unwrap()
+            .contains("<link rel=\"canonical\" href=\"https://example.test/docs/\">")
+    );
     assert!(
         request(port, "/")
             .await

@@ -48,6 +48,9 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
             )
             .unwrap();
         }
+        if let Some(url) = site.canonical_urls.get(route) {
+            write!(html, "<link rel=\"canonical\" href=\"{}\">", escape(url)).unwrap();
+        }
         write!(html, "<title>{} · {}</title><link rel=\"stylesheet\" href=\"{}\"><script defer src=\"{}\"></script><script defer src=\"{}\"></script></head><body><a class=\"skip-link\" href=\"#main\">Skip to content</a>", escape(&page.title), escape(site.title()), escape(&relative_url(route, "assets/site.css")), escape(&relative_url(route, "assets/search.js")), escape(&relative_url(route, "assets/nav.js"))).unwrap();
         write!(html, "<header><a class=\"brand\" href=\"{}\">{}</a><form role=\"search\"><label for=\"search\">Search documentation</label><input id=\"search\" type=\"search\" autocomplete=\"off\"><ul id=\"search-results\" aria-live=\"polite\"></ul></form></header><div class=\"layout\"><nav aria-label=\"Documentation\"><details class=\"nav-disclosure\" open><summary>Browse documentation</summary>", escape(&relative_url(route, "index.html")), escape(site.title())).unwrap();
         super::navigation::project_pages(&mut html, site, route);
@@ -195,6 +198,7 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
             "application/json",
         ),
     );
+    super::sitemap::render(site, &mut files)?;
     Ok(RenderedSite { files })
 }
 fn file(bytes: Vec<u8>, media_type: &str) -> RenderedFile {

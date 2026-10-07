@@ -4,6 +4,7 @@ mod html;
 mod navigation;
 mod publish;
 mod signatures;
+mod sitemap;
 pub use html::render_site;
 pub use publish::{RenderedFile, RenderedSite};
 

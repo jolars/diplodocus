@@ -3,6 +3,8 @@ name = "Diplodocus"
 
 [presentation]
 description = "Guides for building Python and R documentation with Diplodocus."
+site_url = "https://diplodocus.cc/"
+canonical_url_style = "clean"
 
 [[repository]]
 id = "diplodocus"

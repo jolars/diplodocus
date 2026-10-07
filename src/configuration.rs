@@ -71,12 +71,81 @@ pub struct PresentationDefaults {
     pub title: Option<String>,
     /// Site-wide HTML description; `None` omits the description metadata.
     pub description: Option<String>,
+    /// Public site root, including any hosting prefix; `None` omits crawler metadata.
+    #[serde(
+        deserialize_with = "deserialize_site_url",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub site_url: Option<String>,
+    /// Public URL spelling used by canonical links and the sitemap.
+    #[serde(skip_serializing_if = "CanonicalUrlStyle::is_default")]
+    pub canonical_url_style: CanonicalUrlStyle,
 }
 
 impl PresentationDefaults {
     fn is_default(&self) -> bool {
         self == &Self::default()
     }
+
+    pub(crate) fn site_base_url(&self) -> Result<Option<url::Url>, &'static str> {
+        self.site_url.as_deref().map(parse_site_url).transpose()
+    }
+}
+
+/// How a host exposes the generated HTML files to crawlers.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum CanonicalUrlStyle {
+    /// Preserve generated filenames, including `index.html`.
+    #[default]
+    File,
+    /// Use directory URLs for index pages and omit other `.html` suffixes.
+    Clean,
+}
+
+impl CanonicalUrlStyle {
+    fn is_default(&self) -> bool {
+        *self == Self::default()
+    }
+}
+
+fn deserialize_site_url<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Option<String>, D::Error> {
+    let value = Option::<String>::deserialize(deserializer)?;
+    if let Some(value) = &value {
+        parse_site_url(value).map_err(D::Error::custom)?;
+    }
+    Ok(value)
+}
+
+fn parse_site_url(value: &str) -> Result<url::Url, &'static str> {
+    let invalid = "presentation.site_url must be an absolute HTTP or HTTPS URL without credentials, query parameters, fragments, or whitespace";
+    if value
+        .chars()
+        .any(|ch| ch.is_whitespace() || ch.is_control())
+    {
+        return Err(invalid);
+    }
+    let mut url = url::Url::parse(value).map_err(|_| invalid)?;
+    let authority = value
+        .split_once("://")
+        .map(|(_, rest)| rest.split(['/', '?', '#']).next().unwrap_or_default())
+        .ok_or(invalid)?;
+    if !matches!(url.scheme(), "http" | "https")
+        || url.host_str().is_none()
+        || authority.is_empty()
+        || authority.contains('@')
+        || url.query().is_some()
+        || url.fragment().is_some()
+    {
+        return Err(invalid);
+    }
+    // A hosting prefix denotes a directory even when its declaration omits the slash.
+    if !url.path().ends_with('/') {
+        url.set_path(&format!("{}/", url.path()));
+    }
+    Ok(url)
 }
 
 /// An explicitly supplied local source repository.

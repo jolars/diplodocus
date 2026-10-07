@@ -1,8 +1,10 @@
 //! Site routes and presentation models built solely from a validated snapshot.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
-use crate::configuration::{ExecutionMode, PackageVisibility, PresentationDefaults};
+use crate::configuration::{
+    CanonicalUrlStyle, ExecutionMode, PackageVisibility, PresentationDefaults,
+};
 use crate::diagnostics::DiagnosticPath;
 use crate::documents::prepare_collection_document;
 use crate::execution::{PreparedCell, ValidatedPage};
@@ -19,6 +21,9 @@ pub enum SiteError {
     /// A portable document lacks complete presentation evidence.
     #[error("site presentation evidence is incomplete")]
     Evidence,
+    /// Crawler metadata cannot be generated from the supplied presentation settings.
+    #[error("site crawler metadata is invalid: {0}")]
+    CrawlerMetadata(String),
     /// The output directory could not be staged or replaced.
     #[error("site publication failed: {0}")]
     Io(#[from] std::io::Error),
@@ -34,6 +39,8 @@ pub struct Site<'a> {
     pub(crate) pages: BTreeMap<String, PageModel<'a>>,
     pub(crate) routes: BTreeMap<DocumentIdentity, String>,
     pub(crate) assets: &'a BTreeMap<String, ContentAsset>,
+    pub(crate) base_url: Option<url::Url>,
+    pub(crate) canonical_urls: BTreeMap<String, String>,
 }
 pub(crate) struct PageModel<'a> {
     pub title: String,
@@ -75,6 +82,11 @@ impl<'a> Site<'a> {
             pages: BTreeMap::new(),
             routes: BTreeMap::new(),
             assets: snapshot.assets(),
+            base_url: snapshot
+                .presentation()
+                .site_base_url()
+                .map_err(|message| SiteError::CrawlerMetadata(message.into()))?,
+            canonical_urls: BTreeMap::new(),
         };
         let records: BTreeMap<_, _> = snapshot
             .documents()
@@ -213,7 +225,50 @@ impl<'a> Site<'a> {
                 PageModel::empty(site.title().to_owned(), None, true),
             )?;
         }
+        site.assign_canonical_urls()?;
         Ok(site)
+    }
+
+    fn assign_canonical_urls(&mut self) -> Result<(), SiteError> {
+        let Some(base) = &self.base_url else {
+            return Ok(());
+        };
+        let mut assigned = BTreeSet::new();
+        for route in self.pages.keys() {
+            let public_route = match self.presentation.canonical_url_style {
+                CanonicalUrlStyle::File => route.as_str(),
+                CanonicalUrlStyle::Clean => {
+                    let public_route = if route == "index.html" {
+                        ""
+                    } else if let Some(directory) = route.strip_suffix("/index.html") {
+                        &route[..directory.len() + 1]
+                    } else {
+                        route.strip_suffix(".html").ok_or(SiteError::Evidence)?
+                    };
+                    let file_alias = format!("{}.html", public_route.trim_end_matches('/'));
+                    let index_alias = format!("{}/index.html", public_route.trim_end_matches('/'));
+                    if [file_alias, index_alias]
+                        .iter()
+                        .any(|alias| alias != route && self.pages.contains_key(alias))
+                        || matches!(
+                            public_route.trim_end_matches('/'),
+                            "sitemap.xml" | "robots.txt"
+                        )
+                    {
+                        return Err(SiteError::Route(route.clone()));
+                    }
+                    public_route
+                }
+            };
+            let url = base
+                .join(&encode_url_path(public_route))
+                .map_err(|error| SiteError::CrawlerMetadata(error.to_string()))?;
+            if !assigned.insert(url.clone()) {
+                return Err(SiteError::Route(route.clone()));
+            }
+            self.canonical_urls.insert(route.clone(), url.into());
+        }
+        Ok(())
     }
     pub(crate) fn title(&self) -> &str {
         self.presentation
@@ -271,6 +326,18 @@ impl<'a> Site<'a> {
         };
         Ok(format!("assets/{digest}.{extension}"))
     }
+}
+
+fn encode_url_path(path: &str) -> String {
+    const SEGMENT: &percent_encoding::AsciiSet = &percent_encoding::NON_ALPHANUMERIC
+        .remove(b'-')
+        .remove(b'_')
+        .remove(b'.')
+        .remove(b'~');
+    path.split('/')
+        .map(|segment| percent_encoding::utf8_percent_encode(segment, SEGMENT).to_string())
+        .collect::<Vec<_>>()
+        .join("/")
 }
 
 pub(crate) fn encode(value: &str) -> String {

@@ -22,6 +22,9 @@ impl Snapshot {
     pub(super) fn validate(
         &self,
     ) -> Result<BTreeMap<String, crate::execution::ValidatedPage>, SnapshotError> {
+        self.presentation
+            .site_base_url()
+            .map_err(SnapshotError::Invalid)?;
         links::validate(&self.workspace)?;
         let outputs = self.restore_outputs()?;
         let workspace = &self.workspace;

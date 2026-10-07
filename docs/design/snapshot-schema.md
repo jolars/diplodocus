@@ -106,7 +106,7 @@ The `records` kinds are:
   | Kind         | Owner      | ID                            | Content                                                                                                                                              |
   | ---          | ---        | ---                           | ---                                                                                                                                                  |
   | `workspace`  | Empty      | Empty                         | `schema_version`, `name`, `relationships`, `diagnostics`, `provenance`                                                                               |
-  | `presentation` | Empty    | Empty                         | `title`, `description`                                                                                                                            |
+  | `presentation` | Empty    | Empty                         | `title`, `description`, optional `site_url` and `canonical_url_style`                                                                               |
   | `repository` | Empty      | Repository ID                 | `canonical_url`, `source_link_template`, `revision`, `dirty`, `declared_input_fingerprint`                                                           |
   | `package`    | Empty      | Package ID                    | `slug`, `name`, `ecosystem`, `version`, `repository`, `path`, `metadata_path`, `kind`, `visibility`                                                  |
   | `target`     | Package ID | Target ID                     | `extractor`, `path`, `role`                                                                                                                          |
@@ -227,6 +227,20 @@ titles remain part of their documents. Generation treats these values as text
 and escapes them for HTML. The initial generator uses its built-in theme.
 Local theme paths, output directories, checkout roots, and execution authority
 are not presentation defaults. Unknown fields and malformed values are rejected.
+
+The singleton may also contain `site_url` and `canonical_url_style`. A non-null
+`site_url` must be an absolute HTTP or HTTPS URL without credentials, query
+parameters, fragments, or whitespace. The generator treats its path as a
+directory prefix and emits a sitemap, robots file, and HTML canonical links.
+`canonical_url_style` accepts `file` or `clean`; omission defaults to `file`.
+The generator retains the declared URL spelling in storage and normalizes it
+only when constructing public URLs.
+
+Writers omit a null `site_url` and the default `canonical_url_style`. This keeps
+the record's original shape and fingerprints when crawler metadata is unused,
+so the current reader can load earlier storage-version-2 snapshots without
+migration. Older binaries reject records containing the new fields. Neither
+the storage layout, semantic IR, nor canonical hashing rules change.
 
 `Snapshot::presentation()` exposes these defaults, and `Snapshot::producer()`
 returns the original manifest producer version without replacing it with the

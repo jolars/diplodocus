@@ -61,17 +61,48 @@ enable it when the collection forbids it. `check` never runs cells. `extract`,
 
 ## Presentation
 
-An optional table controls the site name and HTML description:
+An optional table controls the site name, HTML description, and public URL:
 
 ```toml
 [presentation]
 title = "Foo documentation"
 description = "Guides and API documentation for Foo."
+site_url = "https://example.com/docs/"
+canonical_url_style = "file"
 ```
 
 The title defaults to `project.name`. Diplodocus uses its built-in theme.
 Generated sites and portable snapshots keep the presentation metadata, so
 `generate` does not need the original configuration. Read about
 [portable snapshots](snapshots.md) before separating extraction and generation.
+
+Set `site_url` to generate `sitemap.xml`, `robots.txt`, and canonical links in
+HTML pages. It must be an absolute HTTP or HTTPS URL without credentials,
+query parameters, fragments, or whitespace. Include the hosting prefix when
+deploying under a subdirectory. Diplodocus treats the URL as a directory root,
+whether or not you include its trailing slash. Omitting `site_url` omits all
+three forms of crawler metadata.
+
+The sitemap lists the homepage, authored pages, package overviews, API pages,
+and concepts. It follows search visibility: public and internal package pages
+appear, and hidden package pages do not. Assets do not appear. Entries contain
+URLs only; Diplodocus does not infer modification dates from build times.
+
+`canonical_url_style` defaults to `file`, which retains generated filenames
+such as `/docs/index.html` and `/docs/installation.html`. Use `clean` when your
+host serves index pages at directory URLs and other HTML pages without their
+extension. For example, those URLs become `/docs/` and `/docs/installation`.
+The Diplodocus documentation uses `clean` to match Cloudflare's default static
+asset routing. This setting changes sitemap URLs and canonical links; output
+filenames, navigation links, and local preview routes retain their file paths.
+Clean URLs require matching support from your host. Ambiguous routes, such as
+`foo.html` alongside `foo/index.html`, fail generation before site publication.
+
+The generated `robots.txt` allows crawling and advertises the sitemap's full
+URL. Crawlers read this file from the host's root `/robots.txt`. For a site
+deployed under `/docs/`, add the generated `Sitemap` directive to the host's
+root robots file. A file at `/docs/robots.txt` does not provide crawler discovery.
+The first implementation writes one sitemap and rejects sites that exceed
+the sitemap protocol's URL count, file size, or URL length limits.
 
 Return to the [quick start](quick-start.md) or see the [commands](cli.md).

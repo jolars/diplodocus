@@ -2,7 +2,7 @@
   "document": {
     "span": {
       "start": 0,
-      "end": 3025
+      "end": 4994
     },
     "frontmatter": null,
     "blocks": [
@@ -1113,76 +1113,104 @@
         "inlines": [
           {
             "type": "text",
-            "value": "An optional table controls the site name and HTML description:",
+            "value": "An optional table controls the site name, HTML description, and public URL:",
             "span": {
               "start": 2483,
-              "end": 2545
+              "end": 2558
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2545,
-              "end": 2546
+              "start": 2558,
+              "end": 2559
             }
           }
         ],
         "span": {
           "start": 2483,
-          "end": 2546
+          "end": 2559
         }
       },
       {
         "type": "code-block",
         "language": "toml",
-        "source": "[presentation]\ntitle = \"Foo documentation\"\ndescription = \"Guides and API documentation for Foo.\"\n",
+        "source": "[presentation]\ntitle = \"Foo documentation\"\ndescription = \"Guides and API documentation for Foo.\"\nsite_url = \"https://example.com/docs/\"\ncanonical_url_style = \"file\"\n",
         "source_segments": [
           {
             "text": "[presentation]",
             "span": {
-              "start": 2555,
-              "end": 2569
+              "start": 2568,
+              "end": 2582
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 2569,
-              "end": 2570
+              "start": 2582,
+              "end": 2583
             }
           },
           {
             "text": "title = \"Foo documentation\"",
             "span": {
-              "start": 2570,
-              "end": 2597
+              "start": 2583,
+              "end": 2610
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 2597,
-              "end": 2598
+              "start": 2610,
+              "end": 2611
             }
           },
           {
             "text": "description = \"Guides and API documentation for Foo.\"",
             "span": {
-              "start": 2598,
-              "end": 2651
+              "start": 2611,
+              "end": 2664
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 2651,
-              "end": 2652
+              "start": 2664,
+              "end": 2665
+            }
+          },
+          {
+            "text": "site_url = \"https://example.com/docs/\"",
+            "span": {
+              "start": 2665,
+              "end": 2703
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 2703,
+              "end": 2704
+            }
+          },
+          {
+            "text": "canonical_url_style = \"file\"",
+            "span": {
+              "start": 2704,
+              "end": 2732
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 2732,
+              "end": 2733
             }
           }
         ],
         "span": {
-          "start": 2547,
-          "end": 2656
+          "start": 2560,
+          "end": 2737
         }
       },
       {
@@ -1192,69 +1220,69 @@
             "type": "text",
             "value": "The title defaults to ",
             "span": {
-              "start": 2657,
-              "end": 2679
+              "start": 2738,
+              "end": 2760
             }
           },
           {
             "type": "code",
             "value": "project.name",
             "span": {
-              "start": 2679,
-              "end": 2693
+              "start": 2760,
+              "end": 2774
             }
           },
           {
             "type": "text",
             "value": ". Diplodocus uses its built-in theme.",
             "span": {
-              "start": 2693,
-              "end": 2730
+              "start": 2774,
+              "end": 2811
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2730,
-              "end": 2731
+              "start": 2811,
+              "end": 2812
             }
           },
           {
             "type": "text",
             "value": "Generated sites and portable snapshots keep the presentation metadata, so",
             "span": {
-              "start": 2731,
-              "end": 2804
+              "start": 2812,
+              "end": 2885
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2804,
-              "end": 2805
+              "start": 2885,
+              "end": 2886
             }
           },
           {
             "type": "code",
             "value": "generate",
             "span": {
-              "start": 2805,
-              "end": 2815
+              "start": 2886,
+              "end": 2896
             }
           },
           {
             "type": "text",
             "value": " does not need the original configuration. Read about",
             "span": {
-              "start": 2815,
-              "end": 2868
+              "start": 2896,
+              "end": 2949
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2868,
-              "end": 2869
+              "start": 2949,
+              "end": 2950
             }
           },
           {
@@ -1264,8 +1292,8 @@
                 "type": "text",
                 "value": "portable snapshots",
                 "span": {
-                  "start": 2870,
-                  "end": 2888
+                  "start": 2951,
+                  "end": 2969
                 }
               }
             ],
@@ -1277,29 +1305,728 @@
               "key_values": []
             },
             "span": {
-              "start": 2869,
-              "end": 2903
+              "start": 2950,
+              "end": 2984
             }
           },
           {
             "type": "text",
             "value": " before separating extraction and generation.",
             "span": {
-              "start": 2903,
-              "end": 2948
+              "start": 2984,
+              "end": 3029
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2948,
-              "end": 2949
+              "start": 3029,
+              "end": 3030
             }
           }
         ],
         "span": {
-          "start": 2657,
-          "end": 2949
+          "start": 2738,
+          "end": 3030
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Set ",
+            "span": {
+              "start": 3031,
+              "end": 3035
+            }
+          },
+          {
+            "type": "code",
+            "value": "site_url",
+            "span": {
+              "start": 3035,
+              "end": 3045
+            }
+          },
+          {
+            "type": "text",
+            "value": " to generate ",
+            "span": {
+              "start": 3045,
+              "end": 3058
+            }
+          },
+          {
+            "type": "code",
+            "value": "sitemap.xml",
+            "span": {
+              "start": 3058,
+              "end": 3071
+            }
+          },
+          {
+            "type": "text",
+            "value": ", ",
+            "span": {
+              "start": 3071,
+              "end": 3073
+            }
+          },
+          {
+            "type": "code",
+            "value": "robots.txt",
+            "span": {
+              "start": 3073,
+              "end": 3085
+            }
+          },
+          {
+            "type": "text",
+            "value": ", and canonical links in",
+            "span": {
+              "start": 3085,
+              "end": 3109
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 3109,
+              "end": 3110
+            }
+          },
+          {
+            "type": "text",
+            "value": "HTML pages. It must be an absolute HTTP or HTTPS URL without credentials,",
+            "span": {
+              "start": 3110,
+              "end": 3183
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 3183,
+              "end": 3184
+            }
+          },
+          {
+            "type": "text",
+            "value": "query parameters, fragments, or whitespace. Include the hosting prefix when",
+            "span": {
+              "start": 3184,
+              "end": 3259
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 3259,
+              "end": 3260
+            }
+          },
+          {
+            "type": "text",
+            "value": "deploying under a subdirectory. Diplodocus treats the URL as a directory root,",
+            "span": {
+              "start": 3260,
+              "end": 3338
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 3338,
+              "end": 3339
+            }
+          },
+          {
+            "type": "text",
+            "value": "whether or not you include its trailing slash. Omitting ",
+            "span": {
+              "start": 3339,
+              "end": 3395
+            }
+          },
+          {
+            "type": "code",
+            "value": "site_url",
+            "span": {
+              "start": 3395,
+              "end": 3405
+            }
+          },
+          {
+            "type": "text",
+            "value": " omits all",
+            "span": {
+              "start": 3405,
+              "end": 3415
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 3415,
+              "end": 3416
+            }
+          },
+          {
+            "type": "text",
+            "value": "three forms of crawler metadata.",
+            "span": {
+              "start": 3416,
+              "end": 3448
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 3448,
+              "end": 3449
+            }
+          }
+        ],
+        "span": {
+          "start": 3031,
+          "end": 3449
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "The sitemap lists the homepage, authored pages, package overviews, API pages,",
+            "span": {
+              "start": 3450,
+              "end": 3527
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 3527,
+              "end": 3528
+            }
+          },
+          {
+            "type": "text",
+            "value": "and concepts. It follows search visibility: public and internal package pages",
+            "span": {
+              "start": 3528,
+              "end": 3605
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 3605,
+              "end": 3606
+            }
+          },
+          {
+            "type": "text",
+            "value": "appear, and hidden package pages do not. Assets do not appear. Entries contain",
+            "span": {
+              "start": 3606,
+              "end": 3684
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 3684,
+              "end": 3685
+            }
+          },
+          {
+            "type": "text",
+            "value": "URLs only; Diplodocus does not infer modification dates from build times.",
+            "span": {
+              "start": 3685,
+              "end": 3758
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 3758,
+              "end": 3759
+            }
+          }
+        ],
+        "span": {
+          "start": 3450,
+          "end": 3759
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "code",
+            "value": "canonical_url_style",
+            "span": {
+              "start": 3760,
+              "end": 3781
+            }
+          },
+          {
+            "type": "text",
+            "value": " defaults to ",
+            "span": {
+              "start": 3781,
+              "end": 3794
+            }
+          },
+          {
+            "type": "code",
+            "value": "file",
+            "span": {
+              "start": 3794,
+              "end": 3800
+            }
+          },
+          {
+            "type": "text",
+            "value": ", which retains generated filenames",
+            "span": {
+              "start": 3800,
+              "end": 3835
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 3835,
+              "end": 3836
+            }
+          },
+          {
+            "type": "text",
+            "value": "such as ",
+            "span": {
+              "start": 3836,
+              "end": 3844
+            }
+          },
+          {
+            "type": "code",
+            "value": "/docs/index.html",
+            "span": {
+              "start": 3844,
+              "end": 3862
+            }
+          },
+          {
+            "type": "text",
+            "value": " and ",
+            "span": {
+              "start": 3862,
+              "end": 3867
+            }
+          },
+          {
+            "type": "code",
+            "value": "/docs/installation.html",
+            "span": {
+              "start": 3867,
+              "end": 3892
+            }
+          },
+          {
+            "type": "text",
+            "value": ". Use ",
+            "span": {
+              "start": 3892,
+              "end": 3898
+            }
+          },
+          {
+            "type": "code",
+            "value": "clean",
+            "span": {
+              "start": 3898,
+              "end": 3905
+            }
+          },
+          {
+            "type": "text",
+            "value": " when your",
+            "span": {
+              "start": 3905,
+              "end": 3915
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 3915,
+              "end": 3916
+            }
+          },
+          {
+            "type": "text",
+            "value": "host serves index pages at directory URLs and other HTML pages without their",
+            "span": {
+              "start": 3916,
+              "end": 3992
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 3992,
+              "end": 3993
+            }
+          },
+          {
+            "type": "text",
+            "value": "extension. For example, those URLs become ",
+            "span": {
+              "start": 3993,
+              "end": 4035
+            }
+          },
+          {
+            "type": "code",
+            "value": "/docs/",
+            "span": {
+              "start": 4035,
+              "end": 4043
+            }
+          },
+          {
+            "type": "text",
+            "value": " and ",
+            "span": {
+              "start": 4043,
+              "end": 4048
+            }
+          },
+          {
+            "type": "code",
+            "value": "/docs/installation",
+            "span": {
+              "start": 4048,
+              "end": 4068
+            }
+          },
+          {
+            "type": "text",
+            "value": ".",
+            "span": {
+              "start": 4068,
+              "end": 4069
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 4069,
+              "end": 4070
+            }
+          },
+          {
+            "type": "text",
+            "value": "The Diplodocus documentation uses ",
+            "span": {
+              "start": 4070,
+              "end": 4104
+            }
+          },
+          {
+            "type": "code",
+            "value": "clean",
+            "span": {
+              "start": 4104,
+              "end": 4111
+            }
+          },
+          {
+            "type": "text",
+            "value": " to match Cloudflare's default static",
+            "span": {
+              "start": 4111,
+              "end": 4148
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 4148,
+              "end": 4149
+            }
+          },
+          {
+            "type": "text",
+            "value": "asset routing. This setting changes sitemap URLs and canonical links; output",
+            "span": {
+              "start": 4149,
+              "end": 4225
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 4225,
+              "end": 4226
+            }
+          },
+          {
+            "type": "text",
+            "value": "filenames, navigation links, and local preview routes retain their file paths.",
+            "span": {
+              "start": 4226,
+              "end": 4304
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 4304,
+              "end": 4305
+            }
+          },
+          {
+            "type": "text",
+            "value": "Clean URLs require matching support from your host. Ambiguous routes, such as",
+            "span": {
+              "start": 4305,
+              "end": 4382
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 4382,
+              "end": 4383
+            }
+          },
+          {
+            "type": "code",
+            "value": "foo.html",
+            "span": {
+              "start": 4383,
+              "end": 4393
+            }
+          },
+          {
+            "type": "text",
+            "value": " alongside ",
+            "span": {
+              "start": 4393,
+              "end": 4404
+            }
+          },
+          {
+            "type": "code",
+            "value": "foo/index.html",
+            "span": {
+              "start": 4404,
+              "end": 4420
+            }
+          },
+          {
+            "type": "text",
+            "value": ", fail generation before site publication.",
+            "span": {
+              "start": 4420,
+              "end": 4462
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 4462,
+              "end": 4463
+            }
+          }
+        ],
+        "span": {
+          "start": 3760,
+          "end": 4463
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "The generated ",
+            "span": {
+              "start": 4464,
+              "end": 4478
+            }
+          },
+          {
+            "type": "code",
+            "value": "robots.txt",
+            "span": {
+              "start": 4478,
+              "end": 4490
+            }
+          },
+          {
+            "type": "text",
+            "value": " allows crawling and advertises the sitemap's full",
+            "span": {
+              "start": 4490,
+              "end": 4540
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 4540,
+              "end": 4541
+            }
+          },
+          {
+            "type": "text",
+            "value": "URL. Crawlers read this file from the host's root ",
+            "span": {
+              "start": 4541,
+              "end": 4591
+            }
+          },
+          {
+            "type": "code",
+            "value": "/robots.txt",
+            "span": {
+              "start": 4591,
+              "end": 4604
+            }
+          },
+          {
+            "type": "text",
+            "value": ". For a site",
+            "span": {
+              "start": 4604,
+              "end": 4616
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 4616,
+              "end": 4617
+            }
+          },
+          {
+            "type": "text",
+            "value": "deployed under ",
+            "span": {
+              "start": 4617,
+              "end": 4632
+            }
+          },
+          {
+            "type": "code",
+            "value": "/docs/",
+            "span": {
+              "start": 4632,
+              "end": 4640
+            }
+          },
+          {
+            "type": "text",
+            "value": ", add the generated ",
+            "span": {
+              "start": 4640,
+              "end": 4660
+            }
+          },
+          {
+            "type": "code",
+            "value": "Sitemap",
+            "span": {
+              "start": 4660,
+              "end": 4669
+            }
+          },
+          {
+            "type": "text",
+            "value": " directive to the host's",
+            "span": {
+              "start": 4669,
+              "end": 4693
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 4693,
+              "end": 4694
+            }
+          },
+          {
+            "type": "text",
+            "value": "root robots file. A file at ",
+            "span": {
+              "start": 4694,
+              "end": 4722
+            }
+          },
+          {
+            "type": "code",
+            "value": "/docs/robots.txt",
+            "span": {
+              "start": 4722,
+              "end": 4740
+            }
+          },
+          {
+            "type": "text",
+            "value": " does not provide crawler discovery.",
+            "span": {
+              "start": 4740,
+              "end": 4776
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 4776,
+              "end": 4777
+            }
+          },
+          {
+            "type": "text",
+            "value": "The first implementation writes one sitemap and rejects sites that exceed",
+            "span": {
+              "start": 4777,
+              "end": 4850
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 4850,
+              "end": 4851
+            }
+          },
+          {
+            "type": "text",
+            "value": "the sitemap protocol's URL count, file size, or URL length limits.",
+            "span": {
+              "start": 4851,
+              "end": 4917
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 4917,
+              "end": 4918
+            }
+          }
+        ],
+        "span": {
+          "start": 4464,
+          "end": 4918
         }
       },
       {
@@ -1309,8 +2036,8 @@
             "type": "text",
             "value": "Return to the ",
             "span": {
-              "start": 2950,
-              "end": 2964
+              "start": 4919,
+              "end": 4933
             }
           },
           {
@@ -1320,8 +2047,8 @@
                 "type": "text",
                 "value": "quick start",
                 "span": {
-                  "start": 2965,
-                  "end": 2976
+                  "start": 4934,
+                  "end": 4945
                 }
               }
             ],
@@ -1333,16 +2060,16 @@
               "key_values": []
             },
             "span": {
-              "start": 2964,
-              "end": 2993
+              "start": 4933,
+              "end": 4962
             }
           },
           {
             "type": "text",
             "value": " or see the ",
             "span": {
-              "start": 2993,
-              "end": 3005
+              "start": 4962,
+              "end": 4974
             }
           },
           {
@@ -1352,8 +2079,8 @@
                 "type": "text",
                 "value": "commands",
                 "span": {
-                  "start": 3006,
-                  "end": 3014
+                  "start": 4975,
+                  "end": 4983
                 }
               }
             ],
@@ -1365,29 +2092,29 @@
               "key_values": []
             },
             "span": {
-              "start": 3005,
-              "end": 3023
+              "start": 4974,
+              "end": 4992
             }
           },
           {
             "type": "text",
             "value": ".",
             "span": {
-              "start": 3023,
-              "end": 3024
+              "start": 4992,
+              "end": 4993
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3024,
-              "end": 3025
+              "start": 4993,
+              "end": 4994
             }
           }
         ],
         "span": {
-          "start": 2950,
-          "end": 3025
+          "start": 4919,
+          "end": 4994
         }
       }
     ]

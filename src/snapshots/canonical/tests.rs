@@ -22,6 +22,7 @@ fn fixture() -> Snapshot {
         presentation: PresentationDefaults {
             title: Some("Canonical café".into()),
             description: None,
+            ..PresentationDefaults::default()
         },
         documents: Vec::new(),
         assets: BTreeMap::new(),

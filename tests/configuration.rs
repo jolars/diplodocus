@@ -13,6 +13,45 @@ const COMPLETE: &str = include_str!("fixtures/configuration/complete.toml");
 const ACCEPTANCE: &str = include_str!("fixtures/acceptance/workspace/diplodocus.toml");
 
 #[test]
+fn presentation_site_urls_require_absolute_http_urls_without_request_metadata() {
+    for url in [
+        "",
+        "/docs",
+        "example.test",
+        "ftp://example.test/",
+        "https:///",
+        "https://user:pass@example.test/",
+        "https://example.test/?q=1",
+        "https://example.test/#top",
+        " https://example.test/",
+        "https://example.test/a b",
+        "https://example.test/\n",
+    ] {
+        let source = format!(
+            "[project]\nname='Docs'\n[presentation]\nsite_url={}\n",
+            toml::Value::String(url.into())
+        );
+        assert!(parse_configuration(&source).is_err(), "{url:?}");
+    }
+    for style in ["file", "clean"] {
+        let source = format!(
+            "[project]\nname='Docs'\n[presentation]\nsite_url='https://example.test/docs'\ncanonical_url_style='{style}'\n"
+        );
+        let configuration = parse_configuration(&source).unwrap();
+        assert_eq!(
+            parse_configuration(&toml::to_string(&configuration).unwrap()).unwrap(),
+            configuration
+        );
+    }
+    assert!(
+        parse_configuration(
+            "[project]\nname='Docs'\n[presentation]\ncanonical_url_style='unknown'\n"
+        )
+        .is_err()
+    );
+}
+
+#[test]
 fn presentation_settings_accept_only_portable_display_metadata() {
     for settings in [
         "title = 42",
