@@ -192,11 +192,18 @@ impl Snapshot {
                     kind == reference.kind && spelling == reference.spelling,
                     "reference association",
                 )?;
+                require(
+                    crate::validation::semantic_target(document, kind, &spelling).is_none()
+                        || matches!(&reference.target, ReferenceTarget::Item { .. }),
+                    "semantic reference destination",
+                )?;
                 match &reference.target {
                     ReferenceTarget::Item { item } => {
                         require(
-                            kind == ReferenceKind::Semantic
-                                && resolve_item(workspace, owner, &spelling).as_ref() == Ok(item),
+                            crate::validation::semantic_target(document, kind, &spelling)
+                                .is_some_and(|target| {
+                                    resolve_item(workspace, owner, target).as_ref() == Ok(item)
+                                }),
                             "semantic reference",
                         )?;
                     }

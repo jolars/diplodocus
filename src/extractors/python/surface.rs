@@ -728,5 +728,7 @@ fn alias_rank(kind: ItemAliasKind) -> u8 {
         ItemAliasKind::PythonAssignment => 1,
         ItemAliasKind::RdAlias => 2,
         ItemAliasKind::RAssignment => 3,
+        ItemAliasKind::JuliaImport => 4,
+        ItemAliasKind::JuliaAssignment => 5,
     }
 }

@@ -1,14 +1,14 @@
-# R/Python monorepo example
+# Python, R, and Julia monorepo example
 
-Tiny Stats is a working prediction-evaluation toolkit with Python and R
-packages. Both expose six operations: mean squared error, mean absolute error,
+Tiny Stats is a working prediction-evaluation toolkit with Python, R, and Julia
+packages. All three expose six operations: mean squared error, mean absolute error,
 root mean squared error, mean error, R squared, and residuals.
 
 The site combines installation and quick-start pages, three shared guides, a
-Python-specific workflow, and both package references in one left sidebar.
+Python-specific workflow, and all three package references in one left sidebar.
 Python functions nest under their module; the current package and API ancestors
 open automatically. A separate **On this page** area follows the page's headings.
-Each operation links to its equivalent in the other language.
+Each operation links to its equivalent in the other languages.
 
 ```text
 monorepo/
@@ -30,6 +30,10 @@ monorepo/
     src/tinystats/__init__.py
     docs/evaluating-models.md
     tests/test_metrics.py
+  julia/
+    Project.toml
+    src/TinyStats.jl
+    src/metrics.jl
   r/
     DESCRIPTION
     LICENSE
@@ -66,9 +70,10 @@ a function under **Reference**. Then search for
 `mean_squared_error` or follow **Same API in** on a function page.
 
 The collection explicitly sets `mode = "never"`. Once Diplodocus is built, these
-commands need no Python, R, Jupyter kernels, or package installation. Python
+commands need no Python, R, Julia, Jupyter kernels, or package installation. Python
 documentation comes from NumPy-style docstrings. R documentation comes from
-the checked-in `man/*.Rd` files; Diplodocus does not run roxygen2.
+the checked-in `man/*.Rd` files; Diplodocus does not run roxygen2. Julia documentation comes from Julia Markdown
+docstrings, and its methods have separate pages. Doctests remain inert.
 
 The current R parser emits an `r-rd-source-attribution` warning because it tracks
 Rd content at file granularity. This warning does not prevent the site from
@@ -112,11 +117,11 @@ constant observations for R squared, and missing-value propagation.
 
 ## Adapt the example
 
-Copy this directory into your project and edit `diplodocus.toml`. Both packages
+Copy this directory into your project and edit `diplodocus.toml`. All packages
 refer to the same repository declaration, whose path is `.`. Package paths are
 relative to that repository, and extraction targets are relative to each
 package. Shared pages mount at the site root; package references live under
-`packages/python/` and `packages/r/`. The Python-owned collection mounts its
+`packages/python/`, `packages/r/`, and `packages/julia/`. The Python-owned collection mounts its
 guide at `packages/python/guides/`. Links between collections use ordinary
 relative source paths and are rewritten to the generated page routes.
 

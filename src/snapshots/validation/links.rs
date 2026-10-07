@@ -120,6 +120,14 @@ impl Links<'_> {
             }
             match &record.activity {
                 ProvenanceActivity::Declaration => {}
+                ProvenanceActivity::DecodedDocumentation { decoded_span } => {
+                    require(
+                        decoded_span.start <= decoded_span.end
+                            && record.span.is_some_and(|span| span.start <= span.end)
+                            && record.source.is_some(),
+                        "decoded documentation provenance",
+                    )?;
+                }
                 ProvenanceActivity::GeneratedMarkdown { collection, .. } => {
                     require(
                         self.0.content_collections.contains_key(collection),
@@ -208,6 +216,28 @@ impl Links<'_> {
 
     fn language(&self, data: &ItemLanguageData) -> Result {
         match data {
+            ItemLanguageData::Julia(data) => match &data.declaration {
+                JuliaDeclaration::Callable { role, .. } => match role {
+                    JuliaCallableRole::Family { methods } => self.items(methods),
+                    JuliaCallableRole::Method { family, dispatch } => {
+                        self.item(family)?;
+                        self.expression(dispatch)
+                    }
+                },
+                JuliaDeclaration::Type {
+                    parameters,
+                    supertype,
+                    constructors,
+                    ..
+                } => {
+                    self.expressions(parameters)?;
+                    self.optional_expression(supertype)?;
+                    self.items(constructors)
+                }
+                JuliaDeclaration::Module { .. }
+                | JuliaDeclaration::Constant
+                | JuliaDeclaration::Field { .. } => Ok(()),
+            },
             ItemLanguageData::Python(data) => {
                 for decorator in &data.decorators {
                     self.expression(&decorator.expression)?;
@@ -269,6 +299,14 @@ impl Links<'_> {
 
     fn document(&self, document: &SourcedDocument) -> Result {
         self.provenance(&document.provenance)?;
+        for record in &document.provenance {
+            if let ProvenanceActivity::DecodedDocumentation { decoded_span } = record.activity {
+                require(
+                    decoded_span.end <= document.document.span.end,
+                    "decoded documentation range",
+                )?;
+            }
+        }
         self.blocks(&document.document.blocks)
     }
 

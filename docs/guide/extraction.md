@@ -1,7 +1,7 @@
-# Python and R API extraction
+# Python, R, and Julia API extraction
 
 Diplodocus reads configured API targets statically. It does not import a Python
-package, load an R package, run a build backend, or install dependencies.
+package, load an R or Julia package, run a build backend, or install dependencies.
 Targets must point to maintained files inside their declared package and
 repository boundaries. The [workspace guide](configuration.md) shows how to
 declare a target.
@@ -43,3 +43,24 @@ markup stays visible with a diagnostic. For exact parser and identity rules,
 see the [Python extraction contract](https://github.com/jolars/diplodocus/blob/main/docs/ir/python-extraction.md)
 or [R extraction contract](https://github.com/jolars/diplodocus/blob/main/docs/ir/r-extraction.md)
 in the source repository.
+
+## Julia
+
+Julia extraction reads `Project.toml`, an explicit `.jl` entry file, and its
+unconditional literal includes. Declare `ecosystem = "julia"`,
+`metadata-path = "Project.toml"`, and a target with `extractor = "julia"` and
+`path = "src/MyPackage.jl"`. Source directories are not valid Julia targets.
+
+Exported, `public`, and documented declarations form the maintained surface.
+Functions have a family page and separate pages for their supplied methods.
+Types retain fields and explicit constructors. Static imports and aliases
+resolve to maintained declarations. Julia Markdown docstrings supply prose,
+lists, tables, admonitions, and inert code examples. API `@ref` links can name
+a family or select a method, and they preserve their labels.
+
+Computed includes, conditional declarations, generated definitions, unsupported
+macros, and unavailable reexports produce diagnostics. Extraction does not
+expand macros, consult a Julia depot, infer runtime methods, or execute doctests.
+Unsupported documentation syntax remains visible with warnings. The
+[Julia extraction contract](https://github.com/jolars/diplodocus/blob/main/docs/ir/julia-extraction.md)
+defines the supported subset and method identity rules.

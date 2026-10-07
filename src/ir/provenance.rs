@@ -42,6 +42,11 @@ pub struct Provenance {
 pub enum ProvenanceActivity {
     /// An explicit declaration or source observation.
     Declaration,
+    /// A decoded documentation range mapped back to its source literal.
+    DecodedDocumentation {
+        /// Zero-based UTF-8 byte range in the decoded document.
+        decoded_span: SourceSpan,
+    },
     /// Inert parsing of Markdown output from an authored cell.
     ///
     /// The enclosing provenance source and span identify the producing page and

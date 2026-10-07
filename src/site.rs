@@ -192,8 +192,22 @@ impl<'a> Site<'a> {
                     "{base}/reference/{}.html",
                     crate::provenance::fingerprint_bytes(item_id.as_bytes()).value
                 );
+                let title = if package.ecosystem == "julia" && item.kind == ItemKind::Method {
+                    item.signatures
+                        .first()
+                        .map(|signature| {
+                            crate::rendering::signature_title(
+                                &item.qualified_name,
+                                &signature.signature,
+                                "julia",
+                            )
+                        })
+                        .unwrap_or_else(|| item.qualified_name.clone())
+                } else {
+                    item.qualified_name.clone()
+                };
                 let mut model = PageModel::empty(
-                    item.qualified_name.clone(),
+                    title,
                     Some(id.clone()),
                     package.visibility != PackageVisibility::Hidden,
                 );

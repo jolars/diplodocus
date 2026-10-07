@@ -10,8 +10,9 @@ use support::{AcceptanceRegistry, TestWorkspace};
 #[test]
 fn baseline_authored_pages_have_no_parser_diagnostics() {
     let workspace = support::acceptance_workspace();
-    let declared = support::authored_sources(&workspace, "workspace/diplodocus.toml")
+    let declared = ["workspace/diplodocus.toml", "julia/diplodocus.toml"]
         .into_iter()
+        .flat_map(|config| support::authored_sources(&workspace, config))
         .map(|(path, _)| path)
         .collect::<BTreeSet<_>>();
     for path in support::fixture_files("acceptance") {

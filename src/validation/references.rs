@@ -1,6 +1,7 @@
 use crate::diagnostics::DiagnosticCode;
 use crate::ir::{
-    ItemLanguageData, ItemReference, PythonCallableRole, PythonDeclaration, Workspace,
+    ItemLanguageData, ItemReference, JuliaCallableRole, JuliaDeclaration, PythonCallableRole,
+    PythonDeclaration, Workspace,
 };
 
 /// Resolve a semantic name without assigning or consulting a rendered route.
@@ -13,7 +14,9 @@ pub fn resolve_item(
     owner: Option<&str>,
     target: &str,
 ) -> Result<ItemReference, DiagnosticCode> {
-    if let Some((package, name)) = target.split_once("::") {
+    if let Some((package, name)) = target.split_once("::")
+        && !package.contains(['(', '{', '['])
+    {
         return in_package(workspace, package, name);
     }
     if let Some(owner) = owner {
@@ -47,10 +50,22 @@ pub(crate) fn in_package(
         .items;
     let found = if items.contains_key(name) {
         name
+    } else if workspace.packages[package].ecosystem == "julia"
+        && let Some((family_name, dispatch)) = crate::extractors::julia::method_selector(name)
+    {
+        let family = in_package(workspace, package, &family_name)?;
+        let (id, _) = items.iter().find(|(_, item)| {
+            matches!(&item.language_data, Some(ItemLanguageData::Julia(data)) if matches!(&data.declaration,
+                JuliaDeclaration::Callable { role: JuliaCallableRole::Method { family: target, dispatch: actual }, .. }
+                if target == &family && actual == &dispatch))
+        }).ok_or(DiagnosticCode::UnresolvedItemReference)?;
+        id
     } else {
         let mut candidates = items.iter().filter(|(_, item)| {
             !matches!(&item.language_data, Some(ItemLanguageData::Python(data)) if matches!(&data.declaration,
                 PythonDeclaration::Callable { role: PythonCallableRole::Overload { .. }, .. }))
+            && !matches!(&item.language_data, Some(ItemLanguageData::Julia(data)) if matches!(&data.declaration,
+                JuliaDeclaration::Callable { role: JuliaCallableRole::Method { .. }, .. }))
             && (item.qualified_name == name || item.aliases.iter().any(|a| a.qualified_name == name))
         });
         let (id, _) = candidates

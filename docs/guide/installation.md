@@ -13,7 +13,7 @@ cargo run --locked -- --help
 
 The `devenv` shell also provides Python, R, Jupyter kernels, and browser tools
 used by the project examples and tests. A workspace that only contains
-Markdown or static Python and R API extraction does not need those language
+Markdown or static Python, R, and Julia API extraction does not need those language
 runtimes to build its site. Executable QMD pages need the selected Jupyter
 kernel already installed and discoverable. Diplodocus never installs a
 workspace's dependencies or kernels.

@@ -1,6 +1,6 @@
 use super::*;
 use crate::diagnostics::DiagnosticEntity;
-use crate::extractors::{python, r};
+use crate::extractors::{julia, python, r};
 use crate::ir::{ExtractionTarget, Item, Package, Provenance, ProvenanceActivity, SourceLocation};
 
 pub(super) fn assemble(
@@ -37,6 +37,15 @@ pub(super) fn assemble(
                 },
             );
             let fragment = match target.extractor.as_str() {
+                "julia" => {
+                    let result = julia::extract_target(repository, resolved, selected);
+                    Fragment {
+                        version: result.metadata.and_then(|metadata| metadata.version),
+                        items: result.items,
+                        diagnostics: result.diagnostics,
+                        provenance: result.provenance,
+                    }
+                }
                 "python" => {
                     let result = python::extract_target(repository, resolved, selected);
                     Fragment {

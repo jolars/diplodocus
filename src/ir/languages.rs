@@ -13,6 +13,8 @@ use super::{ItemReference, SignatureExpression, SourceEvidence};
     deny_unknown_fields
 )]
 pub enum ItemLanguageData {
+    /// Julia declaration semantics from maintained source.
+    Julia(JuliaItemData),
     /// Python declaration semantics after source/stub reconciliation.
     Python(PythonItemData),
     /// R declaration semantics after namespace/source/Rd reconciliation.
@@ -39,6 +41,10 @@ pub struct ItemAlias {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum ItemAliasKind {
+    /// A statically resolved Julia import or reexport.
+    JuliaImport,
+    /// A statically proven assignment of the same Julia binding.
+    JuliaAssignment,
     /// A statically resolved import or re-export.
     PythonReexport,
     /// A statically proven assignment of the same object.
@@ -304,5 +310,115 @@ pub enum RGenericReference {
         package: String,
         /// Generic name, such as `predict`.
         name: String,
+    },
+}
+
+/// Julia facts independent of signature syntax and documentation.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct JuliaItemData {
+    /// Lexical module containing the maintained declaration.
+    pub defining_module: String,
+    /// Explicit API visibility, separate from documentation-based inclusion.
+    pub visibility: JuliaVisibility,
+    /// Supported declaration semantics.
+    pub declaration: JuliaDeclaration,
+}
+
+/// Julia distinguishes exported API from public qualified API.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum JuliaVisibility {
+    /// An `export` declaration makes this binding public.
+    Exported,
+    /// A `public` declaration marks this binding without exporting it.
+    Public,
+    /// Neither declaration marks this binding as public.
+    Private,
+}
+
+/// Static Julia declarations represented without evaluating package code.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "kebab-case", deny_unknown_fields)]
+pub enum JuliaDeclaration {
+    /// A lexical module, including `baremodule`.
+    Module {
+        /// Whether this module omits Julia's implicit Base imports.
+        bare: bool,
+    },
+    /// A function family, authored method, or macro definition.
+    Callable {
+        /// Function, constructor, or macro semantics.
+        binding: JuliaCallableKind,
+        /// Family membership is independent of lexical containment.
+        role: JuliaCallableRole,
+        /// An external module owning a function extended by this package.
+        external_owner: Option<String>,
+    },
+    /// A type is also the canonical family for its explicit constructors.
+    Type {
+        /// Struct, abstract, or primitive type semantics.
+        flavor: JuliaTypeKind,
+        /// Declared type parameters and bounds.
+        parameters: Vec<SignatureExpression>,
+        /// Unevaluated supertype when supplied.
+        supertype: Option<SignatureExpression>,
+        /// Maintained constructor methods, without synthesized defaults.
+        constructors: Vec<ItemReference>,
+    },
+    /// A maintained constant binding.
+    Constant,
+    /// A struct field, including a `const` field.
+    Field {
+        /// Whether the source uses Julia's const field marker.
+        is_const: bool,
+    },
+}
+
+/// Julia callable declaration semantics.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum JuliaCallableKind {
+    /// A generic function or its authored method.
+    Function,
+    /// An explicit inner or outer constructor.
+    Constructor,
+    /// A maintained macro definition, without expansion.
+    Macro,
+}
+
+/// An addressable authored method belongs to one canonical family.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "kebab-case", deny_unknown_fields)]
+pub enum JuliaCallableRole {
+    /// A generic function, or a macro with its declaration signature.
+    Family {
+        /// Maintained method declarations in source order.
+        methods: Vec<ItemReference>,
+    },
+    /// One authored method, rather than a synthesized runtime method.
+    Method {
+        /// Local family or type whose constructor this method implements.
+        family: ItemReference,
+        /// Normalized dispatch syntax used for identity and method references.
+        dispatch: SignatureExpression,
+    },
+}
+
+/// Supported Julia type flavors.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "kebab-case", deny_unknown_fields)]
+pub enum JuliaTypeKind {
+    /// A concrete type with maintained fields.
+    Struct {
+        /// Whether the type uses `mutable struct`.
+        mutable: bool,
+    },
+    /// An abstract type.
+    Abstract,
+    /// A primitive type with an unevaluated bit width.
+    Primitive {
+        /// Declared bit-width spelling.
+        bits: Option<String>,
     },
 }

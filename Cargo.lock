@@ -468,6 +468,7 @@ dependencies = [
  "arity-parser",
  "base64",
  "clap",
+ "fatou-parser",
  "getrandom 0.4.3",
  "html5ever",
  "image",
@@ -482,6 +483,7 @@ dependencies = [
  "pyproject-toml",
  "rd-ast",
  "rd-source",
+ "rowan",
  "roxmltree",
  "ruff_python_ast",
  "ruff_python_parser",
@@ -601,6 +603,17 @@ name = "fastrand"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "da7c62ceae207dd37ea5b845da6a0696c799f85e97da1ab5b7910be3c1c80223"
+
+[[package]]
+name = "fatou-parser"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e5d014d637a7f0374af7389e92209e4dc4fb1cf8d26a32676dae52e8beca1218"
+dependencies = [
+ "rowan",
+ "serde",
+ "unicode-normalization",
+]
 
 [[package]]
 name = "fdeflate"

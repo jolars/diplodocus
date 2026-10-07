@@ -31,7 +31,18 @@ mean_squared_error(c(1, 2), c(1, 3))
 # [1] 0.5
 ```
 
-Both functions require inputs with the same nonzero length. These snippets are
+## Julia
+
+Use [`juliastats::TinyStats.mean_squared_error`]:
+
+```julia
+using TinyStats
+
+mean_squared_error([1.0, 2.0], [1.0, 3.0])
+# 0.5
+```
+
+All three functions require inputs with the same nonzero length. These snippets are
 display examples; building the documentation does not execute them.
 
 ## Choose the next step

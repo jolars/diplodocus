@@ -15,6 +15,14 @@ use crate::execution::{
 };
 use crate::ir::SourceSegment;
 
+pub(crate) fn signature_title(
+    name: &str,
+    signature: &crate::ir::Signature,
+    ecosystem: &str,
+) -> String {
+    signatures::signature(name, signature, ecosystem)
+}
+
 /// Render literal output as escaped, preformatted HTML without Markdown parsing.
 ///
 /// Use this for `PlainText` representations, stderr, and normalized error text.

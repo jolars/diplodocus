@@ -25,6 +25,33 @@ pub enum DiagnosticCode {
     /// No built-in adapter implements an explicitly selected extractor.
     #[serde(rename = "unsupported-extractor")]
     UnsupportedExtractor,
+    /// Julia metadata is malformed or lacks package identity.
+    #[serde(rename = "julia-metadata")]
+    JuliaMetadata,
+    /// A Julia input cannot be read or decoded safely.
+    #[serde(rename = "julia-source-read")]
+    JuliaSourceRead,
+    /// Maintained Julia source contains syntax errors.
+    #[serde(rename = "julia-syntax")]
+    JuliaSyntax,
+    /// An include is dynamic, cyclic, or otherwise unsupported.
+    #[serde(rename = "julia-include")]
+    JuliaInclude,
+    /// Public Julia declarations exceed the supported static subset.
+    #[serde(rename = "julia-unsupported-surface")]
+    JuliaUnsupportedSurface,
+    /// A public binding has no statically established definition.
+    #[serde(rename = "julia-unresolved-definition")]
+    JuliaUnresolvedDefinition,
+    /// Julia definitions, identities, or lookup names conflict.
+    #[serde(rename = "julia-conflicting-surface")]
+    JuliaConflictingSurface,
+    /// Julia documentation cannot be interpreted without evaluation.
+    #[serde(rename = "julia-unsupported-docstring")]
+    JuliaUnsupportedDocstring,
+    /// Julia Markdown contains unsupported or malformed syntax.
+    #[serde(rename = "julia-unsupported-markdown")]
+    JuliaUnsupportedMarkdown,
     /// An authored semantic name has no matching item.
     #[serde(rename = "unresolved-item-reference")]
     UnresolvedItemReference,
@@ -283,6 +310,15 @@ impl DiagnosticCode {
             Self::IncompatiblePackageRelationship => "incompatible-package-relationship",
             Self::IndeterminatePackageRelationship => "indeterminate-package-relationship",
             Self::UnsupportedExtractor => "unsupported-extractor",
+            Self::JuliaMetadata => "julia-metadata",
+            Self::JuliaSourceRead => "julia-source-read",
+            Self::JuliaSyntax => "julia-syntax",
+            Self::JuliaInclude => "julia-include",
+            Self::JuliaUnsupportedSurface => "julia-unsupported-surface",
+            Self::JuliaUnresolvedDefinition => "julia-unresolved-definition",
+            Self::JuliaConflictingSurface => "julia-conflicting-surface",
+            Self::JuliaUnsupportedDocstring => "julia-unsupported-docstring",
+            Self::JuliaUnsupportedMarkdown => "julia-unsupported-markdown",
             Self::UnresolvedItemReference => "unresolved-item-reference",
             Self::AmbiguousItemReference => "ambiguous-item-reference",
             Self::GeneratedAssetOutsideBoundary => "generated-asset-outside-boundary",

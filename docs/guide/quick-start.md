@@ -1,10 +1,10 @@
 # Quick start
 
 Follow [installation](installation.md) to get the CLI and project checkout.
-Then build the small R/Python monorepo in `examples/monorepo/`. It has two
-package APIs, a shared guide, search, and links between the Python and R
+Then build the small three-language monorepo in `examples/monorepo/`. It has three
+package APIs, a shared guide, search, and links between the Python, R, and Julia
 versions of the same function. Its execution mode is `never`, so the site does
-not need Python, R, or Jupyter kernels at build time.
+not need Python, R, Julia, or Jupyter kernels at build time.
 
 From the Diplodocus repository root:
 

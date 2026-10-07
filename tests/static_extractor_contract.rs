@@ -5,6 +5,13 @@ const MANIFEST: &str = include_str!("../Cargo.toml");
 fn parser_versions_are_pinned_and_match_the_contract() {
     for (dependency, manifest_declaration, contract_declaration) in [
         (
+            "fatou-parser",
+            "fatou-parser = \"=0.8.1\"",
+            "| `fatou-parser` | `0.8.1` |",
+        ),
+        ("rowan", "rowan = \"=0.17.0\"", "| `rowan` | `0.17.0` |"),
+        ("toml", "toml = \"=1.1.6\"", "| `toml` | `1.1.6` |"),
+        (
             "pyproject-toml",
             "pyproject-toml = \"=0.13.7\"",
             "| `pyproject-toml` | `0.13.7` |",
@@ -57,7 +64,7 @@ fn parser_versions_are_pinned_and_match_the_contract() {
 }
 
 #[test]
-fn both_extractors_have_complete_capability_manifests() {
+fn extractors_have_complete_capability_manifests() {
     assert_eq!(
         capabilities_between("## Python extractor", "## R extractor"),
         [
@@ -73,7 +80,7 @@ fn both_extractors_have_complete_capability_manifests() {
         ]
     );
     assert_eq!(
-        capabilities_between("## R extractor", "## Provenance fields"),
+        capabilities_between("## R extractor", "## Julia extractor"),
         [
             "diagnostics.unsupported-visible",
             "provenance.source",
@@ -82,6 +89,21 @@ fn both_extractors_have_complete_capability_manifests() {
             "r.namespace.static",
             "r.s3",
             "r.source.functions",
+        ]
+    );
+    assert_eq!(
+        capabilities_between("## Julia extractor", "## Provenance fields"),
+        [
+            "diagnostics.unsupported-visible",
+            "julia.declarations",
+            "julia.docs.markdown",
+            "julia.docs.references",
+            "julia.exports.static",
+            "julia.includes.static",
+            "julia.metadata.project",
+            "julia.methods",
+            "julia.reexports",
+            "provenance.source",
         ]
     );
 }

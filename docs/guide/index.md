@@ -1,6 +1,6 @@
 # Diplodocus
 
-Diplodocus builds one site for related Python and R packages. It combines
+Diplodocus builds one site for related Python, R, and Julia packages. It combines
 statically extracted API references with authored guides, shared navigation,
 cross-references, and search. This guide is built by Diplodocus from the
 project's own `diplodocus.toml`.
@@ -13,7 +13,7 @@ with the project's configured kernel.
 
 ![A documentation workspace with Python and R packages](assets/workspace.svg)
 
-Python and R APIs are parsed without importing or loading the packages. Read
+Python, R, and Julia APIs are parsed without importing or loading the packages. Read
 the [extraction guide](extraction.md) for the supported surfaces, the
 [execution guide](execution.md) before enabling QMD cells, and the
 [diagnostics guide](diagnostics.md) when a build reports a problem. A

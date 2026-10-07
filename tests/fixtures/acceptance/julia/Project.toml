@@ -1,0 +1,7 @@
+name = "TinyGeometry"
+uuid = "b882dd89-6096-44b0-8cba-e0fcc828fead"
+version = "0.2.0"
+authors = ["Geometry contributors"]
+
+[compat]
+julia = "1.11"

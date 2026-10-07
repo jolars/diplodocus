@@ -2,21 +2,21 @@
 
 ## Outcome
 
-The MVP has two built-in API extractors, identified as `python` and `r`. Both
+The built-in API extractors are identified as `python`, `r`, and `julia`. Each
 publish a deterministic manifest containing their version, static extraction
-mode, capabilities, parser stack, target, and inputs. Facts emitted by either
+mode, capabilities, parser stack, target, and inputs. Facts emitted by each
 extractor carry source provenance separately from this target-level manifest.
 
 This document fixes the logical extractor contract. The production record shapes
-are described in the [Python](../ir/python-extraction.md) and
-[R](../ir/r-extraction.md) references. Native parser types and diagnostic
+are described in the [Python](../ir/python-extraction.md),
+[R](../ir/r-extraction.md), and [Julia](../ir/julia-extraction.md) references. Native parser types and diagnostic
 messages are not part of the contract.
 
 ## Common contract
 
 ### Extractor identity and version
 
-The extractor identifiers are exactly `python` and `r`, matching the values
+The extractor identifiers are exactly `python`, `r`, and `julia`, matching the values
 accepted in an extraction target. A built-in extractor's version is the
 Diplodocus crate version from `CARGO_PKG_VERSION`. A parser release or capability
 change does not create an ad hoc extractor version: it changes the parser or
@@ -25,12 +25,12 @@ cache key derived from it.
 
 ### Static mode
 
-Both extractors declare `mode = "static"`. This is the only MVP API-extraction
+All extractors declare `mode = "static"`. This is the only MVP API-extraction
 mode. It means that an extractor:
 
 - runs in the Diplodocus process with Rust-native libraries;
 - reads only configured metadata and files reachable from the declared target;
-- never starts Python, R, Jupyter, a build backend, or another parser process;
+- never starts Python, R, Julia, Jupyter, a build backend, or another parser process;
 - never imports, installs, builds, sources, attaches, or loads documented code;
 - evaluates only an extractor's explicitly supported constant subset; and
 - emits a diagnostic when required semantics cannot be established statically,
@@ -138,6 +138,39 @@ file-level provenance and one `r-rd-source-attribution` warning per Rd file.
 The [R extraction contract](../ir/r-extraction.md) defines the production API,
 supported subset, and coarse document-range behavior.
 
+## Julia extractor
+
+### Parser manifest
+
+| Component | Version | Role and recorded settings |
+| --- | --- | --- |
+| `fatou-parser` | `0.8.1` | Parse Julia declarations, decode docstrings with source maps, and parse Julia Markdown. Record `grammar = "julia-superset"`, `includes = "unconditional-literal"`, `surface = "public-or-documented"`, and `documentation = "julia-markdown-inert"`. |
+| `rowan` | `0.17.0` | Supply Fatou's syntax tree and zero-based, half-open UTF-8 byte ranges. |
+| `toml` | `1.1.6` | Read static Project.toml fields with their source ranges. |
+
+All three releases are exact pins in `Cargo.toml`. Fatou is a published crate;
+extraction does not depend on a sibling checkout or a Julia installation.
+
+### Capability manifest
+
+| Capability | Supported semantic subset |
+| --- | --- |
+| `diagnostics.unsupported-visible` | Common guarantee defined above. |
+| `julia.declarations` | Modules, functions, explicit constructors, types, fields, macros, and constants. |
+| `julia.docs.markdown` | Static decoded docstrings become Julia Markdown nodes, with visible retained unsupported syntax and inert examples. |
+| `julia.docs.references` | Explicit and inferred API `@ref` links resolve to supplied families or method selectors while preserving labels. |
+| `julia.exports.static` | Exported, public, and documented declarations, with their required containers and members. |
+| `julia.includes.static` | Unconditional literal includes within the configured package and repository retain their defining module. |
+| `julia.metadata.project` | Project.toml name, UUID, optional version, authors, dependency UUIDs, compatibility strings, and original fields. |
+| `julia.methods` | Canonical families and addressable authored methods with normalized static dispatch identities. |
+| `julia.reexports` | Maintained imports and aliases resolve to canonical declarations without duplicating them. |
+| `provenance.source` | Common guarantee defined above. |
+
+The manifest does not claim macro expansion, package loading, depot access,
+Documenter page assembly, doctest execution, inferred dependency exports, or
+runtime-generated methods and constructors. The [Julia extraction contract](../ir/julia-extraction.md)
+defines the static subset and its identity and source-map rules.
+
 ## Provenance fields
 
 The following records define logical data, not the final serialization syntax.
@@ -148,7 +181,7 @@ source evidence for an individual field or document node.
 
 | Field | Required value |
 | --- | --- |
-| `extractor` | The extractor `id` (`python` or `r`) and its Diplodocus `version`. |
+| `extractor` | The extractor `id` (`python`, `r`, or `julia`) and its Diplodocus `version`. |
 | `mode` | Exactly `static`. |
 | `capabilities` | The extractor's complete sorted capability identifiers from this document. |
 | `parsers` | A sorted list of component `name`, exact `version`, semantic `role`, and output-affecting `settings` from the relevant parser manifest. |
@@ -157,7 +190,8 @@ source evidence for an individual field or document node.
 
 The Python input kinds are `package-metadata`, `python-source`, `python-stub`,
 and `typed-marker`. The R input kinds are `package-metadata`, `namespace`,
-`r-source`, and `rd`. Inputs, parser records, and capability identifiers are
+`r-source`, and `rd`. Julia input kinds are `package-metadata` and
+`julia-source`. Inputs, parser records, and capability identifiers are
 sorted before serialization. The fingerprint representation and hash algorithm
 belong to the schema and cache-key work in Milestone 3; the field is mandatory
 here so an extraction result cannot claim provenance without naming all content
@@ -184,7 +218,7 @@ several sources support one fact, their records are ordered by `role`, `path`,
 and `range`.
 
 Parser-native messages belong to diagnostics, not provenance. Local repository
-roots, timestamps, process IDs, host names, Python or R runtime versions, and
+roots, timestamps, process IDs, host names, Python, R, or Julia runtime versions, and
 undeclared environment state are forbidden because static extraction neither
 uses them nor can serialize them portably.
 
@@ -197,4 +231,4 @@ The selected Python stack and its represented surface are recorded in the
 [`tests/r_extraction_spike.rs`](../../tests/r_extraction_spike.rs) verify the
 parser modes, semantic inputs, source ranges, and no-evaluation boundary. The
 production diagnostic and provenance behavior is described in the
-[Python](../ir/python-extraction.md) and [R](../ir/r-extraction.md) references.
+[Python](../ir/python-extraction.md), [R](../ir/r-extraction.md), and [Julia](../ir/julia-extraction.md) references.

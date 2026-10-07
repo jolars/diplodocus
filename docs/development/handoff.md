@@ -1,6 +1,6 @@
 # Contributor handoff
 
-Start with the [small R/Python example](../../examples/monorepo/README.md) to
+Start with the [small three-language example](../../examples/monorepo/README.md) to
 see a complete build. The [project guide](../guide/index.md) describes the
 user-facing configuration and commands. This page is a map for changing the
 implementation.
@@ -12,7 +12,7 @@ implementation.
 
 1. `src/configuration.rs` and `src/paths.rs` load declarations and resolve
    source boundaries.
-2. `src/extractors/` reads Python and R packages without importing or running
+2. `src/extractors/` reads Python, R, and Julia packages without importing or running
    them. `src/documents/` parses Markdown and QMD. `src/assembly/` combines
    those inputs into the types in `src/ir/`.
 3. `src/validation/` resolves references and assets. On Linux,
@@ -39,7 +39,7 @@ combined in one `cargo test` invocation.
 | Change | Main code | Focused check |
 |:-------|:----------|:--------------|
 | Configuration and input paths | `src/configuration.rs`, `src/configuration_validation.rs`, `src/paths.rs` | `cargo test --locked --test configuration --test path_resolution` |
-| Static Python or R extraction | `src/extractors/` | `cargo test --locked --test python_surface --test r_extraction --test static_extractor_contract` |
+| Static Python, R, or Julia extraction | `src/extractors/` | `cargo test --locked --test python_surface --test r_extraction --test julia_extraction --test static_extractor_contract` |
 | Authored Markdown or QMD | `src/documents/` | `cargo test --locked --test documents --test qmd_preparation` |
 | Assembly and references | `src/assembly/`, `src/validation/` | `cargo test --locked --test workspace_assembly --test snapshot_validation` |
 | Execution and caching | `src/execution/`, `src/assembly/execution.rs` | `cargo test --locked --test execution_contract --test execution_cache --test jupyter_real_kernels` |

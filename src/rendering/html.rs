@@ -83,6 +83,13 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
             )
             .unwrap();
         }
+        let julia_method = page.item.filter(|item| {
+            item.kind == ItemKind::Method
+                && matches!(&item.language_data, Some(ItemLanguageData::Julia(_)))
+        });
+        if julia_method.is_some() {
+            html.push_str("<p class=\"package\">Method</p>");
+        }
         // Keep the authored heading's formatting and anchor when it supplies the title.
         let authored_title = page.item.is_none()
             && page.concept.is_none()
@@ -95,7 +102,13 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
             });
         if !authored_title {
             let title = if page.item.is_some() {
-                format!("<code>{}</code>", escape(&page.title))
+                format!(
+                    "<code>{}</code>",
+                    escape(
+                        julia_method
+                            .map_or(page.title.as_str(), |item| item.qualified_name.as_str())
+                    )
+                )
             } else {
                 escape(&page.title)
             };
@@ -113,6 +126,40 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
                     &signature.signature,
                     ecosystem,
                 )));
+            }
+            if let Some(ItemLanguageData::Julia(data)) = &item.language_data {
+                let members = match &data.declaration {
+                    JuliaDeclaration::Callable {
+                        role: JuliaCallableRole::Family { methods },
+                        ..
+                    } => methods.as_slice(),
+                    JuliaDeclaration::Type { constructors, .. } => constructors.as_slice(),
+                    _ => &[],
+                };
+                if !members.is_empty() {
+                    html.push_str("<h2>Methods</h2><ul>");
+                    for member in members {
+                        let method = &site.workspace.packages[&member.package].items[&member.item];
+                        let target = &site.routes[&DocumentIdentity::Item {
+                            item: member.clone(),
+                        }];
+                        let title = method
+                            .signatures
+                            .first()
+                            .map(|s| {
+                                super::signatures::signature(&method.name, &s.signature, "julia")
+                            })
+                            .unwrap_or_else(|| method.name.clone());
+                        write!(
+                            html,
+                            "<li><a href=\"{}\"><code>{}</code></a></li>",
+                            escape(&relative_url(route, target)),
+                            escape(&title)
+                        )
+                        .unwrap();
+                    }
+                    html.push_str("</ul>");
+                }
             }
         }
         if let Some(document) = page.document {
@@ -633,4 +680,4 @@ fn plain(nodes: &[Inline]) -> String {
 }
 const STYLE: &str = include_str!("assets/site.css");
 const NAV_SCRIPT: &str = "(()=>{const disclosure=document.querySelector('.nav-disclosure');const narrow=matchMedia('(max-width:760px)');const toc=document.querySelector('.toc-disclosure');const wide=matchMedia('(min-width:1100px)');disclosure.open=!narrow.matches;narrow.addEventListener('change',event=>{disclosure.open=!event.matches});if(toc){toc.open=wide.matches;wide.addEventListener('change',event=>{toc.open=event.matches})}})();";
-const SEARCH: &str = "(()=>{const script=document.currentScript;const root=new URL('../',script.src);const input=document.querySelector('#search');const results=document.querySelector('#search-results');let entries=[];fetch(new URL('search.json',script.src)).then(r=>r.json()).then(v=>{entries=v}).catch(()=>{});input.form.addEventListener('submit',e=>e.preventDefault());input.addEventListener('input',()=>{results.replaceChildren();const q=input.value.trim().toLowerCase();if(!q)return;for(const entry of entries.filter(e=>(e.title+' '+e.text+' '+(e.package||'')).toLowerCase().includes(q)).slice(0,12)){const li=document.createElement('li');const a=document.createElement('a');a.href=new URL(entry.path,root);if(entry.api){const code=document.createElement('code');code.textContent=entry.title;a.append(code)}else{a.append(entry.title)}if(entry.package)a.append(' · '+entry.package);li.append(a);results.append(li)}})})();";
+const SEARCH: &str = include_str!("search.js");

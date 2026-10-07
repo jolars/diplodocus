@@ -2,7 +2,7 @@
   "document": {
     "span": {
       "start": 0,
-      "end": 4994
+      "end": 5114
     },
     "frontmatter": null,
     "blocks": [
@@ -319,10 +319,57 @@
           },
           {
             "type": "text",
-            "value": "starting R. The ",
+            "value": "starting R. Julia extraction reads ",
             "span": {
               "start": 932,
-              "end": 948
+              "end": 967
+            }
+          },
+          {
+            "type": "code",
+            "value": "Project.toml",
+            "span": {
+              "start": 967,
+              "end": 981
+            }
+          },
+          {
+            "type": "text",
+            "value": ", an explicit ",
+            "span": {
+              "start": 981,
+              "end": 995
+            }
+          },
+          {
+            "type": "code",
+            "value": ".jl",
+            "span": {
+              "start": 995,
+              "end": 1000
+            }
+          },
+          {
+            "type": "text",
+            "value": " entry",
+            "span": {
+              "start": 1000,
+              "end": 1006
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1006,
+              "end": 1007
+            }
+          },
+          {
+            "type": "text",
+            "value": "file, and its literal includes without starting Julia. The ",
+            "span": {
+              "start": 1007,
+              "end": 1066
             }
           },
           {
@@ -332,8 +379,8 @@
                 "type": "text",
                 "value": "extraction guide",
                 "span": {
-                  "start": 949,
-                  "end": 965
+                  "start": 1067,
+                  "end": 1083
                 }
               }
             ],
@@ -345,44 +392,44 @@
               "key_values": []
             },
             "span": {
-              "start": 948,
-              "end": 981
+              "start": 1066,
+              "end": 1099
             }
           },
           {
             "type": "text",
             "value": " describes their supported",
             "span": {
-              "start": 981,
-              "end": 1007
+              "start": 1099,
+              "end": 1125
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1007,
-              "end": 1008
+              "start": 1125,
+              "end": 1126
             }
           },
           {
             "type": "text",
             "value": "inputs and limits.",
             "span": {
-              "start": 1008,
-              "end": 1026
+              "start": 1126,
+              "end": 1144
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1026,
-              "end": 1027
+              "start": 1144,
+              "end": 1145
             }
           }
         ],
         "span": {
           "start": 779,
-          "end": 1027
+          "end": 1145
         }
       },
       {
@@ -398,14 +445,14 @@
             "type": "text",
             "value": "Authored content",
             "span": {
-              "start": 1031,
-              "end": 1047
+              "start": 1149,
+              "end": 1165
             }
           }
         ],
         "span": {
-          "start": 1028,
-          "end": 1048
+          "start": 1146,
+          "end": 1166
         }
       },
       {
@@ -415,161 +462,161 @@
             "type": "text",
             "value": "Each ",
             "span": {
-              "start": 1049,
-              "end": 1054
+              "start": 1167,
+              "end": 1172
             }
           },
           {
             "type": "code",
             "value": "[[content]]",
             "span": {
-              "start": 1054,
-              "end": 1067
+              "start": 1172,
+              "end": 1185
             }
           },
           {
             "type": "text",
             "value": " collection names a repository, source directory, mount,",
             "span": {
-              "start": 1067,
-              "end": 1123
+              "start": 1185,
+              "end": 1241
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1123,
-              "end": 1124
+              "start": 1241,
+              "end": 1242
             }
           },
           {
             "type": "text",
             "value": "format, and owner. The ",
             "span": {
-              "start": 1124,
-              "end": 1147
+              "start": 1242,
+              "end": 1265
             }
           },
           {
             "type": "code",
             "value": "project",
             "span": {
-              "start": 1147,
-              "end": 1156
+              "start": 1265,
+              "end": 1274
             }
           },
           {
             "type": "text",
             "value": " owner puts pages in project navigation; a",
             "span": {
-              "start": 1156,
-              "end": 1198
+              "start": 1274,
+              "end": 1316
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1198,
-              "end": 1199
+              "start": 1316,
+              "end": 1317
             }
           },
           {
             "type": "text",
             "value": "package ID puts them under ",
             "span": {
-              "start": 1199,
-              "end": 1226
+              "start": 1317,
+              "end": 1344
             }
           },
           {
             "type": "code",
             "value": "/packages/<slug>/",
             "span": {
-              "start": 1226,
-              "end": 1245
+              "start": 1344,
+              "end": 1363
             }
           },
           {
             "type": "text",
             "value": ". GFM collections read ",
             "span": {
-              "start": 1245,
-              "end": 1268
+              "start": 1363,
+              "end": 1386
             }
           },
           {
             "type": "code",
             "value": ".md",
             "span": {
-              "start": 1268,
-              "end": 1273
+              "start": 1386,
+              "end": 1391
             }
           },
           {
             "type": "text",
             "value": " files.",
             "span": {
-              "start": 1273,
-              "end": 1280
+              "start": 1391,
+              "end": 1398
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1280,
-              "end": 1281
+              "start": 1398,
+              "end": 1399
             }
           },
           {
             "type": "text",
             "value": "QMD collections read ",
             "span": {
-              "start": 1281,
-              "end": 1302
+              "start": 1399,
+              "end": 1420
             }
           },
           {
             "type": "code",
             "value": ".qmd",
             "span": {
-              "start": 1302,
-              "end": 1308
+              "start": 1420,
+              "end": 1426
             }
           },
           {
             "type": "text",
             "value": " files and can include executable cells. Checked-in",
             "span": {
-              "start": 1308,
-              "end": 1359
+              "start": 1426,
+              "end": 1477
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1359,
-              "end": 1360
+              "start": 1477,
+              "end": 1478
             }
           },
           {
             "type": "text",
             "value": "assets can live beside the pages that use them.",
             "span": {
-              "start": 1360,
-              "end": 1407
+              "start": 1478,
+              "end": 1525
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1407,
-              "end": 1408
+              "start": 1525,
+              "end": 1526
             }
           }
         ],
         "span": {
-          "start": 1049,
-          "end": 1408
+          "start": 1167,
+          "end": 1526
         }
       },
       {
@@ -577,56 +624,56 @@
         "inlines": [
           {
             "type": "text",
-            "value": "The monorepo example has one shared GFM guide and two statically extracted",
+            "value": "The monorepo example has one shared GFM guide and three statically extracted",
             "span": {
-              "start": 1409,
-              "end": 1483
+              "start": 1527,
+              "end": 1603
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1483,
-              "end": 1484
+              "start": 1603,
+              "end": 1604
             }
           },
           {
             "type": "text",
             "value": "packages. The root configuration mounts this GFM guide at the site root and",
             "span": {
-              "start": 1484,
-              "end": 1559
+              "start": 1604,
+              "end": 1679
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1559,
-              "end": 1560
+              "start": 1679,
+              "end": 1680
             }
           },
           {
             "type": "text",
             "value": "keeps its QMD example under ",
             "span": {
-              "start": 1560,
-              "end": 1588
+              "start": 1680,
+              "end": 1708
             }
           },
           {
             "type": "code",
             "value": "/examples/",
             "span": {
-              "start": 1588,
-              "end": 1600
+              "start": 1708,
+              "end": 1720
             }
           },
           {
             "type": "text",
             "value": ". See ",
             "span": {
-              "start": 1600,
-              "end": 1606
+              "start": 1720,
+              "end": 1726
             }
           },
           {
@@ -636,8 +683,8 @@
                 "type": "text",
                 "value": "authored pages",
                 "span": {
-                  "start": 1607,
-                  "end": 1621
+                  "start": 1727,
+                  "end": 1741
                 }
               }
             ],
@@ -649,36 +696,36 @@
               "key_values": []
             },
             "span": {
-              "start": 1606,
-              "end": 1636
+              "start": 1726,
+              "end": 1756
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1636,
-              "end": 1637
+              "start": 1756,
+              "end": 1757
             }
           },
           {
             "type": "text",
             "value": "for supported syntax, links, and assets.",
             "span": {
-              "start": 1637,
-              "end": 1677
+              "start": 1757,
+              "end": 1797
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1677,
-              "end": 1678
+              "start": 1797,
+              "end": 1798
             }
           }
         ],
         "span": {
-          "start": 1409,
-          "end": 1678
+          "start": 1527,
+          "end": 1798
         }
       },
       {
@@ -694,14 +741,14 @@
             "type": "text",
             "value": "Execution",
             "span": {
-              "start": 1682,
-              "end": 1691
+              "start": 1802,
+              "end": 1811
             }
           }
         ],
         "span": {
-          "start": 1679,
-          "end": 1692
+          "start": 1799,
+          "end": 1812
         }
       },
       {
@@ -711,52 +758,52 @@
             "type": "text",
             "value": "Execution defaults to ",
             "span": {
-              "start": 1693,
-              "end": 1715
+              "start": 1813,
+              "end": 1835
             }
           },
           {
             "type": "code",
             "value": "never",
             "span": {
-              "start": 1715,
-              "end": 1722
+              "start": 1835,
+              "end": 1842
             }
           },
           {
             "type": "text",
             "value": ". To allow it, set the collection to QMD and",
             "span": {
-              "start": 1722,
-              "end": 1766
+              "start": 1842,
+              "end": 1886
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1766,
-              "end": 1767
+              "start": 1886,
+              "end": 1887
             }
           },
           {
             "type": "text",
             "value": "declare a Jupyter engine and kernel explicitly:",
             "span": {
-              "start": 1767,
-              "end": 1814
+              "start": 1887,
+              "end": 1934
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1814,
-              "end": 1815
+              "start": 1934,
+              "end": 1935
             }
           }
         ],
         "span": {
-          "start": 1693,
-          "end": 1815
+          "start": 1813,
+          "end": 1935
         }
       },
       {
@@ -767,182 +814,182 @@
           {
             "text": "[[content]]",
             "span": {
-              "start": 1824,
-              "end": 1835
+              "start": 1944,
+              "end": 1955
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 1835,
-              "end": 1836
+              "start": 1955,
+              "end": 1956
             }
           },
           {
             "text": "id = \"examples\"",
             "span": {
-              "start": 1836,
-              "end": 1851
+              "start": 1956,
+              "end": 1971
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 1851,
-              "end": 1852
+              "start": 1971,
+              "end": 1972
             }
           },
           {
             "text": "owner = \"project\"",
             "span": {
-              "start": 1852,
-              "end": 1869
+              "start": 1972,
+              "end": 1989
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 1869,
-              "end": 1870
+              "start": 1989,
+              "end": 1990
             }
           },
           {
             "text": "repository = \"diplodocus\"",
             "span": {
-              "start": 1870,
-              "end": 1895
+              "start": 1990,
+              "end": 2015
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 1895,
-              "end": 1896
+              "start": 2015,
+              "end": 2016
             }
           },
           {
             "text": "path = \"docs/examples\"",
             "span": {
-              "start": 1896,
-              "end": 1918
+              "start": 2016,
+              "end": 2038
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 1918,
-              "end": 1919
+              "start": 2038,
+              "end": 2039
             }
           },
           {
             "text": "mount = \"examples\"",
             "span": {
-              "start": 1919,
-              "end": 1937
+              "start": 2039,
+              "end": 2057
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 1937,
-              "end": 1938
+              "start": 2057,
+              "end": 2058
             }
           },
           {
             "text": "format = \"qmd\"",
             "span": {
-              "start": 1938,
-              "end": 1952
+              "start": 2058,
+              "end": 2072
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 1952,
-              "end": 1953
+              "start": 2072,
+              "end": 2073
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 1953,
-              "end": 1954
+              "start": 2073,
+              "end": 2074
             }
           },
           {
             "text": "[content.execution]",
             "span": {
-              "start": 1954,
-              "end": 1973
+              "start": 2074,
+              "end": 2093
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 1973,
-              "end": 1974
+              "start": 2093,
+              "end": 2094
             }
           },
           {
             "text": "mode = \"execute\"",
             "span": {
-              "start": 1974,
-              "end": 1990
+              "start": 2094,
+              "end": 2110
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 1990,
-              "end": 1991
+              "start": 2110,
+              "end": 2111
             }
           },
           {
             "text": "engine = \"jupyter\"",
             "span": {
-              "start": 1991,
-              "end": 2009
+              "start": 2111,
+              "end": 2129
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 2009,
-              "end": 2010
+              "start": 2129,
+              "end": 2130
             }
           },
           {
             "text": "kernel = \"python3\"",
             "span": {
-              "start": 2010,
-              "end": 2028
+              "start": 2130,
+              "end": 2148
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 2028,
-              "end": 2029
+              "start": 2148,
+              "end": 2149
             }
           },
           {
             "text": "declared-environment-inputs = [\"devenv.lock\"]",
             "span": {
-              "start": 2029,
-              "end": 2074
+              "start": 2149,
+              "end": 2194
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 2074,
-              "end": 2075
+              "start": 2194,
+              "end": 2195
             }
           }
         ],
         "span": {
-          "start": 1816,
-          "end": 2079
+          "start": 1936,
+          "end": 2199
         }
       },
       {
@@ -952,137 +999,137 @@
             "type": "text",
             "value": "Declared environment inputs are individual files relative to the repository.",
             "span": {
-              "start": 2080,
-              "end": 2156
+              "start": 2200,
+              "end": 2276
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2156,
-              "end": 2157
+              "start": 2276,
+              "end": 2277
             }
           },
           {
             "type": "text",
             "value": "They contribute to provenance and execution cache keys; Diplodocus does not",
             "span": {
-              "start": 2157,
-              "end": 2232
+              "start": 2277,
+              "end": 2352
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2232,
-              "end": 2233
+              "start": 2352,
+              "end": 2353
             }
           },
           {
             "type": "text",
             "value": "install or interpret them. Document metadata can restrict execution but cannot",
             "span": {
-              "start": 2233,
-              "end": 2311
+              "start": 2353,
+              "end": 2431
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2311,
-              "end": 2312
+              "start": 2431,
+              "end": 2432
             }
           },
           {
             "type": "text",
             "value": "enable it when the collection forbids it. ",
             "span": {
-              "start": 2312,
-              "end": 2354
+              "start": 2432,
+              "end": 2474
             }
           },
           {
             "type": "code",
             "value": "check",
             "span": {
-              "start": 2354,
-              "end": 2361
+              "start": 2474,
+              "end": 2481
             }
           },
           {
             "type": "text",
             "value": " never runs cells. ",
             "span": {
-              "start": 2361,
-              "end": 2380
+              "start": 2481,
+              "end": 2500
             }
           },
           {
             "type": "code",
             "value": "extract",
             "span": {
-              "start": 2380,
-              "end": 2389
+              "start": 2500,
+              "end": 2509
             }
           },
           {
             "type": "text",
             "value": ",",
             "span": {
-              "start": 2389,
-              "end": 2390
+              "start": 2509,
+              "end": 2510
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2390,
-              "end": 2391
+              "start": 2510,
+              "end": 2511
             }
           },
           {
             "type": "code",
             "value": "build",
             "span": {
-              "start": 2391,
-              "end": 2398
+              "start": 2511,
+              "end": 2518
             }
           },
           {
             "type": "text",
             "value": ", and ",
             "span": {
-              "start": 2398,
-              "end": 2404
+              "start": 2518,
+              "end": 2524
             }
           },
           {
             "type": "code",
             "value": "serve",
             "span": {
-              "start": 2404,
-              "end": 2411
+              "start": 2524,
+              "end": 2531
             }
           },
           {
             "type": "text",
             "value": " may run authorized cells with your user permissions.",
             "span": {
-              "start": 2411,
-              "end": 2464
+              "start": 2531,
+              "end": 2584
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2464,
-              "end": 2465
+              "start": 2584,
+              "end": 2585
             }
           }
         ],
         "span": {
-          "start": 2080,
-          "end": 2465
+          "start": 2200,
+          "end": 2585
         }
       },
       {
@@ -1098,14 +1145,14 @@
             "type": "text",
             "value": "Presentation",
             "span": {
-              "start": 2469,
-              "end": 2481
+              "start": 2589,
+              "end": 2601
             }
           }
         ],
         "span": {
-          "start": 2466,
-          "end": 2482
+          "start": 2586,
+          "end": 2602
         }
       },
       {
@@ -1115,21 +1162,21 @@
             "type": "text",
             "value": "An optional table controls the site name, HTML description, and public URL:",
             "span": {
-              "start": 2483,
-              "end": 2558
+              "start": 2603,
+              "end": 2678
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2558,
-              "end": 2559
+              "start": 2678,
+              "end": 2679
             }
           }
         ],
         "span": {
-          "start": 2483,
-          "end": 2559
+          "start": 2603,
+          "end": 2679
         }
       },
       {
@@ -1140,77 +1187,77 @@
           {
             "text": "[presentation]",
             "span": {
-              "start": 2568,
-              "end": 2582
+              "start": 2688,
+              "end": 2702
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 2582,
-              "end": 2583
+              "start": 2702,
+              "end": 2703
             }
           },
           {
             "text": "title = \"Foo documentation\"",
             "span": {
-              "start": 2583,
-              "end": 2610
+              "start": 2703,
+              "end": 2730
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 2610,
-              "end": 2611
+              "start": 2730,
+              "end": 2731
             }
           },
           {
             "text": "description = \"Guides and API documentation for Foo.\"",
             "span": {
-              "start": 2611,
-              "end": 2664
+              "start": 2731,
+              "end": 2784
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 2664,
-              "end": 2665
+              "start": 2784,
+              "end": 2785
             }
           },
           {
             "text": "site-url = \"https://example.com/docs/\"",
             "span": {
-              "start": 2665,
-              "end": 2703
+              "start": 2785,
+              "end": 2823
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 2703,
-              "end": 2704
+              "start": 2823,
+              "end": 2824
             }
           },
           {
             "text": "canonical-url-style = \"file\"",
             "span": {
-              "start": 2704,
-              "end": 2732
+              "start": 2824,
+              "end": 2852
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 2732,
-              "end": 2733
+              "start": 2852,
+              "end": 2853
             }
           }
         ],
         "span": {
-          "start": 2560,
-          "end": 2737
+          "start": 2680,
+          "end": 2857
         }
       },
       {
@@ -1220,69 +1267,69 @@
             "type": "text",
             "value": "The title defaults to ",
             "span": {
-              "start": 2738,
-              "end": 2760
+              "start": 2858,
+              "end": 2880
             }
           },
           {
             "type": "code",
             "value": "project.name",
             "span": {
-              "start": 2760,
-              "end": 2774
+              "start": 2880,
+              "end": 2894
             }
           },
           {
             "type": "text",
             "value": ". Diplodocus uses its built-in theme.",
             "span": {
-              "start": 2774,
-              "end": 2811
+              "start": 2894,
+              "end": 2931
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2811,
-              "end": 2812
+              "start": 2931,
+              "end": 2932
             }
           },
           {
             "type": "text",
             "value": "Generated sites and portable snapshots keep the presentation metadata, so",
             "span": {
-              "start": 2812,
-              "end": 2885
+              "start": 2932,
+              "end": 3005
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2885,
-              "end": 2886
+              "start": 3005,
+              "end": 3006
             }
           },
           {
             "type": "code",
             "value": "generate",
             "span": {
-              "start": 2886,
-              "end": 2896
+              "start": 3006,
+              "end": 3016
             }
           },
           {
             "type": "text",
             "value": " does not need the original configuration. Read about",
             "span": {
-              "start": 2896,
-              "end": 2949
+              "start": 3016,
+              "end": 3069
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2949,
-              "end": 2950
+              "start": 3069,
+              "end": 3070
             }
           },
           {
@@ -1292,8 +1339,8 @@
                 "type": "text",
                 "value": "portable snapshots",
                 "span": {
-                  "start": 2951,
-                  "end": 2969
+                  "start": 3071,
+                  "end": 3089
                 }
               }
             ],
@@ -1305,29 +1352,29 @@
               "key_values": []
             },
             "span": {
-              "start": 2950,
-              "end": 2984
+              "start": 3070,
+              "end": 3104
             }
           },
           {
             "type": "text",
             "value": " before separating extraction and generation.",
             "span": {
-              "start": 2984,
-              "end": 3029
+              "start": 3104,
+              "end": 3149
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3029,
-              "end": 3030
+              "start": 3149,
+              "end": 3150
             }
           }
         ],
         "span": {
-          "start": 2738,
-          "end": 3030
+          "start": 2858,
+          "end": 3150
         }
       },
       {
@@ -1337,160 +1384,160 @@
             "type": "text",
             "value": "Set ",
             "span": {
-              "start": 3031,
-              "end": 3035
+              "start": 3151,
+              "end": 3155
             }
           },
           {
             "type": "code",
             "value": "site-url",
             "span": {
-              "start": 3035,
-              "end": 3045
+              "start": 3155,
+              "end": 3165
             }
           },
           {
             "type": "text",
             "value": " to generate ",
             "span": {
-              "start": 3045,
-              "end": 3058
+              "start": 3165,
+              "end": 3178
             }
           },
           {
             "type": "code",
             "value": "sitemap.xml",
             "span": {
-              "start": 3058,
-              "end": 3071
+              "start": 3178,
+              "end": 3191
             }
           },
           {
             "type": "text",
             "value": ", ",
             "span": {
-              "start": 3071,
-              "end": 3073
+              "start": 3191,
+              "end": 3193
             }
           },
           {
             "type": "code",
             "value": "robots.txt",
             "span": {
-              "start": 3073,
-              "end": 3085
+              "start": 3193,
+              "end": 3205
             }
           },
           {
             "type": "text",
             "value": ", and canonical links in",
             "span": {
-              "start": 3085,
-              "end": 3109
+              "start": 3205,
+              "end": 3229
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3109,
-              "end": 3110
+              "start": 3229,
+              "end": 3230
             }
           },
           {
             "type": "text",
             "value": "HTML pages. It must be an absolute HTTP or HTTPS URL without credentials,",
             "span": {
-              "start": 3110,
-              "end": 3183
+              "start": 3230,
+              "end": 3303
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3183,
-              "end": 3184
+              "start": 3303,
+              "end": 3304
             }
           },
           {
             "type": "text",
             "value": "query parameters, fragments, or whitespace. Include the hosting prefix when",
             "span": {
-              "start": 3184,
-              "end": 3259
+              "start": 3304,
+              "end": 3379
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3259,
-              "end": 3260
+              "start": 3379,
+              "end": 3380
             }
           },
           {
             "type": "text",
             "value": "deploying under a subdirectory. Diplodocus treats the URL as a directory root,",
             "span": {
-              "start": 3260,
-              "end": 3338
+              "start": 3380,
+              "end": 3458
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3338,
-              "end": 3339
+              "start": 3458,
+              "end": 3459
             }
           },
           {
             "type": "text",
             "value": "whether or not you include its trailing slash. Omitting ",
             "span": {
-              "start": 3339,
-              "end": 3395
+              "start": 3459,
+              "end": 3515
             }
           },
           {
             "type": "code",
             "value": "site-url",
             "span": {
-              "start": 3395,
-              "end": 3405
+              "start": 3515,
+              "end": 3525
             }
           },
           {
             "type": "text",
             "value": " omits all",
             "span": {
-              "start": 3405,
-              "end": 3415
+              "start": 3525,
+              "end": 3535
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3415,
-              "end": 3416
+              "start": 3535,
+              "end": 3536
             }
           },
           {
             "type": "text",
             "value": "three forms of crawler metadata.",
             "span": {
-              "start": 3416,
-              "end": 3448
+              "start": 3536,
+              "end": 3568
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3448,
-              "end": 3449
+              "start": 3568,
+              "end": 3569
             }
           }
         ],
         "span": {
-          "start": 3031,
-          "end": 3449
+          "start": 3151,
+          "end": 3569
         }
       },
       {
@@ -1500,66 +1547,66 @@
             "type": "text",
             "value": "The sitemap lists the homepage, authored pages, package overviews, API pages,",
             "span": {
-              "start": 3450,
-              "end": 3527
+              "start": 3570,
+              "end": 3647
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3527,
-              "end": 3528
+              "start": 3647,
+              "end": 3648
             }
           },
           {
             "type": "text",
             "value": "and concepts. It follows search visibility: public and internal package pages",
             "span": {
-              "start": 3528,
-              "end": 3605
+              "start": 3648,
+              "end": 3725
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3605,
-              "end": 3606
+              "start": 3725,
+              "end": 3726
             }
           },
           {
             "type": "text",
             "value": "appear, and hidden package pages do not. Assets do not appear. Entries contain",
             "span": {
-              "start": 3606,
-              "end": 3684
+              "start": 3726,
+              "end": 3804
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3684,
-              "end": 3685
+              "start": 3804,
+              "end": 3805
             }
           },
           {
             "type": "text",
             "value": "URLs only; Diplodocus does not infer modification dates from build times.",
             "span": {
-              "start": 3685,
-              "end": 3758
+              "start": 3805,
+              "end": 3878
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3758,
-              "end": 3759
+              "start": 3878,
+              "end": 3879
             }
           }
         ],
         "span": {
-          "start": 3450,
-          "end": 3759
+          "start": 3570,
+          "end": 3879
         }
       },
       {
@@ -1569,285 +1616,285 @@
             "type": "code",
             "value": "canonical-url-style",
             "span": {
-              "start": 3760,
-              "end": 3781
+              "start": 3880,
+              "end": 3901
             }
           },
           {
             "type": "text",
             "value": " defaults to ",
             "span": {
-              "start": 3781,
-              "end": 3794
+              "start": 3901,
+              "end": 3914
             }
           },
           {
             "type": "code",
             "value": "file",
             "span": {
-              "start": 3794,
-              "end": 3800
+              "start": 3914,
+              "end": 3920
             }
           },
           {
             "type": "text",
             "value": ", which retains generated filenames",
             "span": {
-              "start": 3800,
-              "end": 3835
+              "start": 3920,
+              "end": 3955
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3835,
-              "end": 3836
+              "start": 3955,
+              "end": 3956
             }
           },
           {
             "type": "text",
             "value": "such as ",
             "span": {
-              "start": 3836,
-              "end": 3844
+              "start": 3956,
+              "end": 3964
             }
           },
           {
             "type": "code",
             "value": "/docs/index.html",
             "span": {
-              "start": 3844,
-              "end": 3862
+              "start": 3964,
+              "end": 3982
             }
           },
           {
             "type": "text",
             "value": " and ",
             "span": {
-              "start": 3862,
-              "end": 3867
+              "start": 3982,
+              "end": 3987
             }
           },
           {
             "type": "code",
             "value": "/docs/installation.html",
             "span": {
-              "start": 3867,
-              "end": 3892
+              "start": 3987,
+              "end": 4012
             }
           },
           {
             "type": "text",
             "value": ". Use ",
             "span": {
-              "start": 3892,
-              "end": 3898
+              "start": 4012,
+              "end": 4018
             }
           },
           {
             "type": "code",
             "value": "clean",
             "span": {
-              "start": 3898,
-              "end": 3905
+              "start": 4018,
+              "end": 4025
             }
           },
           {
             "type": "text",
             "value": " when your",
             "span": {
-              "start": 3905,
-              "end": 3915
+              "start": 4025,
+              "end": 4035
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3915,
-              "end": 3916
+              "start": 4035,
+              "end": 4036
             }
           },
           {
             "type": "text",
             "value": "host serves index pages at directory URLs and other HTML pages without their",
             "span": {
-              "start": 3916,
-              "end": 3992
+              "start": 4036,
+              "end": 4112
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3992,
-              "end": 3993
+              "start": 4112,
+              "end": 4113
             }
           },
           {
             "type": "text",
             "value": "extension. For example, those URLs become ",
             "span": {
-              "start": 3993,
-              "end": 4035
+              "start": 4113,
+              "end": 4155
             }
           },
           {
             "type": "code",
             "value": "/docs/",
             "span": {
-              "start": 4035,
-              "end": 4043
+              "start": 4155,
+              "end": 4163
             }
           },
           {
             "type": "text",
             "value": " and ",
             "span": {
-              "start": 4043,
-              "end": 4048
+              "start": 4163,
+              "end": 4168
             }
           },
           {
             "type": "code",
             "value": "/docs/installation",
             "span": {
-              "start": 4048,
-              "end": 4068
+              "start": 4168,
+              "end": 4188
             }
           },
           {
             "type": "text",
             "value": ".",
             "span": {
-              "start": 4068,
-              "end": 4069
+              "start": 4188,
+              "end": 4189
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 4069,
-              "end": 4070
+              "start": 4189,
+              "end": 4190
             }
           },
           {
             "type": "text",
             "value": "The Diplodocus documentation uses ",
             "span": {
-              "start": 4070,
-              "end": 4104
+              "start": 4190,
+              "end": 4224
             }
           },
           {
             "type": "code",
             "value": "clean",
             "span": {
-              "start": 4104,
-              "end": 4111
+              "start": 4224,
+              "end": 4231
             }
           },
           {
             "type": "text",
             "value": " to match Cloudflare's default static",
             "span": {
-              "start": 4111,
-              "end": 4148
+              "start": 4231,
+              "end": 4268
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 4148,
-              "end": 4149
+              "start": 4268,
+              "end": 4269
             }
           },
           {
             "type": "text",
             "value": "asset routing. This setting changes sitemap URLs and canonical links; output",
             "span": {
-              "start": 4149,
-              "end": 4225
+              "start": 4269,
+              "end": 4345
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 4225,
-              "end": 4226
+              "start": 4345,
+              "end": 4346
             }
           },
           {
             "type": "text",
             "value": "filenames, navigation links, and local preview routes retain their file paths.",
             "span": {
-              "start": 4226,
-              "end": 4304
+              "start": 4346,
+              "end": 4424
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 4304,
-              "end": 4305
+              "start": 4424,
+              "end": 4425
             }
           },
           {
             "type": "text",
             "value": "Clean URLs require matching support from your host. Ambiguous routes, such as",
             "span": {
-              "start": 4305,
-              "end": 4382
+              "start": 4425,
+              "end": 4502
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 4382,
-              "end": 4383
+              "start": 4502,
+              "end": 4503
             }
           },
           {
             "type": "code",
             "value": "foo.html",
             "span": {
-              "start": 4383,
-              "end": 4393
+              "start": 4503,
+              "end": 4513
             }
           },
           {
             "type": "text",
             "value": " alongside ",
             "span": {
-              "start": 4393,
-              "end": 4404
+              "start": 4513,
+              "end": 4524
             }
           },
           {
             "type": "code",
             "value": "foo/index.html",
             "span": {
-              "start": 4404,
-              "end": 4420
+              "start": 4524,
+              "end": 4540
             }
           },
           {
             "type": "text",
             "value": ", fail generation before site publication.",
             "span": {
-              "start": 4420,
-              "end": 4462
+              "start": 4540,
+              "end": 4582
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 4462,
-              "end": 4463
+              "start": 4582,
+              "end": 4583
             }
           }
         ],
         "span": {
-          "start": 3760,
-          "end": 4463
+          "start": 3880,
+          "end": 4583
         }
       },
       {
@@ -1857,176 +1904,176 @@
             "type": "text",
             "value": "The generated ",
             "span": {
-              "start": 4464,
-              "end": 4478
+              "start": 4584,
+              "end": 4598
             }
           },
           {
             "type": "code",
             "value": "robots.txt",
             "span": {
-              "start": 4478,
-              "end": 4490
+              "start": 4598,
+              "end": 4610
             }
           },
           {
             "type": "text",
             "value": " allows crawling and advertises the sitemap's full",
             "span": {
-              "start": 4490,
-              "end": 4540
+              "start": 4610,
+              "end": 4660
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 4540,
-              "end": 4541
+              "start": 4660,
+              "end": 4661
             }
           },
           {
             "type": "text",
             "value": "URL. Crawlers read this file from the host's root ",
             "span": {
-              "start": 4541,
-              "end": 4591
+              "start": 4661,
+              "end": 4711
             }
           },
           {
             "type": "code",
             "value": "/robots.txt",
             "span": {
-              "start": 4591,
-              "end": 4604
+              "start": 4711,
+              "end": 4724
             }
           },
           {
             "type": "text",
             "value": ". For a site",
             "span": {
-              "start": 4604,
-              "end": 4616
+              "start": 4724,
+              "end": 4736
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 4616,
-              "end": 4617
+              "start": 4736,
+              "end": 4737
             }
           },
           {
             "type": "text",
             "value": "deployed under ",
             "span": {
-              "start": 4617,
-              "end": 4632
+              "start": 4737,
+              "end": 4752
             }
           },
           {
             "type": "code",
             "value": "/docs/",
             "span": {
-              "start": 4632,
-              "end": 4640
+              "start": 4752,
+              "end": 4760
             }
           },
           {
             "type": "text",
             "value": ", add the generated ",
             "span": {
-              "start": 4640,
-              "end": 4660
+              "start": 4760,
+              "end": 4780
             }
           },
           {
             "type": "code",
             "value": "Sitemap",
             "span": {
-              "start": 4660,
-              "end": 4669
+              "start": 4780,
+              "end": 4789
             }
           },
           {
             "type": "text",
             "value": " directive to the host's",
             "span": {
-              "start": 4669,
-              "end": 4693
+              "start": 4789,
+              "end": 4813
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 4693,
-              "end": 4694
+              "start": 4813,
+              "end": 4814
             }
           },
           {
             "type": "text",
             "value": "root robots file. A file at ",
             "span": {
-              "start": 4694,
-              "end": 4722
+              "start": 4814,
+              "end": 4842
             }
           },
           {
             "type": "code",
             "value": "/docs/robots.txt",
             "span": {
-              "start": 4722,
-              "end": 4740
+              "start": 4842,
+              "end": 4860
             }
           },
           {
             "type": "text",
             "value": " does not provide crawler discovery.",
             "span": {
-              "start": 4740,
-              "end": 4776
+              "start": 4860,
+              "end": 4896
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 4776,
-              "end": 4777
+              "start": 4896,
+              "end": 4897
             }
           },
           {
             "type": "text",
             "value": "The first implementation writes one sitemap and rejects sites that exceed",
             "span": {
-              "start": 4777,
-              "end": 4850
+              "start": 4897,
+              "end": 4970
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 4850,
-              "end": 4851
+              "start": 4970,
+              "end": 4971
             }
           },
           {
             "type": "text",
             "value": "the sitemap protocol's URL count, file size, or URL length limits.",
             "span": {
-              "start": 4851,
-              "end": 4917
+              "start": 4971,
+              "end": 5037
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 4917,
-              "end": 4918
+              "start": 5037,
+              "end": 5038
             }
           }
         ],
         "span": {
-          "start": 4464,
-          "end": 4918
+          "start": 4584,
+          "end": 5038
         }
       },
       {
@@ -2036,8 +2083,8 @@
             "type": "text",
             "value": "Return to the ",
             "span": {
-              "start": 4919,
-              "end": 4933
+              "start": 5039,
+              "end": 5053
             }
           },
           {
@@ -2047,8 +2094,8 @@
                 "type": "text",
                 "value": "quick start",
                 "span": {
-                  "start": 4934,
-                  "end": 4945
+                  "start": 5054,
+                  "end": 5065
                 }
               }
             ],
@@ -2060,16 +2107,16 @@
               "key_values": []
             },
             "span": {
-              "start": 4933,
-              "end": 4962
+              "start": 5053,
+              "end": 5082
             }
           },
           {
             "type": "text",
             "value": " or see the ",
             "span": {
-              "start": 4962,
-              "end": 4974
+              "start": 5082,
+              "end": 5094
             }
           },
           {
@@ -2079,8 +2126,8 @@
                 "type": "text",
                 "value": "commands",
                 "span": {
-                  "start": 4975,
-                  "end": 4983
+                  "start": 5095,
+                  "end": 5103
                 }
               }
             ],
@@ -2092,29 +2139,29 @@
               "key_values": []
             },
             "span": {
-              "start": 4974,
-              "end": 4992
+              "start": 5094,
+              "end": 5112
             }
           },
           {
             "type": "text",
             "value": ".",
             "span": {
-              "start": 4992,
-              "end": 4993
+              "start": 5112,
+              "end": 5113
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 4993,
-              "end": 4994
+              "start": 5113,
+              "end": 5114
             }
           }
         ],
         "span": {
-          "start": 4919,
-          "end": 4994
+          "start": 5039,
+          "end": 5114
         }
       }
     ]

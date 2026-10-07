@@ -1,0 +1,7 @@
+name = "TinyStats"
+uuid = "18f44767-5045-4ec0-91b2-2113d84f2d30"
+version = "0.1.0"
+authors = ["Tiny Stats contributors"]
+
+[compat]
+julia = "1.10"

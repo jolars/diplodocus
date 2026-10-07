@@ -1,7 +1,7 @@
 # Browser development
 
-The browser workflow uses the small [R/Python monorepo](../../examples/monorepo/README.md).
-Its static extraction needs no running Python or R kernels. Rust tests cover
+The browser workflow uses the small [three-language monorepo](../../examples/monorepo/README.md).
+Its static extraction needs no Python, R, or Julia runtime. Rust tests cover
 the extraction and generation contracts; Playwright tests exercise the pages
 through Chromium.
 

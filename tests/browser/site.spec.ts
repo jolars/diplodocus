@@ -48,6 +48,7 @@ for (const [path, title, name] of [
   ["/guides/comparing-predictions.html", "Comparing predictions", "guide"],
   ["/packages/python/", "Tiny Stats for Python", "python-package"],
   ["/packages/r/", "Tiny Stats for R", "r-package"],
+  ["/packages/julia/", "Tiny Stats for Julia", "julia-package"],
   ["/getting-started/quick-start.html", "Quick start", "quick-start"],
   ["/guides/choosing-a-metric.html", "Choosing a metric", "choosing-a-metric"],
   ["/packages/python/guides/evaluating-models.html", "Evaluating models in Python", "python-guide"],
@@ -66,7 +67,7 @@ for (const [path, title, name] of [
   });
 }
 
-test("search finds both APIs and follows a result", async ({ page }) => {
+test("search finds all three APIs and follows a result", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("searchbox").fill("mean_squared_error");
   const results = page.locator("#search-results");
@@ -74,6 +75,7 @@ test("search finds both APIs and follows a result", async ({ page }) => {
   await expect(python).toBeVisible();
   await expect(python.locator("code")).toHaveText("tinystats.mean_squared_error");
   await expect(results.getByRole("link", { name: "mean_squared_error · Tiny Stats for R", exact: true })).toBeVisible();
+  await expect(results.getByRole("link", { name: "TinyStats.mean_squared_error · Tiny Stats for Julia", exact: true })).toBeVisible();
   await python.click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("tinystats.mean_squared_error");
 });
@@ -129,8 +131,8 @@ test("equivalent APIs link in both directions", async ({ page }, info) => {
   await fitsViewport(page);
   await capture(page, info, "python-api");
   const sameApi = page.locator("section").filter({ has: page.getByRole("heading", { name: "Same API in", exact: true }) });
-  await expect(sameApi.getByRole("link")).toHaveCount(1);
-  await expect(sameApi.locator("code")).toHaveText("mean_squared_error");
+  await expect(sameApi.getByRole("link")).toHaveCount(2);
+  await expect(sameApi.locator("code")).toHaveText(["TinyStats.mean_squared_error", "mean_squared_error"]);
   await sameApi.getByRole("link", { name: "Tiny Stats for R: mean_squared_error", exact: true }).click();
   await expect(page.getByRole("heading", { level: 1, name: "mean_squared_error", exact: true })).toBeVisible();
   await fitsViewport(page);
@@ -219,4 +221,22 @@ test("page TOC stays close to content when the window narrows", async ({ page },
   const title = await page.getByRole("heading", { level: 1 }).boundingBox();
   expect(title!.y - (header!.y + header!.height), "A page without a TOC should not reserve an empty row").toBeLessThanOrEqual(40);
   await capture(page, info, "medium-without-toc");
+});
+
+test("Julia families link to documented methods", async ({ page }, info) => {
+  await page.goto("/guides/comparing-predictions.html");
+  await page.getByRole("main").getByRole("link", { name: "juliastats::TinyStats.mean_squared_error", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("TinyStats.mean_squared_error");
+  await expect(page.getByRole("heading", { name: "Methods", exact: true })).toBeVisible();
+  await expect(page.getByRole("main").getByText("Calculate the mean squared difference", { exact: false })).toBeVisible();
+  await fitsViewport(page);
+  await capture(page, info, "julia-family");
+  await page.getByRole("main").getByRole("link", { name: "vector method", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("TinyStats.mean_squared_error");
+  await expect(page.getByRole("main").getByText("Method", { exact: true })).toBeVisible();
+  await expect(page.getByRole("main").locator("pre code")).toHaveText("mean_squared_error(observed::AbstractVector, predicted::AbstractVector)");
+  await expect(page.getByRole("main").getByText("Calculate mean squared error for numeric vectors.", { exact: true })).toBeVisible();
+  await expect(page.locator('[aria-current="page"]')).toHaveText("mean_squared_error(observed::AbstractVector, predicted::AbstractVector)");
+  await fitsViewport(page);
+  await capture(page, info, "julia-method");
 });

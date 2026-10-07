@@ -51,7 +51,7 @@ if (mode === "serve-test") {
   const workspace = mkdtempSync(join(tmpdir(), "diplodocus-browser-"));
   try {
     // Separate sources also isolate snapshots and caches between concurrent runs.
-    for (const path of ["diplodocus.toml", "docs", "python", "r"]) {
+    for (const path of ["diplodocus.toml", "docs", "python", "r", "julia"]) {
       cpSync(join(root, "examples/monorepo", path), join(workspace, path), {
         recursive: true,
       });

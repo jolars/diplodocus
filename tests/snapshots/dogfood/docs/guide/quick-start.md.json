@@ -2,7 +2,7 @@
   "document": {
     "span": {
       "start": 0,
-      "end": 2682
+      "end": 2705
     },
     "frontmatter": null,
     "blocks": [
@@ -81,100 +81,100 @@
           },
           {
             "type": "text",
-            "value": "Then build the small R/Python monorepo in ",
+            "value": "Then build the small three-language monorepo in ",
             "span": {
               "start": 91,
-              "end": 133
+              "end": 139
             }
           },
           {
             "type": "code",
             "value": "examples/monorepo/",
             "span": {
-              "start": 133,
-              "end": 153
+              "start": 139,
+              "end": 159
             }
           },
           {
             "type": "text",
-            "value": ". It has two",
+            "value": ". It has three",
             "span": {
-              "start": 153,
-              "end": 165
+              "start": 159,
+              "end": 173
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 165,
-              "end": 166
+              "start": 173,
+              "end": 174
             }
           },
           {
             "type": "text",
-            "value": "package APIs, a shared guide, search, and links between the Python and R",
+            "value": "package APIs, a shared guide, search, and links between the Python, R, and Julia",
             "span": {
-              "start": 166,
-              "end": 238
+              "start": 174,
+              "end": 254
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 238,
-              "end": 239
+              "start": 254,
+              "end": 255
             }
           },
           {
             "type": "text",
             "value": "versions of the same function. Its execution mode is ",
             "span": {
-              "start": 239,
-              "end": 292
+              "start": 255,
+              "end": 308
             }
           },
           {
             "type": "code",
             "value": "never",
             "span": {
-              "start": 292,
-              "end": 299
+              "start": 308,
+              "end": 315
             }
           },
           {
             "type": "text",
             "value": ", so the site does",
             "span": {
-              "start": 299,
-              "end": 317
+              "start": 315,
+              "end": 333
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 317,
-              "end": 318
+              "start": 333,
+              "end": 334
             }
           },
           {
             "type": "text",
-            "value": "not need Python, R, or Jupyter kernels at build time.",
+            "value": "not need Python, R, Julia, or Jupyter kernels at build time.",
             "span": {
-              "start": 318,
-              "end": 371
+              "start": 334,
+              "end": 394
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 371,
-              "end": 372
+              "start": 394,
+              "end": 395
             }
           }
         ],
         "span": {
           "start": 15,
-          "end": 372
+          "end": 395
         }
       },
       {
@@ -184,21 +184,21 @@
             "type": "text",
             "value": "From the Diplodocus repository root:",
             "span": {
-              "start": 373,
-              "end": 409
+              "start": 396,
+              "end": 432
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 409,
-              "end": 410
+              "start": 432,
+              "end": 433
             }
           }
         ],
         "span": {
-          "start": 373,
-          "end": 410
+          "start": 396,
+          "end": 433
         }
       },
       {
@@ -209,35 +209,35 @@
           {
             "text": "devenv shell",
             "span": {
-              "start": 422,
-              "end": 434
+              "start": 445,
+              "end": 457
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 434,
-              "end": 435
+              "start": 457,
+              "end": 458
             }
           },
           {
             "text": "task preview",
             "span": {
-              "start": 435,
-              "end": 447
+              "start": 458,
+              "end": 470
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 447,
-              "end": 448
+              "start": 470,
+              "end": 471
             }
           }
         ],
         "span": {
-          "start": 411,
-          "end": 452
+          "start": 434,
+          "end": 475
         }
       },
       {
@@ -247,90 +247,90 @@
             "type": "code",
             "value": "task preview",
             "span": {
-              "start": 453,
-              "end": 467
+              "start": 476,
+              "end": 490
             }
           },
           {
             "type": "text",
             "value": " builds Diplodocus and serves the example. Open the local URL",
             "span": {
-              "start": 467,
-              "end": 528
+              "start": 490,
+              "end": 551
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 528,
-              "end": 529
+              "start": 551,
+              "end": 552
             }
           },
           {
             "type": "text",
             "value": "printed in the terminal. Edit a page under ",
             "span": {
-              "start": 529,
-              "end": 572
+              "start": 552,
+              "end": 595
             }
           },
           {
             "type": "code",
             "value": "examples/monorepo/docs",
             "span": {
-              "start": 572,
-              "end": 596
+              "start": 595,
+              "end": 619
             }
           },
           {
             "type": "text",
             "value": " to try a",
             "span": {
-              "start": 596,
-              "end": 605
+              "start": 619,
+              "end": 628
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 605,
-              "end": 606
+              "start": 628,
+              "end": 629
             }
           },
           {
             "type": "text",
             "value": "watched rebuild; successful rebuilds refresh the browser. Stop the server with",
             "span": {
-              "start": 606,
-              "end": 684
+              "start": 629,
+              "end": 707
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 684,
-              "end": 685
+              "start": 707,
+              "end": 708
             }
           },
           {
             "type": "text",
             "value": "Ctrl-C. The equivalent direct commands are:",
             "span": {
-              "start": 685,
-              "end": 728
+              "start": 708,
+              "end": 751
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 728,
-              "end": 729
+              "start": 751,
+              "end": 752
             }
           }
         ],
         "span": {
-          "start": 453,
-          "end": 729
+          "start": 476,
+          "end": 752
         }
       },
       {
@@ -341,49 +341,49 @@
           {
             "text": "cargo run --locked -- check --config examples/monorepo/diplodocus.toml",
             "span": {
-              "start": 741,
-              "end": 811
+              "start": 764,
+              "end": 834
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 811,
-              "end": 812
+              "start": 834,
+              "end": 835
             }
           },
           {
             "text": "cargo run --locked -- build --config examples/monorepo/diplodocus.toml --output site/monorepo",
             "span": {
-              "start": 812,
-              "end": 905
+              "start": 835,
+              "end": 928
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 905,
-              "end": 906
+              "start": 928,
+              "end": 929
             }
           },
           {
             "text": "cargo run --locked -- serve --config examples/monorepo/diplodocus.toml --output site/monorepo --port 0 --live-reload",
             "span": {
-              "start": 906,
-              "end": 1022
+              "start": 929,
+              "end": 1045
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 1022,
-              "end": 1023
+              "start": 1045,
+              "end": 1046
             }
           }
         ],
         "span": {
-          "start": 730,
-          "end": 1027
+          "start": 753,
+          "end": 1050
         }
       },
       {
@@ -393,55 +393,55 @@
             "type": "code",
             "value": "check",
             "span": {
-              "start": 1028,
-              "end": 1035
+              "start": 1051,
+              "end": 1058
             }
           },
           {
             "type": "text",
             "value": " validates sources without writing a site. ",
             "span": {
-              "start": 1035,
-              "end": 1078
+              "start": 1058,
+              "end": 1101
             }
           },
           {
             "type": "code",
             "value": "build",
             "span": {
-              "start": 1078,
-              "end": 1085
+              "start": 1101,
+              "end": 1108
             }
           },
           {
             "type": "text",
             "value": " writes the site, and",
             "span": {
-              "start": 1085,
-              "end": 1106
+              "start": 1108,
+              "end": 1129
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1106,
-              "end": 1107
+              "start": 1129,
+              "end": 1130
             }
           },
           {
             "type": "code",
             "value": "serve",
             "span": {
-              "start": 1107,
-              "end": 1114
+              "start": 1130,
+              "end": 1137
             }
           },
           {
             "type": "text",
             "value": " builds and watches it. See the ",
             "span": {
-              "start": 1114,
-              "end": 1146
+              "start": 1137,
+              "end": 1169
             }
           },
           {
@@ -451,8 +451,8 @@
                 "type": "text",
                 "value": "command reference",
                 "span": {
-                  "start": 1147,
-                  "end": 1164
+                  "start": 1170,
+                  "end": 1187
                 }
               }
             ],
@@ -464,53 +464,53 @@
               "key_values": []
             },
             "span": {
-              "start": 1146,
-              "end": 1173
+              "start": 1169,
+              "end": 1196
             }
           },
           {
             "type": "text",
             "value": " for the",
             "span": {
-              "start": 1173,
-              "end": 1181
+              "start": 1196,
+              "end": 1204
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1181,
-              "end": 1182
+              "start": 1204,
+              "end": 1205
             }
           },
           {
             "type": "text",
             "value": "snapshot commands and defaults. Diplodocus does not install dependencies or",
             "span": {
-              "start": 1182,
-              "end": 1257
+              "start": 1205,
+              "end": 1280
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1257,
-              "end": 1258
+              "start": 1280,
+              "end": 1281
             }
           },
           {
             "type": "text",
             "value": "kernels for a workspace. To adapt the example, read the",
             "span": {
-              "start": 1258,
-              "end": 1313
+              "start": 1281,
+              "end": 1336
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1313,
-              "end": 1314
+              "start": 1336,
+              "end": 1337
             }
           },
           {
@@ -520,8 +520,8 @@
                 "type": "text",
                 "value": "workspace configuration",
                 "span": {
-                  "start": 1315,
-                  "end": 1338
+                  "start": 1338,
+                  "end": 1361
                 }
               }
             ],
@@ -533,16 +533,16 @@
               "key_values": []
             },
             "span": {
-              "start": 1314,
-              "end": 1357
+              "start": 1337,
+              "end": 1380
             }
           },
           {
             "type": "text",
             "value": " and ",
             "span": {
-              "start": 1357,
-              "end": 1362
+              "start": 1380,
+              "end": 1385
             }
           },
           {
@@ -552,8 +552,8 @@
                 "type": "text",
                 "value": "authored-pages",
                 "span": {
-                  "start": 1363,
-                  "end": 1377
+                  "start": 1386,
+                  "end": 1400
                 }
               }
             ],
@@ -565,36 +565,36 @@
               "key_values": []
             },
             "span": {
-              "start": 1362,
-              "end": 1392
+              "start": 1385,
+              "end": 1415
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1392,
-              "end": 1393
+              "start": 1415,
+              "end": 1416
             }
           },
           {
             "type": "text",
             "value": "guides.",
             "span": {
-              "start": 1393,
-              "end": 1400
+              "start": 1416,
+              "end": 1423
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1400,
-              "end": 1401
+              "start": 1423,
+              "end": 1424
             }
           }
         ],
         "span": {
-          "start": 1028,
-          "end": 1401
+          "start": 1051,
+          "end": 1424
         }
       },
       {
@@ -610,14 +610,14 @@
             "type": "text",
             "value": "Build Diplodocus's own documentation",
             "span": {
-              "start": 1405,
-              "end": 1441
+              "start": 1428,
+              "end": 1464
             }
           }
         ],
         "span": {
-          "start": 1402,
-          "end": 1442
+          "start": 1425,
+          "end": 1465
         }
       },
       {
@@ -627,83 +627,83 @@
             "type": "text",
             "value": "The root ",
             "span": {
-              "start": 1443,
-              "end": 1452
+              "start": 1466,
+              "end": 1475
             }
           },
           {
             "type": "code",
             "value": "diplodocus.toml",
             "span": {
-              "start": 1452,
-              "end": 1469
+              "start": 1475,
+              "end": 1492
             }
           },
           {
             "type": "text",
             "value": " builds this guide as the homepage and an executable",
             "span": {
-              "start": 1469,
-              "end": 1521
+              "start": 1492,
+              "end": 1544
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1521,
-              "end": 1522
+              "start": 1544,
+              "end": 1545
             }
           },
           {
             "type": "text",
             "value": "Python example.",
             "span": {
-              "start": 1522,
-              "end": 1537
+              "start": 1545,
+              "end": 1560
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1537,
-              "end": 1538
+              "start": 1560,
+              "end": 1561
             }
           },
           {
             "type": "text",
             "value": "The devenv shell supplies its ",
             "span": {
-              "start": 1538,
-              "end": 1568
+              "start": 1561,
+              "end": 1591
             }
           },
           {
             "type": "code",
             "value": "python3",
             "span": {
-              "start": 1568,
-              "end": 1577
+              "start": 1591,
+              "end": 1600
             }
           },
           {
             "type": "text",
             "value": " kernel. From the repository root:",
             "span": {
-              "start": 1577,
-              "end": 1611
+              "start": 1600,
+              "end": 1634
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1611,
-              "end": 1612
+              "start": 1634,
+              "end": 1635
             }
           }
         ],
         "span": {
-          "start": 1443,
-          "end": 1612
+          "start": 1466,
+          "end": 1635
         }
       },
       {
@@ -714,49 +714,49 @@
           {
             "text": "cargo run --locked -- check",
             "span": {
-              "start": 1624,
-              "end": 1651
+              "start": 1647,
+              "end": 1674
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 1651,
-              "end": 1652
+              "start": 1674,
+              "end": 1675
             }
           },
           {
             "text": "cargo run --locked -- build",
             "span": {
-              "start": 1652,
-              "end": 1679
+              "start": 1675,
+              "end": 1702
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 1679,
-              "end": 1680
+              "start": 1702,
+              "end": 1703
             }
           },
           {
             "text": "cargo run --locked -- serve",
             "span": {
-              "start": 1680,
-              "end": 1707
+              "start": 1703,
+              "end": 1730
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 1707,
-              "end": 1708
+              "start": 1730,
+              "end": 1731
             }
           }
         ],
         "span": {
-          "start": 1613,
-          "end": 1712
+          "start": 1636,
+          "end": 1735
         }
       },
       {
@@ -766,115 +766,115 @@
             "type": "text",
             "value": "The generated homepage is ",
             "span": {
-              "start": 1713,
-              "end": 1739
+              "start": 1736,
+              "end": 1762
             }
           },
           {
             "type": "code",
             "value": "site/index.html",
             "span": {
-              "start": 1739,
-              "end": 1756
+              "start": 1762,
+              "end": 1779
             }
           },
           {
             "type": "text",
             "value": ", and the preview listens at",
             "span": {
-              "start": 1756,
-              "end": 1784
+              "start": 1779,
+              "end": 1807
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1784,
-              "end": 1785
+              "start": 1807,
+              "end": 1808
             }
           },
           {
             "type": "code",
             "value": "http://127.0.0.1:8000/",
             "span": {
-              "start": 1785,
-              "end": 1809
+              "start": 1808,
+              "end": 1832
             }
           },
           {
             "type": "text",
             "value": " by default. ",
             "span": {
-              "start": 1809,
-              "end": 1822
+              "start": 1832,
+              "end": 1845
             }
           },
           {
             "type": "code",
             "value": "check",
             "span": {
-              "start": 1822,
-              "end": 1829
+              "start": 1845,
+              "end": 1852
             }
           },
           {
             "type": "text",
             "value": " never executes cells; ",
             "span": {
-              "start": 1829,
-              "end": 1852
+              "start": 1852,
+              "end": 1875
             }
           },
           {
             "type": "code",
             "value": "build",
             "span": {
-              "start": 1852,
-              "end": 1859
+              "start": 1875,
+              "end": 1882
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1859,
-              "end": 1860
+              "start": 1882,
+              "end": 1883
             }
           },
           {
             "type": "text",
             "value": "and ",
             "span": {
-              "start": 1860,
-              "end": 1864
+              "start": 1883,
+              "end": 1887
             }
           },
           {
             "type": "code",
             "value": "serve",
             "span": {
-              "start": 1864,
-              "end": 1871
+              "start": 1887,
+              "end": 1894
             }
           },
           {
             "type": "text",
             "value": " execute cells only in collections that the configuration authorizes.",
             "span": {
-              "start": 1871,
-              "end": 1940
+              "start": 1894,
+              "end": 1963
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1940,
-              "end": 1941
+              "start": 1963,
+              "end": 1964
             }
           }
         ],
         "span": {
-          "start": 1713,
-          "end": 1941
+          "start": 1736,
+          "end": 1964
         }
       },
       {
@@ -890,14 +890,14 @@
             "type": "text",
             "value": "Exercise the full acceptance workspace",
             "span": {
-              "start": 1945,
-              "end": 1983
+              "start": 1968,
+              "end": 2006
             }
           }
         ],
         "span": {
-          "start": 1942,
-          "end": 1984
+          "start": 1965,
+          "end": 2007
         }
       },
       {
@@ -907,74 +907,74 @@
             "type": "text",
             "value": "The acceptance workspace at ",
             "span": {
-              "start": 1985,
-              "end": 2013
+              "start": 2008,
+              "end": 2036
             }
           },
           {
             "type": "code",
             "value": "tests/fixtures/acceptance/workspace/diplodocus.toml",
             "span": {
-              "start": 2013,
-              "end": 2066
+              "start": 2036,
+              "end": 2089
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2066,
-              "end": 2067
+              "start": 2089,
+              "end": 2090
             }
           },
           {
             "type": "text",
             "value": "uses sibling core, Python, and R repositories, plus executable Python and R",
             "span": {
-              "start": 2067,
-              "end": 2142
+              "start": 2090,
+              "end": 2165
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2142,
-              "end": 2143
+              "start": 2165,
+              "end": 2166
             }
           },
           {
             "type": "text",
             "value": "pages. The devenv shell supplies both kernels. This workspace is for broader",
             "span": {
-              "start": 2143,
-              "end": 2219
+              "start": 2166,
+              "end": 2242
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2219,
-              "end": 2220
+              "start": 2242,
+              "end": 2243
             }
           },
           {
             "type": "text",
             "value": "validation after the small example and project site:",
             "span": {
-              "start": 2220,
-              "end": 2272
+              "start": 2243,
+              "end": 2295
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2272,
-              "end": 2273
+              "start": 2295,
+              "end": 2296
             }
           }
         ],
         "span": {
-          "start": 1985,
-          "end": 2273
+          "start": 2008,
+          "end": 2296
         }
       },
       {
@@ -985,35 +985,35 @@
           {
             "text": "cargo run --locked -- check --config tests/fixtures/acceptance/workspace/diplodocus.toml",
             "span": {
-              "start": 2285,
-              "end": 2373
+              "start": 2308,
+              "end": 2396
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 2373,
-              "end": 2374
+              "start": 2396,
+              "end": 2397
             }
           },
           {
             "text": "cargo run --locked -- build --config tests/fixtures/acceptance/workspace/diplodocus.toml --output site/acceptance",
             "span": {
-              "start": 2374,
-              "end": 2487
+              "start": 2397,
+              "end": 2510
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 2487,
-              "end": 2488
+              "start": 2510,
+              "end": 2511
             }
           }
         ],
         "span": {
-          "start": 2274,
-          "end": 2492
+          "start": 2297,
+          "end": 2515
         }
       },
       {
@@ -1023,23 +1023,23 @@
             "type": "text",
             "value": "Authorized cells run with your user permissions. Review a workspace's sources",
             "span": {
-              "start": 2493,
-              "end": 2570
+              "start": 2516,
+              "end": 2593
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2570,
-              "end": 2571
+              "start": 2593,
+              "end": 2594
             }
           },
           {
             "type": "text",
             "value": "and ",
             "span": {
-              "start": 2571,
-              "end": 2575
+              "start": 2594,
+              "end": 2598
             }
           },
           {
@@ -1049,8 +1049,8 @@
                 "type": "text",
                 "value": "execution settings",
                 "span": {
-                  "start": 2576,
-                  "end": 2594
+                  "start": 2599,
+                  "end": 2617
                 }
               }
             ],
@@ -1062,44 +1062,44 @@
               "key_values": []
             },
             "span": {
-              "start": 2575,
-              "end": 2609
+              "start": 2598,
+              "end": 2632
             }
           },
           {
             "type": "text",
             "value": " before building it.",
             "span": {
-              "start": 2609,
-              "end": 2629
+              "start": 2632,
+              "end": 2652
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2629,
-              "end": 2630
+              "start": 2652,
+              "end": 2653
             }
           },
           {
             "type": "text",
             "value": "Document metadata cannot grant execution authority.",
             "span": {
-              "start": 2630,
-              "end": 2681
+              "start": 2653,
+              "end": 2704
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2681,
-              "end": 2682
+              "start": 2704,
+              "end": 2705
             }
           }
         ],
         "span": {
-          "start": 2493,
-          "end": 2682
+          "start": 2516,
+          "end": 2705
         }
       }
     ]

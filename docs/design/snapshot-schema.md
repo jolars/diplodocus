@@ -280,8 +280,12 @@ Its `kind` is `depends-on`, `binds`, `wraps`, or `generated-from`.
 
 `Provenance` contains `activity`, nullable `source`, nullable `span`, and
 `tools` (an object mapping component names to versions). `activity.kind` selects
-`declaration`, `extraction`, `execution`, or `generated-markdown`; the
+`declaration`, `decoded-documentation`, `extraction`, `execution`, or
+`generated-markdown`; the
 [provenance types](../../src/ir/provenance.rs) specify each variant's evidence.
+Decoded documentation records pair a decoded byte range with the enclosing
+provenance's original source range, so validation can attribute a docstring
+reference to its Julia literal without the source checkout.
 `Fingerprint` contains `algorithm` and `value`. Diagnostics use the shared
 [diagnostic types](../../src/diagnostics.rs): `code`, `severity`, `message`, and
 nullable `span` are always present. `related_entity` and `source` are omitted

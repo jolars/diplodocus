@@ -16,6 +16,22 @@ use crate::provenance::fingerprint_bytes;
 mod walk;
 pub(crate) use walk::{anchors as document_anchors, references as document_references};
 
+pub(crate) fn semantic_target<'a>(
+    document: &SourcedDocument,
+    kind: ReferenceKind,
+    spelling: &'a str,
+) -> Option<&'a str> {
+    if kind == ReferenceKind::Semantic {
+        return Some(spelling);
+    }
+    if kind == ReferenceKind::Link
+        && matches!(&document.source_format, DocumentFormat::Extracted { name } if name == "julia-markdown")
+    {
+        return spelling.strip_prefix("@ref ");
+    }
+    None
+}
+
 /// A document's semantic owner, independent of its rendered URL.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case", deny_unknown_fields)]
@@ -376,7 +392,19 @@ fn resolve(
                         ),
                     )
                     .with_entity(context.entity.clone());
-                    diagnostic.span = Some(span);
+                    diagnostic.span = context
+                        .document
+                        .provenance
+                        .iter()
+                        .find_map(|record| match record.activity {
+                            ProvenanceActivity::DecodedDocumentation { decoded_span }
+                                if decoded_span == span =>
+                            {
+                                record.span
+                            }
+                            _ => None,
+                        })
+                        .or(Some(span));
                     diagnostic.source = context.document.source_location.as_ref().map(|s| {
                         DiagnosticSource::Repository {
                             repository: s.repository.clone(),
@@ -441,7 +469,7 @@ impl Resolver<'_> {
         generated: bool,
     ) -> Result<ReferenceTarget, DiagnosticCode> {
         let invalid = DiagnosticCode::UnresolvedDocumentReference;
-        if kind == ReferenceKind::Semantic {
+        if let Some(spelling) = semantic_target(context.document, kind, spelling) {
             return references::resolve_item(self.sources.workspace(), context.owner, spelling)
                 .map(|item| ReferenceTarget::Item { item });
         }

@@ -16,7 +16,8 @@ it. Package metadata and extraction targets are relative to the package. Declare
 
 Python extraction reads source and package metadata without importing code. R
 extraction reads source, package metadata, and checked-in Rd files without
-starting R. The [extraction guide](extraction.md) describes their supported
+starting R. Julia extraction reads `Project.toml`, an explicit `.jl` entry
+file, and its literal includes without starting Julia. The [extraction guide](extraction.md) describes their supported
 inputs and limits.
 
 ## Authored content
@@ -27,7 +28,7 @@ package ID puts them under `/packages/<slug>/`. GFM collections read `.md` files
 QMD collections read `.qmd` files and can include executable cells. Checked-in
 assets can live beside the pages that use them.
 
-The monorepo example has one shared GFM guide and two statically extracted
+The monorepo example has one shared GFM guide and three statically extracted
 packages. The root configuration mounts this GFM guide at the site root and
 keeps its QMD example under `/examples/`. See [authored pages](authoring.md)
 for supported syntax, links, and assets.

@@ -86,6 +86,7 @@ pub(super) fn packages(html: &mut String, site: &Site<'_>, route: &str) {
         let label = if unique_ecosystem {
             match package.ecosystem.as_str() {
                 "python" => "Python",
+                "julia" => "Julia",
                 "r" => "R",
                 _ => &package.name,
             }
@@ -150,6 +151,16 @@ fn item_tree(
         return (String::new(), false);
     }
     let item = &package.items[item_id];
+    let title = if package.ecosystem == "julia" && item.kind == crate::ir::ItemKind::Method {
+        item.signatures
+            .first()
+            .map(|signature| {
+                super::signatures::signature(&item.name, &signature.signature, "julia")
+            })
+            .unwrap_or_else(|| item.name.clone())
+    } else {
+        item.name.clone()
+    };
     let destination = &site.routes[&DocumentIdentity::Item {
         item: ItemReference {
             package: package_id.into(),
@@ -169,14 +180,14 @@ fn item_tree(
             &mut html,
             route,
             destination,
-            &format!("<code>{}</code>", escape(&item.name)),
+            &format!("<code>{}</code>", escape(&title)),
         );
     } else {
         let open = if active { " open" } else { "" };
         write!(
             html,
             "<li><details class=\"item-disclosure\"{open}><summary><code>{}</code></summary><ul>",
-            escape(&item.name)
+            escape(&title)
         )
         .unwrap();
         link(&mut html, route, destination, "Overview");

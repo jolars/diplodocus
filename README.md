@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/jolars/diplodocus/actions/workflows/ci.yml/badge.svg)](https://github.com/jolars/diplodocus/actions/workflows/ci.yml)
 
-Diplodocus builds one documentation site for related Python and R packages.
+Diplodocus builds one documentation site for related Python, R, and Julia packages.
 It combines statically extracted APIs with authored Markdown and QMD guides,
 shared navigation, semantic cross-references, and search. The project is under
 active development; the [current status and remaining work](TODO.md) describe
@@ -11,7 +11,7 @@ what still needs attention.
 ## Start here
 
 The [Diplodocus guide](https://diplodocus.cc/) is built from this
-repository with Diplodocus. The [small R/Python monorepo](examples/monorepo/README.md)
+repository with Diplodocus. The [small three-language monorepo](examples/monorepo/README.md)
 is the quickest way to build a complete package site locally. From the
 repository root:
 
@@ -21,7 +21,7 @@ task preview
 ```
 
 Open the local URL printed by the command. This example builds without Python,
-R, or Jupyter kernels at runtime. The [quick start](docs/guide/quick-start.md)
+R, Julia, or Jupyter kernels at runtime. The [quick start](docs/guide/quick-start.md)
 shows direct CLI commands, Diplodocus's own documentation site, and the broader
 acceptance workspace.
 
@@ -38,7 +38,7 @@ an installed kernel.
 Read the [configuration guide](docs/guide/configuration.md), [command
 reference](docs/guide/cli.md), or [snapshot schema](docs/design/snapshot-schema.md)
 for details. The [Python](docs/ir/python-extraction.md) and
-[R](docs/ir/r-extraction.md) contracts describe the static extraction surface.
+[R](docs/ir/r-extraction.md), and [Julia](docs/ir/julia-extraction.md) contracts describe the static extraction surface.
 
 ## Development
 

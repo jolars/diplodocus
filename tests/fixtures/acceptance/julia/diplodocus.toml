@@ -1,0 +1,27 @@
+[project]
+name = "Julia acceptance"
+
+[[repository]]
+id = "repo"
+path = "."
+
+[[package]]
+id = "geometry"
+name = "Tiny Geometry"
+slug = "julia"
+ecosystem = "julia"
+repository = "repo"
+path = "."
+metadata-path = "Project.toml"
+targets = [{ id = "api", extractor = "julia", path = "src/TinyGeometry.jl", role = "public-api" }]
+
+[[content]]
+id = "guide"
+owner = "project"
+repository = "repo"
+path = "docs"
+mount = ""
+format = "gfm"
+
+[content.execution]
+mode = "never"

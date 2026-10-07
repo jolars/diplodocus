@@ -1,7 +1,7 @@
 # Tiny Stats
 
-Tiny Stats evaluates numeric predictions in Python and R. The two packages
-share six operations, so you can learn the ideas once and use either language.
+Tiny Stats evaluates numeric predictions in Python, R, and Julia. The packages
+share six operations, so you can learn the ideas once and use any of the three languages.
 
 ## Start with the guide
 
@@ -21,7 +21,8 @@ Browse the **Reference** branches in the sidebar or open a function directly:
 
 - **Python:** [`pystats::tinystats.mean_squared_error`]
 - **R:** [`rstats::mean_squared_error`]
+- **Julia:** [`juliastats::TinyStats.mean_squared_error`]
 
-Each function links to its counterpart under **Same API in**. The
+Each function links to its counterparts under **Same API in**. The
 [Python workflow](../python/docs/evaluating-models.md) shows how to evaluate
 several models with a small loop.

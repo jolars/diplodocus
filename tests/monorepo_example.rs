@@ -28,7 +28,7 @@ fn monorepo_example_builds_without_runtimes_and_generates_without_sources() {
         "diplodocus.toml",
         fs::read(example.join("diplodocus.toml")).unwrap(),
     );
-    for directory in ["docs", "python", "r"] {
+    for directory in ["docs", "python", "r", "julia"] {
         for relative in support::files_under(&example.join(directory)) {
             let relative = Path::new(directory).join(relative);
             root.write(&relative, fs::read(example.join(&relative)).unwrap());
@@ -42,7 +42,7 @@ fn monorepo_example_builds_without_runtimes_and_generates_without_sources() {
     let database = root.path().join(".diplodocus/documentation.sqlite");
     let snapshot = Snapshot::load(&database).unwrap();
     assert_eq!(snapshot.workspace().repositories.len(), 1);
-    assert_eq!(snapshot.workspace().packages.len(), 2);
+    assert_eq!(snapshot.workspace().packages.len(), 3);
     assert_eq!(snapshot.workspace().pages.len(), 9);
     assert_eq!(snapshot.workspace().concepts.len(), 6);
     assert_eq!(snapshot.assets().len(), 1);
@@ -58,6 +58,7 @@ fn monorepo_example_builds_without_runtimes_and_generates_without_sources() {
     let api_paths: Vec<_> = [
         ("python", "tinystats.mean_squared_error"),
         ("r", "mean_squared_error"),
+        ("julia", "TinyStats.mean_squared_error"),
     ]
     .into_iter()
     .map(|(ecosystem, name)| {
@@ -96,6 +97,7 @@ fn monorepo_example_builds_without_runtimes_and_generates_without_sources() {
         for (ecosystem, title) in [
             ("python", format!("tinystats.{metric}")),
             ("r", metric.into()),
+            ("julia", format!("TinyStats.{metric}")),
         ] {
             let entry = entries
                 .iter()

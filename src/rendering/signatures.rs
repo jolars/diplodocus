@@ -6,6 +6,42 @@ pub(super) fn signature(name: &str, signature: &Signature, ecosystem: &str) -> S
             parameters,
             returns,
         } => {
+            if ecosystem == "julia" {
+                let mut positional = Vec::new();
+                let mut keywords = Vec::new();
+                for parameter in parameters {
+                    let mut part = parameter.name.clone();
+                    if let Some(annotation) = &parameter.annotation {
+                        part.push_str(&format!("::{}", expression(annotation, ecosystem)));
+                    }
+                    if matches!(
+                        parameter.kind,
+                        ParameterKind::VariadicPositional | ParameterKind::VariadicKeyword
+                    ) {
+                        part.push_str("...");
+                    }
+                    if let Some(default) = &parameter.default {
+                        part.push_str(&format!(" = {}", expression(default, ecosystem)));
+                    }
+                    if matches!(
+                        parameter.kind,
+                        ParameterKind::KeywordOnly | ParameterKind::VariadicKeyword
+                    ) {
+                        keywords.push(part);
+                    } else {
+                        positional.push(part);
+                    }
+                }
+                let mut args = positional.join(", ");
+                if !keywords.is_empty() {
+                    args.push_str(&format!("; {}", keywords.join(", ")));
+                }
+                let mut value = format!("{name}({args})");
+                if let Some(returns) = returns {
+                    value.push_str(&format!("::{}", expression(returns, ecosystem)));
+                }
+                return value;
+            }
             let mut parts = Vec::new();
             let mut keyword_marker = false;
             for (index, parameter) in parameters.iter().enumerate() {
@@ -50,14 +86,26 @@ pub(super) fn signature(name: &str, signature: &Signature, ecosystem: &str) -> S
         Signature::Value { annotation, value } => {
             let mut result = name.to_owned();
             if let Some(annotation) = annotation {
-                result.push_str(&format!(": {}", expression(annotation, ecosystem)));
+                let separator = if ecosystem == "julia" { "::" } else { ": " };
+                result.push_str(&format!("{separator}{}", expression(annotation, ecosystem)));
             }
             if let Some(value) = value {
                 result.push_str(&format!(" = {}", expression(value, ecosystem)));
             }
             result
         }
-        Signature::LanguageSpecific { syntax, .. } => expression(syntax, ecosystem),
+        Signature::LanguageSpecific { syntax, .. } => {
+            let value = expression(syntax, ecosystem);
+            if ecosystem == "julia"
+                && let Some((module, binding)) = name.rsplit_once('.')
+                && value
+                    .strip_prefix(binding)
+                    .is_some_and(|suffix| suffix.starts_with(['(', '{']))
+            {
+                return format!("{module}.{value}");
+            }
+            value
+        }
     }
 }
 fn expression(value: &SignatureExpression, ecosystem: &str) -> String {

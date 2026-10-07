@@ -66,6 +66,22 @@ impl PythonIdentityKind {
 pub struct SemanticIdentity(String);
 
 impl SemanticIdentity {
+    /// Build a named Julia declaration key under the existing `sid1` contract.
+    pub fn julia(name: &str, kind: JuliaIdentityKind) -> Result<Self, IdentityError> {
+        nonempty("canonical-name", name)?;
+        Ok(Self(format!("sid1:julia:{}:{}", kind.tag(), atom(name))))
+    }
+
+    /// Build an authored Julia method key from normalized positional dispatch.
+    ///
+    /// The producer excludes names, keywords, defaults, and return annotations,
+    /// and normalizes bound type variables before calling this constructor.
+    pub fn julia_method(name: &str, dispatch: &SignatureExpression) -> Result<Self, IdentityError> {
+        nonempty("canonical-name", name)?;
+        let mut key = format!("sid1:julia:method:{}:", atom(name));
+        expression(&mut key, dispatch)?;
+        Ok(Self(key))
+    }
     /// Build the canonical Python declaration or callable-family key.
     ///
     /// Use the defining module and lexical containers, not a re-export name.
@@ -196,6 +212,36 @@ impl SemanticIdentity {
             package: package.into(),
             item: self.0.clone(),
         })
+    }
+}
+
+/// Julia declaration roles with distinct canonical identities.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum JuliaIdentityKind {
+    /// Lexical module.
+    Module,
+    /// Generic function.
+    Function,
+    /// Struct, abstract type, or primitive type.
+    Type,
+    /// Struct field.
+    Field,
+    /// Maintained constant.
+    Constant,
+    /// Maintained macro.
+    Macro,
+}
+
+impl JuliaIdentityKind {
+    fn tag(self) -> &'static str {
+        match self {
+            Self::Module => "module",
+            Self::Function => "function",
+            Self::Type => "type",
+            Self::Field => "field",
+            Self::Constant => "constant",
+            Self::Macro => "macro",
+        }
     }
 }
 
