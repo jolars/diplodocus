@@ -13,7 +13,7 @@ slug = "python"
 ecosystem = "python"
 repository = "python"
 path = "."
-metadata_path = "pyproject.toml"
+metadata-path = "pyproject.toml"
 targets = [
   { id = "api", extractor = "python", path = "python/foo", role = "public-api" },
 ]
@@ -22,5 +22,5 @@ targets = [
 from = "pyfoo"
 to = "cargo:foo-core"
 kind = "binds"
-version_constraint = "^1.9"
+version-constraint = "^1.9"
 provenance = "explicit"

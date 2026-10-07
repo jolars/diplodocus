@@ -573,7 +573,7 @@ mod tests {
         )
         .unwrap();
         let config = root.path().join("diplodocus.toml");
-        fs::write(&config, "[project]\nname='Observe'\n[[repository]]\nid='repo'\npath='.'\n[[package]]\nid='pkg'\nname='Package'\nslug='package'\necosystem='python'\nrepository='repo'\npath='.'\nmetadata_path='pyproject.toml'\ntargets=[{id='api', extractor='python', path='python/pkg', role='public-api'}]\n").unwrap();
+        fs::write(&config, "[project]\nname='Observe'\n[[repository]]\nid='repo'\npath='.'\n[[package]]\nid='pkg'\nname='Package'\nslug='package'\necosystem='python'\nrepository='repo'\npath='.'\nmetadata-path='pyproject.toml'\ntargets=[{id='api', extractor='python', path='python/pkg', role='public-api'}]\n").unwrap();
         let asset = root.path().join("python/pkg/payload.txt");
         fs::write(&asset, "before").unwrap();
         let sources = assemble_workspace(&config).unwrap();

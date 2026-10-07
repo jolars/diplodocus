@@ -24,7 +24,7 @@ slug = "pkg"
 ecosystem = "python"
 repository = "source"
 path = "packages/pkg"
-metadata_path = "pyproject.toml"
+metadata-path = "pyproject.toml"
 targets = [
   { id = "directory", extractor = "python", path = "src", role = "public-api" },
   { id = "file", extractor = "python", path = "src/module.py", role = "public-api" },
@@ -42,7 +42,7 @@ format = "qmd"
 mode = "execute"
 engine = "jupyter"
 kernel = "python3"
-declared_environment_inputs = ["uv.lock"]
+declared-environment-inputs = ["uv.lock"]
 "#;
 
 fn workspace() -> (TestWorkspace, WorkspaceConfiguration, PathBuf) {
@@ -223,10 +223,10 @@ impl Field {
         match self {
             Self::Repository => "repository[0] (`source`).path",
             Self::Package => "package[0] (`pkg`).path",
-            Self::Metadata => "package[0] (`pkg`).metadata_path",
+            Self::Metadata => "package[0] (`pkg`).metadata-path",
             Self::Target => "package[0] (`pkg`).targets[0] (`directory`).path",
             Self::Content => "content[0] (`guide`).path",
-            Self::Environment => "content[0] (`guide`).execution.declared_environment_inputs[0]",
+            Self::Environment => "content[0] (`guide`).execution.declared-environment-inputs[0]",
         }
     }
 

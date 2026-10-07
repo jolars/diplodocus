@@ -299,8 +299,8 @@ fn explicit_database_downloads_remain_inputs_and_cannot_be_overwritten() {
 fn cli_rejects_every_kind_of_declared_input_before_execution() {
     let root = support::acceptance_workspace();
     let config = root.read(CONFIG).replace(
-        "declared_environment_inputs = [\"pyproject.toml\"]",
-        "declared_environment_inputs = [\"environment.lock\"]",
+        "declared-environment-inputs = [\"pyproject.toml\"]",
+        "declared-environment-inputs = [\"environment.lock\"]",
     );
     root.write(CONFIG, config);
     root.write("python/environment.lock", "environment sentinel");

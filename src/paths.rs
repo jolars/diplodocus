@@ -386,7 +386,7 @@ pub fn resolve_workspace_paths(
             PathType::Directory,
         )?;
         let metadata_path = resolver.child(
-            &format!("{field}.metadata_path"),
+            &format!("{field}.metadata-path"),
             &package.metadata_path,
             &path,
             PathType::File,
@@ -435,7 +435,7 @@ pub fn resolve_workspace_paths(
             .enumerate()
         {
             declared_environment_inputs.push(resolver.child(
-                &format!("{field}.execution.declared_environment_inputs[{index}]"),
+                &format!("{field}.execution.declared-environment-inputs[{index}]"),
                 input,
                 root,
                 PathType::File,

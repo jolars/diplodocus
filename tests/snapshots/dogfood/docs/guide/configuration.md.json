@@ -762,7 +762,7 @@
       {
         "type": "code-block",
         "language": "toml",
-        "source": "[[content]]\nid = \"examples\"\nowner = \"project\"\nrepository = \"diplodocus\"\npath = \"docs/examples\"\nmount = \"examples\"\nformat = \"qmd\"\n\n[content.execution]\nmode = \"execute\"\nengine = \"jupyter\"\nkernel = \"python3\"\ndeclared_environment_inputs = [\"devenv.lock\"]\n",
+        "source": "[[content]]\nid = \"examples\"\nowner = \"project\"\nrepository = \"diplodocus\"\npath = \"docs/examples\"\nmount = \"examples\"\nformat = \"qmd\"\n\n[content.execution]\nmode = \"execute\"\nengine = \"jupyter\"\nkernel = \"python3\"\ndeclared-environment-inputs = [\"devenv.lock\"]\n",
         "source_segments": [
           {
             "text": "[[content]]",
@@ -926,7 +926,7 @@
             }
           },
           {
-            "text": "declared_environment_inputs = [\"devenv.lock\"]",
+            "text": "declared-environment-inputs = [\"devenv.lock\"]",
             "span": {
               "start": 2029,
               "end": 2074
@@ -1135,7 +1135,7 @@
       {
         "type": "code-block",
         "language": "toml",
-        "source": "[presentation]\ntitle = \"Foo documentation\"\ndescription = \"Guides and API documentation for Foo.\"\nsite_url = \"https://example.com/docs/\"\ncanonical_url_style = \"file\"\n",
+        "source": "[presentation]\ntitle = \"Foo documentation\"\ndescription = \"Guides and API documentation for Foo.\"\nsite-url = \"https://example.com/docs/\"\ncanonical-url-style = \"file\"\n",
         "source_segments": [
           {
             "text": "[presentation]",
@@ -1180,7 +1180,7 @@
             }
           },
           {
-            "text": "site_url = \"https://example.com/docs/\"",
+            "text": "site-url = \"https://example.com/docs/\"",
             "span": {
               "start": 2665,
               "end": 2703
@@ -1194,7 +1194,7 @@
             }
           },
           {
-            "text": "canonical_url_style = \"file\"",
+            "text": "canonical-url-style = \"file\"",
             "span": {
               "start": 2704,
               "end": 2732
@@ -1343,7 +1343,7 @@
           },
           {
             "type": "code",
-            "value": "site_url",
+            "value": "site-url",
             "span": {
               "start": 3035,
               "end": 3045
@@ -1451,7 +1451,7 @@
           },
           {
             "type": "code",
-            "value": "site_url",
+            "value": "site-url",
             "span": {
               "start": 3395,
               "end": 3405
@@ -1567,7 +1567,7 @@
         "inlines": [
           {
             "type": "code",
-            "value": "canonical_url_style",
+            "value": "canonical-url-style",
             "span": {
               "start": 3760,
               "end": 3781

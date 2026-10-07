@@ -12,6 +12,48 @@ mod support;
 const COMPLETE: &str = include_str!("fixtures/configuration/complete.toml");
 const ACCEPTANCE: &str = include_str!("fixtures/acceptance/workspace/diplodocus.toml");
 
+fn kebab_case_configuration() -> String {
+    let mut source = COMPLETE.to_owned();
+    source.push_str(
+        "\n[presentation]\nsite-url = 'https://example.test/docs/'\ncanonical-url-style = 'clean'\n",
+    );
+    source
+}
+
+#[test]
+fn configuration_keys_parse_and_serialize_in_kebab_case() {
+    let source = kebab_case_configuration();
+    let config = parse_configuration(&source).unwrap();
+    let serialized = toml::to_string(&config).unwrap();
+    assert_eq!(
+        toml::from_str::<toml::Value>(&serialized).unwrap(),
+        toml::from_str::<toml::Value>(&source).unwrap()
+    );
+    assert_eq!(parse_configuration(&serialized).unwrap(), config);
+}
+
+#[test]
+fn configuration_rejects_snake_case_keys() {
+    let source = kebab_case_configuration();
+    for field in [
+        "source-link-template",
+        "metadata-path",
+        "declared-environment-inputs",
+        "version-constraint",
+        "site-url",
+        "canonical-url-style",
+    ] {
+        let old_field = field.replace('-', "_");
+        let error = parse_configuration(&source.replace(field, &old_field)).unwrap_err();
+        assert!(
+            error
+                .message()
+                .contains(&format!("unknown field `{old_field}`")),
+            "{error}"
+        );
+    }
+}
+
 #[test]
 fn presentation_site_urls_require_absolute_http_urls_without_request_metadata() {
     for url in [
@@ -28,14 +70,14 @@ fn presentation_site_urls_require_absolute_http_urls_without_request_metadata() 
         "https://example.test/\n",
     ] {
         let source = format!(
-            "[project]\nname='Docs'\n[presentation]\nsite_url={}\n",
+            "[project]\nname='Docs'\n[presentation]\nsite-url={}\n",
             toml::Value::String(url.into())
         );
         assert!(parse_configuration(&source).is_err(), "{url:?}");
     }
     for style in ["file", "clean"] {
         let source = format!(
-            "[project]\nname='Docs'\n[presentation]\nsite_url='https://example.test/docs'\ncanonical_url_style='{style}'\n"
+            "[project]\nname='Docs'\n[presentation]\nsite-url='https://example.test/docs'\ncanonical-url-style='{style}'\n"
         );
         let configuration = parse_configuration(&source).unwrap();
         assert_eq!(
@@ -45,7 +87,7 @@ fn presentation_site_urls_require_absolute_http_urls_without_request_metadata() 
     }
     assert!(
         parse_configuration(
-            "[project]\nname='Docs'\n[presentation]\ncanonical_url_style='unknown'\n"
+            "[project]\nname='Docs'\n[presentation]\ncanonical-url-style='unknown'\n"
         )
         .is_err()
     );
@@ -227,7 +269,7 @@ fn applies_only_documented_defaults_without_discovering_inputs() {
     assert!(parse_configuration(&COMPLETE.replace("mode = \"execute\"\n", "")).is_err());
     let config = parse_configuration(
         &COMPLETE
-            .replace("version_constraint = \"^1.9\"\n", "")
+            .replace("version-constraint = \"^1.9\"\n", "")
             .replace("provenance = \"explicit\"\n", "")
             .replace("url = \"https://forge.example/foo-python\"\n", ""),
     )
@@ -390,7 +432,7 @@ const TABLES: &[(&[&str], &[&str])] = &[
             "ecosystem",
             "repository",
             "path",
-            "metadata_path",
+            "metadata-path",
             "targets",
         ],
     ),

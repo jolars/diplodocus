@@ -23,7 +23,7 @@ slug = "python"
 ecosystem = "python"
 repository = "python"
 path = "."
-metadata_path = "pyproject.toml"
+metadata-path = "pyproject.toml"
 targets = [
   { id = "api", extractor = "python", path = "python/foo", role = "public-api" },
 ]
@@ -35,7 +35,7 @@ slug = "r"
 ecosystem = "r"
 repository = "r"
 path = "."
-metadata_path = "DESCRIPTION"
+metadata-path = "DESCRIPTION"
 targets = [
   { id = "api", extractor = "r", path = ".", role = "public-api" },
 ]
@@ -82,7 +82,7 @@ format = "qmd"
 mode = "execute"
 engine = "jupyter"
 kernel = "python3"
-declared_environment_inputs = ["pyproject.toml"]
+declared-environment-inputs = ["pyproject.toml"]
 
 [[content]]
 id = "r-execution"
@@ -96,13 +96,13 @@ format = "qmd"
 mode = "execute"
 engine = "jupyter"
 kernel = "ir"
-declared_environment_inputs = ["DESCRIPTION"]
+declared-environment-inputs = ["DESCRIPTION"]
 
 [[relationship]]
 from = "pyfoo"
 to = "cargo:foo-core"
 kind = "binds"
-version_constraint = "^1.9"
+version-constraint = "^1.9"
 provenance = "explicit"
 
 [[concept]]

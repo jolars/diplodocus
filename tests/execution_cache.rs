@@ -108,7 +108,7 @@ fn python_and_r_builds_restore_portable_results_and_identical_sites() {
         ),
     ] {
         let root = support::TestWorkspace::new();
-        root.write("diplodocus.toml", format!("[project]\nname='Cache'\n[[repository]]\nid='docs'\npath='.'\n[[content]]\nid='guide'\nowner='project'\nrepository='docs'\npath='guide'\nmount=''\nformat='qmd'\n[content.execution]\nmode='execute'\nengine='jupyter'\nkernel='{kernel}'\ndeclared_environment_inputs=['environment.txt']\n"));
+        root.write("diplodocus.toml", format!("[project]\nname='Cache'\n[[repository]]\nid='docs'\npath='.'\n[[content]]\nid='guide'\nowner='project'\nrepository='docs'\npath='guide'\nmount=''\nformat='qmd'\n[content.execution]\nmode='execute'\nengine='jupyter'\nkernel='{kernel}'\ndeclared-environment-inputs=['environment.txt']\n"));
         root.write("diplodocus.toml", format!("{}\n[[content]]\nid='disabled'\nowner='project'\nrepository='docs'\npath='disabled'\nmount='disabled'\nformat='qmd'\n[content.execution]\nmode='never'\n", root.read("diplodocus.toml")));
         root.write(
             "disabled/index.qmd",

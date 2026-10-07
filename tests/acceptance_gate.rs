@@ -382,7 +382,7 @@ fn validate_configuration(workspace: &TestWorkspace, config: &str) {
                 .unwrap();
             assert!(path.starts_with(repository));
             let metadata = path
-                .join(package["metadata_path"].as_str().unwrap())
+                .join(package["metadata-path"].as_str().unwrap())
                 .canonicalize()
                 .unwrap();
             assert!(metadata.is_file() && metadata.starts_with(repository));
@@ -427,7 +427,7 @@ fn validate_configuration(workspace: &TestWorkspace, config: &str) {
                             execution["kernel"].as_str(),
                             Some("python3" | "ir")
                         ));
-                        for input in execution["declared_environment_inputs"].as_array().unwrap() {
+                        for input in execution["declared-environment-inputs"].as_array().unwrap() {
                             let path = repository
                                 .join(input.as_str().unwrap())
                                 .canonicalize()

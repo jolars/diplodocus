@@ -66,7 +66,7 @@
       },
       {
         "execution": {
-          "declared_environment_inputs": [
+          "declared-environment-inputs": [
             "pyproject.toml"
           ],
           "engine": "jupyter",
@@ -82,7 +82,7 @@
       },
       {
         "execution": {
-          "declared_environment_inputs": [
+          "declared-environment-inputs": [
             "DESCRIPTION"
           ],
           "engine": "jupyter",
@@ -102,7 +102,7 @@
         "ecosystem": "python",
         "id": "pyfoo",
         "kind": "package",
-        "metadata_path": "pyproject.toml",
+        "metadata-path": "pyproject.toml",
         "name": "Foo for Python",
         "path": ".",
         "repository": "python",
@@ -121,7 +121,7 @@
         "ecosystem": "r",
         "id": "rfoo",
         "kind": "package",
-        "metadata_path": "DESCRIPTION",
+        "metadata-path": "DESCRIPTION",
         "name": "Foo for R",
         "path": ".",
         "repository": "r",
@@ -146,7 +146,7 @@
         "kind": "binds",
         "provenance": "explicit",
         "to": "cargo:foo-core",
-        "version_constraint": "^1.9"
+        "version-constraint": "^1.9"
       }
     ],
     "repository": [

@@ -24,7 +24,7 @@ slug = "api"
 ecosystem = "python"
 repository = "main"
 path = "."
-metadata_path = "pyproject.toml"
+metadata-path = "pyproject.toml"
 targets = [{ id = "api", extractor = "python", path = "foo", role = "public-api" }]
 [[content]]
 id = "guide"
@@ -52,7 +52,7 @@ slug = "old"
 ecosystem = "python"
 repository = "old"
 path = "."
-metadata_path = "pyproject.toml"
+metadata-path = "pyproject.toml"
 targets = [{ id = "api", extractor = "python", path = "bar", role = "public-api" }]
 [[content]]
 id = "old-guide"

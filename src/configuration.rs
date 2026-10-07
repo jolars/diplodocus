@@ -24,7 +24,7 @@ use crate::ir::SourceSpan;
 
 /// The declarations in a root `diplodocus.toml` file, in source order.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct WorkspaceConfiguration {
     /// Project-wide identity.
     pub project: ProjectConfiguration,
@@ -54,7 +54,7 @@ pub struct WorkspaceConfiguration {
 
 /// Project-wide documentation settings.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct ProjectConfiguration {
     /// Display name of the project.
     pub name: String,
@@ -65,7 +65,7 @@ pub struct ProjectConfiguration {
 /// The built-in theme renders these values as escaped text. No local theme
 /// paths, output directories, or execution authority belong in these defaults.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(default, deny_unknown_fields)]
+#[serde(default, rename_all = "kebab-case", deny_unknown_fields)]
 pub struct PresentationDefaults {
     /// Site title and branding; `None` uses the workspace's project name.
     pub title: Option<String>,
@@ -120,7 +120,7 @@ fn deserialize_site_url<'de, D: Deserializer<'de>>(
 }
 
 fn parse_site_url(value: &str) -> Result<url::Url, &'static str> {
-    let invalid = "presentation.site_url must be an absolute HTTP or HTTPS URL without credentials, query parameters, fragments, or whitespace";
+    let invalid = "presentation.site-url must be an absolute HTTP or HTTPS URL without credentials, query parameters, fragments, or whitespace";
     if value
         .chars()
         .any(|ch| ch.is_whitespace() || ch.is_control())
@@ -150,7 +150,7 @@ fn parse_site_url(value: &str) -> Result<url::Url, &'static str> {
 
 /// An explicitly supplied local source repository.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct RepositoryConfiguration {
     /// Stable repository identifier.
     pub id: String,
@@ -169,7 +169,7 @@ pub struct RepositoryConfiguration {
 
 /// A package or internal component with explicit extraction targets.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct PackageConfiguration {
     /// Stable package identity used by references and relationships.
     pub id: String,
@@ -223,7 +223,7 @@ pub enum PackageVisibility {
 
 /// An explicit source target consumed by one API extractor.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct ExtractionTargetConfiguration {
     /// Target identifier within its package.
     pub id: String,
@@ -237,6 +237,7 @@ pub struct ExtractionTargetConfiguration {
 
 /// An authored collection with independent ownership and source location.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "kebab-case")]
 pub struct ContentConfiguration {
     /// Stable collection identifier.
     pub id: String,
@@ -260,7 +261,7 @@ impl<'de> Deserialize<'de> for ContentConfiguration {
         // Validation needs both the profile and the completed execution table,
         // regardless of their order in the source or the deserialization entry point.
         #[derive(Deserialize)]
-        #[serde(deny_unknown_fields)]
+        #[serde(rename_all = "kebab-case", deny_unknown_fields)]
         struct Declaration {
             id: String,
             owner: String,
@@ -309,7 +310,7 @@ impl ContentConfiguration {
                 ("engine", execution.engine.is_some()),
                 ("kernel", execution.kernel.is_some()),
                 (
-                    "declared_environment_inputs",
+                    "declared-environment-inputs",
                     !execution.declared_environment_inputs.is_empty(),
                 ),
             ] {
@@ -420,7 +421,7 @@ pub enum ExecutionConfigurationError {
     )]
     InvalidKernel,
     /// An environment input does not declare an explicit repository-relative file.
-    #[error("invalid `declared_environment_inputs[{index}]`: {reason}")]
+    #[error("invalid `declared-environment-inputs[{index}]`: {reason}")]
     InvalidEnvironmentInput {
         /// Zero-based index of the invalid declaration.
         index: usize,
@@ -428,7 +429,7 @@ pub enum ExecutionConfigurationError {
         reason: &'static str,
     },
     /// Two environment declarations normalize to the same relative path.
-    #[error("`declared_environment_inputs[{index}]` duplicates input {first_index}")]
+    #[error("`declared-environment-inputs[{index}]` duplicates input {first_index}")]
     DuplicateEnvironmentInput {
         /// Zero-based index of the duplicate declaration.
         index: usize,
@@ -459,7 +460,7 @@ impl ExecutionConfigurationError {
 /// checks their consistency through [`ContentConfiguration::validate_execution`].
 /// Document authority and filesystem validation remain necessary before execution.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct ExecutionConfiguration {
     /// Requested mode; defaults to `never`.
     #[serde(default)]
@@ -496,7 +497,7 @@ pub enum ExecutionEngine {
 
 /// An explicitly declared group of corresponding APIs.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct ConceptConfiguration {
     /// Stable concept identifier.
     pub id: String,
@@ -520,7 +521,7 @@ pub enum ConceptKind {
 
 /// An unresolved item reference in a conceptual API group.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct ConceptMember {
     /// Package containing the member.
     pub package: String,
@@ -530,7 +531,7 @@ pub struct ConceptMember {
 
 /// An implementation or release relationship, distinct from an API concept.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct RelationshipConfiguration {
     /// Source workspace package ID or external ecosystem-qualified coordinate.
     pub from: String,
@@ -619,8 +620,8 @@ impl ConfigurationError {
 /// Omitted repository, package, and content collections are empty. Each declared
 /// package requires a `targets` list; `targets = []` declares no API extraction.
 /// Package kind, package visibility, and execution mode use their documented
-/// defaults. Unknown fields are rejected in every table. Paths and unresolved
-/// references retain their declared spelling.
+/// defaults. Field names use kebab-case. Unknown fields are rejected in every
+/// table. Paths and unresolved references retain their declared spelling.
 ///
 /// ```
 /// use diplodocus::configuration::parse_configuration;

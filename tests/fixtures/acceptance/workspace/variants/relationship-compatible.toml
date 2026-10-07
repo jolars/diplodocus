@@ -18,7 +18,7 @@ slug = "python"
 ecosystem = "python"
 repository = "python"
 path = "."
-metadata_path = "pyproject.toml"
+metadata-path = "pyproject.toml"
 targets = [
   { id = "api", extractor = "python", path = "python/foo", role = "public-api" },
 ]
@@ -30,7 +30,7 @@ slug = "r"
 ecosystem = "r"
 repository = "r"
 path = "."
-metadata_path = "DESCRIPTION"
+metadata-path = "DESCRIPTION"
 targets = [
   { id = "api", extractor = "r", path = ".", role = "public-api" },
 ]
@@ -39,5 +39,5 @@ targets = [
 from = "pyfoo"
 to = "rfoo"
 kind = "depends-on"
-version_constraint = "^1.8"
+version-constraint = "^1.8"
 provenance = "explicit"

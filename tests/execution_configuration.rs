@@ -59,7 +59,7 @@ fn omitted_empty_and_explicit_never_settings_have_the_same_serialized_defaults()
             "",
             "[content.execution]\n",
             "[content.execution]\nmode = 'never'\n",
-            "[content.execution]\nmode = 'never'\ndeclared_environment_inputs = []\n",
+            "[content.execution]\nmode = 'never'\ndeclared-environment-inputs = []\n",
         ];
         let expected = parse_configuration(&configuration(format, "")).unwrap();
         for settings in sources {
@@ -115,8 +115,8 @@ fn never_rejects_execution_settings_even_when_mode_is_omitted() {
             ("engine = 'jupyter'\n", "engine"),
             ("kernel = 'python3'\n", "kernel"),
             (
-                "declared_environment_inputs = ['uv.lock']\n",
-                "declared_environment_inputs",
+                "declared-environment-inputs = ['uv.lock']\n",
+                "declared-environment-inputs",
             ),
         ] {
             for format in ["gfm", "qmd"] {
@@ -194,8 +194,8 @@ fn kernel_selectors_follow_the_contract_without_requiring_an_installed_kernel() 
 fn environment_inputs_are_optional_explicit_file_declarations() {
     for inputs in [
         "",
-        "declared_environment_inputs = []\n",
-        "declared_environment_inputs = ['uv.lock', './environments//docs.toml', 'locks/../renv.lock', 'environment manifests/研究.lock']\n",
+        "declared-environment-inputs = []\n",
+        "declared-environment-inputs = ['uv.lock', './environments//docs.toml', 'locks/../renv.lock', 'environment manifests/研究.lock']\n",
     ] {
         let source = configuration(
             "qmd",
@@ -246,10 +246,10 @@ fn environment_inputs_reject_invalid_paths_and_duplicate_normalized_declarations
         let source = configuration(
             "qmd",
             &execution(&format!(
-                "mode = 'execute'\nengine = 'jupyter'\nkernel = 'python3'\ndeclared_environment_inputs = [{path}]\n"
+                "mode = 'execute'\nengine = 'jupyter'\nkernel = 'python3'\ndeclared-environment-inputs = [{path}]\n"
             )),
         );
-        assert_rejected(&source, "invalid `declared_environment_inputs[0]`");
+        assert_rejected(&source, "invalid `declared-environment-inputs[0]`");
     }
     for inputs in [
         "['uv.lock', 'uv.lock']",
@@ -260,12 +260,12 @@ fn environment_inputs_reject_invalid_paths_and_duplicate_normalized_declarations
         let source = configuration(
             "qmd",
             &execution(&format!(
-                "mode = 'execute'\nengine = 'jupyter'\nkernel = 'python3'\ndeclared_environment_inputs = {inputs}\n"
+                "mode = 'execute'\nengine = 'jupyter'\nkernel = 'python3'\ndeclared-environment-inputs = {inputs}\n"
             )),
         );
         assert_rejected(
             &source,
-            "`declared_environment_inputs[1]` duplicates input 0",
+            "`declared-environment-inputs[1]` duplicates input 0",
         );
     }
 }
@@ -308,7 +308,7 @@ fn direct_deserialization_and_loading_enforce_the_same_collection_rules() {
         }
         error => panic!("expected configuration error, got {error}"),
     }
-    workspace.write("workspace.toml", configuration("qmd", &execution("mode = 'execute'\nengine = 'jupyter'\nkernel = 'uninstalled-kernel'\ndeclared_environment_inputs = ['missing.lock']\n")));
+    workspace.write("workspace.toml", configuration("qmd", &execution("mode = 'execute'\nengine = 'jupyter'\nkernel = 'uninstalled-kernel'\ndeclared-environment-inputs = ['missing.lock']\n")));
     let parsed = load_configuration(&path).unwrap();
     assert_eq!(parsed.content[0].format, AuthoredFormat::Qmd);
     assert_eq!(

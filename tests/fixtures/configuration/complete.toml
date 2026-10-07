@@ -5,7 +5,7 @@ name = "Foo"
 id = "python"
 path = "../foo-python"
 url = "https://forge.example/foo-python"
-source_link_template = "https://forge.example/foo-python/blob/{revision}/{path}#L{line}"
+source-link-template = "https://forge.example/foo-python/blob/{revision}/{path}#L{line}"
 revision = "release-1.9"
 
 [[package]]
@@ -15,7 +15,7 @@ slug = "python"
 ecosystem = "python"
 repository = "python"
 path = "."
-metadata_path = "pyproject.toml"
+metadata-path = "pyproject.toml"
 kind = "component"
 visibility = "internal"
 targets = [
@@ -35,7 +35,7 @@ format = "qmd"
 mode = "execute"
 engine = "jupyter"
 kernel = "python3"
-declared_environment_inputs = ["uv.lock", "environments/docs.toml"]
+declared-environment-inputs = ["uv.lock", "environments/docs.toml"]
 
 [[concept]]
 id = "foo-model.fit"
@@ -49,5 +49,5 @@ members = [
 from = "pyfoo"
 to = "cargo:foo-core"
 kind = "binds"
-version_constraint = "^1.9"
+version-constraint = "^1.9"
 provenance = "explicit"

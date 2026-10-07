@@ -16,7 +16,7 @@ fn fixture(presentation: &str) -> support::TestWorkspace {
         .replace("mount = \"guide\"", "mount = \"manual\"")
         .replace(
             "url = \"https://github.com/example/foo-python\"",
-            "url = \"https://forge.example/foo-python\"\nrevision = \"release-2.1\"\nsource_link_template = \"https://forge.example/foo-python/blob/{revision}/{path}#L{line}\"",
+            "url = \"https://forge.example/foo-python\"\nrevision = \"release-2.1\"\nsource-link-template = \"https://forge.example/foo-python/blob/{revision}/{path}#L{line}\"",
         );
     root.write(
         "workspace/diplodocus.toml",

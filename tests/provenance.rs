@@ -32,7 +32,7 @@ slug = "pkg"
 ecosystem = "python"
 repository = "repo"
 path = "pkg"
-metadata_path = "pyproject.toml"
+metadata-path = "pyproject.toml"
 targets = [{ id = "api", extractor = "python", path = "src", role = "public-api" }]
 
 [[content]]
@@ -46,7 +46,7 @@ format = "qmd"
 mode = "execute"
 engine = "jupyter"
 kernel = "python3"
-declared_environment_inputs = ["uv.lock", "requirements.txt"]
+declared-environment-inputs = ["uv.lock", "requirements.txt"]
 "#;
 
 fn workspace(reverse: bool) -> (TestWorkspace, WorkspaceConfiguration, PathBuf) {

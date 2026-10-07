@@ -138,7 +138,7 @@ fn acceptance_fixture_has_executable_python_and_r_qmd_pages() {
             "executable fixture should exist: {source}"
         );
         assert!(configuration.contains(&format!(
-            "repository = \"{language}\"\npath = \"execution\"\nmount = \"execution\"\nformat = \"qmd\"\n\n[content.execution]\nmode = \"execute\"\nengine = \"jupyter\"\nkernel = \"{kernel}\"\ndeclared_environment_inputs = [\"{environment_input}\"]"
+            "repository = \"{language}\"\npath = \"execution\"\nmount = \"execution\"\nformat = \"qmd\"\n\n[content.execution]\nmode = \"execute\"\nengine = \"jupyter\"\nkernel = \"{kernel}\"\ndeclared-environment-inputs = [\"{environment_input}\"]"
         )));
 
         let page = workspace.read(source);
@@ -301,17 +301,17 @@ fn acceptance_fixture_has_visibility_and_relationship_variants() {
         (
             "relationship-compatible.toml",
             "to = \"rfoo\"",
-            "version_constraint = \"^1.8\"",
+            "version-constraint = \"^1.8\"",
         ),
         (
             "relationship-incompatible.toml",
             "to = \"rfoo\"",
-            "version_constraint = \"^2.0\"",
+            "version-constraint = \"^2.0\"",
         ),
         (
             "relationship-external.toml",
             "to = \"cargo:foo-core\"",
-            "version_constraint = \"^1.9\"",
+            "version-constraint = \"^1.9\"",
         ),
     ];
 

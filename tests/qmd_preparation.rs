@@ -12,7 +12,7 @@ mod support;
 
 fn collection(execute: bool) -> ContentConfiguration {
     let execution = if execute {
-        "[execution]\nmode = 'execute'\nengine = 'jupyter'\nkernel = 'uninstalled-kernel'\ndeclared_environment_inputs = ['missing.lock']\n"
+        "[execution]\nmode = 'execute'\nengine = 'jupyter'\nkernel = 'uninstalled-kernel'\ndeclared-environment-inputs = ['missing.lock']\n"
     } else {
         ""
     };

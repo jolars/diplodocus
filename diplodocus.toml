@@ -3,8 +3,8 @@ name = "Diplodocus"
 
 [presentation]
 description = "Guides for building Python and R documentation with Diplodocus."
-site_url = "https://diplodocus.cc/"
-canonical_url_style = "clean"
+site-url = "https://diplodocus.cc/"
+canonical-url-style = "clean"
 
 [[repository]]
 id = "diplodocus"
@@ -31,4 +31,4 @@ format = "qmd"
 mode = "execute"
 engine = "jupyter"
 kernel = "python3"
-declared_environment_inputs = ["devenv.lock"]
+declared-environment-inputs = ["devenv.lock"]

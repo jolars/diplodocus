@@ -15,7 +15,7 @@ slug = "python"
 ecosystem = "python"
 repository = "tinystats"
 path = "python"
-metadata_path = "pyproject.toml"
+metadata-path = "pyproject.toml"
 targets = [
   { id = "api", extractor = "python", path = "src/tinystats", role = "public-api" },
 ]
@@ -27,7 +27,7 @@ slug = "r"
 ecosystem = "r"
 repository = "tinystats"
 path = "r"
-metadata_path = "DESCRIPTION"
+metadata-path = "DESCRIPTION"
 targets = [
   { id = "api", extractor = "r", path = ".", role = "public-api" },
 ]

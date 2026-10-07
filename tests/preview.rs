@@ -75,7 +75,7 @@ fn gone(process: &(u32, PathBuf)) -> bool {
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn watched_timeout_keeps_serving_the_complete_site_and_recovers() {
     let root = support::TestWorkspace::new();
-    root.write("diplodocus.toml", "[project]\nname='Preview'\n[[repository]]\nid='docs'\npath='.'\n[[content]]\nid='guide'\nowner='project'\nrepository='docs'\npath='guide'\nmount=''\nformat='qmd'\n[content.execution]\nmode='execute'\nengine='jupyter'\nkernel='python3'\ndeclared_environment_inputs=['environment.txt']\n");
+    root.write("diplodocus.toml", "[project]\nname='Preview'\n[[repository]]\nid='docs'\npath='.'\n[[content]]\nid='guide'\nowner='project'\nrepository='docs'\npath='guide'\nmount=''\nformat='qmd'\n[content.execution]\nmode='execute'\nengine='jupyter'\nkernel='python3'\ndeclared-environment-inputs=['environment.txt']\n");
     root.write("environment.txt", "first environment");
     root.write("guide/index.qmd", code("first generation", false));
     let port = std::net::TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0))
@@ -206,7 +206,7 @@ async fn watched_timeout_keeps_serving_the_complete_site_and_recovers() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn preview_tracks_missing_assets_and_configuration_changes() {
     let root = support::TestWorkspace::new();
-    let config = "[project]\nname='Static preview'\n[presentation]\nsite_url='https://example.test/docs'\ncanonical_url_style='clean'\n[[repository]]\nid='docs'\npath='.'\n[[content]]\nid='guide'\nowner='project'\nrepository='docs'\npath='guide'\nmount=''\nformat='gfm'\n";
+    let config = "[project]\nname='Static preview'\n[presentation]\nsite-url='https://example.test/docs'\ncanonical-url-style='clean'\n[[repository]]\nid='docs'\npath='.'\n[[content]]\nid='guide'\nowner='project'\nrepository='docs'\npath='guide'\nmount=''\nformat='gfm'\n";
     root.write("diplodocus.toml", config);
     root.write("guide/index.md", "# Original\n");
     let port = std::net::TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0))

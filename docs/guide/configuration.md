@@ -50,7 +50,7 @@ format = "qmd"
 mode = "execute"
 engine = "jupyter"
 kernel = "python3"
-declared_environment_inputs = ["devenv.lock"]
+declared-environment-inputs = ["devenv.lock"]
 ```
 
 Declared environment inputs are individual files relative to the repository.
@@ -67,8 +67,8 @@ An optional table controls the site name, HTML description, and public URL:
 [presentation]
 title = "Foo documentation"
 description = "Guides and API documentation for Foo."
-site_url = "https://example.com/docs/"
-canonical_url_style = "file"
+site-url = "https://example.com/docs/"
+canonical-url-style = "file"
 ```
 
 The title defaults to `project.name`. Diplodocus uses its built-in theme.
@@ -76,11 +76,11 @@ Generated sites and portable snapshots keep the presentation metadata, so
 `generate` does not need the original configuration. Read about
 [portable snapshots](snapshots.md) before separating extraction and generation.
 
-Set `site_url` to generate `sitemap.xml`, `robots.txt`, and canonical links in
+Set `site-url` to generate `sitemap.xml`, `robots.txt`, and canonical links in
 HTML pages. It must be an absolute HTTP or HTTPS URL without credentials,
 query parameters, fragments, or whitespace. Include the hosting prefix when
 deploying under a subdirectory. Diplodocus treats the URL as a directory root,
-whether or not you include its trailing slash. Omitting `site_url` omits all
+whether or not you include its trailing slash. Omitting `site-url` omits all
 three forms of crawler metadata.
 
 The sitemap lists the homepage, authored pages, package overviews, API pages,
@@ -88,7 +88,7 @@ and concepts. It follows search visibility: public and internal package pages
 appear, and hidden package pages do not. Assets do not appear. Entries contain
 URLs only; Diplodocus does not infer modification dates from build times.
 
-`canonical_url_style` defaults to `file`, which retains generated filenames
+`canonical-url-style` defaults to `file`, which retains generated filenames
 such as `/docs/index.html` and `/docs/installation.html`. Use `clean` when your
 host serves index pages at directory URLs and other HTML pages without their
 extension. For example, those URLs become `/docs/` and `/docs/installation`.

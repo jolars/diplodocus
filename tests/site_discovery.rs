@@ -91,7 +91,7 @@ fn sitemap_and_canonical_links_share_encoded_urls_in_both_styles() {
             "http://example.test/docs/a&b/",
         ] {
             let root = workspace(&format!(
-                "[presentation]\nsite_url='{base}'\ncanonical_url_style='{style}'"
+                "[presentation]\nsite-url='{base}'\ncanonical-url-style='{style}'"
             ));
             let snapshot = snapshot(&root);
             let rendered = render(&snapshot);
@@ -143,7 +143,7 @@ fn sitemap_matches_search_visibility_for_packages_and_concepts() {
     config.as_table_mut().unwrap().insert(
         "presentation".into(),
         toml::Value::Table(toml::Table::from_iter([(
-            "site_url".into(),
+            "site-url".into(),
             "https://example.test/docs/".into(),
         )])),
     );
@@ -185,7 +185,7 @@ fn sitemap_matches_search_visibility_for_packages_and_concepts() {
 #[test]
 fn discovery_survives_portable_generation_and_is_removed_when_disabled() {
     let root = workspace(
-        "[presentation]\nsite_url='https://example.test/docs'\ncanonical_url_style='clean'",
+        "[presentation]\nsite-url='https://example.test/docs'\ncanonical-url-style='clean'",
     );
     let snapshot = snapshot(&root);
     let directory = tempfile::tempdir().unwrap();
@@ -231,7 +231,7 @@ fn ambiguous_clean_urls_fail_before_replacing_a_site() {
         "robots.txt.md",
     ] {
         let root = workspace(
-            "[presentation]\nsite_url='https://example.test/'\ncanonical_url_style='clean'",
+            "[presentation]\nsite-url='https://example.test/'\ncanonical-url-style='clean'",
         );
         let output = root.path().join("site");
         render(&snapshot(&root)).publish(&output).unwrap();
