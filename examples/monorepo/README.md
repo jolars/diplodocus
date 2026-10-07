@@ -1,25 +1,42 @@
 # R/Python monorepo example
 
-Tiny Stats is a small documentation site for two packages in one repository.
-Each package exposes `mean_squared_error`. A shared guide links to both API
-references, and an equivalent concept adds **Same API in** links between them.
+Tiny Stats is a working prediction-evaluation toolkit with Python and R
+packages. Both expose six operations: mean squared error, mean absolute error,
+root mean squared error, mean error, R squared, and residuals.
+
+The site combines installation and quick-start pages, three shared guides, a
+Python-specific workflow, and both package references in one left sidebar.
+Python functions nest under their module; the current package and API ancestors
+open automatically. A separate **On this page** area follows the page's headings.
+Each operation links to its equivalent in the other language.
 
 ```text
 monorepo/
   diplodocus.toml
   docs/
     index.md
-    comparing-predictions.md
+    getting-started/
+      index.md
+      installation.md
+      quick-start.md
+    guides/
+      index.md
+      comparing-predictions.md
+      choosing-a-metric.md
+      inspecting-residuals.md
     assets/errors.svg
   python/
     pyproject.toml
     src/tinystats/__init__.py
+    docs/evaluating-models.md
+    tests/test_metrics.py
   r/
     DESCRIPTION
     LICENSE
     NAMESPACE
-    R/mean_squared_error.R
-    man/mean_squared_error.Rd
+    R/
+    man/
+    tests/metrics.R
 ```
 
 ## Build and preview
@@ -44,7 +61,8 @@ cargo run --locked -- build --config examples/monorepo/diplodocus.toml --output 
 cargo run --locked -- serve --config examples/monorepo/diplodocus.toml --output site/monorepo --port 0 --live-reload
 ```
 
-Browse the guide and both package references, then search for
+Start with the quick start, compare the metrics in the shared guides, and open
+a function under **Reference**. Then search for
 `mean_squared_error` or follow **Same API in** on a function page.
 
 The collection explicitly sets `mode = "never"`. Once Diplodocus is built, these
@@ -74,13 +92,33 @@ into a temporary directory, runs the commands with an empty `PATH`, checks the
 API links and asset, and compares the built site with one generated after the
 temporary sources have been removed.
 
+## Check the package calculations
+
+From the repository root inside `devenv shell`, run the Python tests and examples:
+
+```console
+PYTHONPATH=examples/monorepo/python/src python -m unittest discover -s examples/monorepo/python/tests
+python -m doctest examples/monorepo/python/src/tinystats/__init__.py
+```
+
+After installing the R package into your R library, run:
+
+```console
+Rscript examples/monorepo/r/tests/metrics.R
+```
+
+These tests check known scores, perfect predictions, invalid input lengths,
+constant observations for R squared, and missing-value propagation.
+
 ## Adapt the example
 
 Copy this directory into your project and edit `diplodocus.toml`. Both packages
 refer to the same repository declaration, whose path is `.`. Package paths are
 relative to that repository, and extraction targets are relative to each
-package. The shared guide mounts at the site root; package references live
-under `packages/python/` and `packages/r/`.
+package. Shared pages mount at the site root; package references live under
+`packages/python/` and `packages/r/`. The Python-owned collection mounts its
+guide at `packages/python/guides/`. Links between collections use ordinary
+relative source paths and are rewritten to the generated page routes.
 
 Update the package metadata, source paths, semantic references, and concept
 members together when renaming the packages or functions. Keep execution

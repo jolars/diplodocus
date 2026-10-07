@@ -1,6 +1,7 @@
 //! Rendering of validated site models into static output.
 
 mod html;
+mod navigation;
 mod publish;
 mod signatures;
 pub use html::render_site;

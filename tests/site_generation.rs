@@ -5,6 +5,25 @@ use diplodocus::snapshots::Snapshot;
 use diplodocus::validation::resolve_workspace;
 
 #[test]
+fn page_navigation_preserves_authored_ids_and_disambiguates_repeated_headings() {
+    let root = support::TestWorkspace::new();
+    root.write("diplodocus.toml", "[project]\nname='Navigation'\n[[repository]]\nid='docs'\npath='.'\n[[content]]\nid='guide'\nowner='project'\nrepository='docs'\npath='docs'\nmount=''\nformat='qmd'\n");
+    root.write("docs/index.qmd", "# Guide\n\n## **Examples**\n\nFirst.\n\n## Examples {#examples}\n\nSecond.\n\n### Examples\n\nThird.\n");
+    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+    let rendered =
+        diplodocus::rendering::render_site(&diplodocus::site::Site::new(&snapshot).unwrap())
+            .unwrap();
+    let html = std::str::from_utf8(&rendered.files()["index.html"].bytes).unwrap();
+    assert!(html.contains("aria-label=\"On this page\""));
+    for identifier in ["examples", "examples-2", "examples-3"] {
+        assert_eq!(html.matches(&format!("id=\"{identifier}\"")).count(), 1);
+        assert!(html.contains(&format!("href=\"#{identifier}\"")));
+    }
+    assert!(html.contains("<h2 id=\"examples\">Examples</h2>"));
+}
+
+#[test]
 fn authored_titles_reuse_matching_headings_and_preserve_their_anchors() {
     for (source, heading_count, preserved) in [
         (

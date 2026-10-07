@@ -43,14 +43,14 @@ fn monorepo_example_builds_without_runtimes_and_generates_without_sources() {
     let snapshot = Snapshot::load(&database).unwrap();
     assert_eq!(snapshot.workspace().repositories.len(), 1);
     assert_eq!(snapshot.workspace().packages.len(), 2);
-    assert_eq!(snapshot.workspace().pages.len(), 2);
-    assert_eq!(snapshot.workspace().concepts.len(), 1);
+    assert_eq!(snapshot.workspace().pages.len(), 9);
+    assert_eq!(snapshot.workspace().concepts.len(), 6);
     assert_eq!(snapshot.assets().len(), 1);
 
     let site = root.path().join("site");
     let index = fs::read_to_string(site.join("index.html")).unwrap();
     assert!(index.contains("Comparing predictions"));
-    let guide = fs::read_to_string(site.join("comparing-predictions.html")).unwrap();
+    let guide = fs::read_to_string(site.join("guides/comparing-predictions.html")).unwrap();
     assert!(guide.contains("<img "));
     let search: serde_json::Value =
         serde_json::from_slice(&fs::read(site.join("assets/search.json")).unwrap()).unwrap();
@@ -69,7 +69,7 @@ fn monorepo_example_builds_without_runtimes_and_generates_without_sources() {
     })
     .collect();
     for path in &api_paths {
-        assert!(guide.contains(&format!("href=\"{path}\"")));
+        assert!(guide.contains(&format!("href=\"../{path}\"")));
         let file = percent_encoding::percent_decode_str(path)
             .decode_utf8()
             .unwrap();
@@ -86,6 +86,34 @@ fn monorepo_example_builds_without_runtimes_and_generates_without_sources() {
             .unwrap();
         assert!(html.contains(&format!("href=\"{relative}\"")));
     }
+    for metric in [
+        "mean_absolute_error",
+        "root_mean_squared_error",
+        "mean_error",
+        "r_squared",
+        "residuals",
+    ] {
+        for (ecosystem, title) in [
+            ("python", format!("tinystats.{metric}")),
+            ("r", metric.into()),
+        ] {
+            let entry = entries
+                .iter()
+                .find(|entry| entry["title"] == title && entry["ecosystem"] == ecosystem)
+                .unwrap();
+            let path = percent_encoding::percent_decode_str(entry["path"].as_str().unwrap())
+                .decode_utf8()
+                .unwrap();
+            let html = fs::read_to_string(site.join(path.as_ref())).unwrap();
+            assert!(html.contains("Same API in"), "{title}");
+        }
+    }
+    assert!(index.contains("aria-label=\"Getting started\""));
+    assert!(index.contains("aria-label=\"Guides\""));
+    assert!(index.contains("aria-label=\"Reference\""));
+    let python_guide =
+        fs::read_to_string(site.join("packages/python/guides/evaluating-models.html")).unwrap();
+    assert!(python_guide.contains("Evaluating models in Python"));
     for asset in snapshot.assets().values() {
         assert!(support::files_under(&site).iter().any(|path| {
             path.extension().is_some_and(|extension| extension == "svg")

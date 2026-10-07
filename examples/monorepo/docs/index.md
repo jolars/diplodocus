@@ -1,21 +1,27 @@
 # Tiny Stats
 
-Tiny Stats provides the same small prediction-error calculation in Python and
-R. This site brings the two package references together with a shared guide, so
-you can learn the idea once and then use it in either language.
+Tiny Stats evaluates numeric predictions in Python and R. The two packages
+share six operations, so you can learn the ideas once and use either language.
 
 ## Start with the guide
 
-[Comparing predictions](comparing-predictions.md) explains mean squared error
-with a worked example and shows the corresponding Python and R calls.
+[Install Tiny Stats](getting-started/installation.md), then follow the
+[quick start](getting-started/quick-start.md) to compare two sets of predictions.
+The packages are deliberately small, working examples for Diplodocus.
+
+## Learn how to evaluate predictions
+
+- [Comparing predictions](guides/comparing-predictions.md) works through squared error.
+- [Choosing a metric](guides/choosing-a-metric.md) compares error magnitude, bias, and R squared.
+- [Inspecting residuals](guides/inspecting-residuals.md) explains what a single score can hide.
 
 ## Choose a language
 
-Each package has its own API reference. Start with the function for your language:
+Browse the **Reference** branches in the sidebar or open a function directly:
 
 - **Python:** [`pystats::tinystats.mean_squared_error`]
 - **R:** [`rstats::mean_squared_error`]
 
-Each function page links to its counterpart under **Same API in**. The sidebar
-keeps shared documentation separate from the package references, and search
-finds both implementations of `mean_squared_error`.
+Each function links to its counterpart under **Same API in**. The
+[Python workflow](../python/docs/evaluating-models.md) shows how to evaluate
+several models with a small loop.

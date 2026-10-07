@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write;
 
 use super::{
@@ -11,6 +11,12 @@ use crate::ir::*;
 use crate::site::{PageModel, Site, SiteError, relative_url};
 use crate::validation::{DocumentIdentity, ReferenceKind};
 
+const FRAGMENT: &percent_encoding::AsciiSet = &percent_encoding::NON_ALPHANUMERIC
+    .remove(b'-')
+    .remove(b'_')
+    .remove(b'.')
+    .remove(b'~');
+
 /// Render one complete site from its prepared model, with no source or database I/O.
 pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
     let mut files = BTreeMap::new();
@@ -21,7 +27,16 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
             page,
             route,
             cell: 0,
+            headings: Vec::new(),
+            identifiers: page
+                .resolved
+                .map(|document| document.anchors.clone())
+                .unwrap_or_default(),
+            document_navigation: true,
         };
+        renderer
+            .identifiers
+            .extend(["main", "search", "search-results"].map(str::to_owned));
         let mut html = String::from(
             "<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">",
         );
@@ -35,30 +50,21 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
         }
         write!(html, "<title>{} · {}</title><link rel=\"stylesheet\" href=\"{}\"><script defer src=\"{}\"></script><script defer src=\"{}\"></script></head><body><a class=\"skip-link\" href=\"#main\">Skip to content</a>", escape(&page.title), escape(site.title()), escape(&relative_url(route, "assets/site.css")), escape(&relative_url(route, "assets/search.js")), escape(&relative_url(route, "assets/nav.js"))).unwrap();
         write!(html, "<header><a class=\"brand\" href=\"{}\">{}</a><form role=\"search\"><label for=\"search\">Search documentation</label><input id=\"search\" type=\"search\" autocomplete=\"off\"><ul id=\"search-results\" aria-live=\"polite\"></ul></form></header><div class=\"layout\"><nav aria-label=\"Documentation\"><details class=\"nav-disclosure\" open><summary>Browse documentation</summary>", escape(&relative_url(route, "index.html")), escape(site.title())).unwrap();
-        let mut documentation = vec![("index.html".to_owned(), "Overview".to_owned())];
-        documentation.extend(
-            site.pages
-                .iter()
-                .filter(|(destination, candidate)| {
-                    *destination != "index.html"
-                        && candidate.visible
-                        && candidate.owner.is_none()
-                        && candidate.document.is_some()
-                        && candidate.concept.is_none()
-                })
-                .map(|(destination, candidate)| (destination.clone(), candidate.title.clone())),
-        );
-        nav_group(&mut html, route, "Documentation", &documentation);
-
-        nav_packages(&mut html, site, route);
+        super::navigation::project_pages(&mut html, site, route);
+        super::navigation::packages(&mut html, site, route);
         let concepts: Vec<_> = site
             .pages
             .iter()
-            .filter(|(_, candidate)| candidate.visible && candidate.concept.is_some())
+            .filter(|(_, candidate)| {
+                candidate.visible
+                    && candidate
+                        .concept
+                        .is_some_and(|concept| concept.documentation.is_some())
+            })
             .map(|(destination, candidate)| (destination.clone(), candidate.title.clone()))
             .collect();
-        nav_group(&mut html, route, "Shared concepts", &concepts);
-        html.push_str("</details></nav><main id=\"main\">");
+        super::navigation::group(&mut html, route, "Shared concepts", &concepts);
+        html.push_str("</details></nav><div class=\"page-content\"><main id=\"main\">");
         if let Some(owner) = &page.owner {
             let package = &site.workspace.packages[owner];
             write!(
@@ -85,7 +91,12 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
                 )
             });
         if !authored_title {
-            write!(html, "<h1>{}</h1>", escape(&page.title)).unwrap();
+            let title = if page.item.is_some() {
+                format!("<code>{}</code>", escape(&page.title))
+            } else {
+                escape(&page.title)
+            };
+            write!(html, "<h1>{title}</h1>").unwrap();
         }
         if let Some(item) = page.item {
             let ecosystem = page
@@ -133,17 +144,23 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
                         html,
                         "<li><a href=\"{}\">{}</a></li>",
                         escape(&relative_url(route, path)),
-                        escape(&candidate.title)
+                        if candidate.item.is_some() {
+                            format!("<code>{}</code>", escape(&candidate.title))
+                        } else {
+                            escape(&candidate.title)
+                        }
                     )
                     .unwrap();
                 }
             }
             html.push_str("</ul>");
         }
-        html.push_str("</main></div></body></html>\n");
+        html.push_str("</main>");
+        html.push_str(&renderer.page_navigation());
+        html.push_str("</div></div></body></html>\n");
         if page.visible {
             let package = page.owner.as_ref().map(|id| &site.workspace.packages[id]);
-            search.push(serde_json::json!({"title": page.title, "path": route.split('/').map(crate::site::encode).collect::<Vec<_>>().join("/"), "package": package.map(|p| &p.name), "ecosystem": package.map(|p| &p.ecosystem), "text": page.document.and_then(|d| d.raw_source.as_deref()).unwrap_or("")}));
+            search.push(serde_json::json!({"title": page.title, "path": route.split('/').map(crate::site::encode).collect::<Vec<_>>().join("/"), "package": package.map(|p| &p.name), "ecosystem": package.map(|p| &p.ecosystem), "api": page.item.is_some(), "text": page.document.and_then(|d| d.raw_source.as_deref()).unwrap_or("")}));
         }
         files.insert(
             route.clone(),
@@ -158,10 +175,7 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
     }
     files.insert(
         "assets/site.css".into(),
-        file(
-            [STYLE, NAV_STYLE].concat().into_bytes(),
-            "text/css; charset=utf-8",
-        ),
+        file(STYLE.as_bytes().to_vec(), "text/css; charset=utf-8"),
     );
     files.insert(
         "assets/search.js".into(),
@@ -209,107 +223,6 @@ fn id(attributes: &Attributes) -> String {
         .map(|s| format!(" id=\"{}\"", escape(&s.value)))
         .unwrap_or_default()
 }
-fn nav_group(html: &mut String, route: &str, label: &str, links: &[(String, String)]) {
-    if links.is_empty() {
-        return;
-    }
-    write!(
-        html,
-        "<section class=\"nav-group\" role=\"group\" aria-label=\"{}\"><h2>{}</h2><ul>",
-        escape(label),
-        escape(label)
-    )
-    .unwrap();
-    for (destination, title) in links {
-        nav_link(html, route, destination, title);
-    }
-    html.push_str("</ul></section>");
-}
-fn nav_packages(html: &mut String, site: &Site<'_>, route: &str) {
-    let packages: Vec<_> = site
-        .workspace
-        .packages
-        .iter()
-        .filter(|(_, package)| {
-            package.visibility != crate::configuration::PackageVisibility::Hidden
-        })
-        .collect();
-    if packages.is_empty() {
-        return;
-    }
-    html.push_str(
-        "<section class=\"nav-group\" role=\"group\" aria-label=\"Packages\"><h2>Packages</h2><ul>",
-    );
-    for (id, package) in packages {
-        let unique_ecosystem = site
-            .workspace
-            .packages
-            .values()
-            .filter(|other| {
-                other.visibility != crate::configuration::PackageVisibility::Hidden
-                    && other.ecosystem == package.ecosystem
-            })
-            .count()
-            == 1;
-        let label = if unique_ecosystem {
-            match package.ecosystem.as_str() {
-                "python" => "Python",
-                "r" => "R",
-                _ => package.name.as_str(),
-            }
-        } else {
-            package.name.as_str()
-        };
-        let open = if site.pages[route].owner.as_ref() == Some(id) {
-            " open"
-        } else {
-            ""
-        };
-        html.push_str("<li class=\"nav-package\">");
-        write!(
-            html,
-            "<details class=\"package-disclosure\"{open}><summary>{}</summary><ul>",
-            escape(label)
-        )
-        .unwrap();
-        let overview = format!("packages/{}/index.html", package.slug);
-        nav_link(html, route, &overview, "Overview");
-        let pages: Vec<_> = site
-            .pages
-            .iter()
-            .filter(|(destination, candidate)| {
-                *destination != &overview
-                    && candidate.visible
-                    && candidate.owner.as_ref() == Some(id)
-                    && (candidate.item.is_some() || candidate.document.is_some())
-            })
-            .collect();
-        for (destination, candidate) in pages {
-            nav_link(html, route, destination, &candidate.title);
-        }
-        html.push_str("</ul></details></li>");
-    }
-    html.push_str("</ul></section>");
-}
-fn nav_link(html: &mut String, route: &str, destination: &str, title: &str) {
-    html.push_str("<li>");
-    nav_anchor(html, route, destination, title);
-    html.push_str("</li>");
-}
-fn nav_anchor(html: &mut String, route: &str, destination: &str, title: &str) {
-    let active = if destination == route {
-        " aria-current=\"page\""
-    } else {
-        ""
-    };
-    write!(
-        html,
-        "<a href=\"{}\"{active}>{}</a>",
-        escape(&relative_url(route, destination)),
-        escape(title)
-    )
-    .unwrap();
-}
 fn concept_links(site: &Site<'_>, route: &str, concept: &Concept) -> Result<String, SiteError> {
     let label = if concept.kind == ConceptKind::Equivalent {
         "Same API in"
@@ -328,7 +241,7 @@ fn concept_links(site: &Site<'_>, route: &str, concept: &Concept) -> Result<Stri
         let package = &site.workspace.packages[&item.package];
         write!(
             html,
-            "<li><a href=\"{}\">{}: {}</a></li>",
+            "<li><a href=\"{}\">{}: <code>{}</code></a></li>",
             escape(&relative_url(route, target)),
             escape(&package.name),
             escape(&package.items[&item.item].qualified_name)
@@ -343,8 +256,51 @@ struct Renderer<'a, 'b> {
     page: &'a PageModel<'b>,
     route: &'a str,
     cell: usize,
+    headings: Vec<(usize, String, String)>,
+    identifiers: BTreeSet<String>,
+    document_navigation: bool,
 }
 impl Renderer<'_, '_> {
+    fn heading_id(&mut self, attributes: &Attributes, label: &str) -> String {
+        if let Some(identifier) = &attributes.identifier {
+            return identifier.value.clone();
+        }
+        let slug = label
+            .to_lowercase()
+            .split(|c: char| !c.is_alphanumeric())
+            .filter(|part| !part.is_empty())
+            .collect::<Vec<_>>()
+            .join("-");
+        let base = if slug.is_empty() { "section" } else { &slug };
+        let mut identifier = base.to_owned();
+        let mut suffix = 2;
+        while !self.identifiers.insert(identifier.clone()) {
+            identifier = format!("{base}-{suffix}");
+            suffix += 1;
+        }
+        identifier
+    }
+
+    fn page_navigation(&self) -> String {
+        if self.headings.is_empty() {
+            return String::new();
+        }
+        let mut html = String::from(
+            "<aside class=\"page-toc\"><nav aria-label=\"On this page\"><details class=\"toc-disclosure\" open><summary>On this page</summary><ul>",
+        );
+        for (level, identifier, title) in &self.headings {
+            write!(
+                html,
+                "<li class=\"toc-level-{level}\"><a href=\"#{}\">{}</a></li>",
+                escape(&percent_encoding::utf8_percent_encode(identifier, FRAGMENT).to_string()),
+                escape(title)
+            )
+            .unwrap();
+        }
+        html.push_str("</ul></details></nav></aside>");
+        html
+    }
+
     fn reference(&self, kind: ReferenceKind, spelling: &str) -> Result<String, SiteError> {
         let reference = self
             .page
@@ -448,10 +404,17 @@ impl Renderer<'_, '_> {
                     ..
                 } => {
                     let level = (*level).clamp(1, 6);
+                    let label = plain(inlines);
+                    let identifier = if self.document_navigation && level > 1 {
+                        let identifier = self.heading_id(attributes, &label);
+                        self.headings.push((level, identifier.clone(), label));
+                        format!(" id=\"{}\"", escape(&identifier))
+                    } else {
+                        id(attributes)
+                    };
                     write!(
                         html,
-                        "<h{level}{}>{}</h{level}>",
-                        id(attributes),
+                        "<h{level}{identifier}>{}</h{level}>",
                         self.inlines(inlines)?
                     )
                     .unwrap();
@@ -566,7 +529,11 @@ impl Renderer<'_, '_> {
                         html.push_str(&render_preformatted_text(text))
                     }
                     ValidatedRepresentationRef::Markdown(value) => {
-                        html.push_str(&self.blocks(value.blocks())?)
+                        // Executed output must not become part of the document's navigation.
+                        self.document_navigation = false;
+                        let output = self.blocks(value.blocks());
+                        self.document_navigation = true;
+                        html.push_str(&output?);
                     }
                     ValidatedRepresentationRef::Html(value) => {
                         html.push_str(&self.html_nodes(value.nodes())?)
@@ -660,7 +627,6 @@ fn plain(nodes: &[Inline]) -> String {
         })
         .collect()
 }
-const STYLE: &str = "body{margin:0;color:#202c38;background:#fafbf9;font:17px/1.65 system-ui,sans-serif}a{color:#165c7c}a:focus-visible,input:focus-visible{outline:3px solid #a04605;outline-offset:3px}header{padding:1.5rem 3rem;border-bottom:1px solid #d6dedc;display:flex;gap:2rem;justify-content:space-between;align-items:start}.brand{font-size:1.5rem;font-weight:700;text-decoration:none}form label{display:block;font-size:.8rem}input[type=search]{padding:.5rem;font:inherit;max-width:100%;box-sizing:border-box}.layout{display:grid;grid-template-columns:minmax(12rem,19rem) minmax(0,1fr);max-width:90rem;margin:auto}nav{padding:2rem;border-right:1px solid #d6dedc;font-size:.9rem}nav ul{list-style:none;padding:0}nav li{margin:.4rem 0;overflow-wrap:anywhere}[aria-current=page]{font-weight:700}main{padding:2.5rem 4rem;max-width:54rem;min-width:0;overflow-wrap:anywhere}h1,h2,h3{line-height:1.25;letter-spacing:-.02em}h1{font-size:2.3rem}.package{font-size:.85rem;color:#4d606b}pre{padding:1rem;background:#edf1f0;overflow:auto;border-radius:.25rem}code{font-size:.9em}img{max-width:100%;height:auto}figure{margin:1.5rem 0}.caption,figcaption{font-size:.9rem;color:#4d606b}table{border-collapse:collapse;display:block;overflow:auto}th,td{border:1px solid #bbc9c5;padding:.3rem .7rem}blockquote,.callout{border-left:4px solid #688b84;padding:.2rem 1rem;margin:1rem 0}.unsupported{border-left:4px solid #a04605;padding-left:1rem}.skip-link{position:absolute;left:-10000px}.skip-link:focus{left:1rem;top:1rem;background:white;padding:1rem}#search-results{max-width:24rem;font-size:.85rem}@media(max-width:760px){header{padding:1rem;display:block}.layout{display:block}nav{border-right:0;border-bottom:1px solid #d6dedc;padding:1rem}nav ul{max-height:12rem;overflow:auto}main{padding:1.5rem}h1{font-size:1.9rem}}";
-const NAV_STYLE: &str = ".nav-disclosure>summary{cursor:pointer;color:#165c7c;font-weight:700}.nav-group+.nav-group{margin-top:1.5rem;padding-top:1.25rem;border-top:1px solid #d6dedc}.nav-group h2{margin:0 0 .7rem;color:#4d606b;font-size:.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase}.nav-group ul{margin:0}.nav-group li{margin:.35rem 0}.nav-package+.nav-package{margin-top:.7rem}.package-disclosure>summary{cursor:pointer;color:#165c7c}.package-disclosure[open]>summary{font-weight:700}.package-disclosure>ul{border-left:1px solid #d6dedc;margin:.45rem 0 0 .45rem;padding-left:.8rem}.package-disclosure>ul li{font-size:.85rem}@media(min-width:1000px){.layout{grid-template-columns:minmax(12rem,21rem) minmax(0,1fr)}}@media(min-width:761px){.nav-disclosure>summary{display:none}}@media(max-width:760px){.nav-disclosure[open]>summary{margin-bottom:1rem}}";
-const NAV_SCRIPT: &str = "(()=>{const disclosure=document.querySelector('.nav-disclosure');const narrow=matchMedia('(max-width:760px)');if(narrow.matches)disclosure.open=false;narrow.addEventListener('change',event=>{disclosure.open=!event.matches})})();";
-const SEARCH: &str = "(()=>{const script=document.currentScript;const root=new URL('../',script.src);const input=document.querySelector('#search');const results=document.querySelector('#search-results');let entries=[];fetch(new URL('search.json',script.src)).then(r=>r.json()).then(v=>{entries=v}).catch(()=>{});input.form.addEventListener('submit',e=>e.preventDefault());input.addEventListener('input',()=>{results.replaceChildren();const q=input.value.trim().toLowerCase();if(!q)return;for(const entry of entries.filter(e=>(e.title+' '+e.text+' '+(e.package||'')).toLowerCase().includes(q)).slice(0,12)){const li=document.createElement('li');const a=document.createElement('a');a.href=new URL(entry.path,root);a.textContent=entry.title+(entry.package?' · '+entry.package:'');li.append(a);results.append(li)}})})();";
+const STYLE: &str = include_str!("assets/site.css");
+const NAV_SCRIPT: &str = "(()=>{const disclosure=document.querySelector('.nav-disclosure');const narrow=matchMedia('(max-width:760px)');const toc=document.querySelector('.toc-disclosure');const wide=matchMedia('(min-width:1100px)');disclosure.open=!narrow.matches;narrow.addEventListener('change',event=>{disclosure.open=!event.matches});if(toc){toc.open=wide.matches;wide.addEventListener('change',event=>{toc.open=event.matches})}})();";
+const SEARCH: &str = "(()=>{const script=document.currentScript;const root=new URL('../',script.src);const input=document.querySelector('#search');const results=document.querySelector('#search-results');let entries=[];fetch(new URL('search.json',script.src)).then(r=>r.json()).then(v=>{entries=v}).catch(()=>{});input.form.addEventListener('submit',e=>e.preventDefault());input.addEventListener('input',()=>{results.replaceChildren();const q=input.value.trim().toLowerCase();if(!q)return;for(const entry of entries.filter(e=>(e.title+' '+e.text+' '+(e.package||'')).toLowerCase().includes(q)).slice(0,12)){const li=document.createElement('li');const a=document.createElement('a');a.href=new URL(entry.path,root);if(entry.api){const code=document.createElement('code');code.textContent=entry.title;a.append(code)}else{a.append(entry.title)}if(entry.package)a.append(' · '+entry.package);li.append(a);results.append(li)}})})();";

@@ -7,7 +7,7 @@ average the squared differences. A value of zero means every prediction matches.
 For observations `[1, 2]` and predictions `[1, 3]`, the squared errors are zero
 and one. Their average is `0.5`.
 
-![Squared errors of 0 and 1 give a mean squared error of 0.5.](assets/errors.svg)
+![Squared errors of 0 and 1 give a mean squared error of 0.5.](../assets/errors.svg)
 
 ## Python
 
@@ -34,4 +34,9 @@ mean_squared_error(c(1, 2), c(1, 3))
 Both functions require inputs with the same nonzero length. These snippets are
 display examples; building the documentation does not execute them.
 
-Return to the [overview](index.md).
+## Choose the next step
+
+Compare this result with [`pystats::tinystats.mean_absolute_error`] or
+[`rstats::mean_absolute_error`]. Read [Choosing a metric](choosing-a-metric.md)
+for the tradeoffs, or [Inspecting residuals](inspecting-residuals.md) to see
+which observations account for the error.

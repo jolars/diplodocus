@@ -43,10 +43,61 @@ format = "gfm"
 [content.execution]
 mode = "never"
 
+[[content]]
+id = "python-guide"
+owner = "pystats"
+repository = "tinystats"
+path = "python/docs"
+mount = "guides"
+format = "gfm"
+
+[content.execution]
+mode = "never"
+
 [[concept]]
 id = "mean-squared-error"
 kind = "equivalent"
 members = [
   { package = "pystats", item = "tinystats.mean_squared_error" },
   { package = "rstats", item = "mean_squared_error" },
+]
+
+[[concept]]
+id = "mean-absolute-error"
+kind = "equivalent"
+members = [
+  { package = "pystats", item = "tinystats.mean_absolute_error" },
+  { package = "rstats", item = "mean_absolute_error" },
+]
+
+[[concept]]
+id = "root-mean-squared-error"
+kind = "equivalent"
+members = [
+  { package = "pystats", item = "tinystats.root_mean_squared_error" },
+  { package = "rstats", item = "root_mean_squared_error" },
+]
+
+[[concept]]
+id = "mean-error"
+kind = "equivalent"
+members = [
+  { package = "pystats", item = "tinystats.mean_error" },
+  { package = "rstats", item = "mean_error" },
+]
+
+[[concept]]
+id = "r-squared"
+kind = "equivalent"
+members = [
+  { package = "pystats", item = "tinystats.r_squared" },
+  { package = "rstats", item = "r_squared" },
+]
+
+[[concept]]
+id = "residuals"
+kind = "equivalent"
+members = [
+  { package = "pystats", item = "tinystats.residuals" },
+  { package = "rstats", item = "residuals" },
 ]

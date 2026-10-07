@@ -1,1 +1,6 @@
 export(mean_squared_error)
+export(mean_absolute_error)
+export(root_mean_squared_error)
+export(mean_error)
+export(r_squared)
+export(residuals)
