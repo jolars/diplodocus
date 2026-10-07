@@ -36,7 +36,7 @@ nav [aria-current=page] { color: var(--ink); background: var(--selected); font-w
 .package-disclosure[open] > summary { font-weight: 650; }
 .package-disclosure > ul, .item-disclosure > ul { margin: .25rem 0 .6rem .65rem; padding-left: .5rem; border-left: 1px solid var(--border); }
 .nav-label { padding: .6rem .45rem .15rem; color: var(--muted); font-size: .7rem; font-weight: 650; }
-.page-content { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; }
+.page-content { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; align-content: start; }
 main { grid-column: 1; grid-row: 2; width: 100%; max-width: 52rem; min-width: 0; padding: 2rem 2.5rem 4rem; overflow-wrap: anywhere; }
 h1, h2, h3, h4 { line-height: 1.3; letter-spacing: -.02em; scroll-margin-top: 110px; }
 h1 { margin-top: 0; font-size: 2.2rem; }

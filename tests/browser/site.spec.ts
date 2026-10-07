@@ -196,3 +196,27 @@ test("shared guides, API trees, and page headings support a round trip", async (
   await navigation.getByRole("group", { name: "Guides", exact: true }).getByRole("link", { name: "Choosing a metric" }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Choosing a metric");
 });
+
+test("page TOC stays close to content when the window narrows", async ({ page }, info) => {
+  test.skip(info.project.name !== "desktop", "This checks resizing through the desktop breakpoints.");
+  await page.setViewportSize({ width: 1280, height: 1400 });
+  await page.goto("/getting-started/installation.html");
+  for (const width of [1099, 1000, 761, 760]) {
+    await page.setViewportSize({ width, height: 1400 });
+    await expect(page.locator(".toc-disclosure")).toHaveJSProperty("open", false);
+    const summary = await page.getByRole("navigation", { name: "On this page" }).locator("summary").boundingBox();
+    const title = await page.getByRole("heading", { level: 1 }).boundingBox();
+    const gap = title!.y - (summary!.y + summary!.height);
+    expect(gap, `TOC-to-title spacing at ${width}px`).toBeLessThanOrEqual(40);
+    expect(gap).toBeGreaterThanOrEqual(0);
+    await fitsViewport(page);
+  }
+  await page.setViewportSize({ width: 1000, height: 1000 });
+  await capture(page, info, "medium-page-toc");
+
+  await page.goto("/getting-started/");
+  const header = await page.getByRole("banner").boundingBox();
+  const title = await page.getByRole("heading", { level: 1 }).boundingBox();
+  expect(title!.y - (header!.y + header!.height), "A page without a TOC should not reserve an empty row").toBeLessThanOrEqual(40);
+  await capture(page, info, "medium-without-toc");
+});
