@@ -121,5 +121,16 @@ notebooks; cell-level caching; arbitrary themes and Quarto compatibility; and a
 hosted service are outside the first release. Browser live reload is already
 implemented as an optional `serve --live-reload` feature.
 
+- [ ] Add first-class interactive component embedding for authored pages.
+  Diplodocus should provide authoring syntax for declaring a component and its
+  inputs, manage mounting and asset loading, and preserve the complete bundle
+  in portable snapshots so `generate` works without the original sources.
+  External tools should compile components built with Svelte, TypeScript,
+  WASM, or other browser technologies; Diplodocus should define the embedding
+  contract rather than build its own frontend framework or bundler. Support
+  JavaScript, CSS, WASM, workers, and related assets while preserving bundle
+  paths. Use Eunoia's integrated diagram app and inline documentation examples
+  as motivating cases, with a small browser runtime or adapters where useful.
+
 Change this page when a release gate changes. Keep detailed validation evidence
 in tests and CI results rather than adding another dated ledger.
