@@ -1,10 +1,10 @@
 # Python, R, and Julia API extraction
 
 Diplodocus reads configured API targets statically. It does not import a Python
-package, load an R or Julia package, run a build backend, or install dependencies.
-Targets must point to maintained files inside their declared package and
-repository boundaries. The [workspace guide](configuration.md) shows how to
-declare a target.
+package, load an R or Julia package, run a build backend, or install
+dependencies. Targets must point to maintained files inside their declared
+package and repository boundaries. The [workspace guide](configuration.md) shows
+how to declare a target.
 
 ## Python
 
@@ -14,34 +14,36 @@ properties, constants, fields, type aliases, overloads, and supported
 decorators. A statically resolvable `__all__` controls exports; otherwise,
 public definitions and explicit aliases form the visible surface. Maintained
 stubs supply public signatures, while implementation docstrings supply prose.
-PEP 257 and NumPy-style docstrings provide structured documentation, and
-simple `:func:` roles can become cross-references.
+PEP 257 and NumPy-style docstrings provide structured documentation, and simple
+`:func:` roles can become cross-references.
 
 Computed exports, conditional definitions, opaque signatures, unsupported
 decorators, and other dynamic behavior cannot be inferred safely. Diplodocus
-reports the limit instead of executing package code or guessing an API.
-For a public function decorated with `contextlib.contextmanager`, it preserves
-the parameters and renders a generator's `Iterator[T]` or `Generator[T, ...]`
-return annotation as `AbstractContextManager[T]`. An unsupported decorator on
-a public declaration produces a diagnostic, and its callable signature is
-omitted because the wrapper may change it. Unsupported decorators on internal
-declarations do not prevent extraction of the public surface unless those
-declarations are reexported.
+reports the limit instead of executing package code or guessing an API. For a
+public function decorated with `contextlib.contextmanager`, it preserves the
+parameters and renders a generator's `Iterator[T]` or `Generator[T, ...]` return
+annotation as `AbstractContextManager[T]`. An unsupported decorator on a public
+declaration produces a diagnostic, and its callable signature is omitted because
+the wrapper may change it. Unsupported decorators on internal declarations do
+not prevent extraction of the public surface unless those declarations are
+reexported.
 
 ## R
 
 R extraction reads `DESCRIPTION`, `NAMESPACE`, maintained `R/` source, and
 checked-in `man/` Rd files. Supported static namespace declarations include
-`export`, `import`, `importFrom`, `S3method`, and literal `useDynLib` declarations.
-It connects exports and S3 registrations to direct source definitions, then
-attaches supported Rd topics,
-aliases, usage, arguments, and prose. Rd examples remain display-only.
+`export`, `import`, `importFrom`, `S3method`, and literal `useDynLib`
+declarations. It connects exports and S3 registrations to direct source
+definitions, then attaches supported Rd topics, aliases, usage, arguments, and
+prose. Rd examples remain display-only.
 
-Computed names, conditional namespace directives, dynamic construction,
-roxygen generation, and unsupported Rd markup are not evaluated. Unsupported
-markup stays visible with a diagnostic. For exact parser and identity rules,
-see the [Python extraction contract](https://github.com/jolars/diplodocus/blob/main/docs/ir/python-extraction.md)
-or [R extraction contract](https://github.com/jolars/diplodocus/blob/main/docs/ir/r-extraction.md)
+Computed names, conditional namespace directives, dynamic construction, roxygen
+generation, and unsupported Rd markup are not evaluated. Unsupported markup
+stays visible with a diagnostic. For exact parser and identity rules, see the
+[Python extraction
+contract](https://github.com/jolars/diplodocus/blob/main/docs/ir/python-extraction.md)
+or [R extraction
+contract](https://github.com/jolars/diplodocus/blob/main/docs/ir/r-extraction.md)
 in the source repository.
 
 ## Julia
@@ -55,12 +57,13 @@ Exported, `public`, and documented declarations form the maintained surface.
 Functions have a family page and separate pages for their supplied methods.
 Types retain fields and explicit constructors. Static imports and aliases
 resolve to maintained declarations. Julia Markdown docstrings supply prose,
-lists, tables, admonitions, and inert code examples. API `@ref` links can name
-a family or select a method, and they preserve their labels.
+lists, tables, admonitions, and inert code examples. API `@ref` links can name a
+family or select a method, and they preserve their labels.
 
 Computed includes, conditional declarations, generated definitions, unsupported
 macros, and unavailable reexports produce diagnostics. Extraction does not
-expand macros, consult a Julia depot, infer runtime methods, or execute doctests.
-Unsupported documentation syntax remains visible with warnings. The
-[Julia extraction contract](https://github.com/jolars/diplodocus/blob/main/docs/ir/julia-extraction.md)
+expand macros, consult a Julia depot, infer runtime methods, or execute
+doctests. Unsupported documentation syntax remains visible with warnings. The
+[Julia extraction
+contract](https://github.com/jolars/diplodocus/blob/main/docs/ir/julia-extraction.md)
 defines the supported subset and method identity rules.
