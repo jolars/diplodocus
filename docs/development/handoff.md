@@ -7,7 +7,8 @@ implementation.
 
 ## How a build moves through the code
 
-`src/main.rs` parses the CLI; `src/commands/` coordinates the operations. The
+`src/cli.rs` defines the CLI, `src/main.rs` dispatches commands, and
+`src/commands/` coordinates the operations. The
 `build` command follows this path:
 
 1. `src/configuration.rs` and `src/paths.rs` load declarations and resolve
@@ -28,6 +29,12 @@ implementation.
 The [snapshot schema](../design/snapshot-schema.md) is the contract between
 extraction and generation. The [browser workflow](browser.md) covers local
 preview and visual inspection.
+
+`build.rs` generates `docs/guide/cli.md` with clapdown whenever `src/cli.rs` or
+`docs/cli-intro.md` changes. Edit the command definitions or introductory prose,
+then run `cargo build --locked` to refresh the reference. The build converts
+clapdown's definition lists to lists for the guide's GFM profile. Commit the
+generated page with its source changes.
 
 ## Where to make and verify a change
 

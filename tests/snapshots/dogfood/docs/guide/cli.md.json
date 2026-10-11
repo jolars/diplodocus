@@ -2,7 +2,7 @@
   "document": {
     "span": {
       "start": 0,
-      "end": 1958
+      "end": 3458
     },
     "frontmatter": null,
     "blocks": [
@@ -19,382 +19,14 @@
             "type": "text",
             "value": "Commands",
             "span": {
-              "start": 2,
-              "end": 10
+              "start": 87,
+              "end": 95
             }
           }
         ],
         "span": {
-          "start": 0,
-          "end": 11
-        }
-      },
-      {
-        "type": "table",
-        "caption": [],
-        "alignments": [
-          "left",
-          "left"
-        ],
-        "rows": [
-          {
-            "header": true,
-            "cells": [
-              {
-                "blocks": [
-                  {
-                    "type": "paragraph",
-                    "inlines": [
-                      {
-                        "type": "text",
-                        "value": "Command",
-                        "span": {
-                          "start": 14,
-                          "end": 21
-                        }
-                      }
-                    ],
-                    "span": {
-                      "start": 14,
-                      "end": 21
-                    }
-                  }
-                ],
-                "span": {
-                  "start": 14,
-                  "end": 21
-                }
-              },
-              {
-                "blocks": [
-                  {
-                    "type": "paragraph",
-                    "inlines": [
-                      {
-                        "type": "text",
-                        "value": "Operation",
-                        "span": {
-                          "start": 24,
-                          "end": 33
-                        }
-                      }
-                    ],
-                    "span": {
-                      "start": 24,
-                      "end": 33
-                    }
-                  }
-                ],
-                "span": {
-                  "start": 24,
-                  "end": 33
-                }
-              }
-            ],
-            "span": {
-              "start": 12,
-              "end": 36
-            }
-          },
-          {
-            "header": false,
-            "cells": [
-              {
-                "blocks": [
-                  {
-                    "type": "paragraph",
-                    "inlines": [
-                      {
-                        "type": "code",
-                        "value": "check",
-                        "span": {
-                          "start": 62,
-                          "end": 69
-                        }
-                      }
-                    ],
-                    "span": {
-                      "start": 62,
-                      "end": 69
-                    }
-                  }
-                ],
-                "span": {
-                  "start": 62,
-                  "end": 69
-                }
-              },
-              {
-                "blocks": [
-                  {
-                    "type": "paragraph",
-                    "inlines": [
-                      {
-                        "type": "text",
-                        "value": "Validate declared sources without executing cells or publishing output.",
-                        "span": {
-                          "start": 72,
-                          "end": 143
-                        }
-                      }
-                    ],
-                    "span": {
-                      "start": 72,
-                      "end": 143
-                    }
-                  }
-                ],
-                "span": {
-                  "start": 72,
-                  "end": 143
-                }
-              }
-            ],
-            "span": {
-              "start": 60,
-              "end": 146
-            }
-          },
-          {
-            "header": false,
-            "cells": [
-              {
-                "blocks": [
-                  {
-                    "type": "paragraph",
-                    "inlines": [
-                      {
-                        "type": "code",
-                        "value": "extract",
-                        "span": {
-                          "start": 148,
-                          "end": 157
-                        }
-                      }
-                    ],
-                    "span": {
-                      "start": 148,
-                      "end": 157
-                    }
-                  }
-                ],
-                "span": {
-                  "start": 148,
-                  "end": 157
-                }
-              },
-              {
-                "blocks": [
-                  {
-                    "type": "paragraph",
-                    "inlines": [
-                      {
-                        "type": "text",
-                        "value": "Extract sources, run authorized cells, and publish a portable SQLite snapshot.",
-                        "span": {
-                          "start": 160,
-                          "end": 238
-                        }
-                      }
-                    ],
-                    "span": {
-                      "start": 160,
-                      "end": 238
-                    }
-                  }
-                ],
-                "span": {
-                  "start": 160,
-                  "end": 238
-                }
-              }
-            ],
-            "span": {
-              "start": 146,
-              "end": 241
-            }
-          },
-          {
-            "header": false,
-            "cells": [
-              {
-                "blocks": [
-                  {
-                    "type": "paragraph",
-                    "inlines": [
-                      {
-                        "type": "code",
-                        "value": "generate",
-                        "span": {
-                          "start": 243,
-                          "end": 253
-                        }
-                      }
-                    ],
-                    "span": {
-                      "start": 243,
-                      "end": 253
-                    }
-                  }
-                ],
-                "span": {
-                  "start": 243,
-                  "end": 253
-                }
-              },
-              {
-                "blocks": [
-                  {
-                    "type": "paragraph",
-                    "inlines": [
-                      {
-                        "type": "text",
-                        "value": "Render a completed snapshot without source checkouts or language runtimes.",
-                        "span": {
-                          "start": 256,
-                          "end": 330
-                        }
-                      }
-                    ],
-                    "span": {
-                      "start": 256,
-                      "end": 330
-                    }
-                  }
-                ],
-                "span": {
-                  "start": 256,
-                  "end": 330
-                }
-              }
-            ],
-            "span": {
-              "start": 241,
-              "end": 333
-            }
-          },
-          {
-            "header": false,
-            "cells": [
-              {
-                "blocks": [
-                  {
-                    "type": "paragraph",
-                    "inlines": [
-                      {
-                        "type": "code",
-                        "value": "build",
-                        "span": {
-                          "start": 335,
-                          "end": 342
-                        }
-                      }
-                    ],
-                    "span": {
-                      "start": 335,
-                      "end": 342
-                    }
-                  }
-                ],
-                "span": {
-                  "start": 335,
-                  "end": 342
-                }
-              },
-              {
-                "blocks": [
-                  {
-                    "type": "paragraph",
-                    "inlines": [
-                      {
-                        "type": "text",
-                        "value": "Extract a snapshot, then generate a static site.",
-                        "span": {
-                          "start": 345,
-                          "end": 393
-                        }
-                      }
-                    ],
-                    "span": {
-                      "start": 345,
-                      "end": 393
-                    }
-                  }
-                ],
-                "span": {
-                  "start": 345,
-                  "end": 393
-                }
-              }
-            ],
-            "span": {
-              "start": 333,
-              "end": 396
-            }
-          },
-          {
-            "header": false,
-            "cells": [
-              {
-                "blocks": [
-                  {
-                    "type": "paragraph",
-                    "inlines": [
-                      {
-                        "type": "code",
-                        "value": "serve",
-                        "span": {
-                          "start": 398,
-                          "end": 405
-                        }
-                      }
-                    ],
-                    "span": {
-                      "start": 398,
-                      "end": 405
-                    }
-                  }
-                ],
-                "span": {
-                  "start": 398,
-                  "end": 405
-                }
-              },
-              {
-                "blocks": [
-                  {
-                    "type": "paragraph",
-                    "inlines": [
-                      {
-                        "type": "text",
-                        "value": "Build, serve over HTTP, and rebuild when declared inputs change.",
-                        "span": {
-                          "start": 408,
-                          "end": 472
-                        }
-                      }
-                    ],
-                    "span": {
-                      "start": 408,
-                      "end": 472
-                    }
-                  }
-                ],
-                "span": {
-                  "start": 408,
-                  "end": 472
-                }
-              }
-            ],
-            "span": {
-              "start": 396,
-              "end": 475
-            }
-          }
-        ],
-        "span": {
-          "start": 12,
-          "end": 475
+          "start": 85,
+          "end": 96
         }
       },
       {
@@ -404,236 +36,377 @@
             "type": "code",
             "value": "check",
             "span": {
-              "start": 476,
-              "end": 483
+              "start": 97,
+              "end": 104
             }
           },
           {
             "type": "text",
             "value": ", ",
             "span": {
-              "start": 483,
-              "end": 485
+              "start": 104,
+              "end": 106
             }
           },
           {
             "type": "code",
             "value": "extract",
             "span": {
-              "start": 485,
-              "end": 494
+              "start": 106,
+              "end": 115
             }
           },
           {
             "type": "text",
             "value": ", ",
             "span": {
-              "start": 494,
-              "end": 496
+              "start": 115,
+              "end": 117
             }
           },
           {
             "type": "code",
             "value": "build",
             "span": {
-              "start": 496,
-              "end": 503
+              "start": 117,
+              "end": 124
             }
           },
           {
             "type": "text",
             "value": ", and ",
             "span": {
-              "start": 503,
-              "end": 509
+              "start": 124,
+              "end": 130
             }
           },
           {
             "type": "code",
             "value": "serve",
             "span": {
-              "start": 509,
-              "end": 516
+              "start": 130,
+              "end": 137
             }
           },
           {
             "type": "text",
             "value": " use ",
             "span": {
-              "start": 516,
-              "end": 521
+              "start": 137,
+              "end": 142
             }
           },
           {
             "type": "code",
             "value": "./diplodocus.toml",
             "span": {
-              "start": 521,
-              "end": 540
+              "start": 142,
+              "end": 161
             }
           },
           {
             "type": "text",
             "value": " unless given",
             "span": {
-              "start": 540,
-              "end": 553
+              "start": 161,
+              "end": 174
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 553,
-              "end": 554
+              "start": 174,
+              "end": 175
             }
           },
           {
             "type": "code",
             "value": "--config PATH",
             "span": {
-              "start": 554,
-              "end": 569
+              "start": 175,
+              "end": 190
             }
           },
           {
             "type": "text",
             "value": ". Extraction writes ",
             "span": {
-              "start": 569,
-              "end": 589
+              "start": 190,
+              "end": 210
             }
           },
           {
             "type": "code",
             "value": ".diplodocus/documentation.sqlite",
             "span": {
-              "start": 589,
-              "end": 623
+              "start": 210,
+              "end": 244
             }
           },
           {
             "type": "text",
             "value": " beside",
             "span": {
-              "start": 623,
-              "end": 630
+              "start": 244,
+              "end": 251
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 630,
-              "end": 631
+              "start": 251,
+              "end": 252
             }
           },
           {
             "type": "text",
             "value": "that configuration; ",
             "span": {
-              "start": 631,
-              "end": 651
+              "start": 252,
+              "end": 272
             }
           },
           {
             "type": "code",
             "value": "extract --output PATH",
             "span": {
-              "start": 651,
-              "end": 674
+              "start": 272,
+              "end": 295
             }
           },
           {
             "type": "text",
             "value": " changes the snapshot destination.",
             "span": {
-              "start": 674,
-              "end": 708
+              "start": 295,
+              "end": 329
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 708,
-              "end": 709
+              "start": 329,
+              "end": 330
             }
           },
           {
             "type": "code",
             "value": "generate",
             "span": {
-              "start": 709,
-              "end": 719
+              "start": 330,
+              "end": 340
             }
           },
           {
             "type": "text",
             "value": " requires ",
             "span": {
-              "start": 719,
-              "end": 729
+              "start": 340,
+              "end": 350
             }
           },
           {
             "type": "code",
             "value": "--input PATH",
             "span": {
-              "start": 729,
-              "end": 743
+              "start": 350,
+              "end": 364
             }
           },
           {
             "type": "text",
             "value": ". ",
             "span": {
-              "start": 743,
-              "end": 745
+              "start": 364,
+              "end": 366
             }
           },
           {
             "type": "code",
             "value": "generate",
             "span": {
-              "start": 745,
-              "end": 755
+              "start": 366,
+              "end": 376
             }
           },
           {
             "type": "text",
             "value": ", ",
             "span": {
-              "start": 755,
-              "end": 757
+              "start": 376,
+              "end": 378
             }
           },
           {
             "type": "code",
             "value": "build",
             "span": {
-              "start": 757,
-              "end": 764
+              "start": 378,
+              "end": 385
             }
           },
           {
             "type": "text",
             "value": ", and ",
             "span": {
-              "start": 764,
-              "end": 770
+              "start": 385,
+              "end": 391
             }
           },
           {
             "type": "code",
             "value": "serve",
             "span": {
-              "start": 770,
-              "end": 777
+              "start": 391,
+              "end": 398
             }
           },
           {
             "type": "text",
             "value": " write to",
             "span": {
-              "start": 777,
+              "start": 398,
+              "end": 407
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 407,
+              "end": 408
+            }
+          },
+          {
+            "type": "code",
+            "value": "./site",
+            "span": {
+              "start": 408,
+              "end": 416
+            }
+          },
+          {
+            "type": "text",
+            "value": " unless given ",
+            "span": {
+              "start": 416,
+              "end": 430
+            }
+          },
+          {
+            "type": "code",
+            "value": "--output PATH",
+            "span": {
+              "start": 430,
+              "end": 445
+            }
+          },
+          {
+            "type": "text",
+            "value": ". Relative command-line paths resolve from",
+            "span": {
+              "start": 445,
+              "end": 487
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 487,
+              "end": 488
+            }
+          },
+          {
+            "type": "text",
+            "value": "the working directory.",
+            "span": {
+              "start": 488,
+              "end": 510
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 510,
+              "end": 511
+            }
+          }
+        ],
+        "span": {
+          "start": 97,
+          "end": 511
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "For example, extract once and generate from the completed snapshot:",
+            "span": {
+              "start": 512,
+              "end": 579
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 579,
+              "end": 580
+            }
+          }
+        ],
+        "span": {
+          "start": 512,
+          "end": 580
+        }
+      },
+      {
+        "type": "code-block",
+        "language": "console",
+        "source": "diplodocus extract --output documentation.sqlite\ndiplodocus generate --input documentation.sqlite --output site\n",
+        "source_segments": [
+          {
+            "text": "diplodocus extract --output documentation.sqlite",
+            "span": {
+              "start": 592,
+              "end": 640
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 640,
+              "end": 641
+            }
+          },
+          {
+            "text": "diplodocus generate --input documentation.sqlite --output site",
+            "span": {
+              "start": 641,
+              "end": 703
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 703,
+              "end": 704
+            }
+          }
+        ],
+        "span": {
+          "start": 581,
+          "end": 708
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "The snapshot includes structured documentation, provenance, and local assets.",
+            "span": {
+              "start": 709,
               "end": 786
             }
           },
@@ -645,182 +418,41 @@
             }
           },
           {
-            "type": "code",
-            "value": "./site",
-            "span": {
-              "start": 787,
-              "end": 795
-            }
-          },
-          {
-            "type": "text",
-            "value": " unless given ",
-            "span": {
-              "start": 795,
-              "end": 809
-            }
-          },
-          {
-            "type": "code",
-            "value": "--output PATH",
-            "span": {
-              "start": 809,
-              "end": 824
-            }
-          },
-          {
-            "type": "text",
-            "value": ". Relative command-line paths resolve from",
-            "span": {
-              "start": 824,
-              "end": 866
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 866,
-              "end": 867
-            }
-          },
-          {
-            "type": "text",
-            "value": "the working directory.",
-            "span": {
-              "start": 867,
-              "end": 889
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 889,
-              "end": 890
-            }
-          }
-        ],
-        "span": {
-          "start": 476,
-          "end": 890
-        }
-      },
-      {
-        "type": "paragraph",
-        "inlines": [
-          {
-            "type": "text",
-            "value": "For example, extract once and generate from the completed snapshot:",
-            "span": {
-              "start": 891,
-              "end": 958
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 958,
-              "end": 959
-            }
-          }
-        ],
-        "span": {
-          "start": 891,
-          "end": 959
-        }
-      },
-      {
-        "type": "code-block",
-        "language": "console",
-        "source": "diplodocus extract --output documentation.sqlite\ndiplodocus generate --input documentation.sqlite --output site\n",
-        "source_segments": [
-          {
-            "text": "diplodocus extract --output documentation.sqlite",
-            "span": {
-              "start": 971,
-              "end": 1019
-            }
-          },
-          {
-            "text": "\n",
-            "span": {
-              "start": 1019,
-              "end": 1020
-            }
-          },
-          {
-            "text": "diplodocus generate --input documentation.sqlite --output site",
-            "span": {
-              "start": 1020,
-              "end": 1082
-            }
-          },
-          {
-            "text": "\n",
-            "span": {
-              "start": 1082,
-              "end": 1083
-            }
-          }
-        ],
-        "span": {
-          "start": 960,
-          "end": 1087
-        }
-      },
-      {
-        "type": "paragraph",
-        "inlines": [
-          {
-            "type": "text",
-            "value": "The snapshot includes structured documentation, provenance, and local assets.",
-            "span": {
-              "start": 1088,
-              "end": 1165
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 1165,
-              "end": 1166
-            }
-          },
-          {
             "type": "text",
             "value": "Generation validates its records and output before publication. A copied",
             "span": {
-              "start": 1166,
-              "end": 1238
+              "start": 787,
+              "end": 859
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1238,
-              "end": 1239
+              "start": 859,
+              "end": 860
             }
           },
           {
             "type": "text",
             "value": "snapshot can be generated without the original source files or language",
             "span": {
-              "start": 1239,
-              "end": 1310
+              "start": 860,
+              "end": 931
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1310,
-              "end": 1311
+              "start": 931,
+              "end": 932
             }
           },
           {
             "type": "text",
             "value": "runtimes. See ",
             "span": {
-              "start": 1311,
-              "end": 1325
+              "start": 932,
+              "end": 946
             }
           },
           {
@@ -830,8 +462,8 @@
                 "type": "text",
                 "value": "portable snapshots",
                 "span": {
-                  "start": 1326,
-                  "end": 1344
+                  "start": 947,
+                  "end": 965
                 }
               }
             ],
@@ -843,44 +475,44 @@
               "key_values": []
             },
             "span": {
-              "start": 1325,
-              "end": 1359
+              "start": 946,
+              "end": 980
             }
           },
           {
             "type": "text",
             "value": " for compatibility and refresh",
             "span": {
-              "start": 1359,
-              "end": 1389
+              "start": 980,
+              "end": 1010
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1389,
-              "end": 1390
+              "start": 1010,
+              "end": 1011
             }
           },
           {
             "type": "text",
             "value": "behavior.",
             "span": {
-              "start": 1390,
-              "end": 1399
+              "start": 1011,
+              "end": 1020
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1399,
-              "end": 1400
+              "start": 1020,
+              "end": 1021
             }
           }
         ],
         "span": {
-          "start": 1088,
-          "end": 1400
+          "start": 709,
+          "end": 1021
         }
       },
       {
@@ -890,147 +522,140 @@
             "type": "code",
             "value": "serve",
             "span": {
-              "start": 1401,
-              "end": 1408
+              "start": 1022,
+              "end": 1029
             }
           },
           {
             "type": "text",
             "value": " listens on ",
             "span": {
-              "start": 1408,
-              "end": 1420
+              "start": 1029,
+              "end": 1041
             }
           },
           {
             "type": "code",
             "value": "127.0.0.1:8000",
             "span": {
-              "start": 1420,
-              "end": 1436
+              "start": 1041,
+              "end": 1057
             }
           },
           {
             "type": "text",
             "value": " by default. Use ",
             "span": {
-              "start": 1436,
-              "end": 1453
+              "start": 1057,
+              "end": 1074
             }
           },
           {
             "type": "code",
             "value": "--host",
             "span": {
-              "start": 1453,
-              "end": 1461
+              "start": 1074,
+              "end": 1082
             }
           },
           {
             "type": "text",
             "value": " and ",
             "span": {
-              "start": 1461,
-              "end": 1466
+              "start": 1082,
+              "end": 1087
             }
           },
           {
             "type": "code",
             "value": "--port",
             "span": {
-              "start": 1466,
-              "end": 1474
+              "start": 1087,
+              "end": 1095
             }
           },
           {
             "type": "text",
             "value": " to",
             "span": {
-              "start": 1474,
-              "end": 1477
+              "start": 1095,
+              "end": 1098
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1477,
-              "end": 1478
+              "start": 1098,
+              "end": 1099
             }
           },
           {
             "type": "text",
             "value": "change the address, and ",
             "span": {
-              "start": 1478,
-              "end": 1502
+              "start": 1099,
+              "end": 1123
             }
           },
           {
             "type": "code",
             "value": "--live-reload",
             "span": {
-              "start": 1502,
-              "end": 1517
+              "start": 1123,
+              "end": 1138
             }
           },
           {
             "type": "text",
             "value": " to refresh open pages after a successful",
             "span": {
-              "start": 1517,
-              "end": 1558
+              "start": 1138,
+              "end": 1179
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1558,
-              "end": 1559
+              "start": 1179,
+              "end": 1180
             }
           },
           {
             "type": "text",
             "value": "rebuild. A failed rebuild prints diagnostics and keeps serving the last",
             "span": {
-              "start": 1559,
-              "end": 1630
+              "start": 1180,
+              "end": 1251
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1630,
-              "end": 1631
+              "start": 1251,
+              "end": 1252
             }
           },
           {
             "type": "text",
             "value": "successful site. Warnings permit a successful exit; errors cause a nonzero exit",
             "span": {
-              "start": 1631,
-              "end": 1710
+              "start": 1252,
+              "end": 1331
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1710,
-              "end": 1711
+              "start": 1331,
+              "end": 1332
             }
           },
           {
             "type": "text",
-            "value": "status. Output destinations cannot replace declared inputs. The",
+            "value": "status. Output destinations cannot replace declared inputs. The ",
             "span": {
-              "start": 1711,
-              "end": 1774
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 1774,
-              "end": 1775
+              "start": 1332,
+              "end": 1396
             }
           },
           {
@@ -1038,10 +663,25 @@
             "inlines": [
               {
                 "type": "text",
-                "value": "diagnostics guide",
+                "value": "diagnostics",
                 "span": {
-                  "start": 1776,
-                  "end": 1793
+                  "start": 1397,
+                  "end": 1408
+                }
+              },
+              {
+                "type": "soft-break",
+                "span": {
+                  "start": 1408,
+                  "end": 1409
+                }
+              },
+              {
+                "type": "text",
+                "value": "guide",
+                "span": {
+                  "start": 1409,
+                  "end": 1414
                 }
               }
             ],
@@ -1053,29 +693,29 @@
               "key_values": []
             },
             "span": {
-              "start": 1775,
-              "end": 1810
+              "start": 1396,
+              "end": 1431
             }
           },
           {
             "type": "text",
             "value": " explains reported codes and failed builds.",
             "span": {
-              "start": 1810,
-              "end": 1853
+              "start": 1431,
+              "end": 1474
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1853,
-              "end": 1854
+              "start": 1474,
+              "end": 1475
             }
           }
         ],
         "span": {
-          "start": 1401,
-          "end": 1854
+          "start": 1022,
+          "end": 1475
         }
       },
       {
@@ -1085,8 +725,8 @@
             "type": "text",
             "value": "Start with the ",
             "span": {
-              "start": 1855,
-              "end": 1870
+              "start": 1476,
+              "end": 1491
             }
           },
           {
@@ -1096,8 +736,8 @@
                 "type": "text",
                 "value": "small example",
                 "span": {
-                  "start": 1871,
-                  "end": 1884
+                  "start": 1492,
+                  "end": 1505
                 }
               }
             ],
@@ -1109,23 +749,16 @@
               "key_values": []
             },
             "span": {
-              "start": 1870,
-              "end": 1901
+              "start": 1491,
+              "end": 1522
             }
           },
           {
             "type": "text",
-            "value": " or see its",
+            "value": " or see its ",
             "span": {
-              "start": 1901,
-              "end": 1912
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 1912,
-              "end": 1913
+              "start": 1522,
+              "end": 1534
             }
           },
           {
@@ -1133,10 +766,25 @@
             "inlines": [
               {
                 "type": "text",
-                "value": "workspace configuration",
+                "value": "workspace",
                 "span": {
-                  "start": 1914,
-                  "end": 1937
+                  "start": 1535,
+                  "end": 1544
+                }
+              },
+              {
+                "type": "soft-break",
+                "span": {
+                  "start": 1544,
+                  "end": 1545
+                }
+              },
+              {
+                "type": "text",
+                "value": "configuration",
+                "span": {
+                  "start": 1545,
+                  "end": 1558
                 }
               }
             ],
@@ -1148,29 +796,1695 @@
               "key_values": []
             },
             "span": {
-              "start": 1913,
-              "end": 1956
+              "start": 1534,
+              "end": 1577
             }
           },
           {
             "type": "text",
             "value": ".",
             "span": {
-              "start": 1956,
-              "end": 1957
+              "start": 1577,
+              "end": 1578
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1957,
-              "end": 1958
+              "start": 1578,
+              "end": 1579
             }
           }
         ],
         "span": {
-          "start": 1855,
+          "start": 1476,
+          "end": 1579
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "inlines": [
+              {
+                "type": "text",
+                "value": "Usage:",
+                "span": {
+                  "start": 1582,
+                  "end": 1588
+                }
+              }
+            ],
+            "span": {
+              "start": 1580,
+              "end": 1590
+            }
+          },
+          {
+            "type": "text",
+            "value": " ",
+            "span": {
+              "start": 1590,
+              "end": 1591
+            }
+          },
+          {
+            "type": "code",
+            "value": "diplodocus <COMMAND>",
+            "span": {
+              "start": 1591,
+              "end": 1613
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1613,
+              "end": 1614
+            }
+          }
+        ],
+        "span": {
+          "start": 1580,
+          "end": 1614
+        }
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "code",
+            "value": "diplodocus build",
+            "span": {
+              "start": 1618,
+              "end": 1636
+            }
+          }
+        ],
+        "span": {
+          "start": 1615,
+          "end": 1637
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Build a static documentation site",
+            "span": {
+              "start": 1638,
+              "end": 1671
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1671,
+              "end": 1672
+            }
+          }
+        ],
+        "span": {
+          "start": 1638,
+          "end": 1672
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "inlines": [
+              {
+                "type": "text",
+                "value": "Usage:",
+                "span": {
+                  "start": 1675,
+                  "end": 1681
+                }
+              }
+            ],
+            "span": {
+              "start": 1673,
+              "end": 1683
+            }
+          },
+          {
+            "type": "text",
+            "value": " ",
+            "span": {
+              "start": 1683,
+              "end": 1684
+            }
+          },
+          {
+            "type": "code",
+            "value": "diplodocus build [OPTIONS]",
+            "span": {
+              "start": 1684,
+              "end": 1712
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1712,
+              "end": 1713
+            }
+          }
+        ],
+        "span": {
+          "start": 1673,
+          "end": 1713
+        }
+      },
+      {
+        "type": "heading",
+        "level": 3,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Options",
+            "span": {
+              "start": 1718,
+              "end": 1725
+            }
+          }
+        ],
+        "span": {
+          "start": 1714,
+          "end": 1726
+        }
+      },
+      {
+        "type": "list",
+        "ordered": false,
+        "items": [
+          {
+            "checked": null,
+            "blocks": [
+              {
+                "type": "paragraph",
+                "inlines": [
+                  {
+                    "type": "code",
+                    "value": "--config <PATH>",
+                    "span": {
+                      "start": 1729,
+                      "end": 1746
+                    }
+                  },
+                  {
+                    "type": "soft-break",
+                    "span": {
+                      "start": 1746,
+                      "end": 1747
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1729,
+                  "end": 1747
+                }
+              },
+              {
+                "type": "paragraph",
+                "inlines": [
+                  {
+                    "type": "text",
+                    "value": "    Path to the workspace configuration file",
+                    "span": {
+                      "start": 1748,
+                      "end": 1792
+                    }
+                  },
+                  {
+                    "type": "soft-break",
+                    "span": {
+                      "start": 1792,
+                      "end": 1793
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1748,
+                  "end": 1793
+                }
+              },
+              {
+                "type": "paragraph",
+                "inlines": [
+                  {
+                    "type": "text",
+                    "value": "    Default value: ",
+                    "span": {
+                      "start": 1794,
+                      "end": 1813
+                    }
+                  },
+                  {
+                    "type": "code",
+                    "value": "./diplodocus.toml",
+                    "span": {
+                      "start": 1813,
+                      "end": 1832
+                    }
+                  },
+                  {
+                    "type": "soft-break",
+                    "span": {
+                      "start": 1832,
+                      "end": 1833
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1794,
+                  "end": 1833
+                }
+              }
+            ],
+            "span": {
+              "start": 1727,
+              "end": 1833
+            }
+          },
+          {
+            "checked": null,
+            "blocks": [
+              {
+                "type": "paragraph",
+                "inlines": [
+                  {
+                    "type": "code",
+                    "value": "--output <PATH>",
+                    "span": {
+                      "start": 1836,
+                      "end": 1853
+                    }
+                  },
+                  {
+                    "type": "soft-break",
+                    "span": {
+                      "start": 1853,
+                      "end": 1854
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1836,
+                  "end": 1854
+                }
+              },
+              {
+                "type": "paragraph",
+                "inlines": [
+                  {
+                    "type": "text",
+                    "value": "    Directory in which to write the generated site",
+                    "span": {
+                      "start": 1855,
+                      "end": 1905
+                    }
+                  },
+                  {
+                    "type": "soft-break",
+                    "span": {
+                      "start": 1905,
+                      "end": 1906
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1855,
+                  "end": 1906
+                }
+              },
+              {
+                "type": "paragraph",
+                "inlines": [
+                  {
+                    "type": "text",
+                    "value": "    Default value: ",
+                    "span": {
+                      "start": 1907,
+                      "end": 1926
+                    }
+                  },
+                  {
+                    "type": "code",
+                    "value": "./site",
+                    "span": {
+                      "start": 1926,
+                      "end": 1934
+                    }
+                  },
+                  {
+                    "type": "soft-break",
+                    "span": {
+                      "start": 1934,
+                      "end": 1935
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1907,
+                  "end": 1935
+                }
+              }
+            ],
+            "span": {
+              "start": 1834,
+              "end": 1935
+            }
+          }
+        ],
+        "span": {
+          "start": 1727,
+          "end": 1935
+        }
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "code",
+            "value": "diplodocus check",
+            "span": {
+              "start": 1939,
+              "end": 1957
+            }
+          }
+        ],
+        "span": {
+          "start": 1936,
           "end": 1958
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Check documentation without writing a site",
+            "span": {
+              "start": 1959,
+              "end": 2001
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2001,
+              "end": 2002
+            }
+          }
+        ],
+        "span": {
+          "start": 1959,
+          "end": 2002
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "inlines": [
+              {
+                "type": "text",
+                "value": "Usage:",
+                "span": {
+                  "start": 2005,
+                  "end": 2011
+                }
+              }
+            ],
+            "span": {
+              "start": 2003,
+              "end": 2013
+            }
+          },
+          {
+            "type": "text",
+            "value": " ",
+            "span": {
+              "start": 2013,
+              "end": 2014
+            }
+          },
+          {
+            "type": "code",
+            "value": "diplodocus check [OPTIONS]",
+            "span": {
+              "start": 2014,
+              "end": 2042
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2042,
+              "end": 2043
+            }
+          }
+        ],
+        "span": {
+          "start": 2003,
+          "end": 2043
+        }
+      },
+      {
+        "type": "heading",
+        "level": 3,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Options",
+            "span": {
+              "start": 2048,
+              "end": 2055
+            }
+          }
+        ],
+        "span": {
+          "start": 2044,
+          "end": 2056
+        }
+      },
+      {
+        "type": "list",
+        "ordered": false,
+        "items": [
+          {
+            "checked": null,
+            "blocks": [
+              {
+                "type": "paragraph",
+                "inlines": [
+                  {
+                    "type": "code",
+                    "value": "--config <PATH>",
+                    "span": {
+                      "start": 2059,
+                      "end": 2076
+                    }
+                  },
+                  {
+                    "type": "soft-break",
+                    "span": {
+                      "start": 2076,
+                      "end": 2077
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 2059,
+                  "end": 2077
+                }
+              },
+              {
+                "type": "paragraph",
+                "inlines": [
+                  {
+                    "type": "text",
+                    "value": "    Path to the workspace configuration file",
+                    "span": {
+                      "start": 2078,
+                      "end": 2122
+                    }
+                  },
+                  {
+                    "type": "soft-break",
+                    "span": {
+                      "start": 2122,
+                      "end": 2123
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 2078,
+                  "end": 2123
+                }
+              },
+              {
+                "type": "paragraph",
+                "inlines": [
+                  {
+                    "type": "text",
+                    "value": "    Default value: ",
+                    "span": {
+                      "start": 2124,
+                      "end": 2143
+                    }
+                  },
+                  {
+                    "type": "code",
+                    "value": "./diplodocus.toml",
+                    "span": {
+                      "start": 2143,
+                      "end": 2162
+                    }
+                  },
+                  {
+                    "type": "soft-break",
+                    "span": {
+                      "start": 2162,
+                      "end": 2163
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 2124,
+                  "end": 2163
+                }
+              }
+            ],
+            "span": {
+              "start": 2057,
+              "end": 2163
+            }
+          }
+        ],
+        "span": {
+          "start": 2057,
+          "end": 2163
+        }
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "code",
+            "value": "diplodocus extract",
+            "span": {
+              "start": 2167,
+              "end": 2187
+            }
+          }
+        ],
+        "span": {
+          "start": 2164,
+          "end": 2188
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Extract a portable SQLite documentation snapshot",
+            "span": {
+              "start": 2189,
+              "end": 2237
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2237,
+              "end": 2238
+            }
+          }
+        ],
+        "span": {
+          "start": 2189,
+          "end": 2238
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "inlines": [
+              {
+                "type": "text",
+                "value": "Usage:",
+                "span": {
+                  "start": 2241,
+                  "end": 2247
+                }
+              }
+            ],
+            "span": {
+              "start": 2239,
+              "end": 2249
+            }
+          },
+          {
+            "type": "text",
+            "value": " ",
+            "span": {
+              "start": 2249,
+              "end": 2250
+            }
+          },
+          {
+            "type": "code",
+            "value": "diplodocus extract [OPTIONS]",
+            "span": {
+              "start": 2250,
+              "end": 2280
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2280,
+              "end": 2281
+            }
+          }
+        ],
+        "span": {
+          "start": 2239,
+          "end": 2281
+        }
+      },
+      {
+        "type": "heading",
+        "level": 3,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Options",
+            "span": {
+              "start": 2286,
+              "end": 2293
+            }
+          }
+        ],
+        "span": {
+          "start": 2282,
+          "end": 2294
+        }
+      },
+      {
+        "type": "list",
+        "ordered": false,
+        "items": [
+          {
+            "checked": null,
+            "blocks": [
+              {
+                "type": "paragraph",
+                "inlines": [
+                  {
+                    "type": "code",
+                    "value": "--config <PATH>",
+                    "span": {
+                      "start": 2297,
+                      "end": 2314
+                    }
+                  },
+                  {
+                    "type": "soft-break",
+                    "span": {
+                      "start": 2314,
+                      "end": 2315
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 2297,
+                  "end": 2315
+                }
+              },
+              {
+                "type": "paragraph",
+                "inlines": [
+                  {
+                    "type": "text",
+                    "value": "    Path to the workspace configuration file",
+                    "span": {
+                      "start": 2316,
+                      "end": 2360
+                    }
+                  },
+                  {
+                    "type": "soft-break",
+                    "span": {
+                      "start": 2360,
+                      "end": 2361
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 2316,
+                  "end": 2361
+                }
+              },
+              {
+                "type": "paragraph",
+                "inlines": [
+                  {
+                    "type": "text",
+                    "value": "    Default value: ",
+                    "span": {
+                      "start": 2362,
+                      "end": 2381
+                    }
+                  },
+                  {
+                    "type": "code",
+                    "value": "./diplodocus.toml",
+                    "span": {
+                      "start": 2381,
+                      "end": 2400
+                    }
+                  },
+                  {
+                    "type": "soft-break",
+                    "span": {
+                      "start": 2400,
+                      "end": 2401
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 2362,
+                  "end": 2401
+                }
+              }
+            ],
+            "span": {
+              "start": 2295,
+              "end": 2401
+            }
+          },
+          {
+            "checked": null,
+            "blocks": [
+              {
+                "type": "paragraph",
+                "inlines": [
+                  {
+                    "type": "code",
+                    "value": "--output <PATH>",
+                    "span": {
+                      "start": 2404,
+                      "end": 2421
+                    }
+                  },
+                  {
+                    "type": "soft-break",
+                    "span": {
+                      "start": 2421,
+                      "end": 2422
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 2404,
+                  "end": 2422
+                }
+              },
+              {
+                "type": "paragraph",
+                "inlines": [
+                  {
+                    "type": "text",
+                    "value": "    Snapshot destination (defaults to .diplodocus/documentation.sqlite beside the configuration)",
+                    "span": {
+                      "start": 2423,
+                      "end": 2519
+                    }
+                  },
+                  {
+                    "type": "soft-break",
+                    "span": {
+                      "start": 2519,
+                      "end": 2520
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 2423,
+                  "end": 2520
+                }
+              }
+            ],
+            "span": {
+              "start": 2402,
+              "end": 2520
+            }
+          }
+        ],
+        "span": {
+          "start": 2295,
+          "end": 2520
+        }
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "code",
+            "value": "diplodocus generate",
+            "span": {
+              "start": 2524,
+              "end": 2545
+            }
+          }
+        ],
+        "span": {
+          "start": 2521,
+          "end": 2546
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Generate a site using only a completed snapshot",
+            "span": {
+              "start": 2547,
+              "end": 2594
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2594,
+              "end": 2595
+            }
+          }
+        ],
+        "span": {
+          "start": 2547,
+          "end": 2595
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "inlines": [
+              {
+                "type": "text",
+                "value": "Usage:",
+                "span": {
+                  "start": 2598,
+                  "end": 2604
+                }
+              }
+            ],
+            "span": {
+              "start": 2596,
+              "end": 2606
+            }
+          },
+          {
+            "type": "text",
+            "value": " ",
+            "span": {
+              "start": 2606,
+              "end": 2607
+            }
+          },
+          {
+            "type": "code",
+            "value": "diplodocus generate [OPTIONS] --input <PATH>",
+            "span": {
+              "start": 2607,
+              "end": 2653
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2653,
+              "end": 2654
+            }
+          }
+        ],
+        "span": {
+          "start": 2596,
+          "end": 2654
+        }
+      },
+      {
+        "type": "heading",
+        "level": 3,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Options",
+            "span": {
+              "start": 2659,
+              "end": 2666
+            }
+          }
+        ],
+        "span": {
+          "start": 2655,
+          "end": 2667
+        }
+      },
+      {
+        "type": "list",
+        "ordered": false,
+        "items": [
+          {
+            "checked": null,
+            "blocks": [
+              {
+                "type": "paragraph",
+                "inlines": [
+                  {
+                    "type": "code",
+                    "value": "--input <PATH>",
+                    "span": {
+                      "start": 2670,
+                      "end": 2686
+                    }
+                  },
+                  {
+                    "type": "soft-break",
+                    "span": {
+                      "start": 2686,
+                      "end": 2687
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 2670,
+                  "end": 2687
+                }
+              },
+              {
+                "type": "paragraph",
+                "inlines": [
+                  {
+                    "type": "text",
+                    "value": "    Completed SQLite documentation snapshot",
+                    "span": {
+                      "start": 2688,
+                      "end": 2731
+                    }
+                  },
+                  {
+                    "type": "soft-break",
+                    "span": {
+                      "start": 2731,
+                      "end": 2732
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 2688,
+                  "end": 2732
+                }
+              }
+            ],
+            "span": {
+              "start": 2668,
+              "end": 2732
+            }
+          },
+          {
+            "checked": null,
+            "blocks": [
+              {
+                "type": "paragraph",
+                "inlines": [
+                  {
+                    "type": "code",
+                    "value": "--output <PATH>",
+                    "span": {
+                      "start": 2735,
+                      "end": 2752
+                    }
+                  },
+                  {
+                    "type": "soft-break",
+                    "span": {
+                      "start": 2752,
+                      "end": 2753
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 2735,
+                  "end": 2753
+                }
+              },
+              {
+                "type": "paragraph",
+                "inlines": [
+                  {
+                    "type": "text",
+                    "value": "    Directory in which to write the generated site",
+                    "span": {
+                      "start": 2754,
+                      "end": 2804
+                    }
+                  },
+                  {
+                    "type": "soft-break",
+                    "span": {
+                      "start": 2804,
+                      "end": 2805
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 2754,
+                  "end": 2805
+                }
+              },
+              {
+                "type": "paragraph",
+                "inlines": [
+                  {
+                    "type": "text",
+                    "value": "    Default value: ",
+                    "span": {
+                      "start": 2806,
+                      "end": 2825
+                    }
+                  },
+                  {
+                    "type": "code",
+                    "value": "./site",
+                    "span": {
+                      "start": 2825,
+                      "end": 2833
+                    }
+                  },
+                  {
+                    "type": "soft-break",
+                    "span": {
+                      "start": 2833,
+                      "end": 2834
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 2806,
+                  "end": 2834
+                }
+              }
+            ],
+            "span": {
+              "start": 2733,
+              "end": 2834
+            }
+          }
+        ],
+        "span": {
+          "start": 2668,
+          "end": 2834
+        }
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "code",
+            "value": "diplodocus serve",
+            "span": {
+              "start": 2838,
+              "end": 2856
+            }
+          }
+        ],
+        "span": {
+          "start": 2835,
+          "end": 2857
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Build and serve a site, rebuilding when declared inputs change",
+            "span": {
+              "start": 2858,
+              "end": 2920
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2920,
+              "end": 2921
+            }
+          }
+        ],
+        "span": {
+          "start": 2858,
+          "end": 2921
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "inlines": [
+              {
+                "type": "text",
+                "value": "Usage:",
+                "span": {
+                  "start": 2924,
+                  "end": 2930
+                }
+              }
+            ],
+            "span": {
+              "start": 2922,
+              "end": 2932
+            }
+          },
+          {
+            "type": "text",
+            "value": " ",
+            "span": {
+              "start": 2932,
+              "end": 2933
+            }
+          },
+          {
+            "type": "code",
+            "value": "diplodocus serve [OPTIONS]",
+            "span": {
+              "start": 2933,
+              "end": 2961
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2961,
+              "end": 2962
+            }
+          }
+        ],
+        "span": {
+          "start": 2922,
+          "end": 2962
+        }
+      },
+      {
+        "type": "heading",
+        "level": 3,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Options",
+            "span": {
+              "start": 2967,
+              "end": 2974
+            }
+          }
+        ],
+        "span": {
+          "start": 2963,
+          "end": 2975
+        }
+      },
+      {
+        "type": "list",
+        "ordered": false,
+        "items": [
+          {
+            "checked": null,
+            "blocks": [
+              {
+                "type": "paragraph",
+                "inlines": [
+                  {
+                    "type": "code",
+                    "value": "--config <PATH>",
+                    "span": {
+                      "start": 2978,
+                      "end": 2995
+                    }
+                  },
+                  {
+                    "type": "soft-break",
+                    "span": {
+                      "start": 2995,
+                      "end": 2996
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 2978,
+                  "end": 2996
+                }
+              },
+              {
+                "type": "paragraph",
+                "inlines": [
+                  {
+                    "type": "text",
+                    "value": "    Path to the workspace configuration file",
+                    "span": {
+                      "start": 2997,
+                      "end": 3041
+                    }
+                  },
+                  {
+                    "type": "soft-break",
+                    "span": {
+                      "start": 3041,
+                      "end": 3042
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 2997,
+                  "end": 3042
+                }
+              },
+              {
+                "type": "paragraph",
+                "inlines": [
+                  {
+                    "type": "text",
+                    "value": "    Default value: ",
+                    "span": {
+                      "start": 3043,
+                      "end": 3062
+                    }
+                  },
+                  {
+                    "type": "code",
+                    "value": "./diplodocus.toml",
+                    "span": {
+                      "start": 3062,
+                      "end": 3081
+                    }
+                  },
+                  {
+                    "type": "soft-break",
+                    "span": {
+                      "start": 3081,
+                      "end": 3082
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 3043,
+                  "end": 3082
+                }
+              }
+            ],
+            "span": {
+              "start": 2976,
+              "end": 3082
+            }
+          },
+          {
+            "checked": null,
+            "blocks": [
+              {
+                "type": "paragraph",
+                "inlines": [
+                  {
+                    "type": "code",
+                    "value": "--output <PATH>",
+                    "span": {
+                      "start": 3085,
+                      "end": 3102
+                    }
+                  },
+                  {
+                    "type": "soft-break",
+                    "span": {
+                      "start": 3102,
+                      "end": 3103
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 3085,
+                  "end": 3103
+                }
+              },
+              {
+                "type": "paragraph",
+                "inlines": [
+                  {
+                    "type": "text",
+                    "value": "    Directory in which to write the generated site",
+                    "span": {
+                      "start": 3104,
+                      "end": 3154
+                    }
+                  },
+                  {
+                    "type": "soft-break",
+                    "span": {
+                      "start": 3154,
+                      "end": 3155
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 3104,
+                  "end": 3155
+                }
+              },
+              {
+                "type": "paragraph",
+                "inlines": [
+                  {
+                    "type": "text",
+                    "value": "    Default value: ",
+                    "span": {
+                      "start": 3156,
+                      "end": 3175
+                    }
+                  },
+                  {
+                    "type": "code",
+                    "value": "./site",
+                    "span": {
+                      "start": 3175,
+                      "end": 3183
+                    }
+                  },
+                  {
+                    "type": "soft-break",
+                    "span": {
+                      "start": 3183,
+                      "end": 3184
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 3156,
+                  "end": 3184
+                }
+              }
+            ],
+            "span": {
+              "start": 3083,
+              "end": 3184
+            }
+          },
+          {
+            "checked": null,
+            "blocks": [
+              {
+                "type": "paragraph",
+                "inlines": [
+                  {
+                    "type": "code",
+                    "value": "--host <ADDRESS>",
+                    "span": {
+                      "start": 3187,
+                      "end": 3205
+                    }
+                  },
+                  {
+                    "type": "soft-break",
+                    "span": {
+                      "start": 3205,
+                      "end": 3206
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 3187,
+                  "end": 3206
+                }
+              },
+              {
+                "type": "paragraph",
+                "inlines": [
+                  {
+                    "type": "text",
+                    "value": "    Address on which to serve the generated site",
+                    "span": {
+                      "start": 3207,
+                      "end": 3255
+                    }
+                  },
+                  {
+                    "type": "soft-break",
+                    "span": {
+                      "start": 3255,
+                      "end": 3256
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 3207,
+                  "end": 3256
+                }
+              },
+              {
+                "type": "paragraph",
+                "inlines": [
+                  {
+                    "type": "text",
+                    "value": "    Default value: ",
+                    "span": {
+                      "start": 3257,
+                      "end": 3276
+                    }
+                  },
+                  {
+                    "type": "code",
+                    "value": "127.0.0.1",
+                    "span": {
+                      "start": 3276,
+                      "end": 3287
+                    }
+                  },
+                  {
+                    "type": "soft-break",
+                    "span": {
+                      "start": 3287,
+                      "end": 3288
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 3257,
+                  "end": 3288
+                }
+              }
+            ],
+            "span": {
+              "start": 3185,
+              "end": 3288
+            }
+          },
+          {
+            "checked": null,
+            "blocks": [
+              {
+                "type": "paragraph",
+                "inlines": [
+                  {
+                    "type": "code",
+                    "value": "--port <PORT>",
+                    "span": {
+                      "start": 3291,
+                      "end": 3306
+                    }
+                  },
+                  {
+                    "type": "soft-break",
+                    "span": {
+                      "start": 3306,
+                      "end": 3307
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 3291,
+                  "end": 3307
+                }
+              },
+              {
+                "type": "paragraph",
+                "inlines": [
+                  {
+                    "type": "text",
+                    "value": "    Port on which to serve the generated site",
+                    "span": {
+                      "start": 3308,
+                      "end": 3353
+                    }
+                  },
+                  {
+                    "type": "soft-break",
+                    "span": {
+                      "start": 3353,
+                      "end": 3354
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 3308,
+                  "end": 3354
+                }
+              },
+              {
+                "type": "paragraph",
+                "inlines": [
+                  {
+                    "type": "text",
+                    "value": "    Default value: ",
+                    "span": {
+                      "start": 3355,
+                      "end": 3374
+                    }
+                  },
+                  {
+                    "type": "code",
+                    "value": "8000",
+                    "span": {
+                      "start": 3374,
+                      "end": 3380
+                    }
+                  },
+                  {
+                    "type": "soft-break",
+                    "span": {
+                      "start": 3380,
+                      "end": 3381
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 3355,
+                  "end": 3381
+                }
+              }
+            ],
+            "span": {
+              "start": 3289,
+              "end": 3381
+            }
+          },
+          {
+            "checked": null,
+            "blocks": [
+              {
+                "type": "paragraph",
+                "inlines": [
+                  {
+                    "type": "code",
+                    "value": "--live-reload",
+                    "span": {
+                      "start": 3384,
+                      "end": 3399
+                    }
+                  },
+                  {
+                    "type": "soft-break",
+                    "span": {
+                      "start": 3399,
+                      "end": 3400
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 3384,
+                  "end": 3400
+                }
+              },
+              {
+                "type": "paragraph",
+                "inlines": [
+                  {
+                    "type": "text",
+                    "value": "    Refresh open browser pages after successful rebuilds",
+                    "span": {
+                      "start": 3401,
+                      "end": 3457
+                    }
+                  },
+                  {
+                    "type": "soft-break",
+                    "span": {
+                      "start": 3457,
+                      "end": 3458
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 3401,
+                  "end": 3458
+                }
+              }
+            ],
+            "span": {
+              "start": 3382,
+              "end": 3458
+            }
+          }
+        ],
+        "span": {
+          "start": 2976,
+          "end": 3458
         }
       }
     ]

@@ -69,4 +69,6 @@ snapbox = { version = "1.2", features = ["cmd", "dir"] }
 tokio = { version = "1.36", features = ["macros", "rt-multi-thread", "signal", "time"] }
 
 [build-dependencies]
+clap = { version = "4.5", features = ["derive"] }
+clapdown = "=0.2.0"
 toml = "=1.1.6"

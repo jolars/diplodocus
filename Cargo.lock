@@ -337,6 +337,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c8d4a3bb8b1e0c1050499d1815f5ab16d04f0959b233085fb31653fbfc9d98f9"
 
 [[package]]
+name = "clapdown"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "68bcefa13c36a119d957224c65214f792139033a34f8157297ac2a7fff5a343a"
+dependencies = [
+ "clap",
+]
+
+[[package]]
 name = "collection_literals"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -468,6 +477,7 @@ dependencies = [
  "arity-parser",
  "base64",
  "clap",
+ "clapdown",
  "fatou-parser",
  "getrandom 0.4.3",
  "html5ever",
