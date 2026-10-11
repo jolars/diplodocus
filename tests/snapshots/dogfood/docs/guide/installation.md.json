@@ -34,24 +34,24 @@
         "inlines": [
           {
             "type": "text",
-            "value": "Diplodocus is under active development. Until its first crate release, build",
+            "value": "Diplodocus is under active development. Until its first crate release, build the",
             "span": {
               "start": 16,
-              "end": 92
+              "end": 96
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 92,
-              "end": 93
+              "start": 96,
+              "end": 97
             }
           },
           {
             "type": "text",
-            "value": "the CLI from a source checkout with the pinned Rust toolchain and dependencies:",
+            "value": "CLI from a source checkout with the pinned Rust toolchain and dependencies:",
             "span": {
-              "start": 93,
+              "start": 97,
               "end": 172
             }
           },
@@ -185,24 +185,24 @@
           },
           {
             "type": "text",
-            "value": "used by the project examples and tests. A workspace that only contains",
+            "value": "used by the project examples and tests. A workspace that only contains Markdown",
             "span": {
               "start": 414,
-              "end": 484
+              "end": 493
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 484,
-              "end": 485
+              "start": 493,
+              "end": 494
             }
           },
           {
             "type": "text",
-            "value": "Markdown or static Python, R, and Julia API extraction does not need those language",
+            "value": "or static Python, R, and Julia API extraction does not need those language",
             "span": {
-              "start": 485,
+              "start": 494,
               "end": 568
             }
           },

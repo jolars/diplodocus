@@ -88,31 +88,24 @@
           },
           {
             "type": "text",
-            "value": " reads a completed snapshot and writes the site",
+            "value": " reads a completed snapshot and writes the site without",
             "span": {
               "start": 199,
-              "end": 246
+              "end": 254
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 246,
-              "end": 247
+              "start": 254,
+              "end": 255
             }
           },
           {
             "type": "text",
-            "value": "without the original source checkout, language runtimes, or Jupyter kernels.",
+            "value": "the original source checkout, language runtimes, or Jupyter kernels. ",
             "span": {
-              "start": 247,
-              "end": 323
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 323,
+              "start": 255,
               "end": 324
             }
           },
@@ -125,10 +118,17 @@
             }
           },
           {
-            "type": "text",
-            "value": " combines these two stages. See the ",
+            "type": "soft-break",
             "span": {
               "start": 331,
+              "end": 332
+            }
+          },
+          {
+            "type": "text",
+            "value": "combines these two stages. See the ",
+            "span": {
+              "start": 332,
               "end": 367
             }
           },
@@ -158,24 +158,24 @@
           },
           {
             "type": "text",
-            "value": " for",
+            "value": " for paths and",
             "span": {
               "start": 394,
-              "end": 398
+              "end": 408
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 398,
-              "end": 399
+              "start": 408,
+              "end": 409
             }
           },
           {
             "type": "text",
-            "value": "paths and options.",
+            "value": "options.",
             "span": {
-              "start": 399,
+              "start": 409,
               "end": 417
             }
           },
@@ -326,39 +326,31 @@
           },
           {
             "type": "text",
-            "value": "extraction or publication leaves the previous completed snapshot in place.",
+            "value": "extraction or publication leaves the previous completed snapshot in place. Treat",
             "span": {
               "start": 1014,
-              "end": 1088
+              "end": 1094
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1088,
-              "end": 1089
+              "start": 1094,
+              "end": 1095
             }
           },
           {
             "type": "text",
-            "value": "Treat a copied snapshot as a build artifact; do not edit its records by hand.",
+            "value": "a copied snapshot as a build artifact; do not edit its records by hand. The",
             "span": {
-              "start": 1089,
-              "end": 1166
+              "start": 1095,
+              "end": 1170
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1166,
-              "end": 1167
-            }
-          },
-          {
-            "type": "text",
-            "value": "The ",
-            "span": {
-              "start": 1167,
+              "start": 1170,
               "end": 1171
             }
           },
@@ -367,9 +359,24 @@
             "inlines": [
               {
                 "type": "text",
-                "value": "storage schema",
+                "value": "storage",
                 "span": {
                   "start": 1172,
+                  "end": 1179
+                }
+              },
+              {
+                "type": "soft-break",
+                "span": {
+                  "start": 1179,
+                  "end": 1180
+                }
+              },
+              {
+                "type": "text",
+                "value": "schema",
+                "span": {
+                  "start": 1180,
                   "end": 1186
                 }
               }

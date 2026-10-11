@@ -252,39 +252,39 @@
           },
           {
             "type": "text",
-            "value": "earlier cells on that page. Supported options control whether a cell runs,",
+            "value": "earlier cells on that page. Supported options control whether a cell runs, shows",
             "span": {
               "start": 525,
-              "end": 599
+              "end": 605
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 599,
-              "end": 600
+              "start": 605,
+              "end": 606
             }
           },
           {
             "type": "text",
-            "value": "shows its source or output, permits an ordinary language error, and labels a",
+            "value": "its source or output, permits an ordinary language error, and labels a figure.",
             "span": {
-              "start": 600,
-              "end": 676
+              "start": 606,
+              "end": 684
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 676,
-              "end": 677
+              "start": 684,
+              "end": 685
             }
           },
           {
             "type": "text",
-            "value": "figure. See the ",
+            "value": "See the ",
             "span": {
-              "start": 677,
+              "start": 685,
               "end": 693
             }
           },
@@ -314,24 +314,16 @@
           },
           {
             "type": "text",
-            "value": " for the option names and",
+            "value": " for the option names and the",
             "span": {
               "start": 729,
-              "end": 754
+              "end": 758
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 754,
-              "end": 755
-            }
-          },
-          {
-            "type": "text",
-            "value": "the ",
-            "span": {
-              "start": 755,
+              "start": 758,
               "end": 759
             }
           },
@@ -388,24 +380,24 @@
             "inlines": [
               {
                 "type": "text",
-                "value": "Authorized cells run with the privileges of the user or CI job that builds",
+                "value": "Authorized cells run with the privileges of the user or CI job that builds the",
                 "span": {
                   "start": 831,
-                  "end": 905
+                  "end": 909
                 }
               },
               {
                 "type": "soft-break",
                 "span": {
-                  "start": 905,
-                  "end": 906
+                  "start": 909,
+                  "end": 910
                 }
               },
               {
                 "type": "text",
-                "value": "the site.",
+                "value": "site.",
                 "span": {
-                  "start": 906,
+                  "start": 910,
                   "end": 915
                 }
               }
@@ -417,54 +409,54 @@
           },
           {
             "type": "text",
-            "value": " They can read and change files and use the network. Output",
+            "value": " They can read and change files and use the network. Output sanitization",
             "span": {
               "start": 917,
-              "end": 976
+              "end": 989
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 976,
-              "end": 977
+              "start": 989,
+              "end": 990
             }
           },
           {
             "type": "text",
-            "value": "sanitization protects generated HTML; it does not sandbox code execution.",
+            "value": "protects generated HTML; it does not sandbox code execution. Review a",
             "span": {
-              "start": 977,
-              "end": 1050
+              "start": 990,
+              "end": 1059
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1050,
-              "end": 1051
+              "start": 1059,
+              "end": 1060
             }
           },
           {
             "type": "text",
-            "value": "Review a workspace's source and execution settings before running a build,",
+            "value": "workspace's source and execution settings before running a build, especially for",
             "span": {
-              "start": 1051,
-              "end": 1125
+              "start": 1060,
+              "end": 1140
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1125,
-              "end": 1126
+              "start": 1140,
+              "end": 1141
             }
           },
           {
             "type": "text",
-            "value": "especially for contributions from another person. Run ",
+            "value": "contributions from another person. Run ",
             "span": {
-              "start": 1126,
+              "start": 1141,
               "end": 1180
             }
           },
@@ -478,24 +470,24 @@
           },
           {
             "type": "text",
-            "value": " first when you",
+            "value": " first when you need source",
             "span": {
               "start": 1187,
-              "end": 1202
+              "end": 1214
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1202,
-              "end": 1203
+              "start": 1214,
+              "end": 1215
             }
           },
           {
             "type": "text",
-            "value": "need source validation without execution.",
+            "value": "validation without execution.",
             "span": {
-              "start": 1203,
+              "start": 1215,
               "end": 1244
             }
           },
@@ -517,84 +509,84 @@
         "inlines": [
           {
             "type": "text",
-            "value": "Diplodocus validates cell output before including it in a site. Ordinary",
+            "value": "Diplodocus validates cell output before including it in a site. Ordinary stdout,",
             "span": {
               "start": 1246,
-              "end": 1318
+              "end": 1326
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1318,
-              "end": 1319
+              "start": 1326,
+              "end": 1327
             }
           },
           {
             "type": "text",
-            "value": "stdout, stderr, and tracebacks remain text. Supported images become local",
+            "value": "stderr, and tracebacks remain text. Supported images become local assets; unsafe",
             "span": {
-              "start": 1319,
-              "end": 1392
+              "start": 1327,
+              "end": 1407
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1392,
-              "end": 1393
+              "start": 1407,
+              "end": 1408
             }
           },
           {
             "type": "text",
-            "value": "assets; unsafe HTML or SVG is rejected. A page cache can reuse a successful",
+            "value": "HTML or SVG is rejected. A page cache can reuse a successful execution when its",
             "span": {
-              "start": 1393,
-              "end": 1468
+              "start": 1408,
+              "end": 1487
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1468,
-              "end": 1469
+              "start": 1487,
+              "end": 1488
             }
           },
           {
             "type": "text",
-            "value": "execution when its source, effective options, selected kernel, toolchain, and",
+            "value": "source, effective options, selected kernel, toolchain, and declared environment",
             "span": {
-              "start": 1469,
-              "end": 1546
+              "start": 1488,
+              "end": 1567
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1546,
-              "end": 1547
+              "start": 1567,
+              "end": 1568
             }
           },
           {
             "type": "text",
-            "value": "declared environment inputs still match. The configured kernel is still",
+            "value": "inputs still match. The configured kernel is still started to verify its",
             "span": {
-              "start": 1547,
-              "end": 1618
+              "start": 1568,
+              "end": 1640
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1618,
-              "end": 1619
+              "start": 1640,
+              "end": 1641
             }
           },
           {
             "type": "text",
-            "value": "started to verify its identity on a cache hit.",
+            "value": "identity on a cache hit.",
             "span": {
-              "start": 1619,
+              "start": 1641,
               "end": 1665
             }
           },

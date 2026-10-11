@@ -6,6 +6,7 @@ use std::collections::BTreeSet;
 use std::future::Future;
 use std::io;
 use std::net::Ipv4Addr;
+use std::ops::RangeInclusive;
 use std::sync::Mutex;
 
 use tokio::net::TcpListener;
@@ -47,18 +48,49 @@ impl Drop for PortLease<'_> {
     }
 }
 
-fn candidates(seed: u16) -> impl Iterator<Item = u16> {
-    (0..PORT_COUNT).map(move |offset| (FIRST_PORT + (u32::from(seed) + offset) % PORT_COUNT) as u16)
+fn ephemeral_range(text: &str) -> io::Result<RangeInclusive<u16>> {
+    let values: Vec<_> = text.split_whitespace().collect();
+    let invalid = || io::Error::new(io::ErrorKind::InvalidData, "Invalid ephemeral port range.");
+    if values.len() != 2 {
+        return Err(invalid());
+    }
+    let first = values[0].parse::<u16>().map_err(|_| invalid())?;
+    let last = values[1].parse::<u16>().map_err(|_| invalid())?;
+    if first == 0 || first > last {
+        return Err(invalid());
+    }
+    Ok(first..=last)
+}
+
+fn candidates(seed: u16, ephemeral: RangeInclusive<u16>) -> impl Iterator<Item = u16> {
+    let lower_count = u32::from(*ephemeral.start()).saturating_sub(FIRST_PORT);
+    let excluded_count = (u32::from(*ephemeral.end()) + 1).saturating_sub(FIRST_PORT + lower_count);
+    let available_count = PORT_COUNT - excluded_count;
+    (0..available_count).map(move |offset| {
+        let index = (u32::from(seed) + offset) % available_count;
+        (FIRST_PORT
+            + index
+            + if index >= lower_count {
+                excluded_count
+            } else {
+                0
+            }) as u16
+    })
 }
 
 pub(super) async fn reserve() -> io::Result<(PortLease<'static>, Vec<TcpListener>)> {
+    // Client connections can claim ephemeral source ports after the listeners are
+    // released, before the child binds. The launch registry cannot prevent that.
+    let ephemeral = ephemeral_range(
+        &tokio::fs::read_to_string("/proc/sys/net/ipv4/ip_local_port_range").await?,
+    )?;
     let mut seed = [0; 2];
     getrandom::fill(&mut seed)
         .map_err(|_| io::Error::other("Kernel port selection randomness is unavailable."))?;
     reserve_from(
         &LEASED_PORTS,
         5,
-        candidates(u16::from_ne_bytes(seed)),
+        candidates(u16::from_ne_bytes(seed), ephemeral),
         |port| TcpListener::bind((Ipv4Addr::LOCALHOST, port)),
     )
     .await
@@ -113,6 +145,38 @@ mod tests {
     use std::task::Poll;
 
     use super::*;
+
+    #[test]
+    fn candidates_exclude_the_configured_ephemeral_range_before_limiting_attempts() {
+        for range in [32_768..=60_999, 1_024..=50_000, 50_000..=65_535] {
+            let choices: Vec<_> = candidates(40_000, range.clone()).collect();
+            let unique: BTreeSet<_> = choices.iter().copied().collect();
+            assert_eq!(choices.len(), unique.len());
+            assert_eq!(choices.len(), PORT_COUNT as usize - range.clone().count());
+            assert!(choices.iter().all(|port| !range.contains(port)));
+            assert_eq!(choices.iter().take(MAX_CANDIDATES).count(), MAX_CANDIDATES);
+        }
+    }
+
+    #[test]
+    fn seeds_inside_the_ephemeral_range_do_not_converge_on_its_upper_boundary() {
+        let first: BTreeSet<_> = (32_768..=60_999)
+            .map(|seed| candidates(seed, 32_768..=60_999).next().unwrap())
+            .collect();
+        assert_eq!(first.len(), (60_999 - 32_768 + 1) as usize);
+        assert_eq!(candidates(0, 1_024..=65_535).next(), None);
+    }
+
+    #[test]
+    fn ephemeral_range_requires_two_ordered_nonzero_ports() {
+        assert_eq!(ephemeral_range("32768\t60999\n").unwrap(), 32_768..=60_999);
+        for invalid in ["", "0 10", "20 10", "10", "10 20 30", "10 65536", "a b"] {
+            assert_eq!(
+                ephemeral_range(invalid).unwrap_err().kind(),
+                io::ErrorKind::InvalidData
+            );
+        }
+    }
 
     fn bind_token(port: u16) -> std::future::Ready<io::Result<u16>> {
         ready(Ok(port))

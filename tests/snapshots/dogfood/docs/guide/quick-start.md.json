@@ -66,24 +66,24 @@
           },
           {
             "type": "text",
-            "value": " to get the CLI and project checkout.",
+            "value": " to get the CLI and project checkout. Then",
             "span": {
               "start": 53,
-              "end": 90
+              "end": 95
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 90,
-              "end": 91
+              "start": 95,
+              "end": 96
             }
           },
           {
             "type": "text",
-            "value": "Then build the small three-language monorepo in ",
+            "value": "build the small three-language monorepo in ",
             "span": {
-              "start": 91,
+              "start": 96,
               "end": 139
             }
           },
@@ -500,16 +500,9 @@
           },
           {
             "type": "text",
-            "value": "kernels for a workspace. To adapt the example, read the",
+            "value": "kernels for a workspace. To adapt the example, read the ",
             "span": {
               "start": 1281,
-              "end": 1336
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 1336,
               "end": 1337
             }
           },
@@ -518,9 +511,24 @@
             "inlines": [
               {
                 "type": "text",
-                "value": "workspace configuration",
+                "value": "workspace",
                 "span": {
                   "start": 1338,
+                  "end": 1347
+                }
+              },
+              {
+                "type": "soft-break",
+                "span": {
+                  "start": 1347,
+                  "end": 1348
+                }
+              },
+              {
+                "type": "text",
+                "value": "configuration",
+                "span": {
+                  "start": 1348,
                   "end": 1361
                 }
               }
@@ -570,17 +578,10 @@
             }
           },
           {
-            "type": "soft-break",
+            "type": "text",
+            "value": " guides.",
             "span": {
               "start": 1415,
-              "end": 1416
-            }
-          },
-          {
-            "type": "text",
-            "value": "guides.",
-            "span": {
-              "start": 1416,
               "end": 1423
             }
           },
@@ -656,24 +657,9 @@
           },
           {
             "type": "text",
-            "value": "Python example.",
+            "value": "Python example. The devenv shell supplies its ",
             "span": {
               "start": 1545,
-              "end": 1560
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 1560,
-              "end": 1561
-            }
-          },
-          {
-            "type": "text",
-            "value": "The devenv shell supplies its ",
-            "span": {
-              "start": 1561,
               "end": 1591
             }
           },
@@ -687,9 +673,24 @@
           },
           {
             "type": "text",
-            "value": " kernel. From the repository root:",
+            "value": " kernel. From the",
             "span": {
               "start": 1600,
+              "end": 1617
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1617,
+              "end": 1618
+            }
+          },
+          {
+            "type": "text",
+            "value": "repository root:",
+            "span": {
+              "start": 1618,
               "end": 1634
             }
           },
@@ -834,17 +835,17 @@
             }
           },
           {
-            "type": "soft-break",
+            "type": "text",
+            "value": " and",
             "span": {
               "start": 1882,
-              "end": 1883
+              "end": 1886
             }
           },
           {
-            "type": "text",
-            "value": "and ",
+            "type": "soft-break",
             "span": {
-              "start": 1883,
+              "start": 1886,
               "end": 1887
             }
           },
@@ -905,9 +906,16 @@
         "inlines": [
           {
             "type": "text",
-            "value": "The acceptance workspace at ",
+            "value": "The acceptance workspace at",
             "span": {
               "start": 2008,
+              "end": 2035
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2035,
               "end": 2036
             }
           },
@@ -920,47 +928,55 @@
             }
           },
           {
-            "type": "soft-break",
+            "type": "text",
+            "value": " uses sibling core, Python,",
             "span": {
               "start": 2089,
-              "end": 2090
-            }
-          },
-          {
-            "type": "text",
-            "value": "uses sibling core, Python, and R repositories, plus executable Python and R",
-            "span": {
-              "start": 2090,
-              "end": 2165
+              "end": 2116
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2165,
-              "end": 2166
+              "start": 2116,
+              "end": 2117
             }
           },
           {
             "type": "text",
-            "value": "pages. The devenv shell supplies both kernels. This workspace is for broader",
+            "value": "and R repositories, plus executable Python and R pages. The devenv shell",
             "span": {
-              "start": 2166,
-              "end": 2242
+              "start": 2117,
+              "end": 2189
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2242,
-              "end": 2243
+              "start": 2189,
+              "end": 2190
             }
           },
           {
             "type": "text",
-            "value": "validation after the small example and project site:",
+            "value": "supplies both kernels. This workspace is for broader validation after the small",
             "span": {
-              "start": 2243,
+              "start": 2190,
+              "end": 2269
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2269,
+              "end": 2270
+            }
+          },
+          {
+            "type": "text",
+            "value": "example and project site:",
+            "span": {
+              "start": 2270,
               "end": 2295
             }
           },
@@ -1068,24 +1084,24 @@
           },
           {
             "type": "text",
-            "value": " before building it.",
+            "value": " before building it. Document metadata",
             "span": {
               "start": 2632,
-              "end": 2652
+              "end": 2670
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2652,
-              "end": 2653
+              "start": 2670,
+              "end": 2671
             }
           },
           {
             "type": "text",
-            "value": "Document metadata cannot grant execution authority.",
+            "value": "cannot grant execution authority.",
             "span": {
-              "start": 2653,
+              "start": 2671,
               "end": 2704
             }
           },

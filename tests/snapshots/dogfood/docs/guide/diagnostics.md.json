@@ -80,24 +80,24 @@
           },
           {
             "type": "text",
-            "value": "nonzero exit status. Warnings identify information that Diplodocus retained",
+            "value": "nonzero exit status. Warnings identify information that Diplodocus retained but",
             "span": {
               "start": 189,
-              "end": 264
+              "end": 268
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 264,
-              "end": 265
+              "start": 268,
+              "end": 269
             }
           },
           {
             "type": "text",
-            "value": "but could not fully interpret; a command can succeed with warnings.",
+            "value": "could not fully interpret; a command can succeed with warnings.",
             "span": {
-              "start": 265,
+              "start": 269,
               "end": 332
             }
           },
@@ -219,54 +219,54 @@
           },
           {
             "type": "text",
-            "value": " means a computed Python export list",
+            "value": " means a computed Python export list cannot",
             "span": {
               "start": 662,
-              "end": 698
+              "end": 705
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 698,
-              "end": 699
+              "start": 705,
+              "end": 706
             }
           },
           {
             "type": "text",
-            "value": "cannot establish a certain public surface. A warning about Rd source",
+            "value": "establish a certain public surface. A warning about Rd source attribution means",
             "span": {
-              "start": 699,
-              "end": 767
+              "start": 706,
+              "end": 785
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 767,
-              "end": 768
+              "start": 785,
+              "end": 786
             }
           },
           {
             "type": "text",
-            "value": "attribution means the parsed documentation has file-level, rather than exact",
+            "value": "the parsed documentation has file-level, rather than exact byte-level, location",
             "span": {
-              "start": 768,
-              "end": 844
+              "start": 786,
+              "end": 865
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 844,
-              "end": 845
+              "start": 865,
+              "end": 866
             }
           },
           {
             "type": "text",
-            "value": "byte-level, location evidence.",
+            "value": "evidence.",
             "span": {
-              "start": 845,
+              "start": 866,
               "end": 875
             }
           },
@@ -382,39 +382,39 @@
           },
           {
             "type": "text",
-            "value": " keeps the last successful",
+            "value": " keeps the last successful site",
             "span": {
               "start": 1083,
-              "end": 1109
+              "end": 1114
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1109,
-              "end": 1110
+              "start": 1114,
+              "end": 1115
             }
           },
           {
             "type": "text",
-            "value": "site available after a failed rebuild. Snapshot or output publication failures",
+            "value": "available after a failed rebuild. Snapshot or output publication failures also",
             "span": {
-              "start": 1110,
-              "end": 1188
+              "start": 1115,
+              "end": 1193
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1188,
-              "end": 1189
+              "start": 1193,
+              "end": 1194
             }
           },
           {
             "type": "text",
-            "value": "also preserve the previous completed artifact.",
+            "value": "preserve the previous completed artifact.",
             "span": {
-              "start": 1189,
+              "start": 1194,
               "end": 1235
             }
           },
@@ -507,16 +507,9 @@
           },
           {
             "type": "text",
-            "value": " for static API limits, and",
+            "value": " for static API limits, and ",
             "span": {
               "start": 1321,
-              "end": 1348
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 1348,
               "end": 1349
             }
           },
@@ -545,10 +538,17 @@
             }
           },
           {
-            "type": "text",
-            "value": " for kernel failures and permissions.",
+            "type": "soft-break",
             "span": {
               "start": 1374,
+              "end": 1375
+            }
+          },
+          {
+            "type": "text",
+            "value": "for kernel failures and permissions.",
+            "span": {
+              "start": 1375,
               "end": 1411
             }
           },
