@@ -52,21 +52,17 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
             write!(html, "<link rel=\"canonical\" href=\"{}\">", escape(url)).unwrap();
         }
         write!(html, "<title>{} · {}</title><link rel=\"stylesheet\" href=\"{}\"><script defer src=\"{}\"></script><script defer src=\"{}\"></script></head><body><a class=\"skip-link\" href=\"#main\">Skip to content</a>", escape(&page.title), escape(site.title()), escape(&relative_url(route, "assets/site.css")), escape(&relative_url(route, "assets/search.js")), escape(&relative_url(route, "assets/nav.js"))).unwrap();
-        write!(html, "<header><a class=\"brand\" href=\"{}\">{}</a><form role=\"search\"><label for=\"search\">Search documentation</label><input id=\"search\" type=\"search\" autocomplete=\"off\"><ul id=\"search-results\" aria-live=\"polite\"></ul></form></header><div class=\"layout\"><nav aria-label=\"Documentation\"><details class=\"nav-disclosure\" open><summary>Browse documentation</summary>", escape(&relative_url(route, "index.html")), escape(site.title())).unwrap();
-        super::navigation::project_pages(&mut html, site, route);
-        super::navigation::packages(&mut html, site, route);
-        let concepts: Vec<_> = site
-            .pages
-            .iter()
-            .filter(|(_, candidate)| {
-                candidate.visible
-                    && candidate
-                        .concept
-                        .is_some_and(|concept| concept.documentation.is_some())
-            })
-            .map(|(destination, candidate)| (destination.clone(), candidate.title.clone()))
-            .collect();
-        super::navigation::group(&mut html, route, "Shared concepts", &concepts);
+        write!(
+            html,
+            "<header><a class=\"brand\" href=\"{}\">{}</a>",
+            escape(&relative_url(route, "index.html")),
+            escape(site.title())
+        )
+        .unwrap();
+        super::navigation::sections(&mut html, site, route, "desktop-sections");
+        html.push_str("<form role=\"search\"><label for=\"search\">Search documentation</label><input id=\"search\" type=\"search\" autocomplete=\"off\"><ul id=\"search-results\" aria-live=\"polite\"></ul></form></header><div class=\"layout\"><nav aria-label=\"Documentation\"><details class=\"nav-disclosure\" open><summary>Browse documentation</summary>");
+        super::navigation::sections(&mut html, site, route, "mobile-sections");
+        super::navigation::contextual(&mut html, site, route);
         html.push_str("</details></nav><div class=\"page-content\"><main id=\"main\">");
         if let Some(owner) = &page.owner {
             let package = &site.workspace.packages[owner];
@@ -679,5 +675,5 @@ fn plain(nodes: &[Inline]) -> String {
         .collect()
 }
 const STYLE: &str = include_str!("assets/site.css");
-const NAV_SCRIPT: &str = "(()=>{const disclosure=document.querySelector('.nav-disclosure');const narrow=matchMedia('(max-width:760px)');const toc=document.querySelector('.toc-disclosure');const wide=matchMedia('(min-width:1100px)');disclosure.open=!narrow.matches;narrow.addEventListener('change',event=>{disclosure.open=!event.matches});if(toc){toc.open=wide.matches;wide.addEventListener('change',event=>{toc.open=event.matches})}})();";
+const NAV_SCRIPT: &str = include_str!("navigation.js");
 const SEARCH: &str = include_str!("search.js");

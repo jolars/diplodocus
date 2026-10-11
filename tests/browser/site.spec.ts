@@ -58,6 +58,12 @@ for (const [path, title, name] of [
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(title);
     await expect(page.getByRole("navigation", { name: "Documentation" })).toBeVisible();
     await fitsViewport(page);
+    if (name === "python-guide") {
+      await openNavigation(page, info);
+      await expect(sections(page, info).locator('[aria-current="true"]')).toHaveText("Python");
+      await expect(page.getByRole("navigation", { name: "Documentation" }).locator('[aria-current="page"]')).toHaveText(title);
+      await expect(page.getByRole("navigation", { name: "Documentation" }).getByRole("link", { name: "Choosing a metric" })).toHaveCount(0);
+    }
     if (name === "guide") {
       const image = page.getByRole("img");
       await expect(image).toBeVisible();
@@ -80,47 +86,65 @@ test("search finds all three APIs and follows a result", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("tinystats.mean_squared_error");
 });
 
-test("package accordions keep navigation stable across pages", async ({ page }, info) => {
+async function openNavigation(page: Page, info: TestInfo) {
+  if (info.project.name === "mobile") {
+    const disclosure = page.locator(".nav-disclosure");
+    if (!await disclosure.evaluate((element: HTMLDetailsElement) => element.open)) {
+      await disclosure.locator(":scope > summary").click();
+    }
+  }
+}
+
+function sections(page: Page, info: TestInfo) {
+  return page.locator(info.project.name === "mobile" ? ".mobile-sections" : ".desktop-sections");
+}
+
+test("global sections select a contextual sidebar", async ({ page }, info) => {
   await page.goto("/");
   const navigation = page.getByRole("navigation", { name: "Documentation" });
-  const documentation = navigation.getByRole("group", { name: "Documentation" });
-  const packages = navigation.getByRole("group", { name: "Reference" });
-  const guides = navigation.getByRole("group", { name: "Guides", exact: true });
+  const global = sections(page, info);
   if (info.project.name === "mobile") {
     await expect(navigation.getByText("Browse documentation", { exact: true })).toBeVisible();
-    await expect(documentation.getByRole("link", { name: "Overview" })).not.toBeVisible();
-    await navigation.getByText("Browse documentation", { exact: true }).click();
+    await expect(global).not.toBeVisible();
   }
-  await expect(documentation.getByRole("link", { name: "Overview" })).toBeVisible();
-  await expect(guides.getByRole("link", { name: "Comparing predictions" })).toBeVisible();
-  const python = packages.getByText("Python", { exact: true }).locator("..");
-  const r = packages.getByText("R", { exact: true }).locator("..");
-  await expect(python.locator(":scope > ul > li > a").filter({ hasText: /^Overview$/ })).not.toBeVisible();
-  await expect(r.getByRole("link", { name: "Overview" })).not.toBeVisible();
-  await python.locator(":scope > summary").click();
-  await python.getByText("tinystats", { exact: true }).click();
-  await expect(python.getByRole("link", { name: "mean_squared_error", exact: true })).toBeVisible();
-  const functionCode = python.getByRole("link", { name: "mean_squared_error", exact: true }).locator("code");
-  await expect(functionCode).toHaveText("mean_squared_error");
-  await expect(python.locator("summary code")).toHaveText("tinystats");
-  const proseFont = await guides.getByRole("link", { name: "Comparing predictions" }).evaluate(element => getComputedStyle(element).fontFamily);
-  expect(await functionCode.evaluate(element => getComputedStyle(element).fontFamily)).not.toBe(proseFont);
-  await expect(r.getByRole("link", { name: "mean_squared_error", exact: true })).not.toBeVisible();
-  await capture(page, info, "navigation");
-  await python.locator(":scope > summary").click();
-  await expect(python.locator(":scope > ul > li > a").filter({ hasText: /^Overview$/ })).not.toBeVisible();
-  await r.locator(":scope > summary").click();
-  await expect(r.getByRole("link", { name: "mean_squared_error", exact: true })).toBeVisible();
-  await expect(page.getByRole("main").getByRole("heading", { name: "Start with the guide" })).toBeVisible();
+  await openNavigation(page, info);
+  await expect(global.getByRole("link")).toHaveText(["Guide", "Python", "R", "Julia"]);
+  await expect(global.locator('[aria-current="true"]')).toHaveText("Guide");
+  await expect(navigation.getByRole("group", { name: "Guide", exact: true }).getByRole("link", { name: "Overview" })).toBeVisible();
+  await expect(navigation.getByRole("group", { name: "Guides", exact: true }).getByRole("link", { name: "Comparing predictions" })).toBeVisible();
+  await expect(navigation.getByRole("group", { name: "API reference" })).toHaveCount(0);
 
-  await r.getByRole("link", { name: "Overview" }).click();
-  if (info.project.name === "mobile") {
-    await navigation.getByText("Browse documentation", { exact: true }).click();
-  }
+  await global.getByRole("link", { name: "Python", exact: true }).click();
+  await openNavigation(page, info);
+  await expect(global.locator('[aria-current="true"]')).toHaveText("Python");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Tiny Stats for Python");
+  await expect(navigation.getByRole("group", { name: "Getting started" })).toHaveCount(0);
+  await expect(navigation.getByRole("link", { name: "Comparing predictions" })).toHaveCount(0);
+  await expect(navigation.getByRole("link", { name: "Evaluating models in Python" })).toBeVisible();
+  const api = navigation.getByRole("group", { name: "API reference" });
+  await expect(api.getByRole("link", { name: "mean_squared_error", exact: true })).not.toBeVisible();
+  await api.getByText("tinystats", { exact: true }).click();
+  await api.getByRole("link", { name: "mean_squared_error", exact: true }).click();
+  await openNavigation(page, info);
+  await expect(global.locator('[aria-current="true"]')).toHaveText("Python");
+  await expect(navigation.locator('[aria-current="page"]')).toHaveText("mean_squared_error");
+  await expect(navigation.locator('[aria-current="page"]')).toBeVisible();
+  const functionCode = navigation.locator('[aria-current="page"] code');
+  const proseFont = await navigation.getByRole("link", { name: "Evaluating models in Python" }).evaluate(element => getComputedStyle(element).fontFamily);
+  expect(await functionCode.evaluate(element => getComputedStyle(element).fontFamily)).not.toBe(proseFont);
+  await capture(page, info, "navigation");
+
+  await global.getByRole("link", { name: "R", exact: true }).click();
+  await openNavigation(page, info);
+  await expect(global.locator('[aria-current="true"]')).toHaveText("R");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Tiny Stats for R");
-  await expect(r.getByRole("link", { name: "Overview" })).toBeVisible();
-  await expect(r.getByRole("link", { name: "mean_squared_error", exact: true })).toBeVisible();
-  await expect(python.locator(":scope > ul > li > a").filter({ hasText: /^Overview$/ })).not.toBeVisible();
+  await expect(api.getByRole("link", { name: "mean_squared_error", exact: true })).toBeVisible();
+  await expect(navigation.getByRole("link", { name: "Evaluating models in Python" })).toHaveCount(0);
+  await expect(navigation.getByRole("group", { name: "Guides", exact: true })).toHaveCount(0);
+  await global.getByRole("link", { name: "Guide", exact: true }).click();
+  await openNavigation(page, info);
+  await expect(global.locator('[aria-current="true"]')).toHaveText("Guide");
+  await expect(navigation.getByRole("link", { name: "Comparing predictions" })).toBeVisible();
 });
 
 test("equivalent APIs link in both directions", async ({ page }, info) => {
@@ -145,8 +169,11 @@ test("search and result navigation work with the keyboard", async ({ page }) => 
   await page.goto("/");
   await page.keyboard.press("Tab");
   await expect(page.getByRole("link", { name: "Skip to content" })).toBeFocused();
-  await page.keyboard.press("Tab");
-  await page.keyboard.press("Tab");
+  // Section links are also reachable before search on desktop.
+  for (let step = 0; step < 6; step++) {
+    await page.keyboard.press("Tab");
+    if (await page.getByRole("searchbox").evaluate(element => element === document.activeElement)) break;
+  }
   await expect(page.getByRole("searchbox")).toBeFocused();
   await page.keyboard.type("mean_squared_error");
   const result = page.locator("#search-results").getByRole("link").first();
@@ -176,17 +203,13 @@ test("preview reloads the page when its revision advances", async ({ page }) => 
 test("shared guides, API trees, and page headings support a round trip", async ({ page }, info) => {
   await page.goto("/guides/choosing-a-metric.html");
   const navigation = page.getByRole("navigation", { name: "Documentation" });
-  const openNavigation = async () => {
-    if (info.project.name === "mobile") {
-      await navigation.getByText("Browse documentation", { exact: true }).click();
-    }
-  };
-  await openNavigation();
+  await openNavigation(page, info);
   await expect(navigation.getByRole("group", { name: "Getting started" })).toBeVisible();
   const guideLinks = await navigation.getByRole("group", { name: "Guides", exact: true }).getByRole("link").allTextContents();
   await page.getByRole("main").getByRole("link", { name: "pystats::tinystats.mean_absolute_error", exact: true }).click();
-  await openNavigation();
-  await expect(navigation.getByRole("group", { name: "Guides", exact: true }).getByRole("link")).toHaveText(guideLinks);
+  await openNavigation(page, info);
+  await expect(sections(page, info).locator('[aria-current="true"]')).toHaveText("Python");
+  await expect(navigation.getByRole("link", { name: "Choosing a metric" })).toHaveCount(0);
   const active = navigation.locator('[aria-current="page"]');
   await expect(active).toHaveText("mean_absolute_error");
   await expect(active).toBeVisible();
@@ -195,6 +218,9 @@ test("shared guides, API trees, and page headings support a round trip", async (
   await toc.getByRole("link", { name: "Parameters", exact: true }).click();
   await expect(page).toHaveURL(/#parameters$/);
   await expect(page.getByRole("main").getByRole("heading", { name: "Parameters", exact: true })).toBeInViewport();
+  await sections(page, info).getByRole("link", { name: "Guide", exact: true }).click();
+  await openNavigation(page, info);
+  await expect(navigation.getByRole("group", { name: "Guides", exact: true }).getByRole("link")).toHaveText(guideLinks);
   await navigation.getByRole("group", { name: "Guides", exact: true }).getByRole("link", { name: "Choosing a metric" }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Choosing a metric");
 });
@@ -213,6 +239,8 @@ test("page TOC stays close to content when the window narrows", async ({ page },
     expect(gap).toBeGreaterThanOrEqual(0);
     await fitsViewport(page);
   }
+  await page.setViewportSize({ width: 761, height: 1000 });
+  await capture(page, info, "narrow-desktop-navigation");
   await page.setViewportSize({ width: 1000, height: 1000 });
   await capture(page, info, "medium-page-toc");
 
@@ -236,7 +264,24 @@ test("Julia families link to documented methods", async ({ page }, info) => {
   await expect(page.getByRole("main").getByText("Method", { exact: true })).toBeVisible();
   await expect(page.getByRole("main").locator("pre code")).toHaveText("mean_squared_error(observed::AbstractVector, predicted::AbstractVector)");
   await expect(page.getByRole("main").getByText("Calculate mean squared error for numeric vectors.", { exact: true })).toBeVisible();
-  await expect(page.locator('[aria-current="page"]')).toHaveText("mean_squared_error(observed::AbstractVector, predicted::AbstractVector)");
+  await expect(page.getByRole("navigation", { name: "Documentation" }).locator('[aria-current="page"]')).toHaveText("mean_squared_error(observed::AbstractVector, predicted::AbstractVector)");
   await fitsViewport(page);
   await capture(page, info, "julia-method");
+});
+
+
+test.describe("navigation without JavaScript", () => {
+  test.use({ javaScriptEnabled: false });
+
+  test("section links and API trees remain usable", async ({ page }, info) => {
+    await page.goto("/");
+    await sections(page, info).getByRole("link", { name: "Python", exact: true }).click();
+    const navigation = page.getByRole("navigation", { name: "Documentation" });
+    await navigation.getByText("tinystats", { exact: true }).click();
+    await navigation.getByRole("link", { name: "mean_squared_error", exact: true }).click();
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("tinystats.mean_squared_error");
+    await expect(navigation.locator('[aria-current="page"]')).toBeVisible();
+    await expect(sections(page, info).locator('[aria-current="true"]')).toHaveText("Python");
+    await fitsViewport(page);
+  });
 });

@@ -8,19 +8,123 @@ use crate::ir::{ItemReference, Package};
 use crate::site::{Site, relative_url};
 use crate::validation::DocumentIdentity;
 
-pub(super) fn project_pages(html: &mut String, site: &Site<'_>, route: &str) {
-    let mut root = vec![("index.html".to_owned(), "Overview".to_owned())];
+pub(super) fn sections(html: &mut String, site: &Site<'_>, route: &str, class: &str) {
+    write!(
+        html,
+        "<nav class=\"global-nav {class}\" aria-label=\"Sections\"><ul>"
+    )
+    .unwrap();
+    let owner = site.pages[route].owner.as_deref();
+    section_link(html, route, "index.html", "Guide", owner.is_none());
+    let mut packages: Vec<_> = site
+        .workspace
+        .packages
+        .iter()
+        .filter(|(_, package)| {
+            package.visibility != crate::configuration::PackageVisibility::Hidden
+        })
+        .collect();
+    packages.sort_by_key(|(id, package)| {
+        let language = match package.ecosystem.as_str() {
+            "python" => 0,
+            "r" => 1,
+            "julia" => 2,
+            _ => 3,
+        };
+        (language, &package.name, *id)
+    });
+    for (id, package) in packages {
+        section_link(
+            html,
+            route,
+            &format!("packages/{}/index.html", package.slug),
+            package_label(site, package),
+            owner == Some(id.as_str()),
+        );
+    }
+    html.push_str("</ul></nav>");
+}
+
+fn section_link(html: &mut String, route: &str, destination: &str, label: &str, active: bool) {
+    // The current section stays selected even when its landing page is not open.
+    let current = if active { " aria-current=\"true\"" } else { "" };
+    write!(
+        html,
+        "<li><a href=\"{}\"{current}>{}</a></li>",
+        escape(&relative_url(route, destination)),
+        escape(label)
+    )
+    .unwrap();
+}
+
+fn package_label<'a>(site: &Site<'_>, package: &'a Package) -> &'a str {
+    let unique_ecosystem = site
+        .workspace
+        .packages
+        .values()
+        .filter(|other| {
+            other.visibility != crate::configuration::PackageVisibility::Hidden
+                && other.ecosystem == package.ecosystem
+        })
+        .count()
+        == 1;
+    if unique_ecosystem {
+        match package.ecosystem.as_str() {
+            "python" => "Python",
+            "r" => "R",
+            "julia" => "Julia",
+            _ => &package.name,
+        }
+    } else {
+        &package.name
+    }
+}
+
+pub(super) fn contextual(html: &mut String, site: &Site<'_>, route: &str) {
+    if let Some(owner) = site.pages[route].owner.as_deref() {
+        package_pages(html, site, route, owner);
+    } else {
+        document_groups(html, site, route, None, "Guide", "");
+        let concepts = site
+            .pages
+            .iter()
+            .filter(|(_, page)| {
+                page.visible
+                    && page
+                        .concept
+                        .is_some_and(|concept| concept.documentation.is_some())
+            })
+            .map(|(destination, page)| (destination.clone(), page.title.clone()))
+            .collect::<Vec<_>>();
+        group(html, route, "Shared concepts", &concepts);
+    }
+}
+
+fn document_groups(
+    html: &mut String,
+    site: &Site<'_>,
+    route: &str,
+    owner: Option<&str>,
+    label: &str,
+    base: &str,
+) {
+    let overview = format!("{base}index.html");
+    let mut root = vec![(overview.clone(), "Overview".to_owned())];
     let mut groups: BTreeMap<&str, Vec<(String, String)>> = BTreeMap::new();
     for (destination, page) in &site.pages {
-        if destination == "index.html"
+        if destination == &overview
             || !page.visible
-            || page.owner.is_some()
+            || page.owner.as_deref() != owner
+            || page.item.is_some()
             || page.document.is_none()
             || page.concept.is_some()
         {
             continue;
         }
-        if let Some((directory, _)) = destination.split_once('/') {
+        let Some(path) = destination.strip_prefix(base) else {
+            continue;
+        };
+        if let Some((directory, _)) = path.split_once('/') {
             groups
                 .entry(directory)
                 .or_default()
@@ -29,14 +133,21 @@ pub(super) fn project_pages(html: &mut String, site: &Site<'_>, route: &str) {
             root.push((destination.clone(), page.title.clone()));
         }
     }
-    group(html, route, "Documentation", &root);
+    group(html, route, label, &root);
     for (directory, mut pages) in groups {
-        let overview = format!("{directory}/index.html");
+        let overview = format!("{base}{directory}/index.html");
         let label = site
             .pages
             .get(&overview)
             .map(|page| page.title.clone())
-            .unwrap_or_else(|| directory.replace(['-', '_'], " "));
+            .unwrap_or_else(|| {
+                let name = directory.replace(['-', '_'], " ");
+                let mut chars = name.chars();
+                chars
+                    .next()
+                    .map(|first| first.to_uppercase().collect::<String>() + chars.as_str())
+                    .unwrap_or_default()
+            });
         pages.sort_by_key(|(path, _)| (path != &overview, path.clone()));
         for (path, title) in &mut pages {
             if path == &overview {
@@ -64,77 +175,35 @@ pub(super) fn group(html: &mut String, route: &str, label: &str, links: &[(Strin
     html.push_str("</ul></section>");
 }
 
-pub(super) fn packages(html: &mut String, site: &Site<'_>, route: &str) {
-    let packages: Vec<_> = site
-        .workspace
-        .packages
-        .iter()
-        .filter(|(_, package)| {
-            package.visibility != crate::configuration::PackageVisibility::Hidden
-        })
-        .collect();
-    if packages.is_empty() {
+fn package_pages(html: &mut String, site: &Site<'_>, route: &str, id: &str) {
+    let package = &site.workspace.packages[id];
+    if package.visibility == crate::configuration::PackageVisibility::Hidden {
         return;
     }
-    html.push_str("<section class=\"nav-group\" role=\"group\" aria-label=\"Reference\"><h2>Reference</h2><ul>");
-    for (id, package) in &packages {
-        let unique_ecosystem = packages
-            .iter()
-            .filter(|(_, other)| other.ecosystem == package.ecosystem)
-            .count()
-            == 1;
-        let label = if unique_ecosystem {
-            match package.ecosystem.as_str() {
-                "python" => "Python",
-                "julia" => "Julia",
-                "r" => "R",
-                _ => &package.name,
-            }
-        } else {
-            &package.name
-        };
-        let open = if site.pages[route].owner.as_ref() == Some(id) {
-            " open"
-        } else {
-            ""
-        };
-        write!(html, "<li class=\"nav-package\"><details class=\"package-disclosure\"{open}><summary>{}</summary><ul>", escape(label)).unwrap();
-        let overview = format!("packages/{}/index.html", package.slug);
-        link(html, route, &overview, "Overview");
-        let documents: Vec<_> = site
-            .pages
-            .iter()
-            .filter(|(destination, page)| {
-                *destination != &overview
-                    && page.visible
-                    && page.owner.as_ref() == Some(id)
-                    && page.item.is_none()
-                    && page.document.is_some()
-            })
-            .collect();
-        if !documents.is_empty() {
-            html.push_str("<li class=\"nav-label\">Guides</li>");
-            for (destination, page) in documents {
-                link(html, route, destination, &page.title);
-            }
-        }
-        if !package.items.is_empty() {
-            html.push_str("<li class=\"nav-label\">API</li>");
-        }
-        let children: BTreeSet<_> = package
-            .items
-            .values()
-            .flat_map(|item| &item.children)
-            .collect();
-        let mut visited = BTreeSet::new();
-        for item_id in package.items.keys().filter(|item| !children.contains(item)) {
-            html.push_str(&item_tree(site, route, id, package, item_id, &mut visited).0);
-        }
-        // Shared aliases and disconnected items still need one reachable entry.
-        for item_id in package.items.keys() {
-            html.push_str(&item_tree(site, route, id, package, item_id, &mut visited).0);
-        }
-        html.push_str("</ul></details></li>");
+    document_groups(
+        html,
+        site,
+        route,
+        Some(id),
+        package_label(site, package),
+        &format!("packages/{}/", package.slug),
+    );
+    if package.items.is_empty() {
+        return;
+    }
+    html.push_str("<section class=\"nav-group\" role=\"group\" aria-label=\"API reference\"><h2>API reference</h2><ul>");
+    let children: BTreeSet<_> = package
+        .items
+        .values()
+        .flat_map(|item| &item.children)
+        .collect();
+    let mut visited = BTreeSet::new();
+    for item_id in package.items.keys().filter(|item| !children.contains(item)) {
+        html.push_str(&item_tree(site, route, id, package, item_id, &mut visited).0);
+    }
+    // Shared aliases and disconnected items still need one reachable entry.
+    for item_id in package.items.keys() {
+        html.push_str(&item_tree(site, route, id, package, item_id, &mut visited).0);
     }
     html.push_str("</ul></section>");
 }

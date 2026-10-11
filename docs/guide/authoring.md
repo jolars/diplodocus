@@ -6,6 +6,20 @@ configuration](configuration.md). Set `format = "gfm"` for `.md` files or
 prefix; an empty mount places its `index.md` at the site root. The `owner`
 determines whether pages appear in project or package navigation.
 
+## Navigation
+
+The navigation bar links to the shared Guide and each visible package. Diplodocus
+uses language labels such as Python, R, and Julia when there is one visible
+package in that language; otherwise, it uses package names. The sidebar shows
+only the current section's pages, plus its API reference for package sections.
+On mobile, open **Browse documentation** to switch sections or browse their pages.
+
+Pages are grouped by their first URL directory within the section, including
+the collection's mount. A group's `index.md` or `index.qmd` supplies its label
+through its page title; otherwise, Diplodocus uses the directory name. For example,
+mounting R content at `vignettes` creates a Vignettes group. Empty groups are
+omitted. Shared concepts with authored documentation appear in the Guide sidebar.
+
 ## Supported writing surface
 
 GFM pages support headings, paragraphs, emphasis, links, images, lists, quotes,

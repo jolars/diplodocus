@@ -154,3 +154,134 @@ fn all_rendered_local_links_and_images_resolve_beneath_a_hosting_prefix() {
         }
     }
 }
+
+fn global_sections(html: &str) -> &str {
+    html.split("class=\"global-nav desktop-sections\"")
+        .nth(1)
+        .unwrap()
+        .split("</nav>")
+        .next()
+        .unwrap()
+}
+
+#[test]
+fn section_labels_distinguish_packages_and_ignore_hidden_packages() {
+    let root = support::acceptance_workspace();
+    let path = "workspace/variants/visibility.toml";
+    let mut configuration: toml::Value = toml::from_str(&root.read(path)).unwrap();
+    let packages = configuration["package"].as_array_mut().unwrap();
+    packages[0]["name"] = toml::Value::String("Foo <public> & API".into());
+    for package in packages {
+        package["targets"] = toml::Value::Array(Vec::new());
+    }
+    let configuration = toml::to_string(&configuration).unwrap();
+    root.write(path, &configuration);
+    let sources = assemble_workspace(root.path().join(path)).unwrap();
+    let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+    let rendered =
+        diplodocus::rendering::render_site(&diplodocus::site::Site::new(&snapshot).unwrap())
+            .unwrap();
+    let home = std::str::from_utf8(&rendered.files()["index.html"].bytes).unwrap();
+    let sections = global_sections(home);
+    assert!(sections.contains("Foo &lt;public&gt; &amp; API"));
+    assert!(sections.contains("Foo internal interfaces"));
+    assert!(!sections.contains("Foo hidden native interface"));
+    assert!(!sections.contains(">Python</a>"));
+    let package =
+        std::str::from_utf8(&rendered.files()["packages/python/index.html"].bytes).unwrap();
+    assert!(
+        global_sections(package).contains("aria-current=\"true\">Foo &lt;public&gt; &amp; API")
+    );
+    assert!(!global_sections(package).contains("aria-current=\"true\">Guide"));
+
+    root.write(
+        path,
+        configuration.replace("visibility = \"internal\"", "visibility = \"hidden\""),
+    );
+    let sources = assemble_workspace(root.path().join(path)).unwrap();
+    let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+    let rendered =
+        diplodocus::rendering::render_site(&diplodocus::site::Site::new(&snapshot).unwrap())
+            .unwrap();
+    let home = std::str::from_utf8(&rendered.files()["index.html"].bytes).unwrap();
+    let sections = global_sections(home);
+    assert!(sections.contains(">Python</a>"));
+    assert!(!sections.contains("Foo internal interfaces"));
+}
+
+#[test]
+fn package_sidebar_groups_authored_pages_and_omits_empty_api_sections() {
+    let root = support::TestWorkspace::new();
+    root.write(
+        "diplodocus.toml",
+        r#"
+[project]
+name = "Navigation"
+[[repository]]
+id = "docs"
+path = "."
+[[package]]
+id = "rstats"
+name = "Stats for R"
+slug = "r"
+ecosystem = "r"
+repository = "docs"
+path = "."
+metadata-path = "DESCRIPTION"
+targets = []
+[[content]]
+id = "shared"
+owner = "project"
+repository = "docs"
+path = "docs"
+mount = ""
+format = "gfm"
+[[content]]
+id = "vignettes"
+owner = "rstats"
+repository = "docs"
+path = "r-docs"
+mount = "vignettes"
+format = "gfm"
+"#,
+    );
+    root.write(
+        "DESCRIPTION",
+        support::load_fixture("acceptance/r/DESCRIPTION"),
+    );
+    root.write("docs/index.md", "# Shared introduction\n");
+    root.write("docs/concepts/index.md", "# Shared concepts\n");
+    root.write("r-docs/index.md", "# R workflows\n");
+    root.write("r-docs/evaluating.md", "# Evaluating a model\n");
+    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+    let rendered =
+        diplodocus::rendering::render_site(&diplodocus::site::Site::new(&snapshot).unwrap())
+            .unwrap();
+    let page = std::str::from_utf8(&rendered.files()["packages/r/vignettes/evaluating.html"].bytes)
+        .unwrap();
+    assert!(
+        global_sections(page).contains("href=\"../../../index%2Ehtml\""),
+        "{}",
+        global_sections(page)
+    );
+    assert!(global_sections(page).contains("href=\"../index%2Ehtml\" aria-current=\"true\">R"));
+    assert!(page.contains("aria-label=\"R\""));
+    assert!(page.contains("aria-label=\"R workflows\""));
+    assert!(page.contains("href=\"evaluating%2Ehtml\" aria-current=\"page\">Evaluating a model"));
+    assert!(!page.contains("aria-label=\"API reference\""));
+    assert!(!page.contains("aria-label=\"Shared concepts\""));
+    let home = std::str::from_utf8(&rendered.files()["index.html"].bytes).unwrap();
+    assert!(home.contains("aria-label=\"Shared concepts\""));
+    assert!(!home.contains("aria-label=\"R workflows\""));
+
+    root.remove("r-docs/index.md");
+    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+    let rendered =
+        diplodocus::rendering::render_site(&diplodocus::site::Site::new(&snapshot).unwrap())
+            .unwrap();
+    let page = std::str::from_utf8(&rendered.files()["packages/r/vignettes/evaluating.html"].bytes)
+        .unwrap();
+    assert!(page.contains("aria-label=\"Vignettes\""));
+}

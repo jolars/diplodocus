@@ -112,10 +112,13 @@ fn monorepo_example_builds_without_runtimes_and_generates_without_sources() {
     }
     assert!(index.contains("aria-label=\"Getting started\""));
     assert!(index.contains("aria-label=\"Guides\""));
-    assert!(index.contains("aria-label=\"Reference\""));
+    assert!(index.contains("aria-label=\"Sections\""));
+    assert!(!index.contains("aria-label=\"API reference\""));
     let python_guide =
         fs::read_to_string(site.join("packages/python/guides/evaluating-models.html")).unwrap();
     assert!(python_guide.contains("Evaluating models in Python"));
+    assert!(python_guide.contains("aria-label=\"API reference\""));
+    assert!(!python_guide.contains("aria-label=\"Getting started\""));
     for asset in snapshot.assets().values() {
         assert!(support::files_under(&site).iter().any(|path| {
             path.extension().is_some_and(|extension| extension == "svg")

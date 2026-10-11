@@ -17,7 +17,9 @@ The packages are deliberately small, working examples for Diplodocus.
 
 ## Choose a language
 
-Browse the **Reference** branches in the sidebar or open a function directly:
+Choose **Python**, **R**, or **Julia** in the navigation bar (or the
+**Browse documentation** menu on mobile), then explore its API reference.
+You can also open a function directly:
 
 - **Python:** [`pystats::tinystats.mean_squared_error`]
 - **R:** [`rstats::mean_squared_error`]

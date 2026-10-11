@@ -2,7 +2,7 @@
   "document": {
     "span": {
       "start": 0,
-      "end": 1979
+      "end": 2794
     },
     "frontmatter": null,
     "blocks": [
@@ -50,16 +50,9 @@
           },
           {
             "type": "text",
-            "value": " collection in",
+            "value": " collection in ",
             "span": {
               "start": 66,
-              "end": 80
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 80,
               "end": 81
             }
           },
@@ -68,9 +61,24 @@
             "inlines": [
               {
                 "type": "text",
-                "value": "workspace configuration",
+                "value": "workspace",
                 "span": {
                   "start": 82,
+                  "end": 91
+                }
+              },
+              {
+                "type": "soft-break",
+                "span": {
+                  "start": 91,
+                  "end": 92
+                }
+              },
+              {
+                "type": "text",
+                "value": "configuration",
+                "span": {
+                  "start": 92,
                   "end": 105
                 }
               }
@@ -120,17 +128,17 @@
             }
           },
           {
-            "type": "soft-break",
+            "type": "text",
+            "value": " files or",
             "span": {
               "start": 156,
-              "end": 157
+              "end": 165
             }
           },
           {
-            "type": "text",
-            "value": "files or ",
+            "type": "soft-break",
             "span": {
-              "start": 157,
+              "start": 165,
               "end": 166
             }
           },
@@ -176,24 +184,24 @@
           },
           {
             "type": "text",
-            "value": " determines",
+            "value": " determines its URL",
             "span": {
               "start": 223,
-              "end": 234
+              "end": 242
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 234,
-              "end": 235
+              "start": 242,
+              "end": 243
             }
           },
           {
             "type": "text",
-            "value": "its URL prefix; an empty mount places its ",
+            "value": "prefix; an empty mount places its ",
             "span": {
-              "start": 235,
+              "start": 243,
               "end": 277
             }
           },
@@ -207,16 +215,9 @@
           },
           {
             "type": "text",
-            "value": " at the site root. The",
+            "value": " at the site root. The ",
             "span": {
               "start": 287,
-              "end": 309
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 309,
               "end": 310
             }
           },
@@ -229,10 +230,17 @@
             }
           },
           {
-            "type": "text",
-            "value": " determines whether pages appear in project or package navigation.",
+            "type": "soft-break",
             "span": {
               "start": 317,
+              "end": 318
+            }
+          },
+          {
+            "type": "text",
+            "value": "determines whether pages appear in project or package navigation.",
+            "span": {
+              "start": 318,
               "end": 383
             }
           },
@@ -260,16 +268,16 @@
         "inlines": [
           {
             "type": "text",
-            "value": "Supported writing surface",
+            "value": "Navigation",
             "span": {
               "start": 388,
-              "end": 413
+              "end": 398
             }
           }
         ],
         "span": {
           "start": 385,
-          "end": 414
+          "end": 399
         }
       },
       {
@@ -277,297 +285,561 @@
         "inlines": [
           {
             "type": "text",
-            "value": "GFM pages support headings, paragraphs, emphasis, links, images, lists,",
+            "value": "The navigation bar links to the shared Guide and each visible package. Diplodocus",
             "span": {
-              "start": 415,
-              "end": 486
+              "start": 400,
+              "end": 481
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 486,
-              "end": 487
+              "start": 481,
+              "end": 482
             }
           },
           {
             "type": "text",
-            "value": "quotes, tables, thematic breaks, and display-only code fences. QMD pages add",
+            "value": "uses language labels such as Python, R, and Julia when there is one visible",
             "span": {
-              "start": 487,
-              "end": 563
+              "start": 482,
+              "end": 557
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 563,
-              "end": 564
+              "start": 557,
+              "end": 558
             }
           },
           {
             "type": "text",
-            "value": "YAML front matter, callouts, and braced code cells. The supported document",
+            "value": "package in that language; otherwise, it uses package names. The sidebar shows",
             "span": {
-              "start": 564,
-              "end": 638
+              "start": 558,
+              "end": 635
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 638,
-              "end": 639
+              "start": 635,
+              "end": 636
             }
           },
           {
             "type": "text",
-            "value": "metadata includes ",
+            "value": "only the current section's pages, plus its API reference for package sections.",
             "span": {
-              "start": 639,
-              "end": 657
+              "start": 636,
+              "end": 714
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 714,
+              "end": 715
+            }
+          },
+          {
+            "type": "text",
+            "value": "On mobile, open ",
+            "span": {
+              "start": 715,
+              "end": 731
+            }
+          },
+          {
+            "type": "strong",
+            "inlines": [
+              {
+                "type": "text",
+                "value": "Browse documentation",
+                "span": {
+                  "start": 733,
+                  "end": 753
+                }
+              }
+            ],
+            "span": {
+              "start": 731,
+              "end": 755
+            }
+          },
+          {
+            "type": "text",
+            "value": " to switch sections or browse their pages.",
+            "span": {
+              "start": 755,
+              "end": 797
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 797,
+              "end": 798
+            }
+          }
+        ],
+        "span": {
+          "start": 400,
+          "end": 798
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Pages are grouped by their first URL directory within the section, including",
+            "span": {
+              "start": 799,
+              "end": 875
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 875,
+              "end": 876
+            }
+          },
+          {
+            "type": "text",
+            "value": "the collection's mount. A group's ",
+            "span": {
+              "start": 876,
+              "end": 910
+            }
+          },
+          {
+            "type": "code",
+            "value": "index.md",
+            "span": {
+              "start": 910,
+              "end": 920
+            }
+          },
+          {
+            "type": "text",
+            "value": " or ",
+            "span": {
+              "start": 920,
+              "end": 924
+            }
+          },
+          {
+            "type": "code",
+            "value": "index.qmd",
+            "span": {
+              "start": 924,
+              "end": 935
+            }
+          },
+          {
+            "type": "text",
+            "value": " supplies its label",
+            "span": {
+              "start": 935,
+              "end": 954
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 954,
+              "end": 955
+            }
+          },
+          {
+            "type": "text",
+            "value": "through its page title; otherwise, Diplodocus uses the directory name. For example,",
+            "span": {
+              "start": 955,
+              "end": 1038
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1038,
+              "end": 1039
+            }
+          },
+          {
+            "type": "text",
+            "value": "mounting R content at ",
+            "span": {
+              "start": 1039,
+              "end": 1061
+            }
+          },
+          {
+            "type": "code",
+            "value": "vignettes",
+            "span": {
+              "start": 1061,
+              "end": 1072
+            }
+          },
+          {
+            "type": "text",
+            "value": " creates a Vignettes group. Empty groups are",
+            "span": {
+              "start": 1072,
+              "end": 1116
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1116,
+              "end": 1117
+            }
+          },
+          {
+            "type": "text",
+            "value": "omitted. Shared concepts with authored documentation appear in the Guide sidebar.",
+            "span": {
+              "start": 1117,
+              "end": 1198
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1198,
+              "end": 1199
+            }
+          }
+        ],
+        "span": {
+          "start": 799,
+          "end": 1199
+        }
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Supported writing surface",
+            "span": {
+              "start": 1203,
+              "end": 1228
+            }
+          }
+        ],
+        "span": {
+          "start": 1200,
+          "end": 1229
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "GFM pages support headings, paragraphs, emphasis, links, images, lists, quotes,",
+            "span": {
+              "start": 1230,
+              "end": 1309
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1309,
+              "end": 1310
+            }
+          },
+          {
+            "type": "text",
+            "value": "tables, thematic breaks, and display-only code fences. QMD pages add YAML front",
+            "span": {
+              "start": 1310,
+              "end": 1389
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1389,
+              "end": 1390
+            }
+          },
+          {
+            "type": "text",
+            "value": "matter, callouts, and braced code cells. The supported document metadata",
+            "span": {
+              "start": 1390,
+              "end": 1462
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1462,
+              "end": 1463
+            }
+          },
+          {
+            "type": "text",
+            "value": "includes ",
+            "span": {
+              "start": 1463,
+              "end": 1472
             }
           },
           {
             "type": "code",
             "value": "title",
             "span": {
-              "start": 657,
-              "end": 664
+              "start": 1472,
+              "end": 1479
             }
           },
           {
             "type": "text",
             "value": ", ",
             "span": {
-              "start": 664,
-              "end": 666
+              "start": 1479,
+              "end": 1481
             }
           },
           {
             "type": "code",
             "value": "audience",
             "span": {
-              "start": 666,
-              "end": 676
+              "start": 1481,
+              "end": 1491
             }
           },
           {
             "type": "text",
-            "value": ", and execution settings. Supported cell",
+            "value": ", and execution settings. Supported cell options",
             "span": {
-              "start": 676,
-              "end": 716
+              "start": 1491,
+              "end": 1539
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 716,
-              "end": 717
+              "start": 1539,
+              "end": 1540
             }
           },
           {
             "type": "text",
-            "value": "options include ",
+            "value": "include ",
             "span": {
-              "start": 717,
-              "end": 733
+              "start": 1540,
+              "end": 1548
             }
           },
           {
             "type": "code",
             "value": "eval",
             "span": {
-              "start": 733,
-              "end": 739
+              "start": 1548,
+              "end": 1554
             }
           },
           {
             "type": "text",
             "value": ", ",
             "span": {
-              "start": 739,
-              "end": 741
+              "start": 1554,
+              "end": 1556
             }
           },
           {
             "type": "code",
             "value": "echo",
             "span": {
-              "start": 741,
-              "end": 747
+              "start": 1556,
+              "end": 1562
             }
           },
           {
             "type": "text",
             "value": ", ",
             "span": {
-              "start": 747,
-              "end": 749
+              "start": 1562,
+              "end": 1564
             }
           },
           {
             "type": "code",
             "value": "include",
             "span": {
-              "start": 749,
-              "end": 758
+              "start": 1564,
+              "end": 1573
             }
           },
           {
             "type": "text",
             "value": ", ",
             "span": {
-              "start": 758,
-              "end": 760
+              "start": 1573,
+              "end": 1575
             }
           },
           {
             "type": "code",
             "value": "output",
             "span": {
-              "start": 760,
-              "end": 768
+              "start": 1575,
+              "end": 1583
             }
           },
           {
             "type": "text",
             "value": ", ",
             "span": {
-              "start": 768,
-              "end": 770
+              "start": 1583,
+              "end": 1585
             }
           },
           {
             "type": "code",
             "value": "error",
             "span": {
-              "start": 770,
-              "end": 777
+              "start": 1585,
+              "end": 1592
             }
           },
           {
             "type": "text",
             "value": ", ",
             "span": {
-              "start": 777,
-              "end": 779
+              "start": 1592,
+              "end": 1594
             }
           },
           {
             "type": "code",
             "value": "label",
             "span": {
-              "start": 779,
-              "end": 786
+              "start": 1594,
+              "end": 1601
             }
           },
           {
             "type": "text",
             "value": ", ",
             "span": {
-              "start": 786,
-              "end": 788
+              "start": 1601,
+              "end": 1603
             }
           },
           {
             "type": "code",
             "value": "fig-alt",
             "span": {
-              "start": 788,
-              "end": 797
+              "start": 1603,
+              "end": 1612
             }
           },
           {
             "type": "text",
             "value": ",",
             "span": {
-              "start": 797,
-              "end": 798
+              "start": 1612,
+              "end": 1613
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 798,
-              "end": 799
+              "start": 1613,
+              "end": 1614
             }
           },
           {
             "type": "code",
             "value": "fig-cap",
             "span": {
-              "start": 799,
-              "end": 808
+              "start": 1614,
+              "end": 1623
             }
           },
           {
             "type": "text",
             "value": ", and ",
             "span": {
-              "start": 808,
-              "end": 814
+              "start": 1623,
+              "end": 1629
             }
           },
           {
             "type": "code",
             "value": "fig-subcap",
             "span": {
-              "start": 814,
-              "end": 826
+              "start": 1629,
+              "end": 1641
             }
           },
           {
             "type": "text",
-            "value": ". Cell options may appear in a fence's info string",
+            "value": ". Cell options may appear in a fence's info string or",
             "span": {
-              "start": 826,
-              "end": 876
+              "start": 1641,
+              "end": 1694
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 876,
-              "end": 877
+              "start": 1694,
+              "end": 1695
             }
           },
           {
             "type": "text",
-            "value": "or in ",
+            "value": "in ",
             "span": {
-              "start": 877,
-              "end": 883
+              "start": 1695,
+              "end": 1698
             }
           },
           {
             "type": "code",
             "value": "#|",
             "span": {
-              "start": 883,
-              "end": 887
+              "start": 1698,
+              "end": 1702
             }
           },
           {
             "type": "text",
             "value": " lines; the latter take precedence.",
             "span": {
-              "start": 887,
-              "end": 922
+              "start": 1702,
+              "end": 1737
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 922,
-              "end": 923
+              "start": 1737,
+              "end": 1738
             }
           }
         ],
         "span": {
-          "start": 415,
-          "end": 923
+          "start": 1230,
+          "end": 1738
         }
       },
       {
@@ -577,97 +849,97 @@
             "type": "text",
             "value": "Diplodocus implements these selected profiles, not the full Quarto or Pandoc",
             "span": {
-              "start": 924,
-              "end": 1000
+              "start": 1739,
+              "end": 1815
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1000,
-              "end": 1001
+              "start": 1815,
+              "end": 1816
             }
           },
           {
             "type": "text",
             "value": "languages. Unsupported constructs remain visible as placeholders and produce",
             "span": {
-              "start": 1001,
-              "end": 1077
+              "start": 1816,
+              "end": 1892
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1077,
-              "end": 1078
+              "start": 1892,
+              "end": 1893
             }
           },
           {
             "type": "text",
             "value": "diagnostics. Raw authored HTML, TeX math, footnotes, and arbitrary directives",
             "span": {
-              "start": 1078,
-              "end": 1155
+              "start": 1893,
+              "end": 1970
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1155,
-              "end": 1156
+              "start": 1970,
+              "end": 1971
             }
           },
           {
             "type": "text",
             "value": "are outside the current supported surface. Run ",
             "span": {
-              "start": 1156,
-              "end": 1203
+              "start": 1971,
+              "end": 2018
             }
           },
           {
             "type": "code",
             "value": "diplodocus check",
             "span": {
-              "start": 1203,
-              "end": 1221
+              "start": 2018,
+              "end": 2036
             }
           },
           {
             "type": "text",
             "value": " after editing",
             "span": {
-              "start": 1221,
-              "end": 1235
+              "start": 2036,
+              "end": 2050
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1235,
-              "end": 1236
+              "start": 2050,
+              "end": 2051
             }
           },
           {
             "type": "text",
             "value": "a page to see parser and link diagnostics before any cell executes.",
             "span": {
-              "start": 1236,
-              "end": 1303
+              "start": 2051,
+              "end": 2118
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1303,
-              "end": 1304
+              "start": 2118,
+              "end": 2119
             }
           }
         ],
         "span": {
-          "start": 924,
-          "end": 1304
+          "start": 1739,
+          "end": 2119
         }
       },
       {
@@ -683,14 +955,14 @@
             "type": "text",
             "value": "Links and assets",
             "span": {
-              "start": 1308,
-              "end": 1324
+              "start": 2123,
+              "end": 2139
             }
           }
         ],
         "span": {
-          "start": 1305,
-          "end": 1325
+          "start": 2120,
+          "end": 2140
         }
       },
       {
@@ -700,112 +972,112 @@
             "type": "text",
             "value": "Use ordinary relative links between declared pages, including links across",
             "span": {
-              "start": 1326,
-              "end": 1400
+              "start": 2141,
+              "end": 2215
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1400,
-              "end": 1401
+              "start": 2215,
+              "end": 2216
             }
           },
           {
             "type": "text",
             "value": "collections. For example, ",
             "span": {
-              "start": 1401,
-              "end": 1427
+              "start": 2216,
+              "end": 2242
             }
           },
           {
             "type": "code",
             "value": "[Commands](cli.md)",
             "span": {
-              "start": 1427,
-              "end": 1447
+              "start": 2242,
+              "end": 2262
             }
           },
           {
             "type": "text",
             "value": " targets a page in this guide.",
             "span": {
-              "start": 1447,
-              "end": 1477
+              "start": 2262,
+              "end": 2292
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1477,
-              "end": 1478
+              "start": 2292,
+              "end": 2293
             }
           },
           {
             "type": "text",
-            "value": "Local fragment links must name an existing heading anchor. Keep images and",
+            "value": "Local fragment links must name an existing heading anchor. Keep images and other",
             "span": {
-              "start": 1478,
-              "end": 1552
+              "start": 2293,
+              "end": 2373
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1552,
-              "end": 1553
+              "start": 2373,
+              "end": 2374
             }
           },
           {
             "type": "text",
-            "value": "other local assets inside a declared source boundary and link to them with",
+            "value": "local assets inside a declared source boundary and link to them with relative",
             "span": {
-              "start": 1553,
-              "end": 1627
+              "start": 2374,
+              "end": 2451
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1627,
-              "end": 1628
+              "start": 2451,
+              "end": 2452
             }
           },
           {
             "type": "text",
-            "value": "relative paths. Diplodocus validates local destinations and copies accepted",
+            "value": "paths. Diplodocus validates local destinations and copies accepted assets into",
             "span": {
-              "start": 1628,
-              "end": 1703
+              "start": 2452,
+              "end": 2530
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1703,
-              "end": 1704
+              "start": 2530,
+              "end": 2531
             }
           },
           {
             "type": "text",
-            "value": "assets into the generated site. External HTTP links remain external.",
+            "value": "the generated site. External HTTP links remain external.",
             "span": {
-              "start": 1704,
-              "end": 1772
+              "start": 2531,
+              "end": 2587
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1772,
-              "end": 1773
+              "start": 2587,
+              "end": 2588
             }
           }
         ],
         "span": {
-          "start": 1326,
-          "end": 1773
+          "start": 2141,
+          "end": 2588
         }
       },
       {
@@ -813,32 +1085,25 @@
         "inlines": [
           {
             "type": "text",
-            "value": "Code fences in GFM and API documentation are always display-only. QMD cells",
+            "value": "Code fences in GFM and API documentation are always display-only. QMD cells run",
             "span": {
-              "start": 1774,
-              "end": 1849
+              "start": 2589,
+              "end": 2668
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1849,
-              "end": 1850
+              "start": 2668,
+              "end": 2669
             }
           },
           {
             "type": "text",
-            "value": "run only when their collection explicitly authorizes execution; see",
+            "value": "only when their collection explicitly authorizes execution; see ",
             "span": {
-              "start": 1850,
-              "end": 1917
-            }
-          },
-          {
-            "type": "soft-break",
-            "span": {
-              "start": 1917,
-              "end": 1918
+              "start": 2669,
+              "end": 2733
             }
           },
           {
@@ -846,10 +1111,25 @@
             "inlines": [
               {
                 "type": "text",
-                "value": "execution and security",
+                "value": "execution and",
                 "span": {
-                  "start": 1919,
-                  "end": 1941
+                  "start": 2734,
+                  "end": 2747
+                }
+              },
+              {
+                "type": "soft-break",
+                "span": {
+                  "start": 2747,
+                  "end": 2748
+                }
+              },
+              {
+                "type": "text",
+                "value": "security",
+                "span": {
+                  "start": 2748,
+                  "end": 2756
                 }
               }
             ],
@@ -861,29 +1141,29 @@
               "key_values": []
             },
             "span": {
-              "start": 1918,
-              "end": 1956
+              "start": 2733,
+              "end": 2771
             }
           },
           {
             "type": "text",
             "value": " before enabling them.",
             "span": {
-              "start": 1956,
-              "end": 1978
+              "start": 2771,
+              "end": 2793
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1978,
-              "end": 1979
+              "start": 2793,
+              "end": 2794
             }
           }
         ],
         "span": {
-          "start": 1774,
-          "end": 1979
+          "start": 2589,
+          "end": 2794
         }
       }
     ]
