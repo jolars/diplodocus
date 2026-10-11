@@ -430,8 +430,16 @@ impl Renderer<'_, '_> {
                     escape(target)
                 )
                 .unwrap(),
-                Inline::Unsupported { raw, .. } => {
-                    write!(html, "<span class=\"unsupported\">{}</span>", escape(raw)).unwrap()
+                Inline::Unsupported {
+                    source_kind, raw, ..
+                } => {
+                    let label = unsupported_rd_label(source_kind);
+                    write!(
+                        html,
+                        "<span class=\"unsupported\">{}</span>",
+                        escape(label.as_deref().unwrap_or(raw))
+                    )
+                    .unwrap()
                 }
             }
         }
@@ -518,9 +526,16 @@ impl Renderer<'_, '_> {
                     self.blocks(blocks)?
                 )
                 .unwrap(),
-                Block::Unsupported { raw, .. } => {
-                    html.push_str("<div class=\"unsupported\"><p>Unsupported content</p>");
-                    html.push_str(&render_preformatted_text(raw));
+                Block::Unsupported {
+                    source_kind, raw, ..
+                } => {
+                    html.push_str("<div class=\"unsupported\">");
+                    if let Some(label) = unsupported_rd_label(source_kind) {
+                        write!(html, "<p>{}</p>", escape(&label)).unwrap();
+                    } else {
+                        html.push_str("<p>Unsupported content</p>");
+                        html.push_str(&render_preformatted_text(raw));
+                    }
                     html.push_str("</div>");
                 }
             }
@@ -658,6 +673,13 @@ impl Renderer<'_, '_> {
         Ok(html)
     }
 }
+fn unsupported_rd_label(source_kind: &str) -> Option<String> {
+    // Older snapshots may store the entire Rd file in each unsupported node.
+    source_kind
+        .strip_prefix("rd-")
+        .map(|kind| format!("[Unsupported Rd: {kind}]"))
+}
+
 fn plain(nodes: &[Inline]) -> String {
     nodes
         .iter()
@@ -669,7 +691,9 @@ fn plain(nodes: &[Inline]) -> String {
             | Inline::Strikeout { inlines, .. }
             | Inline::Link { inlines, .. } => plain(inlines),
             Inline::Image { alt, .. } => plain(alt),
-            Inline::Unsupported { raw, .. } => raw.clone(),
+            Inline::Unsupported {
+                source_kind, raw, ..
+            } => unsupported_rd_label(source_kind).unwrap_or_else(|| raw.clone()),
             _ => " ".into(),
         })
         .collect()

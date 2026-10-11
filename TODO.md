@@ -112,6 +112,42 @@ site byte for byte with the original site.
   tools installed. Verify the static example, the executing acceptance site,
   and independent generation from an exported snapshot.
 
+## R documentation gaps
+
+Comparing eulerr with its [pkgdown site](https://jolars.github.io/eulerr/) exposed
+these compatibility, content, and presentation gaps.
+
+- [ ] Resolve standard S3 generics from default R packages and package-wide
+  imports without loading package code. Handle documented internal helpers
+  without requiring public declarations, and keep internal grid hooks out of
+  public navigation and search.
+- [ ] Support dataset topics, including bare object usage and the `docType`,
+  `format`, and `source` sections. Use eulerr's `fruits`, `organisms`, `pain`,
+  and `plants` datasets as acceptance cases.
+- [ ] Support Rd links with options, including local targets, package-qualified
+  targets, and display labels; equations, tables, custom sections, named
+  return-value entries, conditional content, and DOI links.
+- [ ] Present shared help topics with their complete S3 usage and argument
+  listings, methods by class, and method navigation. Resolve help aliases shared
+  across multiple declarations, including eulerr's diagram composition topic.
+- [ ] Add explicitly authorized Rd example execution with results and figures,
+  honoring example controls such as `dontrun` and `donttest`. Keep examples
+  display-only unless execution is authorized.
+- [ ] Support R Markdown vignettes with knitr chunks, inline R, math, citations,
+  and generated figures. Use eulerr's seven vignettes to check the complete
+  article workflow.
+- [ ] Build package landing pages from README and DESCRIPTION content, retain
+  package metadata through assembly, and expose NEWS, citation information,
+  authors, licenses, and community links.
+- [ ] Improve reference presentation with descriptive titles and URLs, source
+  links, introductory prose before usage, topic summaries, syntax highlighting,
+  and copy buttons. Remove duplicate signature blocks.
+- [ ] Rank exact API names ahead of suffix matches in search, index readable
+  documentation and aliases, and avoid duplicate results for shared topics.
+
+The eulerr source also has a stray `#'` in `man/eulerr_options.Rd`. Correct it in
+eulerr before using that topic as an acceptance case.
+
 ## Scope held for later
 
 Incremental extraction and rendering; older snapshot migrations; historical

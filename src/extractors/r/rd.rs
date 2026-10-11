@@ -327,7 +327,8 @@ impl Context<'_> {
         self.unsupported(kind, path);
         Block::Unsupported {
             source_kind: format!("rd-{kind}"),
-            raw: self.raw.into(),
+            // Exact node ranges are unavailable; the enclosing document retains the source.
+            raw: String::new(),
             span: self.span(),
         }
     }
@@ -558,7 +559,8 @@ impl Context<'_> {
         self.unsupported(kind, path);
         Inline::Unsupported {
             source_kind: format!("rd-{kind}"),
-            raw: self.raw.into(),
+            // Exact node ranges are unavailable; the enclosing document retains the source.
+            raw: String::new(),
             span: self.span(),
         }
     }

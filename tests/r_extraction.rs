@@ -238,6 +238,78 @@ fn dynamic_rd_preserves_surrounding_content_and_one_placeholder() {
 }
 
 #[test]
+fn unsupported_rd_nodes_retain_source_once_in_the_enclosing_document() {
+    let rd = r"\name{f}\alias{f}\title{Example}\usage{f(x)}
+\description{Before \link[=f]{f()} and \eqn{x^2}, then \link[=f]{f()} after.}
+\examples{\Sexpr{stop('must not execute')}}";
+    let result = extract(&small("f <- function(x) x", "export(f)", rd));
+    assert!(
+        !result
+            .diagnostics
+            .iter()
+            .any(|d| d.severity == Severity::Error)
+    );
+    assert_eq!(
+        codes(&result)
+            .iter()
+            .filter(|code| **code == "unsupported-rd")
+            .count(),
+        4
+    );
+    let doc = item(&result, "f").documentation.as_ref().unwrap();
+    assert_eq!(doc.raw_source.as_deref(), Some(rd));
+    assert!(
+        result
+            .inputs
+            .values()
+            .any(|input| { input.kind == "rd" && input.text.as_deref() == Some(rd) })
+    );
+    let inline_kinds: Vec<_> = doc
+        .document
+        .blocks
+        .iter()
+        .filter_map(|block| match block {
+            Block::Paragraph { inlines, .. } => Some(inlines),
+            _ => None,
+        })
+        .flatten()
+        .filter_map(|inline| match inline {
+            diplodocus::ir::Inline::Unsupported {
+                source_kind,
+                raw,
+                span,
+            } => {
+                assert!(raw.is_empty());
+                assert_eq!(span.start, 0);
+                assert_eq!(span.end, rd.len());
+                Some(source_kind.as_str())
+            }
+            _ => None,
+        })
+        .collect();
+    assert_eq!(inline_kinds, ["rd-\\link", "rd-\\eqn", "rd-\\link"]);
+    let block_kinds: Vec<_> = doc
+        .document
+        .blocks
+        .iter()
+        .filter_map(|block| match block {
+            Block::Unsupported {
+                source_kind, raw, ..
+            } => {
+                assert!(raw.is_empty());
+                Some(source_kind.as_str())
+            }
+            _ => None,
+        })
+        .collect();
+    assert_eq!(block_kinds, ["rd-examples"]);
+    let document = serde_json::to_string(&doc.document).unwrap();
+    assert!(document.contains("Before "));
+    assert!(document.contains(" after."));
+    assert!(!document.contains("must not execute"));
+}
+
+#[test]
 fn metadata_rejects_recovery_duplicates_and_partial_constraints() {
     for metadata in [
         "Package foo\nVersion: 1.0\nTitle: Test\n",

@@ -571,3 +571,65 @@ fn round_trips_page_links_with_empty_fragments() {
         snapshot.documents()
     );
 }
+
+#[test]
+fn legacy_rd_fallback_payloads_never_render_as_document_copies() {
+    fn restore_legacy_payloads(value: &mut Value, raw: &str) -> usize {
+        match value {
+            Value::Object(object) => {
+                let unsupported = object
+                    .get("source_kind")
+                    .and_then(Value::as_str)
+                    .is_some_and(|kind| kind.starts_with("rd-"));
+                if unsupported {
+                    object.insert("raw".into(), raw.into());
+                    // Snapshot strings remain untrusted even when only the label is rendered.
+                    if object["source_kind"] == "rd-\\eqn" {
+                        object.insert("source_kind".into(), "rd-\\eqn<script>&".into());
+                    }
+                }
+                usize::from(unsupported)
+                    + object
+                        .values_mut()
+                        .map(|child| restore_legacy_payloads(child, raw))
+                        .sum::<usize>()
+            }
+            Value::Array(values) => values
+                .iter_mut()
+                .map(|child| restore_legacy_payloads(child, raw))
+                .sum(),
+            _ => 0,
+        }
+    }
+
+    let root = support::acceptance_workspace();
+    let rd = r"\name{experimental_summary}\alias{experimental_summary}\title{Example}
+\usage{experimental_summary(x)}
+\description{Before \link[=experimental_summary]{summary} and \eqn{x^2} after.}
+\examples{\Sexpr{stop('must not execute')}}";
+    root.write("r/man/experimental_summary.Rd", rd);
+    let sources = assemble_workspace(root.path().join("workspace/diplodocus.toml")).unwrap();
+    let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+    let legacy = changed(&snapshot, |export| {
+        assert_eq!(restore_legacy_payloads(export, rd), 3);
+    })
+    .unwrap();
+    drop(root);
+    let site = diplodocus::site::Site::new(&legacy).unwrap();
+    let rendered = diplodocus::rendering::render_site(&site).unwrap();
+    let html = rendered
+        .files()
+        .values()
+        .filter(|file| file.media_type.starts_with("text/html"))
+        .map(|file| std::str::from_utf8(&file.bytes).unwrap())
+        .find(|html| html.contains("<h1><code>experimental_summary</code></h1>"))
+        .unwrap();
+    assert!(html.contains("Before "));
+    assert!(html.contains(" after."));
+    assert!(html.contains("[Unsupported Rd: \\link]"));
+    assert!(html.contains("[Unsupported Rd: \\eqn&lt;script&gt;&amp;]"));
+    assert!(html.contains("[Unsupported Rd: examples]"));
+    assert!(!html.contains("\\name{experimental_summary}"));
+    assert!(!html.contains("must not execute"));
+    assert!(!html.contains("<script>&"));
+}

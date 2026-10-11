@@ -207,11 +207,12 @@ pub enum Block {
         /// Full source range.
         span: SourceSpan,
     },
-    /// Retained syntax outside Diplodocus's supported authored profile.
+    /// Retained syntax outside Diplodocus's supported documentation profiles.
     Unsupported {
-        /// Panache syntax-kind name.
+        /// Source syntax-kind name.
         source_kind: String,
-        /// Original source bytes.
+        /// Original source fragment, or empty when exact node ranges are unavailable.
+        /// The enclosing sourced document retains the complete input.
         raw: String,
         /// Full source range.
         span: SourceSpan,
@@ -477,9 +478,10 @@ pub enum Inline {
     },
     /// Retained inline syntax outside the supported profile.
     Unsupported {
-        /// Panache syntax-kind name.
+        /// Source syntax-kind name.
         source_kind: String,
-        /// Original source bytes.
+        /// Original source fragment, or empty when exact node ranges are unavailable.
+        /// The enclosing sourced document retains the complete input.
         raw: String,
         /// Full source range.
         span: SourceSpan,

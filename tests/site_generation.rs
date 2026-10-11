@@ -5,6 +5,50 @@ use diplodocus::snapshots::Snapshot;
 use diplodocus::validation::resolve_workspace;
 
 #[test]
+fn unsupported_rd_renders_compact_markers_and_authored_source_stays_visible() {
+    let root = support::acceptance_case("unsupported-rd");
+    let rd = root.read("r/man/experimental_summary.Rd");
+    root.write(
+        "r/man/experimental_summary.Rd",
+        rd.replace(
+            "experimental_summary(c(3, 1, 2))",
+            "\\Sexpr{stop('must not execute')}",
+        ),
+    );
+    root.write(
+        "python/docs/fallbacks.qmd",
+        "# Authored fallbacks\n\n<aside>Authored block</aside>\n\nText $x^2$.\n",
+    );
+    let sources = assemble_workspace(root.path().join("workspace/diplodocus.toml")).unwrap();
+    let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+    let artifact = tempfile::tempdir().unwrap();
+    let path = artifact.path().join("snapshot.sqlite");
+    snapshot.publish(&path).unwrap();
+    drop(root);
+    let loaded = Snapshot::load(&path).unwrap();
+    let site = diplodocus::site::Site::new(&loaded).unwrap();
+    let rendered = diplodocus::rendering::render_site(&site).unwrap();
+    let html = rendered
+        .files()
+        .values()
+        .filter(|file| file.media_type.starts_with("text/html"))
+        .map(|file| std::str::from_utf8(&file.bytes).unwrap())
+        .find(|html| html.contains("<h1><code>experimental_summary</code></h1>"))
+        .unwrap();
+    assert!(html.contains("[Unsupported Rd: \\Sexpr]"));
+    assert!(html.contains("[Unsupported Rd: examples]"));
+    assert!(html.contains("Compute three summary statistics"));
+    assert!(!html.contains("\\name{experimental_summary}"));
+    assert!(!html.contains("must not execute"));
+    let authored =
+        std::str::from_utf8(&rendered.files()["packages/python/guide/fallbacks.html"].bytes)
+            .unwrap();
+    assert!(authored.contains("&lt;aside&gt;Authored block&lt;/aside&gt;"));
+    assert!(authored.contains("$x^2$"));
+    assert!(!authored.contains("[Unsupported Rd:"));
+}
+
+#[test]
 fn page_navigation_preserves_authored_ids_and_disambiguates_repeated_headings() {
     let root = support::TestWorkspace::new();
     root.write("diplodocus.toml", "[project]\nname='Navigation'\n[[repository]]\nid='docs'\npath='.'\n[[content]]\nid='guide'\nowner='project'\nrepository='docs'\npath='docs'\nmount=''\nformat='qmd'\n");

@@ -81,8 +81,11 @@ Supported sections become headings, prose, usage blocks, argument entries,
 lists, links, inline formatting, and display code. Value, details, references,
 examples, notes, authors, see-also entries, keywords, and concepts retain their
 content. Unqualified `\link` nodes become semantic references. Unsupported
-markup, including `\Sexpr`, becomes a visible placeholder with retained raw
-input and an `unsupported-rd` warning.
+markup, including `\Sexpr`, becomes a compact visible marker such as
+`[Unsupported Rd: \Sexpr]` and produces an `unsupported-rd` warning. Unsupported
+nodes have empty raw fragments because the parser provides no exact node ranges.
+The enclosing document and extraction inputs retain the complete original Rd
+source; rendering never repeats that source for each unsupported construct.
 
 Each item on a shared topic receives the common prose and its matching usage
 and arguments. Grouped argument labels are filtered to that item's formals.
