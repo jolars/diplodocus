@@ -2,6 +2,12 @@
 
 Status: Accepted. Date: 2026-09-09.
 
+The [prepared-environment decision](0003-prepared-environment.md) supersedes
+this decision's execution opt-in and display-only API-example rules. Parsing,
+validated outputs, and bounded cleanup remain part of the design. The existing
+authority gates below describe the current implementation until the replacement
+contract is implemented.
+
 ## Context
 
 Authored documentation must participate in the same document model, semantic

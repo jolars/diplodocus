@@ -1,5 +1,9 @@
 # Julia extraction contract
 
+This page describes the current source adapter. The [prepared-environment
+decision](../decisions/0003-prepared-environment.md) supersedes its runtime
+prohibition and inert-example contract; those changes are not yet implemented.
+
 The `julia` adapter reads an explicit `.jl` entry file and `Project.toml` with
 Rust libraries. Fatou provides Julia syntax, documentation attachments, string
 decoding, source maps, and Julia Markdown. Diplodocus determines the maintained

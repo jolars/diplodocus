@@ -1,5 +1,10 @@
 # Static R extraction
 
+This page describes the current source adapter. The [prepared-environment
+decision](../decisions/0003-prepared-environment.md) supersedes its
+package-loading prohibition and inert-example contract; those changes are not
+yet implemented.
+
 `extractors::r::extract_target(repository, package, target)` reads a resolved R
 package directory and returns a portable `RExtraction`. It never installs,
 attaches, loads, or sources a package, or evaluates documentation. R must be

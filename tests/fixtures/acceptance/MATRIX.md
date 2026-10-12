@@ -1,9 +1,16 @@
 # Acceptance matrix
 
-This file is the normative oracle for the acceptance corpus. Each row names a
+This file is the oracle for the current acceptance corpus. Each row names a
 fixture construct and its expected behavior at the boundaries exercised by the
 MVP. A dash means that the construct must have no independently observable
 behavior in that column; it does not mean that the behavior is unspecified.
+
+The [prepared-environment
+decision](../../../docs/decisions/0003-prepared-environment.md) supersedes this
+matrix's static-only extraction and opt-in execution requirements. The rows
+below continue to specify the existing implementation during the transition.
+They do not demonstrate conformance to the replacement contract; the [status
+page](../../../TODO.md) tracks the required fixture and gate updates.
 
 The tables use canonical, directory-style URLs. A route ending in `/` is written
 as an `index.html` file beneath that directory. API routes use the extracted

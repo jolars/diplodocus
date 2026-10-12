@@ -1,4 +1,10 @@
-# Static-extractor contract
+# Static-extractor implementation reference
+
+The [prepared-environment decision](../decisions/0003-prepared-environment.md)
+supersedes the static-only extraction and inert-example requirements below.
+This reference describes current adapter behavior, manifests, and parser pins;
+it does not constrain the replacement contract to static extraction. Runtime
+assistance and required example execution are not yet implemented.
 
 ## Outcome
 
@@ -7,10 +13,10 @@ publish a deterministic manifest containing their version, static extraction
 mode, capabilities, parser stack, target, and inputs. Facts emitted by each
 extractor carry source provenance separately from this target-level manifest.
 
-This document fixes the logical extractor contract. The production record shapes
-are described in the [Python](../ir/python-extraction.md),
-[R](../ir/r-extraction.md), and [Julia](../ir/julia-extraction.md) references. Native parser types and diagnostic
-messages are not part of the contract.
+This document records the existing static extractor contract. The production
+record shapes are described in the [Python](../ir/python-extraction.md),
+[R](../ir/r-extraction.md), and [Julia](../ir/julia-extraction.md) references.
+Native parser types and diagnostic messages are not part of the contract.
 
 ## Common contract
 

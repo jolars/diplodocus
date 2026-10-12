@@ -8,6 +8,12 @@ shared navigation, semantic cross-references, and search. The project is under
 active development; the [current status and remaining work](TODO.md) describe
 what still needs attention.
 
+The accepted [prepared-environment
+contract](docs/decisions/0003-prepared-environment.md) will require usable package
+environments and execution of documentation examples, and allow runtime-assisted
+extraction. Implementation is pending; the workflows below describe current
+behavior.
+
 ## Start here
 
 The [Diplodocus guide](https://diplodocus.cc/) is built from this

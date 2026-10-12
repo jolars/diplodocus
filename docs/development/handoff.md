@@ -5,6 +5,12 @@ see a complete build. The [project guide](../guide/index.md) describes the
 user-facing configuration and commands. This page is a map for changing the
 implementation.
 
+The [prepared-environment decision](../decisions/0003-prepared-environment.md)
+changes the intended extraction contract to allow runtime assistance and require
+example execution. That work is pending. The pipeline and test map below
+describe the current implementation; [remaining work](../../TODO.md) tracks the
+transition.
+
 ## How a build moves through the code
 
 `src/cli.rs` defines the CLI, `src/main.rs` dispatches commands, and

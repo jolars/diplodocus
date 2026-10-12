@@ -1,6 +1,6 @@
 # Project status and remaining work
 
-Reviewed October 6, 2026. This page tracks work that remains before the first
+Reviewed October 12, 2026. This page tracks work that remains before the first
 release and the collaborator handoff. It replaces the old milestone-by-milestone
 implementation log; Git history preserves that log and its completed checklists.
 A checked implementation task is not, by itself, a release gate.
@@ -20,8 +20,13 @@ below has passed on a clean checkout. The [architecture](DESIGN.md),
 [collaborator code map](docs/development/handoff.md), [CLI
 guide](docs/guide/cli.md), and [acceptance
 matrix](tests/fixtures/acceptance/MATRIX.md) give their respective contracts.
-The [R/Python example](examples/monorepo/README.md) is the smallest complete
+The [three-language example](examples/monorepo/README.md) is the smallest complete
 site.
+
+The accepted [prepared-environment
+contract](docs/decisions/0003-prepared-environment.md) changes the intended
+extraction behavior. Runtime assistance and required API-example execution are
+not yet implemented; the table above describes the existing paths.
 
 ## MVP acceptance criteria
 
@@ -31,14 +36,19 @@ matrix](tests/fixtures/acceptance/MATRIX.md) to the release gate. Each criterion
 still needs its complete scenario evidence before release.
 
 - **MVP-01:** Explicit configuration for the full Python/R workspace.
-- **MVP-02:** Static Python and R API extraction without running package code.
+- **MVP-02:** Python and R API extraction in caller-prepared package environments,
+  with source analysis and runtime assistance as needed.
 - **MVP-03:** In-process GFM and QMD parsing with visible unsupported syntax.
-- **MVP-04:** Authorized, structured Python and R authored execution.
+- **MVP-04:** Required execution of recognized API and authored examples, with
+  structured results, expected-output verification, and explicit recorded skips.
 - **MVP-05:** One safe site renderer with navigation, concepts, links, and
   search.
 - **MVP-06:** Correct behavior and failure boundaries for all five commands.
 - **MVP-07:** Deterministic, portable snapshots and site output.
-- **MVP-08:** No implicit installation, network access, or execution.
+- **MVP-08:** No implicit installation, dependency resolution, package builds,
+  or network access by Diplodocus. Extraction authorizes package loading and
+  example execution; `check` does not execute package code, and `generate`
+  requires no package environment.
 - **MVP-09:** Passing acceptance, quality, and end-to-end checks.
 - **MVP-10:** Checked, previewed, and published self-documentation.
 - **MVP-11:** Reproducible new-user and separate-stage workflows.
@@ -60,6 +70,27 @@ site byte for byte with the original site.
 
 ### Product and acceptance
 
+- [ ] Implement the [prepared-environment
+  contract](docs/decisions/0003-prepared-environment.md): validate runtime and
+  package prerequisites, load the supplied checkout, and distinguish source
+  facts from runtime observations when reconciling API semantics. Keep source
+  validation available through `check`.
+- [ ] Execute recognized API examples and authored cells during extraction
+  without a workspace opt-in. Define language-specific setup, session state,
+  expected-output comparison, expected errors, illustrative syntax, and recorded
+  conditional skips. Diagnose unsupported executable syntax and unavailable
+  engines instead of leaving examples unchecked.
+- [ ] Extend provenance, cache identities, and snapshot validation for runtime
+  observations and API-example outcomes, outputs, and assets. Select any required
+  schema and execution-policy version changes before publishing new records.
+- [ ] Replace source-only acceptance packages with usable checkout environments,
+  including compiled extensions. Keep parser-only fixtures for component tests.
+  Update the case registry and matrix as implementation lands, and cover missing
+  prerequisites, incorrect package identity, example errors and output mismatches,
+  explicit skips, failure preservation, and runtime-free generation.
+- [ ] Update configuration, language references, guides, examples, and CI
+  environments alongside implementation. Remove obsolete execution opt-in and
+  runtime-free extraction promises only when the new behavior is available.
 - [ ] Audit the [acceptance matrix](tests/fixtures/acceptance/MATRIX.md) against
   the current implementation. Confirm routes, navigation and visibility,
   semantic links, search, source links, output safety, and assets with
@@ -109,7 +140,7 @@ site byte for byte with the original site.
 - [ ] Verify that the Versionary release pull request, version tag, protected
   crate publishing, and documentation deployment trigger only as intended.
 - [ ] Re-run the documented quick start from a clean checkout with declared
-  tools installed. Verify the static example, the executing acceptance site,
+  tools installed. Verify the prepared package example, the acceptance site,
   and independent generation from an exported snapshot.
 
 ## R documentation gaps
@@ -131,9 +162,9 @@ exposed these compatibility, content, and presentation gaps.
   listings, methods by class, and method navigation. Resolve help aliases
   shared across multiple declarations, including eulerr's diagram
   composition topic.
-- [ ] Add explicitly authorized Rd example execution with results and figures,
-  honoring example controls such as `dontrun` and `donttest`. Keep examples
-  display-only unless execution is authorized.
+- [ ] Execute Rd examples with results and figures as a required extraction step.
+  Preserve explicitly illustrative `dontrun` regions, execute `donttest` regions,
+  and record supported conditional skips under the prepared-environment contract.
 - [ ] Support R Markdown vignettes with knitr chunks, inline R, math, citations,
   and generated figures. Use eulerr's seven vignettes to check the complete
   article workflow.

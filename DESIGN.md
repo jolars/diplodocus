@@ -29,8 +29,8 @@ common navigation, styling, search, URLs, and page structure.
 
 The first release targets workspaces containing related Python and R packages.
 It should prove the complete workflow for those two ecosystems before adding
-others. Rust, Julia, and TypeScript are natural candidates for later extractors,
-but are not part of the initial scope.
+others. The existing Julia source extractor follows the same intended contract;
+Rust and TypeScript are candidates for later extractors.
 
 The initial product is one coherent snapshot of the documentation in the current
 set of supplied source repositories. Extraction saves that snapshot in a
@@ -93,8 +93,9 @@ Cloudflare Pages, Netlify, or any ordinary HTTP server.
 ### Reproducible builds
 
 The same declared source contents, configuration, extractor and parser versions,
-capabilities, and environment inputs should produce the same extraction results,
-apart from explicitly non-reproducible metadata.
+capabilities, runtime and package environment, and controlled execution inputs
+should produce the same extraction results, apart from explicitly
+non-reproducible metadata.
 
 The same logical snapshot, generator version, and presentation settings should
 produce identical site files. Snapshot equivalence is defined by its records and
@@ -103,30 +104,38 @@ asset contents, not by the physical layout or bytes of the SQLite file.
 Diplodocus itself should not perform implicit network access during normal
 builds.
 
-Authored execution adds its toolchain and results to this contract. Recording
-provenance cannot make code deterministic when it reads undeclared state, uses
-randomness or time, or accesses the network. A snapshot preserves the results
-obtained, without claiming that another environment would reproduce them.
+Package loading and example execution add their toolchain and results to this
+contract. Recording provenance cannot make code deterministic when it reads
+undeclared state, uses randomness or time, or accesses the network. A snapshot
+preserves the results obtained, without claiming that another environment would
+reproduce them.
 
-### Explicit authored execution
+### Prepared environments and executable examples
 
-Language runtimes may be invoked only by execution engines for explicitly
-authorized authored code. The MVP permits executable QMD cells; extracted API
-examples remain display-only until they have a separate execution policy.
-Parsing completes before execution and never depends on runtime results.
+The caller supplies a working package environment: the language runtime, package
+dependencies, documentation dependencies, and any required compiled artifacts.
+The documented package must be usable from the supplied checkout. Diplodocus
+does not install dependencies or build the package.
 
-Authored code cells execute arbitrary code with the user's privileges. Execution
-is therefore disabled by default and may be enabled only by workspace
-configuration; document metadata alone cannot grant permission to execute. An
-executing collection must select `mode = "execute"`, the `jupyter` engine, and
-an explicit kernel name. The default mode is `never`. Diplodocus does not
-sandbox cells or install their dependencies. Cells may access the network unless
-the surrounding environment prevents it.
+Extraction may load packages, inspect runtime objects, and use native language
+tools. It executes recognized examples in API documentation and authored pages
+without a separate workspace opt-in. Illustrative snippets use explicit source
+syntax; skips and expected errors are explicit and recorded. Unexpected errors,
+expected-output mismatches, and missing prerequisites prevent publication.
 
-`diplodocus check` parses and validates code cells without executing them.
-`extract`, including extraction invoked by `build` or `serve`, executes cells
-only for content collections whose configuration explicitly enables execution.
-`generate` never executes cells or starts a kernel.
+Package code and examples run with the user's privileges and may change files
+or access the network. Invoking extraction authorizes this execution; Diplodocus
+does not sandbox it. Output sanitization protects rendered content, and atomic
+publication protects the previous snapshot and site, but neither undoes code
+side effects.
+
+`diplodocus check` validates sources without loading package code or executing
+examples. It does not prove runtime-dependent semantics or example correctness.
+`generate` renders the completed snapshot without runtimes or dependencies.
+
+The [prepared-environment decision](docs/decisions/0003-prepared-environment.md)
+defines this contract. Its implementation is pending: the current binary still
+extracts statically and requires explicit authorization for QMD execution.
 
 --------------------------------------------------------------------------------
 
@@ -138,9 +147,9 @@ both stages; SQLite stores a complete snapshot of that model.
 
 ```text
 Extraction
-  checked-out source repositories and workspace configuration
-      → static API extraction and authored-content parsing
-      → optional authorized authored-cell execution
+  checked-out source repositories, workspace configuration, and prepared environments
+      → API extraction with source analysis and runtime assistance
+      → authored-content parsing and required executable-example execution
       → semantic reference resolution, validation, and asset collection
       → documentation.sqlite
 
@@ -173,37 +182,28 @@ package with a Python extraction target, not separate Python and Rust packages.
 Internal bindings may be declared separately when their APIs are themselves
 intended documentation targets.
 
-Built-in extractors parse declared sources in-process with Rust-native parsers.
-They never execute package code or invoke a build backend. R extraction requires
-an installed R for an isolated library-discovery probe, then reads installed
-dependency namespace metadata in Rust. The probe skips project profiles and
-default package attachment; it never loads the documented package or its
-dependencies. Dynamic metadata and semantics outside the supported static
-subset produce diagnostics instead of executing documented code.
+Built-in extractors combine source analysis with runtime assistance where needed.
+Source parsers retain documentation structure, declared signatures, stubs, and
+source attribution. Native tools and runtime inspection may establish metadata,
+exports, methods, and dynamic semantics. Each adapter defines how it reconciles
+those observations and diagnoses conflicts or unsupported semantics.
 
-Python and Julia extraction remain independent of their language runtimes,
-including Python native extensions available only as stubs. R package authors
-use their installed environment for external name resolution without requiring
-installation of the documented package. Parser adaptation and semantic analysis
-remain under Diplodocus's control.
-The cost is maintaining those adapters and accepting incomplete coverage of
-dynamic APIs. The [static-extraction
-decision](docs/decisions/0001-static-extraction.md) records the parser choices
-and rejected alternatives.
+Python reads package metadata, source, and stubs; R reads `DESCRIPTION`,
+`NAMESPACE`, maintained R source, and Rd documentation; Julia reads
+`Project.toml`, source, and attached documentation. These inputs remain useful
+without requiring the extractor to reconstruct every runtime rule in Rust.
+Stub-only source remains a valid parser input, but a full documentation build
+requires the corresponding usable package environment.
 
-For the initial extractors:
-
-- Python uses static source analysis and package metadata. Public exports,
-  re-exports, type stubs, and extension-module stubs form part of that static
-  surface.
-- R parses `DESCRIPTION`, `NAMESPACE`, maintained R source, and checked-in `Rd`
-  documentation.
-
-Extractors return package fragments independently of storage and rendering. The
-[static-extractor contract](docs/spikes/static-extractor-contract.md) defines
-their capabilities and provenance, including extractor and parser versions,
-static mode, and diagnostics. These inputs also participate in any extraction
-cache key.
+Extractors return package fragments independently of storage and rendering.
+Provenance distinguishes source analysis, runtime observations, and executed
+examples and records the actual tools and environment involved. Cache identities
+must cover those inputs. The [static-extraction
+decision](docs/decisions/0001-static-extraction.md) and
+[static-extractor reference](docs/spikes/static-extractor-contract.md) document
+the existing implementation; the
+[prepared-environment decision](docs/decisions/0003-prepared-environment.md)
+supersedes their runtime restrictions.
 
 ### Authored content parsing
 
@@ -450,12 +450,13 @@ extension. Diplodocus semantic references are its only domain-specific inline
 extension. Unsupported directives, metadata, cell options, and embedded
 components produce visible diagnostics.
 
-Each executable QMD page uses one configured Jupyter kernel, with cells run
-sequentially in source order. Other-language blocks remain display-only. An
-in-process Rust client consumes streams, errors, and display results without a
-Jupyter server. This gives Python, R, and other installed kernels one execution
-protocol; their executables and language packages remain external toolchain
-requirements.
+Each executable QMD page uses a selected execution environment, with cells run
+sequentially in source order. Recognized executable cells must run or report an
+explicit supported skip; a language mismatch cannot silently make them display
+code. Engine and kernel selectors identify the environment rather than grant
+execution permission. The existing Jupyter client supplies streams, errors,
+and display results without a Jupyter server. Executables, kernels, and language
+packages remain caller-supplied toolchain requirements.
 
 Execution attaches structured outputs to `CodeCell` nodes. Only Markdown-valued
 results are parsed as isolated, non-executable fragments, preserving source
@@ -495,10 +496,12 @@ A package ID is its stable reference and relationship identity. Its slug
 controls its site URL, independently of ecosystem and display name. Content
 has either a project owner or a package owner; ownership controls navigation
 and semantic-reference context, independently of where the source file lives.
-A collection selects the `gfm` or `qmd` profile. QMD execution requires
-collection-level authority, a Jupyter engine, and an explicit kernel;
-frontmatter cannot grant authority. Declared environment files contribute to
-execution provenance and cache identity, but Diplodocus does not install them.
+A collection selects the `gfm` or `qmd` profile. Executable examples run as part
+of extraction; engine and kernel settings select where they run. Explicit
+illustrative syntax, expected errors, and supported conditional skips preserve
+the distinction between display code and executable examples. Declared
+environment files contribute to execution provenance and cache identity, but
+Diplodocus does not install or activate them.
 
 --------------------------------------------------------------------------------
 

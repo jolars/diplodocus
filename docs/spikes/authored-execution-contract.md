@@ -1,5 +1,11 @@
 # Authored-execution contract
 
+The [prepared-environment decision](../decisions/0003-prepared-environment.md)
+supersedes the opt-in execution and inert API-example requirements below. This
+document describes the current QMD policy. Its output validation, session
+lifecycle, and source-attribution rules remain applicable; execution selection
+and policy identifiers must change when the replacement contract is implemented.
+
 ## Outcome
 
 The MVP executes explicitly authorized QMD pages through the `jupyter` engine.

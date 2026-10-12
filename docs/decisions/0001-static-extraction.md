@@ -2,6 +2,11 @@
 
 Status: Accepted. Date: 2026-09-09.
 
+The [prepared-environment decision](0003-prepared-environment.md) supersedes
+this decision's prohibition on runtime assistance and example execution. The
+parser choices and source-attribution rules below describe the current
+implementation; the replacement contract has not yet been implemented.
+
 ## Context
 
 Diplodocus must document the configured Python and R packages without importing
