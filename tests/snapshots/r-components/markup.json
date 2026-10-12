@@ -319,16 +319,28 @@
           "value": ", and "
         },
         {
+          "attributes": {
+            "classes": [],
+            "identifier": null,
+            "key_values": []
+          },
+          "inlines": [
+            {
+              "span": {
+                "end": 429,
+                "start": 0
+              },
+              "type": "text",
+              "value": "f"
+            }
+          ],
           "span": {
             "end": 429,
             "start": 0
           },
-          "target": "f",
-          "target_span": {
-            "end": 429,
-            "start": 0
-          },
-          "type": "semantic-reference"
+          "target": "@ref f",
+          "title": null,
+          "type": "link"
         },
         {
           "span": {

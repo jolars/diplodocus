@@ -209,6 +209,18 @@ impl Snapshot {
                     kind == reference.kind && spelling == reference.spelling,
                     "reference association",
                 )?;
+                let rd_help = kind == ReferenceKind::Link
+                    && matches!(&document.source_format, DocumentFormat::Extracted { name } if name == "rd")
+                    && spelling.starts_with("@ref ");
+                if rd_help {
+                    require(
+                        crate::validation::resolve_rd_help(workspace, owner, &spelling[5..])
+                            .as_ref()
+                            == Ok(&reference.target),
+                        "Rd help reference",
+                    )?;
+                    continue;
+                }
                 require(
                     crate::validation::semantic_target(document, kind, &spelling).is_none()
                         || matches!(&reference.target, ReferenceTarget::Item { .. }),

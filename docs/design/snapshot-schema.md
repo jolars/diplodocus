@@ -11,21 +11,24 @@ IR into separate rows.
   | Manifest field     | Current value | Governs                                                                                                                                        |
   | ---                | ---           | ---                                                                                                                                            |
   | `storage_version`  | `2`           | SQLite tables, columns, keys, record kinds, splitting entities into rows, and storage-specific envelopes. Defined by `STORAGE_SCHEMA_VERSION`. |
-  | `ir_version`       | `1`           | Semantic IR field shapes and meaning, including nested documents, signatures, and language extensions. Defined by `WORKSPACE_SCHEMA_VERSION`.  |
+  | `ir_version`       | `2`           | Semantic IR field shapes and meaning, including nested documents, signatures, and language extensions. Defined by `WORKSPACE_SCHEMA_VERSION`.  |
   | `encoding_version` | `1`           | Canonical record encoding, fingerprint inputs, and text export. Defined by `RECORD_ENCODING_VERSION`.                                          |
 
 These versions are independent: a table-layout change requires a storage version
 change; an incompatible signature or language-extension change requires an IR
 version change even if the SQL tables stay the same. Changing canonical hashing
 or export rules requires an encoding version change. A change may affect more
-than one version. The current reader accepts only `(2, 1, 1)` and rejects any
+than one version. The current reader accepts only `(2, 2, 1)` and rejects any
 unsupported component; it does not migrate snapshots automatically.
 
 Storage version 2 adds the required `presentation` record. Version 1 snapshots
-must be extracted again. The semantic IR and canonical encoding remain at
-version 1 because presentation defaults are storage metadata outside the IR.
+must be extracted again. Presentation defaults are storage metadata outside the IR.
 
-The workspace record also carries `schema_version: 1`, which must agree with
+IR version 2 adds inline and display equations and installed R help-link
+evidence. Version 1 snapshots must be extracted again. The canonical record
+encoding remains at version 1.
+
+The workspace record also carries `schema_version: 2`, which must agree with
 `manifest.ir_version`. Nested JSON inherits the containing snapshot's versions;
 there is no additional version wrapper on every syntax node or signature.
 Consumers must read the manifest before interpreting a detached record.
@@ -325,6 +328,13 @@ source, and provenance together:
 `source_format` can instead be `{"kind":"extracted","name":"rd"}` or
 `{"kind":"generated"}`. The [document tree](../../src/ir.rs) uses `type`
 discriminators for blocks, inlines, and metadata, with kebab-case variant names.
+Inline `math` and block `display-math` nodes retain `latex`, nullable `fallback`,
+and `span`. R package metadata retains a `help_links` map keyed by the topic or
+`package::topic` spelling. Each candidate has a published `package`, canonical
+help `topic`, and rdrr `repository` (`r`, `cran`, or `bioc`). Candidates sort and
+deduplicate by those fields. Rd `@ref` links resolve to workspace items first,
+then to a unique stored help candidate; snapshot loading checks the destination
+against this evidence without consulting R or installed libraries.
 Spans are zero-based, half-open byte ranges `{start, end}`. Tree spans are
 relative to document source; a source-location span refers to its repository
 file. `frontmatter` is a nullable typed metadata tree, not a free-form JSON map.
@@ -604,7 +614,7 @@ asset's `bytes_base64` field and applying the compact encoding recovers the
 manifest's fingerprint input; hashing the pretty export does not. The
 [minimal export fixture](../../tests/snapshots/snapshot-encoding/minimal.json)
 pins this format and has logical snapshot fingerprint
-`a573096448832e533ef78a5f1dcef56a388dd7735eb08955438f6e3403bf504f`.
+`9ead992309a5f20df37165895695554936eab87beb5b81b523dfd488b02888f2`.
 
 Fingerprints provide integrity checks, not authentication: loading also checks
 record sets, semantic references, anchors, paths, asset media, and active output

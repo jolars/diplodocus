@@ -16,6 +16,9 @@ use crate::ir::{
 
 use super::{diagnostic, located, namespace::Namespace, provenance, source};
 
+mod conditionals;
+mod content;
+
 pub(super) struct Topic {
     name: String,
     pub(super) package: bool,
@@ -54,6 +57,7 @@ pub(super) fn parse(
     text: &str,
     source: &SourceLocation,
     diagnostics: &mut Vec<Diagnostic>,
+    os_type: &str,
 ) -> Option<Topic> {
     let parsed = match rd_source::parse(text.as_bytes()) {
         Ok(parsed) => parsed,
@@ -97,13 +101,17 @@ pub(super) fn parse(
         "Rd nodes have file-level source attribution; exact node byte ranges are unavailable.",
         source,
     ));
-    let document = parsed.document();
     let mut context = Context {
         raw: text,
         source,
         diagnostics,
         uses_r: false,
     };
+    let document = rd_ast::RdDocument::new(context.select_conditionals(
+        parsed.document().nodes(),
+        &RdPath::new(vec![]),
+        os_type,
+    ));
     let mut valid = !parsed
         .diagnostics()
         .iter()
@@ -372,6 +380,16 @@ impl Context<'_> {
             }
             if let RdNode::Tagged(tagged) = node {
                 match tagged.tag() {
+                    RdTag::Section
+                    | RdTag::Subsection
+                    | RdTag::Tabular
+                    | RdTag::Deqn
+                    | RdTag::Item => {
+                        flush(&mut result, &mut paragraph, self.span());
+                        line_has_content = false;
+                        result.extend(self.content_block(tagged, &child_path));
+                        continue;
+                    }
                     RdTag::Itemize | RdTag::Enumerate | RdTag::Describe => {
                         flush(&mut result, &mut paragraph, self.span());
                         line_has_content = false;
@@ -483,7 +501,11 @@ impl Context<'_> {
                     if let Some(value) = plain(tagged.children()) {
                         result.push(Inline::Code { value, span });
                     } else {
-                        result.extend(self.inlines(tagged.children(), path));
+                        let mut inlines = self.inlines(tagged.children(), path);
+                        if tagged.tag() == &RdTag::Code {
+                            content::code_style(&mut inlines);
+                        }
+                        result.extend(inlines);
                     }
                 }
                 RdTag::SQuote | RdTag::DQuote => {
@@ -551,17 +573,9 @@ impl Context<'_> {
                         result.push(self.unsupported_inline("href", path));
                     }
                 },
-                RdTag::Link if tagged.option().is_none() => {
-                    if let Some(target) = plain(tagged.children()) {
-                        result.push(Inline::SemanticReference {
-                            target,
-                            target_span: span,
-                            span,
-                        });
-                    } else {
-                        result.push(self.unsupported_inline("link", path));
-                    }
-                }
+                RdTag::Link => result.push(self.help_link(tagged, path)),
+                RdTag::Eqn => result.push(self.equation_inline(tagged, path)),
+                RdTag::Doi => result.push(self.doi_link(tagged, path)),
                 _ => result.push(self.unsupported_inline(tagged.tag().as_rd_tag(), path)),
             },
             _ => result.push(self.unsupported_inline("node", path)),

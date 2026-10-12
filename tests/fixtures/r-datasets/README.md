@@ -7,7 +7,6 @@ Tests copy them to temporary workspaces and exercise extraction, portable
 snapshots, rendering, navigation, and search.
 
 The synthetic `data-structures.Rd` topic supplies local targets for the four
-unqualified links to R data structures. Resolving installed R help topics is a
-separate compatibility task. The `pain` fixture's custom Disclaimer section
-still produces the existing unsupported-markup warning and retains its raw
-source in the snapshot.
+unqualified links to R data structures. Tests verify that these workspace topics
+win over installed R help. The `pain` fixture's Disclaimer section renders as a
+custom section with its complete prose.

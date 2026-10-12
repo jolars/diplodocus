@@ -6,7 +6,7 @@ use std::sync::OnceLock;
 use rd_rds::lazyload::LazyLoadIndex;
 use rd_rds::package::{MetadataField, NamespaceMetadata};
 
-use crate::ir::{ParserProvenance, RGenericReference};
+use crate::ir::{ParserProvenance, RGenericReference, RHelpTarget, RdrrRepository};
 
 // Profiles and default package attachment are disabled so discovery evaluates
 // only base metadata and cannot run a project's startup or package hooks.
@@ -15,6 +15,7 @@ writeLines(paste("library", .libPaths(), sep = "\t"))
 writeLines(paste("base", ls(baseenv(), all.names = TRUE), sep = "\t"))
 writeLines(paste("generic", names(.knownS3Generics), .knownS3Generics, sep = "\t"))
 writeLines(paste("version", getRversion(), sep = "\t"))
+writeLines(paste("os", .Platform$OS.type, sep = "\t"))
 "#;
 
 #[derive(Clone)]
@@ -23,20 +24,97 @@ struct Discovery {
     base: BTreeSet<String>,
     generics: BTreeMap<String, String>,
     version: String,
+    os_type: String,
 }
 
 pub(super) struct Libraries {
     discovery: Discovery,
     exports: BTreeMap<String, BTreeSet<String>>,
+    help: BTreeMap<String, Option<HelpIndex>>,
+}
+
+struct HelpIndex {
+    aliases: BTreeMap<String, String>,
+    repository: RdrrRepository,
 }
 
 impl Libraries {
+    pub(super) fn os_type(&self) -> &str {
+        &self.discovery.os_type
+    }
+
+    pub(super) fn help_targets(
+        &mut self,
+        spelling: &str,
+        dependencies: &BTreeSet<String>,
+    ) -> Vec<RHelpTarget> {
+        let (package, topic) = spelling
+            .split_once("::")
+            .map_or((None, spelling), |(package, topic)| (Some(package), topic));
+        let packages: BTreeSet<String> = if let Some(package) = package {
+            BTreeSet::from([package.to_owned()])
+        } else {
+            dependencies
+                .iter()
+                .cloned()
+                .chain(
+                    [
+                        "base",
+                        "compiler",
+                        "datasets",
+                        "grDevices",
+                        "graphics",
+                        "grid",
+                        "methods",
+                        "parallel",
+                        "splines",
+                        "stats",
+                        "stats4",
+                        "tcltk",
+                        "tools",
+                        "utils",
+                    ]
+                    .map(String::from),
+                )
+                .collect()
+        };
+        let mut targets = BTreeSet::new();
+        for package in packages {
+            if !valid_package_name(&package) {
+                continue;
+            }
+            if !self.help.contains_key(&package) {
+                let directory = self
+                    .discovery
+                    .paths
+                    .iter()
+                    .map(|library| library.join(&package))
+                    .find(|directory| directory.join("DESCRIPTION").is_file());
+                self.help.insert(
+                    package.clone(),
+                    directory.and_then(|directory| read_help_index(&directory).ok()),
+                );
+            }
+            if let Some(index) = self.help[&package].as_ref()
+                && let Some(topic) = index.aliases.get(topic)
+            {
+                targets.insert(RHelpTarget {
+                    package,
+                    topic: topic.clone(),
+                    repository: index.repository,
+                });
+            }
+        }
+        targets.into_iter().collect()
+    }
+
     pub(super) fn discover() -> Result<Self, String> {
         static DISCOVERY: OnceLock<Result<Discovery, String>> = OnceLock::new();
         let discovery = DISCOVERY.get_or_init(probe).clone()?;
         let mut libraries = Self {
             exports: BTreeMap::from([("base".into(), discovery.base.clone())]),
             discovery,
+            help: BTreeMap::new(),
         };
         for package in [
             "stats",
@@ -104,6 +182,19 @@ impl Libraries {
 
     pub(super) fn provenance(&self) -> ParserProvenance {
         let mut settings = BTreeMap::from([("r-version".into(), self.discovery.version.clone())]);
+        settings.insert("os-type".into(), self.discovery.os_type.clone());
+        for (package, index) in &self.help {
+            let bytes = serde_json::to_vec(
+                &index
+                    .as_ref()
+                    .map(|index| (&index.aliases, index.repository)),
+            )
+            .expect("help indexes serialize");
+            settings.insert(
+                format!("help:{package}"),
+                crate::provenance::fingerprint_bytes(&bytes).value,
+            );
+        }
         for (package, exports) in &self.exports {
             let bytes = serde_json::to_vec(exports).expect("string sets serialize");
             settings.insert(
@@ -144,6 +235,7 @@ fn probe() -> Result<Discovery, String> {
         base: BTreeSet::new(),
         generics: BTreeMap::new(),
         version: String::new(),
+        os_type: String::new(),
     };
     for line in text.lines() {
         let fields: Vec<_> = line.split('\t').collect();
@@ -158,6 +250,9 @@ fn probe() -> Result<Discovery, String> {
             ["version", version] if !version.is_empty() => {
                 discovery.version = (*version).into();
             }
+            ["os", os_type] if matches!(*os_type, "unix" | "windows") => {
+                discovery.os_type = (*os_type).into()
+            }
             _ => return Err("R library discovery returned malformed metadata.".into()),
         }
     }
@@ -165,6 +260,7 @@ fn probe() -> Result<Discovery, String> {
         || discovery.base.is_empty()
         || discovery.generics.is_empty()
         || discovery.version.is_empty()
+        || discovery.os_type.is_empty()
     {
         return Err("R library discovery returned incomplete metadata.".into());
     }
@@ -176,6 +272,53 @@ fn valid_package_name(name: &str) -> bool {
         && name
             .bytes()
             .all(|byte| byte.is_ascii_alphanumeric() || byte == b'.')
+}
+
+fn read_help_index(directory: &std::path::Path) -> Result<HelpIndex, ()> {
+    let aliases = rd_rds::file::read(directory.join("help/aliases.rds")).map_err(|_| ())?;
+    let rd_rds::RValue::Character(values) = aliases.value() else {
+        return Err(());
+    };
+    let names = aliases.names().ok_or(())?;
+    if names.len() != values.len() {
+        return Err(());
+    }
+    let string = |value: &rd_rds::RStr| {
+        value
+            .as_str()
+            .ok_or(())?
+            .map(|value| value.into_owned())
+            .map_err(|_| ())
+    };
+    let mut topics = BTreeMap::new();
+    for (name, value) in names.iter().zip(values) {
+        let name = string(name)?;
+        let topic = string(value)?;
+        if name.is_empty() || topic.is_empty() || topics.insert(name, topic).is_some() {
+            return Err(());
+        }
+    }
+    let description = std::fs::read_to_string(directory.join("DESCRIPTION")).map_err(|_| ())?;
+    let parsed = arity_parser::dcf::parse(&description);
+    if !parsed.diagnostics.is_empty() {
+        return Err(());
+    }
+    let fields: BTreeMap<_, _> = parsed
+        .document()
+        .fields()
+        .map(|field| (field.name().to_string(), field.folded_value()))
+        .collect();
+    let repository = if fields.get("Priority").is_some_and(|value| value == "base") {
+        RdrrRepository::R
+    } else if fields.contains_key("biocViews") {
+        RdrrRepository::Bioc
+    } else {
+        RdrrRepository::Cran
+    };
+    Ok(HelpIndex {
+        aliases: topics,
+        repository,
+    })
 }
 
 fn read_exports(directory: &std::path::Path) -> Result<BTreeSet<String>, ()> {
@@ -244,9 +387,11 @@ mod tests {
             base: BTreeSet::new(),
             generics: BTreeMap::new(),
             version: "test".into(),
+            os_type: "unix".into(),
         };
         let mut libraries = Libraries {
             discovery,
+            help: BTreeMap::new(),
             exports: BTreeMap::new(),
         };
         assert!(libraries.exports("direct").is_err());

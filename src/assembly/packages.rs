@@ -65,6 +65,7 @@ pub(super) fn assemble(
                         metadata: result.metadata.map(|description| {
                             crate::ir::PackageMetadata::R(crate::ir::RPackageMetadata {
                                 description,
+                                help_links: result.help_links,
                                 runtime: None,
                             })
                         }),
@@ -91,11 +92,36 @@ pub(super) fn assemble(
                 }
             };
             workspace.diagnostics.extend(fragment.diagnostics);
-            if let Some(metadata) = fragment.metadata {
+            if let Some(mut metadata) = fragment.metadata {
+                if let (
+                    Some(crate::ir::PackageMetadata::R(previous)),
+                    crate::ir::PackageMetadata::R(current),
+                ) = (&package.metadata, &mut metadata)
+                {
+                    for (spelling, targets) in &previous.help_links {
+                        current
+                            .help_links
+                            .entry(spelling.clone())
+                            .or_default()
+                            .extend(targets.iter().cloned());
+                    }
+                    for targets in current.help_links.values_mut() {
+                        targets.sort();
+                        targets.dedup();
+                    }
+                }
                 if package
                     .metadata
                     .as_ref()
-                    .is_some_and(|previous| previous != &metadata)
+                    .is_some_and(|previous| match (previous, &metadata) {
+                        (
+                            crate::ir::PackageMetadata::R(previous),
+                            crate::ir::PackageMetadata::R(current),
+                        ) => {
+                            previous.description != current.description
+                                || previous.runtime != current.runtime
+                        }
+                    })
                 {
                     workspace.diagnostics.insert(
                         diagnostic(

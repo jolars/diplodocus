@@ -194,7 +194,8 @@ fn shift_attributes(attributes: &mut Attributes, offset: usize) {
 
 fn shift_inline(inline: &mut Inline, offset: usize) {
     match inline {
-        Inline::Text { span, .. }
+        Inline::Math { span, .. }
+        | Inline::Text { span, .. }
         | Inline::Space { span }
         | Inline::SoftBreak { span }
         | Inline::HardBreak { span }

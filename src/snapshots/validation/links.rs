@@ -54,6 +54,35 @@ pub(super) fn validate(workspace: &Workspace) -> Result {
                         == description.fields.get("License").map(|field| &field.value),
                 "R package metadata fields",
             )?;
+            for (spelling, targets) in &metadata.help_links {
+                require(
+                    !spelling.is_empty() && !spelling.chars().any(char::is_control),
+                    "R help spelling",
+                )?;
+                require(
+                    targets.windows(2).all(|pair| pair[0] < pair[1]),
+                    "R help candidate order",
+                )?;
+                for target in targets {
+                    require(
+                        target
+                            .package
+                            .as_bytes()
+                            .first()
+                            .is_some_and(u8::is_ascii_alphabetic)
+                            && target
+                                .package
+                                .bytes()
+                                .all(|byte| byte.is_ascii_alphanumeric() || byte == b'.')
+                            && !target.topic.is_empty()
+                            && !target.topic.chars().any(char::is_control),
+                        "R help target",
+                    )?;
+                    if let Some((package, _)) = spelling.split_once("::") {
+                        require(package == target.package, "R help package qualifier")?;
+                    }
+                }
+            }
             links.source(&description.source)?;
             for field in description.fields.values() {
                 require(

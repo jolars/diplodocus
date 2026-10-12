@@ -21,11 +21,18 @@ const FRAGMENT: &percent_encoding::AsciiSet = &percent_encoding::NON_ALPHANUMERI
 pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
     let mut files = BTreeMap::new();
     let mut search = Vec::new();
+    let mut uses_math = false;
+    let math_context = katex::KatexContext::default();
     for (route, page) in &site.pages {
+        let page_math = page
+            .document
+            .is_some_and(|document| super::math::contains_math(&document.document.blocks));
+        uses_math |= page_math;
         let mut renderer = Renderer {
             site,
             page,
             route,
+            math_context: &math_context,
             cell: 0,
             headings: Vec::new(),
             identifiers: page
@@ -51,7 +58,16 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
         if let Some(url) = site.canonical_urls.get(route) {
             write!(html, "<link rel=\"canonical\" href=\"{}\">", escape(url)).unwrap();
         }
-        write!(html, "<title>{} · {}</title><link rel=\"stylesheet\" href=\"{}\"><script defer src=\"{}\"></script><script defer src=\"{}\"></script></head><body><a class=\"skip-link\" href=\"#main\">Skip to content</a>", escape(&page.title), escape(site.title()), escape(&relative_url(route, "assets/site.css")), escape(&relative_url(route, "assets/search.js")), escape(&relative_url(route, "assets/nav.js"))).unwrap();
+        write!(html, "<title>{} · {}</title><link rel=\"stylesheet\" href=\"{}\"><script defer src=\"{}\"></script><script defer src=\"{}\"></script>", escape(&page.title), escape(site.title()), escape(&relative_url(route, "assets/site.css")), escape(&relative_url(route, "assets/search.js")), escape(&relative_url(route, "assets/nav.js"))).unwrap();
+        if page_math {
+            write!(
+                html,
+                "<link rel=\"stylesheet\" href=\"{}\">",
+                escape(&relative_url(route, "assets/katex/katex.min.css"))
+            )
+            .unwrap();
+        }
+        html.push_str("</head><body><a class=\"skip-link\" href=\"#main\">Skip to content</a>");
         write!(
             html,
             "<header><a class=\"brand\" href=\"{}\">{}</a>",
@@ -261,6 +277,11 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
             file(html.into_bytes(), "text/html; charset=utf-8"),
         );
     }
+    if uses_math {
+        for (path, bytes, media_type) in super::katex_assets::ASSETS {
+            files.insert((*path).into(), file(bytes.to_vec(), media_type));
+        }
+    }
     for (digest, asset) in site.assets {
         files.insert(
             site.asset_route(digest)?,
@@ -347,6 +368,7 @@ fn concept_links(site: &Site<'_>, route: &str, concept: &Concept) -> Result<Stri
     Ok(html)
 }
 struct Renderer<'a, 'b> {
+    math_context: &'a katex::KatexContext,
     site: &'a Site<'b>,
     page: &'a PageModel<'b>,
     route: &'a str,
@@ -412,6 +434,14 @@ impl Renderer<'_, '_> {
         let mut html = String::new();
         for inline in inlines {
             match inline {
+                Inline::Math {
+                    latex, fallback, ..
+                } => html.push_str(&super::math::render(
+                    self.math_context,
+                    latex,
+                    fallback.as_deref(),
+                    false,
+                )),
                 Inline::Text { value, .. } => html.push_str(&escape(value)),
                 Inline::Space { .. } | Inline::SoftBreak { .. } => html.push(' '),
                 Inline::HardBreak { .. } => html.push_str("<br>"),
@@ -497,6 +527,14 @@ impl Renderer<'_, '_> {
         let mut html = String::new();
         for block in blocks {
             match block {
+                Block::DisplayMath {
+                    latex, fallback, ..
+                } => html.push_str(&super::math::render(
+                    self.math_context,
+                    latex,
+                    fallback.as_deref(),
+                    true,
+                )),
                 Block::Paragraph { inlines, .. } => {
                     write!(html, "<p>{}</p>", self.inlines(inlines)?).unwrap()
                 }
@@ -546,7 +584,12 @@ impl Renderer<'_, '_> {
                 Block::ThematicBreak { .. } => html.push_str("<hr>"),
                 Block::CodeBlock { source, .. } => html.push_str(&render_preformatted_text(source)),
                 Block::CodeCell(cell) => html.push_str(&self.code_cell(cell)?),
-                Block::Table { caption, rows, .. } => {
+                Block::Table {
+                    caption,
+                    rows,
+                    alignments,
+                    ..
+                } => {
                     html.push_str("<table>");
                     if !caption.is_empty() {
                         write!(html, "<caption>{}</caption>", self.inlines(caption)?).unwrap();
@@ -554,8 +597,19 @@ impl Renderer<'_, '_> {
                     for row in rows {
                         html.push_str("<tr>");
                         let tag = if row.header { "th" } else { "td" };
-                        for cell in &row.cells {
-                            write!(html, "<{tag}>{}</{tag}>", self.blocks(&cell.blocks)?).unwrap();
+                        for (column, cell) in row.cells.iter().enumerate() {
+                            let alignment = match alignments.get(column) {
+                                Some(TableAlignment::Left) => " class=\"align-left\"",
+                                Some(TableAlignment::Center) => " class=\"align-center\"",
+                                Some(TableAlignment::Right) => " class=\"align-right\"",
+                                _ => "",
+                            };
+                            write!(
+                                html,
+                                "<{tag}{alignment}>{}</{tag}>",
+                                self.blocks(&cell.blocks)?
+                            )
+                            .unwrap();
                         }
                         html.push_str("</tr>");
                     }
@@ -732,6 +786,9 @@ fn plain(nodes: &[Inline]) -> String {
     nodes
         .iter()
         .map(|node| match node {
+            Inline::Math {
+                latex, fallback, ..
+            } => fallback.as_ref().unwrap_or(latex).clone(),
             Inline::Text { value, .. } | Inline::Code { value, .. } => value.clone(),
             Inline::SemanticReference { target, .. } => target.clone(),
             Inline::Emphasis { inlines, .. }

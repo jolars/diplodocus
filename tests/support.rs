@@ -77,6 +77,26 @@ pub fn add_r_datasets(workspace: &TestWorkspace) {
     }
 }
 
+pub fn add_r_rd_content(workspace: &TestWorkspace) {
+    let fixture = fixture_path("r-rd-content");
+    for directory in ["R", "man"] {
+        for file in files_under(&fixture.join(directory)) {
+            workspace.write(
+                Path::new("r").join(directory).join(&file),
+                fs::read(fixture.join(directory).join(file)).unwrap(),
+            );
+        }
+    }
+    workspace.write(
+        "r/NAMESPACE",
+        format!(
+            "{}\n{}",
+            workspace.read("r/NAMESPACE"),
+            fs::read_to_string(fixture.join("NAMESPACE")).unwrap()
+        ),
+    );
+}
+
 pub fn fixture_path(relative: impl AsRef<Path>) -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("tests/fixtures")

@@ -135,6 +135,15 @@ pub struct Document {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "kebab-case")]
 pub enum Block {
+    /// A display equation with an optional plain-text alternative.
+    DisplayMath {
+        /// Verbatim LaTeX source.
+        latex: String,
+        /// Author-supplied plain-text alternative.
+        fallback: Option<String>,
+        /// Full source range.
+        span: SourceSpan,
+    },
     /// Paragraph content.
     Paragraph {
         /// Inline children.
@@ -381,6 +390,15 @@ pub enum CalloutKind {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "kebab-case")]
 pub enum Inline {
+    /// An inline equation with an optional plain-text alternative.
+    Math {
+        /// Verbatim LaTeX source.
+        latex: String,
+        /// Author-supplied plain-text alternative.
+        fallback: Option<String>,
+        /// Full source range.
+        span: SourceSpan,
+    },
     /// Decoded text.
     Text {
         /// Decoded value.

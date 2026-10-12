@@ -155,7 +155,7 @@ exposed these compatibility, content, and presentation gaps.
 - [x] Support dataset topics, including bare object usage and the `docType`,
   `format`, and `source` sections. Use eulerr's `fruits`, `organisms`,
   `pain`, and `plants` datasets as acceptance cases.
-- [ ] Support Rd links with options, including local targets, package-qualified
+- [x] Support Rd links with options, including local targets, package-qualified
   targets, and display labels; equations, tables, custom sections, named
   return-value entries, conditional content, and DOI links.
 - [ ] Present shared help topics with their complete S3 usage and argument

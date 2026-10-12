@@ -128,8 +128,9 @@ fn eulerr_datasets_are_documented_without_source_bindings_or_exports() {
         .filter(|d| d.code.as_str() == "unsupported-rd")
         .map(|d| d.message.as_str())
         .collect();
-    assert_eq!(unsupported.len(), 1, "{unsupported:?}");
-    assert!(unsupported[0].contains("section"));
+    assert!(unsupported.is_empty(), "{unsupported:?}");
+    assert!(item(&result, "pain").documentation.as_ref().unwrap().document.blocks.iter()
+        .any(|block| matches!(block, Block::Heading { inlines, .. } if serde_json::to_string(inlines).unwrap().contains("Disclaimer"))));
 }
 
 #[test]
@@ -648,7 +649,7 @@ fn dynamic_rd_preserves_surrounding_content_and_one_placeholder() {
 #[test]
 fn unsupported_rd_nodes_retain_source_once_in_the_enclosing_document() {
     let rd = r"\name{f}\alias{f}\title{Example}\usage{f(x)}
-\description{Before \link[=f]{f()} and \eqn{x^2}, then \link[=f]{f()} after.}
+\description{Before \Sexpr{1} and \out{x}, then \Sexpr{2} after.}
 \examples{\Sexpr{stop('must not execute')}}";
     let result = extract(&small("f <- function(x) x", "export(f)", rd));
     assert!(
@@ -695,7 +696,7 @@ fn unsupported_rd_nodes_retain_source_once_in_the_enclosing_document() {
             _ => None,
         })
         .collect();
-    assert_eq!(inline_kinds, ["rd-\\link", "rd-\\eqn", "rd-\\link"]);
+    assert_eq!(inline_kinds, ["rd-\\Sexpr", "rd-\\out", "rd-\\Sexpr"]);
     let block_kinds: Vec<_> = doc
         .document
         .blocks
@@ -976,7 +977,7 @@ Second paragraph.}
         2
     );
     assert!(value.to_string().contains("emphasis"));
-    assert!(value.to_string().contains("semantic-reference"));
+    assert!(value.to_string().contains("@ref f"));
     support::assert_json_golden(&value, "r-components/markup.json");
     assert!(
         item(&result, "f")

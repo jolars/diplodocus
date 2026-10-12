@@ -43,6 +43,8 @@ pub struct RExtraction {
     pub target: TargetReference,
     /// Validated metadata, absent on malformed input.
     pub metadata: Option<RMetadata>,
+    /// Installed help evidence for referenced topics.
+    pub help_links: BTreeMap<String, Vec<crate::ir::RHelpTarget>>,
     /// Canonical items with independent signatures and documentation.
     pub items: BTreeMap<String, Item>,
     /// Every consumed input, including malformed bytes retained for inspection.
@@ -96,6 +98,7 @@ pub fn extract_target(
         package: package.id.clone(),
         target: reference,
         metadata: None,
+        help_links: BTreeMap::new(),
         items: BTreeMap::new(),
         inputs: BTreeMap::new(),
         diagnostics: vec![],
@@ -138,6 +141,10 @@ pub fn extract_target(
             &mut result,
         );
     }
+    let discovery = libraries::Libraries::discover();
+    let os_type = discovery
+        .as_ref()
+        .map_or("unix", libraries::Libraries::os_type);
     let mut definitions = vec![];
     let mut namespace = namespace::Namespace::default();
     let mut topics = vec![];
@@ -154,7 +161,9 @@ pub fn extract_target(
                 definitions.extend(source::parse(text, &input.source, &mut result.diagnostics))
             }
             "rd" => {
-                if let Some(topic) = rd::parse(text, &input.source, &mut result.diagnostics) {
+                if let Some(topic) =
+                    rd::parse(text, &input.source, &mut result.diagnostics, os_type)
+                {
                     if let ProvenanceActivity::Extraction { inputs, .. } =
                         &mut result.provenance.activity
                     {
@@ -174,7 +183,7 @@ pub fn extract_target(
             _ => unreachable!(),
         }
     }
-    let mut libraries = match libraries::Libraries::discover() {
+    let mut libraries = match discovery {
         Ok(libraries) => libraries,
         Err(message) => {
             result.diagnostics.push(Diagnostic::new(
@@ -210,9 +219,6 @@ pub fn extract_target(
             }
         }
     }
-    if let ProvenanceActivity::Extraction { parsers, .. } = &mut result.provenance.activity {
-        parsers.insert("rd-rds".into(), libraries.provenance());
-    }
     let imported_names = namespace
         .imports
         .iter()
@@ -241,6 +247,39 @@ pub fn extract_target(
         &namespace,
         &mut result.diagnostics,
     );
+    let mut requested = BTreeSet::new();
+    for item in result.items.values() {
+        if let Some(document) = &item.documentation {
+            crate::validation::document_references(
+                &document.document.blocks,
+                None,
+                &mut |kind, spelling, _, _| {
+                    if kind == crate::validation::ReferenceKind::Link
+                        && let Some(target) = spelling.strip_prefix("@ref ")
+                    {
+                        requested.insert(target.to_owned());
+                    }
+                },
+            );
+        }
+    }
+    let dependencies: BTreeSet<_> = result
+        .metadata
+        .as_ref()
+        .into_iter()
+        .flat_map(|metadata| metadata.dependencies.values().flatten())
+        .filter(|dependency| dependency.name != "R")
+        .map(|dependency| dependency.name.clone())
+        .collect();
+    for spelling in requested {
+        result.help_links.insert(
+            spelling.clone(),
+            libraries.help_targets(&spelling, &dependencies),
+        );
+    }
+    if let ProvenanceActivity::Extraction { parsers, .. } = &mut result.provenance.activity {
+        parsers.insert("rd-rds".into(), libraries.provenance());
+    }
     result.diagnostics.sort();
     result.diagnostics.dedup();
     finish_provenance(&mut result);

@@ -37,6 +37,13 @@ declarations. It connects exports and S3 registrations to direct source
 definitions, then attaches supported Rd topics, aliases, usage, arguments, and
 prose. Rd examples remain display-only.
 
+Rd content supports labeled local and package-qualified help links, equations,
+aligned tables, custom sections, named return entries, HTML and platform
+conditionals, and DOI links. Equations render natively with `katex-rs` and bundled
+fonts, so they work with JavaScript disabled. External help links use installed
+help aliases to select rdrr.io destinations; snapshots retain the results so
+generation needs neither R nor installed help databases.
+
 Dataset topics marked `\docType{data}` create documented data objects without
 requiring source bindings or exports. Their usage lists bare object names, and
 their Format and Source sections retain structured prose, lists, and links.

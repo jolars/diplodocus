@@ -107,3 +107,9 @@ blockquote, .callout { border-left: 4px solid #688b84; padding: .2rem 1rem; marg
   .package-overview { display: grid; grid-template-columns: minmax(0, 1fr) 13rem; gap: 2rem; align-items: start; }
   .package-metadata { margin-top: 0; }
 }
+
+.align-left { text-align: left; }
+.align-center { text-align: center; }
+.align-right { text-align: right; }
+.math-display { max-width: 100%; overflow-x: auto; margin: 1rem 0; }
+.math-display:not(.math-rendered) { white-space: pre-wrap; }

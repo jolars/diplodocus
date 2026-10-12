@@ -226,6 +226,9 @@ pub(super) fn inline_text(inlines: &[Inline]) -> String {
                 target.clone()
             }
             Inline::Unsupported { raw, .. } => raw.clone(),
+            Inline::Math {
+                latex, fallback, ..
+            } => fallback.as_ref().unwrap_or(latex).clone(),
         })
         .collect()
 }

@@ -1,6 +1,8 @@
 //! Rendering of validated site models into static output.
 
 mod html;
+mod katex_assets;
+mod math;
 mod navigation;
 mod package_metadata;
 mod publish;

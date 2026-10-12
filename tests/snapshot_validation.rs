@@ -383,7 +383,10 @@ fn rejects_malformed_records_paths_and_keys() {
             }
             "unknown-field" => record(export, "package")["unknown"] = true.into(),
             "wrong-shape" => *record(export, "package") = json!([]),
-            "ir-version" => record(export, "workspace")["schema_version"] = 2.into(),
+            "ir-version" => {
+                record(export, "workspace")["schema_version"] =
+                    (WORKSPACE_SCHEMA_VERSION + 1).into()
+            }
             "absolute-path" => record(export, "package")["path"] = "/tmp/source".into(),
             "parent-path" => record(export, "package")["metadata_path"] = "../metadata".into(),
             "windows-path" => record(export, "package")["path"] = "C:\\source".into(),
@@ -623,8 +626,8 @@ fn legacy_rd_fallback_payloads_never_render_as_document_copies() {
                 if unsupported {
                     object.insert("raw".into(), raw.into());
                     // Snapshot strings remain untrusted even when only the label is rendered.
-                    if object["source_kind"] == "rd-\\eqn" {
-                        object.insert("source_kind".into(), "rd-\\eqn<script>&".into());
+                    if object["source_kind"] == "rd-\\out" {
+                        object.insert("source_kind".into(), "rd-\\out<script>&".into());
                     }
                 }
                 usize::from(unsupported)
@@ -644,7 +647,7 @@ fn legacy_rd_fallback_payloads_never_render_as_document_copies() {
     let root = support::acceptance_workspace();
     let rd = r"\name{experimental_summary}\alias{experimental_summary}\title{Example}
 \usage{experimental_summary(x)}
-\description{Before \link[=experimental_summary]{summary} and \eqn{x^2} after.}
+\description{Before \Sexpr{1} and \out{x} after.}
 \examples{\Sexpr{stop('must not execute')}}";
     root.write("r/man/experimental_summary.Rd", rd);
     let sources = assemble_workspace(root.path().join("workspace/diplodocus.toml")).unwrap();
@@ -665,10 +668,65 @@ fn legacy_rd_fallback_payloads_never_render_as_document_copies() {
         .unwrap();
     assert!(html.contains("Before "));
     assert!(html.contains(" after."));
-    assert!(html.contains("[Unsupported Rd: \\link]"));
-    assert!(html.contains("[Unsupported Rd: \\eqn&lt;script&gt;&amp;]"));
+    assert!(html.contains("[Unsupported Rd: \\Sexpr]"));
+    assert!(html.contains("[Unsupported Rd: \\out&lt;script&gt;&amp;]"));
     assert!(html.contains("[Unsupported Rd: examples]"));
     assert!(!html.contains("\\name{experimental_summary}"));
     assert!(!html.contains("must not execute"));
     assert!(!html.contains("<script>&"));
+}
+
+#[test]
+fn rejects_changed_rd_help_destinations_and_invalid_candidate_evidence() {
+    let root = support::acceptance_workspace();
+    support::add_r_rd_content(&root);
+    let sources = assemble_workspace(root.path().join("workspace/diplodocus.toml")).unwrap();
+    let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+    for case in [
+        "destination",
+        "local-destination",
+        "package",
+        "duplicate",
+        "topic",
+    ] {
+        assert!(
+            changed(&snapshot, |export| {
+                if matches!(case, "destination" | "local-destination") {
+                    let reference = export["records"]
+                        .as_array_mut()
+                        .unwrap()
+                        .iter_mut()
+                        .filter_map(|record| record["content"]["references"].as_array_mut())
+                        .flatten()
+                        .find(|reference| reference["spelling"] == "@ref grid::gpar")
+                        .unwrap();
+                    reference["target"] = if case == "destination" {
+                        json!({"kind": "external", "url": "https://example.com/substituted"})
+                    } else {
+                        json!({"kind": "item", "item": {"package": "rfoo", "item": "fit"}})
+                    };
+                } else {
+                    let package = export["records"]
+                        .as_array_mut()
+                        .unwrap()
+                        .iter_mut()
+                        .find(|record| record["kind"] == "package" && record["id"] == "rfoo")
+                        .unwrap();
+                    let candidates =
+                        &mut package["content"]["metadata"]["data"]["help_links"]["grid::gpar"];
+                    match case {
+                        "package" => candidates[0]["package"] = "base".into(),
+                        "topic" => candidates[0]["topic"] = "bad\nname".into(),
+                        "duplicate" => {
+                            let candidate = candidates[0].clone();
+                            candidates.as_array_mut().unwrap().push(candidate);
+                        }
+                        _ => unreachable!(),
+                    }
+                }
+            })
+            .is_err(),
+            "accepted {case}"
+        );
+    }
 }

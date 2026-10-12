@@ -121,8 +121,32 @@ Strict Rd views validate topic names, aliases, section shapes, and arguments.
 Supported sections become headings, prose, usage blocks, argument entries,
 lists, links, inline formatting, and display code. Value, details, references,
 examples, notes, authors, see-also entries, keywords, and concepts retain their
-content. Unqualified `\link` nodes become semantic references. Unsupported
-markup, including `\Sexpr`, becomes a compact visible marker such as
+content. Rd links retain their labels independently of their targets. `\link{topic}`,
+`\link[=topic]{label}`, `\link[pkg]{topic}`, and `\link[pkg:topic]{label}` become
+links with `@ref` targets. Links nested inside `\code` retain code styling.
+Resolution prefers the owning package and then a unique R workspace match;
+package qualifiers accept published DESCRIPTION names and workspace IDs.
+A qualifier naming a workspace package never falls back to an installed release.
+Otherwise, installed help aliases from declared dependencies and standard R
+packages supply rdrr.io destinations. Missing and ambiguous topics produce
+errors. Help-index fingerprints and candidate destinations travel with snapshots,
+so generation needs neither R nor installed help databases.
+
+`\eqn` and `\deqn` retain verbatim LaTeX and optional text alternatives. The
+native `katex-rs` renderer emits HTML and MathML with bundled CSS and fonts;
+math works with JavaScript disabled. Unsupported LaTeX falls back to the text
+alternative or LaTeX source. `\tabular` retains column alignment and all rows
+without inferring headers. Custom `\section` and `\subsection` content becomes
+headings, and named `\value` entries retain their labels and descriptions.
+`\doi` becomes an HTTPS link to doi.org.
+
+Format conditionals select HTML content, including comma-separated formats,
+`TRUE`, and `FALSE`. Platform `#ifdef` and `#ifndef` blocks select `unix` or
+`windows` using R's platform observation. Selection precedes semantic section
+validation, and unselected branches contribute no references or unsupported-node
+warnings. The selected content and platform evidence remain in the snapshot.
+
+Unsupported markup, including `\Sexpr`, becomes a compact visible marker such as
 `[Unsupported Rd: \Sexpr]` and produces an `unsupported-rd` warning. Unsupported
 nodes have empty raw fragments because the parser provides no exact node ranges.
 The enclosing document and extraction inputs retain the complete original Rd
@@ -146,7 +170,8 @@ with callable names or aliases produce errors. Dataset aliases, internal flags,
 and explicit name exports retain their usual evidence and discovery behavior.
 The acceptance fixtures use eulerr's `fruits`, `organisms`, `pain`, and `plants`
 topics unchanged. They also supply a local topic for links to R data structures;
-installed help links and custom sections remain separate compatibility work.
+installed help links and custom sections use the same Rd lowering and resolution
+rules as callable topics.
 
 Callable topics marked `\keyword{internal}` set `RItemData.internal` independently
 of `exported`. Their signatures, documentation, identities, and source evidence

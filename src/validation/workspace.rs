@@ -25,7 +25,7 @@ pub(crate) fn semantic_target<'a>(
         return Some(spelling);
     }
     if kind == ReferenceKind::Link
-        && matches!(&document.source_format, DocumentFormat::Extracted { name } if name == "julia-markdown")
+        && matches!(&document.source_format, DocumentFormat::Extracted { name } if name == "julia-markdown" || name == "rd")
     {
         return spelling.strip_prefix("@ref ");
     }
@@ -496,6 +496,15 @@ impl Resolver<'_> {
     ) -> Result<ReferenceTarget, DiagnosticCode> {
         let invalid = DiagnosticCode::UnresolvedDocumentReference;
         if let Some(spelling) = semantic_target(context.document, kind, spelling) {
+            if matches!(&context.document.source_format, DocumentFormat::Extracted { name } if name == "rd")
+                && kind == ReferenceKind::Link
+            {
+                return references::resolve_rd_help(
+                    self.sources.workspace(),
+                    context.owner,
+                    spelling,
+                );
+            }
             return references::resolve_item(self.sources.workspace(), context.owner, spelling)
                 .map(|item| ReferenceTarget::Item { item });
         }

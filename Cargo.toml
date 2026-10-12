@@ -32,6 +32,7 @@ html5ever = "=0.39.0"
 image = { version = "=0.25.10", default-features = false, features = ["jpeg", "png"] }
 jupyter-protocol = "=2.0.2"
 jupyter-zmq-client = { version = "=1.0.1", features = ["tokio-runtime"] }
+katex = { package = "katex-rs", version = "=0.3.0", default-features = false }
 markup5ever_rcdom = "=0.39.0"
 panache-parser = "=0.30.0"
 pep440_rs = "=0.7.3"

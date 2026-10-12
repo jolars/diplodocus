@@ -79,7 +79,9 @@ fn visit_blocks<'a>(
                 }
             }
             Block::ThematicBreak { .. } | Block::CodeBlock { .. } => {}
-            Block::CodeCell(_) => return Err(RestoreRejection::Structure),
+            Block::CodeCell(_) | Block::DisplayMath { .. } => {
+                return Err(RestoreRejection::Structure);
+            }
         }
     }
     Ok(())

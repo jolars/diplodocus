@@ -45,6 +45,7 @@
       "span": null
     }
   ],
+  "help_links": {},
   "inputs": {
     "DESCRIPTION": {
       "kind": "package-metadata",
@@ -5451,6 +5452,7 @@
             "exports:methods": "bd30bca122ff55ac1529be2facd8cf65b1f960f57a8b47d8cb9e878dae64c80c",
             "exports:stats": "6fbc04b5322b316aebe7d24e81a4e239c44a69301bff830fbf7d8321f867a252",
             "exports:utils": "1c2cb5ed309154c8740cccf38f8e20707dd04ccf42ee0b335f8c94a664f86733",
+            "os-type": "unix",
             "r-version": "4.6.1"
           },
           "version": "0.5.0"
@@ -5479,7 +5481,7 @@
       "rd-source": "0.4.0"
     }
   },
-  "schema_version": 1,
+  "schema_version": 2,
   "target": {
     "package": "rfoo",
     "target": "api"

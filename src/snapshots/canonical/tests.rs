@@ -103,7 +103,7 @@ fn minimal_export_and_snapshot_digest_match_independent_fixture() {
     );
     assert_eq!(
         content_fingerprint(&snapshot, &records(&snapshot).unwrap()).unwrap(),
-        "a573096448832e533ef78a5f1dcef56a388dd7735eb08955438f6e3403bf504f"
+        "9ead992309a5f20df37165895695554936eab87beb5b81b523dfd488b02888f2"
     );
 }
 

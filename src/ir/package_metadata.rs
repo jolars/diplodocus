@@ -81,9 +81,36 @@ pub enum PackageMetadata {
 pub struct RPackageMetadata {
     /// Original validated DESCRIPTION fields and their source evidence.
     pub description: RMetadata,
+    /// Installed help candidates keyed by the referenced topic or package-qualified topic.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub help_links: BTreeMap<String, Vec<RHelpTarget>>,
     /// Results completed during extraction; absent during source validation.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub runtime: Option<RPackageRuntime>,
+}
+
+/// Installed help evidence retained for reference resolution without R.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RHelpTarget {
+    /// Published package name.
+    pub package: String,
+    /// Canonical help filename, without an extension.
+    pub topic: String,
+    /// Repository used by rdrr.io.
+    pub repository: RdrrRepository,
+}
+
+/// An rdrr.io help collection.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum RdrrRepository {
+    /// Packages bundled with R.
+    R,
+    /// CRAN packages.
+    Cran,
+    /// Bioconductor packages.
+    Bioc,
 }
 
 /// Native R results stored so generation needs neither R nor the checkout.

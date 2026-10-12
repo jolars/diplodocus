@@ -400,7 +400,7 @@ impl Live<'_> {
                         raw,
                         span,
                     },
-                    Block::CodeCell(_) => {
+                    Block::CodeCell(_) | Block::DisplayMath { .. } => {
                         return Err(LiveError::Policy(MarkdownRejectionReason::Structure));
                     }
                 })
@@ -420,6 +420,9 @@ impl Live<'_> {
             .map(|node| {
                 Ok(match node {
                     Inline::Text { value, span } => FragmentInline::Text { value, span },
+                    Inline::Math { .. } => {
+                        return Err(LiveError::Policy(MarkdownRejectionReason::Structure));
+                    }
                     Inline::Space { span } => FragmentInline::Space { span },
                     Inline::SoftBreak { span } => FragmentInline::SoftBreak { span },
                     Inline::HardBreak { span } => FragmentInline::HardBreak { span },

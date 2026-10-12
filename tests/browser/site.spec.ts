@@ -387,3 +387,41 @@ test.describe("navigation without JavaScript", () => {
     await fitsViewport(page);
   });
 });
+
+test("structured Rd renders math, tables, sections, and help labels", async ({ page }, info) => {
+  await page.goto("/packages/r/");
+  const link = page.getByRole("navigation", { name: "Documentation" }).getByRole("link", { name: "rd_content", exact: true });
+  await openNavigation(page, info);
+  await link.click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("rd_content");
+  await expect(page.locator(".math-display .katex")).toHaveCount(4);
+  await expect(page.locator(".math:not(.math-display) .katex")).toHaveCount(2);
+  await expect(page.locator(".katex-mathml math")).toHaveCount(6);
+  await expect(page.getByRole("table")).toHaveCount(1);
+  await expect(page.getByRole("table").locator("tr").first().locator("td")).toHaveCount(9);
+  await expect(page.getByRole("heading", { level: 2, name: "Graphical parameters", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 3, name: "Links", exact: true })).toBeVisible();
+  await expect(page.getByRole("main").getByRole("link", { name: "graphical parameters", exact: true })).toHaveAttribute("href", "https://rdrr.io/r/grid/gpar.html");
+  await expect(page.getByRole("main").getByRole("link", { name: "rd_content()", exact: true }).locator("code")).toHaveText("rd_content()");
+  await expect(page.getByRole("main")).toContainText("HTML-only content.");
+  await expect(page.getByRole("main")).not.toContainText("Text-only content.");
+  await expect(page.locator(".unsupported")).toHaveCount(0);
+  await expect(page.locator('script[src*="katex"], script[src*="math.js"]')).toHaveCount(0);
+  await fitsViewport(page);
+  await capture(page, info, "r-rd-content");
+});
+
+test("Rd equations remain typeset with JavaScript disabled", async ({ browser, baseURL }, info) => {
+  const context = await browser.newContext({ javaScriptEnabled: false, baseURL, viewport: info.project.use.viewport });
+  try {
+    const page = await context.newPage();
+    await page.goto("/packages/r/");
+    const link = page.getByRole("navigation", { name: "Documentation" }).getByRole("link", { name: "rd_content", exact: true });
+    await page.goto(new URL((await link.getAttribute("href"))!, page.url()).href);
+    await expect(page.locator(".math-display .katex")).toHaveCount(4);
+    await expect(page.locator(".katex-mathml math")).toHaveCount(6);
+    await fitsViewport(page);
+  } finally {
+    await context.close();
+  }
+});

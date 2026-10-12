@@ -16,12 +16,15 @@ fn schema_version_is_explicit_and_rejects_unknown_versions() {
         serde_json::from_value::<Workspace>(value.clone()).unwrap(),
         workspace
     );
-    value["schema_version"] = json!(2);
+    value["schema_version"] = json!(WORKSPACE_SCHEMA_VERSION + 1);
     assert!(serde_json::from_value::<Workspace>(value.clone()).is_err());
     value.as_object_mut().unwrap().remove("schema_version");
     assert!(serde_json::from_value::<Workspace>(value).is_err());
-    assert_eq!(serde_json::to_string(&SchemaVersion).unwrap(), "1");
-    for invalid in [json!(0), json!(-1), json!("1"), json!(null)] {
+    assert_eq!(
+        serde_json::to_string(&SchemaVersion).unwrap(),
+        WORKSPACE_SCHEMA_VERSION.to_string()
+    );
+    for invalid in [json!(0), json!(1), json!(-1), json!("1"), json!(null)] {
         assert!(serde_json::from_value::<SchemaVersion>(invalid).is_err());
     }
 }
@@ -87,7 +90,7 @@ fn sample() -> serde_json::Value {
         }}
     }});
     json!({
-        "schema_version": 1, "name": "Foo",
+        "schema_version": WORKSPACE_SCHEMA_VERSION, "name": "Foo",
         "repositories": {"core": {
             "canonical_url": "https://example.com/foo.git",
             "source_link_template": "https://example.com/foo/blob/{revision}/{path}#L{line}",

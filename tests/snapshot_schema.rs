@@ -45,7 +45,7 @@ fn every_entity_is_queryable_by_its_documented_semantic_key() {
                 |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
             )
             .unwrap();
-        assert_eq!(manifest, (2, 1, 1));
+        assert_eq!(manifest, (2, 2, 1));
         let mut count = 0;
         let mut assert_record = |kind: &str, owner: &str, id: &str, expected: &Value| {
             let content: String = db
@@ -65,7 +65,7 @@ fn every_entity_is_queryable_by_its_documented_semantic_key() {
             "",
             "",
             &json!({
-                "schema_version": 1,
+                "schema_version": 2,
                 "name": workspace.name,
                 "relationships": workspace.relationships,
                 "diagnostics": workspace.diagnostics,
