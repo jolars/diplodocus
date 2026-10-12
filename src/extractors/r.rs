@@ -237,6 +237,7 @@ pub fn extract_target(
         &package.id,
         &mut result.items,
         &topics,
+        &namespace,
         &mut result.diagnostics,
     );
     result.diagnostics.sort();

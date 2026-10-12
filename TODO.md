@@ -152,7 +152,7 @@ exposed these compatibility, content, and presentation gaps.
   imports without loading package code. Handle documented internal helpers
   without requiring public declarations, and keep internal grid hooks out of
   public navigation and search.
-- [ ] Support dataset topics, including bare object usage and the `docType`,
+- [x] Support dataset topics, including bare object usage and the `docType`,
   `format`, and `source` sections. Use eulerr's `fruits`, `organisms`,
   `pain`, and `plants` datasets as acceptance cases.
 - [ ] Support Rd links with options, including local targets, package-qualified

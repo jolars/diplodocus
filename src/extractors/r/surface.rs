@@ -48,6 +48,13 @@ pub(super) fn reconcile(
                     .or_default()
                     .insert(name.clone());
             }
+            None if !namespace
+                .methods
+                .iter()
+                .any(|method| method.binding == *name)
+                && topics
+                    .iter()
+                    .any(|topic| topic.valid && topic.dataset && topic.aliases.contains(name)) => {}
             None => diagnostics.push(diagnostic(
                 DiagnosticCode::RUnresolvedDefinition,
                 Severity::Error,

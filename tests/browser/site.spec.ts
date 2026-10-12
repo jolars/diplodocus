@@ -108,6 +108,37 @@ test("internal R helpers and grid hooks remain addressable but undiscoverable", 
   await capture(page, info, "r-internal-helper");
 });
 
+for (const [name, format, source] of [
+  ["fruits", "100 observations of 5 variables", undefined],
+  ["organisms", "7 observations", "VennMaster/blob/master/data_examples/deploy/example1.list"],
+  ["pain", "pain distribution in rows", "Westergren H, Larsson J, Freeman M"],
+  ["plants", "33,721 plants", "National Plant Data Center"],
+]) {
+  test(`R dataset ${name} appears in search and retains its documentation`, async ({ page }, info) => {
+    await page.goto("/packages/r/");
+    await page.getByRole("searchbox").fill(name!);
+    await page.locator("#search-results").getByRole("link", { name: `${name} · Tiny Stats for R`, exact: true }).click();
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(name!);
+    const main = page.getByRole("main");
+    await expect(main.getByRole("heading", { name: "Usage", exact: true })).toBeVisible();
+    await expect(main.getByRole("heading", { name: "Format", exact: true })).toBeVisible();
+    await expect(main).toContainText(format!);
+    await expect(main).not.toContainText(`${name}()`);
+    await expect(main.locator("pre code")).toHaveText([name!, name!]);
+    if (source) {
+      await expect(main.getByRole("heading", { name: "Source", exact: true })).toBeVisible();
+      await expect(main).toContainText(source);
+    }
+    if (name === "fruits") {
+      for (const field of ["banana", "apple", "orange", "sex", "age"]) {
+        await expect(main).toContainText(field);
+      }
+    }
+    await fitsViewport(page);
+    await capture(page, info, `r-dataset-${name}`);
+  });
+}
+
 async function openNavigation(page: Page, info: TestInfo) {
   if (info.project.name === "mobile") {
     const disclosure = page.locator(".nav-disclosure");

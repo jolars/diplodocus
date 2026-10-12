@@ -60,6 +60,169 @@ fn item<'a>(result: &'a RExtraction, name: &str) -> &'a Item {
 }
 
 #[test]
+fn eulerr_datasets_are_documented_without_source_bindings_or_exports() {
+    let workspace = small("stop('Dataset extraction must not run code.')", "", "");
+    support::add_r_datasets(&workspace);
+    let result = extract(&workspace);
+    assert!(
+        result
+            .diagnostics
+            .iter()
+            .all(|d| d.severity != Severity::Error),
+        "{:?}",
+        result.diagnostics
+    );
+    for name in ["fruits", "organisms", "pain", "plants"] {
+        let dataset = item(&result, name);
+        assert_eq!(dataset.kind, diplodocus::ir::ItemKind::Constant);
+        assert!(matches!(&dataset.language_data,
+            Some(ItemLanguageData::R(data)) if !data.exported && matches!(data.declaration, RDeclaration::Dataset)));
+        assert!(matches!(
+            dataset.signatures[0].signature,
+            diplodocus::ir::Signature::Value {
+                annotation: None,
+                value: None
+            }
+        ));
+        let doc = dataset.documentation.as_ref().unwrap();
+        assert_eq!(
+            doc.raw_source.as_deref(),
+            Some(workspace.read(format!("r/man/{name}.Rd")).as_str())
+        );
+        let headings: Vec<_> = doc
+            .document
+            .blocks
+            .iter()
+            .filter_map(|block| match block {
+                Block::Heading { inlines, .. } => Some(serde_json::to_string(inlines).unwrap()),
+                _ => None,
+            })
+            .collect();
+        assert!(headings.iter().any(|heading| heading.contains("Format")));
+        assert!(headings.iter().any(|heading| heading.contains("Usage")));
+        if name != "fruits" {
+            assert!(headings.iter().any(|heading| heading.contains("Source")));
+        }
+        assert!(
+            doc.document
+                .blocks
+                .iter()
+                .any(|block| matches!(block, Block::CodeBlock { source, .. } if source == name))
+        );
+        assert!(
+            dataset
+                .aliases
+                .iter()
+                .any(|alias| alias.qualified_name == name)
+        );
+        let id = diplodocus::ir::SemanticIdentity::r_dataset(name).unwrap();
+        assert!(result.items.contains_key(id.item_id()));
+        assert_ne!(
+            id,
+            diplodocus::ir::SemanticIdentity::r_function(name).unwrap()
+        );
+    }
+    let unsupported: Vec<_> = result
+        .diagnostics
+        .iter()
+        .filter(|d| d.code.as_str() == "unsupported-rd")
+        .map(|d| d.message.as_str())
+        .collect();
+    assert_eq!(unsupported.len(), 1, "{unsupported:?}");
+    assert!(unsupported[0].contains("section"));
+}
+
+#[test]
+fn dataset_aliases_non_syntactic_usage_and_explicit_exports_are_preserved() {
+    let rd = r"\docType{data}\name{strange data}\alias{strange data}\alias{extra}
+\title{Dataset}\usage{`strange data`
+extra}\format{A list.}\source{A survey.}
+\description{Documented data.}\keyword{internal}";
+    let workspace = small("", "export(`strange data`)", rd);
+    let original = extract(&workspace);
+    assert_eq!(codes(&original), ["r-rd-source-attribution"]);
+    let dataset = item(&original, "strange data");
+    assert!(matches!(&dataset.language_data,
+        Some(ItemLanguageData::R(data)) if data.exported && data.internal));
+    assert!(!dataset.discoverable());
+    assert_eq!(dataset.provenance.len(), 2);
+    assert!(dataset.documentation.as_ref().unwrap().document.blocks.iter().any(|block|
+        matches!(block, Block::CodeBlock { source, .. } if source == "`strange data`")));
+    assert!(
+        dataset
+            .aliases
+            .iter()
+            .any(|alias| alias.qualified_name == "extra")
+    );
+    assert!(
+        dataset
+            .documentation
+            .as_ref()
+            .unwrap()
+            .document
+            .blocks
+            .iter()
+            .any(|block| matches!(block, Block::CodeBlock { source, .. } if source == "extra"))
+    );
+    workspace.write("r/man/moved.Rd", format!("% A relocated topic.\n{rd}"));
+    workspace.remove("r/man/api.Rd");
+    let moved = extract(&workspace);
+    assert_eq!(
+        original.items.keys().collect::<Vec<_>>(),
+        moved.items.keys().collect::<Vec<_>>()
+    );
+}
+
+#[test]
+fn dataset_usage_and_sections_reject_unsupported_or_ambiguous_shapes() {
+    for usage in [
+        "fruits()",
+        "fruits[1]",
+        "fruits <- 1",
+        "'fruits'",
+        "NULL",
+        "ghost",
+    ] {
+        let rd = format!(r"\docType{{data}}{}", topic("fruits", usage));
+        let result = extract(&small("", "", &rd));
+        assert!(
+            result
+                .diagnostics
+                .iter()
+                .any(|d| d.severity == Severity::Error),
+            "{usage}"
+        );
+    }
+    for section in [
+        r"\docType{data}",
+        r"\format{Another format.}",
+        r"\source{Another source.}",
+    ] {
+        let rd = format!(
+            r"\docType{{data}}{}\format{{A list.}}\source{{A survey.}}{section}",
+            topic("fruits", "fruits")
+        );
+        let result = extract(&small("", "", &rd));
+        assert!(
+            codes(&result).contains(&"r-rd-information-loss"),
+            "{section}"
+        );
+        assert!(result.items.is_empty());
+    }
+    let rd = format!(r"\docType{{data}}{}", topic("fruits", "fruits"));
+    let workspace = small("fruits <- function() 1", "export(fruits)", &rd);
+    assert!(codes(&extract(&workspace)).contains(&"r-conflicting-surface"));
+    let workspace = small("", "", &rd);
+    workspace.write("r/man/duplicate.Rd", &rd);
+    assert!(codes(&extract(&workspace)).contains(&"r-conflicting-surface"));
+    let result = extract(&small("", "exportPattern('fruits')", &rd));
+    assert!(codes(&result).contains(&"r-unsupported-namespace"));
+    assert!(result.items.is_empty());
+    let result = extract(&small("", "S3method(print, fruits, fruits)", &rd));
+    assert!(codes(&result).contains(&"r-unresolved-definition"));
+}
+
+#[test]
 fn base_s3_generics_resolve_without_explicit_imports() {
     let result = extract(&small(
         "print.foo <- function(x, ...) x",
@@ -302,6 +465,21 @@ fn eulerr_source_resolves_registered_generics_and_documented_helpers() {
         "Resolved {method_count} eulerr S3 registrations; {} total items.",
         result.items.len()
     );
+    for name in ["fruits", "organisms", "pain", "plants"] {
+        let dataset = item(&result, name);
+        assert!(matches!(&dataset.language_data,
+            Some(ItemLanguageData::R(data)) if matches!(data.declaration, RDeclaration::Dataset)));
+        assert!(
+            dataset
+                .documentation
+                .as_ref()
+                .unwrap()
+                .document
+                .blocks
+                .iter()
+                .any(|block| matches!(block, Block::CodeBlock { source, .. } if source == name))
+        );
+    }
 }
 
 #[test]

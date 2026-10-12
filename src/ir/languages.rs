@@ -271,6 +271,8 @@ pub struct RItemData {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum RDeclaration {
+    /// A dataset documented by an Rd topic with `\docType{data}`.
+    Dataset,
     /// An ordinary named function.
     Function,
     /// An S3 generic is itself the canonical callable family.

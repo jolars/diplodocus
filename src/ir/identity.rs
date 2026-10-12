@@ -162,6 +162,11 @@ impl SemanticIdentity {
         Self::r_named(name, "package")
     }
 
+    /// Build a dataset key from its documented object name.
+    pub fn r_dataset(name: &str) -> Result<Self, IdentityError> {
+        Self::r_named(name, "dataset")
+    }
+
     /// Build an S3 generic's key; the generic is also its callable family.
     pub fn r_s3_generic(name: &str) -> Result<Self, IdentityError> {
         Self::r_named(name, "s3-generic")

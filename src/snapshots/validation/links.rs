@@ -274,7 +274,9 @@ impl Links<'_> {
                 }
             }
             ItemLanguageData::R(data) => match &data.declaration {
-                RDeclaration::Function | RDeclaration::Constructor { .. } => Ok(()),
+                RDeclaration::Dataset
+                | RDeclaration::Function
+                | RDeclaration::Constructor { .. } => Ok(()),
                 RDeclaration::S3Generic {
                     dispatch_object,
                     methods,

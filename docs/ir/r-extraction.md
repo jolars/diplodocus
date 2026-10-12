@@ -92,6 +92,11 @@ construction remain outside this subset.
 Exports, S3 registrations, and valid Rd aliases select maintained functions.
 Documented helpers do not require exports or S3 registration, but documentation
 cannot invent a definition or disambiguate uncertain source bindings.
+Dataset topics marked `\docType{data}` establish data objects directly from Rd,
+without requiring maintained assignments or namespace exports. They carry
+`RDeclaration::Dataset`, `ItemKind::Constant`, a value signature without an
+inferred type or value, and documentation evidence. Their identity uses
+`SemanticIdentity::r_dataset` and the topic's object name.
 Assignment aliases use
 the defining function's canonical identity and carry `r-assignment` evidence.
 Rd aliases carry `rd-alias` evidence. Neither kind creates another item.
@@ -126,6 +131,16 @@ Additional help aliases can refer to a single unambiguous topic target.
 Package topics with `\docType{package}` create a documented namespace item
 without a maintained function or signature. Their aliases remain separate
 from callable aliases, and conflicting package topics or aliases are errors.
+
+Dataset usage supports bare object names, including backtick names. Calls,
+assignments, and other expressions produce errors. The `\docType{data}` marker
+sets the declaration kind, while `\format` and `\source` become headed sections
+with structured content. Duplicate sections, conflicting topics, and collisions
+with callable names or aliases produce errors. Dataset aliases, internal flags,
+and explicit name exports retain their usual evidence and discovery behavior.
+The acceptance fixtures use eulerr's `fruits`, `organisms`, `pain`, and `plants`
+topics unchanged. They also supply a local topic for links to R data structures;
+installed help links and custom sections remain separate compatibility work.
 
 Callable topics marked `\keyword{internal}` set `RItemData.internal` independently
 of `exported`. Their signatures, documentation, identities, and source evidence

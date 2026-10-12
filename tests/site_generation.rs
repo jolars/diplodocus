@@ -5,6 +5,70 @@ use diplodocus::snapshots::Snapshot;
 use diplodocus::validation::resolve_workspace;
 
 #[test]
+fn eulerr_datasets_survive_snapshots_and_render_bare_usage_format_and_source() {
+    let root = support::acceptance_workspace();
+    support::add_r_datasets(&root);
+    let sources = assemble_workspace(root.path().join("workspace/diplodocus.toml")).unwrap();
+    let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+    let artifact = tempfile::tempdir().unwrap();
+    let path = artifact.path().join("snapshot.sqlite");
+    snapshot.publish(&path).unwrap();
+    drop(root);
+    let loaded = Snapshot::load(&path).unwrap();
+    let site = diplodocus::site::Site::new(&loaded).unwrap();
+    let rendered = diplodocus::rendering::render_site(&site).unwrap();
+    let search = std::str::from_utf8(&rendered.files()["assets/search.json"].bytes).unwrap();
+    for (name, format, source) in [
+        ("fruits", "100 observations of 5 variables", None),
+        (
+            "organisms",
+            "7 observations",
+            Some("VennMaster/blob/master/data_examples/deploy/example1.list"),
+        ),
+        (
+            "pain",
+            "pain distribution in rows",
+            Some("Westergren H, Larsson J, Freeman M"),
+        ),
+        (
+            "plants",
+            "33,721 plants",
+            Some("National Plant Data Center"),
+        ),
+    ] {
+        let html = rendered
+            .files()
+            .values()
+            .filter(|file| file.media_type.starts_with("text/html"))
+            .map(|file| std::str::from_utf8(&file.bytes).unwrap())
+            .find(|html| html.contains(&format!("<h1><code>{name}</code></h1>")))
+            .unwrap();
+        assert!(html.contains(format));
+        assert_eq!(
+            html.matches(&format!("<pre><code>{name}</code></pre>"))
+                .count(),
+            2
+        );
+        assert!(!html.contains(&format!("{name}()")));
+        assert!(html.contains(">Format</h2>"));
+        assert!(html.contains(">Usage</h2>"));
+        if let Some(source) = source {
+            assert!(html.contains(">Source</h2>"));
+            assert!(html.contains(source));
+        }
+        assert!(search.contains(&format!("\"title\":\"{name}\"")));
+        let navigation = html
+            .split("<nav aria-label=\"Documentation\">")
+            .nth(1)
+            .unwrap()
+            .split("<main")
+            .next()
+            .unwrap();
+        assert!(navigation.contains(&format!("><code>{name}</code></a>")));
+    }
+}
+
+#[test]
 fn internal_r_topics_survive_snapshots_without_public_navigation_or_search() {
     let root = support::acceptance_workspace();
     let fixture = support::fixture_path("r-internal-topics");

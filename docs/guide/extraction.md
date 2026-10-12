@@ -37,6 +37,10 @@ declarations. It connects exports and S3 registrations to direct source
 definitions, then attaches supported Rd topics, aliases, usage, arguments, and
 prose. Rd examples remain display-only.
 
+Dataset topics marked `\docType{data}` create documented data objects without
+requiring source bindings or exports. Their usage lists bare object names, and
+their Format and Source sections retain structured prose, lists, and links.
+
 Standard S3 generics from default R packages resolve without explicit imports.
 R must be available on `PATH`. Package-wide imports use the installed
 dependencies' metadata without loading their namespaces. Documented helpers

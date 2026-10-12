@@ -67,6 +67,16 @@ pub fn acceptance_workspace() -> TestWorkspace {
     TestWorkspace::from_fixture("acceptance")
 }
 
+pub fn add_r_datasets(workspace: &TestWorkspace) {
+    let fixture = fixture_path("r-datasets/man");
+    for file in files_under(&fixture) {
+        workspace.write(
+            Path::new("r/man").join(&file),
+            fs::read(fixture.join(file)).unwrap(),
+        );
+    }
+}
+
 pub fn fixture_path(relative: impl AsRef<Path>) -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("tests/fixtures")

@@ -61,6 +61,7 @@ if (mode === "serve-test") {
       cpSync(join(internalTopics, directory), join(workspace, "r", directory), { recursive: true });
     }
     appendFileSync(join(workspace, "r/NAMESPACE"), `\n${readFileSync(join(internalTopics, "NAMESPACE"), "utf8")}`);
+    cpSync(join(root, "tests/fixtures/r-datasets/man"), join(workspace, "r/man"), { recursive: true });
     process.exitCode = await run(process.env.DIPLODOCUS_BROWSER_BINARY, [
       "serve", "--config", join(workspace, "diplodocus.toml"),
       "--output", join(workspace, "site"),

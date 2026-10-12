@@ -58,6 +58,7 @@ ordinals, and absolute checkout roots are not identity inputs.
 | `python` | Canonical qualified name and declaration role |
 | `python_overload` | Canonical family name and role, plus normalized callable signature |
 | `r_function` | Maintained function name, including an S3 constructor function |
+| `r_dataset` | Documented dataset object name |
 | `r_s3_generic` | Canonical generic binding name |
 | `r_s3_method` | Maintained method binding name, qualified generic, and dispatch class |
 

@@ -10,15 +10,16 @@ use crate::diagnostics::{Diagnostic, DiagnosticCode, Severity};
 use crate::ir::{
     Attributes, Block, Document, DocumentFormat, IdentityRegistry, Inline, Item, ItemAlias,
     ItemAliasKind, ItemKind, ItemLanguageData, ListItem, Parameter, ParameterKind, RDeclaration,
-    RGenericReference, SemanticIdentity, Signature, SignatureExpression, SourceEvidence,
-    SourceLocation, SourceRole, SourceSpan, SourcedDocument,
+    RGenericReference, RItemData, SemanticIdentity, Signature, SignatureExpression, SourceEvidence,
+    SourceLocation, SourceRole, SourceSpan, SourcedDocument, SourcedSignature,
 };
 
-use super::{diagnostic, located, provenance, source};
+use super::{diagnostic, located, namespace::Namespace, provenance, source};
 
 pub(super) struct Topic {
     name: String,
     pub(super) package: bool,
+    pub(super) dataset: bool,
     pub(super) aliases: Vec<String>,
     pub(super) internal: bool,
     parts: Vec<Part>,
@@ -38,7 +39,7 @@ enum Part {
 struct Usage {
     name: String,
     method: Option<(String, String)>,
-    arguments: String,
+    arguments: Option<String>,
     parameters: Vec<Parameter>,
 }
 
@@ -121,6 +122,8 @@ pub(super) fn parse(
         document.inspect_see_also(),
         document.inspect_author(),
         document.inspect_doc_type(),
+        document.inspect_format(),
+        document.inspect_source(),
     ] {
         if let Err(error) = view {
             context.shape(error);
@@ -140,12 +143,11 @@ pub(super) fn parse(
         );
         valid = false;
     }
-    let package = document
-        .inspect_doc_type()
-        .ok()
-        .flatten()
-        .and_then(plain)
+    let doc_type = document.inspect_doc_type().ok().flatten().and_then(plain);
+    let package = doc_type
+        .as_ref()
         .is_some_and(|kind| kind.trim() == "package");
+    let dataset = doc_type.as_ref().is_some_and(|kind| kind.trim() == "data");
     let internal = !package
         && document.nodes().iter().any(|node| {
             matches!(node, RdNode::Tagged(tagged) if *tagged.tag() == RdTag::Keyword
@@ -233,9 +235,9 @@ pub(super) fn parse(
         };
         match tagged.tag() {
             RdTag::Name | RdTag::Alias => {}
-            RdTag::DocType if package => {}
+            RdTag::DocType if package || dataset => {}
             RdTag::Usage => {
-                let parsed = context.usages(tagged.children(), &path);
+                let parsed = context.usages(tagged.children(), &path, dataset);
                 if parsed.is_empty() && !tagged.children().is_empty() {
                     parts.push(Part::Blocks(vec![
                         context.unsupported_block("usage", &path),
@@ -261,6 +263,8 @@ pub(super) fn parse(
             | RdTag::Note
             | RdTag::SeeAlso
             | RdTag::Author
+            | RdTag::Format
+            | RdTag::Source
             | RdTag::Keyword
             | RdTag::Concept => {
                 let title = match tagged.tag() {
@@ -270,6 +274,8 @@ pub(super) fn parse(
                     RdTag::Note => "Notes",
                     RdTag::SeeAlso => "See also",
                     RdTag::Author => "Author",
+                    RdTag::Format => "Format",
+                    RdTag::Source => "Source",
                     RdTag::Keyword => "Keywords",
                     _ => "Concepts",
                 };
@@ -293,6 +299,7 @@ pub(super) fn parse(
     Some(Topic {
         name: name.trim().into(),
         package,
+        dataset,
         internal,
         aliases,
         parts,
@@ -620,7 +627,7 @@ impl Context<'_> {
         Some(result)
     }
 
-    fn usages(&mut self, nodes: &[RdNode], path: &RdPath) -> Vec<Usage> {
+    fn usages(&mut self, nodes: &[RdNode], path: &RdPath, dataset: bool) -> Vec<Usage> {
         let mut methods = BTreeMap::new();
         let Some(code) = self.code(nodes, path, &mut methods) else {
             self.unsupported("usage", path);
@@ -637,6 +644,24 @@ impl Context<'_> {
         }
         let mut result = vec![];
         for expr in parsed.cst.children_with_tokens().filter_map(Expr::cast) {
+            if dataset {
+                let bare = matches!(&expr, Expr::Name(name) if !name.is_reserved_constant())
+                    || matches!(&expr, Expr::StringLiteral(name) if name.is_backtick());
+                if let Some(name) = bare.then(|| source::static_name(&expr)).flatten() {
+                    result.push(Usage {
+                        name,
+                        method: None,
+                        arguments: None,
+                        parameters: vec![],
+                    });
+                } else {
+                    self.error(
+                        DiagnosticCode::RRdInformationLoss,
+                        "Dataset usage requires a bare object name.",
+                    );
+                }
+                continue;
+            }
             let Expr::Call(call) = expr else {
                 self.error(
                     DiagnosticCode::RRdInformationLoss,
@@ -701,7 +726,7 @@ impl Context<'_> {
             result.push(Usage {
                 method: methods.get(&name).cloned(),
                 name,
-                arguments,
+                arguments: Some(arguments),
                 parameters,
             });
         }
@@ -713,8 +738,95 @@ pub(super) fn attach(
     package: &str,
     items: &mut BTreeMap<String, Item>,
     topics: &[Topic],
+    namespace: &Namespace,
     diagnostics: &mut Vec<Diagnostic>,
 ) {
+    if !namespace.valid {
+        return;
+    }
+    for topic in topics.iter().filter(|topic| topic.valid && topic.dataset) {
+        let identity = SemanticIdentity::r_dataset(&topic.name).expect("static topic name");
+        let id = identity.item_id().to_owned();
+        if items.contains_key(&id) {
+            continue;
+        }
+        if items.values().any(|item| {
+            std::iter::once(&topic.name)
+                .chain(&topic.aliases)
+                .any(|name| {
+                    item.qualified_name == *name
+                        || item
+                            .aliases
+                            .iter()
+                            .any(|alias| alias.qualified_name == *name)
+                })
+        }) {
+            diagnostics.push(diagnostic(
+                DiagnosticCode::RConflictingSurface,
+                Severity::Error,
+                format!(
+                    "Dataset topic `{}` conflicts with another declaration or alias.",
+                    topic.name
+                ),
+                &topic.source,
+            ));
+            continue;
+        }
+        items.insert(
+            id,
+            Item {
+                kind: ItemKind::Constant,
+                name: topic.name.clone(),
+                qualified_name: topic.name.clone(),
+                language_data: Some(ItemLanguageData::R(RItemData {
+                    exported: std::iter::once(&topic.name)
+                        .chain(&topic.aliases)
+                        .any(|name| namespace.exports.contains_key(name)),
+                    internal: topic.internal,
+                    declaration: RDeclaration::Dataset,
+                })),
+                aliases: topic
+                    .aliases
+                    .iter()
+                    .map(|alias| ItemAlias {
+                        qualified_name: alias.clone(),
+                        kind: ItemAliasKind::RdAlias,
+                        sources: vec![SourceEvidence {
+                            source: topic.source.clone(),
+                            role: SourceRole::Documentation,
+                            parsers: BTreeSet::from(["rd-source".into(), "rd-ast".into()]),
+                        }],
+                    })
+                    .collect(),
+                signatures: vec![SourcedSignature {
+                    signature: Signature::Value {
+                        annotation: None,
+                        value: None,
+                    },
+                    sources: vec![SourceEvidence {
+                        source: topic.source.clone(),
+                        role: SourceRole::Documentation,
+                        parsers: BTreeSet::from(["rd-source".into(), "rd-ast".into()]),
+                    }],
+                }],
+                documentation: None,
+                source_location: Some(topic.source.clone()),
+                children: vec![],
+                provenance: std::iter::once(provenance(&topic.source, true))
+                    .chain(
+                        namespace
+                            .exports
+                            .iter()
+                            .filter(|(name, _)| {
+                                *name == &topic.name || topic.aliases.contains(name)
+                            })
+                            .flat_map(|(_, sources)| sources)
+                            .map(|source| provenance(source, false)),
+                    )
+                    .collect(),
+            },
+        );
+    }
     let mut package_topic_seen = false;
     for topic in topics.iter().filter(|topic| topic.valid && topic.package) {
         if package_topic_seen {
@@ -847,6 +959,17 @@ pub(super) fn attach(
         let mut unknown = vec![];
         for alias in &topic.aliases {
             if let Some(id) = names.get(alias) {
+                let dataset = matches!(&items[id].language_data,
+                    Some(ItemLanguageData::R(data)) if matches!(data.declaration, RDeclaration::Dataset));
+                if topic.dataset != dataset {
+                    diagnostics.push(diagnostic(
+                        DiagnosticCode::RConflictingSurface,
+                        Severity::Error,
+                        format!("Rd topic type disagrees with declaration `{alias}`."),
+                        &topic.source,
+                    ));
+                    continue;
+                }
                 targets.entry(id.clone()).or_default().push(alias.clone());
             } else {
                 unknown.push(alias.clone());
@@ -870,11 +993,9 @@ pub(super) fn attach(
         let parameters: BTreeSet<_> = targets
             .keys()
             .flat_map(|id| {
-                let Signature::Callable { parameters, .. } = &items[id].signatures[0].signature
-                else {
-                    unreachable!()
-                };
-                parameters.iter().map(|parameter| parameter.name.as_str())
+                item_parameters(&items[id])
+                    .iter()
+                    .map(|parameter| parameter.name.as_str())
             })
             .collect();
         for part in &topic.parts {
@@ -980,9 +1101,7 @@ pub(super) fn attach(
             .iter()
             .filter(|usage| usage_matches(usage, item, &names, id))
             .collect();
-        let Signature::Callable { parameters, .. } = &item.signatures[0].signature else {
-            unreachable!()
-        };
+        let parameters = item_parameters(item);
         if !topic.usages.is_empty() && usages.is_empty() {
             diagnostics.push(diagnostic(
                 DiagnosticCode::RConflictingSurface,
@@ -1014,10 +1133,16 @@ pub(super) fn attach(
                 Part::Usage if !usages.is_empty() => {
                     blocks.push(heading("Usage", span));
                     for usage in &usages {
-                        blocks.push(code_block(
-                            format!("{}({})", r_name(&item.qualified_name), usage.arguments),
-                            span,
-                        ));
+                        let name = r_name(if usage.arguments.is_none() {
+                            &usage.name
+                        } else {
+                            &item.qualified_name
+                        });
+                        let code = usage.arguments.as_ref().map_or_else(
+                            || name.clone(),
+                            |arguments| format!("{name}({arguments})"),
+                        );
+                        blocks.push(code_block(code, span));
                     }
                 }
                 Part::Usage => {}
@@ -1080,6 +1205,11 @@ pub(super) fn attach(
 }
 
 fn usage_matches(usage: &Usage, item: &Item, names: &BTreeMap<String, String>, id: &str) -> bool {
+    let dataset = matches!(&item.language_data,
+        Some(ItemLanguageData::R(data)) if matches!(data.declaration, RDeclaration::Dataset));
+    if dataset != usage.arguments.is_none() {
+        return false;
+    }
     if let Some((generic, class)) = &usage.method {
         if let Some(ItemLanguageData::R(data)) = &item.language_data
             && let RDeclaration::S3Method {
@@ -1097,6 +1227,17 @@ fn usage_matches(usage: &Usage, item: &Item, names: &BTreeMap<String, String>, i
         return false;
     }
     names.get(&usage.name).is_some_and(|target| target == id)
+}
+
+fn item_parameters(item: &Item) -> &[Parameter] {
+    match item
+        .signatures
+        .first()
+        .map(|signature| &signature.signature)
+    {
+        Some(Signature::Callable { parameters, .. }) => parameters,
+        _ => &[],
+    }
 }
 
 fn same_parameters(left: &[Parameter], right: &[Parameter]) -> bool {
