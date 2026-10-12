@@ -7,13 +7,13 @@ A checked implementation task is not, by itself, a release gate.
 
 ## What works today
 
-  | Area               | Current implementation                                                                                                                         | Evidence to start with                                                                                             |
-  | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+  | Area               | Current implementation                                                                                                                                 | Evidence to start with                                                                                             |
+  | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
   | Workspace input    | Explicit repository, package, content, concept, relationship, and execution configuration; static Python, R, and Julia extraction; GFM and QMD parsing | `src/configuration.rs`, `src/extractors/`, `src/documents/`; `tests/acceptance_gate.rs`                            |
-  | Authored execution | Explicitly authorized Python and R Jupyter pages, structured and validated output, bounded cleanup, and a page cache                           | `src/execution/`; `tests/milestone_six.rs`, `tests/execution_cache.rs`                                             |
-  | Portable handoff   | Workspace assembly, reference resolution, and a self-contained SQLite snapshot with canonical text export                                      | `src/assembly/`, `src/validation/`, `src/snapshots/`; `tests/snapshot_publication.rs`, `tests/monorepo_example.rs` |
-  | Site               | Snapshot-backed routes, HTML, navigation, search, local assets, and atomic publication                                                         | `src/site.rs`, `src/rendering/`; `tests/site_generation.rs`, `tests/browser/site.spec.ts`                          |
-  | Commands           | `check`, `extract`, `generate`, `build`, and watched `serve`, including optional live reload                                                   | `src/commands/`; `tests/commands.rs`, `tests/cli.rs`                                                               |
+  | Authored execution | Explicitly authorized Python and R Jupyter pages, structured and validated output, bounded cleanup, and a page cache                                   | `src/execution/`; `tests/milestone_six.rs`, `tests/execution_cache.rs`                                             |
+  | Portable handoff   | Workspace assembly, reference resolution, and a self-contained SQLite snapshot with canonical text export                                              | `src/assembly/`, `src/validation/`, `src/snapshots/`; `tests/snapshot_publication.rs`, `tests/monorepo_example.rs` |
+  | Site               | Snapshot-backed routes, HTML, navigation, search, local assets, and atomic publication                                                                 | `src/site.rs`, `src/rendering/`; `tests/site_generation.rs`, `tests/browser/site.spec.ts`                          |
+  | Commands           | `check`, `extract`, `generate`, `build`, and watched `serve`, including optional live reload                                                           | `src/commands/`; `tests/commands.rs`, `tests/cli.rs`                                                               |
 
 These are implemented paths, not a claim that every acceptance and release check
 below has passed on a clean checkout. The [architecture](DESIGN.md),
@@ -114,22 +114,23 @@ site byte for byte with the original site.
 
 ## R documentation gaps
 
-Comparing eulerr with its [pkgdown site](https://jolars.github.io/eulerr/) exposed
-these compatibility, content, and presentation gaps.
+Comparing eulerr with its [pkgdown site](https://jolars.github.io/eulerr/)
+exposed these compatibility, content, and presentation gaps.
 
 - [ ] Resolve standard S3 generics from default R packages and package-wide
   imports without loading package code. Handle documented internal helpers
   without requiring public declarations, and keep internal grid hooks out of
   public navigation and search.
 - [ ] Support dataset topics, including bare object usage and the `docType`,
-  `format`, and `source` sections. Use eulerr's `fruits`, `organisms`, `pain`,
-  and `plants` datasets as acceptance cases.
+  `format`, and `source` sections. Use eulerr's `fruits`, `organisms`,
+  `pain`, and `plants` datasets as acceptance cases.
 - [ ] Support Rd links with options, including local targets, package-qualified
   targets, and display labels; equations, tables, custom sections, named
   return-value entries, conditional content, and DOI links.
 - [ ] Present shared help topics with their complete S3 usage and argument
-  listings, methods by class, and method navigation. Resolve help aliases shared
-  across multiple declarations, including eulerr's diagram composition topic.
+  listings, methods by class, and method navigation. Resolve help aliases
+  shared across multiple declarations, including eulerr's diagram
+  composition topic.
 - [ ] Add explicitly authorized Rd example execution with results and figures,
   honoring example controls such as `dontrun` and `donttest`. Keep examples
   display-only unless execution is authorized.
@@ -140,13 +141,13 @@ these compatibility, content, and presentation gaps.
   package metadata through assembly, and expose NEWS, citation information,
   authors, licenses, and community links.
 - [ ] Improve reference presentation with descriptive titles and URLs, source
-  links, introductory prose before usage, topic summaries, syntax highlighting,
-  and copy buttons. Remove duplicate signature blocks.
+  links, introductory prose before usage, topic summaries, syntax
+  highlighting, and copy buttons. Remove duplicate signature blocks.
 - [ ] Rank exact API names ahead of suffix matches in search, index readable
   documentation and aliases, and avoid duplicate results for shared topics.
 
-The eulerr source also has a stray `#'` in `man/eulerr_options.Rd`. Correct it in
-eulerr before using that topic as an acceptance case.
+The eulerr source also has a stray `#'` in `man/eulerr_options.Rd`. Correct it
+in eulerr before using that topic as an acceptance case.
 
 ## Scope held for later
 
@@ -158,15 +159,16 @@ hosted service are outside the first release. Browser live reload is already
 implemented as an optional `serve --live-reload` feature.
 
 - [ ] Add first-class interactive component embedding for authored pages.
-  Diplodocus should provide authoring syntax for declaring a component and its
-  inputs, manage mounting and asset loading, and preserve the complete bundle
-  in portable snapshots so `generate` works without the original sources.
-  External tools should compile components built with Svelte, TypeScript,
-  WASM, or other browser technologies; Diplodocus should define the embedding
-  contract rather than build its own frontend framework or bundler. Support
-  JavaScript, CSS, WASM, workers, and related assets while preserving bundle
-  paths. Use Eunoia's integrated diagram app and inline documentation examples
-  as motivating cases, with a small browser runtime or adapters where useful.
+  Diplodocus should provide authoring syntax for declaring a component and
+  its inputs, manage mounting and asset loading, and preserve the complete
+  bundle in portable snapshots so `generate` works without the original
+  sources. External tools should compile components built with Svelte,
+  TypeScript, WASM, or other browser technologies; Diplodocus should define
+  the embedding contract rather than build its own frontend framework or
+  bundler. Support JavaScript, CSS, WASM, workers, and related assets while
+  preserving bundle paths. Use Eunoia's integrated diagram app and inline
+  documentation examples as motivating cases, with a small browser runtime
+  or adapters where useful.
 
 Change this page when a release gate changes. Keep detailed validation evidence
 in tests and CI results rather than adding another dated ledger.
