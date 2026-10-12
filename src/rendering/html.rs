@@ -264,8 +264,9 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
         }
         html.push_str("</main>");
         html.push_str(&renderer.page_navigation());
+        html.push_str("</div></div>");
         super::footer::render(&mut html, &site.presentation.footer);
-        html.push_str("</div></div></body></html>\n");
+        html.push_str("</body></html>\n");
         if page.visible {
             let package = page.owner.as_ref().map(|id| &site.workspace.packages[id]);
             let mut search_text = page

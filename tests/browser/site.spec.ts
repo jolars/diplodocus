@@ -100,6 +100,9 @@ test("footer identifies the docs and exposes project, license, and generator lin
     const footer = page.getByRole("contentinfo");
     await expect(footer).toHaveCount(1);
     await expect(footer).toBeVisible();
+    if (path === "/guides/comparing-predictions.html") {
+      await expect(footer).not.toBeInViewport();
+    }
     await expect(footer).toContainText("Docs: dev");
     await expect(footer).toContainText("© 2026 Johan Larsson");
     await expect(footer).toContainText("MIT or Apache-2.0");
@@ -112,11 +115,18 @@ test("footer identifies the docs and exposes project, license, and generator lin
     ]) {
       await expect(footer.getByRole("link", { name: label, exact: true })).toHaveAttribute("href", url);
     }
-    const main = await page.getByRole("main").boundingBox();
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    // Integer scroll positions can leave a fraction of a pixel below the viewport.
+    await expect(footer).toBeInViewport({ ratio: 0.99 });
+    const layout = await page.locator(".layout").boundingBox();
     const box = await footer.boundingBox();
-    expect(box!.y).toBeGreaterThanOrEqual(main!.y + main!.height);
+    expect(box!.y).toBeGreaterThanOrEqual(layout!.y + layout!.height - 1);
+    expect(box!.x).toBe(0);
+    expect(box!.width).toBe(page.viewportSize()!.width);
+    expect(Math.abs(box!.y + box!.height - page.viewportSize()!.height)).toBeLessThan(1);
     await fitsViewport(page);
   }
+  await page.evaluate(() => window.scrollTo(0, 0));
   await capture(page, info, "footer");
 });
 
