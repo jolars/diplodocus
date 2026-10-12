@@ -10,6 +10,9 @@ Python functions nest under their module; the current package and API ancestors
 open automatically. A separate **On this page** area follows the page's headings.
 Each operation links to its equivalent in the other languages.
 
+The navbar's home link displays `docs/assets/logo.svg` before the site title.
+The `[presentation.logo]` table selects this image from the `tinystats` repository.
+
 The R package has a landing page built from its README and DESCRIPTION. Package
 information links to release notes, authors and citation information, the
 license, and community guidelines. These pages require no content collection.

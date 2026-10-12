@@ -75,13 +75,17 @@ pub(super) fn records(snapshot: &Snapshot) -> Result<Vec<Record>, SnapshotError>
             );
         }
     }
+    let mut presentation = serde_json::to_value(&snapshot.presentation)?;
+    if let Some(logo) = &snapshot.logo {
+        presentation["logo-asset"] = serde_json::to_value(logo)?;
+    }
     values.insert(
         Key {
             kind: "presentation".into(),
             owner: String::new(),
             id: String::new(),
         },
-        serde_json::to_value(&snapshot.presentation)?,
+        presentation,
     );
     values.insert(
         Key {

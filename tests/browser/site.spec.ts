@@ -74,6 +74,26 @@ for (const [path, title, name] of [
   });
 }
 
+test("navbar logo loads on nested pages and links home", async ({ page }, info) => {
+  for (const path of ["/", "/guides/comparing-predictions.html", "/packages/python/"]) {
+    await page.goto(path);
+    const brand = page.locator("header .brand");
+    const logo = brand.locator(".brand-logo");
+    await expect(brand).toHaveAccessibleName("Tiny Stats");
+    await expect(logo).toBeVisible();
+    await expect(logo).toHaveAttribute("alt", "");
+    await expect.poll(() => logo.evaluate((element: HTMLImageElement) => element.naturalWidth)).toBeGreaterThan(0);
+    const image = await logo.boundingBox();
+    const title = await brand.locator("span").boundingBox();
+    expect(image!.x + image!.width).toBeLessThanOrEqual(title!.x);
+    expect(image!.height).toBeLessThanOrEqual(40);
+    await fitsViewport(page);
+    await brand.click();
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Tiny Stats");
+  }
+  await capture(page, info, "navbar-logo");
+});
+
 test("footer identifies the docs and exposes project, license, and generator links", async ({ page }, info) => {
   for (const path of ["/", "/guides/comparing-predictions.html", "/packages/r/"]) {
     await page.goto(path);

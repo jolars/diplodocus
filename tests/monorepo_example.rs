@@ -45,7 +45,12 @@ fn monorepo_example_builds_with_r_and_generates_without_sources_or_runtimes() {
     assert_eq!(snapshot.workspace().packages.len(), 3);
     assert_eq!(snapshot.workspace().pages.len(), 14);
     assert_eq!(snapshot.workspace().concepts.len(), 6);
-    assert_eq!(snapshot.assets().len(), 1);
+    assert_eq!(snapshot.assets().len(), 2);
+    let logo = snapshot.logo().unwrap();
+    assert_eq!(
+        snapshot.assets()[&logo.fingerprint.value].bytes,
+        fs::read(example.join("docs/assets/logo.svg")).unwrap()
+    );
 
     let Some(diplodocus::ir::PackageMetadata::R(metadata)) =
         &snapshot.workspace().packages["rstats"].metadata

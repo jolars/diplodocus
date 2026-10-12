@@ -53,6 +53,17 @@ pub fn validate_configuration(configuration: &WorkspaceConfiguration) -> Vec<Dia
             &mut diagnostics,
         );
     }
+    if let Some(logo) = &configuration.presentation.logo {
+        check_repository(
+            &repositories,
+            &logo.repository,
+            "presentation.logo.repository",
+            DiagnosticEntity::ConfigurationField {
+                path: "presentation.logo.repository".into(),
+            },
+            &mut diagnostics,
+        );
+    }
     for (index, package) in configuration.packages.iter().enumerate() {
         let entity = DiagnosticEntity::Package {
             id: package.id.clone(),

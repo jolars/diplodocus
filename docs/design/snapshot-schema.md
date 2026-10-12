@@ -109,7 +109,7 @@ The `records` kinds are:
   | Kind         | Owner      | ID                            | Content                                                                                                                                              |
   | ---          | ---        | ---                           | ---                                                                                                                                                  |
   | `workspace`  | Empty      | Empty                         | `schema_version`, `name`, `relationships`, `diagnostics`, `provenance`                                                                               |
-  | `presentation` | Empty    | Empty                         | `title`, `description`, optional `site-url` and `canonical-url-style`                                                                               |
+  | `presentation` | Empty    | Empty                         | `title`, `description`, optional `logo`, `logo-asset`, `site-url`, `canonical-url-style`, and `footer`                                                |
   | `repository` | Empty      | Repository ID                 | `canonical_url`, `source_link_template`, `revision`, `dirty`, `declared_input_fingerprint`                                                           |
   | `package`    | Empty      | Package ID                    | `slug`, `name`, `ecosystem`, `version`, optional `metadata`, `repository`, `path`, `metadata_path`, `kind`, `visibility`                             |
   | `target`     | Package ID | Target ID                     | `extractor`, `path`, `role`                                                                                                                          |
@@ -128,6 +128,14 @@ and `concepts`. Package rows omit `items` and `extraction_targets`. Loading
 rebuilds those maps from their rows, including empty maps. All entity IDs and
 package owners must be nonempty; only the workspace and presentation IDs are
 empty.
+
+When a logo is configured, the presentation record retains its `logo`
+declaration (`repository` and repository-relative `path`) and a `logo-asset`
+reference (`path` and `fingerprint`). Both fields must be present together.
+The asset reference uses `content-assets/sha256/<digest>` and identifies image
+bytes in the `assets` table. Loading validates the repository, reference, media
+type, and bytes without accessing the original logo path. A logo counts as a
+used asset even when no document refers to it.
 
 Each page has exactly one `document` row. An item or concept has one precisely
 when its `documentation` is non-null. This row stores resolution metadata; the

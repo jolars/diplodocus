@@ -62,7 +62,7 @@ enable it when the collection forbids it. `check` never runs cells. `extract`,
 
 ## Presentation
 
-An optional table controls the site name, HTML description, public URL, and footer:
+An optional table controls the site name, logo, HTML description, public URL, and footer:
 
 ```toml
 [presentation]
@@ -88,6 +88,26 @@ The title defaults to `project.name`. Diplodocus uses its built-in theme.
 Generated sites and portable snapshots keep the presentation metadata, so
 `generate` does not need the original configuration. Read about [portable
 snapshots](snapshots.md) before separating extraction and generation.
+
+To add a logo before the title in the leftmost navbar link, declare an image in
+one of your repositories:
+
+```toml
+[presentation.logo]
+repository = "docs"
+path = "assets/logo.svg"
+```
+
+`repository` must match a declared `[[repository]]` ID. `path` is relative to
+that repository's root and must name an SVG, PNG, or JPEG file. The image can
+live outside a content collection. Use forward slashes without leading slashes
+or `.` or `..` components. Symlinks must stay inside the repository.
+
+Diplodocus validates and embeds the image in the snapshot, so generation needs
+no source checkout. The logo keeps its proportions within the navbar and shares
+the title's link to the homepage. The title supplies the accessible link name.
+Omitting `[presentation.logo]` leaves the navbar with the title alone. `serve`
+watches the logo file and rebuilds when it changes.
 
 The footer appears at the bottom of every page. All its fields are optional,
 and omitting the table produces no footer. `docs-version` is a free-form label

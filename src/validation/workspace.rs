@@ -141,6 +141,7 @@ pub struct ContentAsset {
 #[derive(Debug)]
 pub struct ResolvedWorkspace {
     records: Vec<ResolvedDocument>,
+    logo: Option<AssetReference>,
     assets: BTreeMap<String, ContentAsset>,
     diagnostics: BTreeSet<Diagnostic>,
     inputs: BTreeMap<PathBuf, AssetObservation>,
@@ -160,6 +161,10 @@ impl ResolvedWorkspace {
     /// Deduplicated bytes keyed by SHA-256 digest.
     pub fn assets(&self) -> &BTreeMap<String, ContentAsset> {
         &self.assets
+    }
+    /// Validated navbar image retained with the other portable asset bytes.
+    pub fn logo(&self) -> Option<&AssetReference> {
+        self.logo.as_ref()
     }
     /// All source and resolution warnings in deterministic order.
     pub fn diagnostics(&self) -> &BTreeSet<Diagnostic> {
@@ -387,6 +392,7 @@ fn resolve(
         generated,
         result: ResolvedWorkspace {
             records: vec![],
+            logo: None,
             assets: BTreeMap::new(),
             diagnostics: workspace.diagnostics.clone(),
             inputs: BTreeMap::new(),
@@ -396,6 +402,42 @@ fn resolve(
         .result
         .diagnostics
         .extend(relationships::validate(workspace));
+    if let Some(logo) = &sources.configuration().presentation.logo {
+        let root = &sources
+            .paths()
+            .repositories
+            .iter()
+            .find(|r| r.id == logo.repository)
+            .expect("validated logo repository")
+            .path;
+        let path = crate::paths::resolve_input_file(
+            root,
+            "presentation.logo.path",
+            Path::new(logo.path.as_str()),
+            root,
+        )
+        .map_err(AssemblyError::from)?;
+        match resolution.collect_asset(
+            root.join(logo.path.as_str()),
+            path,
+            root,
+            ReferenceKind::Image,
+        ) {
+            Ok(asset) => resolution.result.logo = Some(asset),
+            Err(code) => {
+                resolution.result.diagnostics.insert(
+                    Diagnostic::new(
+                        code,
+                        Severity::Error,
+                        "presentation.logo.path must name a valid SVG, PNG, or JPEG image.",
+                    )
+                    .with_entity(DiagnosticEntity::ConfigurationField {
+                        path: "presentation.logo.path".into(),
+                    }),
+                );
+            }
+        }
+    }
     for context in documents {
         let mut references = Vec::new();
         walk::references(
@@ -621,6 +663,18 @@ impl Resolver<'_> {
             boundary,
         )
         .map_err(|_| invalid)?;
+        let asset = self.collect_asset(candidate, path, boundary, kind)?;
+        Ok(ReferenceTarget::Asset { asset, fragment })
+    }
+
+    fn collect_asset(
+        &mut self,
+        candidate: PathBuf,
+        path: PathBuf,
+        boundary: &Path,
+        kind: ReferenceKind,
+    ) -> Result<AssetReference, DiagnosticCode> {
+        let invalid = DiagnosticCode::UnresolvedDocumentReference;
         let bytes = fs::read(&path).map_err(|_| invalid)?;
         let media_type = match path
             .extension()
@@ -654,19 +708,22 @@ impl Resolver<'_> {
         )?;
         let observation = AssetObservation {
             path,
-            boundary: boundary.clone(),
+            boundary: boundary.to_owned(),
             fingerprint,
         };
-        if self
-            .result
-            .inputs
-            .get(&candidate)
-            .is_some_and(|old| old != &observation)
-        {
-            return Err(invalid);
+        if let Some(old) = self.result.inputs.get_mut(&candidate) {
+            if old.path != observation.path || old.fingerprint != observation.fingerprint {
+                return Err(invalid);
+            }
+            // A logo and a document can share bytes under different declared roots.
+            // Retain the narrower boundary for the publication recheck.
+            if observation.boundary.starts_with(&old.boundary) {
+                *old = observation;
+            }
+        } else {
+            self.result.inputs.insert(candidate, observation);
         }
-        self.result.inputs.insert(candidate, observation);
-        Ok(ReferenceTarget::Asset { asset, fragment })
+        Ok(asset)
     }
 }
 

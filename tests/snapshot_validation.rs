@@ -179,6 +179,51 @@ fn rejects_missing_or_malformed_presentation_even_with_valid_fingerprints() {
 }
 
 #[test]
+fn rejects_incomplete_or_forged_logo_evidence_with_valid_fingerprints() {
+    let root = support::TestWorkspace::new();
+    root.write(
+        "diplodocus.toml",
+        "[project]\nname='Logo'\n[presentation.logo]\nrepository='docs'\npath='logo.svg'\n[[repository]]\nid='docs'\npath='.'\n",
+    );
+    root.write(
+        "logo.svg",
+        "<svg xmlns='http://www.w3.org/2000/svg'><circle r='3'/></svg>",
+    );
+    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+    for case in [
+        "declaration",
+        "reference",
+        "repository",
+        "path",
+        "digest",
+        "media",
+        "bytes",
+    ] {
+        let result = changed(&snapshot, |export| {
+            let presentation = record(export, "presentation");
+            match case {
+                "declaration" => {
+                    presentation.as_object_mut().unwrap().remove("logo");
+                }
+                "reference" => {
+                    presentation.as_object_mut().unwrap().remove("logo-asset");
+                }
+                "repository" => presentation["logo"]["repository"] = "missing".into(),
+                "path" => presentation["logo-asset"]["path"] = "elsewhere/logo.svg".into(),
+                "digest" => {
+                    presentation["logo-asset"]["fingerprint"]["value"] = "0".repeat(64).into()
+                }
+                "media" => export["assets"][0]["media_type"] = "application/octet-stream".into(),
+                "bytes" => export["assets"] = json!([]),
+                _ => unreachable!(),
+            }
+        });
+        assert!(result.is_err(), "accepted {case}");
+    }
+}
+
+#[test]
 fn loading_and_republishing_preserve_the_original_producer_version() {
     let snapshot = snapshot();
     let loaded = changed(&snapshot, |export| export["producer"] = "0.0.1".into()).unwrap();

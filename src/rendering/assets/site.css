@@ -19,7 +19,9 @@ header { position: sticky; top: 0; z-index: 10; min-height: 94px; padding: 1rem 
 .global-nav [aria-current=true] { color: var(--ink); background: var(--selected); font-weight: 650; }
 .desktop-sections { min-width: 0; overflow-x: auto; padding: .4rem; margin: -.4rem; }
 .mobile-sections { display: none; }
-.brand { max-width: 18rem; overflow-wrap: anywhere; font-size: 1.4rem; font-weight: 700; text-decoration: none; }
+.brand { display: flex; align-items: center; gap: .65rem; max-width: 18rem; min-width: 0; overflow-wrap: anywhere; font-size: 1.4rem; font-weight: 700; text-decoration: none; }
+.brand span { min-width: 0; }
+.brand-logo { flex: none; width: auto; height: 2.5rem; max-width: 5rem; object-fit: contain; }
 form { position: relative; }
 form label { display: block; color: var(--muted); font-size: .75rem; }
 input[type=search] { width: 18rem; max-width: 100%; padding: .4rem .65rem; border: 1px solid #bbc9c5; border-radius: .3rem; background: white; font: inherit; }

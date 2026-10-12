@@ -70,11 +70,22 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
         html.push_str("</head><body><a class=\"skip-link\" href=\"#main\">Skip to content</a>");
         write!(
             html,
-            "<header><a class=\"brand\" href=\"{}\">{}</a>",
+            "<header><a class=\"brand\" href=\"{}\">",
             escape(&relative_url(route, "index.html")),
-            escape(site.title())
         )
         .unwrap();
+        if let Some(logo) = site.logo {
+            write!(
+                html,
+                "<img class=\"brand-logo\" src=\"{}\" alt=\"\">",
+                escape(&relative_url(
+                    route,
+                    &site.asset_route(&logo.fingerprint.value)?
+                ))
+            )
+            .unwrap();
+        }
+        write!(html, "<span>{}</span></a>", escape(site.title())).unwrap();
         super::navigation::sections(&mut html, site, route, "desktop-sections");
         html.push_str("<form role=\"search\"><label for=\"search\">Search documentation</label><input id=\"search\" type=\"search\" autocomplete=\"off\"><ul id=\"search-results\" aria-live=\"polite\"></ul></form></header><div class=\"layout\"><nav aria-label=\"Documentation\"><details class=\"nav-disclosure\" open><summary>Browse documentation</summary>");
         super::navigation::sections(&mut html, site, route, "mobile-sections");

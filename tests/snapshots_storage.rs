@@ -200,7 +200,7 @@ async fn executed_snapshot_restores_all_safe_alternatives_without_staging() {
     root.write(
         "diplodocus.toml",
         format!(
-            "{}\n[presentation]\ntitle='Executed results'\ndescription='Portable execution'\n",
+            "{}\n[presentation]\ntitle='Executed results'\ndescription='Portable execution'\n[presentation.logo]\nrepository='docs'\npath='guide/picture.svg'\n",
             root.read("diplodocus.toml")
         ),
     );
@@ -243,6 +243,7 @@ async fn executed_snapshot_restores_all_safe_alternatives_without_staging() {
         snapshot.canonical_export().unwrap()
     );
     assert_eq!(loaded.assets().len(), 1);
+    assert!(loaded.logo().is_some());
     let result = loaded.executed_page(&id).unwrap();
     assert_eq!(result.record().cells.len(), 4);
     let output = &result.record().cells[0].outputs[0];

@@ -205,6 +205,7 @@ fn decode(
 ) -> Result<Snapshot, SnapshotError> {
     let mut workspace = None;
     let mut presentation = None;
+    let mut logo = None;
     let mut entities: BTreeMap<&str, serde_json::Map<String, Value>> = BTreeMap::new();
     let mut nested = Vec::new();
     let mut documents = Vec::new();
@@ -213,7 +214,14 @@ fn decode(
         let Key { kind, owner, id } = &record.key;
         let field = match kind.as_str() {
             "presentation" if owner.is_empty() && id.is_empty() && presentation.is_none() => {
-                presentation = Some(serde_json::from_value(record.content.clone())?);
+                let mut content = record.content.clone();
+                let object = content
+                    .as_object_mut()
+                    .ok_or(SnapshotError::Invalid("presentation shape"))?;
+                if let Some(asset) = object.remove("logo-asset") {
+                    logo = Some(serde_json::from_value(asset)?);
+                }
+                presentation = Some(serde_json::from_value(content)?);
                 continue;
             }
             "workspace" if owner.is_empty() && id.is_empty() && workspace.is_none() => {
@@ -313,6 +321,7 @@ fn decode(
     Ok(Snapshot {
         workspace: serde_json::from_value(workspace)?,
         presentation: presentation.ok_or(SnapshotError::Invalid("missing presentation"))?,
+        logo,
         documents,
         assets,
         producer,

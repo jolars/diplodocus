@@ -309,6 +309,11 @@ impl Observer {
                     .map(|path| (r.id.as_str(), path))
             })
             .collect();
+        if let Some(logo) = &config.presentation.logo
+            && let Some(root) = roots.get(logo.repository.as_str())
+        {
+            observe(&root.join(logo.path.as_str()), &mut observed);
+        }
         for package in &config.packages {
             let Some(root) = roots.get(package.repository.as_str()) else {
                 continue;
@@ -592,6 +597,31 @@ mod tests {
         assert_eq!(observer.capture(), before);
         fs::write(page, "# Updated guide\n").unwrap();
         assert_ne!(observer.capture(), before);
+    }
+
+    #[test]
+    fn watches_logo_creation_edits_and_removal_outside_content_collections() {
+        let root = tempfile::tempdir().unwrap();
+        let config = root.path().join("diplodocus.toml");
+        fs::write(&config, "[project]\nname='Observe'\n[presentation.logo]\nrepository='repo'\npath='logo.svg'\n[[repository]]\nid='repo'\npath='.'\n").unwrap();
+        let mut observer = Observer::new(&config, &root.path().join("site")).unwrap();
+        let missing = observer.capture();
+        let logo = root.path().join("logo.svg");
+        fs::write(
+            &logo,
+            "<svg xmlns='http://www.w3.org/2000/svg'><circle r='3'/></svg>",
+        )
+        .unwrap();
+        let created = observer.capture();
+        assert_ne!(created, missing);
+        fs::write(
+            &logo,
+            "<svg xmlns='http://www.w3.org/2000/svg'><circle r='4'/></svg>",
+        )
+        .unwrap();
+        assert_ne!(observer.capture(), created);
+        fs::remove_file(logo).unwrap();
+        assert_eq!(observer.capture(), missing);
     }
 
     #[test]

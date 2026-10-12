@@ -25,6 +25,7 @@ fn fixture() -> Snapshot {
             ..PresentationDefaults::default()
         },
         documents: Vec::new(),
+        logo: None,
         assets: BTreeMap::new(),
         producer: "canonical-fixture".into(),
         executions: BTreeMap::new(),

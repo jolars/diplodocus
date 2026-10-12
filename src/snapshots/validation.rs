@@ -169,6 +169,28 @@ impl Snapshot {
             "document record set",
         )?;
         let mut used_assets = BTreeSet::new();
+        require(
+            self.presentation.logo.is_some() == self.logo.is_some(),
+            "logo presentation evidence",
+        )?;
+        if let (Some(declaration), Some(logo)) = (&self.presentation.logo, &self.logo) {
+            require(
+                workspace.repositories.contains_key(&declaration.repository),
+                "logo repository",
+            )?;
+            let stored = self
+                .assets
+                .get(&logo.fingerprint.value)
+                .ok_or(SnapshotError::Invalid("missing logo asset"))?;
+            require(
+                stored.fingerprint == logo.fingerprint
+                    && stored.media_type.starts_with("image/")
+                    && logo.path.as_str()
+                        == format!("content-assets/sha256/{}", logo.fingerprint.value),
+                "logo asset metadata",
+            )?;
+            used_assets.insert(logo.fingerprint.value.clone());
+        }
         let generated: BTreeMap<_, _> = outputs
             .values()
             .flat_map(|p| p.referenced_assets())

@@ -8,7 +8,7 @@ use std::path::Path;
 
 use crate::assembly::{AssemblyError, WorkspaceSources};
 use crate::configuration::PresentationDefaults;
-use crate::ir::Workspace;
+use crate::ir::{AssetReference, Workspace};
 use crate::validation::{ContentAsset, ResolvedDocument, ResolvedWorkspace};
 
 mod canonical;
@@ -30,6 +30,7 @@ pub const RECORD_ENCODING_VERSION: u32 = 1;
 pub struct Snapshot {
     workspace: Workspace,
     presentation: PresentationDefaults,
+    logo: Option<AssetReference>,
     documents: Vec<ResolvedDocument>,
     assets: BTreeMap<String, ContentAsset>,
     producer: String,
@@ -76,6 +77,7 @@ impl Snapshot {
         let mut snapshot = Self {
             workspace,
             presentation: sources.configuration().presentation.clone(),
+            logo: resolved.logo().cloned(),
             documents: resolved.records().to_vec(),
             assets: resolved.assets().clone(),
             producer: env!("CARGO_PKG_VERSION").into(),
@@ -93,6 +95,10 @@ impl Snapshot {
     /// Recorded site defaults, available without the original configuration.
     pub fn presentation(&self) -> &PresentationDefaults {
         &self.presentation
+    }
+    /// Portable navbar image, available without the original repository.
+    pub fn logo(&self) -> Option<&AssetReference> {
+        self.logo.as_ref()
     }
     /// Diplodocus version that originally produced this snapshot.
     pub fn producer(&self) -> &str {

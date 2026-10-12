@@ -124,6 +124,35 @@ fn presentation_settings_accept_only_portable_display_metadata() {
 }
 
 #[test]
+fn logo_declarations_require_a_repository_and_portable_image_path() {
+    let source =
+        "[project]\nname='Docs'\n[presentation.logo]\nrepository='docs'\npath='assets/logo.svg'\n";
+    let config = parse_configuration(source).unwrap();
+    assert_eq!(
+        parse_configuration(&toml::to_string(&config).unwrap()).unwrap(),
+        config
+    );
+    for settings in [
+        "repository='docs'",
+        "path='logo.svg'",
+        "repository='docs'\npath=42",
+        "repository='docs'\npath='/logo.svg'",
+        "repository='docs'\npath='../logo.svg'",
+        "repository='docs'\npath='./logo.svg'",
+        "repository='docs'\npath='https://example.test/logo.svg'",
+        "repository='docs'\npath='logo.svg'\nunknown=true",
+    ] {
+        assert!(
+            parse_configuration(&format!(
+                "[project]\nname='Docs'\n[presentation.logo]\n{settings}\n"
+            ))
+            .is_err(),
+            "{settings}"
+        );
+    }
+}
+
+#[test]
 fn footer_links_reject_unsafe_or_ambiguous_urls() {
     for field in ["licenses", "links"] {
         for url in [

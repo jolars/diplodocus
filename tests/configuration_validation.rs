@@ -26,6 +26,16 @@ fn only_diagnostic(configuration: &WorkspaceConfiguration, code: DiagnosticCode)
 }
 
 #[test]
+fn logo_requires_a_declared_repository() {
+    let config = parse_configuration(
+        "[project]\nname='Docs'\n[presentation.logo]\nrepository='missing'\npath='logo.svg'\n",
+    )
+    .unwrap();
+    let diagnostic = only_diagnostic(&config, DiagnosticCode::InvalidRepositoryReference);
+    assert!(diagnostic.message.contains("presentation.logo.repository"));
+}
+
+#[test]
 fn duplicate_repository_ids_have_repository_context() {
     let mut config = configuration();
     config.repositories.push(config.repositories[0].clone());

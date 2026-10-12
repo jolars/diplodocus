@@ -115,6 +115,7 @@ impl Snapshot {
         let mut snapshot = Self {
             workspace,
             presentation: executed.sources().configuration().presentation.clone(),
+            logo: resolved.logo().cloned(),
             documents: resolved.records().to_vec(),
             assets: resolved.assets().clone(),
             producer: env!("CARGO_PKG_VERSION").into(),

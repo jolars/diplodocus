@@ -36,6 +36,7 @@ pub enum SiteError {
 pub struct Site<'a> {
     pub(crate) workspace: &'a Workspace,
     pub(crate) presentation: &'a PresentationDefaults,
+    pub(crate) logo: Option<&'a AssetReference>,
     pub(crate) pages: BTreeMap<String, PageModel<'a>>,
     pub(crate) routes: BTreeMap<DocumentIdentity, String>,
     pub(crate) assets: &'a BTreeMap<String, ContentAsset>,
@@ -79,6 +80,7 @@ impl<'a> Site<'a> {
         let mut site = Self {
             workspace,
             presentation: snapshot.presentation(),
+            logo: snapshot.logo(),
             pages: BTreeMap::new(),
             routes: BTreeMap::new(),
             assets: snapshot.assets(),
