@@ -29,6 +29,7 @@ mod authored;
 mod execution;
 mod package_docs;
 mod packages;
+mod rd_examples;
 mod references;
 
 /// A failed source assembly or execution, without a publishable workspace.
@@ -101,6 +102,7 @@ pub struct WorkspaceSources {
     package_files: BTreeMap<String, package_docs::PackageFiles>,
     selections: DeclaredSourceInputs,
     evidence: StaticProvenance,
+    pub(crate) rd_assets: BTreeMap<DiagnosticPath, crate::validation::ContentAsset>,
 }
 impl WorkspaceSources {
     /// Portable records assembled so far, without a claim of final validation.
@@ -295,6 +297,7 @@ pub fn assemble_workspace(path: impl AsRef<Path>) -> Result<WorkspaceSources, As
         package_files,
         selections,
         evidence,
+        rd_assets: BTreeMap::new(),
     };
     result.revalidate()?;
     Ok(result)

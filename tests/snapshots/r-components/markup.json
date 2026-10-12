@@ -539,7 +539,15 @@
     },
     {
       "attributes": {
-        "classes": [],
+        "classes": [
+          {
+            "span": {
+              "end": 429,
+              "start": 0
+            },
+            "value": "rd-examples"
+          }
+        ],
         "identifier": null,
         "key_values": []
       },

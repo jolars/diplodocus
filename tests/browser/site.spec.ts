@@ -351,6 +351,12 @@ test("equivalent APIs link in both directions", async ({ page }, info) => {
   await sameApi.getByRole("link", { name: "Tiny Stats for R: mean_squared_error", exact: true }).click();
   await expect(page.getByRole("heading", { level: 1, name: "mean_squared_error", exact: true })).toBeVisible();
   await fitsViewport(page);
+  await expect(page.getByRole("main")).toContainText("[1] 0.5");
+  const figure = page.getByRole("main").getByRole("img", { name: "Example figure", exact: true });
+  await expect(figure).toBeVisible();
+  await expect(figure).toHaveJSProperty("complete", true);
+  expect(await figure.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
+  await expect(figure).toHaveAttribute("src", /assets\/[a-f0-9]{64}(?:\.|%2E)png$/);
   await capture(page, info, "r-api");
   await page.getByRole("link", { name: "Tiny Stats for Python: tinystats.mean_squared_error", exact: true }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("tinystats.mean_squared_error");

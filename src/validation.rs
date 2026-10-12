@@ -7,6 +7,7 @@ mod workspace;
 pub(crate) use references::in_package as resolve_package_item;
 pub use references::resolve_item;
 pub(crate) use references::resolve_rd_help;
+pub(crate) use relationships::r_versions_equal;
 pub(crate) use workspace::document_references;
 pub use workspace::*;
 

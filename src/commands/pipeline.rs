@@ -48,6 +48,9 @@ pub(super) async fn extract_attempt(
     sources
         .complete_package_metadata(deadlines, &mut cancellation)
         .await?;
+    sources
+        .execute_rd_examples(deadlines, &mut cancellation)
+        .await?;
     #[cfg(target_os = "linux")]
     let snapshot = {
         // Execution staging stays outside watched source trees and survives until copying finishes.
@@ -78,6 +81,7 @@ pub(super) async fn extract_attempt(
         {
             return Err(CommandError::UnsupportedExecution);
         }
+        let resolved = resolve_workspace(&sources)?;
         Snapshot::from_sources(&sources, &resolved)?
     };
     snapshot.publish(&output)?;

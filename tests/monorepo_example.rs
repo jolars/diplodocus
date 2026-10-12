@@ -45,7 +45,15 @@ fn monorepo_example_builds_with_r_and_generates_without_sources_or_runtimes() {
     assert_eq!(snapshot.workspace().packages.len(), 3);
     assert_eq!(snapshot.workspace().pages.len(), 14);
     assert_eq!(snapshot.workspace().concepts.len(), 6);
-    assert_eq!(snapshot.assets().len(), 2);
+    assert_eq!(snapshot.assets().len(), 3);
+    assert_eq!(
+        snapshot
+            .assets()
+            .values()
+            .filter(|asset| asset.media_type == "image/png")
+            .count(),
+        1
+    );
     let logo = snapshot.logo().unwrap();
     assert_eq!(
         snapshot.assets()[&logo.fingerprint.value].bytes,
@@ -159,8 +167,13 @@ fn monorepo_example_builds_with_r_and_generates_without_sources_or_runtimes() {
     assert!(python_guide.contains("aria-label=\"API reference\""));
     assert!(!python_guide.contains("aria-label=\"Getting started\""));
     for asset in snapshot.assets().values() {
+        let extension = match asset.media_type.as_str() {
+            "image/svg+xml" => "svg",
+            "image/png" => "png",
+            other => panic!("unexpected example asset: {other}"),
+        };
         assert!(support::files_under(&site).iter().any(|path| {
-            path.extension().is_some_and(|extension| extension == "svg")
+            path.extension().is_some_and(|value| value == extension)
                 && fs::read(site.join(path)).unwrap() == asset.bytes
         }));
     }

@@ -1,6 +1,6 @@
 # 0003: Extract in a prepared environment and execute examples
 
-Status: Accepted; implementation pending. Date: 2026-10-12.
+Status: Accepted; partially implemented. Date: 2026-10-12.
 
 ## Context
 
@@ -126,9 +126,10 @@ verified during extraction.
 ## Implementation transition
 
 This decision changes the intended contract, not the current binary. Current
-extractors still analyze source statically, API examples remain inert, and QMD
-execution still requires the existing explicit configuration. The guides and
-language-specific implementation references describe that behavior until the
+source adapters still analyze declarations statically. Extraction executes R Rd
+examples in the prepared checkout environment; Python and Julia API examples
+remain inert, and QMD execution still requires the existing explicit configuration.
+The guides and language-specific implementation references describe that behavior until the
 corresponding implementation changes land.
 
 Implementation must update configuration defaults and execution selection,

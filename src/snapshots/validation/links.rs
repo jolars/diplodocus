@@ -278,6 +278,27 @@ impl Links<'_> {
                         self.source(&input.source)?;
                     }
                 }
+                ProvenanceActivity::RdExamples {
+                    package,
+                    policy,
+                    r_version,
+                    package_version,
+                    dependencies,
+                    input,
+                    skipped,
+                    ..
+                } => {
+                    require(
+                        self.0.packages.contains_key(package)
+                            && policy == "rd-examples-v1"
+                            && !r_version.is_empty()
+                            && !package_version.is_empty()
+                            && !dependencies.is_empty()
+                            && skipped.iter().all(|reason| !reason.is_empty()),
+                        "Rd example provenance",
+                    )?;
+                    self.source(&input.source)?;
+                }
                 ProvenanceActivity::Execution {
                     declared_environment_inputs,
                     ..
@@ -433,6 +454,34 @@ impl Links<'_> {
 
     fn document(&self, document: &SourcedDocument) -> Result {
         self.provenance(&document.provenance)?;
+        for record in &document.provenance {
+            if let ProvenanceActivity::RdExamples {
+                input,
+                package,
+                package_version,
+                dependencies,
+                ..
+            } = &record.activity
+            {
+                let Some(PackageMetadata::R(metadata)) = &self.0.packages[package].metadata else {
+                    return Err(SnapshotError::Invalid("Rd example package metadata"));
+                };
+                require(
+                    matches!(&document.source_format, DocumentFormat::Extracted { name } if name == "rd")
+                        && document.source_location.as_ref() == Some(&input.source)
+                        && document.raw_source.as_ref().is_some_and(|raw| {
+                            crate::provenance::fingerprint_bytes(raw.as_bytes())
+                                == input.fingerprint
+                        })
+                        && crate::validation::r_versions_equal(
+                            package_version,
+                            &metadata.description.version,
+                        )
+                        && dependencies.get(&metadata.description.name) == Some(package_version),
+                    "Rd example source and package evidence",
+                )?;
+            }
+        }
         for record in &document.provenance {
             if let ProvenanceActivity::DecodedDocumentation { decoded_span } = record.activity {
                 require(

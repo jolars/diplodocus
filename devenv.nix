@@ -28,7 +28,7 @@ let
     pythonPackages.ipykernel
   ]);
   r = pkgs.rWrapper.override {
-    packages = [ pkgs.rPackages.IRkernel ];
+    packages = with pkgs.rPackages; [ IRkernel pkgload evaluate ];
   };
   jupyterKernels = pkgs.symlinkJoin {
     name = "diplodocus-jupyter-kernels";

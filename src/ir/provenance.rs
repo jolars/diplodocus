@@ -84,6 +84,27 @@ pub enum ProvenanceActivity {
         /// Exact source bytes supplied to native helpers.
         inputs: Vec<InputFingerprint>,
     },
+    /// Completed native R help-topic examples from the supplied checkout.
+    RdExamples {
+        /// Workspace package identity.
+        package: String,
+        /// Native example adapter policy.
+        policy: String,
+        /// Observed interpreter version.
+        r_version: String,
+        /// Observed checkout package version.
+        package_version: String,
+        /// Loaded namespace versions, excluding local library paths.
+        dependencies: BTreeMap<String, String>,
+        /// Original help-topic input.
+        input: InputFingerprint,
+        /// Executed expressions in source order.
+        executed: Vec<String>,
+        /// Explicit illustrative regions excluded by native Rd conversion.
+        illustrative: Vec<String>,
+        /// Conditional omissions and their evaluated reasons.
+        skipped: Vec<String>,
+    },
     /// Successful execution or restoration of an executed page result.
     Execution {
         /// Declared execution mode.

@@ -1,9 +1,9 @@
 # Python, R, and Julia API extraction
 
 Diplodocus reads configured API targets statically and uses R to complete package
-author and citation information. It does not run a build backend or install
-dependencies. Targets must point to maintained files inside their declared
-package and repository boundaries. The [workspace guide](configuration.md) shows
+author and citation information and execute Rd examples. It does not run a build
+backend or install dependencies. Targets must point to maintained files inside
+their declared package and repository boundaries. The [workspace guide](configuration.md) shows
 how to declare a target.
 
 ## Python
@@ -35,7 +35,29 @@ checked-in `man/` Rd files. Supported static namespace declarations include
 `export`, `import`, `importFrom`, `S3method`, and literal `useDynLib`
 declarations. It connects exports and S3 registrations to direct source
 definitions, then attaches supported Rd topics, aliases, usage, arguments, and
-prose. Rd examples remain display-only.
+prose. `extract`, `build`, and `serve` execute Rd examples as a required step.
+`check` reads their source without loading the package or executing examples.
+
+Prepare a working checkout with R, `pkgload`, `evaluate`, the package dependencies,
+and the dependencies used by its examples. Compile native extensions beforehand;
+Diplodocus never compiles or installs the package. Each help topic runs once in a
+fresh R process, including topics shared by several declarations. Expressions
+within a topic share state and a graphics device. The package loads from the
+configured checkout, and extraction verifies its namespace path and version.
+
+`\dontrun` regions remain explicitly illustrative. `\donttest` regions execute.
+False `if` conditions without an `else`, including `interactive()` and platform
+checks, record a skip reason. Conditions run once. Missing dependencies requested
+through `require()` or `requireNamespace()` cause an error rather than a skip.
+Normal R error handling such as `tryCatch()` remains available to examples.
+
+Results, messages, and warnings render as literal text, and recorded plots become
+validated PNG assets. Snapshots retain executed expressions, illustrative regions,
+skip reasons, the Rd source fingerprint, R and package versions, and loaded
+namespace versions. Each extraction executes examples afresh; the QMD cache does
+not cover Rd examples. Generation uses the completed snapshot without R or the
+checkout. Errors, missing prerequisites, timeouts, invalid figures, and cleanup
+failures prevent publication and preserve the previous snapshot and site.
 
 Shared help topics retain all documented usages and arguments on each
 declaration's page. Topic aliases resolve to a primary declaration, while

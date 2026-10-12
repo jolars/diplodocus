@@ -2,7 +2,7 @@
   "document": {
     "span": {
       "start": 0,
-      "end": 1264
+      "end": 1382
     },
     "frontmatter": null,
     "blocks": [
@@ -246,9 +246,41 @@
           },
           {
             "type": "text",
-            "value": "imports. It probes library locations and reads metadata without loading the",
+            "value": "imports. Rd examples additionally require ",
             "span": {
               "start": 657,
+              "end": 699
+            }
+          },
+          {
+            "type": "code",
+            "value": "pkgload",
+            "span": {
+              "start": 699,
+              "end": 708
+            }
+          },
+          {
+            "type": "text",
+            "value": ", ",
+            "span": {
+              "start": 708,
+              "end": 710
+            }
+          },
+          {
+            "type": "code",
+            "value": "evaluate",
+            "span": {
+              "start": 710,
+              "end": 720
+            }
+          },
+          {
+            "type": "text",
+            "value": ", a loadable",
+            "span": {
+              "start": 720,
               "end": 732
             }
           },
@@ -261,68 +293,83 @@
           },
           {
             "type": "text",
-            "value": "documented package. Generating a site from an exported snapshot needs none of",
+            "value": "checkout with prebuilt extensions, and the dependencies used by those examples.",
             "span": {
               "start": 733,
-              "end": 810
+              "end": 812
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 810,
-              "end": 811
+              "start": 812,
+              "end": 813
+            }
+          },
+          {
+            "type": "text",
+            "value": "Extraction loads that checkout and executes its examples. Generating a site from an exported snapshot needs none of",
+            "span": {
+              "start": 813,
+              "end": 928
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 928,
+              "end": 929
             }
           },
           {
             "type": "text",
             "value": "these runtimes. Executable QMD pages need the selected Jupyter",
             "span": {
-              "start": 811,
-              "end": 873
+              "start": 929,
+              "end": 991
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 873,
-              "end": 874
+              "start": 991,
+              "end": 992
             }
           },
           {
             "type": "text",
             "value": "kernel already installed and discoverable. Diplodocus never installs a",
             "span": {
-              "start": 874,
-              "end": 944
+              "start": 992,
+              "end": 1062
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 944,
-              "end": 945
+              "start": 1062,
+              "end": 1063
             }
           },
           {
             "type": "text",
             "value": "workspace's dependencies or kernels.",
             "span": {
-              "start": 945,
-              "end": 981
+              "start": 1063,
+              "end": 1099
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 981,
-              "end": 982
+              "start": 1099,
+              "end": 1100
             }
           }
         ],
         "span": {
           "start": 335,
-          "end": 982
+          "end": 1100
         }
       },
       {
@@ -332,99 +379,99 @@
             "type": "text",
             "value": "After the crate is published, ",
             "span": {
-              "start": 983,
-              "end": 1013
+              "start": 1101,
+              "end": 1131
             }
           },
           {
             "type": "code",
             "value": "cargo install diplodocus --locked",
             "span": {
-              "start": 1013,
-              "end": 1048
+              "start": 1131,
+              "end": 1166
             }
           },
           {
             "type": "text",
             "value": " will install",
             "span": {
-              "start": 1048,
-              "end": 1061
+              "start": 1166,
+              "end": 1179
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1061,
-              "end": 1062
+              "start": 1179,
+              "end": 1180
             }
           },
           {
             "type": "text",
             "value": "the CLI from crates.io. Until then, run it with ",
             "span": {
-              "start": 1062,
-              "end": 1110
+              "start": 1180,
+              "end": 1228
             }
           },
           {
             "type": "code",
             "value": "cargo run --locked --",
             "span": {
-              "start": 1110,
-              "end": 1133
+              "start": 1228,
+              "end": 1251
             }
           },
           {
             "type": "text",
             "value": " from",
             "span": {
-              "start": 1133,
-              "end": 1138
+              "start": 1251,
+              "end": 1256
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1138,
-              "end": 1139
+              "start": 1256,
+              "end": 1257
             }
           },
           {
             "type": "text",
             "value": "this checkout, or invoke the compiled binary at ",
             "span": {
-              "start": 1139,
-              "end": 1187
+              "start": 1257,
+              "end": 1305
             }
           },
           {
             "type": "code",
             "value": "target/debug/diplodocus",
             "span": {
-              "start": 1187,
-              "end": 1212
+              "start": 1305,
+              "end": 1330
             }
           },
           {
             "type": "text",
             "value": ".",
             "span": {
-              "start": 1212,
-              "end": 1213
+              "start": 1330,
+              "end": 1331
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1213,
-              "end": 1214
+              "start": 1331,
+              "end": 1332
             }
           }
         ],
         "span": {
-          "start": 983,
-          "end": 1214
+          "start": 1101,
+          "end": 1332
         }
       },
       {
@@ -434,8 +481,8 @@
             "type": "text",
             "value": "Continue with the ",
             "span": {
-              "start": 1215,
-              "end": 1233
+              "start": 1333,
+              "end": 1351
             }
           },
           {
@@ -445,8 +492,8 @@
                 "type": "text",
                 "value": "quick start",
                 "span": {
-                  "start": 1234,
-                  "end": 1245
+                  "start": 1352,
+                  "end": 1363
                 }
               }
             ],
@@ -458,29 +505,29 @@
               "key_values": []
             },
             "span": {
-              "start": 1233,
-              "end": 1262
+              "start": 1351,
+              "end": 1380
             }
           },
           {
             "type": "text",
             "value": ".",
             "span": {
-              "start": 1262,
-              "end": 1263
+              "start": 1380,
+              "end": 1381
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1263,
-              "end": 1264
+              "start": 1381,
+              "end": 1382
             }
           }
         ],
         "span": {
-          "start": 1215,
-          "end": 1264
+          "start": 1333,
+          "end": 1382
         }
       }
     ]

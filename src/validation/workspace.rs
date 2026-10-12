@@ -225,7 +225,7 @@ impl ResolutionError {
 /// This operation never discovers a kernel, runs authored code, reads an
 /// execution cache, or publishes output. It checks only outputs already present.
 pub fn resolve_workspace(sources: &WorkspaceSources) -> Result<ResolvedWorkspace, ResolutionError> {
-    resolve(sources, BTreeMap::new())
+    resolve(sources, sources.rd_assets.clone())
 }
 
 /// Resolve executed documents and copy their verified final staged asset bytes.
@@ -235,7 +235,7 @@ pub fn resolve_workspace(sources: &WorkspaceSources) -> Result<ResolvedWorkspace
 pub fn resolve_executed_workspace(
     executed: &ExecutedWorkspace,
 ) -> Result<ResolvedWorkspace, ResolutionError> {
-    let mut generated = BTreeMap::new();
+    let mut generated = executed.sources().rd_assets.clone();
     for result in executed.executed_pages().values() {
         for staged in result.staged_assets() {
             let asset = result
@@ -602,7 +602,13 @@ impl Resolver<'_> {
         }
         // Execution has already replaced image targets with staged asset paths.
         // Links still use the owning page's source context for pages and downloads.
-        if generated && kind == ReferenceKind::Image {
+        let rd_figure = spelling.starts_with("rd-example-assets/")
+            && context
+                .document
+                .provenance
+                .iter()
+                .any(|record| matches!(record.activity, ProvenanceActivity::RdExamples { .. }));
+        if (generated || rd_figure) && kind == ReferenceKind::Image {
             let path = DiagnosticPath::try_from(file.as_ref()).map_err(|_| invalid)?;
             let asset = self.generated.get(&path).ok_or(invalid)?;
             if fragment.is_some() {
@@ -610,7 +616,15 @@ impl Resolver<'_> {
             }
             return Ok(ReferenceTarget::Asset {
                 asset: AssetReference {
-                    path,
+                    path: if rd_figure {
+                        DiagnosticPath::try_from(format!(
+                            "content-assets/sha256/{}",
+                            asset.fingerprint.value
+                        ))
+                        .map_err(|_| invalid)?
+                    } else {
+                        path
+                    },
                     fingerprint: asset.fingerprint.clone(),
                 },
                 fragment: None,

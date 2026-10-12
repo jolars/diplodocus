@@ -97,6 +97,20 @@ fn cli_paths_and_completed_snapshot_match_the_contract() {
         panic!("R metadata");
     };
     assert!(metadata.runtime.take().is_some());
+    for (id, item) in &mut completed_packages.get_mut("rfoo").unwrap().items {
+        let expected = &static_packages["rfoo"].items[id];
+        if let Some(document) = &item.documentation {
+            assert!(document.provenance.iter().any(|record| matches!(
+                record.activity,
+                diplodocus::ir::ProvenanceActivity::RdExamples { .. }
+            )));
+            assert_eq!(
+                document.raw_source,
+                expected.documentation.as_ref().unwrap().raw_source
+            );
+            item.documentation = expected.documentation.clone();
+        }
+    }
     assert_eq!(completed_packages, static_packages);
     let expected = completed.canonical_export().unwrap();
     assert!(!root.path().join(".diplodocus").exists());
@@ -132,6 +146,20 @@ fn cli_paths_and_completed_snapshot_match_the_contract() {
 #[test]
 fn generated_snapshots_never_become_sources_or_change_input_fingerprints() {
     let root = static_workspace();
+    // This source-discovery case deliberately stores databases with R source
+    // extensions; it cannot also serve as a loadable package execution fixture.
+    for name in [
+        "fit",
+        "foo_model",
+        "mean_squared_error",
+        "experimental_summary",
+    ] {
+        let path = format!("r/man/{name}.Rd");
+        let text = root.read(&path);
+        let start = text.find("\\examples{").unwrap();
+        let end = start + text[start..].find("\n}\n").unwrap() + 3;
+        root.write(path, format!("{}{}", &text[..start], &text[end..]));
+    }
     let config = root.path().join(CONFIG);
     let original = assemble_workspace(&config).unwrap();
     let expected_inputs: Vec<_> = original.input_paths().collect();

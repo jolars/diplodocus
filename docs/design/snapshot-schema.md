@@ -302,7 +302,7 @@ Its `kind` is `depends-on`, `binds`, `wraps`, or `generated-from`.
 `Provenance` contains `activity`, nullable `source`, nullable `span`, and
 `tools` (an object mapping component names to versions). `activity.kind` selects
 `declaration`, `decoded-documentation`, `extraction`, `execution`,
-`package-metadata`, or `generated-markdown`; the
+`package-metadata`, `rd-examples`, or `generated-markdown`; the
 [provenance types](../../src/ir/provenance.rs) specify each variant's evidence.
 Decoded documentation records pair a decoded byte range with the enclosing
 provenance's original source range, so validation can attribute a docstring
@@ -510,6 +510,15 @@ author and citation document also retains this evidence. Markdown documents
 retain their original source and declaration evidence. Combined license and
 community pages retain the contributing files as source aliases, so ordinary
 links to those files resolve to their generated pages.
+
+Rd documents retain `rd-examples` provenance after native execution, with policy
+`rd-examples-v1`, package identity, the original Rd fingerprint, R and package
+versions, loaded namespace versions, executed expressions, illustrative regions,
+and conditional skip reasons. Validation checks that the source fingerprint and
+location match the retained Rd document and that the package version matches
+DESCRIPTION and the loaded namespace evidence. Output text uses ordinary escaped
+code blocks; validated PNG figures use the content asset store. No authored
+execution row or QMD cache entry is created for an Rd topic.
 
 Query all package names and versions:
 

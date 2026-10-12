@@ -10,7 +10,7 @@ hold the detailed rules. Source and tests establish current behavior.
 
 `check` assembles static Python, R, and authored sources, then resolves semantic
 and local references. It does not execute authored cells or publish output.
-`extract` also executes authorized QMD pages and publishes a portable SQLite
+`extract` also executes Rd examples and authorized QMD pages and publishes a portable SQLite
 snapshot. `build` generates a site from a completed snapshot and publishes it
 through a staged directory. `serve` keeps the last successful generation live
 while it watches inputs, rebuilds, and optionally refreshes browsers. The command
@@ -63,3 +63,22 @@ The principal execution tests are [`tests/milestone_six.rs`](../../tests/milesto
 maps behavior to fixtures. The real Python and R kernel tests run through the
 devenv environment. The [browser workflow](../development/browser.md) covers
 site and preview checks.
+
+## R help-topic examples
+
+R examples run through the native helper in `src/assembly/rd_examples.rs` and
+`src/assembly/rd_examples.R`, independently of QMD configuration and kernels.
+The prepared environment supplies R, pkgload, evaluate, package dependencies, and
+prebuilt extensions. Each topic loads the supplied checkout in a fresh supervised
+process; expressions share state and graphics within the topic. Native Rd
+conversion preserves illustrative dontrun regions and executes donttest regions.
+False conditional branches retain skip reasons, and unavailable dependencies fail.
+
+The helper returns literal text, recorded plot images, and portable runtime
+observations. PNG validation precedes projection into Rd documents; resolved
+figures use the existing snapshot content asset store. `RdExamples` provenance
+records input fingerprints, executed expressions, illustrative regions, skip
+reasons, and actual R, package, and loaded namespace versions. There is no Rd
+execution cache. Timeout, cancellation, output, and cleanup failures stop
+publication. `tests/rd_examples.rs` exercises this path and generation with the
+checkout removed and R unavailable.

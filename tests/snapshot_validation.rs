@@ -819,3 +819,52 @@ fn rejects_changed_rd_help_destinations_and_invalid_candidate_evidence() {
         );
     }
 }
+
+#[tokio::test]
+async fn rejects_rd_example_evidence_that_disagrees_with_its_source_or_package() {
+    use diplodocus::execution::{ExecutionCancellation, ExecutionDeadlines};
+    let root = support::acceptance_workspace();
+    let mut sources = assemble_workspace(root.path().join("workspace/diplodocus.toml")).unwrap();
+    let mut cancellation: ExecutionCancellation<'_> = Box::pin(std::future::pending());
+    sources
+        .execute_rd_examples(ExecutionDeadlines::default(), &mut cancellation)
+        .await
+        .unwrap();
+    let resolved = resolve_workspace(&sources).unwrap();
+    let snapshot = Snapshot::from_sources(&sources, &resolved).unwrap();
+    for field in [
+        "source",
+        "fingerprint",
+        "package-version",
+        "dependency-version",
+        "policy",
+    ] {
+        let result = changed(&snapshot, |export| {
+            let activity = export["records"]
+                .as_array_mut()
+                .unwrap()
+                .iter_mut()
+                .filter(|record| record["kind"] == "item" && record["owner"] == "rfoo")
+                .find_map(|record| {
+                    record["content"]["documentation"]["provenance"]
+                        .as_array_mut()
+                        .and_then(|records| {
+                            records
+                                .iter_mut()
+                                .find(|record| record["activity"]["kind"] == "rd-examples")
+                        })
+                })
+                .map(|record| &mut record["activity"])
+                .unwrap();
+            match field {
+                "source" => activity["input"]["source"]["path"] = "man/another.Rd".into(),
+                "fingerprint" => activity["input"]["fingerprint"]["value"] = "0".repeat(64).into(),
+                "package-version" => activity["package_version"] = "99.0.0".into(),
+                "dependency-version" => activity["dependencies"]["foo"] = "99.0.0".into(),
+                "policy" => activity["policy"] = "unsupported".into(),
+                _ => unreachable!(),
+            }
+        });
+        assert!(result.is_err(), "{field}: {result:?}");
+    }
+}

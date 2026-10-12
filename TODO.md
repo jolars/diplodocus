@@ -162,7 +162,7 @@ exposed these compatibility, content, and presentation gaps.
   listings, methods by class, and method navigation. Resolve help aliases
   shared across multiple declarations, including eulerr's diagram
   composition topic.
-- [ ] Execute Rd examples with results and figures as a required extraction step.
+- [x] Execute Rd examples with results and figures as a required extraction step.
   Preserve explicitly illustrative `dontrun` regions, execute `donttest` regions,
   and record supported conditional skips under the prepared-environment contract.
 - [ ] Support R Markdown vignettes with knitr chunks, inline R, math, citations,

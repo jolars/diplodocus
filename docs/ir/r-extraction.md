@@ -2,8 +2,9 @@
 
 This page describes the current source adapter. The [prepared-environment
 decision](../decisions/0003-prepared-environment.md) supersedes its
-package-loading prohibition and inert-example contract; those changes are not
-yet implemented.
+package-loading prohibition and inert-example contract. Source assembly remains
+static; extraction now loads the checkout and executes Rd examples through a
+separate native completion step.
 
 `extractors::r::extract_target(repository, package, target)` reads a resolved R
 package directory and returns a portable `RExtraction`. The API adapter never
@@ -236,4 +237,29 @@ and imported S3 generics, and the extra dynamic-Rd warning. They compare
 relocated workspaces, diagnose a missing R executable, and verify installed
 dependency imports without package loading or profile execution. Component
 cases cover malformed input, conflicts, source boundaries, structured markup,
-and inert source and examples.
+and inert source and examples during assembly. [`tests/rd_examples.rs`](../../tests/rd_examples.rs)
+checks required extraction-time execution, shared topic sessions, illustrative
+regions, conditional skips, text, figures, prerequisite failures, cancellation,
+timeouts, failure preservation, and portable generation.
+
+## Native Rd example execution
+
+`WorkspaceSources::execute_rd_examples` runs after native metadata completion
+and before QMD execution and snapshot publication. It uses `pkgload::load_all`
+with compilation disabled, public exports only, and test helpers disabled.
+The loaded namespace must belong to the supplied checkout and match DESCRIPTION.
+Every requested DLL must already exist and load from that checkout.
+
+A fresh R process handles each distinct documented Rd source. `tools::Rd2ex`
+comments out `dontrun` and retains executable `donttest`. `evaluate` runs the
+converted expressions in one session with one graphics device and captures
+ordered output and recorded plots. Explicit false branches record their predicates
+and reasons; failed dependency probes are fatal. Unsupported executable Rd syntax
+is an extraction error even when source assembly retains a visible placeholder.
+
+Output text becomes escaped display blocks. Recorded plots are replayed to PNG,
+validated with the existing image policy, and copied into the snapshot's content
+asset store. File-level Rd attribution covers source, outputs, and skip evidence;
+the adapter does not invent node ranges. `RdExamples` provenance records the input
+fingerprint, runtime and namespace versions, executed expressions, illustrative
+regions, and skips. This adapter does not reuse the authored-page cache.

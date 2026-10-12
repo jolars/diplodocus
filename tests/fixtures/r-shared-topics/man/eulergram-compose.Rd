@@ -38,13 +38,13 @@ The gap between adjacent plots is controlled by the
 \code{\link[grid:unit]{grid::unit()}} and defaults to \code{grid::unit(1, "lines")}.
 }
 \examples{
-p1 <- plot(euler(c(A = 1, B = 8, "A&B" = 1)))
-p2 <- plot(euler(c(A = 1, C = 1, "A&C" = 1)))
+p1 <- plot(example_euler(c(A = 1, B = 8, "A&B" = 1)))
+p2 <- plot(example_euler(c(A = 1, C = 1, "A&C" = 1)))
 
 p1 | p2
 p1 / p2
 
-p3 <- plot(euler(c(X = 3, Y = 2, "X&Y" = 1)))
+p3 <- plot(example_euler(c(X = 3, Y = 2, "X&Y" = 1)))
 (p1 | p2) / p3
 
 }

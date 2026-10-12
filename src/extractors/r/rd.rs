@@ -293,7 +293,14 @@ pub(super) fn parse(
                 parts.push(Part::Blocks(blocks));
             }
             RdTag::Examples => {
-                let mut blocks = vec![heading("Examples", context.span())];
+                let mut title = heading("Examples", context.span());
+                if let Block::Heading { attributes, .. } = &mut title {
+                    attributes.classes.push(crate::ir::SpannedString {
+                        value: "rd-examples".into(),
+                        span: context.span(),
+                    });
+                }
+                let mut blocks = vec![title];
                 match context.code(tagged.children(), &path, &mut BTreeMap::new()) {
                     Some(code) => blocks.push(code_block(code.trim().into(), context.span())),
                     None => blocks.push(context.unsupported_block("examples", &path)),

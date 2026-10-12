@@ -7,8 +7,9 @@ implementation.
 
 The [prepared-environment decision](../decisions/0003-prepared-environment.md)
 changes the intended extraction contract to allow runtime assistance and require
-example execution. R author and citation completion uses native helpers; the
-broader package-loading and example-execution work is pending. The pipeline and test map below
+example execution. R extraction uses native helpers to complete authors and
+citations and now loads the checkout to execute Rd examples. Python, Julia, and
+QMD default-execution changes remain pending. The pipeline and test map below
 describe the current implementation; [remaining work](../../TODO.md) tracks the
 transition.
 
@@ -28,7 +29,8 @@ transition.
    their outputs; `src/assembly/execution.rs` joins the results to the
    workspace. The [execution map](../design/execution.md) describes this path.
    `src/assembly/package_docs.rs` discovers R package documents, and its native
-   helper completes authors, citations, and NEWS.Rd during extraction.
+   helper completes authors, citations, and NEWS.Rd during extraction. `src/assembly/rd_examples.rs`
+   executes native Rd examples and retains text and validated PNG figures.
 4. `src/snapshots/` validates and publishes a portable SQLite database.
    `generate` can load this database without the original sources or kernels.
 5. `src/site.rs` builds routes and navigation from the snapshot;
@@ -58,7 +60,7 @@ combined in one `cargo test` invocation.
 | Static Python, R, or Julia extraction | `src/extractors/` | `cargo test --locked --test python_surface --test r_extraction --test julia_extraction --test static_extractor_contract` |
 | Authored Markdown or QMD | `src/documents/` | `cargo test --locked --test documents --test qmd_preparation` |
 | Assembly and references | `src/assembly/`, `src/validation/` | `cargo test --locked --test workspace_assembly --test snapshot_validation` |
-| Execution and caching | `src/execution/`, `src/assembly/execution.rs` | `cargo test --locked --test execution_contract --test execution_cache --test jupyter_real_kernels` |
+| Execution and caching | `src/execution/`, `src/assembly/execution.rs` | `cargo test --locked --test execution_contract --test execution_cache --test jupyter_real_kernels --test rd_examples` |
 | SQLite snapshot | `src/snapshots/` | `cargo test --locked --test snapshot_schema --test snapshots_storage --test snapshot_publication` |
 | Site or command pipeline | `src/site.rs`, `src/rendering/`, `src/commands/` | `cargo test --locked --test site_generation --test extract_command` |
 

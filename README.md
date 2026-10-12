@@ -27,8 +27,9 @@ task preview
 ```
 
 Open the local URL printed by the command. This example uses R to discover
-installed package metadata, without loading the documented package. It does not
-need Python, Julia, or Jupyter kernels. The [quick start](docs/guide/quick-start.md)
+installed package metadata and load the supplied checkout to execute Rd examples.
+It requires `pkgload` and `evaluate`, supplied by devenv, and does not need Python,
+Julia, or Jupyter kernels. The [quick start](docs/guide/quick-start.md)
 shows direct CLI commands, Diplodocus's own documentation site, and the broader
 acceptance workspace.
 

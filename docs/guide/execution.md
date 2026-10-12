@@ -1,6 +1,6 @@
 # QMD execution and security
 
-Execution is disabled by default. To run cells, declare a QMD collection with
+QMD execution is disabled by default. To run cells, declare a QMD collection with
 `mode = "execute"`, `engine = "jupyter"`, and a kernel name in
 [`diplodocus.toml`](configuration.md). The kernel must already be installed.
 Document metadata may turn execution off for a page, but cannot grant it to a
@@ -26,3 +26,7 @@ HTML or SVG is rejected. A page cache can reuse a successful execution when its
 source, effective options, selected kernel, toolchain, and declared environment
 inputs still match. The configured kernel is still started to verify its
 identity on a cache hit.
+
+R help-topic examples execute during `extract`, `build`, and `serve` independently
+of QMD configuration. See [R extraction](extraction.md) for the prepared
+environment, illustrative regions, conditional skips, results, and figures.

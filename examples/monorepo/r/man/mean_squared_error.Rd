@@ -10,4 +10,5 @@
 \value{The average squared prediction error. Zero indicates a perfect match.}
 \examples{
 mean_squared_error(c(1, 2), c(1, 3))
+plot(c(1, 2), c(1, 3), xlab = "Truth", ylab = "Prediction")
 }

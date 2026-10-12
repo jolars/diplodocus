@@ -93,6 +93,19 @@ fn matches_constraint(ecosystem: &str, version: &str, requirement: &str) -> Opti
     }
 }
 
+/// Compare R version spellings without requiring R during snapshot generation.
+pub(crate) fn r_versions_equal(actual: &str, expected: &str) -> bool {
+    let (Some(mut actual), Some(mut expected)) =
+        (numeric_version(actual), numeric_version(expected))
+    else {
+        return false;
+    };
+    let width = actual.len().max(expected.len());
+    actual.resize(width, 0);
+    expected.resize(width, 0);
+    actual == expected
+}
+
 fn numeric_version(value: &str) -> Option<Vec<u64>> {
     value
         .split(['.', '-'])

@@ -1,4 +1,4 @@
-export(fit, eulerr_options)
+export(fit, example_euler, eulerr_options)
 S3method(fit, default)
 S3method(fit, model)
 S3method("|", eulergram)
