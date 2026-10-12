@@ -4,6 +4,160 @@ use diplodocus::assembly::assemble_workspace;
 use diplodocus::snapshots::Snapshot;
 use diplodocus::validation::resolve_workspace;
 
+fn code_blocks(html: &str) -> Vec<(bool, String)> {
+    use html5ever::tendril::TendrilSink;
+    use markup5ever_rcdom::{Handle, NodeData, RcDom};
+
+    fn text(node: &Handle) -> String {
+        if let NodeData::Text { contents } = &node.data {
+            return contents.borrow().to_string();
+        }
+        node.children.borrow().iter().map(text).collect()
+    }
+
+    fn visit(node: &Handle, blocks: &mut Vec<(bool, String)>) {
+        if let NodeData::Element { name, attrs, .. } = &node.data
+            && name.local.as_ref() == "pre"
+        {
+            let highlighted = attrs.borrow().iter().any(|attribute| {
+                attribute.name.local.as_ref() == "class"
+                    && attribute
+                        .value
+                        .split_whitespace()
+                        .any(|c| c == "syntax-code")
+            });
+            blocks.push((highlighted, text(node)));
+        }
+        for child in node.children.borrow().iter() {
+            visit(child, blocks);
+        }
+    }
+
+    let document = html5ever::parse_document(RcDom::default(), Default::default()).one(html);
+    let mut blocks = Vec::new();
+    visit(&document.document, &mut blocks);
+    blocks
+}
+
+#[test]
+fn highlighting_survives_snapshot_generation_without_sources() {
+    let root = support::TestWorkspace::new();
+    root.write(
+        "diplodocus.toml",
+        "[project]\nname='Highlighting'\n\
+         [[repository]]\nid='docs'\npath='.'\n\
+         [[content]]\nid='guide'\nowner='project'\nrepository='docs'\n\
+         path='guide'\nmount='guide'\nformat='qmd'\n",
+    );
+    root.write(
+        "guide/index.qmd",
+        "# Examples\n\n\
+         ```python\nmessage = '<script>& café</script>'\n```\n\n\
+         > ```r\n> x <- 42\n> ```\n\n\
+         ```julia\nx = 42\n```\n\n\
+         ```{python, echo=false}\nx = 1\n```\n\n\
+         ```unknown\nliteral <markup>\n```\n\n\
+         ```text\nplain text\n```\n",
+    );
+    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+    let artifact = tempfile::tempdir().unwrap();
+    let path = artifact.path().join("snapshot.sqlite");
+    snapshot.publish(&path).unwrap();
+    drop(sources);
+    drop(root);
+    let loaded = Snapshot::load(&path).unwrap();
+    let rendered =
+        diplodocus::rendering::render_site(&diplodocus::site::Site::new(&loaded).unwrap()).unwrap();
+    let html = std::str::from_utf8(&rendered.files()["guide/index.html"].bytes).unwrap();
+    assert_eq!(
+        code_blocks(html),
+        [
+            (true, "message = '<script>& café</script>'\n".into()),
+            (true, "x <- 42\n".into()),
+            (true, "x = 42\n".into()),
+            (true, "x = 1\n".into()),
+            (false, "literal <markup>\n".into()),
+            (false, "plain text\n".into()),
+        ]
+    );
+    assert!(!html.contains("<script>& café</script>"));
+    let css = std::str::from_utf8(&rendered.files()["assets/site.css"].bytes).unwrap();
+    assert!(css.contains(".syntax-code"));
+    assert!(css.contains(".syntax-keyword"));
+    assert!(!html.contains("highlight.js"));
+}
+
+#[cfg(target_os = "linux")]
+#[tokio::test]
+async fn executed_source_is_highlighted_while_hidden_source_and_literal_outputs_stay_plain() {
+    use diplodocus::assembly::WorkspaceExecution;
+    use diplodocus::execution::ExecutionDeadlines;
+    use diplodocus::validation::resolve_executed_workspace;
+
+    let root = support::TestWorkspace::new();
+    root.write(
+        "diplodocus.toml",
+        "[project]\nname='Execution highlighting'\n\
+         [[repository]]\nid='docs'\npath='.'\n\
+         [[content]]\nid='guide'\nowner='project'\nrepository='docs'\n\
+         path='guide'\nmount='guide'\nformat='qmd'\n\
+         [content.execution]\nmode='execute'\nengine='jupyter'\nkernel='python3'\n",
+    );
+    root.write(
+        "guide/index.qmd",
+        "# Execution\n\n\
+         ```{python}\nprint('<script>& output</script>')\n```\n\n\
+         ```{python, echo=false}\nsecret = 'hidden-echo-source'\n```\n\n\
+         ```{python, include=false}\nsecret = 'hidden-include-source'\nprint(secret)\n```\n\n\
+         ```{python}\nimport sys\nprint('<stderr>', file=sys.stderr)\n```\n\n\
+         ```{python, error=true}\nraise ValueError('literal-error')\n```\n\n\
+         ```{python}\nfrom IPython.display import Markdown\nMarkdown('```python\\nx = 7\\n```')\n```\n",
+    );
+    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let stage = tempfile::tempdir().unwrap();
+    let executed = sources
+        .execute(WorkspaceExecution {
+            staging_parent: stage.path(),
+            deadlines: ExecutionDeadlines::default(),
+            cancellation: Box::pin(std::future::pending()),
+        })
+        .await
+        .unwrap();
+    let snapshot =
+        Snapshot::from_executed(&executed, &resolve_executed_workspace(&executed).unwrap())
+            .unwrap();
+    executed.discard().unwrap();
+    let artifact = tempfile::tempdir().unwrap();
+    let path = artifact.path().join("snapshot.sqlite");
+    snapshot.publish(&path).unwrap();
+    drop(root);
+    let loaded = Snapshot::load(&path).unwrap();
+    let rendered =
+        diplodocus::rendering::render_site(&diplodocus::site::Site::new(&loaded).unwrap()).unwrap();
+    let html = std::str::from_utf8(&rendered.files()["guide/index.html"].bytes).unwrap();
+    let blocks = code_blocks(html);
+    assert_eq!(
+        blocks
+            .iter()
+            .filter(|(highlighted, _)| *highlighted)
+            .count(),
+        5
+    );
+    assert!(blocks.contains(&(true, "print('<script>& output</script>')\n".into())));
+    assert!(blocks.contains(&(false, "<script>& output</script>\n".into())));
+    assert!(blocks.contains(&(false, "<stderr>\n".into())));
+    assert!(blocks.contains(&(true, "x = 7\n".into())));
+    assert!(
+        blocks
+            .iter()
+            .any(|(highlighted, text)| !highlighted && text.contains("ValueError: literal-error"))
+    );
+    assert!(!html.contains("hidden-echo-source"));
+    assert!(!html.contains("hidden-include-source"));
+    assert!(!html.contains("<script>& output</script>"));
+}
+
 #[test]
 fn footer_survives_snapshot_generation_without_sources_and_escapes_its_content() {
     let root = support::TestWorkspace::new();
@@ -152,7 +306,9 @@ fn eulerr_datasets_survive_snapshots_and_render_bare_usage_format_and_source() {
             .unwrap();
         assert!(html.contains(format));
         assert_eq!(
-            html.matches(&format!("<pre><code>{name}</code></pre>"))
+            code_blocks(html)
+                .iter()
+                .filter(|(highlighted, text)| *highlighted && text == name)
                 .count(),
             2
         );

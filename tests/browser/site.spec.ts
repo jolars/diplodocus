@@ -25,15 +25,17 @@ const test = base.extend<{ browserErrors: string[] }>({
   }, { auto: true }],
 });
 
-async function capture(page: Page, info: TestInfo, name: string) {
+async function capture(page: Page, info: TestInfo, name: string, waitForFrame = true) {
   if (!process.env.DIPLODOCUS_BROWSER_CAPTURE) return;
   const directory = join(process.env.DIPLODOCUS_BROWSER_ARTIFACTS!, "screenshots", info.project.name);
   await mkdir(directory, { recursive: true });
   const path = join(directory, `${name}.png`);
   // Chromium can finish navigation before its first composited frame is ready.
-  await page.evaluate(() => new Promise<void>(resolve => {
-    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
-  }));
+  if (waitForFrame) {
+    await page.evaluate(() => new Promise<void>(resolve => {
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+    }));
+  }
   await page.screenshot({ path, fullPage: true, animations: "disabled" });
   await info.attach(name, { path, contentType: "image/png" });
 }
@@ -43,6 +45,39 @@ async function fitsViewport(page: Page) {
     document.documentElement.scrollWidth <= document.documentElement.clientWidth,
   )).toBe(true);
 }
+
+test("code chunks and API signatures stay highlighted without JavaScript", async ({ browser, baseURL }, info) => {
+  const context = await browser.newContext({ javaScriptEnabled: false, baseURL, viewport: info.project.use.viewport });
+  const page = await context.newPage();
+  try {
+    await page.goto("/guides/comparing-predictions.html");
+    const blocks = page.locator("main pre.syntax-code");
+    await expect(blocks).toHaveCount(3);
+    for (const block of await blocks.all()) {
+      const colors = await block.locator("span").evaluateAll(elements =>
+        [...new Set(elements.map(element => getComputedStyle(element).color))],
+      );
+      expect(colors.length).toBeGreaterThan(1);
+    }
+    await expect(blocks.nth(0).locator("code")).toHaveText("from tinystats import mean_squared_error\n\nmean_squared_error([1.0, 2.0], [1.0, 3.0])\n# 0.5\n", { useInnerText: false });
+    await fitsViewport(page);
+    // Disabled JavaScript prevents animation-frame callbacks from running.
+    await capture(page, info, "syntax-highlighting", false);
+
+    for (const language of ["Python", "R", "Julia"]) {
+      await page.goto("/guides/comparing-predictions.html");
+      const heading = page.getByRole("heading", { name: language, exact: true });
+      const href = await heading.locator("xpath=following-sibling::p[1]").getByRole("link").getAttribute("href");
+      await page.goto(new URL(href!, page.url()).href);
+      const signature = page.locator("main pre.syntax-code").first();
+      await expect(signature).toBeVisible();
+      expect(await signature.locator("span").count()).toBeGreaterThan(0);
+      await fitsViewport(page);
+    }
+  } finally {
+    await context.close();
+  }
+});
 
 for (const [path, title, name] of [
   ["/", "Tiny Stats", "home"],

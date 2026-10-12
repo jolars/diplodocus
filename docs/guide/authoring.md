@@ -36,6 +36,12 @@ include `eval`, `echo`, `include`, `output`, `error`, `label`, `fig-alt`,
 `fig-cap`, and `fig-subcap`. Cell options may appear in a fence's info string or
 in `#|` lines; the latter take precedence.
 
+Add a language label such as `python`, `r`, or `julia` to a code fence to enable
+syntax highlighting. Diplodocus also highlights visible QMD cell source and API
+signature blocks. Highlighting uses a built-in light theme and works without
+JavaScript. Unlabeled fences, unknown languages, and `text` fences remain plain.
+Plain-text execution output and errors also remain unhighlighted.
+
 Diplodocus implements these selected profiles, not the full Quarto or Pandoc
 languages. Unsupported constructs remain visible as placeholders and produce
 diagnostics. Raw authored HTML, TeX math, footnotes, and arbitrary directives

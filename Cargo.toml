@@ -55,10 +55,12 @@ semver = "=1.0.28"
 serde_json = "1.0"
 sha2 = "0.11"
 svgtypes = "=0.16.1"
+syntect = { version = "=5.3.0", default-features = false, features = ["html", "regex-fancy"] }
 tempfile = "3.27"
 thiserror = "2.0"
 tokio = { version = "1.36", features = ["fs", "macros", "net", "process", "rt-multi-thread", "sync", "time", "signal", "io-util"] }
 toml = "=1.1.6"
+two-face = { version = "=0.5.2", default-features = false, features = ["syntect-fancy"] }
 url = "=2.5.8"
 zune-core = "=0.5.3"
 zune-jpeg = "=0.5.15"

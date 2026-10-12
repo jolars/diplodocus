@@ -23,6 +23,7 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
     let mut search = Vec::new();
     let mut uses_math = false;
     let math_context = katex::KatexContext::default();
+    let highlighter = super::highlighting::Highlighter::new();
     for (route, page) in &site.pages {
         let page_math = page
             .document
@@ -33,6 +34,7 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
             page,
             route,
             math_context: &math_context,
+            highlighter: &highlighter,
             cell: 0,
             headings: Vec::new(),
             identifiers: page
@@ -165,11 +167,10 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
                 .map(|p| site.workspace.packages[p].ecosystem.as_str())
                 .unwrap_or("");
             for signature in &item.signatures {
-                html.push_str(&render_preformatted_text(&super::signatures::signature(
-                    &item.name,
-                    &signature.signature,
-                    ecosystem,
-                )));
+                html.push_str(&highlighter.render(
+                    &super::signatures::signature(&item.name, &signature.signature, ecosystem),
+                    Some(ecosystem),
+                ));
             }
             if let Some(ItemLanguageData::Julia(data)) = &item.language_data {
                 let members = match &data.declaration {
@@ -301,9 +302,13 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
             file(asset.bytes.clone(), &asset.media_type),
         );
     }
+    let style = format!(
+        "{STYLE}\n{}",
+        super::highlighting::stylesheet().map_err(|_| SiteError::Evidence)?
+    );
     files.insert(
         "assets/site.css".into(),
-        file(STYLE.as_bytes().to_vec(), "text/css; charset=utf-8"),
+        file(style.into_bytes(), "text/css; charset=utf-8"),
     );
     files.insert(
         "assets/search.js".into(),
@@ -381,6 +386,7 @@ fn concept_links(site: &Site<'_>, route: &str, concept: &Concept) -> Result<Stri
     Ok(html)
 }
 struct Renderer<'a, 'b> {
+    highlighter: &'a super::highlighting::Highlighter,
     math_context: &'a katex::KatexContext,
     site: &'a Site<'b>,
     page: &'a PageModel<'b>,
@@ -595,7 +601,9 @@ impl Renderer<'_, '_> {
                     write!(html, "</{tag}>").unwrap();
                 }
                 Block::ThematicBreak { .. } => html.push_str("<hr>"),
-                Block::CodeBlock { source, .. } => html.push_str(&render_preformatted_text(source)),
+                Block::CodeBlock {
+                    source, language, ..
+                } => html.push_str(&self.highlighter.render(source, language.as_deref())),
                 Block::CodeCell(cell) => html.push_str(&self.code_cell(cell)?),
                 Block::Table {
                     caption,
@@ -678,7 +686,11 @@ impl Renderer<'_, '_> {
                 Some(&prepared.options),
             )
         } else {
-            html.push_str(&render_preformatted_text(&cell.source));
+            html.push_str(
+                &self
+                    .highlighter
+                    .render(&cell.source, cell.language.as_deref()),
+            );
             return Ok(html);
         };
         let label = options
@@ -693,8 +705,9 @@ impl Renderer<'_, '_> {
         )
         .unwrap();
         if let Some(source) = view.source {
-            html.push_str(&render_preformatted_text(
+            html.push_str(&self.highlighter.render(
                 &source.iter().map(|s| s.text.as_str()).collect::<String>(),
+                cell.language.as_deref(),
             ));
         }
         let mut figure = 0;
