@@ -67,6 +67,31 @@ pub fn acceptance_workspace() -> TestWorkspace {
     TestWorkspace::from_fixture("acceptance")
 }
 
+pub fn shared_r_workspace() -> TestWorkspace {
+    let workspace = TestWorkspace::new();
+    workspace.write("workspace/diplodocus.toml", "[project]\nname='Shared R help'\n\
+        [[repository]]\nid='r'\npath='../r'\n\
+        [[package]]\nid='rfoo'\nname='Shared help'\nslug='r'\necosystem='r'\nrepository='r'\npath='.'\nmetadata-path='DESCRIPTION'\n\
+        targets=[{id='api', extractor='r', path='.', role='public-api'}]\n");
+    workspace.write(
+        "r/DESCRIPTION",
+        "Package: sharedhelp\nVersion: 1.0.0\nTitle: Shared Help Fixtures\n\
+        Description: Fixtures for shared help topics.\nLicense: MIT\n\
+        Author: Fixture Authors\nMaintainer: Fixture Authors <fixtures@example.com>\n",
+    );
+    let fixture = fixture_path("r-shared-topics");
+    for directory in ["R", "man"] {
+        for file in files_under(&fixture.join(directory)) {
+            workspace.write(
+                Path::new("r").join(directory).join(&file),
+                fs::read(fixture.join(directory).join(&file)).unwrap(),
+            );
+        }
+    }
+    workspace.write("r/NAMESPACE", fs::read(fixture.join("NAMESPACE")).unwrap());
+    workspace
+}
+
 pub fn add_r_datasets(workspace: &TestWorkspace) {
     let fixture = fixture_path("r-datasets/man");
     for file in files_under(&fixture) {

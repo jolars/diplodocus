@@ -2,7 +2,7 @@
   "document": {
     "span": {
       "start": 0,
-      "end": 6647
+      "end": 6929
     },
     "frontmatter": null,
     "blocks": [
@@ -839,114 +839,183 @@
         "inlines": [
           {
             "type": "text",
-            "value": "Rd content supports labeled local and package-qualified help links, equations,",
+            "value": "Shared help topics retain all documented usages and arguments on each",
             "span": {
               "start": 2099,
-              "end": 2177
+              "end": 2168
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2177,
-              "end": 2178
+              "start": 2168,
+              "end": 2169
+            }
+          },
+          {
+            "type": "text",
+            "value": "declaration's page. Topic aliases resolve to a primary declaration, while",
+            "span": {
+              "start": 2169,
+              "end": 2242
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2242,
+              "end": 2243
+            }
+          },
+          {
+            "type": "text",
+            "value": "method aliases resolve to their own pages. Links between declarations and",
+            "span": {
+              "start": 2243,
+              "end": 2316
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2316,
+              "end": 2317
+            }
+          },
+          {
+            "type": "text",
+            "value": "methods grouped by S3 class make the complete topic navigable.",
+            "span": {
+              "start": 2317,
+              "end": 2379
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2379,
+              "end": 2380
+            }
+          }
+        ],
+        "span": {
+          "start": 2099,
+          "end": 2380
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Rd content supports labeled local and package-qualified help links, equations,",
+            "span": {
+              "start": 2381,
+              "end": 2459
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2459,
+              "end": 2460
             }
           },
           {
             "type": "text",
             "value": "aligned tables, custom sections, named return entries, HTML and platform",
             "span": {
-              "start": 2178,
-              "end": 2250
+              "start": 2460,
+              "end": 2532
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2250,
-              "end": 2251
+              "start": 2532,
+              "end": 2533
             }
           },
           {
             "type": "text",
             "value": "conditionals, and DOI links. Equations render natively with ",
             "span": {
-              "start": 2251,
-              "end": 2311
+              "start": 2533,
+              "end": 2593
             }
           },
           {
             "type": "code",
             "value": "katex-rs",
             "span": {
-              "start": 2311,
-              "end": 2321
+              "start": 2593,
+              "end": 2603
             }
           },
           {
             "type": "text",
             "value": " and bundled",
             "span": {
-              "start": 2321,
-              "end": 2333
+              "start": 2603,
+              "end": 2615
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2333,
-              "end": 2334
+              "start": 2615,
+              "end": 2616
             }
           },
           {
             "type": "text",
             "value": "fonts, so they work with JavaScript disabled. External help links use installed",
             "span": {
-              "start": 2334,
-              "end": 2413
+              "start": 2616,
+              "end": 2695
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2413,
-              "end": 2414
+              "start": 2695,
+              "end": 2696
             }
           },
           {
             "type": "text",
             "value": "help aliases to select rdrr.io destinations; snapshots retain the results so",
             "span": {
-              "start": 2414,
-              "end": 2490
+              "start": 2696,
+              "end": 2772
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2490,
-              "end": 2491
+              "start": 2772,
+              "end": 2773
             }
           },
           {
             "type": "text",
             "value": "generation needs neither R nor installed help databases.",
             "span": {
-              "start": 2491,
-              "end": 2547
+              "start": 2773,
+              "end": 2829
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2547,
-              "end": 2548
+              "start": 2829,
+              "end": 2830
             }
           }
         ],
         "span": {
-          "start": 2099,
-          "end": 2548
+          "start": 2381,
+          "end": 2830
         }
       },
       {
@@ -956,67 +1025,67 @@
             "type": "text",
             "value": "Dataset topics marked ",
             "span": {
-              "start": 2549,
-              "end": 2571
+              "start": 2831,
+              "end": 2853
             }
           },
           {
             "type": "code",
             "value": "\\docType{data}",
             "span": {
-              "start": 2571,
-              "end": 2587
+              "start": 2853,
+              "end": 2869
             }
           },
           {
             "type": "text",
             "value": " create documented data objects without",
             "span": {
-              "start": 2587,
-              "end": 2626
+              "start": 2869,
+              "end": 2908
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2626,
-              "end": 2627
+              "start": 2908,
+              "end": 2909
             }
           },
           {
             "type": "text",
             "value": "requiring source bindings or exports. Their usage lists bare object names, and",
             "span": {
-              "start": 2627,
-              "end": 2705
+              "start": 2909,
+              "end": 2987
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2705,
-              "end": 2706
+              "start": 2987,
+              "end": 2988
             }
           },
           {
             "type": "text",
             "value": "their Format and Source sections retain structured prose, lists, and links.",
             "span": {
-              "start": 2706,
-              "end": 2781
+              "start": 2988,
+              "end": 3063
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2781,
-              "end": 2782
+              "start": 3063,
+              "end": 3064
             }
           }
         ],
         "span": {
-          "start": 2549,
-          "end": 2782
+          "start": 2831,
+          "end": 3064
         }
       },
       {
@@ -1026,120 +1095,120 @@
             "type": "text",
             "value": "Standard S3 generics from default R packages resolve without explicit imports.",
             "span": {
-              "start": 2783,
-              "end": 2861
+              "start": 3065,
+              "end": 3143
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2861,
-              "end": 2862
+              "start": 3143,
+              "end": 3144
             }
           },
           {
             "type": "text",
             "value": "R must be available on ",
             "span": {
-              "start": 2862,
-              "end": 2885
+              "start": 3144,
+              "end": 3167
             }
           },
           {
             "type": "code",
             "value": "PATH",
             "span": {
-              "start": 2885,
-              "end": 2891
+              "start": 3167,
+              "end": 3173
             }
           },
           {
             "type": "text",
             "value": ". Package-wide imports use the installed",
             "span": {
-              "start": 2891,
-              "end": 2931
+              "start": 3173,
+              "end": 3213
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2931,
-              "end": 2932
+              "start": 3213,
+              "end": 3214
             }
           },
           {
             "type": "text",
             "value": "dependencies' metadata without loading their namespaces. Documented helpers",
             "span": {
-              "start": 2932,
-              "end": 3007
+              "start": 3214,
+              "end": 3289
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3007,
-              "end": 3008
+              "start": 3289,
+              "end": 3290
             }
           },
           {
             "type": "text",
             "value": "retain their maintained signatures without requiring exports. Topics marked",
             "span": {
-              "start": 3008,
-              "end": 3083
+              "start": 3290,
+              "end": 3365
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3083,
-              "end": 3084
+              "start": 3365,
+              "end": 3366
             }
           },
           {
             "type": "code",
             "value": "\\keyword{internal}",
             "span": {
-              "start": 3084,
-              "end": 3104
+              "start": 3366,
+              "end": 3386
             }
           },
           {
             "type": "text",
             "value": " have addressable pages but stay out of navigation and search.",
             "span": {
-              "start": 3104,
-              "end": 3166
+              "start": 3386,
+              "end": 3448
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3166,
-              "end": 3167
+              "start": 3448,
+              "end": 3449
             }
           },
           {
             "type": "text",
             "value": "See the R extraction contract below for discovery and import limits.",
             "span": {
-              "start": 3167,
-              "end": 3235
+              "start": 3449,
+              "end": 3517
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3235,
-              "end": 3236
+              "start": 3517,
+              "end": 3518
             }
           }
         ],
         "span": {
-          "start": 2783,
-          "end": 3236
+          "start": 3065,
+          "end": 3518
         }
       },
       {
@@ -1155,14 +1224,14 @@
             "type": "text",
             "value": "Package landing pages",
             "span": {
-              "start": 3241,
-              "end": 3262
+              "start": 3523,
+              "end": 3544
             }
           }
         ],
         "span": {
-          "start": 3237,
-          "end": 3263
+          "start": 3519,
+          "end": 3545
         }
       },
       {
@@ -1172,82 +1241,82 @@
             "type": "text",
             "value": "Diplodocus automatically reads ",
             "span": {
-              "start": 3264,
-              "end": 3295
+              "start": 3546,
+              "end": 3577
             }
           },
           {
             "type": "code",
             "value": "README.md",
             "span": {
-              "start": 3295,
-              "end": 3306
+              "start": 3577,
+              "end": 3588
             }
           },
           {
             "type": "text",
             "value": " from the declared R package root and",
             "span": {
-              "start": 3306,
-              "end": 3343
+              "start": 3588,
+              "end": 3625
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3343,
-              "end": 3344
+              "start": 3625,
+              "end": 3626
             }
           },
           {
             "type": "text",
             "value": "uses it as the package overview. Without a README, DESCRIPTION supplies the",
             "span": {
-              "start": 3344,
-              "end": 3419
+              "start": 3626,
+              "end": 3701
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3419,
-              "end": 3420
+              "start": 3701,
+              "end": 3702
             }
           },
           {
             "type": "text",
             "value": "introduction. The page shows package metadata and links to available release",
             "span": {
-              "start": 3420,
-              "end": 3496
+              "start": 3702,
+              "end": 3778
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3496,
-              "end": 3497
+              "start": 3778,
+              "end": 3779
             }
           },
           {
             "type": "text",
             "value": "notes, authors and citation information, licenses, and community guidelines.",
             "span": {
-              "start": 3497,
-              "end": 3573
+              "start": 3779,
+              "end": 3855
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3573,
-              "end": 3574
+              "start": 3855,
+              "end": 3856
             }
           }
         ],
         "span": {
-          "start": 3264,
-          "end": 3574
+          "start": 3546,
+          "end": 3856
         }
       },
       {
@@ -1257,248 +1326,248 @@
             "type": "text",
             "value": "Release notes use ",
             "span": {
-              "start": 3575,
-              "end": 3593
+              "start": 3857,
+              "end": 3875
             }
           },
           {
             "type": "code",
             "value": "NEWS.md",
             "span": {
-              "start": 3593,
-              "end": 3602
+              "start": 3875,
+              "end": 3884
             }
           },
           {
             "type": "text",
             "value": ", then ",
             "span": {
-              "start": 3602,
-              "end": 3609
+              "start": 3884,
+              "end": 3891
             }
           },
           {
             "type": "code",
             "value": "NEWS.Rd",
             "span": {
-              "start": 3609,
-              "end": 3618
+              "start": 3891,
+              "end": 3900
             }
           },
           {
             "type": "text",
             "value": ", then plain ",
             "span": {
-              "start": 3618,
-              "end": 3631
+              "start": 3900,
+              "end": 3913
             }
           },
           {
             "type": "code",
             "value": "NEWS",
             "span": {
-              "start": 3631,
-              "end": 3637
+              "start": 3913,
+              "end": 3919
             }
           },
           {
             "type": "text",
             "value": ". Licenses include",
             "span": {
-              "start": 3637,
-              "end": 3655
+              "start": 3919,
+              "end": 3937
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3655,
-              "end": 3656
+              "start": 3937,
+              "end": 3938
             }
           },
           {
             "type": "text",
             "value": "the DESCRIPTION declaration, its local ",
             "span": {
-              "start": 3656,
-              "end": 3695
+              "start": 3938,
+              "end": 3977
             }
           },
           {
             "type": "code",
             "value": "file",
             "span": {
-              "start": 3695,
-              "end": 3701
+              "start": 3977,
+              "end": 3983
             }
           },
           {
             "type": "text",
             "value": " references, and conventional",
             "span": {
-              "start": 3701,
-              "end": 3730
+              "start": 3983,
+              "end": 4012
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3730,
-              "end": 3731
+              "start": 4012,
+              "end": 4013
             }
           },
           {
             "type": "code",
             "value": "LICENSE",
             "span": {
-              "start": 3731,
-              "end": 3740
+              "start": 4013,
+              "end": 4022
             }
           },
           {
             "type": "text",
             "value": ", ",
             "span": {
-              "start": 3740,
-              "end": 3742
+              "start": 4022,
+              "end": 4024
             }
           },
           {
             "type": "code",
             "value": "LICENSE.md",
             "span": {
-              "start": 3742,
-              "end": 3754
+              "start": 4024,
+              "end": 4036
             }
           },
           {
             "type": "text",
             "value": ", ",
             "span": {
-              "start": 3754,
-              "end": 3756
+              "start": 4036,
+              "end": 4038
             }
           },
           {
             "type": "code",
             "value": "LICENCE",
             "span": {
-              "start": 3756,
-              "end": 3765
+              "start": 4038,
+              "end": 4047
             }
           },
           {
             "type": "text",
             "value": ", and ",
             "span": {
-              "start": 3765,
-              "end": 3771
+              "start": 4047,
+              "end": 4053
             }
           },
           {
             "type": "code",
             "value": "LICENCE.md",
             "span": {
-              "start": 3771,
-              "end": 3783
+              "start": 4053,
+              "end": 4065
             }
           },
           {
             "type": "text",
             "value": " files. Contribution guidelines",
             "span": {
-              "start": 3783,
-              "end": 3814
+              "start": 4065,
+              "end": 4096
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3814,
-              "end": 3815
+              "start": 4096,
+              "end": 4097
             }
           },
           {
             "type": "text",
             "value": "and a code of conduct use ",
             "span": {
-              "start": 3815,
-              "end": 3841
+              "start": 4097,
+              "end": 4123
             }
           },
           {
             "type": "code",
             "value": "CONTRIBUTING.md",
             "span": {
-              "start": 3841,
-              "end": 3858
+              "start": 4123,
+              "end": 4140
             }
           },
           {
             "type": "text",
             "value": " and ",
             "span": {
-              "start": 3858,
-              "end": 3863
+              "start": 4140,
+              "end": 4145
             }
           },
           {
             "type": "code",
             "value": "CODE_OF_CONDUCT.md",
             "span": {
-              "start": 3863,
-              "end": 3883
+              "start": 4145,
+              "end": 4165
             }
           },
           {
             "type": "text",
             "value": ", preferring",
             "span": {
-              "start": 3883,
-              "end": 3895
+              "start": 4165,
+              "end": 4177
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3895,
-              "end": 3896
+              "start": 4177,
+              "end": 4178
             }
           },
           {
             "type": "text",
             "value": "package files over files at the repository root. Missing optional files do not",
             "span": {
-              "start": 3896,
-              "end": 3974
+              "start": 4178,
+              "end": 4256
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3974,
-              "end": 3975
+              "start": 4256,
+              "end": 4257
             }
           },
           {
             "type": "text",
             "value": "create empty pages. A missing file explicitly named by License is an error.",
             "span": {
-              "start": 3975,
-              "end": 4050
+              "start": 4257,
+              "end": 4332
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 4050,
-              "end": 4051
+              "start": 4332,
+              "end": 4333
             }
           }
         ],
         "span": {
-          "start": 3575,
-          "end": 4051
+          "start": 3857,
+          "end": 4333
         }
       },
       {
@@ -1508,136 +1577,136 @@
             "type": "text",
             "value": "Extraction evaluates ",
             "span": {
-              "start": 4052,
-              "end": 4073
+              "start": 4334,
+              "end": 4355
             }
           },
           {
             "type": "code",
             "value": "Authors@R",
             "span": {
-              "start": 4073,
-              "end": 4084
+              "start": 4355,
+              "end": 4366
             }
           },
           {
             "type": "text",
             "value": " and ",
             "span": {
-              "start": 4084,
-              "end": 4089
+              "start": 4366,
+              "end": 4371
             }
           },
           {
             "type": "code",
             "value": "inst/CITATION",
             "span": {
-              "start": 4089,
-              "end": 4104
+              "start": 4371,
+              "end": 4386
             }
           },
           {
             "type": "text",
             "value": " with native R helpers. When",
             "span": {
-              "start": 4104,
-              "end": 4132
+              "start": 4386,
+              "end": 4414
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 4132,
-              "end": 4133
+              "start": 4414,
+              "end": 4415
             }
           },
           {
             "type": "text",
             "value": "CITATION is absent, R generates a citation from DESCRIPTION. Author supplies a",
             "span": {
-              "start": 4133,
-              "end": 4211
+              "start": 4415,
+              "end": 4493
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 4211,
-              "end": 4212
+              "start": 4493,
+              "end": 4494
             }
           },
           {
             "type": "text",
             "value": "fallback when Authors@R is absent. R also converts NEWS.Rd to readable text. These",
             "span": {
-              "start": 4212,
-              "end": 4294
+              "start": 4494,
+              "end": 4576
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 4294,
-              "end": 4295
+              "start": 4576,
+              "end": 4577
             }
           },
           {
             "type": "text",
             "value": "operations use the checkout's files and supplied environment, and do not install",
             "span": {
-              "start": 4295,
-              "end": 4375
+              "start": 4577,
+              "end": 4657
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 4375,
-              "end": 4376
+              "start": 4657,
+              "end": 4658
             }
           },
           {
             "type": "text",
             "value": "the documented package. Native errors and timeouts prevent publication. ",
             "span": {
-              "start": 4376,
-              "end": 4448
+              "start": 4658,
+              "end": 4730
             }
           },
           {
             "type": "code",
             "value": "check",
             "span": {
-              "start": 4448,
-              "end": 4455
+              "start": 4730,
+              "end": 4737
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 4455,
-              "end": 4456
+              "start": 4737,
+              "end": 4738
             }
           },
           {
             "type": "text",
             "value": "validates source syntax and links without evaluating this information.",
             "span": {
-              "start": 4456,
-              "end": 4526
+              "start": 4738,
+              "end": 4808
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 4526,
-              "end": 4527
+              "start": 4808,
+              "end": 4809
             }
           }
         ],
         "span": {
-          "start": 4052,
-          "end": 4527
+          "start": 4334,
+          "end": 4809
         }
       },
       {
@@ -1647,112 +1716,112 @@
             "type": "text",
             "value": "An explicitly authored page at the package root or a supporting page's route",
             "span": {
-              "start": 4528,
-              "end": 4604
+              "start": 4810,
+              "end": 4886
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 4604,
-              "end": 4605
+              "start": 4886,
+              "end": 4887
             }
           },
           {
             "type": "text",
             "value": "takes precedence. Files already included by authored collections are not",
             "span": {
-              "start": 4605,
-              "end": 4677
+              "start": 4887,
+              "end": 4959
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 4677,
-              "end": 4678
+              "start": 4959,
+              "end": 4960
             }
           },
           {
             "type": "text",
             "value": "duplicated automatically. README links, heading anchors, and local images use",
             "span": {
-              "start": 4678,
-              "end": 4755
+              "start": 4960,
+              "end": 5037
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 4755,
-              "end": 4756
+              "start": 5037,
+              "end": 5038
             }
           },
           {
             "type": "text",
             "value": "the normal reference and asset pipeline. Snapshots retain the metadata, native",
             "span": {
-              "start": 4756,
-              "end": 4834
+              "start": 5038,
+              "end": 5116
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 4834,
-              "end": 4835
+              "start": 5116,
+              "end": 5117
             }
           },
           {
             "type": "text",
             "value": "results, documents, and assets so ",
             "span": {
-              "start": 4835,
-              "end": 4869
+              "start": 5117,
+              "end": 5151
             }
           },
           {
             "type": "code",
             "value": "generate",
             "span": {
-              "start": 4869,
-              "end": 4879
+              "start": 5151,
+              "end": 5161
             }
           },
           {
             "type": "text",
             "value": " works without the checkout or R.",
             "span": {
-              "start": 4879,
-              "end": 4912
+              "start": 5161,
+              "end": 5194
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 4912,
-              "end": 4913
+              "start": 5194,
+              "end": 5195
             }
           },
           {
             "type": "text",
             "value": "README.Rmd rendering remains outside this workflow.",
             "span": {
-              "start": 4913,
-              "end": 4964
+              "start": 5195,
+              "end": 5246
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 4964,
-              "end": 4965
+              "start": 5246,
+              "end": 5247
             }
           }
         ],
         "span": {
-          "start": 4528,
-          "end": 4965
+          "start": 4810,
+          "end": 5247
         }
       },
       {
@@ -1762,45 +1831,45 @@
             "type": "text",
             "value": "Computed names, conditional namespace directives, dynamic construction, roxygen",
             "span": {
-              "start": 4966,
-              "end": 5045
+              "start": 5248,
+              "end": 5327
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 5045,
-              "end": 5046
+              "start": 5327,
+              "end": 5328
             }
           },
           {
             "type": "text",
             "value": "generation, and unsupported Rd markup are not evaluated. Unsupported markup",
             "span": {
-              "start": 5046,
-              "end": 5121
+              "start": 5328,
+              "end": 5403
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 5121,
-              "end": 5122
+              "start": 5403,
+              "end": 5404
             }
           },
           {
             "type": "text",
             "value": "stays visible with a diagnostic. For exact parser and identity rules, see the",
             "span": {
-              "start": 5122,
-              "end": 5199
+              "start": 5404,
+              "end": 5481
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 5199,
-              "end": 5200
+              "start": 5481,
+              "end": 5482
             }
           },
           {
@@ -1810,23 +1879,23 @@
                 "type": "text",
                 "value": "Python extraction",
                 "span": {
-                  "start": 5201,
-                  "end": 5218
+                  "start": 5483,
+                  "end": 5500
                 }
               },
               {
                 "type": "soft-break",
                 "span": {
-                  "start": 5218,
-                  "end": 5219
+                  "start": 5500,
+                  "end": 5501
                 }
               },
               {
                 "type": "text",
                 "value": "contract",
                 "span": {
-                  "start": 5219,
-                  "end": 5227
+                  "start": 5501,
+                  "end": 5509
                 }
               }
             ],
@@ -1838,23 +1907,23 @@
               "key_values": []
             },
             "span": {
-              "start": 5200,
-              "end": 5305
+              "start": 5482,
+              "end": 5587
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 5305,
-              "end": 5306
+              "start": 5587,
+              "end": 5588
             }
           },
           {
             "type": "text",
             "value": "or ",
             "span": {
-              "start": 5306,
-              "end": 5309
+              "start": 5588,
+              "end": 5591
             }
           },
           {
@@ -1864,23 +1933,23 @@
                 "type": "text",
                 "value": "R extraction",
                 "span": {
-                  "start": 5310,
-                  "end": 5322
+                  "start": 5592,
+                  "end": 5604
                 }
               },
               {
                 "type": "soft-break",
                 "span": {
-                  "start": 5322,
-                  "end": 5323
+                  "start": 5604,
+                  "end": 5605
                 }
               },
               {
                 "type": "text",
                 "value": "contract",
                 "span": {
-                  "start": 5323,
-                  "end": 5331
+                  "start": 5605,
+                  "end": 5613
                 }
               }
             ],
@@ -1892,36 +1961,36 @@
               "key_values": []
             },
             "span": {
-              "start": 5309,
-              "end": 5404
+              "start": 5591,
+              "end": 5686
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 5404,
-              "end": 5405
+              "start": 5686,
+              "end": 5687
             }
           },
           {
             "type": "text",
             "value": "in the source repository.",
             "span": {
-              "start": 5405,
-              "end": 5430
+              "start": 5687,
+              "end": 5712
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 5430,
-              "end": 5431
+              "start": 5712,
+              "end": 5713
             }
           }
         ],
         "span": {
-          "start": 4966,
-          "end": 5431
+          "start": 5248,
+          "end": 5713
         }
       },
       {
@@ -1937,14 +2006,14 @@
             "type": "text",
             "value": "Julia",
             "span": {
-              "start": 5435,
-              "end": 5440
+              "start": 5717,
+              "end": 5722
             }
           }
         ],
         "span": {
-          "start": 5432,
-          "end": 5441
+          "start": 5714,
+          "end": 5723
         }
       },
       {
@@ -1954,146 +2023,146 @@
             "type": "text",
             "value": "Julia extraction reads ",
             "span": {
-              "start": 5442,
-              "end": 5465
+              "start": 5724,
+              "end": 5747
             }
           },
           {
             "type": "code",
             "value": "Project.toml",
             "span": {
-              "start": 5465,
-              "end": 5479
+              "start": 5747,
+              "end": 5761
             }
           },
           {
             "type": "text",
             "value": ", an explicit ",
             "span": {
-              "start": 5479,
-              "end": 5493
+              "start": 5761,
+              "end": 5775
             }
           },
           {
             "type": "code",
             "value": ".jl",
             "span": {
-              "start": 5493,
-              "end": 5498
+              "start": 5775,
+              "end": 5780
             }
           },
           {
             "type": "text",
             "value": " entry file, and its",
             "span": {
-              "start": 5498,
-              "end": 5518
+              "start": 5780,
+              "end": 5800
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 5518,
-              "end": 5519
+              "start": 5800,
+              "end": 5801
             }
           },
           {
             "type": "text",
             "value": "unconditional literal includes. Declare ",
             "span": {
-              "start": 5519,
-              "end": 5559
+              "start": 5801,
+              "end": 5841
             }
           },
           {
             "type": "code",
             "value": "ecosystem = \"julia\"",
             "span": {
-              "start": 5559,
-              "end": 5580
+              "start": 5841,
+              "end": 5862
             }
           },
           {
             "type": "text",
             "value": ",",
             "span": {
-              "start": 5580,
-              "end": 5581
+              "start": 5862,
+              "end": 5863
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 5581,
-              "end": 5582
+              "start": 5863,
+              "end": 5864
             }
           },
           {
             "type": "code",
             "value": "metadata-path = \"Project.toml\"",
             "span": {
-              "start": 5582,
-              "end": 5614
+              "start": 5864,
+              "end": 5896
             }
           },
           {
             "type": "text",
             "value": ", and a target with ",
             "span": {
-              "start": 5614,
-              "end": 5634
+              "start": 5896,
+              "end": 5916
             }
           },
           {
             "type": "code",
             "value": "extractor = \"julia\"",
             "span": {
-              "start": 5634,
-              "end": 5655
+              "start": 5916,
+              "end": 5937
             }
           },
           {
             "type": "text",
             "value": " and",
             "span": {
-              "start": 5655,
-              "end": 5659
+              "start": 5937,
+              "end": 5941
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 5659,
-              "end": 5660
+              "start": 5941,
+              "end": 5942
             }
           },
           {
             "type": "code",
             "value": "path = \"src/MyPackage.jl\"",
             "span": {
-              "start": 5660,
-              "end": 5687
+              "start": 5942,
+              "end": 5969
             }
           },
           {
             "type": "text",
             "value": ". Source directories are not valid Julia targets.",
             "span": {
-              "start": 5687,
-              "end": 5736
+              "start": 5969,
+              "end": 6018
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 5736,
-              "end": 5737
+              "start": 6018,
+              "end": 6019
             }
           }
         ],
         "span": {
-          "start": 5442,
-          "end": 5737
+          "start": 5724,
+          "end": 6019
         }
       },
       {
@@ -2103,128 +2172,128 @@
             "type": "text",
             "value": "Exported, ",
             "span": {
-              "start": 5738,
-              "end": 5748
+              "start": 6020,
+              "end": 6030
             }
           },
           {
             "type": "code",
             "value": "public",
             "span": {
-              "start": 5748,
-              "end": 5756
+              "start": 6030,
+              "end": 6038
             }
           },
           {
             "type": "text",
             "value": ", and documented declarations form the maintained surface.",
             "span": {
-              "start": 5756,
-              "end": 5814
+              "start": 6038,
+              "end": 6096
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 5814,
-              "end": 5815
+              "start": 6096,
+              "end": 6097
             }
           },
           {
             "type": "text",
             "value": "Functions have a family page and separate pages for their supplied methods.",
             "span": {
-              "start": 5815,
-              "end": 5890
+              "start": 6097,
+              "end": 6172
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 5890,
-              "end": 5891
+              "start": 6172,
+              "end": 6173
             }
           },
           {
             "type": "text",
             "value": "Types retain fields and explicit constructors. Static imports and aliases",
             "span": {
-              "start": 5891,
-              "end": 5964
+              "start": 6173,
+              "end": 6246
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 5964,
-              "end": 5965
+              "start": 6246,
+              "end": 6247
             }
           },
           {
             "type": "text",
             "value": "resolve to maintained declarations. Julia Markdown docstrings supply prose,",
             "span": {
-              "start": 5965,
-              "end": 6040
+              "start": 6247,
+              "end": 6322
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 6040,
-              "end": 6041
+              "start": 6322,
+              "end": 6323
             }
           },
           {
             "type": "text",
             "value": "lists, tables, admonitions, and inert code examples. API ",
             "span": {
-              "start": 6041,
-              "end": 6098
+              "start": 6323,
+              "end": 6380
             }
           },
           {
             "type": "code",
             "value": "@ref",
             "span": {
-              "start": 6098,
-              "end": 6104
+              "start": 6380,
+              "end": 6386
             }
           },
           {
             "type": "text",
             "value": " links can name a",
             "span": {
-              "start": 6104,
-              "end": 6121
+              "start": 6386,
+              "end": 6403
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 6121,
-              "end": 6122
+              "start": 6403,
+              "end": 6404
             }
           },
           {
             "type": "text",
             "value": "family or select a method, and they preserve their labels.",
             "span": {
-              "start": 6122,
-              "end": 6180
+              "start": 6404,
+              "end": 6462
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 6180,
-              "end": 6181
+              "start": 6462,
+              "end": 6463
             }
           }
         ],
         "span": {
-          "start": 5738,
-          "end": 6181
+          "start": 6020,
+          "end": 6463
         }
       },
       {
@@ -2234,60 +2303,60 @@
             "type": "text",
             "value": "Computed includes, conditional declarations, generated definitions, unsupported",
             "span": {
-              "start": 6182,
-              "end": 6261
+              "start": 6464,
+              "end": 6543
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 6261,
-              "end": 6262
+              "start": 6543,
+              "end": 6544
             }
           },
           {
             "type": "text",
             "value": "macros, and unavailable reexports produce diagnostics. Extraction does not",
             "span": {
-              "start": 6262,
-              "end": 6336
+              "start": 6544,
+              "end": 6618
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 6336,
-              "end": 6337
+              "start": 6618,
+              "end": 6619
             }
           },
           {
             "type": "text",
             "value": "expand macros, consult a Julia depot, infer runtime methods, or execute",
             "span": {
-              "start": 6337,
-              "end": 6408
+              "start": 6619,
+              "end": 6690
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 6408,
-              "end": 6409
+              "start": 6690,
+              "end": 6691
             }
           },
           {
             "type": "text",
             "value": "doctests. Unsupported documentation syntax remains visible with warnings. The",
             "span": {
-              "start": 6409,
-              "end": 6486
+              "start": 6691,
+              "end": 6768
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 6486,
-              "end": 6487
+              "start": 6768,
+              "end": 6769
             }
           },
           {
@@ -2297,23 +2366,23 @@
                 "type": "text",
                 "value": "Julia extraction",
                 "span": {
-                  "start": 6488,
-                  "end": 6504
+                  "start": 6770,
+                  "end": 6786
                 }
               },
               {
                 "type": "soft-break",
                 "span": {
-                  "start": 6504,
-                  "end": 6505
+                  "start": 6786,
+                  "end": 6787
                 }
               },
               {
                 "type": "text",
                 "value": "contract",
                 "span": {
-                  "start": 6505,
-                  "end": 6513
+                  "start": 6787,
+                  "end": 6795
                 }
               }
             ],
@@ -2325,36 +2394,36 @@
               "key_values": []
             },
             "span": {
-              "start": 6487,
-              "end": 6590
+              "start": 6769,
+              "end": 6872
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 6590,
-              "end": 6591
+              "start": 6872,
+              "end": 6873
             }
           },
           {
             "type": "text",
             "value": "defines the supported subset and method identity rules.",
             "span": {
-              "start": 6591,
-              "end": 6646
+              "start": 6873,
+              "end": 6928
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 6646,
-              "end": 6647
+              "start": 6928,
+              "end": 6929
             }
           }
         ],
         "span": {
-          "start": 6182,
-          "end": 6647
+          "start": 6464,
+          "end": 6929
         }
       }
     ]

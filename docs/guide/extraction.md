@@ -37,6 +37,11 @@ declarations. It connects exports and S3 registrations to direct source
 definitions, then attaches supported Rd topics, aliases, usage, arguments, and
 prose. Rd examples remain display-only.
 
+Shared help topics retain all documented usages and arguments on each
+declaration's page. Topic aliases resolve to a primary declaration, while
+method aliases resolve to their own pages. Links between declarations and
+methods grouped by S3 class make the complete topic navigable.
+
 Rd content supports labeled local and package-qualified help links, equations,
 aligned tables, custom sections, named return entries, HTML and platform
 conditionals, and DOI links. Equations render natively with `katex-rs` and bundled

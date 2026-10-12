@@ -332,6 +332,93 @@ fn eulerr_datasets_survive_snapshots_and_render_bare_usage_format_and_source() {
 }
 
 #[test]
+fn shared_r_topics_and_method_navigation_survive_generation_without_sources() {
+    use diplodocus::ir::ItemLanguageData;
+    use diplodocus::validation::resolve_item;
+
+    let root = support::shared_r_workspace();
+    let sources = assemble_workspace(root.path().join("workspace/diplodocus.toml")).unwrap();
+    let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+    let artifact = tempfile::tempdir().unwrap();
+    let path = artifact.path().join("snapshot.sqlite");
+    snapshot.publish(&path).unwrap();
+    drop(sources);
+    drop(root);
+    let loaded = Snapshot::load(&path).unwrap();
+    let site = diplodocus::site::Site::new(&loaded).unwrap();
+    let rendered = diplodocus::rendering::render_site(&site).unwrap();
+    for alias in [
+        "fit",
+        "fit.default",
+        "fit.model",
+        "model-fitting",
+        "eulergram-compose",
+        "|.eulergram",
+        "/.eulergram",
+    ] {
+        let reference = resolve_item(loaded.workspace(), Some("rfoo"), alias).unwrap();
+        let item = &loaded.workspace().packages["rfoo"].items[&reference.item];
+        let html = rendered
+            .files()
+            .values()
+            .filter(|file| file.media_type.starts_with("text/html"))
+            .map(|file| std::str::from_utf8(&file.bytes).unwrap())
+            .find(|html| html.contains(&format!("<h1><code>{}</code></h1>", item.qualified_name)))
+            .unwrap();
+        let blocks = code_blocks(html);
+        let Some(ItemLanguageData::R(data)) = &item.language_data else {
+            panic!()
+        };
+        let topic = data.help_topic.as_ref().unwrap();
+        let method_names = if topic.name == "fit" {
+            assert!(html.contains("Observation weights for the model method."));
+            assert_eq!(blocks.len(), 3);
+            vec!["fit.default", "fit.model"]
+        } else {
+            assert_eq!(blocks.len(), 3);
+            assert!(
+                blocks
+                    .iter()
+                    .any(|(_, source)| source == "`|.eulergram`(e1, e2)")
+            );
+            assert!(
+                blocks
+                    .iter()
+                    .any(|(_, source)| source == "`/.eulergram`(e1, e2)")
+            );
+            vec!["|.eulergram", "/.eulergram"]
+        };
+        assert!(html.contains("aria-label=\"S3 methods by class\""));
+        for name in method_names {
+            let member = resolve_item(loaded.workspace(), Some("rfoo"), name).unwrap();
+            assert!(topic.members.contains(&member));
+            let (target, _) = rendered
+                .files()
+                .iter()
+                .filter(|(_, file)| file.media_type.starts_with("text/html"))
+                .find(|(_, file)| {
+                    std::str::from_utf8(&file.bytes)
+                        .unwrap()
+                        .contains(&format!("<h1><code>{name}</code></h1>"))
+                })
+                .unwrap();
+            let filename = target.rsplit('/').next().unwrap();
+            let href =
+                percent_encoding::utf8_percent_encode(filename, percent_encoding::NON_ALPHANUMERIC);
+            assert!(html.contains(&format!("href=\"{href}\"")));
+        }
+    }
+    assert_eq!(
+        resolve_item(loaded.workspace(), Some("rfoo"), "model-fitting").unwrap(),
+        resolve_item(loaded.workspace(), Some("rfoo"), "fit").unwrap()
+    );
+    assert_eq!(
+        resolve_item(loaded.workspace(), Some("rfoo"), "eulergram-compose").unwrap(),
+        resolve_item(loaded.workspace(), Some("rfoo"), "|.eulergram").unwrap()
+    );
+}
+
+#[test]
 fn internal_r_topics_survive_snapshots_without_public_navigation_or_search() {
     let root = support::acceptance_workspace();
     let fixture = support::fixture_path("r-internal-topics");

@@ -8,6 +8,7 @@ mod math;
 mod navigation;
 mod package_metadata;
 mod publish;
+mod r_topics;
 mod signatures;
 mod sitemap;
 pub use html::render_site;

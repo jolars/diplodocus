@@ -2,7 +2,7 @@
   "document": {
     "span": {
       "start": 0,
-      "end": 3178
+      "end": 3564
     },
     "frontmatter": null,
     "blocks": [
@@ -1043,99 +1043,247 @@
         "inlines": [
           {
             "type": "text",
-            "value": "Diplodocus implements these selected profiles, not the full Quarto or Pandoc",
+            "value": "Add a language label such as ",
             "span": {
               "start": 2123,
-              "end": 2199
+              "end": 2152
+            }
+          },
+          {
+            "type": "code",
+            "value": "python",
+            "span": {
+              "start": 2152,
+              "end": 2160
+            }
+          },
+          {
+            "type": "text",
+            "value": ", ",
+            "span": {
+              "start": 2160,
+              "end": 2162
+            }
+          },
+          {
+            "type": "code",
+            "value": "r",
+            "span": {
+              "start": 2162,
+              "end": 2165
+            }
+          },
+          {
+            "type": "text",
+            "value": ", or ",
+            "span": {
+              "start": 2165,
+              "end": 2170
+            }
+          },
+          {
+            "type": "code",
+            "value": "julia",
+            "span": {
+              "start": 2170,
+              "end": 2177
+            }
+          },
+          {
+            "type": "text",
+            "value": " to a code fence to enable",
+            "span": {
+              "start": 2177,
+              "end": 2203
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2199,
-              "end": 2200
+              "start": 2203,
+              "end": 2204
+            }
+          },
+          {
+            "type": "text",
+            "value": "syntax highlighting. Diplodocus also highlights visible QMD cell source and API",
+            "span": {
+              "start": 2204,
+              "end": 2283
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2283,
+              "end": 2284
+            }
+          },
+          {
+            "type": "text",
+            "value": "signature blocks. Highlighting uses a built-in light theme and works without",
+            "span": {
+              "start": 2284,
+              "end": 2360
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2360,
+              "end": 2361
+            }
+          },
+          {
+            "type": "text",
+            "value": "JavaScript. Unlabeled fences, unknown languages, and ",
+            "span": {
+              "start": 2361,
+              "end": 2414
+            }
+          },
+          {
+            "type": "code",
+            "value": "text",
+            "span": {
+              "start": 2414,
+              "end": 2420
+            }
+          },
+          {
+            "type": "text",
+            "value": " fences remain plain.",
+            "span": {
+              "start": 2420,
+              "end": 2441
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2441,
+              "end": 2442
+            }
+          },
+          {
+            "type": "text",
+            "value": "Plain-text execution output and errors also remain unhighlighted.",
+            "span": {
+              "start": 2442,
+              "end": 2507
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2507,
+              "end": 2508
+            }
+          }
+        ],
+        "span": {
+          "start": 2123,
+          "end": 2508
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Diplodocus implements these selected profiles, not the full Quarto or Pandoc",
+            "span": {
+              "start": 2509,
+              "end": 2585
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2585,
+              "end": 2586
             }
           },
           {
             "type": "text",
             "value": "languages. Unsupported constructs remain visible as placeholders and produce",
             "span": {
-              "start": 2200,
-              "end": 2276
+              "start": 2586,
+              "end": 2662
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2276,
-              "end": 2277
+              "start": 2662,
+              "end": 2663
             }
           },
           {
             "type": "text",
             "value": "diagnostics. Raw authored HTML, TeX math, footnotes, and arbitrary directives",
             "span": {
-              "start": 2277,
-              "end": 2354
+              "start": 2663,
+              "end": 2740
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2354,
-              "end": 2355
+              "start": 2740,
+              "end": 2741
             }
           },
           {
             "type": "text",
             "value": "are outside the current supported surface. Run ",
             "span": {
-              "start": 2355,
-              "end": 2402
+              "start": 2741,
+              "end": 2788
             }
           },
           {
             "type": "code",
             "value": "diplodocus check",
             "span": {
-              "start": 2402,
-              "end": 2420
+              "start": 2788,
+              "end": 2806
             }
           },
           {
             "type": "text",
             "value": " after editing",
             "span": {
-              "start": 2420,
-              "end": 2434
+              "start": 2806,
+              "end": 2820
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2434,
-              "end": 2435
+              "start": 2820,
+              "end": 2821
             }
           },
           {
             "type": "text",
             "value": "a page to see parser and link diagnostics before any cell executes.",
             "span": {
-              "start": 2435,
-              "end": 2502
+              "start": 2821,
+              "end": 2888
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2502,
-              "end": 2503
+              "start": 2888,
+              "end": 2889
             }
           }
         ],
         "span": {
-          "start": 2123,
-          "end": 2503
+          "start": 2509,
+          "end": 2889
         }
       },
       {
@@ -1151,14 +1299,14 @@
             "type": "text",
             "value": "Links and assets",
             "span": {
-              "start": 2507,
-              "end": 2523
+              "start": 2893,
+              "end": 2909
             }
           }
         ],
         "span": {
-          "start": 2504,
-          "end": 2524
+          "start": 2890,
+          "end": 2910
         }
       },
       {
@@ -1168,112 +1316,112 @@
             "type": "text",
             "value": "Use ordinary relative links between declared pages, including links across",
             "span": {
-              "start": 2525,
-              "end": 2599
+              "start": 2911,
+              "end": 2985
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2599,
-              "end": 2600
+              "start": 2985,
+              "end": 2986
             }
           },
           {
             "type": "text",
             "value": "collections. For example, ",
             "span": {
-              "start": 2600,
-              "end": 2626
+              "start": 2986,
+              "end": 3012
             }
           },
           {
             "type": "code",
             "value": "[Commands](cli.md)",
             "span": {
-              "start": 2626,
-              "end": 2646
+              "start": 3012,
+              "end": 3032
             }
           },
           {
             "type": "text",
             "value": " targets a page in this guide.",
             "span": {
-              "start": 2646,
-              "end": 2676
+              "start": 3032,
+              "end": 3062
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2676,
-              "end": 2677
+              "start": 3062,
+              "end": 3063
             }
           },
           {
             "type": "text",
             "value": "Local fragment links must name an existing heading anchor. Keep images and other",
             "span": {
-              "start": 2677,
-              "end": 2757
+              "start": 3063,
+              "end": 3143
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2757,
-              "end": 2758
+              "start": 3143,
+              "end": 3144
             }
           },
           {
             "type": "text",
             "value": "local assets inside a declared source boundary and link to them with relative",
             "span": {
-              "start": 2758,
-              "end": 2835
+              "start": 3144,
+              "end": 3221
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2835,
-              "end": 2836
+              "start": 3221,
+              "end": 3222
             }
           },
           {
             "type": "text",
             "value": "paths. Diplodocus validates local destinations and copies accepted assets into",
             "span": {
-              "start": 2836,
-              "end": 2914
+              "start": 3222,
+              "end": 3300
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2914,
-              "end": 2915
+              "start": 3300,
+              "end": 3301
             }
           },
           {
             "type": "text",
             "value": "the generated site. External HTTP links remain external.",
             "span": {
-              "start": 2915,
-              "end": 2971
+              "start": 3301,
+              "end": 3357
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2971,
-              "end": 2972
+              "start": 3357,
+              "end": 3358
             }
           }
         ],
         "span": {
-          "start": 2525,
-          "end": 2972
+          "start": 2911,
+          "end": 3358
         }
       },
       {
@@ -1283,23 +1431,23 @@
             "type": "text",
             "value": "Code fences in GFM and API documentation are always display-only. QMD cells run",
             "span": {
-              "start": 2973,
-              "end": 3052
+              "start": 3359,
+              "end": 3438
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3052,
-              "end": 3053
+              "start": 3438,
+              "end": 3439
             }
           },
           {
             "type": "text",
             "value": "only when their collection explicitly authorizes execution; see ",
             "span": {
-              "start": 3053,
-              "end": 3117
+              "start": 3439,
+              "end": 3503
             }
           },
           {
@@ -1309,23 +1457,23 @@
                 "type": "text",
                 "value": "execution and",
                 "span": {
-                  "start": 3118,
-                  "end": 3131
+                  "start": 3504,
+                  "end": 3517
                 }
               },
               {
                 "type": "soft-break",
                 "span": {
-                  "start": 3131,
-                  "end": 3132
+                  "start": 3517,
+                  "end": 3518
                 }
               },
               {
                 "type": "text",
                 "value": "security",
                 "span": {
-                  "start": 3132,
-                  "end": 3140
+                  "start": 3518,
+                  "end": 3526
                 }
               }
             ],
@@ -1337,29 +1485,29 @@
               "key_values": []
             },
             "span": {
-              "start": 3117,
-              "end": 3155
+              "start": 3503,
+              "end": 3541
             }
           },
           {
             "type": "text",
             "value": " before enabling them.",
             "span": {
-              "start": 3155,
-              "end": 3177
+              "start": 3541,
+              "end": 3563
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3177,
-              "end": 3178
+              "start": 3563,
+              "end": 3564
             }
           }
         ],
         "span": {
-          "start": 2973,
-          "end": 3178
+          "start": 3359,
+          "end": 3564
         }
       }
     ]

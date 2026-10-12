@@ -437,6 +437,14 @@ omitted when false. A callable Rd topic with `\keyword{internal}` sets it to
 `true`, independently of `exported`. Internal items retain their declarations,
 documents, and routes, but generation omits them from navigation and search.
 
+`RItemData.help_topic` is optional and omitted for topics with one declaration.
+Shared topics retain `name`, a `primary` item reference for topic aliases, and
+`members` in canonical identity order. Every member belongs to the same package
+and carries identical topic coordinates and complete documentation. Loading
+rejects missing references, duplicate or unordered members, inconsistent
+membership, and differing documents. Declaration aliases keep their original
+targets, while aliases for the whole topic belong to its primary declaration.
+
 The [language types](../../src/ir/languages.rs) define all tagged declarations:
 Python modules, callables, classes, properties, constants, fields, and type
 aliases; R functions, S3 generics, S3 methods, and constructors. Family,

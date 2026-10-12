@@ -9,9 +9,10 @@ use rd_ast::{RdListItem, RdListKind, RdNode, RdPath, RdPathSegment, RdShapeError
 use crate::diagnostics::{Diagnostic, DiagnosticCode, Severity};
 use crate::ir::{
     Attributes, Block, Document, DocumentFormat, IdentityRegistry, Inline, Item, ItemAlias,
-    ItemAliasKind, ItemKind, ItemLanguageData, ListItem, Parameter, ParameterKind, RDeclaration,
-    RGenericReference, RItemData, SemanticIdentity, Signature, SignatureExpression, SourceEvidence,
-    SourceLocation, SourceRole, SourceSpan, SourcedDocument, SourcedSignature,
+    ItemAliasKind, ItemKind, ItemLanguageData, ItemReference, ListItem, Parameter, ParameterKind,
+    RDeclaration, RGenericReference, RHelpTopic, RItemData, SemanticIdentity, Signature,
+    SignatureExpression, SourceEvidence, SourceLocation, SourceRole, SourceSpan, SourcedDocument,
+    SourcedSignature,
 };
 
 use super::{diagnostic, located, namespace::Namespace, provenance, source};
@@ -797,6 +798,7 @@ pub(super) fn attach(
                         .chain(&topic.aliases)
                         .any(|name| namespace.exports.contains_key(name)),
                     internal: topic.internal,
+                    help_topic: None,
                     declaration: RDeclaration::Dataset,
                 })),
                 aliases: topic
@@ -948,6 +950,7 @@ pub(super) fn attach(
         }
     }
     let mut candidates = BTreeMap::<String, Vec<(usize, Vec<String>)>>::new();
+    let mut shared_topics = BTreeMap::new();
     for (index, topic) in topics
         .iter()
         .enumerate()
@@ -989,9 +992,16 @@ pub(super) fn attach(
                 unknown.push(alias.clone());
             }
         }
+        let primary = names.get(&topic.name).filter(|id| targets.contains_key(*id))
+            .or_else(|| targets.keys().find(|id| matches!(&items[*id].language_data,
+                Some(ItemLanguageData::R(data)) if matches!(data.declaration, RDeclaration::S3Generic { .. }))))
+            .or_else(|| topic.usages.iter().find_map(|usage| targets.keys().find(|id|
+                usage_matches(usage, &items[*id], &names, id))))
+            .or_else(|| targets.keys().next()).cloned();
         if !unknown.is_empty() {
-            if targets.len() == 1 {
-                targets.values_mut().next().unwrap().extend(unknown);
+            if let Some(primary) = &primary {
+                // A topic alias names the whole document even when several declarations share it.
+                targets.get_mut(primary).unwrap().extend(unknown);
             } else {
                 diagnostics.push(diagnostic(
                     DiagnosticCode::RUnresolvedDefinition,
@@ -1003,6 +1013,25 @@ pub(super) fn attach(
                     &topic.source,
                 ));
             }
+        }
+        if targets.len() > 1 {
+            shared_topics.insert(
+                index,
+                RHelpTopic {
+                    name: topic.name.clone(),
+                    primary: ItemReference {
+                        package: package.into(),
+                        item: primary.unwrap(),
+                    },
+                    members: targets
+                        .keys()
+                        .map(|id| ItemReference {
+                            package: package.into(),
+                            item: id.clone(),
+                        })
+                        .collect(),
+                },
+            );
         }
         let parameters: BTreeSet<_> = targets
             .keys()
@@ -1079,6 +1108,7 @@ pub(super) fn attach(
         let topic = &topics[*index];
         if let Some(ItemLanguageData::R(data)) = &mut item.language_data {
             data.internal = topic.internal;
+            data.help_topic = shared_topics.get(index).cloned();
         }
         for alias in aliases {
             if alias_targets[alias].len() != 1 {
@@ -1144,14 +1174,10 @@ pub(super) fn attach(
         for part in &topic.parts {
             match part {
                 Part::Blocks(content) => blocks.extend(content.clone()),
-                Part::Usage if !usages.is_empty() => {
+                Part::Usage if !topic.usages.is_empty() => {
                     blocks.push(heading("Usage", span));
-                    for usage in &usages {
-                        let name = r_name(if usage.arguments.is_none() {
-                            &usage.name
-                        } else {
-                            &item.qualified_name
-                        });
+                    for usage in &topic.usages {
+                        let name = r_name(&usage.name);
                         let code = usage.arguments.as_ref().map_or_else(
                             || name.clone(),
                             |arguments| format!("{name}({arguments})"),
@@ -1161,32 +1187,8 @@ pub(super) fn attach(
                 }
                 Part::Usage => {}
                 Part::Arguments(arguments) => {
-                    let entries: Vec<_> = arguments
-                        .iter()
-                        .filter_map(|(names, entry)| {
-                            let selected: Vec<_> = names
-                                .iter()
-                                .filter(|name| {
-                                    parameters.iter().any(|parameter| parameter.name == **name)
-                                })
-                                .map(|name| r_name(name))
-                                .collect();
-                            if selected.is_empty() {
-                                return None;
-                            }
-                            let mut entry = entry.clone();
-                            if selected.len() != names.len() {
-                                let Block::Paragraph { inlines, .. } = &mut entry.blocks[0] else {
-                                    unreachable!()
-                                };
-                                inlines[0] = Inline::Code {
-                                    value: selected.join(", "),
-                                    span,
-                                };
-                            }
-                            Some(entry)
-                        })
-                        .collect();
+                    let entries: Vec<_> =
+                        arguments.iter().map(|(_, entry)| entry.clone()).collect();
                     if !entries.is_empty() {
                         blocks.push(heading("Arguments", span));
                         blocks.push(Block::List {

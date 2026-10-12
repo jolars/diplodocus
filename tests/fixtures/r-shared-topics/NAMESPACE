@@ -1,0 +1,6 @@
+export(fit, eulerr_options)
+S3method(fit, default)
+S3method(fit, model)
+S3method("|", eulergram)
+S3method("/", eulergram)
+S3method(plot, euler)

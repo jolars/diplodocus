@@ -686,6 +686,16 @@
               "type": "code-block"
             },
             {
+              "language": "r",
+              "source": "predict.foo_model(object, newdata, ...)",
+              "source_segments": [],
+              "span": {
+                "end": 972,
+                "start": 0
+              },
+              "type": "code-block"
+            },
+            {
               "attributes": {
                 "classes": [],
                 "identifier": null,
@@ -824,6 +834,151 @@
                           },
                           "type": "text",
                           "value": "The name of the fitting algorithm."
+                        }
+                      ],
+                      "span": {
+                        "end": 972,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    }
+                  ],
+                  "checked": null,
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  }
+                },
+                {
+                  "blocks": [
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 972,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "object"
+                        }
+                      ],
+                      "span": {
+                        "end": 972,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    },
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 972,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "An object of class "
+                        },
+                        {
+                          "span": {
+                            "end": 972,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "\"foo_model\""
+                        },
+                        {
+                          "span": {
+                            "end": 972,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "."
+                        }
+                      ],
+                      "span": {
+                        "end": 972,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    }
+                  ],
+                  "checked": null,
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  }
+                },
+                {
+                  "blocks": [
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 972,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "newdata"
+                        }
+                      ],
+                      "span": {
+                        "end": 972,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    },
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 972,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "A numeric feature vector or matrix."
+                        }
+                      ],
+                      "span": {
+                        "end": 972,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    }
+                  ],
+                  "checked": null,
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  }
+                },
+                {
+                  "blocks": [
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 972,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "..."
+                        }
+                      ],
+                      "span": {
+                        "end": 972,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    },
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 972,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "Additional arguments reserved for method compatibility."
                         }
                       ],
                       "span": {
@@ -1072,7 +1227,24 @@
             ],
             "kind": "constructor"
           },
-          "exported": true
+          "exported": true,
+          "help_topic": {
+            "members": [
+              {
+                "item": "sid1:r:function:foo_model",
+                "package": "rfoo"
+              },
+              {
+                "item": "sid1:r:s3-method:predict.foo_model:external(stats,predict):foo_model",
+                "package": "rfoo"
+              }
+            ],
+            "name": "foo_model",
+            "primary": {
+              "item": "sid1:r:function:foo_model",
+              "package": "rfoo"
+            }
+          }
         },
         "language": "r"
       },
@@ -1830,6 +2002,26 @@
               "type": "code-block"
             },
             {
+              "language": "r",
+              "source": "fit.default(x, y, solver = c(\"normal\", \"qr\"),\n  tolerance = 1e-8, ...)",
+              "source_segments": [],
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "code-block"
+            },
+            {
+              "language": "r",
+              "source": "fit.foo_model(x, features, target, tolerance = 1e-8, ...)",
+              "source_segments": [],
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "code-block"
+            },
+            {
               "attributes": {
                 "classes": [],
                 "identifier": null,
@@ -1981,6 +2173,301 @@
                           },
                           "type": "text",
                           "value": "Additional arguments passed to an S3 method."
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    }
+                  ],
+                  "checked": null,
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  }
+                },
+                {
+                  "blocks": [
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "y"
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    },
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "A numeric response vector with one value per row of "
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "x"
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "."
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    }
+                  ],
+                  "checked": null,
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  }
+                },
+                {
+                  "blocks": [
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "solver"
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    },
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "The fitting algorithm, either "
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "\"normal\""
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": " or "
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "\"qr\""
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "."
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    }
+                  ],
+                  "checked": null,
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  }
+                },
+                {
+                  "blocks": [
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "tolerance"
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    },
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "A positive convergence tolerance."
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    }
+                  ],
+                  "checked": null,
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  }
+                },
+                {
+                  "blocks": [
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "features"
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    },
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "A numeric feature matrix used to refit "
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "x"
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "."
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    }
+                  ],
+                  "checked": null,
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  }
+                },
+                {
+                  "blocks": [
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "target"
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    },
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "A numeric response vector used to refit "
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "x"
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "."
                         }
                       ],
                       "span": {
@@ -2351,7 +2838,28 @@
               }
             ]
           },
-          "exported": true
+          "exported": true,
+          "help_topic": {
+            "members": [
+              {
+                "item": "sid1:r:s3-generic:fit",
+                "package": "rfoo"
+              },
+              {
+                "item": "sid1:r:s3-method:fit.default:workspace(rfoo,sid1%3Ar%3As3-generic%3Afit):default",
+                "package": "rfoo"
+              },
+              {
+                "item": "sid1:r:s3-method:fit.foo_model:workspace(rfoo,sid1%3Ar%3As3-generic%3Afit):foo_model",
+                "package": "rfoo"
+              }
+            ],
+            "name": "fit",
+            "primary": {
+              "item": "sid1:r:s3-generic:fit",
+              "package": "rfoo"
+            }
+          }
         },
         "language": "r"
       },
@@ -2551,7 +3059,27 @@
             },
             {
               "language": "r",
+              "source": "fit(x, ...)",
+              "source_segments": [],
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "code-block"
+            },
+            {
+              "language": "r",
               "source": "fit.default(x, y, solver = c(\"normal\", \"qr\"),\n  tolerance = 1e-8, ...)",
+              "source_segments": [],
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "code-block"
+            },
+            {
+              "language": "r",
+              "source": "fit.foo_model(x, features, target, tolerance = 1e-8, ...)",
               "source_segments": [],
               "span": {
                 "end": 1508,
@@ -2888,6 +3416,124 @@
                           },
                           "type": "text",
                           "value": "A positive convergence tolerance."
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    }
+                  ],
+                  "checked": null,
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  }
+                },
+                {
+                  "blocks": [
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "features"
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    },
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "A numeric feature matrix used to refit "
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "x"
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "."
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    }
+                  ],
+                  "checked": null,
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  }
+                },
+                {
+                  "blocks": [
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "target"
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    },
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "A numeric response vector used to refit "
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "x"
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "."
                         }
                       ],
                       "span": {
@@ -3270,7 +3916,28 @@
               }
             ]
           },
-          "exported": false
+          "exported": false,
+          "help_topic": {
+            "members": [
+              {
+                "item": "sid1:r:s3-generic:fit",
+                "package": "rfoo"
+              },
+              {
+                "item": "sid1:r:s3-method:fit.default:workspace(rfoo,sid1%3Ar%3As3-generic%3Afit):default",
+                "package": "rfoo"
+              },
+              {
+                "item": "sid1:r:s3-method:fit.foo_model:workspace(rfoo,sid1%3Ar%3As3-generic%3Afit):foo_model",
+                "package": "rfoo"
+              }
+            ],
+            "name": "fit",
+            "primary": {
+              "item": "sid1:r:s3-generic:fit",
+              "package": "rfoo"
+            }
+          }
         },
         "language": "r"
       },
@@ -3537,6 +4204,26 @@
             },
             {
               "language": "r",
+              "source": "fit(x, ...)",
+              "source_segments": [],
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "code-block"
+            },
+            {
+              "language": "r",
+              "source": "fit.default(x, y, solver = c(\"normal\", \"qr\"),\n  tolerance = 1e-8, ...)",
+              "source_segments": [],
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "code-block"
+            },
+            {
+              "language": "r",
               "source": "fit.foo_model(x, features, target, tolerance = 1e-8, ...)",
               "source_segments": [],
               "span": {
@@ -3697,6 +4384,140 @@
                           },
                           "type": "text",
                           "value": "Additional arguments passed to an S3 method."
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    }
+                  ],
+                  "checked": null,
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  }
+                },
+                {
+                  "blocks": [
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "y"
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    },
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "A numeric response vector with one value per row of "
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "x"
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "."
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    }
+                  ],
+                  "checked": null,
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  }
+                },
+                {
+                  "blocks": [
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "solver"
+                        }
+                      ],
+                      "span": {
+                        "end": 1508,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    },
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "The fitting algorithm, either "
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "\"normal\""
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": " or "
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "\"qr\""
+                        },
+                        {
+                          "span": {
+                            "end": 1508,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "."
                         }
                       ],
                       "span": {
@@ -4240,7 +5061,28 @@
               }
             ]
           },
-          "exported": false
+          "exported": false,
+          "help_topic": {
+            "members": [
+              {
+                "item": "sid1:r:s3-generic:fit",
+                "package": "rfoo"
+              },
+              {
+                "item": "sid1:r:s3-method:fit.default:workspace(rfoo,sid1%3Ar%3As3-generic%3Afit):default",
+                "package": "rfoo"
+              },
+              {
+                "item": "sid1:r:s3-method:fit.foo_model:workspace(rfoo,sid1%3Ar%3As3-generic%3Afit):foo_model",
+                "package": "rfoo"
+              }
+            ],
+            "name": "fit",
+            "primary": {
+              "item": "sid1:r:s3-generic:fit",
+              "package": "rfoo"
+            }
+          }
         },
         "language": "r"
       },
@@ -4490,6 +5332,16 @@
             },
             {
               "language": "r",
+              "source": "foo_model(coefficients, intercept = 0, solver = \"normal\")",
+              "source_segments": [],
+              "span": {
+                "end": 972,
+                "start": 0
+              },
+              "type": "code-block"
+            },
+            {
+              "language": "r",
               "source": "predict.foo_model(object, newdata, ...)",
               "source_segments": [],
               "span": {
@@ -4523,6 +5375,135 @@
             },
             {
               "items": [
+                {
+                  "blocks": [
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 972,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "coefficients"
+                        }
+                      ],
+                      "span": {
+                        "end": 972,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    },
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 972,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "A numeric vector of fitted coefficients."
+                        }
+                      ],
+                      "span": {
+                        "end": 972,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    }
+                  ],
+                  "checked": null,
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  }
+                },
+                {
+                  "blocks": [
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 972,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "intercept"
+                        }
+                      ],
+                      "span": {
+                        "end": 972,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    },
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 972,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "A numeric intercept."
+                        }
+                      ],
+                      "span": {
+                        "end": 972,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    }
+                  ],
+                  "checked": null,
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  }
+                },
+                {
+                  "blocks": [
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 972,
+                            "start": 0
+                          },
+                          "type": "code",
+                          "value": "solver"
+                        }
+                      ],
+                      "span": {
+                        "end": 972,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    },
+                    {
+                      "inlines": [
+                        {
+                          "span": {
+                            "end": 972,
+                            "start": 0
+                          },
+                          "type": "text",
+                          "value": "The name of the fitting algorithm."
+                        }
+                      ],
+                      "span": {
+                        "end": 972,
+                        "start": 0
+                      },
+                      "type": "paragraph"
+                    }
+                  ],
+                  "checked": null,
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  }
+                },
                 {
                   "blocks": [
                     {
@@ -4920,7 +5901,24 @@
               }
             ]
           },
-          "exported": false
+          "exported": false,
+          "help_topic": {
+            "members": [
+              {
+                "item": "sid1:r:function:foo_model",
+                "package": "rfoo"
+              },
+              {
+                "item": "sid1:r:s3-method:predict.foo_model:external(stats,predict):foo_model",
+                "package": "rfoo"
+              }
+            ],
+            "name": "foo_model",
+            "primary": {
+              "item": "sid1:r:function:foo_model",
+              "package": "rfoo"
+            }
+          }
         },
         "language": "r"
       },

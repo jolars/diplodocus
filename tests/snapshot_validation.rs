@@ -224,6 +224,50 @@ fn rejects_incomplete_or_forged_logo_evidence_with_valid_fingerprints() {
 }
 
 #[test]
+fn rejects_inconsistent_shared_r_help_topics() {
+    let snapshot = snapshot();
+    for case in [
+        "primary",
+        "missing-member",
+        "order",
+        "duplicate",
+        "singleton",
+        "name",
+        "membership",
+        "document",
+    ] {
+        let result = changed(&snapshot, |export| {
+            let content = &mut export["records"]
+                .as_array_mut()
+                .unwrap()
+                .iter_mut()
+                .find(|record| {
+                    record["kind"] == "item" && record["content"]["qualified_name"] == "fit"
+                })
+                .unwrap()["content"];
+            let topic = &mut content["language_data"]["data"]["help_topic"];
+            match case {
+                "primary" => topic["primary"]["item"] = "missing".into(),
+                "missing-member" => topic["members"][0]["item"] = "missing".into(),
+                "order" => topic["members"].as_array_mut().unwrap().reverse(),
+                "duplicate" => {
+                    let primary = topic["primary"].clone();
+                    topic["members"].as_array_mut().unwrap().push(primary);
+                }
+                "singleton" => topic["members"] = json!([topic["primary"].clone()]),
+                "name" => topic["name"] = "".into(),
+                "membership" => topic["name"] = "different-topic".into(),
+                "document" => {
+                    content["documentation"]["raw_source"] = "different topic source".into()
+                }
+                _ => unreachable!(),
+            }
+        });
+        assert!(result.is_err(), "accepted {case}");
+    }
+}
+
+#[test]
 fn loading_and_republishing_preserve_the_original_producer_version() {
     let snapshot = snapshot();
     let loaded = changed(&snapshot, |export| export["producer"] = "0.0.1".into()).unwrap();

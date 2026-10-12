@@ -152,12 +152,19 @@ nodes have empty raw fragments because the parser provides no exact node ranges.
 The enclosing document and extraction inputs retain the complete original Rd
 source; rendering never repeats that source for each unsupported construct.
 
-Each item on a shared topic receives the common prose and its matching usage
-and arguments. Grouped argument labels are filtered to that item's formals.
+Each item on a shared topic receives the complete prose, usage, and argument
+listings. Grouped argument labels remain intact, including names used only by
+another method. Shared topic coordinates retain the topic name, primary
+declaration, and all members independently of their semantic identities.
 Usage supports ordinary calls and typed `\method` or `\S3method` syntax;
 maintained source remains authoritative for signatures. Conflicting usage,
 unknown declarations, and arguments with no matching formal produce errors.
-Additional help aliases can refer to a single unambiguous topic target.
+Additional help aliases name the topic's primary declaration. Selection prefers
+a declaration matching the topic name, then a local generic, then the first
+documented usage, and finally the first canonical identity. Declaration aliases
+still resolve to their own items. Aliases claimed by different topics remain
+errors. Reference pages link shared declarations and group S3 methods by class,
+including registrations whose generic lives in an external R package.
 Package topics with `\docType{package}` create a documented namespace item
 without a maintained function or signature. Their aliases remain separate
 from callable aliases, and conflicting package topics or aliases are errors.

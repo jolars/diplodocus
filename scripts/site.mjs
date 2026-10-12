@@ -67,6 +67,11 @@ if (mode === "serve-test") {
       cpSync(join(rdContent, directory), join(workspace, "r", directory), { recursive: true });
     }
     appendFileSync(join(workspace, "r/NAMESPACE"), `\n${readFileSync(join(rdContent, "NAMESPACE"), "utf8")}`);
+    const sharedTopics = join(root, "tests/fixtures/r-shared-topics");
+    for (const directory of ["R", "man"]) {
+      cpSync(join(sharedTopics, directory), join(workspace, "r", directory), { recursive: true });
+    }
+    appendFileSync(join(workspace, "r/NAMESPACE"), `\n${readFileSync(join(sharedTopics, "NAMESPACE"), "utf8")}`);
     process.exitCode = await run(process.env.DIPLODOCUS_BROWSER_BINARY, [
       "serve", "--config", join(workspace, "diplodocus.toml"),
       "--output", join(workspace, "site"),

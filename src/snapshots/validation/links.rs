@@ -110,7 +110,34 @@ pub(super) fn validate(workspace: &Workspace) -> Result {
         for id in package.extraction_targets.keys() {
             require(!id.is_empty(), "empty target identity")?;
         }
-        for item in package.items.values() {
+        for (item_id, item) in &package.items {
+            if let Some(ItemLanguageData::R(data)) = &item.language_data
+                && let Some(topic) = &data.help_topic
+            {
+                require(
+                    !topic.name.trim().is_empty()
+                        && !topic.name.chars().any(char::is_control)
+                        && topic.members.len() > 1
+                        && topic.members.windows(2).all(|pair| pair[0] < pair[1])
+                        && topic.members.contains(&topic.primary)
+                        && topic
+                            .members
+                            .iter()
+                            .any(|member| member.package == *package_id && member.item == *item_id),
+                    "R shared help topic coordinates",
+                )?;
+                for member in &topic.members {
+                    links.item(member)?;
+                    let sibling = &workspace.packages[&member.package].items[&member.item];
+                    require(
+                        member.package == *package_id
+                            && matches!(&sibling.language_data, Some(ItemLanguageData::R(data)) if data.help_topic.as_ref() == Some(topic))
+                            && item.documentation.is_some()
+                            && sibling.documentation == item.documentation,
+                        "R shared help topic membership",
+                    )?;
+                }
+            }
             for signature in &item.signatures {
                 links.signature(&signature.signature)?;
                 links.evidence(&signature.sources)?;

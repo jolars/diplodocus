@@ -437,6 +437,31 @@ fn eulerr_source_resolves_registered_generics_and_documented_helpers() {
             if actual_package == package && name == generic))
         );
     }
+    for binding in ["|.eulergram", "/.eulergram"] {
+        let method = item(&result, binding);
+        let Some(ItemLanguageData::R(data)) = &method.language_data else {
+            panic!()
+        };
+        let topic = data.help_topic.as_ref().unwrap();
+        assert_eq!(topic.name, "eulergram-compose");
+        assert_eq!(topic.members.len(), 2);
+        let document = method.documentation.as_ref().unwrap();
+        for usage in ["`|.eulergram`(e1, e2)", "`/.eulergram`(e1, e2)"] {
+            assert!(
+                document.document.blocks.iter().any(|block| matches!(block,
+                Block::CodeBlock { source, .. } if source == usage)),
+                "{binding}: {usage}"
+            );
+        }
+        assert!(
+            result.items[&topic.primary.item]
+                .aliases
+                .iter()
+                .any(|alias| alias.qualified_name == "eulergram-compose")
+        );
+        assert!(!result.diagnostics.iter().any(|diagnostic| diagnostic.severity == Severity::Error &&
+            matches!(&diagnostic.source, Some(diplodocus::diagnostics::DiagnosticSource::Repository { path, .. }) if path.as_str() == "man/eulergram-compose.Rd")), "{:?}", result.diagnostics);
+    }
     for name in [
         "setup_gpar",
         "setup_grobs",
@@ -597,28 +622,133 @@ fn complete_r_extraction_matches_portable_acceptance_ir() {
 }
 
 #[test]
-fn shared_topics_tailor_usage_and_arguments_but_preserve_prose() {
+fn shared_topics_preserve_complete_usage_arguments_and_prose() {
     let result = extract(&support::acceptance_workspace());
     for name in ["fit", "fit.default", "fit.foo_model"] {
         let doc = item(&result, name).documentation.as_ref().unwrap();
-        let usage = doc
+        let usages: Vec<_> = doc
             .document
             .blocks
             .iter()
-            .find_map(|block| match block {
-                Block::CodeBlock { source, .. } => Some(source),
+            .filter_map(|block| match block {
+                Block::CodeBlock { source, .. } => Some(source.as_str()),
                 _ => None,
             })
-            .unwrap();
-        assert!(usage.starts_with(&format!("{name}(")), "{usage}");
-        assert_eq!(
-            usage.matches("tolerance").count(),
-            usize::from(name != "fit")
+            .collect();
+        assert!(usages.iter().any(|usage| usage.starts_with("fit(x, ...")));
+        assert!(usages.iter().any(|usage| usage.starts_with("fit.default(")));
+        assert!(
+            usages
+                .iter()
+                .any(|usage| usage.starts_with("fit.foo_model("))
         );
+        let data = match &item(&result, name).language_data {
+            Some(ItemLanguageData::R(data)) => data,
+            _ => unreachable!(),
+        };
+        let topic = data.help_topic.as_ref().unwrap();
+        assert_eq!(topic.name, "fit");
+        assert_eq!(topic.members.len(), 3);
+        assert_eq!(result.items[&topic.primary.item].qualified_name, "fit");
+        let blocks = serde_json::to_string(&doc.document.blocks).unwrap();
+        for argument in ["solver", "tolerance", "features", "target"] {
+            assert!(blocks.contains(argument), "{name}: {argument}");
+        }
+        assert_eq!(doc, item(&result, "fit").documentation.as_ref().unwrap());
         let rendered = serde_json::to_string(&doc.document).unwrap();
         assert!(rendered.contains("Journal of Fixtures"));
         assert!(doc.source_location.as_ref().unwrap().span.is_none());
     }
+}
+
+#[test]
+fn shared_topic_aliases_have_one_primary_without_merging_declarations() {
+    let workspace = support::shared_r_workspace();
+    let result = extract(&workspace);
+    assert!(
+        result
+            .diagnostics
+            .iter()
+            .all(|d| d.severity != Severity::Error),
+        "{:?}",
+        result.diagnostics
+    );
+    for (alias, primary, members) in [
+        (
+            "model-fitting",
+            "fit",
+            vec!["fit", "fit.default", "fit.model"],
+        ),
+        (
+            "eulergram-compose",
+            "|.eulergram",
+            vec!["/.eulergram", "|.eulergram"],
+        ),
+    ] {
+        let owners: Vec<_> = result
+            .items
+            .values()
+            .filter(|item| item.aliases.iter().any(|a| a.qualified_name == alias))
+            .collect();
+        assert_eq!(owners.len(), 1, "{alias}");
+        assert_eq!(owners[0].qualified_name, primary);
+        let Some(ItemLanguageData::R(data)) = &owners[0].language_data else {
+            panic!()
+        };
+        let topic = data.help_topic.as_ref().unwrap();
+        assert_eq!(result.items[&topic.primary.item].qualified_name, primary);
+        assert_eq!(topic.members.len(), members.len());
+        for name in members {
+            let member = item(&result, name);
+            assert_eq!(member.documentation, owners[0].documentation);
+            assert_eq!(member.signatures.len(), 1);
+        }
+    }
+    let doc = item(&result, "fit").documentation.as_ref().unwrap();
+    assert!(
+        serde_json::to_string(&doc.document)
+            .unwrap()
+            .contains("weights")
+    );
+    let usages: Vec<_> = item(&result, "|.eulergram")
+        .documentation
+        .as_ref()
+        .unwrap()
+        .document
+        .blocks
+        .iter()
+        .filter_map(|block| match block {
+            Block::CodeBlock { source, .. } if source.ends_with("(e1, e2)") => {
+                Some(source.as_str())
+            }
+            _ => None,
+        })
+        .collect();
+    assert_eq!(usages, ["`|.eulergram`(e1, e2)", "`/.eulergram`(e1, e2)"]);
+    let relocated = support::shared_r_workspace();
+    assert_eq!(result, extract(&relocated));
+}
+
+#[test]
+fn shared_topic_alias_collisions_still_fail() {
+    let workspace = support::shared_r_workspace();
+    workspace.write(
+        "r/man/fit.Rd",
+        workspace
+            .read("r/man/fit.Rd")
+            .replace("\\alias{model-fitting}", "\\alias{eulergram-compose}"),
+    );
+    let result = extract(&workspace);
+    assert!(
+        result
+            .diagnostics
+            .iter()
+            .any(|d| d.severity == Severity::Error
+                && d.code.as_str() == "r-conflicting-surface"
+                && d.message.contains("eulergram-compose")),
+        "{:?}",
+        result.diagnostics
+    );
 }
 
 #[test]
@@ -1116,7 +1246,7 @@ fn invalid_formals_and_conditional_rebindings_do_not_publish_old_definitions() {
 }
 
 #[test]
-fn grouped_argument_names_are_tailored_and_unknown_arguments_are_diagnosed() {
+fn grouped_argument_names_are_preserved_and_unknown_arguments_are_diagnosed() {
     let rd = r"\name{f}\alias{f}\alias{g}\title{Shared}
 \usage{f(x)
 g(y)}
@@ -1128,7 +1258,7 @@ g(y)}
         rd,
     ));
     assert!(codes(&result).contains(&"r-rd-information-loss"));
-    for (name, expected) in [("f", "x"), ("g", "y")] {
+    for name in ["f", "g"] {
         let doc = item(&result, name).documentation.as_ref().unwrap();
         let entries = doc
             .document
@@ -1143,7 +1273,7 @@ g(y)}
             panic!()
         };
         assert!(
-            matches!(&inlines[0], diplodocus::ir::Inline::Code { value, .. } if value == expected)
+            matches!(&inlines[0], diplodocus::ir::Inline::Code { value, .. } if value == "x, y")
         );
         assert!(
             serde_json::to_string(&entries[0])

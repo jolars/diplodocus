@@ -166,11 +166,16 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
                 .as_ref()
                 .map(|p| site.workspace.packages[p].ecosystem.as_str())
                 .unwrap_or("");
-            for signature in &item.signatures {
-                html.push_str(&highlighter.render(
-                    &super::signatures::signature(&item.name, &signature.signature, ecosystem),
-                    Some(ecosystem),
-                ));
+            let shared_usage = matches!(&item.language_data, Some(ItemLanguageData::R(data)) if data.help_topic.is_some())
+                && item.documentation.as_ref().is_some_and(|document| document.document.blocks.iter().any(|block|
+                    matches!(block, Block::Heading { level: 2, inlines, .. } if plain(inlines) == "Usage")));
+            if !shared_usage {
+                for signature in &item.signatures {
+                    html.push_str(&highlighter.render(
+                        &super::signatures::signature(&item.name, &signature.signature, ecosystem),
+                        Some(ecosystem),
+                    ));
+                }
             }
             if let Some(ItemLanguageData::Julia(data)) = &item.language_data {
                 let members = match &data.declaration {
@@ -214,6 +219,25 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
                 &document.document.blocks
             };
             html.push_str(&renderer.blocks(blocks)?);
+        }
+        if let (Some(item), Some(owner)) = (page.item, page.owner.as_deref()) {
+            html.push_str(&super::r_topics::navigation(
+                site,
+                route,
+                owner,
+                item,
+                |title| {
+                    renderer.blocks(&[Block::Heading {
+                        level: 2,
+                        attributes: Attributes::default(),
+                        inlines: vec![Inline::Text {
+                            value: title.into(),
+                            span: SourceSpan { start: 0, end: 0 },
+                        }],
+                        span: SourceSpan { start: 0, end: 0 },
+                    }])
+                },
+            )?);
         }
         if let Some(concept) = page.concept {
             html.push_str(&concept_links(site, route, concept)?);

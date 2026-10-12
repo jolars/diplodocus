@@ -263,8 +263,23 @@ pub struct RItemData {
     /// An Rd topic marked `\\keyword{internal}`, retained but omitted from discovery.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub internal: bool,
+    /// Shared Rd topic coordinates, independent of declaration identity.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub help_topic: Option<RHelpTopic>,
     /// Supported maintained-source and namespace semantics.
     pub declaration: RDeclaration,
+}
+
+/// A help topic shared by several maintained R declarations.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RHelpTopic {
+    /// Static Rd topic name.
+    pub name: String,
+    /// Declaration that owns aliases naming the topic as a whole.
+    pub primary: ItemReference,
+    /// All documented declarations in canonical identity order.
+    pub members: Vec<ItemReference>,
 }
 
 /// Static R declarations supported by the MVP corpus.

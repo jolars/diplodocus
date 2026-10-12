@@ -158,7 +158,7 @@ exposed these compatibility, content, and presentation gaps.
 - [x] Support Rd links with options, including local targets, package-qualified
   targets, and display labels; equations, tables, custom sections, named
   return-value entries, conditional content, and DOI links.
-- [ ] Present shared help topics with their complete S3 usage and argument
+- [x] Present shared help topics with their complete S3 usage and argument
   listings, methods by class, and method navigation. Resolve help aliases
   shared across multiple declarations, including eulerr's diagram
   composition topic.

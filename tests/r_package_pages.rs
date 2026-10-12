@@ -30,6 +30,25 @@ fn html<'a>(site: &'a RenderedSite, path: &str) -> &'a str {
     std::str::from_utf8(&site.files()[path].bytes).unwrap()
 }
 
+fn html_text(html: &str) -> String {
+    use html5ever::tendril::TendrilSink;
+    use markup5ever_rcdom::{Handle, NodeData, RcDom};
+
+    fn append(node: &Handle, text: &mut String) {
+        if let NodeData::Text { contents } = &node.data {
+            text.push_str(&contents.borrow());
+        }
+        for child in node.children.borrow().iter() {
+            append(child, text);
+        }
+    }
+
+    let document = html5ever::parse_document(RcDom::default(), Default::default()).one(html);
+    let mut text = String::new();
+    append(&document.document, &mut text);
+    text
+}
+
 fn completed(root: &support::TestWorkspace) -> Snapshot {
     extract(ExtractOptions {
         config: root.path().join("diplodocus.toml"),
@@ -256,16 +275,18 @@ fn native_authors_multiple_citations_and_description_fallback_are_retained() {
     );
     let site = render_site(&Site::new(&snapshot).unwrap()).unwrap();
     let authors = html(&site, "packages/r/authors.html");
+    // Syntax highlighting can split citation tokens across HTML elements.
+    let authors_text = html_text(authors);
     for text in [
         "First citation",
         "Second citation",
         "@Manual",
         "@Article",
         "Avery Researcher",
-        "id=\"citation\"",
     ] {
-        assert!(authors.contains(text), "{text}");
+        assert!(authors_text.contains(text), "{text}");
     }
+    assert!(authors.contains("id=\"citation\""));
 }
 
 #[test]

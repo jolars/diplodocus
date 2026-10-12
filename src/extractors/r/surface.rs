@@ -269,6 +269,7 @@ pub(super) fn reconcile(
                     .iter()
                     .any(|name| namespace.exports.contains_key(name)),
                 internal: false,
+                help_topic: None,
                 declaration,
             })),
             aliases: vec![],

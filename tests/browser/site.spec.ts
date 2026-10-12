@@ -516,3 +516,44 @@ test("Rd equations remain typeset with JavaScript disabled", async ({ browser, b
     await context.close();
   }
 });
+
+test("shared R topics retain all usages and navigate methods by class", async ({ page }, info) => {
+  await page.goto("/packages/r/");
+  await openNavigation(page, info);
+  await page.getByRole("navigation", { name: "Documentation" }).getByRole("link", { name: "fit", exact: true }).click();
+  const main = page.getByRole("main");
+  await expect(main.locator("pre code")).toHaveText([
+    "fit(x, ...)", "fit.default(x, y, ...)", "fit.model(x, weights = NULL, ...)",
+  ]);
+  await expect(main).toContainText("Response values for the default method.");
+  await expect(main).toContainText("Observation weights for the model method.");
+  const methods = main.getByRole("navigation", { name: "S3 methods by class" });
+  const toc = page.getByRole("navigation", { name: "On this page" });
+  if (info.project.name === "mobile") await toc.getByText("On this page", { exact: true }).click();
+  await toc.getByRole("link", { name: "Methods by class", exact: true }).click();
+  await expect(page).toHaveURL(/#methods-by-class$/);
+  await expect(methods.getByRole("heading", { name: "Methods by class", exact: true })).toBeInViewport();
+  await expect(methods.getByRole("heading", { name: "Class default", exact: true })).toBeVisible();
+  await expect(methods.getByRole("heading", { name: "Class model", exact: true })).toBeVisible();
+  await fitsViewport(page);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await capture(page, info, "r-shared-generic");
+  await methods.getByRole("link", { name: "fit.model", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("fit.model");
+  await expect(main.locator("pre code")).toHaveCount(3);
+  await expect(main).toContainText("Response values for the default method.");
+  await fitsViewport(page);
+  await capture(page, info, "r-shared-method");
+  await main.getByRole("link", { name: "model-fitting", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("fit");
+  await main.getByRole("link", { name: "eulergram-compose", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("|.eulergram");
+  await expect(main.locator("pre code").nth(0)).toHaveText("`|.eulergram`(e1, e2)");
+  await expect(main.locator("pre code").nth(1)).toHaveText("`/.eulergram`(e1, e2)");
+  await expect(methods.getByRole("heading", { name: "Class eulergram", exact: true })).toBeVisible();
+  await fitsViewport(page);
+  await capture(page, info, "r-shared-operators");
+  await methods.getByRole("link", { name: "/.eulergram", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("/.eulergram");
+  await expect(main.locator("pre code").nth(0)).toHaveText("`|.eulergram`(e1, e2)");
+});
