@@ -20,8 +20,8 @@ below has passed on a clean checkout. The [architecture](DESIGN.md),
 [collaborator code map](docs/development/handoff.md), [CLI
 guide](docs/guide/cli.md), and [acceptance
 matrix](tests/fixtures/acceptance/MATRIX.md) give their respective contracts.
-The [three-language example](examples/monorepo/README.md) is the smallest complete
-site.
+The [three-language example](examples/monorepo/README.md) is the smallest
+complete site.
 
 The accepted [prepared-environment
 contract](docs/decisions/0003-prepared-environment.md) changes the intended
@@ -36,8 +36,8 @@ matrix](tests/fixtures/acceptance/MATRIX.md) to the release gate. Each criterion
 still needs its complete scenario evidence before release.
 
 - **MVP-01:** Explicit configuration for the full Python/R workspace.
-- **MVP-02:** Python and R API extraction in caller-prepared package environments,
-  with source analysis and runtime assistance as needed.
+- **MVP-02:** Python and R API extraction in caller-prepared package
+  environments, with source analysis and runtime assistance as needed.
 - **MVP-03:** In-process GFM and QMD parsing with visible unsupported syntax.
 - **MVP-04:** Required execution of recognized API and authored examples, with
   structured results, expected-output verification, and explicit recorded skips.
@@ -71,26 +71,29 @@ site byte for byte with the original site.
 ### Product and acceptance
 
 - [ ] Implement the [prepared-environment
-  contract](docs/decisions/0003-prepared-environment.md): validate runtime and
-  package prerequisites, load the supplied checkout, and distinguish source
-  facts from runtime observations when reconciling API semantics. Keep source
-  validation available through `check`.
+  contract](docs/decisions/0003-prepared-environment.md): validate runtime
+  and package prerequisites, load the supplied checkout, and distinguish
+  source facts from runtime observations when reconciling API semantics.
+  Keep source validation available through `check`.
 - [ ] Execute recognized API examples and authored cells during extraction
   without a workspace opt-in. Define language-specific setup, session state,
-  expected-output comparison, expected errors, illustrative syntax, and recorded
-  conditional skips. Diagnose unsupported executable syntax and unavailable
-  engines instead of leaving examples unchecked.
+  expected-output comparison, expected errors, illustrative syntax, and
+  recorded conditional skips. Diagnose unsupported executable syntax and
+  unavailable engines instead of leaving examples unchecked.
 - [ ] Extend provenance, cache identities, and snapshot validation for runtime
-  observations and API-example outcomes, outputs, and assets. Select any required
-  schema and execution-policy version changes before publishing new records.
+  observations and API-example outcomes, outputs, and assets. Select any
+  required schema and execution-policy version changes before publishing new
+  records.
 - [ ] Replace source-only acceptance packages with usable checkout environments,
-  including compiled extensions. Keep parser-only fixtures for component tests.
-  Update the case registry and matrix as implementation lands, and cover missing
-  prerequisites, incorrect package identity, example errors and output mismatches,
-  explicit skips, failure preservation, and runtime-free generation.
+  including compiled extensions. Keep parser-only fixtures for component
+  tests. Update the case registry and matrix as implementation lands, and
+  cover missing prerequisites, incorrect package identity, example errors
+  and output mismatches, explicit skips, failure preservation, and
+  runtime-free generation.
 - [ ] Update configuration, language references, guides, examples, and CI
-  environments alongside implementation. Remove obsolete execution opt-in and
-  runtime-free extraction promises only when the new behavior is available.
+  environments alongside implementation. Remove obsolete execution opt-in
+  and runtime-free extraction promises only when the new behavior is
+  available.
 - [ ] Audit the [acceptance matrix](tests/fixtures/acceptance/MATRIX.md) against
   the current implementation. Confirm routes, navigation and visibility,
   semantic links, search, source links, output safety, and assets with
@@ -162,9 +165,10 @@ exposed these compatibility, content, and presentation gaps.
   listings, methods by class, and method navigation. Resolve help aliases
   shared across multiple declarations, including eulerr's diagram
   composition topic.
-- [x] Execute Rd examples with results and figures as a required extraction step.
-  Preserve explicitly illustrative `dontrun` regions, execute `donttest` regions,
-  and record supported conditional skips under the prepared-environment contract.
+- [x] Execute Rd examples with results and figures as a required extraction
+  step. Preserve explicitly illustrative `dontrun` regions, execute
+  `donttest` regions, and record supported conditional skips under the
+  prepared-environment contract.
 - [ ] Support R Markdown vignettes with knitr chunks, inline R, math, citations,
   and generated figures. Use eulerr's seven vignettes to check the complete
   article workflow.
@@ -176,9 +180,6 @@ exposed these compatibility, content, and presentation gaps.
   highlighting, and copy buttons. Remove duplicate signature blocks.
 - [ ] Rank exact API names ahead of suffix matches in search, index readable
   documentation and aliases, and avoid duplicate results for shared topics.
-
-The eulerr source also has a stray `#'` in `man/eulerr_options.Rd`. Correct it
-in eulerr before using that topic as an acceptance case.
 
 ## Scope held for later
 
