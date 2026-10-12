@@ -208,7 +208,7 @@ fn title(document: &Document) -> Option<String> {
     })
 }
 
-fn inline_text(inlines: &[Inline]) -> String {
+pub(super) fn inline_text(inlines: &[Inline]) -> String {
     inlines
         .iter()
         .map(|inline| match inline {

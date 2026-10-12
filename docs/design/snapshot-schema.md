@@ -108,7 +108,7 @@ The `records` kinds are:
   | `workspace`  | Empty      | Empty                         | `schema_version`, `name`, `relationships`, `diagnostics`, `provenance`                                                                               |
   | `presentation` | Empty    | Empty                         | `title`, `description`, optional `site-url` and `canonical-url-style`                                                                               |
   | `repository` | Empty      | Repository ID                 | `canonical_url`, `source_link_template`, `revision`, `dirty`, `declared_input_fingerprint`                                                           |
-  | `package`    | Empty      | Package ID                    | `slug`, `name`, `ecosystem`, `version`, `repository`, `path`, `metadata_path`, `kind`, `visibility`                                                  |
+  | `package`    | Empty      | Package ID                    | `slug`, `name`, `ecosystem`, `version`, optional `metadata`, `repository`, `path`, `metadata_path`, `kind`, `visibility`                             |
   | `target`     | Package ID | Target ID                     | `extractor`, `path`, `role`                                                                                                                          |
   | `item`       | Package ID | Semantic item ID              | `kind`, `name`, `qualified_name`, optional `language_data` and `aliases`, `signatures`, `documentation`, `source_location`, `children`, `provenance` |
   | `collection` | Empty      | Collection ID                 | `owner`, `repository`, `path`, `mount`, `format`, `execution`                                                                                        |
@@ -280,8 +280,8 @@ Its `kind` is `depends-on`, `binds`, `wraps`, or `generated-from`.
 
 `Provenance` contains `activity`, nullable `source`, nullable `span`, and
 `tools` (an object mapping component names to versions). `activity.kind` selects
-`declaration`, `decoded-documentation`, `extraction`, `execution`, or
-`generated-markdown`; the
+`declaration`, `decoded-documentation`, `extraction`, `execution`,
+`package-metadata`, or `generated-markdown`; the
 [provenance types](../../src/ir/provenance.rs) specify each variant's evidence.
 Decoded documentation records pair a decoded byte range with the enclosing
 provenance's original source range, so validation can attribute a docstring
@@ -452,6 +452,28 @@ output and unselected alternatives, without writing staging files.
 ## Query examples
 
 ### Package metadata
+
+The optional `metadata` field uses `{"language":"r","data":...}` for R
+packages. Its `description` retains the complete DESCRIPTION metadata, including
+original fields, dependency constraints, and source locations. Its optional
+`runtime` contains `authors`, optional `maintainers`, `citation` (text and
+BibTeX, or null), and `r_version`. Source validation leaves runtime results absent. CLI extraction
+completes them with native R helpers before publication. Existing package records
+without metadata remain readable, and SQLite storage version 2 is unchanged.
+
+Automatically discovered pages use `page.kind` with
+`{"kind":"package-documentation","role":...}`. Roles are `overview`, `news`,
+`authors`, `license`, and `community`. Their owner must be an R package with
+retained metadata. They have ordinary document resolution records and asset
+references, with no collection-relative path or execution row. Page identities
+use `package-page1:<package ID byte length>:<package ID>:<filename>`.
+
+Native completion records `package-metadata` provenance with package identity,
+R version, policy `r-package-metadata-v1`, and source fingerprints. The generated
+author and citation document also retains this evidence. Markdown documents
+retain their original source and declaration evidence. Combined license and
+community pages retain the contributing files as source aliases, so ordinary
+links to those files resolve to their generated pages.
 
 Query all package names and versions:
 

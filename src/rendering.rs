@@ -2,6 +2,7 @@
 
 mod html;
 mod navigation;
+mod package_metadata;
 mod publish;
 mod signatures;
 mod sitemap;

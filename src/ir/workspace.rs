@@ -18,7 +18,8 @@ use crate::diagnostics::{Diagnostic, DiagnosticPath};
 use crate::documents::AuthoredFormat;
 
 use super::{
-    Document, Fingerprint, ItemAlias, ItemLanguageData, Provenance, SourceSpan, SourcedSignature,
+    Document, Fingerprint, ItemAlias, ItemLanguageData, PackageMetadata, Provenance, SourceSpan,
+    SourcedSignature,
 };
 
 /// Current portable workspace schema version.
@@ -104,6 +105,9 @@ pub struct Package {
     pub ecosystem: String,
     /// Extracted package version, if available.
     pub version: Option<String>,
+    /// Extracted package information, including ecosystem-specific source evidence.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<PackageMetadata>,
     /// Owning repository ID.
     pub repository: String,
     /// Repository-relative package root; `None` means the repository root.
@@ -213,8 +217,53 @@ pub enum PageKind {
         /// Workspace concept ID.
         concept: String,
     },
+    /// Automatically discovered package documentation.
+    PackageDocumentation {
+        /// Stable purpose and route beneath the package root.
+        role: PackagePageRole,
+    },
     /// A generated project or package overview.
     Overview,
+}
+
+/// Conventional package pages, independent of source filenames.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum PackagePageRole {
+    /// Package README or DESCRIPTION overview.
+    Overview,
+    /// Release notes.
+    News,
+    /// Contributors and bibliography information.
+    Authors,
+    /// License declarations and local license text.
+    License,
+    /// Contribution guidelines and code of conduct.
+    Community,
+}
+
+impl PackagePageRole {
+    /// Stable filename under the package's documentation root.
+    pub fn filename(self) -> &'static str {
+        match self {
+            Self::Overview => "index.html",
+            Self::News => "news.html",
+            Self::Authors => "authors.html",
+            Self::License => "license.html",
+            Self::Community => "community.html",
+        }
+    }
+
+    /// Human-readable title of a supporting package page.
+    pub fn title(self) -> &'static str {
+        match self {
+            Self::Overview => "Overview",
+            Self::News => "News",
+            Self::Authors => "Authors and citation",
+            Self::License => "License",
+            Self::Community => "Community",
+        }
+    }
 }
 
 /// Portable document envelope; the existing authored syntax tree is unchanged.

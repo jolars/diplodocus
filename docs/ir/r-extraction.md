@@ -6,8 +6,8 @@ package-loading prohibition and inert-example contract; those changes are not
 yet implemented.
 
 `extractors::r::extract_target(repository, package, target)` reads a resolved R
-package directory and returns a portable `RExtraction`. It never installs,
-attaches, loads, or sources a package, or evaluates documentation. R must be
+package directory and returns a portable `RExtraction`. The API adapter never
+installs, attaches, loads, or sources a package, or evaluates documentation. R must be
 available on `PATH` for an isolated library-discovery probe.
 Workspace assembly, reference resolution, and CLI commands consume this fragment;
 their boundaries are described in the [implementation map](../design/execution.md).
@@ -18,6 +18,12 @@ provenance. Its `inputs` map retains the original text of every configured sourc
 including unsupported or malformed input. Invalid UTF-8 retains its bytes
 instead. Callers must reject error-bearing results before building a site;
 independent valid inputs remain available for inspection.
+
+Workspace assembly retains the complete DESCRIPTION metadata on its package
+record and discovers conventional package documents. During extraction, a
+separate native helper evaluates author and citation information and converts
+NEWS.Rd. These completed results are distinct from the static API adapter's
+observations. See the [package landing page workflow](../guide/extraction.md).
 
 ## Inputs and public declarations
 

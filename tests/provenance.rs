@@ -75,6 +75,7 @@ fn selection(reverse: bool) -> DeclaredSourceInputs {
         files.reverse();
     }
     DeclaredSourceInputs {
+        package_documentation: BTreeMap::new(),
         extraction: BTreeMap::from([(
             TargetReference {
                 package: "pkg".into(),

@@ -52,6 +52,8 @@ pub fn builtin_tools() -> BTreeMap<String, String> {
 pub struct DeclaredSourceInputs {
     /// Contributing files relative to each target's configured package root.
     pub extraction: BTreeMap<TargetReference, Vec<PathBuf>>,
+    /// Conventional package documentation files relative to each repository root.
+    pub package_documentation: BTreeMap<String, Vec<PathBuf>>,
     /// Selected authored files relative to each configured content root.
     pub content: BTreeMap<String, Vec<PathBuf>>,
 }
@@ -191,6 +193,19 @@ pub fn collect_static_provenance(
             }
         }
     }
+    for repository in &resolved.repositories {
+        if let Some(files) = selections.package_documentation.get(&repository.id) {
+            for file in sorted(files) {
+                let path = resolve_input_file(
+                    configuration_path,
+                    "package.documentation",
+                    file,
+                    &repository.path,
+                )?;
+                result.insert(read_input(configuration_path, repository, &path, None)?)?;
+            }
+        }
+    }
     for (collection, declaration) in resolved.content.iter().zip(&configuration.content) {
         let repository = &resolved.repositories[collection.repository_index];
         if let Some(files) = selections.content.get(&collection.id) {
@@ -308,6 +323,18 @@ fn validate_selections(
             return Err(ProvenanceError::UnknownSelection {
                 kind: "target",
                 id: format!("{}::{}", key.package, key.target),
+            });
+        }
+    }
+    for key in selections.package_documentation.keys() {
+        if !configuration
+            .repositories
+            .iter()
+            .any(|repository| repository.id == *key)
+        {
+            return Err(ProvenanceError::UnknownSelection {
+                kind: "repository",
+                id: key.clone(),
             });
         }
     }

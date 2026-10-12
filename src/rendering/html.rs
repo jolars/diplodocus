@@ -63,7 +63,14 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
         html.push_str("<form role=\"search\"><label for=\"search\">Search documentation</label><input id=\"search\" type=\"search\" autocomplete=\"off\"><ul id=\"search-results\" aria-live=\"polite\"></ul></form></header><div class=\"layout\"><nav aria-label=\"Documentation\"><details class=\"nav-disclosure\" open><summary>Browse documentation</summary>");
         super::navigation::sections(&mut html, site, route, "mobile-sections");
         super::navigation::contextual(&mut html, site, route);
-        html.push_str("</details></nav><div class=\"page-content\"><main id=\"main\">");
+        let package_overview =
+            super::package_metadata::is_overview(site, route, page.owner.as_deref());
+        html.push_str("</details></nav><div class=\"page-content\">");
+        if package_overview {
+            html.push_str("<main id=\"main\" class=\"package-overview\"><div class=\"package-overview-body\">");
+        } else {
+            html.push_str("<main id=\"main\">");
+        }
         if let Some(owner) = &page.owner {
             let package = &site.workspace.packages[owner];
             write!(
@@ -109,6 +116,20 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
                 escape(&page.title)
             };
             write!(html, "<h1>{title}</h1>").unwrap();
+        } else if package_overview {
+            let document = page.document.expect("authored overview title");
+            html.push_str(&renderer.blocks(&document.document.blocks[..1])?);
+        }
+        if package_overview
+            && let Some(owner) = &page.owner
+            && let Some(PackageMetadata::R(metadata)) = &site.workspace.packages[owner].metadata
+        {
+            write!(
+                html,
+                "<p class=\"package-introduction\">{}</p>",
+                escape(&metadata.description.title)
+            )
+            .unwrap();
         }
         if let Some(item) = page.item {
             let ecosystem = page
@@ -159,7 +180,12 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
             }
         }
         if let Some(document) = page.document {
-            html.push_str(&renderer.blocks(&document.document.blocks)?);
+            let blocks = if package_overview && authored_title {
+                &document.document.blocks[1..]
+            } else {
+                &document.document.blocks
+            };
+            html.push_str(&renderer.blocks(blocks)?);
         }
         if let Some(concept) = page.concept {
             html.push_str(&concept_links(site, route, concept)?);
@@ -201,12 +227,34 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
             }
             html.push_str("</ul>");
         }
+        if package_overview {
+            html.push_str("</div>");
+            html.push_str(&super::package_metadata::panel(
+                site,
+                route,
+                page.owner.as_deref().expect("package overview owner"),
+            ));
+        }
         html.push_str("</main>");
         html.push_str(&renderer.page_navigation());
         html.push_str("</div></div></body></html>\n");
         if page.visible {
             let package = page.owner.as_ref().map(|id| &site.workspace.packages[id]);
-            search.push(serde_json::json!({"title": page.title, "path": route.split('/').map(crate::site::encode).collect::<Vec<_>>().join("/"), "package": package.map(|p| &p.name), "ecosystem": package.map(|p| &p.ecosystem), "api": page.item.is_some(), "text": page.document.and_then(|d| d.raw_source.as_deref()).unwrap_or("")}));
+            let mut search_text = page
+                .document
+                .and_then(|document| document.raw_source.as_deref())
+                .unwrap_or("")
+                .to_owned();
+            if package_overview {
+                search_text.push_str(&format!(
+                    "\n{}",
+                    super::package_metadata::search_text(
+                        site,
+                        page.owner.as_deref().expect("package overview owner")
+                    )
+                ));
+            }
+            search.push(serde_json::json!({"title": page.title, "path": route.split('/').map(crate::site::encode).collect::<Vec<_>>().join("/"), "package": package.map(|p| &p.name), "ecosystem": package.map(|p| &p.ecosystem), "api": page.item.is_some(), "text": search_text}));
         }
         files.insert(
             route.clone(),

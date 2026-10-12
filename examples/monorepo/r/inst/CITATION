@@ -1,0 +1,9 @@
+bibentry(
+    bibtype = "Manual",
+    key = "tinystats",
+    title = "Tiny Stats: Prediction Metrics for R",
+    author = person("Diplodocus", "Contributors"),
+    year = "2026",
+    note = paste("R package version", meta$Version),
+    url = "https://github.com/jolars/diplodocus"
+)

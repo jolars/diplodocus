@@ -168,7 +168,7 @@ exposed these compatibility, content, and presentation gaps.
 - [ ] Support R Markdown vignettes with knitr chunks, inline R, math, citations,
   and generated figures. Use eulerr's seven vignettes to check the complete
   article workflow.
-- [ ] Build package landing pages from README and DESCRIPTION content, retain
+- [x] Build package landing pages from README and DESCRIPTION content, retain
   package metadata through assembly, and expose NEWS, citation information,
   authors, licenses, and community links.
 - [ ] Improve reference presentation with descriptive titles and URLs, source

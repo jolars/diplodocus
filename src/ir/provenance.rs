@@ -73,6 +73,17 @@ pub enum ProvenanceActivity {
         /// Contributing inputs keyed first by repository ID, then relative path.
         inputs: BTreeMap<String, BTreeMap<DiagnosticPath, ExtractionInput>>,
     },
+    /// Native R metadata and citation completion from the supplied checkout.
+    PackageMetadata {
+        /// Workspace package identity.
+        package: String,
+        /// Observed R interpreter version.
+        r_version: String,
+        /// Native helper policy used to complete the results.
+        policy: String,
+        /// Exact source bytes supplied to native helpers.
+        inputs: Vec<InputFingerprint>,
+    },
     /// Successful execution or restoration of an executed page result.
     Execution {
         /// Declared execution mode.

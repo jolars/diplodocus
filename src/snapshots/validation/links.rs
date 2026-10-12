@@ -17,8 +17,67 @@ pub(super) fn validate(workspace: &Workspace) -> Result {
             links.diagnostic_source(source)?;
         }
     }
-    for package in workspace.packages.values() {
+    for (package_id, package) in &workspace.packages {
         route(&package.slug)?;
+        if let Some(PackageMetadata::R(metadata)) = &package.metadata {
+            let description = &metadata.description;
+            let root = package.path.as_ref().map_or("", DiagnosticPath::as_str);
+            let metadata_path = std::path::Path::new(root).join(package.metadata_path.as_str());
+            require(
+                package.ecosystem == "r"
+                    && package.version.as_ref() == Some(&description.version)
+                    && description.source.repository == package.repository
+                    && metadata_path == std::path::Path::new(description.source.path.as_str()),
+                "R package metadata identity",
+            )?;
+            for (name, value) in [
+                ("Package", description.name.as_str()),
+                ("Version", description.version.as_str()),
+                ("Title", description.title.as_str()),
+            ] {
+                require(
+                    !value.is_empty()
+                        && description
+                            .fields
+                            .get(name)
+                            .is_some_and(|field| field.value == value),
+                    "R package metadata fields",
+                )?;
+            }
+            require(
+                description.description.as_ref()
+                    == description
+                        .fields
+                        .get("Description")
+                        .map(|field| &field.value)
+                    && description.license.as_ref()
+                        == description.fields.get("License").map(|field| &field.value),
+                "R package metadata fields",
+            )?;
+            links.source(&description.source)?;
+            for field in description.fields.values() {
+                require(
+                    field.source.repository == description.source.repository
+                        && field.source.path == description.source.path
+                        && field.source.span.is_some_and(|span| span.start <= span.end),
+                    "R metadata field source",
+                )?;
+                links.source(&field.source)?;
+            }
+            for dependency in metadata.description.dependencies.values().flatten() {
+                links.source(&dependency.source)?;
+                for constraint in &dependency.constraints {
+                    links.source(&constraint.source)?;
+                }
+            }
+            if let Some(runtime) = &metadata.runtime {
+                require(!runtime.r_version.is_empty(), "R metadata runtime version")?;
+                require(workspace.provenance.iter().any(|record| {
+                    matches!(&record.activity, ProvenanceActivity::PackageMetadata { package: id, r_version, .. }
+                        if id == package_id && r_version == &runtime.r_version)
+                }), "R metadata runtime evidence")?;
+            }
+        }
         for id in package.extraction_targets.keys() {
             require(!id.is_empty(), "empty target identity")?;
         }
@@ -144,6 +203,23 @@ impl Links<'_> {
                     )?;
                     for repository in inputs.keys() {
                         self.repository(repository)?;
+                    }
+                }
+                ProvenanceActivity::PackageMetadata {
+                    package,
+                    r_version,
+                    policy,
+                    inputs,
+                } => {
+                    require(
+                        self.0.packages.contains_key(package)
+                            && !r_version.is_empty()
+                            && policy == "r-package-metadata-v1"
+                            && !inputs.is_empty(),
+                        "package metadata provenance",
+                    )?;
+                    for input in inputs {
+                        self.source(&input.source)?;
                     }
                 }
                 ProvenanceActivity::Execution {

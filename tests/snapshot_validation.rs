@@ -108,6 +108,45 @@ fn changed(
 }
 
 #[test]
+fn rejects_inconsistent_r_metadata_and_package_page_ownership() {
+    let snapshot = snapshot();
+    for field in ["version", "source", "name", "owner"] {
+        assert!(
+            changed(&snapshot, |export| {
+                if field == "owner" {
+                    let page = export["records"]
+                        .as_array_mut()
+                        .unwrap()
+                        .iter_mut()
+                        .find(|record| {
+                            record["kind"] == "page"
+                                && record["content"]["kind"]["kind"] == "package-documentation"
+                        })
+                        .unwrap();
+                    page["content"]["owner"] = serde_json::json!({"kind": "project"});
+                } else {
+                    let package = export["records"]
+                        .as_array_mut()
+                        .unwrap()
+                        .iter_mut()
+                        .find(|record| record["kind"] == "package" && record["id"] == "rfoo")
+                        .unwrap();
+                    let metadata = &mut package["content"]["metadata"]["data"]["description"];
+                    match field {
+                        "version" => metadata["version"] = serde_json::json!("9.9.9"),
+                        "name" => metadata["name"] = serde_json::json!("another"),
+                        "source" => metadata["source"]["repository"] = serde_json::json!("python"),
+                        _ => unreachable!(),
+                    }
+                }
+            })
+            .is_err(),
+            "{field}"
+        );
+    }
+}
+
+#[test]
 fn rejects_missing_or_malformed_presentation_even_with_valid_fingerprints() {
     let snapshot = snapshot();
     for case in [

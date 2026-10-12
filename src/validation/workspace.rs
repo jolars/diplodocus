@@ -287,12 +287,38 @@ fn resolve(
         if let Some(path) = &path {
             pages.entry(path.clone()).or_default().push(id.clone());
         }
+        for provenance in &page.document.provenance {
+            if !matches!(provenance.activity, ProvenanceActivity::Declaration) {
+                continue;
+            }
+            if let Some(DiagnosticSource::Repository {
+                repository,
+                path: source_path,
+            }) = &provenance.source
+            {
+                let source = SourceLocation {
+                    repository: repository.clone(),
+                    path: source_path.clone(),
+                    span: None,
+                };
+                if let Some(alias) = path_for(&source) {
+                    let aliases = pages.entry(alias).or_default();
+                    if !aliases.contains(id) {
+                        aliases.push(id.clone());
+                    }
+                }
+            }
+        }
         let prepared = sources.prepared_pages().get(id);
         let entity =
             if let (PageKind::Authored { collection }, Some(prepared)) = (&page.kind, prepared) {
                 DiagnosticEntity::Document {
                     collection: collection.clone(),
                     path: prepared.relative.clone(),
+                }
+            } else if let ContentOwner::Package { package } = &page.owner {
+                DiagnosticEntity::Package {
+                    id: package.clone(),
                 }
             } else {
                 DiagnosticEntity::Project

@@ -66,7 +66,7 @@ fn missing_r_prevents_snapshot_publication() {
 }
 
 #[test]
-fn cli_paths_and_static_snapshot_match_the_contract() {
+fn cli_paths_and_completed_snapshot_match_the_contract() {
     let root = static_workspace();
     let sources = assemble_workspace(root.path().join(CONFIG)).unwrap();
     let resolved = resolve_workspace(&sources).unwrap();
@@ -82,20 +82,23 @@ fn cli_paths_and_static_snapshot_match_the_contract() {
         .map(|diagnostic| format!("{}\n", format_diagnostic(diagnostic)))
         .collect();
     assert!(!warnings.is_empty());
-    let expected = expected.canonical_export().unwrap();
+    let static_packages = expected.workspace().packages.clone();
     drop((sources, resolved));
 
     let result = extract(root.path(), None, false);
     success(&result);
     assert_eq!(String::from_utf8(result.stderr).unwrap(), warnings);
     let default = root.path().join(DEFAULT_OUTPUT);
-    assert_eq!(
-        Snapshot::load(&default)
-            .unwrap()
-            .canonical_export()
-            .unwrap(),
-        expected
-    );
+    let completed = Snapshot::load(&default).unwrap();
+    let mut completed_packages = completed.workspace().packages.clone();
+    let Some(diplodocus::ir::PackageMetadata::R(metadata)) =
+        &mut completed_packages.get_mut("rfoo").unwrap().metadata
+    else {
+        panic!("R metadata");
+    };
+    assert!(metadata.runtime.take().is_some());
+    assert_eq!(completed_packages, static_packages);
+    let expected = completed.canonical_export().unwrap();
     assert!(!root.path().join(".diplodocus").exists());
     fs::remove_file(&default).unwrap();
 
@@ -132,7 +135,8 @@ fn generated_snapshots_never_become_sources_or_change_input_fingerprints() {
     let config = root.path().join(CONFIG);
     let original = assemble_workspace(&config).unwrap();
     let expected_inputs: Vec<_> = original.input_paths().collect();
-    let expected = Snapshot::from_sources(&original, &resolve_workspace(&original).unwrap())
+    success(&extract(root.path(), None, false));
+    let expected = Snapshot::load(root.path().join(DEFAULT_OUTPUT))
         .unwrap()
         .canonical_export()
         .unwrap();
@@ -146,6 +150,10 @@ fn generated_snapshots_never_become_sources_or_change_input_fingerprints() {
         "python/python/foo/export.pyi",
         "r/R/export.R",
         "r/man/export.Rd",
+        "r/README.md",
+        "r/NEWS.md",
+        "r/LICENSE.md",
+        "r/CONTRIBUTING.md",
     ] {
         for _ in 0..2 {
             success(&extract(root.path(), Some(Path::new(output)), false));

@@ -114,6 +114,7 @@ impl Snapshot {
                 }
             }
         }
+        let mut package_page_roles = BTreeSet::new();
         for (id, page) in &workspace.pages {
             require(
                 !id.is_empty() && owns(&page.owner),
@@ -130,6 +131,22 @@ impl Snapshot {
                 PageKind::Api { item } => require(item_exists(item), "API page item")?,
                 PageKind::Concept { concept } => {
                     require(workspace.concepts.contains_key(concept), "concept page")?
+                }
+                PageKind::PackageDocumentation { role } => {
+                    let ContentOwner::Package { package } = &page.owner else {
+                        return Err(SnapshotError::Invalid("package documentation owner"));
+                    };
+                    require(
+                        matches!(
+                            workspace.packages[package].metadata,
+                            Some(PackageMetadata::R(_))
+                        ),
+                        "package documentation owner",
+                    )?;
+                    require(
+                        package_page_roles.insert((package, role)),
+                        "duplicate package documentation role",
+                    )?;
                 }
                 PageKind::Overview => {}
             }

@@ -87,6 +87,53 @@ test("search finds all three APIs and follows a result", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("tinystats.mean_squared_error");
 });
 
+test("R package overview exposes metadata and supporting documentation", async ({ page }, info) => {
+  await page.goto("/packages/r/");
+  const main = page.getByRole("main");
+  const metadata = page.getByRole("complementary", { name: "Package information", exact: true });
+  await expect(main.getByRole("heading", { level: 1 })).toHaveText("Tiny Stats for R");
+  await expect(main.getByRole("heading", { name: "Compare predictions", exact: true })).toBeVisible();
+  await expect(metadata).toContainText("tinystats");
+  await expect(metadata).toContainText("0.1.0");
+  await expect(metadata).toContainText("MIT + file LICENSE");
+  await expect(metadata.getByRole("link", { name: "Report an issue" })).toHaveAttribute("href", "https://github.com/jolars/diplodocus/issues");
+  await expect(main.getByRole("img")).toBeVisible();
+  await expect.poll(() => main.getByRole("img").evaluate((element: HTMLImageElement) => element.naturalWidth)).toBeGreaterThan(0);
+  const body = await page.locator(".package-overview-body").boundingBox();
+  const panel = await metadata.boundingBox();
+  if (info.project.name === "desktop") expect(panel!.x).toBeGreaterThanOrEqual(body!.x + body!.width);
+  else expect(panel!.y).toBeGreaterThanOrEqual(body!.y + body!.height);
+  await fitsViewport(page);
+  await capture(page, info, "r-package-overview");
+
+  for (const [title, expected, filename] of [
+    ["News", "tinystats 0.1.0", "news"],
+    ["Authors and citation", "Tiny Stats: Prediction Metrics for R", "authors"],
+    ["License", "Permission is hereby granted", "license"],
+    ["Community", "Contributing to Tiny Stats", "community"],
+  ]) {
+    await metadata.getByRole("link", { name: title, exact: true }).click();
+    await expect(main.getByRole("heading", { level: 1 })).toHaveText(title);
+    await expect(main).toContainText(expected);
+    await fitsViewport(page);
+    await capture(page, info, `r-package-${filename}`);
+    await page.goto("/packages/r/");
+  }
+  await metadata.getByRole("link", { name: "Authors and citation" }).click();
+  await expect(main.locator("pre code")).toContainText("@Manual");
+  const toc = page.getByRole("navigation", { name: "On this page" });
+  if (info.project.name === "mobile") await toc.getByText("On this page", { exact: true }).click();
+  await toc.getByRole("link", { name: "Citation", exact: true }).click();
+  await expect(page).toHaveURL(/#citation$/);
+});
+
+test("R package overview is searchable by DESCRIPTION content", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("searchbox").fill("Small Statistics Example");
+  await page.locator("#search-results").getByRole("link", { name: "Tiny Stats for R · Tiny Stats for R", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Tiny Stats for R");
+});
+
 test("internal R helpers and grid hooks remain addressable but undiscoverable", async ({ page }, info) => {
   await page.goto("/packages/r/");
   await openNavigation(page, info);
@@ -285,11 +332,13 @@ test("page TOC stays close to content when the window narrows", async ({ page },
   for (const width of [1099, 1000, 761, 760]) {
     await page.setViewportSize({ width, height: 1400 });
     await expect(page.locator(".toc-disclosure")).toHaveJSProperty("open", false);
-    const summary = await page.getByRole("navigation", { name: "On this page" }).locator("summary").boundingBox();
-    const title = await page.getByRole("heading", { level: 1 }).boundingBox();
-    const gap = title!.y - (summary!.y + summary!.height);
-    expect(gap, `TOC-to-title spacing at ${width}px`).toBeLessThanOrEqual(40);
-    expect(gap).toBeGreaterThanOrEqual(0);
+    // Measure both positions together while responsive disclosure changes settle.
+    await expect.poll(() => page.evaluate(() => {
+      const summary = document.querySelector(".page-toc summary")!.getBoundingClientRect();
+      const title = document.querySelector("main h1")!.getBoundingClientRect();
+      const gap = title.top - summary.bottom;
+      return gap >= 0 && gap <= 40;
+    }), { message: `TOC-to-title spacing at ${width}px` }).toBe(true);
     await fitsViewport(page);
   }
   await page.setViewportSize({ width: 761, height: 1000 });

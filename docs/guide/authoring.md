@@ -6,6 +6,12 @@ configuration](configuration.md). Set `format = "gfm"` for `.md` files or
 prefix; an empty mount places its `index.md` at the site root. The `owner`
 determines whether pages appear in project or package navigation.
 
+R packages also have [automatically discovered package pages](extraction.md).
+Use a package-owned collection with an empty mount and `index.md` or `index.qmd`
+to replace the automatic overview. The metadata panel remains available. The
+supporting routes are `news.html`, `authors.html`, `license.html`, and
+`community.html`; an authored page at one of these routes takes precedence.
+
 ## Navigation
 
 The navigation bar links to the shared Guide and each visible package. Diplodocus

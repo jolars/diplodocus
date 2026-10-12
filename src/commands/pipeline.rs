@@ -30,9 +30,9 @@ pub(super) async fn extract_attempt(
     options: ExtractOptions,
     site_output: Option<&Path>,
     deadlines: ExecutionDeadlines,
-    cancellation: ExecutionCancellation<'_>,
+    mut cancellation: ExecutionCancellation<'_>,
 ) -> Result<PathBuf, CommandError> {
-    let sources = assemble_workspace(&options.config)?;
+    let mut sources = assemble_workspace(&options.config)?;
     let resolved = resolve_workspace(&sources)?;
     let output = options.output.unwrap_or_else(|| {
         sources
@@ -45,6 +45,9 @@ pub(super) async fn extract_attempt(
         protect_sources(&sources, &resolved, &options.config, site)?;
         reject_overlap(site, &output)?;
     }
+    sources
+        .complete_package_metadata(deadlines, &mut cancellation)
+        .await?;
     #[cfg(target_os = "linux")]
     let snapshot = {
         // Execution staging stays outside watched source trees and survives until copying finishes.

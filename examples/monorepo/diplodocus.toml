@@ -7,6 +7,7 @@ description = "A shared guide and API reference for Tiny Stats in Python, R, and
 [[repository]]
 id = "tinystats"
 path = "."
+url = "https://github.com/jolars/diplodocus"
 
 [[package]]
 id = "pystats"

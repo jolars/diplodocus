@@ -1,67 +1,22 @@
 use std::collections::BTreeMap;
 
 use arity_parser::{ast::AstNode, dcf};
-use serde::{Deserialize, Serialize};
 
 use crate::diagnostics::{Diagnostic, DiagnosticCode, Severity};
 use crate::ir::SourceLocation;
+pub use crate::ir::{RDependency, RMetadata, RMetadataField, RVersionConstraint};
 
 use super::{diagnostic, located};
 
-/// Static DESCRIPTION metadata with the original fields and their evidence.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct RMetadata {
-    /// Published R package name, independent of its workspace ID.
-    pub name: String,
-    /// Declared R package version.
-    pub version: String,
-    /// Short package title.
-    pub title: String,
-    /// Package description when supplied.
-    pub description: Option<String>,
-    /// Unevaluated license declaration.
-    pub license: Option<String>,
-    /// Dependencies grouped by their DESCRIPTION field, including R in Depends.
-    pub dependencies: BTreeMap<String, Vec<RDependency>>,
-    /// All original fields, including unevaluated Authors@R.
-    pub fields: BTreeMap<String, RMetadataField>,
-    /// Original metadata file.
-    pub source: SourceLocation,
-}
-
-/// One DCF field, retaining folded text and its exact enclosing source range.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct RMetadataField {
-    /// Continuation lines folded by the DCF parser.
-    pub value: String,
-    /// Exact source field.
-    pub source: SourceLocation,
-}
-
-/// One static dependency declaration.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct RDependency {
-    /// Package name, or R for the interpreter requirement.
-    pub name: String,
-    /// Constraints in declared order.
-    pub constraints: Vec<RVersionConstraint>,
-    /// Exact dependency source range.
-    pub source: SourceLocation,
-}
-
-/// An unevaluated R version constraint.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct RVersionConstraint {
-    /// One of <, <=, ==, >=, or >.
-    pub operator: String,
-    /// Version spelling in R syntax.
-    pub version: String,
-    /// Exact constraint source range.
-    pub source: SourceLocation,
+pub(crate) fn license_files(value: &str) -> impl Iterator<Item = &str> {
+    value.split(['+', '|']).filter_map(|declaration| {
+        declaration
+            .trim()
+            .trim_matches(['(', ')'])
+            .trim()
+            .strip_prefix("file ")
+            .map(str::trim)
+    })
 }
 
 pub(super) fn parse(

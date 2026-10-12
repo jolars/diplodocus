@@ -317,6 +317,39 @@ impl Observer {
             observe(&root.join(&package.metadata_path), &mut observed);
             if package.ecosystem == "r" {
                 observe(&root.join("NAMESPACE"), &mut observed);
+                for name in [
+                    "README.md",
+                    "NEWS.md",
+                    "NEWS.Rd",
+                    "NEWS",
+                    "inst/CITATION",
+                    "LICENSE",
+                    "LICENSE.md",
+                    "LICENCE",
+                    "LICENCE.md",
+                    "CONTRIBUTING.md",
+                    "CODE_OF_CONDUCT.md",
+                ] {
+                    observe(&root.join(name), &mut observed);
+                }
+                for name in ["CONTRIBUTING.md", "CODE_OF_CONDUCT.md"] {
+                    observe(
+                        &roots[package.repository.as_str()].join(name),
+                        &mut observed,
+                    );
+                }
+                if let Ok(text) = fs::read_to_string(root.join(&package.metadata_path)) {
+                    let metadata = arity_parser::dcf::parse(&text);
+                    for field in metadata
+                        .document()
+                        .fields()
+                        .filter(|field| field.name() == "License")
+                    {
+                        for name in crate::extractors::r::license_files(&field.folded_value()) {
+                            observe(&root.join(name), &mut observed);
+                        }
+                    }
+                }
             }
             for target in &package.targets {
                 let mut selected = Vec::new();
@@ -365,6 +398,9 @@ impl Observer {
         };
         let workspace = sources.workspace();
         let mut assets = Observation::new();
+        for path in sources.input_paths() {
+            observe(&path, &mut assets);
+        }
         let documents = workspace
             .pages
             .values()
@@ -581,6 +617,31 @@ mod tests {
         let mut observer = Observer::new(&config, &root.path().join("site")).unwrap();
         let before = observer.capture();
         fs::write(&asset, "after").unwrap();
+        assert_ne!(observer.capture(), before);
+    }
+
+    #[test]
+    fn watches_missing_and_custom_r_package_documents() {
+        let root = tempfile::tempdir().unwrap();
+        fs::create_dir(root.path().join("r")).unwrap();
+        fs::write(
+            root.path().join("r/DESCRIPTION"),
+            "Package: observed\nTitle: Observed package\nVersion: 1.0.0\nLicense: file COPYING\n",
+        )
+        .unwrap();
+        fs::write(root.path().join("r/NAMESPACE"), "").unwrap();
+        let config = root.path().join("diplodocus.toml");
+        fs::write(&config, "[project]\nname='Observe'\n[[repository]]\nid='repo'\npath='.'\n[[package]]\nid='r'\nname='R package'\nslug='r'\necosystem='r'\nrepository='repo'\npath='r'\nmetadata-path='DESCRIPTION'\ntargets=[{id='api', extractor='r', path='.', role='public-api'}]\n").unwrap();
+        let mut observer = Observer::new(&config, &root.path().join("site")).unwrap();
+        let before = observer.capture();
+        fs::write(root.path().join("r/COPYING"), "First license text").unwrap();
+        assert_ne!(observer.capture(), before);
+        observer.refresh_assets();
+        let before = observer.capture();
+        fs::write(root.path().join("r/COPYING"), "Second license text").unwrap();
+        assert_ne!(observer.capture(), before);
+        let before = observer.capture();
+        fs::write(root.path().join("r/README.md"), "# New overview\n").unwrap();
         assert_ne!(observer.capture(), before);
     }
 }

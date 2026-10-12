@@ -2,6 +2,7 @@ Package: tinystats
 Type: Package
 Title: A Small Statistics Example
 Version: 0.1.0
+Date: 2026-01-01
 Authors@R: person("Diplodocus", "Contributors", role = c("aut", "cre"),
     email = "maintainers@example.com")
 Author: Diplodocus Contributors [aut, cre]
@@ -9,4 +10,6 @@ Maintainer: Diplodocus Contributors <maintainers@example.com>
 Description: A small R package for the Diplodocus monorepo example. Computes
     error magnitudes, bias, residuals, and R squared to evaluate predictions.
 License: MIT + file LICENSE
+URL: https://github.com/jolars/diplodocus (Project website)
+BugReports: https://github.com/jolars/diplodocus/issues
 Encoding: UTF-8

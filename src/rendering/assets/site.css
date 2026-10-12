@@ -92,3 +92,18 @@ blockquote, .callout { border-left: 4px solid #688b84; padding: .2rem 1rem; marg
   h1 { font-size: 1.85rem; }
   h1, h2, h3, h4 { scroll-margin-top: 1rem; }
 }
+
+.package-overview { max-width: none; }
+.package-overview-body { min-width: 0; }
+.package-introduction { color: var(--muted); font-size: 1.1rem; }
+.package-metadata { min-width: 0; margin-top: 2rem; padding: 1rem; border: 1px solid var(--border); border-radius: .3rem; font-size: .85rem; }
+.package-metadata h2 { margin: 0 0 1rem; font-size: 1rem; }
+.package-metadata dl { margin: 0; }
+.package-metadata dt { margin-top: .6rem; color: var(--muted); font-size: .75rem; font-weight: 650; }
+.package-metadata dd { margin: 0; }
+.package-metadata ul { margin: 1rem 0 0; padding-left: 1.1rem; }
+.package-metadata li { margin: .3rem 0; }
+@media (min-width: 1280px) {
+  .package-overview { display: grid; grid-template-columns: minmax(0, 1fr) 13rem; gap: 2rem; align-items: start; }
+  .package-metadata { margin-top: 0; }
+}

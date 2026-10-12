@@ -27,6 +27,7 @@ use crate::provenance::{
 mod authored;
 #[cfg(target_os = "linux")]
 mod execution;
+mod package_docs;
 mod packages;
 mod references;
 
@@ -97,6 +98,7 @@ pub struct WorkspaceSources {
     configuration_source: String,
     paths: ResolvedWorkspacePaths,
     prepared_pages: BTreeMap<String, PreparedPage>,
+    package_files: BTreeMap<String, package_docs::PackageFiles>,
     selections: DeclaredSourceInputs,
     evidence: StaticProvenance,
 }
@@ -155,6 +157,9 @@ impl WorkspaceSources {
             {
                 return Err(AssemblyError::InputsChanged);
             }
+        }
+        if package_docs::discover(&paths, &self.workspace)? != self.package_files {
+            return Err(AssemblyError::InputsChanged);
         }
         let current = collect_static_provenance(
             &self.configuration_path,
@@ -262,6 +267,8 @@ pub fn assemble_workspace(path: impl AsRef<Path>) -> Result<WorkspaceSources, As
         &mut selections,
         &mut observed,
     )?;
+    let package_files =
+        package_docs::assemble(&paths, &mut workspace, &mut selections, &mut observed)?;
     references::concepts_and_relationships(&configuration, &mut workspace, &config_name);
     reject_errors(workspace.diagnostics.iter().cloned().collect())?;
     let evidence = collect_static_provenance(path, &configuration, &selections)?;
@@ -285,6 +292,7 @@ pub fn assemble_workspace(path: impl AsRef<Path>) -> Result<WorkspaceSources, As
         configuration_source: text,
         paths,
         prepared_pages,
+        package_files,
         selections,
         evidence,
     };

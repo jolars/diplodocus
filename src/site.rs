@@ -159,6 +159,13 @@ impl<'a> Site<'a> {
                 }
                 model.cells = prepared.preparation.map(|p| p.cells).unwrap_or_default();
                 format!("{base}{mount}{stem}.html")
+            } else if let PageKind::PackageDocumentation { role } = &page.kind {
+                let package = owner.as_ref().ok_or(SiteError::Evidence)?;
+                format!(
+                    "packages/{}/{}",
+                    workspace.packages[package].slug,
+                    role.filename()
+                )
             } else {
                 format!(
                     "pages/{}.html",

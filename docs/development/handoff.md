@@ -7,7 +7,8 @@ implementation.
 
 The [prepared-environment decision](../decisions/0003-prepared-environment.md)
 changes the intended extraction contract to allow runtime assistance and require
-example execution. That work is pending. The pipeline and test map below
+example execution. R author and citation completion uses native helpers; the
+broader package-loading and example-execution work is pending. The pipeline and test map below
 describe the current implementation; [remaining work](../../TODO.md) tracks the
 transition.
 
@@ -26,6 +27,8 @@ transition.
    `src/execution/` runs authorized QMD cells through Jupyter and validates
    their outputs; `src/assembly/execution.rs` joins the results to the
    workspace. The [execution map](../design/execution.md) describes this path.
+   `src/assembly/package_docs.rs` discovers R package documents, and its native
+   helper completes authors, citations, and NEWS.Rd during extraction.
 4. `src/snapshots/` validates and publishes a portable SQLite database.
    `generate` can load this database without the original sources or kernels.
 5. `src/site.rs` builds routes and navigation from the snapshot;

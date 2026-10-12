@@ -1,7 +1,7 @@
 # Python, R, and Julia API extraction
 
-Diplodocus reads configured API targets statically. It does not import a Python
-package, load an R or Julia package, run a build backend, or install
+Diplodocus reads configured API targets statically and uses R to complete package
+author and citation information. It does not run a build backend or install
 dependencies. Targets must point to maintained files inside their declared
 package and repository boundaries. The [workspace guide](configuration.md) shows
 how to declare a target.
@@ -47,6 +47,34 @@ dependencies' metadata without loading their namespaces. Documented helpers
 retain their maintained signatures without requiring exports. Topics marked
 `\keyword{internal}` have addressable pages but stay out of navigation and search.
 See the R extraction contract below for discovery and import limits.
+
+### Package landing pages
+
+Diplodocus automatically reads `README.md` from the declared R package root and
+uses it as the package overview. Without a README, DESCRIPTION supplies the
+introduction. The page shows package metadata and links to available release
+notes, authors and citation information, licenses, and community guidelines.
+
+Release notes use `NEWS.md`, then `NEWS.Rd`, then plain `NEWS`. Licenses include
+the DESCRIPTION declaration, its local `file` references, and conventional
+`LICENSE`, `LICENSE.md`, `LICENCE`, and `LICENCE.md` files. Contribution guidelines
+and a code of conduct use `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md`, preferring
+package files over files at the repository root. Missing optional files do not
+create empty pages. A missing file explicitly named by License is an error.
+
+Extraction evaluates `Authors@R` and `inst/CITATION` with native R helpers. When
+CITATION is absent, R generates a citation from DESCRIPTION. Author supplies a
+fallback when Authors@R is absent. R also converts NEWS.Rd to readable text. These
+operations use the checkout's files and supplied environment, and do not install
+the documented package. Native errors and timeouts prevent publication. `check`
+validates source syntax and links without evaluating this information.
+
+An explicitly authored page at the package root or a supporting page's route
+takes precedence. Files already included by authored collections are not
+duplicated automatically. README links, heading anchors, and local images use
+the normal reference and asset pipeline. Snapshots retain the metadata, native
+results, documents, and assets so `generate` works without the checkout or R.
+README.Rmd rendering remains outside this workflow.
 
 Computed names, conditional namespace directives, dynamic construction, roxygen
 generation, and unsupported Rd markup are not evaluated. Unsupported markup

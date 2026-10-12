@@ -28,6 +28,7 @@ mod rd;
 mod source;
 mod surface;
 
+pub(crate) use metadata::license_files;
 pub use metadata::{RDependency, RMetadata, RMetadataField, RVersionConstraint};
 
 /// Portable extraction result ready for later workspace merging.

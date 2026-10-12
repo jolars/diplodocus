@@ -76,18 +76,17 @@ fn every_entity_is_queryable_by_its_documented_semantic_key() {
             assert_record("repository", "", id, &json!(repository));
         }
         for (id, package) in &workspace.packages {
-            assert_record(
-                "package",
-                "",
-                id,
-                &json!({
-                    "slug": package.slug, "name": package.name,
-                    "ecosystem": package.ecosystem, "version": package.version,
-                    "repository": package.repository, "path": package.path,
-                    "metadata_path": package.metadata_path,
-                    "kind": package.kind, "visibility": package.visibility,
-                }),
-            );
+            let mut expected = json!({
+                "slug": package.slug, "name": package.name,
+                "ecosystem": package.ecosystem, "version": package.version,
+                "repository": package.repository, "path": package.path,
+                "metadata_path": package.metadata_path,
+                "kind": package.kind, "visibility": package.visibility,
+            });
+            if let Some(metadata) = &package.metadata {
+                expected["metadata"] = json!(metadata);
+            }
+            assert_record("package", "", id, &expected);
             for (target_id, target) in &package.extraction_targets {
                 assert_record("target", id, target_id, &json!(target));
             }

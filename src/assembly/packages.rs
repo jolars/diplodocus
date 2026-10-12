@@ -18,6 +18,7 @@ pub(super) fn assemble(
             name: declaration.name.clone(),
             ecosystem: declaration.ecosystem.clone(),
             version: None,
+            metadata: None,
             repository: declaration.repository.clone(),
             path: relative(&resolved.path, &repository.path)?,
             metadata_path: relative(&resolved.metadata_path, &resolved.path)?
@@ -40,6 +41,7 @@ pub(super) fn assemble(
                 "julia" => {
                     let result = julia::extract_target(repository, resolved, selected);
                     Fragment {
+                        metadata: None,
                         version: result.metadata.and_then(|metadata| metadata.version),
                         items: result.items,
                         diagnostics: result.diagnostics,
@@ -49,6 +51,7 @@ pub(super) fn assemble(
                 "python" => {
                     let result = python::extract_target(repository, resolved, selected);
                     Fragment {
+                        metadata: None,
                         version: result.metadata.map(|m| m.version),
                         items: result.items,
                         diagnostics: result.diagnostics,
@@ -58,7 +61,13 @@ pub(super) fn assemble(
                 "r" => {
                     let result = r::extract_target(repository, resolved, selected);
                     Fragment {
-                        version: result.metadata.map(|m| m.version),
+                        version: result.metadata.as_ref().map(|m| m.version.clone()),
+                        metadata: result.metadata.map(|description| {
+                            crate::ir::PackageMetadata::R(crate::ir::RPackageMetadata {
+                                description,
+                                runtime: None,
+                            })
+                        }),
                         items: result.items,
                         diagnostics: result.diagnostics,
                         provenance: result.provenance,
@@ -82,6 +91,25 @@ pub(super) fn assemble(
                 }
             };
             workspace.diagnostics.extend(fragment.diagnostics);
+            if let Some(metadata) = fragment.metadata {
+                if package
+                    .metadata
+                    .as_ref()
+                    .is_some_and(|previous| previous != &metadata)
+                {
+                    workspace.diagnostics.insert(
+                        diagnostic(
+                            DiagnosticCode::ConflictingExtraction,
+                            "Extraction targets observed different package metadata.",
+                        )
+                        .with_entity(DiagnosticEntity::Package {
+                            id: declaration.id.clone(),
+                        }),
+                    );
+                } else {
+                    package.metadata = Some(metadata);
+                }
+            }
             if package.version.is_some()
                 && fragment.version.is_some()
                 && package.version != fragment.version
@@ -153,6 +181,7 @@ pub(super) fn assemble(
 }
 
 struct Fragment {
+    metadata: Option<crate::ir::PackageMetadata>,
     version: Option<String>,
     items: BTreeMap<String, Item>,
     diagnostics: Vec<Diagnostic>,

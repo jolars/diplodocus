@@ -43,11 +43,45 @@ fn monorepo_example_builds_with_r_and_generates_without_sources_or_runtimes() {
     let snapshot = Snapshot::load(&database).unwrap();
     assert_eq!(snapshot.workspace().repositories.len(), 1);
     assert_eq!(snapshot.workspace().packages.len(), 3);
-    assert_eq!(snapshot.workspace().pages.len(), 9);
+    assert_eq!(snapshot.workspace().pages.len(), 14);
     assert_eq!(snapshot.workspace().concepts.len(), 6);
     assert_eq!(snapshot.assets().len(), 1);
 
+    let Some(diplodocus::ir::PackageMetadata::R(metadata)) =
+        &snapshot.workspace().packages["rstats"].metadata
+    else {
+        panic!("R metadata");
+    };
+    assert_eq!(metadata.description.name, "tinystats");
+    assert_eq!(metadata.description.title, "A Small Statistics Example");
+    let runtime = metadata.runtime.as_ref().unwrap();
+    assert!(runtime.authors[0].contains("Diplodocus Contributors"));
+    assert!(runtime.citation.as_ref().unwrap().bibtex.contains("2026"));
     let site = root.path().join("site");
+    let overview = fs::read_to_string(site.join("packages/r/index.html")).unwrap();
+    for text in [
+        "Compare predictions",
+        "Package information",
+        "Project website",
+        "Report an issue",
+        "mean_absolute_error",
+        "<img ",
+    ] {
+        assert!(overview.contains(text), "{text}");
+    }
+    for (file, content) in [
+        ("news.html", "tinystats 0.1.0"),
+        ("authors.html", "Tiny Stats: Prediction Metrics for R"),
+        ("license.html", "Permission is hereby granted"),
+        ("community.html", "Contributing to Tiny Stats"),
+    ] {
+        assert!(overview.contains(&format!("href=\"{}\"", file.replace('.', "%2E"))));
+        assert!(
+            fs::read_to_string(site.join("packages/r").join(file))
+                .unwrap()
+                .contains(content)
+        );
+    }
     let index = fs::read_to_string(site.join("index.html")).unwrap();
     assert!(index.contains("Comparing predictions"));
     let guide = fs::read_to_string(site.join("guides/comparing-predictions.html")).unwrap();
