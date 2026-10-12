@@ -5,6 +5,113 @@ use diplodocus::snapshots::Snapshot;
 use diplodocus::validation::resolve_workspace;
 
 #[test]
+fn footer_survives_snapshot_generation_without_sources_and_escapes_its_content() {
+    let root = support::TestWorkspace::new();
+    root.write(
+        "diplodocus.toml",
+        r#"[project]
+name = 'Footer'
+[presentation.footer]
+docs-version = 'dev <preview>'
+copyright = '© 2026 A & B'
+licenses = [
+  {label='MIT', url='https://example.test/LICENSE-MIT'},
+  {label='Apache-2.0', url='https://example.test/LICENSE-APACHE'},
+]
+links = [
+  {label='<GitHub>', url='https://example.test/repo?a=1&b=2'},
+  {label='Report an issue', url='https://example.test/issues'},
+]
+built-with = true
+[[repository]]
+id = 'docs'
+path = '.'
+[[content]]
+id = 'guide'
+owner = 'project'
+repository = 'docs'
+path = 'docs'
+mount = ''
+format = 'gfm'
+"#,
+    );
+    root.write("docs/index.md", "# Home\n\nWelcome.\n");
+    root.write(
+        "docs/guide/nested.md",
+        "# Nested\n\n## Examples\n\nAn example.\n",
+    );
+    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+    let artifact = tempfile::tempdir().unwrap();
+    let path = artifact.path().join("snapshot.sqlite");
+    snapshot.publish(&path).unwrap();
+    let footer = snapshot.presentation().footer.clone();
+    drop(sources);
+    drop(root);
+    let loaded = Snapshot::load(&path).unwrap();
+    assert_eq!(loaded.presentation().footer, footer);
+    let rendered =
+        diplodocus::rendering::render_site(&diplodocus::site::Site::new(&loaded).unwrap()).unwrap();
+    for route in ["index.html", "guide/nested.html"] {
+        let html = std::str::from_utf8(&rendered.files()[route].bytes).unwrap();
+        assert_eq!(html.matches("<footer class=\"site-footer\">").count(), 1);
+        let footer = html.split("<footer class=\"site-footer\">").nth(1).unwrap();
+        assert!(html.find("</main>").unwrap() < html.find("<footer").unwrap());
+        assert!(footer.contains("Docs: dev &lt;preview&gt;"));
+        assert!(footer.contains("© 2026 A &amp; B"));
+        assert!(
+            footer.contains("href=\"https://example.test/repo?a=1&amp;b=2\">&lt;GitHub&gt;</a>")
+        );
+        assert!(footer.contains("href=\"https://example.test/LICENSE-MIT\">MIT</a> or <a"));
+        assert!(footer.contains("href=\"https://example.test/LICENSE-APACHE\">Apache-2.0</a>"));
+        assert!(footer.contains("href=\"https://example.test/issues\">Report an issue</a>"));
+        assert!(footer.contains("Built with <a href=\"https://diplodocus.cc/\">Diplodocus</a>"));
+    }
+    let search = std::str::from_utf8(&rendered.files()["assets/search.json"].bytes).unwrap();
+    assert!(!search.contains("preview"));
+    assert!(!search.contains("Report an issue"));
+}
+
+#[test]
+fn footer_omits_unconfigured_content_and_credit_is_optional() {
+    for (settings, expected) in [
+        ("", None),
+        ("[presentation.footer]\n", None),
+        ("[presentation.footer]\nbuilt-with=false\n", None),
+        (
+            "[presentation.footer]\ndocs-version='main'\n",
+            Some("<p>Docs: main</p>"),
+        ),
+        (
+            "[presentation.footer]\nbuilt-with=true\n",
+            Some("<p>Built with <a href=\"https://diplodocus.cc/\">Diplodocus</a></p>"),
+        ),
+    ] {
+        let root = support::TestWorkspace::new();
+        root.write(
+            "diplodocus.toml",
+            format!("[project]\nname='Footer'\n{settings}"),
+        );
+        let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+        let snapshot =
+            Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+        let rendered =
+            diplodocus::rendering::render_site(&diplodocus::site::Site::new(&snapshot).unwrap())
+                .unwrap();
+        let html = std::str::from_utf8(&rendered.files()["index.html"].bytes).unwrap();
+        match expected {
+            Some(content) => {
+                assert!(html.contains(&format!("<footer class=\"site-footer\">{content}</footer>")))
+            }
+            None => {
+                assert!(!html.contains("<footer"));
+                assert!(!snapshot.canonical_export().unwrap().contains("\"footer\""));
+            }
+        }
+    }
+}
+
+#[test]
 fn eulerr_datasets_survive_snapshots_and_render_bare_usage_format_and_source() {
     let root = support::acceptance_workspace();
     support::add_r_datasets(&root);

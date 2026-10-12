@@ -6,6 +6,19 @@ description = "Guides for building Python and R documentation with Diplodocus."
 site-url = "https://diplodocus.cc/"
 canonical-url-style = "clean"
 
+[presentation.footer]
+docs-version = "dev"
+copyright = "© 2026 Johan Larsson"
+licenses = [
+  { label = "MIT", url = "https://github.com/jolars/diplodocus/blob/main/LICENSE-MIT" },
+  { label = "Apache-2.0", url = "https://github.com/jolars/diplodocus/blob/main/LICENSE-APACHE" },
+]
+links = [
+  { label = "GitHub", url = "https://github.com/jolars/diplodocus" },
+  { label = "Report an issue", url = "https://github.com/jolars/diplodocus/issues" },
+]
+built-with = true
+
 [[repository]]
 id = "diplodocus"
 path = "."

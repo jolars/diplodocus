@@ -74,6 +74,32 @@ for (const [path, title, name] of [
   });
 }
 
+test("footer identifies the docs and exposes project, license, and generator links", async ({ page }, info) => {
+  for (const path of ["/", "/guides/comparing-predictions.html", "/packages/r/"]) {
+    await page.goto(path);
+    const footer = page.getByRole("contentinfo");
+    await expect(footer).toHaveCount(1);
+    await expect(footer).toBeVisible();
+    await expect(footer).toContainText("Docs: dev");
+    await expect(footer).toContainText("© 2026 Johan Larsson");
+    await expect(footer).toContainText("MIT or Apache-2.0");
+    for (const [label, url] of [
+      ["GitHub", "https://github.com/jolars/diplodocus"],
+      ["Report an issue", "https://github.com/jolars/diplodocus/issues"],
+      ["MIT", "https://github.com/jolars/diplodocus/blob/main/LICENSE-MIT"],
+      ["Apache-2.0", "https://github.com/jolars/diplodocus/blob/main/LICENSE-APACHE"],
+      ["Diplodocus", "https://diplodocus.cc/"],
+    ]) {
+      await expect(footer.getByRole("link", { name: label, exact: true })).toHaveAttribute("href", url);
+    }
+    const main = await page.getByRole("main").boundingBox();
+    const box = await footer.boundingBox();
+    expect(box!.y).toBeGreaterThanOrEqual(main!.y + main!.height);
+    await fitsViewport(page);
+  }
+  await capture(page, info, "footer");
+});
+
 test("search finds all three APIs and follows a result", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("searchbox").fill("mean_squared_error");

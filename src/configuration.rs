@@ -80,6 +80,9 @@ pub struct PresentationDefaults {
     /// Public URL spelling used by canonical links and the sitemap.
     #[serde(skip_serializing_if = "CanonicalUrlStyle::is_default")]
     pub canonical_url_style: CanonicalUrlStyle,
+    /// Optional notices and links shown at the bottom of every page.
+    #[serde(skip_serializing_if = "FooterDefaults::is_default")]
+    pub footer: FooterDefaults,
 }
 
 impl PresentationDefaults {
@@ -90,6 +93,65 @@ impl PresentationDefaults {
     pub(crate) fn site_base_url(&self) -> Result<Option<url::Url>, &'static str> {
         self.site_url.as_deref().map(parse_site_url).transpose()
     }
+}
+
+/// Portable footer content; omitted fields do not appear in the generated site.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, rename_all = "kebab-case", deny_unknown_fields)]
+pub struct FooterDefaults {
+    /// Free-form documentation release or branch label, independent of package versions.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub docs_version: Option<String>,
+    /// Complete copyright notice, including the symbol, years, and holder.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub copyright: Option<String>,
+    /// Alternative licenses for the site's content, displayed with "or" between them.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub licenses: Vec<FooterLink>,
+    /// Project links, in display order.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub links: Vec<FooterLink>,
+    /// Whether to show a linked "Built with Diplodocus" credit.
+    pub built_with: bool,
+}
+
+impl FooterDefaults {
+    fn is_default(&self) -> bool {
+        self == &Self::default()
+    }
+}
+
+/// A labeled external footer link.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+pub struct FooterLink {
+    /// Link text, rendered without Markdown or HTML parsing.
+    pub label: String,
+    /// Absolute HTTP or HTTPS destination.
+    #[serde(deserialize_with = "deserialize_footer_url")]
+    pub url: String,
+}
+
+fn deserialize_footer_url<'de, D: Deserializer<'de>>(deserializer: D) -> Result<String, D::Error> {
+    let value = String::deserialize(deserializer)?;
+    let invalid =
+        "footer links must use absolute HTTP or HTTPS URLs without credentials or whitespace";
+    let url = url::Url::parse(&value).map_err(|_| D::Error::custom(invalid))?;
+    let authority = value
+        .split_once("://")
+        .map(|(_, rest)| rest.split(['/', '?', '#']).next().unwrap_or_default())
+        .ok_or_else(|| D::Error::custom(invalid))?;
+    if !matches!(url.scheme(), "http" | "https")
+        || url.host_str().is_none()
+        || authority.is_empty()
+        || authority.contains('@')
+        || value
+            .chars()
+            .any(|ch| ch.is_whitespace() || ch.is_control())
+    {
+        return Err(D::Error::custom(invalid));
+    }
+    Ok(value)
 }
 
 /// How a host exposes the generated HTML files to crawlers.

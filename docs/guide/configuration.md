@@ -62,7 +62,7 @@ enable it when the collection forbids it. `check` never runs cells. `extract`,
 
 ## Presentation
 
-An optional table controls the site name, HTML description, and public URL:
+An optional table controls the site name, HTML description, public URL, and footer:
 
 ```toml
 [presentation]
@@ -70,12 +70,39 @@ title = "Foo documentation"
 description = "Guides and API documentation for Foo."
 site-url = "https://example.com/docs/"
 canonical-url-style = "file"
+
+[presentation.footer]
+docs-version = "v1.0.0"
+copyright = "© 2026 Foo contributors"
+licenses = [
+  { label = "MIT", url = "https://github.com/example/foo/blob/main/LICENSE" },
+]
+links = [
+  { label = "GitHub", url = "https://github.com/example/foo" },
+  { label = "Report an issue", url = "https://github.com/example/foo/issues" },
+]
+built-with = true
 ```
 
 The title defaults to `project.name`. Diplodocus uses its built-in theme.
 Generated sites and portable snapshots keep the presentation metadata, so
 `generate` does not need the original configuration. Read about [portable
 snapshots](snapshots.md) before separating extraction and generation.
+
+The footer appears at the bottom of every page. All its fields are optional,
+and omitting the table produces no footer. `docs-version` is a free-form label
+such as `v1.0.0`, `dev`, or `main`; it identifies the documentation release or
+branch independently of individual package versions. Diplodocus does not infer
+the label or copyright notice from package metadata or the build date.
+
+`copyright` supplies the complete notice, including the symbol, years, and
+holder. `licenses` links to alternative licenses for the site's content and
+joins them with "or". Package-specific licenses remain on their package pages.
+`links` supplies project links in display order. Each license or project link
+requires a text `label` and an absolute HTTP or HTTPS `url` without credentials
+or whitespace. Footer text is escaped rather than parsed as Markdown or HTML.
+`built-with` defaults to `false`; setting it to `true` adds a linked
+"Built with Diplodocus" credit.
 
 Set `site-url` to generate `sitemap.xml`, `robots.txt`, and canonical links in
 HTML pages. It must be an absolute HTTP or HTTPS URL without credentials, query

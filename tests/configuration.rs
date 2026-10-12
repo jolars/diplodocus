@@ -17,6 +17,9 @@ fn kebab_case_configuration() -> String {
     source.push_str(
         "\n[presentation]\nsite-url = 'https://example.test/docs/'\ncanonical-url-style = 'clean'\n",
     );
+    source.push_str(
+        "\n[presentation.footer]\ndocs-version = 'dev'\ncopyright = '© 2026 Contributors'\nlicenses = [{ label = 'MIT', url = 'https://example.test/LICENSE' }]\nlinks = [{ label = 'GitHub', url = 'https://example.test/repo' }]\nbuilt-with = true\n",
+    );
     source
 }
 
@@ -42,6 +45,8 @@ fn configuration_rejects_snake_case_keys() {
         "version-constraint",
         "site-url",
         "canonical-url-style",
+        "docs-version",
+        "built-with",
     ] {
         let old_field = field.replace('-', "_");
         let error = parse_configuration(&source.replace(field, &old_field)).unwrap_err();
@@ -116,6 +121,48 @@ fn presentation_settings_accept_only_portable_display_metadata() {
         parse_configuration(&toml::to_string(&config).unwrap()).unwrap(),
         config
     );
+}
+
+#[test]
+fn footer_links_reject_unsafe_or_ambiguous_urls() {
+    for field in ["licenses", "links"] {
+        for url in [
+            "javascript:alert(1)",
+            "data:text/html,hello",
+            "file:///tmp/license",
+            "//example.test/license",
+            "license.html",
+            "https:example.test",
+            "https:///example.test",
+            "https://user:pass@example.test/",
+            "https://@example.test/",
+            " https://example.test/",
+            "https://example.test/a b",
+            "https://example.test/\n",
+        ] {
+            let source = format!(
+                "[project]\nname='Docs'\n[presentation.footer]\n{field}=[{{label='License',url={}}}]\n",
+                toml::Value::String(url.into())
+            );
+            assert!(parse_configuration(&source).is_err(), "{field}: {url:?}");
+        }
+    }
+    for settings in [
+        "docs-version = 1",
+        "copyright = false",
+        "built-with = 'yes'",
+        "links = [{ url = 'https://example.test/' }]",
+        "licenses = [{ label = 'MIT' }]",
+        "unknown = true",
+    ] {
+        assert!(
+            parse_configuration(&format!(
+                "[project]\nname='Docs'\n[presentation.footer]\n{settings}\n"
+            ))
+            .is_err(),
+            "{settings}"
+        );
+    }
 }
 
 #[test]

@@ -239,6 +239,16 @@ directory prefix and emits a sitemap, robots file, and HTML canonical links.
 The generator retains the declared URL spelling in storage and normalizes it
 only when constructing public URLs.
 
+An optional `footer` object retains `docs-version`, `copyright`, `licenses`,
+`links`, and `built-with`. The first two fields are optional strings. The link
+arrays contain objects with a text `label` and an absolute HTTP or HTTPS `url`
+without credentials or whitespace. License links describe alternative licenses
+for site content. `built-with` is a Boolean that defaults to false. Generation
+escapes footer text, preserves link order, and omits absent content. The docs
+version label is independent of package versions and the snapshot producer.
+Writers omit the default footer object, preserving the presentation record's
+shape and fingerprint when no footer is configured.
+
 Writers omit a null `site-url` and the default `canonical-url-style`. This keeps
 the record's original shape and fingerprints when crawler metadata is unused,
 so the current reader can load earlier storage-version-2 snapshots without

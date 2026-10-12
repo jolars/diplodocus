@@ -1,5 +1,6 @@
 //! Rendering of validated site models into static output.
 
+mod footer;
 mod html;
 mod katex_assets;
 mod math;
