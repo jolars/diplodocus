@@ -209,7 +209,7 @@ impl<'a> Site<'a> {
                 let mut model = PageModel::empty(
                     title,
                     Some(id.clone()),
-                    package.visibility != PackageVisibility::Hidden,
+                    package.visibility != PackageVisibility::Hidden && item.discoverable(),
                 );
                 model.document = item.documentation.as_ref();
                 model.resolved = records.get(&identity).copied();

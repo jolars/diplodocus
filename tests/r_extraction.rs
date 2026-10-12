@@ -76,8 +76,237 @@ fn base_s3_generics_resolve_without_explicit_imports() {
 }
 
 #[test]
+fn standard_s3_generics_resolve_from_defaults_and_whole_package_imports() {
+    for (generic, package, namespace) in [
+        ("coef", "stats", ""),
+        ("coefficients", "stats", ""),
+        ("fitted", "stats", ""),
+        ("residuals", "stats", ""),
+        ("plot", "base", ""),
+        ("sort", "base", ""),
+        ("as.data.frame", "base", ""),
+        ("[", "base", ""),
+        ("/", "base", ""),
+        ("|", "base", ""),
+        ("Ops", "base", ""),
+        ("hist", "graphics", ""),
+        ("head", "utils", ""),
+        ("as.raster", "grDevices", ""),
+        ("makeContent", "grid", "import(grid)"),
+        ("makeContext", "grid", "import(grid)"),
+        ("predict", "stats", "import(stats)"),
+    ] {
+        let binding = format!("{generic}.euler");
+        let result = extract(&small(
+            &format!("`{binding}` <- function(x, ...) stop('must not execute')"),
+            &format!("{namespace}\nS3method(\"{generic}\", euler)"),
+            &topic(&binding, &format!("\\method{{{generic}}}{{euler}}(x, ...)")),
+        ));
+        assert!(
+            result
+                .diagnostics
+                .iter()
+                .all(|d| d.severity != Severity::Error),
+            "{generic}: {:?}",
+            result.diagnostics
+        );
+        assert!(matches!(&item(&result, &binding).language_data,
+            Some(ItemLanguageData::R(data)) if matches!(&data.declaration,
+                RDeclaration::S3Method { generic: RGenericReference::External { package: actual, name }, .. }
+                if actual == package && name == generic)));
+    }
+    let missing = extract(&small(
+        "makeContent.foo <- function(x) x",
+        "S3method(makeContent, foo)",
+        "",
+    ));
+    assert!(codes(&missing).contains(&"r-unresolved-definition"));
+}
+
+#[test]
+fn ambiguous_or_shadowed_default_generics_do_not_resolve() {
+    for (source, namespace) in [
+        ("print <- 1", ""),
+        ("if (TRUE) print <- function(x) x", ""),
+        ("print <- function(x) x", ""),
+        ("", "importFrom(other, print)\nimportFrom(another, print)"),
+        ("", "import(unknown)"),
+        ("", "import(grid)\nimportFrom(other, makeContent)"),
+    ] {
+        let generic = if namespace.contains("makeContent") {
+            "makeContent"
+        } else {
+            "print"
+        };
+        let binding = format!("{generic}.foo");
+        let result = extract(&small(
+            &format!("{source}\n{binding} <- function(x) x"),
+            &format!("{namespace}\nS3method({generic}, foo)"),
+            "",
+        ));
+        assert!(
+            codes(&result).contains(&"r-unresolved-definition"),
+            "{source} {namespace}"
+        );
+        assert!(!result.items.values().any(|i| i.name == binding));
+    }
+    let explicit = extract(&small(
+        "print.foo <- function(x) x",
+        "importFrom(other, print)\nS3method(print, foo)",
+        "",
+    ));
+    assert!(
+        matches!(&item(&explicit, "print.foo").language_data, Some(ItemLanguageData::R(data))
+        if matches!(&data.declaration, RDeclaration::S3Method { generic: RGenericReference::External { package, .. }, .. } if package == "other"))
+    );
+}
+
+#[test]
+fn documented_helpers_and_grid_hooks_retain_internal_semantics() {
+    let workspace = small(
+        "setup_gpar <- function(default = list(), user = list(), n) stop('must not execute')\nundocumented <- function(x) x\nmakeContent.EulerGlyphs <- function(x) x",
+        "import(grid)\nS3method(makeContent, EulerGlyphs)",
+        &format!(
+            "{}\\keyword{{internal}}",
+            topic(
+                "setup_gpar",
+                "setup_gpar(default = list(), user = list(), n)"
+            )
+        ),
+    );
+    workspace.write(
+        "r/man/hook.Rd",
+        format!(
+            "{}\\keyword{{internal}}",
+            topic(
+                "makeContent.EulerGlyphs",
+                "\\method{makeContent}{EulerGlyphs}(x)"
+            )
+        ),
+    );
+    let result = extract(&workspace);
+    assert!(
+        result
+            .diagnostics
+            .iter()
+            .all(|d| d.severity != Severity::Error),
+        "{:?}",
+        result.diagnostics
+    );
+    assert_eq!(result.items.len(), 2);
+    for name in ["setup_gpar", "makeContent.EulerGlyphs"] {
+        let helper = item(&result, name);
+        assert!(!helper.discoverable());
+        assert!(helper.documentation.is_some());
+        assert!(!helper.signatures.is_empty());
+        assert!(
+            matches!(&helper.language_data, Some(ItemLanguageData::R(data)) if !data.exported && data.internal)
+        );
+    }
+}
+
+#[test]
+fn internal_documentation_cannot_invent_or_disambiguate_helpers() {
+    for source in [
+        "",
+        "helper <- 1",
+        "helper <- function(x) x\nhelper <- function(x) x",
+        "if (TRUE) helper <- function(x) x",
+    ] {
+        let result = extract(&small(
+            source,
+            "",
+            &format!("{}\\keyword{{internal}}", topic("helper", "helper(x)")),
+        ));
+        assert!(codes(&result).contains(&"r-unresolved-definition"));
+        assert!(result.items.is_empty());
+    }
+}
+
+#[test]
+#[ignore = "Requires a local eulerr checkout via DIPLODOCUS_EULERR_PATH."]
+fn eulerr_source_resolves_registered_generics_and_documented_helpers() {
+    let checkout = std::path::PathBuf::from(
+        std::env::var_os("DIPLODOCUS_EULERR_PATH")
+            .expect("Set DIPLODOCUS_EULERR_PATH to an eulerr checkout"),
+    );
+    let workspace = small("", "", "");
+    let namespace = std::fs::read_to_string(checkout.join("NAMESPACE")).unwrap();
+    workspace.write("r/NAMESPACE", &namespace);
+    workspace.write(
+        "r/DESCRIPTION",
+        std::fs::read(checkout.join("DESCRIPTION")).unwrap(),
+    );
+    for directory in ["R", "man"] {
+        let path = checkout.join(directory);
+        for file in support::files_under(&path) {
+            workspace.write(
+                std::path::Path::new("r").join(directory).join(&file),
+                std::fs::read(path.join(&file)).unwrap(),
+            );
+        }
+    }
+    let result = extract(&workspace);
+    let method_count = result.items.values().filter(|item| matches!(&item.language_data, Some(ItemLanguageData::R(data)) if matches!(data.declaration, RDeclaration::S3Method { .. }))).count();
+    assert_eq!(
+        method_count,
+        namespace
+            .lines()
+            .filter(|line| line.starts_with("S3method("))
+            .count(),
+        "{:?}",
+        result.diagnostics
+    );
+    for (binding, package, generic) in [
+        ("coef.euler", "stats", "coef"),
+        ("fitted.euler", "stats", "fitted"),
+        ("residuals.euler", "stats", "residuals"),
+        ("plot.euler", "base", "plot"),
+        ("/.eulergram", "base", "/"),
+        ("|.eulergram", "base", "|"),
+        ("makeContent.EulerGlyphs", "grid", "makeContent"),
+        ("makeContext.EulerPanel", "grid", "makeContext"),
+    ] {
+        assert!(
+            matches!(&item(&result, binding).language_data, Some(ItemLanguageData::R(data)) if matches!(&data.declaration,
+            RDeclaration::S3Method { generic: RGenericReference::External { package: actual_package, name }, .. }
+            if actual_package == package && name == generic))
+        );
+    }
+    for name in [
+        "setup_gpar",
+        "setup_grobs",
+        "is_integer",
+        "is_real",
+        "makeContent.EulerGlyphs",
+        "makeContent.EulerTags",
+        "makeContent.EulerSetLabels",
+        "makeContext.EulerPanel",
+    ] {
+        let helper = item(&result, name);
+        assert!(!helper.discoverable(), "{name}");
+        assert!(helper.documentation.is_some(), "{name}");
+        assert!(
+            matches!(&helper.language_data, Some(ItemLanguageData::R(data)) if !data.exported && data.internal)
+        );
+        assert!(
+            !result
+                .diagnostics
+                .iter()
+                .any(|d| d.severity == Severity::Error && d.message.contains(name)),
+            "{name}: {:?}",
+            result.diagnostics
+        );
+    }
+    eprintln!(
+        "Resolved {method_count} eulerr S3 registrations; {} total items.",
+        result.items.len()
+    );
+}
+
+#[test]
 fn package_rd_topic_is_documented_without_a_function() {
-    let rd = r"\name{rfoo-package}\alias{rfoo}\alias{rfoo-package}\title{R Foo}\description{Package description.}\docType{package}";
+    let rd = r"\name{rfoo-package}\alias{rfoo}\alias{rfoo-package}\title{R Foo}\description{Package description.}\docType{package}\keyword{internal}";
     let result = extract(&small("", "", rd));
     assert!(!codes(&result).contains(&"r-unresolved-definition"));
     assert!(!codes(&result).contains(&"unsupported-rd"));
@@ -85,6 +314,7 @@ fn package_rd_topic_is_documented_without_a_function() {
     assert!(matches!(package.kind, diplodocus::ir::ItemKind::Namespace));
     assert!(package.signatures.is_empty());
     assert!(package.documentation.is_some());
+    assert!(package.discoverable());
     assert!(
         package
             .aliases
@@ -796,24 +1026,62 @@ fn input_paths_that_cannot_be_serialized_are_diagnosed() {
 }
 
 #[test]
-fn extraction_succeeds_without_a_runtime_on_path() {
+fn extraction_reports_missing_r_on_path() {
     const PROBE: &str = "DIPLODOCUS_R_STATIC_PROBE";
     if std::env::var_os(PROBE).is_some() {
         let result = extract(&support::acceptance_workspace());
-        assert_eq!(result.items.len(), 7);
-        assert!(
-            result
-                .diagnostics
-                .iter()
-                .all(|d| d.severity == Severity::Warning)
-        );
+        assert!(result.items.is_empty());
+        assert!(codes(&result).contains(&"r-library-unavailable"));
         return;
     }
     let empty_path = support::TestWorkspace::new();
     let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args(["--exact", "extraction_succeeds_without_a_runtime_on_path"])
+        .args(["--exact", "extraction_reports_missing_r_on_path"])
         .env(PROBE, "1")
         .env("PATH", empty_path.path())
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+#[test]
+fn installed_dependency_imports_resolve_without_loading_code_or_profiles() {
+    const PROBE: &str = "DIPLODOCUS_R_LIBRARY_PROBE";
+    if std::env::var_os(PROBE).is_some() {
+        let result = extract(&small(
+            "publicGeneric.foo <- function(x) x\nstop('Target code must not run.')",
+            "import(patterns)\nS3method(publicGeneric, foo)",
+            &topic("publicGeneric.foo", "\\method{publicGeneric}{foo}(x)"),
+        ));
+        assert!(
+            result
+                .diagnostics
+                .iter()
+                .all(|d| d.severity != Severity::Error),
+            "{:?}",
+            result.diagnostics
+        );
+        assert!(
+            matches!(&item(&result, "publicGeneric.foo").language_data, Some(ItemLanguageData::R(data))
+            if matches!(&data.declaration, RDeclaration::S3Method { generic: RGenericReference::External { package, name }, .. } if package == "patterns" && name == "publicGeneric"))
+        );
+        return;
+    }
+    let root = support::TestWorkspace::new();
+    root.write(".Rprofile", "stop('Project profiles must not run.')");
+    let output = std::process::Command::new(std::env::current_exe().unwrap())
+        .args([
+            "--exact",
+            "installed_dependency_imports_resolve_without_loading_code_or_profiles",
+        ])
+        .current_dir(root.path())
+        .env(PROBE, "1")
+        .env("R_LIBS", support::fixture_path("r-installed-library"))
+        .env("R_DEFAULT_PACKAGES", "patterns")
         .output()
         .unwrap();
     assert!(

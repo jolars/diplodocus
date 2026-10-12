@@ -37,6 +37,13 @@ declarations. It connects exports and S3 registrations to direct source
 definitions, then attaches supported Rd topics, aliases, usage, arguments, and
 prose. Rd examples remain display-only.
 
+Standard S3 generics from default R packages resolve without explicit imports.
+R must be available on `PATH`. Package-wide imports use the installed
+dependencies' metadata without loading their namespaces. Documented helpers
+retain their maintained signatures without requiring exports. Topics marked
+`\keyword{internal}` have addressable pages but stay out of navigation and search.
+See the R extraction contract below for discovery and import limits.
+
 Computed names, conditional namespace directives, dynamic construction, roxygen
 generation, and unsupported Rd markup are not evaluated. Unsupported markup
 stays visible with a diagnostic. For exact parser and identity rules, see the

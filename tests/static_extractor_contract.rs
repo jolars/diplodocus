@@ -51,6 +51,11 @@ fn parser_versions_are_pinned_and_match_the_contract() {
             "rd-ast = { version = \"=0.4.0\", default-features = false }",
             "| `rd-ast` | `0.4.0` |",
         ),
+        (
+            "rd-rds",
+            "rd-rds = { version = \"=0.5.0\", default-features = false, features = [\"lazyload\"] }",
+            "| `rd-rds` | `0.5.0` |",
+        ),
     ] {
         assert!(
             MANIFEST.contains(manifest_declaration),

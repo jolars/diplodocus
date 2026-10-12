@@ -279,6 +279,13 @@ pub struct Item {
     pub provenance: Vec<Provenance>,
 }
 
+impl Item {
+    /// Whether the declaration belongs in public navigation and search.
+    pub fn discoverable(&self) -> bool {
+        !matches!(&self.language_data, Some(super::ItemLanguageData::R(data)) if data.internal)
+    }
+}
+
 /// Common API item categories; typed language extensions are a separate layer.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]

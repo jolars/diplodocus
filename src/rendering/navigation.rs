@@ -188,7 +188,7 @@ fn package_pages(html: &mut String, site: &Site<'_>, route: &str, id: &str) {
         package_label(site, package),
         &format!("packages/{}/", package.slug),
     );
-    if package.items.is_empty() {
+    if !package.items.values().any(crate::ir::Item::discoverable) {
         return;
     }
     html.push_str("<section class=\"nav-group\" role=\"group\" aria-label=\"API reference\"><h2>API reference</h2><ul>");
@@ -220,6 +220,9 @@ fn item_tree(
         return (String::new(), false);
     }
     let item = &package.items[item_id];
+    if !item.discoverable() {
+        return (String::new(), false);
+    }
     let title = if package.ecosystem == "julia" && item.kind == crate::ir::ItemKind::Method {
         item.signatures
             .first()

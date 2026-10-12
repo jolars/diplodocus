@@ -20,8 +20,9 @@ devenv shell
 task preview
 ```
 
-Open the local URL printed by the command. This example builds without Python,
-R, Julia, or Jupyter kernels at runtime. The [quick start](docs/guide/quick-start.md)
+Open the local URL printed by the command. This example uses R to discover
+installed package metadata, without loading the documented package. It does not
+need Python, Julia, or Jupyter kernels. The [quick start](docs/guide/quick-start.md)
 shows direct CLI commands, Diplodocus's own documentation site, and the broader
 acceptance workspace.
 

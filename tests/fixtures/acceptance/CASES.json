@@ -799,7 +799,7 @@
         "tests/fixtures/acceptance/workspace/diplodocus.toml"
       ],
       "action": "Run check for every case with kernels unavailable and no site or cache directory, then repeat with a preexisting cache.",
-      "expected": "Diagnostics match each check array; warnings exit zero and errors nonzero; no kernel discovery, runtime launch, network request, cache access/mutation, execution assets, snapshot publication, or site writes occur.",
+      "expected": "Diagnostics match each check array; warnings exit zero and errors nonzero; no kernel discovery, kernel launch, network request, cache access/mutation, execution assets, snapshot publication, or site writes occur.",
       "milestone": 7
     },
     {
@@ -834,7 +834,7 @@
         "tests/fixtures/acceptance/workspace/diplodocus.toml",
         "tests/extract_command.rs"
       ],
-      "action": "Set every collection to mode = never in a temporary baseline; run extract from the configuration directory and another working directory, using default, relative, and absolute output paths with runtimes unavailable.",
+      "action": "Set every collection to mode = never in a temporary baseline; run extract from the configuration directory and another working directory, using default, relative, and absolute output paths with R available and kernels unused.",
       "expected": "The default snapshot is .diplodocus/documentation.sqlite beside the configuration; an explicit --output is relative to the working directory or absolute. Every snapshot has the same canonical content, warnings remain visible, and no site or execution cache is created.",
       "milestone": 7
     },

@@ -18,13 +18,14 @@ use super::{diagnostic, located, provenance, source};
 
 pub(super) struct Topic {
     name: String,
-    package: bool,
-    aliases: Vec<String>,
+    pub(super) package: bool,
+    pub(super) aliases: Vec<String>,
+    pub(super) internal: bool,
     parts: Vec<Part>,
     usages: Vec<Usage>,
     source: SourceLocation,
     raw: String,
-    valid: bool,
+    pub(super) valid: bool,
     pub(super) uses_r: bool,
 }
 
@@ -145,6 +146,11 @@ pub(super) fn parse(
         .flatten()
         .and_then(plain)
         .is_some_and(|kind| kind.trim() == "package");
+    let internal = !package
+        && document.nodes().iter().any(|node| {
+            matches!(node, RdNode::Tagged(tagged) if *tagged.tag() == RdTag::Keyword
+            && plain(tagged.children()).is_some_and(|keyword| keyword.trim() == "internal"))
+        });
     let mut aliases = vec![];
     for alias in document.inspect_aliases() {
         match alias {
@@ -287,6 +293,7 @@ pub(super) fn parse(
     Some(Topic {
         name: name.trim().into(),
         package,
+        internal,
         aliases,
         parts,
         usages,
@@ -829,7 +836,7 @@ pub(super) fn attach(
                     DiagnosticCode::RUnresolvedDefinition,
                     Severity::Error,
                     format!(
-                        "Rd usage `{}` has no maintained public declaration.",
+                        "Rd usage `{}` has no unambiguous maintained declaration.",
                         usage.name
                     ),
                     &topic.source,
@@ -935,6 +942,9 @@ pub(super) fn attach(
         }
         let (index, aliases) = &candidates[0];
         let topic = &topics[*index];
+        if let Some(ItemLanguageData::R(data)) = &mut item.language_data {
+            data.internal = topic.internal;
+        }
         for alias in aliases {
             if alias_targets[alias].len() != 1 {
                 diagnostics.push(diagnostic(

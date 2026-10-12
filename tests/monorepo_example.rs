@@ -7,12 +7,12 @@ use std::process::Command;
 use diplodocus::snapshots::Snapshot;
 
 fn run(root: &Path, arguments: &[&str]) {
-    let output = Command::new(env!("CARGO_BIN_EXE_diplodocus"))
-        .current_dir(root)
-        .args(arguments)
-        .env("PATH", "")
-        .output()
-        .unwrap();
+    let mut command = Command::new(env!("CARGO_BIN_EXE_diplodocus"));
+    command.current_dir(root).args(arguments);
+    if arguments.first() == Some(&"generate") {
+        command.env("PATH", "");
+    }
+    let output = command.output().unwrap();
     assert!(
         output.status.success(),
         "{arguments:?}: {}",
@@ -21,7 +21,7 @@ fn run(root: &Path, arguments: &[&str]) {
 }
 
 #[test]
-fn monorepo_example_builds_without_runtimes_and_generates_without_sources() {
+fn monorepo_example_builds_with_r_and_generates_without_sources_or_runtimes() {
     let root = support::TestWorkspace::new();
     let example = Path::new(env!("CARGO_MANIFEST_DIR")).join("examples/monorepo");
     root.write(

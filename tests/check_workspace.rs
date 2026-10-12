@@ -23,7 +23,6 @@ fn check_runs_the_static_pipeline_with_missing_kernels_and_leaves_files_unchange
     assert_eq!(tree(root.path()), before);
     Command::new(cargo_bin("diplodocus"))
         .current_dir(root.path())
-        .env("PATH", "")
         .args(["check", "--config", "workspace/diplodocus.toml"])
         .assert()
         .success()

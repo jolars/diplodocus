@@ -6,9 +6,11 @@ Status: Accepted. Date: 2026-09-09.
 
 Diplodocus must document the configured Python and R packages without importing
 them, loading a namespace, installing dependencies, or running package code. The
-acceptance workspace includes a Python extension represented only by a stub,
-computed exports, R S3 methods, and dynamic `Rd`. Runtime inspection cannot be a
-prerequisite or an implicit recovery path.
+R library discovery is a bounded exception: it probes the installed R with
+profiles and default package attachment disabled, then Rust reads installed
+namespace metadata. It never loads the documented package or its dependencies.
+The acceptance workspace includes a Python extension represented only by a stub,
+computed exports, R S3 methods, and dynamic `Rd`. Evaluating documented code cannot be a prerequisite or an implicit recovery path.
 
 Extraction must preserve language-specific structure and the evidence for each
 fact. Syntax recognition alone does not settle visibility, canonical identity,
@@ -75,6 +77,11 @@ invent exact ranges from a structural path or substring search.
 
 ## Alternatives
 
+The installed R metadata reader uses `rd-rds` 0.5.0 with its `lazyload` feature
+and default features disabled. R discovery only reports library locations,
+base bindings, and known generic coordinates. Rust reads dependency exports
+from installed namespace metadata and lazy-load indexes without evaluating code.
+
 These alternatives were evaluated for the pinned parser versions. Their
 rejection does not claim that every parser lacks useful capabilities.
 
@@ -87,7 +94,7 @@ rejection does not claim that every parser lacks useful capabilities.
   | `python-parser` 0.2.0                                                                 | Reject for the declared Python 3.11 fixture because the compared grammar is too old.                                                                                                                                                                                   |
   | Generic TOML decoding                                                                 | Reject for package metadata. The selected crate already models the packaging schema and constraints.                                                                                                                                                                   |
   | Ruff lexical docstring helpers, indentation-only `docstring`, or a new section parser | Reject the first two as the NumPy section parser; defer a new implementation because `pydocstring` exposes the required sections and ranges.                                                                                                                           |
-  | `Rscript`, package/namespace loading, `tools::parse_Rd()`, or roxygen execution       | Reject. They require a language runtime or execution to obtain facts available from maintained source.                                                                                                                                                                 |
+  | Package/namespace loading, `tools::parse_Rd()`, or roxygen execution       | Reject. They execute code to obtain facts available from maintained source or installed metadata.                                                                                                                                                                 |
   | Regexes, generic text parsing, or a new R/Rd parser                                   | Reject as the primary path. The selected native grammars already preserve formal/default structure, namespace declarations, Rd markup, and diagnostic evidence. This is an assessment against the boundary and corpus, not a performance benchmark of other R parsers. |
   | Lossy `Rd` convenience views or Rd-to-Markdown conversion as the extraction boundary  | Reject. They can flatten markup, hide duplicate sections, and discard the distinctions needed for API identity and source attribution.                                                                                                                                 |
 

@@ -28,13 +28,16 @@ cache key derived from it.
 All extractors declare `mode = "static"`. This is the only MVP API-extraction
 mode. It means that an extractor:
 
-- runs in the Diplodocus process with Rust-native libraries;
-- reads only configured metadata and files reachable from the declared target;
-- never starts Python, R, Julia, Jupyter, a build backend, or another parser process;
+- parses source and installed metadata in the Diplodocus process with Rust-native libraries;
+- reads configured metadata and files reachable from the declared target;
+  R also reads installed namespace metadata for external name resolution;
+- never starts Python, Julia, Jupyter, a build backend, or another parser process;
+  R library discovery uses an isolated `R --vanilla` probe with profiles and
+  default package attachment disabled;
 - never imports, installs, builds, sources, attaches, or loads documented code;
 - evaluates only an extractor's explicitly supported constant subset; and
 - emits a diagnostic when required semantics cannot be established statically,
-  without falling back to runtime inspection.
+  without executing documented code.
 
 Static extraction may read a referenced source file to resolve a module,
 re-export, or documented definition. It may not follow that reference outside
@@ -110,6 +113,7 @@ extractor retains raw input and never invents a source range it cannot prove.
 | --- | --- | --- |
 | `arity-parser` | `0.6.0` | Parse `DESCRIPTION`, `NAMESPACE`, maintained R source, and supported Rd usage calls; record the selected grammar as `dcf`, `namespace`, or `r` for each input. Conditional namespace expressions and R calls remain unevaluated. |
 | `rd-source` | `0.4.0` | Parse checked-in `Rd` bytes and provide native diagnostics. Dynamic markup remains unresolved. |
+| `rd-rds` | `0.5.0` | Read installed namespace metadata and lazy-load indexes without loading packages. |
 | `rd-ast` | `0.4.0` | Interpret supported `Rd` semantics through strict shape-checking views, with default features disabled. Lossy convenience projections are not authoritative. |
 
 All three releases are exact pins in `Cargo.toml`. The extractor records both
@@ -218,9 +222,9 @@ several sources support one fact, their records are ordered by `role`, `path`,
 and `range`.
 
 Parser-native messages belong to diagnostics, not provenance. Local repository
-roots, timestamps, process IDs, host names, Python, R, or Julia runtime versions, and
-undeclared environment state are forbidden because static extraction neither
-uses them nor can serialize them portably.
+roots, timestamps, process IDs, host names, and local library paths are forbidden.
+R's installed metadata reader records the observed R version and fingerprints
+of effective export sets and known-generic coordinates as parser settings.
 
 ## Evidence
 

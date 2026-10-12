@@ -260,6 +260,9 @@ pub struct RItemData {
     /// Whether `NAMESPACE` explicitly exports the declaration by name.
     /// A registered S3 method can be public through dispatch without this flag.
     pub exported: bool,
+    /// An Rd topic marked `\\keyword{internal}`, retained but omitted from discovery.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub internal: bool,
     /// Supported maintained-source and namespace semantics.
     pub declaration: RDeclaration,
 }

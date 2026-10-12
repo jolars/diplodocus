@@ -404,6 +404,11 @@ An ordinary exported R function is:
 }
 ```
 
+`RItemData.internal` is an optional boolean that defaults to `false` and is
+omitted when false. A callable Rd topic with `\keyword{internal}` sets it to
+`true`, independently of `exported`. Internal items retain their declarations,
+documents, and routes, but generation omits them from navigation and search.
+
 The [language types](../../src/ir/languages.rs) define all tagged declarations:
 Python modules, callables, classes, properties, constants, fields, and type
 aliases; R functions, S3 generics, S3 methods, and constructors. Family,

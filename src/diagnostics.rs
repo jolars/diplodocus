@@ -127,6 +127,9 @@ pub enum DiagnosticCode {
     /// An R input cannot be read or decoded.
     #[serde(rename = "r-source-read")]
     RSourceRead,
+    /// Installed R library discovery or package metadata is unavailable.
+    #[serde(rename = "r-library-unavailable")]
+    RLibraryUnavailable,
     /// Maintained R source has syntax errors.
     #[serde(rename = "r-syntax")]
     RSyntax,
@@ -334,6 +337,7 @@ impl DiagnosticCode {
             Self::NonDeterministicExecution => "non-deterministic-execution",
             Self::RMetadata => "r-metadata",
             Self::RSourceRead => "r-source-read",
+            Self::RLibraryUnavailable => "r-library-unavailable",
             Self::RSyntax => "r-syntax",
             Self::RUnsupportedNamespace => "r-unsupported-namespace",
             Self::RUnresolvedDefinition => "r-unresolved-definition",

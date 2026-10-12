@@ -59,7 +59,14 @@ fn static_workspace() -> support::TestWorkspace {
 }
 
 #[test]
-fn cli_paths_and_static_snapshot_match_the_contract_without_runtimes() {
+fn missing_r_prevents_snapshot_publication() {
+    let root = static_workspace();
+    failure(&extract(root.path(), None, true), "r-library-unavailable");
+    assert!(!root.path().join(DEFAULT_OUTPUT).exists());
+}
+
+#[test]
+fn cli_paths_and_static_snapshot_match_the_contract() {
     let root = static_workspace();
     let sources = assemble_workspace(root.path().join(CONFIG)).unwrap();
     let resolved = resolve_workspace(&sources).unwrap();
@@ -78,7 +85,7 @@ fn cli_paths_and_static_snapshot_match_the_contract_without_runtimes() {
     let expected = expected.canonical_export().unwrap();
     drop((sources, resolved));
 
-    let result = extract(root.path(), None, true);
+    let result = extract(root.path(), None, false);
     success(&result);
     assert_eq!(String::from_utf8(result.stderr).unwrap(), warnings);
     let default = root.path().join(DEFAULT_OUTPUT);
@@ -95,7 +102,7 @@ fn cli_paths_and_static_snapshot_match_the_contract_without_runtimes() {
     let portable = tempfile::tempdir().unwrap();
     let absolute = portable.path().join("absolute.sqlite");
     for output in [Path::new("exports/relative.sqlite"), absolute.as_path()] {
-        success(&extract(root.path(), Some(output), true));
+        success(&extract(root.path(), Some(output), false));
         assert_eq!(
             Snapshot::load(root.path().join(output))
                 .unwrap()
@@ -141,7 +148,7 @@ fn generated_snapshots_never_become_sources_or_change_input_fingerprints() {
         "r/man/export.Rd",
     ] {
         for _ in 0..2 {
-            success(&extract(root.path(), Some(Path::new(output)), true));
+            success(&extract(root.path(), Some(Path::new(output)), false));
             assert_eq!(
                 Snapshot::load(root.path().join(output))
                     .unwrap()
@@ -159,7 +166,6 @@ fn generated_snapshots_never_become_sources_or_change_input_fingerprints() {
     let result = Command::new(env!("CARGO_BIN_EXE_diplodocus"))
         .current_dir(root.path())
         .args(["check", "--config", CONFIG])
-        .env("PATH", "")
         .output()
         .unwrap();
     success(&result);
@@ -192,7 +198,7 @@ fn temporary_storage_does_not_enter_discovery_or_revalidation() {
     let current = assemble_workspace(&config).unwrap();
     assert_eq!(current.input_paths().collect::<Vec<_>>(), expected_inputs);
     assert_eq!(current.workspace(), original.workspace());
-    success(&extract(root.path(), None, true));
+    success(&extract(root.path(), None, false));
 }
 
 #[test]
@@ -202,7 +208,7 @@ fn older_snapshots_are_excluded_without_touching_their_recovery_files() {
     let original = assemble_workspace(&config).unwrap();
     // URI punctuation must remain part of the filename during read-only inspection.
     let output = Path::new("core/docs/older ?#%.md");
-    success(&extract(root.path(), Some(output), true));
+    success(&extract(root.path(), Some(output), false));
     let path = root.path().join(output);
     assert_eq!(&fs::read(&path).unwrap()[68..72], b"DIPL");
     let database = rusqlite::Connection::open(&path).unwrap();
@@ -241,7 +247,7 @@ fn source_aliases_to_snapshots_and_storage_are_excluded_within_the_boundary() {
         ("python/export.sqlite", "python/python/foo/alias.py"),
         ("r/export.sqlite", "r/R/alias.R"),
     ] {
-        success(&extract(root.path(), Some(Path::new(output)), true));
+        success(&extract(root.path(), Some(Path::new(output)), false));
         symlink(root.path().join(output), root.path().join(alias)).unwrap();
     }
     root.write("core/.diplodocus/staging", b"\xffpartial storage");
@@ -278,7 +284,7 @@ fn explicit_database_downloads_remain_inputs_and_cannot_be_overwritten() {
     let root = static_workspace();
     let config = root.path().join(CONFIG);
     let output = Path::new("core/docs/download.sqlite");
-    success(&extract(root.path(), Some(output), true));
+    success(&extract(root.path(), Some(output), false));
     let bytes = fs::read(root.path().join(output)).unwrap();
     let document = root.read("core/docs/index.md");
     root.write(
@@ -289,7 +295,7 @@ fn explicit_database_downloads_remain_inputs_and_cannot_be_overwritten() {
     let resolved = resolve_workspace(&sources).unwrap();
     assert!(resolved.assets().values().any(|asset| asset.bytes == bytes));
     failure(
-        &extract(root.path(), Some(output), true),
+        &extract(root.path(), Some(output), false),
         "output overlaps a declared input",
     );
     assert_eq!(fs::read(root.path().join(output)).unwrap(), bytes);
@@ -328,7 +334,7 @@ fn cli_rejects_every_kind_of_declared_input_before_execution() {
         ".",
     ] {
         failure(
-            &extract(root.path(), Some(Path::new(output)), true),
+            &extract(root.path(), Some(Path::new(output)), false),
             "output overlaps a declared input",
         );
     }
@@ -365,7 +371,7 @@ fn cli_rejects_input_aliases_and_a_default_destination_that_is_an_input() {
         None,
     ] {
         failure(
-            &extract(root.path(), output, true),
+            &extract(root.path(), output, false),
             "output overlaps a declared input",
         );
         assert_eq!(fs::read(&asset).unwrap(), bytes);
@@ -380,28 +386,28 @@ fn cli_rejects_input_aliases_and_a_default_destination_that_is_an_input() {
 #[test]
 fn cli_validation_and_publication_failures_preserve_the_previous_snapshot() {
     let root = static_workspace();
-    success(&extract(root.path(), None, true));
+    success(&extract(root.path(), None, false));
     let path = root.path().join(DEFAULT_OUTPUT);
     let before = fs::read(&path).unwrap();
     let page = root.read("core/docs/index.md");
     root.write("core/docs/index.md", "[`missing-reference`]\n");
     failure(
-        &extract(root.path(), None, true),
+        &extract(root.path(), None, false),
         "unresolved-item-reference",
     );
     assert_eq!(fs::read(&path).unwrap(), before);
     root.write("core/docs/index.md", page);
     let config = root.read(CONFIG);
     root.write(CONFIG, "not valid TOML");
-    failure(&extract(root.path(), None, true), "could not parse");
+    failure(&extract(root.path(), None, false), "could not parse");
     assert_eq!(fs::read(&path).unwrap(), before);
     root.write(CONFIG, config);
     root.write("core/docs/index.md", "# Refreshed\n");
     root.write(format!("{DEFAULT_OUTPUT}-journal"), "recovery sentinel");
-    failure(&extract(root.path(), None, true), "SQLite sidecar exists");
+    failure(&extract(root.path(), None, false), "SQLite sidecar exists");
     assert_eq!(fs::read(&path).unwrap(), before);
     root.remove(format!("{DEFAULT_OUTPUT}-journal"));
-    success(&extract(root.path(), None, true));
+    success(&extract(root.path(), None, false));
     assert!(
         Snapshot::load(&path)
             .unwrap()
@@ -475,7 +481,7 @@ fn executable_workspace() -> support::TestWorkspace {
 #[test]
 fn cli_execution_and_generated_reference_failures_preserve_the_previous_snapshot() {
     let root = executable_workspace();
-    success(&extract(root.path(), None, true));
+    success(&extract(root.path(), None, false));
     let path = root.path().join(DEFAULT_OUTPUT);
     let before = fs::read(&path).unwrap();
     let config = root.read(CONFIG);

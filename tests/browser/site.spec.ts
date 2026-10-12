@@ -1,6 +1,7 @@
 import { expect, test as base, type Page, type TestInfo } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
+import { createHash } from "node:crypto";
 
 const test = base.extend<{ browserErrors: string[] }>({
   baseURL: async ({}, use) => {
@@ -84,6 +85,27 @@ test("search finds all three APIs and follows a result", async ({ page }) => {
   await expect(results.getByRole("link", { name: "TinyStats.mean_squared_error · Tiny Stats for Julia", exact: true })).toBeVisible();
   await python.click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("tinystats.mean_squared_error");
+});
+
+test("internal R helpers and grid hooks remain addressable but undiscoverable", async ({ page }, info) => {
+  await page.goto("/packages/r/");
+  await openNavigation(page, info);
+  const navigation = page.getByRole("navigation", { name: "Documentation" });
+  const search = await (await page.request.get("/assets/search.json")).json();
+  for (const name of ["setup_gpar", "makeContent.EulerGlyphs"]) {
+    await expect(navigation.getByRole("link", { name, exact: true })).toHaveCount(0);
+    await expect(page.getByRole("main").getByRole("link", { name, exact: true })).toHaveCount(0);
+    expect(search.some((entry: { title: string }) => entry.title === name)).toBe(false);
+    await page.getByRole("searchbox").fill(name);
+    await expect(page.locator("#search-results").getByRole("link")).toHaveCount(0);
+  }
+  const item = "sid1:r:function:setup_gpar";
+  const route = createHash("sha256").update(item).digest("hex");
+  await page.goto(`/packages/r/reference/${route}.html`);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("setup_gpar");
+  await expect(page.getByRole("main")).toContainText("Prepare parameters.");
+  await fitsViewport(page);
+  await capture(page, info, "r-internal-helper");
 });
 
 async function openNavigation(page: Page, info: TestInfo) {

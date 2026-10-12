@@ -8,8 +8,10 @@ use crate::ir::{
 
 use super::{
     diagnostic, evidence,
+    libraries::Libraries,
     namespace::Namespace,
     provenance,
+    rd::Topic,
     source::{Definition, DefinitionValue},
 };
 
@@ -17,6 +19,8 @@ pub(super) fn reconcile(
     package: &str,
     definitions: &[Definition],
     namespace: &Namespace,
+    topics: &[Topic],
+    libraries: &Libraries,
     diagnostics: &mut Vec<Diagnostic>,
 ) -> BTreeMap<String, Item> {
     let mut result = BTreeMap::new();
@@ -50,6 +54,19 @@ pub(super) fn reconcile(
                 format!("No unambiguous maintained function defines `{name}`."),
                 source,
             )),
+        }
+    }
+    // Documentation can select a maintained helper without exporting it.
+    for alias in topics
+        .iter()
+        .filter(|topic| topic.valid && !topic.package)
+        .flat_map(|topic| &topic.aliases)
+    {
+        if let Some(definition) = resolve(alias, &bindings, &mut BTreeSet::new()) {
+            selected
+                .entry(definition.name.clone())
+                .or_default()
+                .insert(alias.clone());
         }
     }
     // Local generics are needed for method identity even without a name export.
@@ -94,21 +111,26 @@ pub(super) fn reconcile(
                 package: pkg.into(),
                 name: name.into(),
             })
-        } else if let Some(generic) = resolve(&method.generic, &bindings, &mut BTreeSet::new()) {
-            if matches!(
-                &generic.value,
-                DefinitionValue::Function {
-                    declaration: RDeclaration::S3Generic { .. },
-                    ..
+        } else if bindings.contains_key(method.generic.as_str()) {
+            let generic = resolve(&method.generic, &bindings, &mut BTreeSet::new());
+            generic.and_then(|generic| {
+                if matches!(
+                    &generic.value,
+                    DefinitionValue::Function {
+                        declaration: RDeclaration::S3Generic { .. },
+                        ..
+                    }
+                ) {
+                    identities
+                        .get(&generic.name)
+                        .cloned()
+                        .map(|item| RGenericReference::Workspace { item })
+                } else {
+                    None
                 }
-            ) {
-                identities
-                    .get(&generic.name)
-                    .cloned()
-                    .map(|item| RGenericReference::Workspace { item })
-            } else {
-                None
-            }
+            })
+        } else if !namespace.unknown_imports.is_empty() {
+            None
         } else {
             namespace
                 .imports
@@ -122,12 +144,7 @@ pub(super) fn reconcile(
                     if namespace.imports.contains_key(&method.generic) {
                         return None;
                     }
-                    ["print", "format", "dim"]
-                        .contains(&method.generic.as_str())
-                        .then(|| RGenericReference::External {
-                            package: "base".into(),
-                            name: method.generic.clone(),
-                        })
+                    libraries.default_generic(&method.generic)
                 })
         };
         let Some(generic) = generic else {
@@ -244,6 +261,7 @@ pub(super) fn reconcile(
                 exported: names
                     .iter()
                     .any(|name| namespace.exports.contains_key(name)),
+                internal: false,
                 declaration,
             })),
             aliases: vec![],

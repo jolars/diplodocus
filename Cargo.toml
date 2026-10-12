@@ -41,6 +41,8 @@ pydocstring = "=0.4.1"
 pyproject-toml = "=0.13.7"
 rd-ast = { version = "=0.4.0", default-features = false }
 rd-source = "=0.4.0"
+rd-rds = { version = "=0.5.0", default-features = false, features = ["lazyload"] }
+regex = "1.12"
 roxmltree = "=0.21.1"
 rowan = "=0.17.0"
 rusqlite = { version = "=0.40.2", default-features = false, features = ["bundled"] }

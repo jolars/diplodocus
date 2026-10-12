@@ -173,14 +173,19 @@ package with a Python extraction target, not separate Python and Rust packages.
 Internal bindings may be declared separately when their APIs are themselves
 intended documentation targets.
 
-Built-in extractors run in-process with Rust-native parsers and read only
-declared inputs. They never start a language runtime or external parser, execute
-package code, or invoke a build backend. Dynamic metadata and semantics outside
-the supported static subset produce diagnostics, with no runtime fallback.
+Built-in extractors parse declared sources in-process with Rust-native parsers.
+They never execute package code or invoke a build backend. R extraction requires
+an installed R for an isolated library-discovery probe, then reads installed
+dependency namespace metadata in Rust. The probe skips project profiles and
+default package attachment; it never loads the documented package or its
+dependencies. Dynamic metadata and semantics outside the supported static
+subset produce diagnostics instead of executing documented code.
 
-This keeps extraction usable without installing the documented packages or their
-language environments, including native extensions available only as stubs. It
-also leaves parser adaptation and semantic analysis under Diplodocus's control.
+Python and Julia extraction remain independent of their language runtimes,
+including Python native extensions available only as stubs. R package authors
+use their installed environment for external name resolution without requiring
+installation of the documented package. Parser adaptation and semantic analysis
+remain under Diplodocus's control.
 The cost is maintaining those adapters and accepting incomplete coverage of
 dynamic APIs. The [static-extraction
 decision](docs/decisions/0001-static-extraction.md) records the parser choices

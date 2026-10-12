@@ -1,5 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
-import { cpSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { appendFileSync, cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -56,6 +56,11 @@ if (mode === "serve-test") {
         recursive: true,
       });
     }
+    const internalTopics = join(root, "tests/fixtures/r-internal-topics");
+    for (const directory of ["R", "man"]) {
+      cpSync(join(internalTopics, directory), join(workspace, "r", directory), { recursive: true });
+    }
+    appendFileSync(join(workspace, "r/NAMESPACE"), `\n${readFileSync(join(internalTopics, "NAMESPACE"), "utf8")}`);
     process.exitCode = await run(process.env.DIPLODOCUS_BROWSER_BINARY, [
       "serve", "--config", join(workspace, "diplodocus.toml"),
       "--output", join(workspace, "site"),

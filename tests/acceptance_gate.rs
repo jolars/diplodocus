@@ -104,6 +104,7 @@ fn validate_registry(registry: &AcceptanceRegistry) {
         let prefix = format!("| `{id}`:");
         let rows: Vec<_> = matrix
             .lines()
+            .map(str::trim)
             .filter(|line| line.starts_with(&prefix))
             .collect();
         assert_eq!(rows.len(), 1, "duplicate criterion {id}");
@@ -141,14 +142,15 @@ fn validate_registry(registry: &AcceptanceRegistry) {
             "| `{}` | {inputs} | {} | {} | {} |",
             scenario.id, scenario.action, scenario.expected, scenario.milestone
         );
-        let prefix = format!("| `{}` |", scenario.id);
+        let key = format!("`{}`", scenario.id);
         let rows: Vec<_> = matrix
             .lines()
-            .filter(|line| line.starts_with(&prefix))
+            .map(|line| line.split('|').map(str::trim).collect::<Vec<_>>())
+            .filter(|columns| columns.get(1) == Some(&key.as_str()))
             .collect();
         assert_eq!(
             rows,
-            [expected_row.as_str()],
+            [expected_row.split('|').map(str::trim).collect::<Vec<_>>()],
             "scenario differs: {}",
             scenario.id
         );
@@ -168,7 +170,11 @@ fn validate_registry(registry: &AcceptanceRegistry) {
     let mut overlay_files = BTreeSet::new();
     for case in &registry.cases {
         assert!(support::is_relative_input(&case.config));
-        assert!(matrix.contains(&format!("| `{}` |", case.id)));
+        assert!(matrix.lines().any(|line| {
+            line.split('|')
+                .nth(1)
+                .is_some_and(|cell| cell.trim() == format!("`{}`", case.id))
+        }));
         let check: Vec<_> = case
             .check
             .iter()

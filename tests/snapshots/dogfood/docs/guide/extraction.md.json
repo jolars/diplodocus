@@ -2,7 +2,7 @@
   "document": {
     "span": {
       "start": 0,
-      "end": 3771
+      "end": 4225
     },
     "frontmatter": null,
     "blocks": [
@@ -839,47 +839,170 @@
         "inlines": [
           {
             "type": "text",
-            "value": "Computed names, conditional namespace directives, dynamic construction, roxygen",
+            "value": "Standard S3 generics from default R packages resolve without explicit imports.",
             "span": {
               "start": 2090,
-              "end": 2169
+              "end": 2168
             }
           },
           {
             "type": "soft-break",
             "span": {
+              "start": 2168,
+              "end": 2169
+            }
+          },
+          {
+            "type": "text",
+            "value": "R must be available on ",
+            "span": {
               "start": 2169,
-              "end": 2170
+              "end": 2192
+            }
+          },
+          {
+            "type": "code",
+            "value": "PATH",
+            "span": {
+              "start": 2192,
+              "end": 2198
+            }
+          },
+          {
+            "type": "text",
+            "value": ". Package-wide imports use the installed",
+            "span": {
+              "start": 2198,
+              "end": 2238
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2238,
+              "end": 2239
+            }
+          },
+          {
+            "type": "text",
+            "value": "dependencies' metadata without loading their namespaces. Documented helpers",
+            "span": {
+              "start": 2239,
+              "end": 2314
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2314,
+              "end": 2315
+            }
+          },
+          {
+            "type": "text",
+            "value": "retain their maintained signatures without requiring exports. Topics marked",
+            "span": {
+              "start": 2315,
+              "end": 2390
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2390,
+              "end": 2391
+            }
+          },
+          {
+            "type": "code",
+            "value": "\\keyword{internal}",
+            "span": {
+              "start": 2391,
+              "end": 2411
+            }
+          },
+          {
+            "type": "text",
+            "value": " have addressable pages but stay out of navigation and search.",
+            "span": {
+              "start": 2411,
+              "end": 2473
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2473,
+              "end": 2474
+            }
+          },
+          {
+            "type": "text",
+            "value": "See the R extraction contract below for discovery and import limits.",
+            "span": {
+              "start": 2474,
+              "end": 2542
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2542,
+              "end": 2543
+            }
+          }
+        ],
+        "span": {
+          "start": 2090,
+          "end": 2543
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Computed names, conditional namespace directives, dynamic construction, roxygen",
+            "span": {
+              "start": 2544,
+              "end": 2623
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2623,
+              "end": 2624
             }
           },
           {
             "type": "text",
             "value": "generation, and unsupported Rd markup are not evaluated. Unsupported markup",
             "span": {
-              "start": 2170,
-              "end": 2245
+              "start": 2624,
+              "end": 2699
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2245,
-              "end": 2246
+              "start": 2699,
+              "end": 2700
             }
           },
           {
             "type": "text",
             "value": "stays visible with a diagnostic. For exact parser and identity rules, see the",
             "span": {
-              "start": 2246,
-              "end": 2323
+              "start": 2700,
+              "end": 2777
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2323,
-              "end": 2324
+              "start": 2777,
+              "end": 2778
             }
           },
           {
@@ -889,23 +1012,23 @@
                 "type": "text",
                 "value": "Python extraction",
                 "span": {
-                  "start": 2325,
-                  "end": 2342
+                  "start": 2779,
+                  "end": 2796
                 }
               },
               {
                 "type": "soft-break",
                 "span": {
-                  "start": 2342,
-                  "end": 2343
+                  "start": 2796,
+                  "end": 2797
                 }
               },
               {
                 "type": "text",
                 "value": "contract",
                 "span": {
-                  "start": 2343,
-                  "end": 2351
+                  "start": 2797,
+                  "end": 2805
                 }
               }
             ],
@@ -917,23 +1040,23 @@
               "key_values": []
             },
             "span": {
-              "start": 2324,
-              "end": 2429
+              "start": 2778,
+              "end": 2883
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2429,
-              "end": 2430
+              "start": 2883,
+              "end": 2884
             }
           },
           {
             "type": "text",
             "value": "or ",
             "span": {
-              "start": 2430,
-              "end": 2433
+              "start": 2884,
+              "end": 2887
             }
           },
           {
@@ -943,23 +1066,23 @@
                 "type": "text",
                 "value": "R extraction",
                 "span": {
-                  "start": 2434,
-                  "end": 2446
+                  "start": 2888,
+                  "end": 2900
                 }
               },
               {
                 "type": "soft-break",
                 "span": {
-                  "start": 2446,
-                  "end": 2447
+                  "start": 2900,
+                  "end": 2901
                 }
               },
               {
                 "type": "text",
                 "value": "contract",
                 "span": {
-                  "start": 2447,
-                  "end": 2455
+                  "start": 2901,
+                  "end": 2909
                 }
               }
             ],
@@ -971,36 +1094,36 @@
               "key_values": []
             },
             "span": {
-              "start": 2433,
-              "end": 2528
+              "start": 2887,
+              "end": 2982
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2528,
-              "end": 2529
+              "start": 2982,
+              "end": 2983
             }
           },
           {
             "type": "text",
             "value": "in the source repository.",
             "span": {
-              "start": 2529,
-              "end": 2554
+              "start": 2983,
+              "end": 3008
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2554,
-              "end": 2555
+              "start": 3008,
+              "end": 3009
             }
           }
         ],
         "span": {
-          "start": 2090,
-          "end": 2555
+          "start": 2544,
+          "end": 3009
         }
       },
       {
@@ -1016,14 +1139,14 @@
             "type": "text",
             "value": "Julia",
             "span": {
-              "start": 2559,
-              "end": 2564
+              "start": 3013,
+              "end": 3018
             }
           }
         ],
         "span": {
-          "start": 2556,
-          "end": 2565
+          "start": 3010,
+          "end": 3019
         }
       },
       {
@@ -1033,146 +1156,146 @@
             "type": "text",
             "value": "Julia extraction reads ",
             "span": {
-              "start": 2566,
-              "end": 2589
+              "start": 3020,
+              "end": 3043
             }
           },
           {
             "type": "code",
             "value": "Project.toml",
             "span": {
-              "start": 2589,
-              "end": 2603
+              "start": 3043,
+              "end": 3057
             }
           },
           {
             "type": "text",
             "value": ", an explicit ",
             "span": {
-              "start": 2603,
-              "end": 2617
+              "start": 3057,
+              "end": 3071
             }
           },
           {
             "type": "code",
             "value": ".jl",
             "span": {
-              "start": 2617,
-              "end": 2622
+              "start": 3071,
+              "end": 3076
             }
           },
           {
             "type": "text",
             "value": " entry file, and its",
             "span": {
-              "start": 2622,
-              "end": 2642
+              "start": 3076,
+              "end": 3096
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2642,
-              "end": 2643
+              "start": 3096,
+              "end": 3097
             }
           },
           {
             "type": "text",
             "value": "unconditional literal includes. Declare ",
             "span": {
-              "start": 2643,
-              "end": 2683
+              "start": 3097,
+              "end": 3137
             }
           },
           {
             "type": "code",
             "value": "ecosystem = \"julia\"",
             "span": {
-              "start": 2683,
-              "end": 2704
+              "start": 3137,
+              "end": 3158
             }
           },
           {
             "type": "text",
             "value": ",",
             "span": {
-              "start": 2704,
-              "end": 2705
+              "start": 3158,
+              "end": 3159
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2705,
-              "end": 2706
+              "start": 3159,
+              "end": 3160
             }
           },
           {
             "type": "code",
             "value": "metadata-path = \"Project.toml\"",
             "span": {
-              "start": 2706,
-              "end": 2738
+              "start": 3160,
+              "end": 3192
             }
           },
           {
             "type": "text",
             "value": ", and a target with ",
             "span": {
-              "start": 2738,
-              "end": 2758
+              "start": 3192,
+              "end": 3212
             }
           },
           {
             "type": "code",
             "value": "extractor = \"julia\"",
             "span": {
-              "start": 2758,
-              "end": 2779
+              "start": 3212,
+              "end": 3233
             }
           },
           {
             "type": "text",
             "value": " and",
             "span": {
-              "start": 2779,
-              "end": 2783
+              "start": 3233,
+              "end": 3237
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2783,
-              "end": 2784
+              "start": 3237,
+              "end": 3238
             }
           },
           {
             "type": "code",
             "value": "path = \"src/MyPackage.jl\"",
             "span": {
-              "start": 2784,
-              "end": 2811
+              "start": 3238,
+              "end": 3265
             }
           },
           {
             "type": "text",
             "value": ". Source directories are not valid Julia targets.",
             "span": {
-              "start": 2811,
-              "end": 2860
+              "start": 3265,
+              "end": 3314
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2860,
-              "end": 2861
+              "start": 3314,
+              "end": 3315
             }
           }
         ],
         "span": {
-          "start": 2566,
-          "end": 2861
+          "start": 3020,
+          "end": 3315
         }
       },
       {
@@ -1182,128 +1305,128 @@
             "type": "text",
             "value": "Exported, ",
             "span": {
-              "start": 2862,
-              "end": 2872
+              "start": 3316,
+              "end": 3326
             }
           },
           {
             "type": "code",
             "value": "public",
             "span": {
-              "start": 2872,
-              "end": 2880
+              "start": 3326,
+              "end": 3334
             }
           },
           {
             "type": "text",
             "value": ", and documented declarations form the maintained surface.",
             "span": {
-              "start": 2880,
-              "end": 2938
+              "start": 3334,
+              "end": 3392
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2938,
-              "end": 2939
+              "start": 3392,
+              "end": 3393
             }
           },
           {
             "type": "text",
             "value": "Functions have a family page and separate pages for their supplied methods.",
             "span": {
-              "start": 2939,
-              "end": 3014
+              "start": 3393,
+              "end": 3468
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3014,
-              "end": 3015
+              "start": 3468,
+              "end": 3469
             }
           },
           {
             "type": "text",
             "value": "Types retain fields and explicit constructors. Static imports and aliases",
             "span": {
-              "start": 3015,
-              "end": 3088
+              "start": 3469,
+              "end": 3542
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3088,
-              "end": 3089
+              "start": 3542,
+              "end": 3543
             }
           },
           {
             "type": "text",
             "value": "resolve to maintained declarations. Julia Markdown docstrings supply prose,",
             "span": {
-              "start": 3089,
-              "end": 3164
+              "start": 3543,
+              "end": 3618
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3164,
-              "end": 3165
+              "start": 3618,
+              "end": 3619
             }
           },
           {
             "type": "text",
             "value": "lists, tables, admonitions, and inert code examples. API ",
             "span": {
-              "start": 3165,
-              "end": 3222
+              "start": 3619,
+              "end": 3676
             }
           },
           {
             "type": "code",
             "value": "@ref",
             "span": {
-              "start": 3222,
-              "end": 3228
+              "start": 3676,
+              "end": 3682
             }
           },
           {
             "type": "text",
             "value": " links can name a",
             "span": {
-              "start": 3228,
-              "end": 3245
+              "start": 3682,
+              "end": 3699
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3245,
-              "end": 3246
+              "start": 3699,
+              "end": 3700
             }
           },
           {
             "type": "text",
             "value": "family or select a method, and they preserve their labels.",
             "span": {
-              "start": 3246,
-              "end": 3304
+              "start": 3700,
+              "end": 3758
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3304,
-              "end": 3305
+              "start": 3758,
+              "end": 3759
             }
           }
         ],
         "span": {
-          "start": 2862,
-          "end": 3305
+          "start": 3316,
+          "end": 3759
         }
       },
       {
@@ -1313,60 +1436,60 @@
             "type": "text",
             "value": "Computed includes, conditional declarations, generated definitions, unsupported",
             "span": {
-              "start": 3306,
-              "end": 3385
+              "start": 3760,
+              "end": 3839
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3385,
-              "end": 3386
+              "start": 3839,
+              "end": 3840
             }
           },
           {
             "type": "text",
             "value": "macros, and unavailable reexports produce diagnostics. Extraction does not",
             "span": {
-              "start": 3386,
-              "end": 3460
+              "start": 3840,
+              "end": 3914
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3460,
-              "end": 3461
+              "start": 3914,
+              "end": 3915
             }
           },
           {
             "type": "text",
             "value": "expand macros, consult a Julia depot, infer runtime methods, or execute",
             "span": {
-              "start": 3461,
-              "end": 3532
+              "start": 3915,
+              "end": 3986
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3532,
-              "end": 3533
+              "start": 3986,
+              "end": 3987
             }
           },
           {
             "type": "text",
             "value": "doctests. Unsupported documentation syntax remains visible with warnings. The",
             "span": {
-              "start": 3533,
-              "end": 3610
+              "start": 3987,
+              "end": 4064
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3610,
-              "end": 3611
+              "start": 4064,
+              "end": 4065
             }
           },
           {
@@ -1376,23 +1499,23 @@
                 "type": "text",
                 "value": "Julia extraction",
                 "span": {
-                  "start": 3612,
-                  "end": 3628
+                  "start": 4066,
+                  "end": 4082
                 }
               },
               {
                 "type": "soft-break",
                 "span": {
-                  "start": 3628,
-                  "end": 3629
+                  "start": 4082,
+                  "end": 4083
                 }
               },
               {
                 "type": "text",
                 "value": "contract",
                 "span": {
-                  "start": 3629,
-                  "end": 3637
+                  "start": 4083,
+                  "end": 4091
                 }
               }
             ],
@@ -1404,36 +1527,36 @@
               "key_values": []
             },
             "span": {
-              "start": 3611,
-              "end": 3714
+              "start": 4065,
+              "end": 4168
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3714,
-              "end": 3715
+              "start": 4168,
+              "end": 4169
             }
           },
           {
             "type": "text",
             "value": "defines the supported subset and method identity rules.",
             "span": {
-              "start": 3715,
-              "end": 3770
+              "start": 4169,
+              "end": 4224
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3770,
-              "end": 3771
+              "start": 4224,
+              "end": 4225
             }
           }
         ],
         "span": {
-          "start": 3306,
-          "end": 3771
+          "start": 3760,
+          "end": 4225
         }
       }
     ]

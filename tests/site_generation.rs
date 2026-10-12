@@ -5,6 +5,59 @@ use diplodocus::snapshots::Snapshot;
 use diplodocus::validation::resolve_workspace;
 
 #[test]
+fn internal_r_topics_survive_snapshots_without_public_navigation_or_search() {
+    let root = support::acceptance_workspace();
+    let fixture = support::fixture_path("r-internal-topics");
+    for directory in ["R", "man"] {
+        for file in support::files_under(&fixture.join(directory)) {
+            root.write(
+                std::path::Path::new("r").join(directory).join(&file),
+                std::fs::read(fixture.join(directory).join(&file)).unwrap(),
+            );
+        }
+    }
+    root.write(
+        "r/NAMESPACE",
+        format!(
+            "{}\nimport(grid)\nS3method(makeContent, EulerGlyphs)\n",
+            root.read("r/NAMESPACE")
+        ),
+    );
+    let sources = assemble_workspace(root.path().join("workspace/diplodocus.toml")).unwrap();
+    let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+    let artifact = tempfile::tempdir().unwrap();
+    let path = artifact.path().join("snapshot.sqlite");
+    snapshot.publish(&path).unwrap();
+    drop(root);
+    let loaded = Snapshot::load(&path).unwrap();
+    let site = diplodocus::site::Site::new(&loaded).unwrap();
+    let rendered = diplodocus::rendering::render_site(&site).unwrap();
+    let search = std::str::from_utf8(&rendered.files()["assets/search.json"].bytes).unwrap();
+    assert!(search.contains("mean_squared_error"));
+    for name in ["makeContent.EulerGlyphs", "setup_gpar"] {
+        assert!(!search.contains(name));
+        let mut found = false;
+        for file in rendered
+            .files()
+            .values()
+            .filter(|file| file.media_type.starts_with("text/html"))
+        {
+            let html = std::str::from_utf8(&file.bytes).unwrap();
+            let nav = html
+                .split("<nav aria-label=\"Documentation\">")
+                .nth(1)
+                .unwrap()
+                .split("</nav>")
+                .next()
+                .unwrap();
+            assert!(!nav.contains(name));
+            found |= html.contains(&format!("<h1><code>{name}</code></h1>"));
+        }
+        assert!(found, "The internal topic remains addressable: {name}");
+    }
+}
+
+#[test]
 fn unsupported_rd_renders_compact_markers_and_authored_source_stays_visible() {
     let root = support::acceptance_case("unsupported-rd");
     let rd = root.read("r/man/experimental_summary.Rd");

@@ -5440,6 +5440,21 @@
           },
           "version": "0.4.0"
         },
+        "rd-rds": {
+          "role": "r-installed-namespace-metadata",
+          "settings": {
+            "base-known-s3-generics": "9b22722041e20411b554e730bb2f5308db1909da3d85889e127af2dacee3ed72",
+            "exports:base": "b7b4c3aaf96f485d5a9905746aa6cb45d82b01f66268063f42bc28ed23d8a0e2",
+            "exports:datasets": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "exports:grDevices": "ad26c4b254c50380227f361edbcce6fcb881ceb2a774d9ac5947aa38611b92de",
+            "exports:graphics": "2a60b722652b20a6a473108d8844a0048413dae8dca5b12c0a3220fd2ce6196f",
+            "exports:methods": "bd30bca122ff55ac1529be2facd8cf65b1f960f57a8b47d8cb9e878dae64c80c",
+            "exports:stats": "6fbc04b5322b316aebe7d24e81a4e239c44a69301bff830fbf7d8321f867a252",
+            "exports:utils": "1c2cb5ed309154c8740cccf38f8e20707dd04ccf42ee0b335f8c94a664f86733",
+            "r-version": "4.6.1"
+          },
+          "version": "0.5.0"
+        },
         "rd-source": {
           "role": "rd-syntax",
           "settings": {
@@ -5460,6 +5475,7 @@
       "diplodocus": "[DIPLODOCUS_VERSION]",
       "r": "[DIPLODOCUS_VERSION]",
       "rd-ast": "0.4.0",
+      "rd-rds": "0.5.0",
       "rd-source": "0.4.0"
     }
   },

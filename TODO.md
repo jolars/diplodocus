@@ -117,7 +117,7 @@ site byte for byte with the original site.
 Comparing eulerr with its [pkgdown site](https://jolars.github.io/eulerr/)
 exposed these compatibility, content, and presentation gaps.
 
-- [ ] Resolve standard S3 generics from default R packages and package-wide
+- [x] Resolve standard S3 generics from default R packages and package-wide
   imports without loading package code. Handle documented internal helpers
   without requiring public declarations, and keep internal grid hooks out of
   public navigation and search.

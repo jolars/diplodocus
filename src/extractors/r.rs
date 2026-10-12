@@ -1,7 +1,8 @@
 //! Static R extraction from maintained DESCRIPTION, NAMESPACE, R, and Rd files.
 //!
-//! The adapter never starts a runtime or evaluates package code. Native syntax
-//! stays internal; results contain only portable Diplodocus records.
+//! The adapter probes R's installed library paths but never evaluates package
+//! code. Native syntax stays internal; results contain only portable Diplodocus
+//! records.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
@@ -20,6 +21,7 @@ use crate::paths::{
 };
 use crate::provenance::{BuiltinExtractor, ExtractionObservation, fingerprint_bytes};
 
+mod libraries;
 mod metadata;
 mod namespace;
 mod rd;
@@ -171,11 +173,64 @@ pub fn extract_target(
             _ => unreachable!(),
         }
     }
-    source::reject_shadowed_builtins(&mut definitions, namespace.imports.keys().cloned());
+    let mut libraries = match libraries::Libraries::discover() {
+        Ok(libraries) => libraries,
+        Err(message) => {
+            result.diagnostics.push(Diagnostic::new(
+                DiagnosticCode::RLibraryUnavailable,
+                Severity::Error,
+                message,
+            ));
+            result.diagnostics.sort();
+            result.diagnostics.dedup();
+            finish_provenance(&mut result);
+            return result;
+        }
+    };
+    for (package, sources) in &namespace.package_imports {
+        match libraries.exports(package) {
+            Ok(names) => {
+                for name in names {
+                    namespace
+                        .imports
+                        .entry(name.clone())
+                        .or_default()
+                        .insert(package.clone());
+                }
+            }
+            Err(message) => {
+                namespace.unknown_imports.insert(package.clone());
+                result.diagnostics.push(diagnostic(
+                    DiagnosticCode::RLibraryUnavailable,
+                    Severity::Error,
+                    message,
+                    &sources[0],
+                ));
+            }
+        }
+    }
+    if let ProvenanceActivity::Extraction { parsers, .. } = &mut result.provenance.activity {
+        parsers.insert("rd-rds".into(), libraries.provenance());
+    }
+    let imported_names = namespace
+        .imports
+        .iter()
+        .filter(|(_, packages)| packages.iter().any(|package| package != "base"))
+        .map(|(name, _)| name.clone())
+        .chain(
+            (!namespace.unknown_imports.is_empty())
+                .then_some(["UseMethod", "structure"])
+                .into_iter()
+                .flatten()
+                .map(String::from),
+        );
+    source::reject_shadowed_builtins(&mut definitions, imported_names);
     result.items = surface::reconcile(
         &package.id,
         &definitions,
         &namespace,
+        &topics,
+        &libraries,
         &mut result.diagnostics,
     );
     rd::attach(

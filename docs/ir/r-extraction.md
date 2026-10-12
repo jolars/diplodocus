@@ -2,13 +2,14 @@
 
 `extractors::r::extract_target(repository, package, target)` reads a resolved R
 package directory and returns a portable `RExtraction`. It never installs,
-attaches, loads, or sources a package, starts R, or evaluates documentation.
+attaches, loads, or sources a package, or evaluates documentation. R must be
+available on `PATH` for an isolated library-discovery probe.
 Workspace assembly, reference resolution, and CLI commands consume this fragment;
 their boundaries are described in the [implementation map](../design/execution.md).
 
 The result contains validated `DESCRIPTION` metadata, canonical items with
 independent signatures and documentation, ordered diagnostics, and extraction
-provenance. Its `inputs` map retains the original text of every consumed file,
+provenance. Its `inputs` map retains the original text of every configured source file,
 including unsupported or malformed input. Invalid UTF-8 retains its bytes
 instead. Callers must reject error-bearing results before building a site;
 independent valid inputs remain available for inspection.
@@ -35,13 +36,34 @@ and literal `useDynLib` declarations. For `useDynLib`, the library and any
 named or positional symbols must have static names. `.registration` accepts
 `TRUE` or `FALSE`, and `.fixes` accepts a string literal. Extraction retains the
 namespace input without loading a native library or inferring registered symbols.
-A package-wide `import` is retained in the original input, but does not
-establish which names it imports. Resolving an external S3 generic therefore
-requires `importFrom` or a qualified registration such as
-`S3method(stats::predict, foo_model)`. The base generics `print`, `format`, and
-`dim` also resolve without explicit imports when no maintained or imported
-binding shadows them. Conditional directives, computed names,
-`exportPattern`, and other directives produce errors. An invalid namespace
+
+R extraction requires an installed R and the packages named in package-wide
+imports. A single `R --vanilla` probe discovers `.libPaths()`, base bindings,
+and R's known S3 generic coordinates. The probe sets `R_DEFAULT_PACKAGES=NULL`
+and skips profiles and environment files, so it never loads project code or
+attaches dependency packages. It respects library environment variables and
+launcher-supplied paths, including Nix wrappers. Profiles that configure `renv`
+or other project libraries are not executed; expose those libraries through
+`R_LIBS` when needed.
+
+Rust reads installed `Meta/nsInfo.rds` with `rd-rds` to resolve package-wide
+imports, including `import(grid)`. Installed export patterns expand against
+names in the package's `.rdx` index using supported regular expressions; dependency
+code records and package hooks are never read or run. Missing packages, malformed
+metadata, and unsupported patterns produce `r-library-unavailable` errors.
+Explicit `importFrom` declarations and qualified registrations retain their
+source-declared coordinates without loading the dependency.
+
+S3 registrations resolve through local generics, explicit imports, and the
+usual default R packages, in that order. Base takes precedence over the default
+search path. Installed exports and R's known-generic map determine external
+coordinates; ambiguous imports and uncertain local bindings produce errors.
+There is no embedded table of generic names. Provenance records the R version
+and fingerprints of the effective export sets and known-generic map, without
+local library paths. Generation from a snapshot does not require R.
+
+Conditional directives, computed names, `exportPattern`, and other directives
+in the documented package's NAMESPACE produce errors. An invalid namespace
 cannot establish a public surface.
 
 Maintained source supplies direct, statically named function assignments and
@@ -62,7 +84,10 @@ construction remain outside this subset.
 
 ## Reconciliation and identity
 
-Exports and S3 registrations select the public surface. Assignment aliases use
+Exports, S3 registrations, and valid Rd aliases select maintained functions.
+Documented helpers do not require exports or S3 registration, but documentation
+cannot invent a definition or disambiguate uncertain source bindings.
+Assignment aliases use
 the defining function's canonical identity and carry `r-assignment` evidence.
 Rd aliases carry `rd-alias` evidence. Neither kind creates another item.
 
@@ -97,6 +122,12 @@ Package topics with `\docType{package}` create a documented namespace item
 without a maintained function or signature. Their aliases remain separate
 from callable aliases, and conflicting package topics or aliases are errors.
 
+Callable topics marked `\keyword{internal}` set `RItemData.internal` independently
+of `exported`. Their signatures, documentation, identities, and source evidence
+remain in snapshots, and generation writes addressable pages. Public navigation
+and search omit these items, including registered internal grid hooks. Package
+topics remain discoverable even when they carry the conventional internal keyword.
+
 Examples, including `\dontrun`, `\donttest`, and `\dontdiff` content, are
 display-only `CodeBlock` nodes. They never become executable `CodeCell` nodes.
 Unsupported example or usage forms retain a placeholder and the original
@@ -117,6 +148,7 @@ values in diagnostics never substitute for byte offsets.
 | --- | --- |
 | `r-metadata` | Invalid DESCRIPTION grammar, fields, or dependency constraints |
 | `r-source-read` | An input cannot be read or decoded |
+| `r-library-unavailable` | R discovery or installed dependency metadata is unavailable |
 | `r-syntax` | Native maintained-source parse failure |
 | `r-unsupported-namespace` | Invalid, conditional, or unsupported namespace syntax |
 | `r-unresolved-definition` | A public name, generic, or Rd usage lacks an unambiguous static declaration |
@@ -143,6 +175,7 @@ the capability manifest.
 The [integrated tests](../../tests/r_extraction.rs) lock the seven acceptance
 items, four location warnings, shared documentation, alias identities, local
 and imported S3 generics, and the extra dynamic-Rd warning. They compare
-relocated workspaces and run extraction with no runtime on `PATH`. Component
+relocated workspaces, diagnose a missing R executable, and verify installed
+dependency imports without package loading or profile execution. Component
 cases cover malformed input, conflicts, source boundaries, structured markup,
 and inert source and examples.

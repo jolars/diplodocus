@@ -2,7 +2,7 @@
   "document": {
     "span": {
       "start": 0,
-      "end": 1034
+      "end": 1264
     },
     "frontmatter": null,
     "blocks": [
@@ -200,68 +200,129 @@
           },
           {
             "type": "text",
-            "value": "or static Python, R, and Julia API extraction does not need those language",
+            "value": "or static Python and Julia API extraction does not need those language runtimes.",
             "span": {
               "start": 494,
-              "end": 568
+              "end": 574
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 568,
-              "end": 569
+              "start": 574,
+              "end": 575
             }
           },
           {
             "type": "text",
-            "value": "runtimes to build its site. Executable QMD pages need the selected Jupyter",
+            "value": "R API extraction requires R on ",
             "span": {
-              "start": 569,
-              "end": 643
+              "start": 575,
+              "end": 606
+            }
+          },
+          {
+            "type": "code",
+            "value": "PATH",
+            "span": {
+              "start": 606,
+              "end": 612
+            }
+          },
+          {
+            "type": "text",
+            "value": " and installed dependencies for package-wide",
+            "span": {
+              "start": 612,
+              "end": 656
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 643,
-              "end": 644
+              "start": 656,
+              "end": 657
+            }
+          },
+          {
+            "type": "text",
+            "value": "imports. It probes library locations and reads metadata without loading the",
+            "span": {
+              "start": 657,
+              "end": 732
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 732,
+              "end": 733
+            }
+          },
+          {
+            "type": "text",
+            "value": "documented package. Generating a site from an exported snapshot needs none of",
+            "span": {
+              "start": 733,
+              "end": 810
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 810,
+              "end": 811
+            }
+          },
+          {
+            "type": "text",
+            "value": "these runtimes. Executable QMD pages need the selected Jupyter",
+            "span": {
+              "start": 811,
+              "end": 873
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 873,
+              "end": 874
             }
           },
           {
             "type": "text",
             "value": "kernel already installed and discoverable. Diplodocus never installs a",
             "span": {
-              "start": 644,
-              "end": 714
+              "start": 874,
+              "end": 944
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 714,
-              "end": 715
+              "start": 944,
+              "end": 945
             }
           },
           {
             "type": "text",
             "value": "workspace's dependencies or kernels.",
             "span": {
-              "start": 715,
-              "end": 751
+              "start": 945,
+              "end": 981
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 751,
-              "end": 752
+              "start": 981,
+              "end": 982
             }
           }
         ],
         "span": {
           "start": 335,
-          "end": 752
+          "end": 982
         }
       },
       {
@@ -271,99 +332,99 @@
             "type": "text",
             "value": "After the crate is published, ",
             "span": {
-              "start": 753,
-              "end": 783
+              "start": 983,
+              "end": 1013
             }
           },
           {
             "type": "code",
             "value": "cargo install diplodocus --locked",
             "span": {
-              "start": 783,
-              "end": 818
+              "start": 1013,
+              "end": 1048
             }
           },
           {
             "type": "text",
             "value": " will install",
             "span": {
-              "start": 818,
-              "end": 831
+              "start": 1048,
+              "end": 1061
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 831,
-              "end": 832
+              "start": 1061,
+              "end": 1062
             }
           },
           {
             "type": "text",
             "value": "the CLI from crates.io. Until then, run it with ",
             "span": {
-              "start": 832,
-              "end": 880
+              "start": 1062,
+              "end": 1110
             }
           },
           {
             "type": "code",
             "value": "cargo run --locked --",
             "span": {
-              "start": 880,
-              "end": 903
+              "start": 1110,
+              "end": 1133
             }
           },
           {
             "type": "text",
             "value": " from",
             "span": {
-              "start": 903,
-              "end": 908
+              "start": 1133,
+              "end": 1138
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 908,
-              "end": 909
+              "start": 1138,
+              "end": 1139
             }
           },
           {
             "type": "text",
             "value": "this checkout, or invoke the compiled binary at ",
             "span": {
-              "start": 909,
-              "end": 957
+              "start": 1139,
+              "end": 1187
             }
           },
           {
             "type": "code",
             "value": "target/debug/diplodocus",
             "span": {
-              "start": 957,
-              "end": 982
+              "start": 1187,
+              "end": 1212
             }
           },
           {
             "type": "text",
             "value": ".",
             "span": {
-              "start": 982,
-              "end": 983
+              "start": 1212,
+              "end": 1213
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 983,
-              "end": 984
+              "start": 1213,
+              "end": 1214
             }
           }
         ],
         "span": {
-          "start": 753,
-          "end": 984
+          "start": 983,
+          "end": 1214
         }
       },
       {
@@ -373,8 +434,8 @@
             "type": "text",
             "value": "Continue with the ",
             "span": {
-              "start": 985,
-              "end": 1003
+              "start": 1215,
+              "end": 1233
             }
           },
           {
@@ -384,8 +445,8 @@
                 "type": "text",
                 "value": "quick start",
                 "span": {
-                  "start": 1004,
-                  "end": 1015
+                  "start": 1234,
+                  "end": 1245
                 }
               }
             ],
@@ -397,29 +458,29 @@
               "key_values": []
             },
             "span": {
-              "start": 1003,
-              "end": 1032
+              "start": 1233,
+              "end": 1262
             }
           },
           {
             "type": "text",
             "value": ".",
             "span": {
-              "start": 1032,
-              "end": 1033
+              "start": 1262,
+              "end": 1263
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1033,
-              "end": 1034
+              "start": 1263,
+              "end": 1264
             }
           }
         ],
         "span": {
-          "start": 985,
-          "end": 1034
+          "start": 1215,
+          "end": 1264
         }
       }
     ]

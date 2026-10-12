@@ -16,6 +16,8 @@ pub(super) struct Namespace {
     pub valid: bool,
     pub exports: BTreeMap<String, Vec<SourceLocation>>,
     pub imports: BTreeMap<String, BTreeSet<String>>,
+    pub unknown_imports: BTreeSet<String>,
+    pub package_imports: BTreeMap<String, Vec<SourceLocation>>,
     pub methods: Vec<Registration>,
 }
 
@@ -115,7 +117,16 @@ pub(super) fn parse(
                 }
                 true
             }
-            DirectiveKind::Import if !args.is_empty() => true,
+            DirectiveKind::Import if !args.is_empty() => {
+                for package in args {
+                    result
+                        .package_imports
+                        .entry(package)
+                        .or_default()
+                        .push(location.clone());
+                }
+                true
+            }
             DirectiveKind::S3Method if (2..=3).contains(&args.len()) => {
                 let generic_name = args[0]
                     .split_once("::")
