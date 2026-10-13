@@ -226,11 +226,13 @@ so regression tests do not require the sibling checkout.
   `check` contract and distinguish runtime observations from source facts.
   Once complete extraction works, enable the Julia target and extend the nine
   shared concepts in Datamonger's configuration.
-- [ ] Add an offline Datamonger example using
-  [the shared conformance corpus](../datamonger/tests/conformance/README.md)
-  to exercise retrieval, decoding, and rendered output in a prepared package
-  environment. The current package has no Rd examples or R Markdown vignettes,
-  so successful site builds do not verify example execution.
+- [x] Add an offline Datamonger example using
+  [the shared conformance corpus](../datamonger/tests/conformance/README.md).
+  The [R vignette](../datamonger/packages/r/vignettes/offline-conformance.Rmd)
+  retrieves the bundled mixed CSV through the public API, verifies its decoded
+  values and canonical digest, and renders tables and a plot. Installed-package
+  tests forbid network retrieval. A small Diplodocus fixture covers package
+  data lookup, execution failure, and generation without sources or runtimes.
 - [ ] Improve the motivating package's source documentation: add explanations
   for Python dataclass fields and `BUNDLED_REGISTRY`, and Rd topics or aliases
   for the eight undocumented R S3 methods listed in the assessment. Track these
