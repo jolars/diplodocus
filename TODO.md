@@ -169,9 +169,12 @@ exposed these compatibility, content, and presentation gaps.
   step. Preserve explicitly illustrative `dontrun` regions, execute
   `donttest` regions, and record supported conditional skips under the
   prepared-environment contract.
-- [ ] Support R Markdown vignettes with knitr chunks, inline R, math, citations,
+- [x] Support R Markdown vignettes with knitr chunks, inline R, math, citations,
   and generated figures. Use eulerr's seven vignettes to check the complete
   article workflow.
+- [ ] Handle documented constants and deprecated help aliases, and preserve
+  nested Rd list content. Current eulerr cases are `EULER_PANEL_PAD_PT`,
+  `eulerr_deprecated`, and `eulerr_options`; these block full-package extraction.
 - [x] Build package landing pages from README and DESCRIPTION content, retain
   package metadata through assembly, and expose NEWS, citation information,
   authors, licenses, and community links.

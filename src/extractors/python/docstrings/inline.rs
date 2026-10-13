@@ -205,6 +205,8 @@ fn shift_inline(inline: &mut Inline, offset: usize) {
         | Inline::Unsupported { span, .. } => shift(span, offset),
         Inline::Emphasis { inlines, span }
         | Inline::Strong { inlines, span }
+        | Inline::Styled { inlines, span, .. }
+        | Inline::Citation { inlines, span, .. }
         | Inline::Strikeout { inlines, span } => {
             shift(span, offset);
             for inline in inlines {

@@ -164,6 +164,14 @@ pub(super) fn validate(workspace: &Workspace) -> Result {
     }
     for page in workspace.pages.values() {
         links.document(&page.document)?;
+        for record in &page.document.provenance {
+            if let ProvenanceActivity::RMarkdown { package, .. } = &record.activity {
+                require(
+                    matches!(&page.owner, ContentOwner::Package { package: owner } if owner == package),
+                    "R Markdown package owner",
+                )?;
+            }
+        }
     }
     for concept in workspace.concepts.values() {
         if let Some(document) = &concept.documentation {
@@ -234,6 +242,39 @@ impl Links<'_> {
                 self.diagnostic_source(source)?;
             }
             match &record.activity {
+                ProvenanceActivity::RMarkdown {
+                    package,
+                    policy,
+                    r_version,
+                    knitr_version,
+                    package_version,
+                    dependencies,
+                    input,
+                    chunks,
+                    ..
+                } => {
+                    require(
+                        self.0.packages.contains_key(package)
+                            && policy == "rmd-knitr-v1"
+                            && !r_version.is_empty()
+                            && !knitr_version.is_empty()
+                            && !package_version.is_empty()
+                            && !dependencies.is_empty()
+                            && chunks.iter().all(|c| {
+                                c.span.start <= c.span.end
+                                    && !c.label.is_empty()
+                                    && matches!(
+                                        c.outcome.as_str(),
+                                        "executed"
+                                            | "illustrative"
+                                            | "conditional-skip"
+                                            | "allowed-error"
+                                    )
+                            }),
+                        "R Markdown execution provenance",
+                    )?;
+                    self.source(&input.source)?;
+                }
                 ProvenanceActivity::Declaration => {}
                 ProvenanceActivity::DecodedDocumentation { decoded_span } => {
                     require(
@@ -454,6 +495,81 @@ impl Links<'_> {
 
     fn document(&self, document: &SourcedDocument) -> Result {
         self.provenance(&document.provenance)?;
+        if matches!(
+            document.source_format,
+            DocumentFormat::Authored {
+                format: crate::documents::AuthoredFormat::Rmd
+            }
+        ) {
+            let records: Vec<_> = document
+                .provenance
+                .iter()
+                .filter_map(|p| match &p.activity {
+                    ProvenanceActivity::RMarkdown {
+                        input,
+                        output,
+                        package,
+                        package_version,
+                        dependencies,
+                        chunks,
+                        ..
+                    } => Some((
+                        input,
+                        output,
+                        package,
+                        package_version,
+                        dependencies,
+                        chunks,
+                    )),
+                    _ => None,
+                })
+                .collect();
+            require(
+                records.len() == 1,
+                "R Markdown requires completed native execution",
+            )?;
+            let (input, output, package, version, dependencies, chunks) = records[0];
+            let Some(PackageMetadata::R(metadata)) = &self.0.packages[package].metadata else {
+                return Err(SnapshotError::Invalid("R Markdown package metadata"));
+            };
+            let raw = document
+                .raw_source
+                .as_ref()
+                .ok_or(SnapshotError::Invalid("R Markdown original source"))?;
+            let generated = document
+                .generated_source
+                .as_ref()
+                .ok_or(SnapshotError::Invalid("R Markdown evaluated source"))?;
+            let (preparation, diagnostics) = crate::documents::prepare_rmd_document(raw);
+            let inline = document
+                .provenance
+                .iter()
+                .find_map(|p| match &p.activity {
+                    ProvenanceActivity::RMarkdown { inline, .. } => Some(inline),
+                    _ => None,
+                })
+                .expect("native evidence");
+            require(
+                preparation.inline == inline.iter().map(|item| item.span).collect::<Vec<_>>(),
+                "R Markdown inline source association",
+            )?;
+            require(
+                document.source_location.as_ref() == Some(&input.source)
+                    && crate::provenance::fingerprint_bytes(raw.as_bytes()) == input.fingerprint
+                    && crate::provenance::fingerprint_bytes(generated.as_bytes()) == *output
+                    && crate::validation::r_versions_equal(version, &metadata.description.version)
+                    && dependencies.contains_key("knitr")
+                    && dependencies.get(&metadata.description.name) == Some(version)
+                    && diagnostics.is_empty()
+                    && preparation.chunks == chunks.iter().map(|c| c.span).collect::<Vec<_>>(),
+                "R Markdown execution source association",
+            )?;
+        } else {
+            require(
+                document.generated_source.is_none(),
+                "evaluated source belongs to R Markdown",
+            )?;
+        }
         for record in &document.provenance {
             if let ProvenanceActivity::RdExamples {
                 input,
@@ -496,9 +612,9 @@ impl Links<'_> {
     fn blocks(&self, blocks: &[Block]) -> Result {
         for block in blocks {
             match block {
-                Block::BlockQuote { blocks, .. } | Block::Callout { blocks, .. } => {
-                    self.blocks(blocks)?
-                }
+                Block::BlockQuote { blocks, .. }
+                | Block::Container { blocks, .. }
+                | Block::Callout { blocks, .. } => self.blocks(blocks)?,
                 Block::List { items, .. } => {
                     for item in items {
                         self.blocks(&item.blocks)?;

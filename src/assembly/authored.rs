@@ -15,6 +15,7 @@ pub(super) fn assemble(
     observed: &mut ObservedInputs,
 ) -> Result<BTreeMap<String, PreparedPage>, AssemblyError> {
     let mut pages = BTreeMap::new();
+    let mut seen = std::collections::BTreeSet::new();
     for (index, collection) in configuration.content.iter().enumerate() {
         let resolved = &paths.content[index];
         let repository = &paths.repositories[resolved.repository_index];
@@ -57,6 +58,11 @@ pub(super) fn assemble(
         for relative in &files {
             let declared = resolved.path.join(relative);
             let location = repository.source_location(&declared, None)?;
+            let key = (location.repository.clone(), location.path.clone());
+            if collection.id.starts_with("rmd-vignettes:") && seen.contains(&key) {
+                continue;
+            }
+            seen.insert(key);
             let path = repository.path.join(location.path.as_str());
             let text = fs::read_to_string(&path)?;
             observe(observed, &location, fingerprint_bytes(text.as_bytes()))?;
@@ -64,13 +70,36 @@ pub(super) fn assemble(
                 AssemblyError::Diagnostics(vec![error.to_diagnostic(&collection.id)])
             })?;
             let relative = portable(relative)?;
-            let parsed = prepared.parsed.with_context(
+            let mut parsed = prepared.parsed.with_context(
                 source(&location),
                 DiagnosticEntity::Document {
                     collection: collection.id.clone(),
                     path: relative.clone(),
                 },
             );
+            if collection.format == AuthoredFormat::Rmd {
+                let (_, mut diagnostics) = crate::documents::prepare_rmd_document(&text);
+                for diagnostic in &mut diagnostics {
+                    diagnostic.source = Some(source(&location));
+                    diagnostic.related_entity = Some(DiagnosticEntity::Document {
+                        collection: collection.id.clone(),
+                        path: relative.clone(),
+                    });
+                }
+                parsed.diagnostics.extend(diagnostics);
+                for path in
+                    super::rmarkdown::citations::inputs(&parsed.document, &path, repository)?
+                {
+                    let location = repository.source_location(&path, None)?;
+                    observe(observed, &location, fingerprint_bytes(&fs::read(&path)?))?;
+                    selections
+                        .package_documentation
+                        .entry(repository.id.clone())
+                        .or_default()
+                        .push(PathBuf::from(location.path.as_str()));
+                }
+                super::rmarkdown::citations::resolve(&mut parsed.document, &path, repository)?;
+            }
             workspace.diagnostics.extend(parsed.diagnostics);
             // Length prefixes keep collection/path punctuation from aliasing another page.
             let id = format!(
@@ -95,6 +124,7 @@ pub(super) fn assemble(
                             format: collection.format,
                         },
                         source_location: Some(location.clone()),
+                        generated_source: None,
                         raw_source: Some(text.clone()),
                         provenance: vec![Provenance {
                             activity: ProvenanceActivity::Declaration,
@@ -156,7 +186,11 @@ pub(super) fn discover(
             }
             if kind.is_dir() {
                 visit(root, &path, extension, repository, files)?;
-            } else if path.extension().and_then(|s| s.to_str()) == Some(extension) {
+            } else if path
+                .extension()
+                .and_then(|s| s.to_str())
+                .is_some_and(|s| s == extension || (extension == "rmd" && s == "Rmd"))
+            {
                 if !fs::metadata(&path)?.is_file() {
                     return Err(AssemblyError::Diagnostics(vec![diagnostic(
                         DiagnosticCode::SourcePathWrongType,
@@ -184,6 +218,7 @@ pub(super) fn discover(
         match format {
             AuthoredFormat::Gfm => "md",
             AuthoredFormat::Qmd => "qmd",
+            AuthoredFormat::Rmd => "rmd",
         },
         repository,
         &mut files,
@@ -219,6 +254,8 @@ pub(super) fn inline_text(inlines: &[Inline]) -> String {
             | Inline::NonbreakingSpace { .. } => " ".into(),
             Inline::Emphasis { inlines, .. }
             | Inline::Strong { inlines, .. }
+            | Inline::Styled { inlines, .. }
+            | Inline::Citation { inlines, .. }
             | Inline::Strikeout { inlines, .. }
             | Inline::Link { inlines, .. } => inline_text(inlines),
             Inline::Image { alt, .. } => inline_text(alt),

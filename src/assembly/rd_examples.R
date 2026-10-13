@@ -8,29 +8,9 @@ local({
   if (!requireNamespace("pkgload", quietly = TRUE) || !requireNamespace("evaluate", quietly = TRUE)) {
     stop("Rd example execution requires pkgload and evaluate")
   }
-  root <- normalizePath(args[[1L]], mustWork = TRUE)
-  meta <- read.dcf(file.path(root, "DESCRIPTION"))[1L, ]
-  name <- unname(meta[["Package"]])
-  if (!identical(name, args[[4L]]) || !isTRUE(base::package_version(meta[["Version"]]) == base::package_version(args[[5L]]))) {
-    stop("Supplied checkout package identity does not match the configured DESCRIPTION")
-  }
-  pkgload::load_all(root, compile = FALSE, quiet = TRUE, export_all = FALSE, helpers = FALSE, attach_testthat = FALSE)
-  verify_checkout <- function() {
-    ns <- asNamespace(name)
-    if (!identical(normalizePath(getNamespaceInfo(ns, "path"), mustWork = TRUE), root)) {
-      stop("Loaded R package does not match the supplied checkout")
-    }
-    for (library in getNamespaceInfo(ns, "dynlibs")) {
-      dll <- getNamespaceInfo(ns, "DLLs")[[library]]
-      if (is.null(dll)) stop(paste("Missing prebuilt package extension:", library))
-      dll_path <- normalizePath(dll[["path"]], mustWork = TRUE)
-      if (!startsWith(dll_path, paste0(root, .Platform$file.sep))) stop("Loaded package extension does not belong to the supplied checkout")
-    }
-    if (!isTRUE(utils::packageVersion(name) == base::package_version(meta[["Version"]]))) {
-      stop("Loaded R package version does not match DESCRIPTION")
-    }
-  }
-  verify_checkout()
+  checkout <- load_checkout(args[[1L]], args[[4L]], args[[5L]])
+  name <- checkout$name
+  verify_checkout <- checkout$verify
   rd <- tools::parse_Rd(args[[2L]], encoding = "UTF-8")
   codefile <- file.path(dirname(args[[3L]]), "examples.R")
   tools::Rd2ex(rd, out = codefile, commentDontrun = TRUE, commentDonttest = FALSE)

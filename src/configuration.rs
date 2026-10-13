@@ -326,7 +326,7 @@ pub struct ContentConfiguration {
     pub mount: String,
     /// Explicit authored input profile.
     pub format: AuthoredFormat,
-    /// Declared execution settings; omission defaults to `never`.
+    /// Execution defaults to native knitr for Rmd and `never` for GFM and QMD.
     #[serde(default)]
     pub execution: ExecutionConfiguration,
 }
@@ -335,6 +335,15 @@ impl<'de> Deserialize<'de> for ContentConfiguration {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         // Validation needs both the profile and the completed execution table,
         // regardless of their order in the source or the deserialization entry point.
+        #[derive(Default, Deserialize)]
+        #[serde(rename_all = "kebab-case", deny_unknown_fields)]
+        struct ExecutionDeclaration {
+            mode: Option<ExecutionMode>,
+            engine: Option<ExecutionEngine>,
+            kernel: Option<String>,
+            #[serde(default)]
+            declared_environment_inputs: Vec<PathBuf>,
+        }
         #[derive(Deserialize)]
         #[serde(rename_all = "kebab-case", deny_unknown_fields)]
         struct Declaration {
@@ -345,7 +354,7 @@ impl<'de> Deserialize<'de> for ContentConfiguration {
             mount: String,
             format: AuthoredFormat,
             #[serde(default)]
-            execution: ExecutionConfiguration,
+            execution: Option<ExecutionDeclaration>,
         }
 
         let declaration = Declaration::deserialize(deserializer)?;
@@ -356,7 +365,24 @@ impl<'de> Deserialize<'de> for ContentConfiguration {
             path: declaration.path,
             mount: declaration.mount,
             format: declaration.format,
-            execution: declaration.execution,
+            execution: {
+                let execution = declaration.execution.unwrap_or_default();
+                let rmd = declaration.format == AuthoredFormat::Rmd;
+                ExecutionConfiguration {
+                    mode: execution.mode.unwrap_or(if rmd {
+                        ExecutionMode::Execute
+                    } else {
+                        ExecutionMode::Never
+                    }),
+                    engine: execution.engine.or(if rmd {
+                        Some(ExecutionEngine::Knitr)
+                    } else {
+                        None
+                    }),
+                    kernel: execution.kernel,
+                    declared_environment_inputs: execution.declared_environment_inputs,
+                }
+            },
         };
         collection
             .validate_execution()
@@ -380,6 +406,13 @@ impl ContentConfiguration {
     /// symlink containment separately. Reading file contents remains a later step.
     pub fn validate_execution(&self) -> Result<(), ExecutionConfigurationError> {
         let execution = &self.execution;
+        if self.format == AuthoredFormat::Rmd
+            && (execution.mode != ExecutionMode::Execute
+                || execution.engine != Some(ExecutionEngine::Knitr)
+                || execution.kernel.is_some())
+        {
+            return Err(ExecutionConfigurationError::RmdExecution);
+        }
         if execution.mode == ExecutionMode::Never {
             for (field, declared) in [
                 ("engine", execution.engine.is_some()),
@@ -396,18 +429,20 @@ impl ContentConfiguration {
             return Ok(());
         }
 
-        if self.format != AuthoredFormat::Qmd {
+        if self.format == AuthoredFormat::Gfm {
             return Err(ExecutionConfigurationError::GfmExecution);
         }
-        if execution.engine != Some(ExecutionEngine::Jupyter) {
-            return Err(ExecutionConfigurationError::MissingEngine);
-        }
-        let kernel = execution
-            .kernel
-            .as_deref()
-            .ok_or(ExecutionConfigurationError::MissingKernel)?;
-        if !valid_kernel_selector(kernel) {
-            return Err(ExecutionConfigurationError::InvalidKernel);
+        if self.format == AuthoredFormat::Qmd {
+            if execution.engine != Some(ExecutionEngine::Jupyter) {
+                return Err(ExecutionConfigurationError::MissingEngine);
+            }
+            let kernel = execution
+                .kernel
+                .as_deref()
+                .ok_or(ExecutionConfigurationError::MissingKernel)?;
+            if !valid_kernel_selector(kernel) {
+                return Err(ExecutionConfigurationError::InvalidKernel);
+            }
         }
 
         let mut inputs = HashMap::new();
@@ -475,6 +510,9 @@ fn environment_input_components(path: &Path) -> Result<Vec<&str>, &'static str> 
 /// A contradictory or malformed collection execution declaration.
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
 pub enum ExecutionConfigurationError {
+    /// R Markdown always uses native knitr execution.
+    #[error("R Markdown requires `mode = \"execute\"`, `engine = \"knitr\"`, and no kernel")]
+    RmdExecution,
     /// A display-only collection has execution-specific settings.
     #[error("`{field}` requires `mode = \"execute\"`")]
     InactiveSetting {
@@ -568,6 +606,8 @@ pub enum ExecutionMode {
 pub enum ExecutionEngine {
     /// A page-scoped Jupyter kernel session.
     Jupyter,
+    /// A native R session using knitr.
+    Knitr,
 }
 
 /// An explicitly declared group of corresponding APIs.

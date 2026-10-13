@@ -53,6 +53,7 @@ pub fn parse(text: &StaticDocText, source: SourceLocation) -> JuliaDocstringPars
             name: "julia-markdown".into(),
         },
         source_location: Some(source),
+        generated_source: None,
         raw_source: Some(text.as_str().into()),
         provenance: context.provenance,
     };
@@ -81,6 +82,7 @@ pub(super) fn opaque(raw: String, source: SourceLocation) -> SourcedDocument {
             name: "julia-markdown".into(),
         },
         source_location: Some(source.clone()),
+        generated_source: None,
         raw_source: Some(raw),
         provenance: vec![declaration_provenance(&source)],
     }

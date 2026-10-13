@@ -51,6 +51,9 @@ pub(super) async fn extract_attempt(
     sources
         .execute_rd_examples(deadlines, &mut cancellation)
         .await?;
+    sources
+        .execute_rmarkdown(deadlines, &mut cancellation)
+        .await?;
     #[cfg(target_os = "linux")]
     let snapshot = {
         // Execution staging stays outside watched source trees and survives until copying finishes.

@@ -713,9 +713,9 @@ fn rewrite_references(blocks: &mut [Block], rewrite: &mut impl FnMut(&str) -> St
             Block::Paragraph { inlines, .. } | Block::Heading { inlines, .. } => {
                 rewrite_inlines(inlines, rewrite)
             }
-            Block::BlockQuote { blocks, .. } | Block::Callout { blocks, .. } => {
-                rewrite_references(blocks, rewrite)
-            }
+            Block::BlockQuote { blocks, .. }
+            | Block::Container { blocks, .. }
+            | Block::Callout { blocks, .. } => rewrite_references(blocks, rewrite),
             Block::List { items, .. } => {
                 for item in items {
                     rewrite_references(&mut item.blocks, rewrite);
@@ -748,6 +748,8 @@ fn rewrite_inlines(inlines: &mut [Inline], rewrite: &mut impl FnMut(&str) -> Str
             }
             Inline::Emphasis { inlines, .. }
             | Inline::Strong { inlines, .. }
+            | Inline::Styled { inlines, .. }
+            | Inline::Citation { inlines, .. }
             | Inline::Strikeout { inlines, .. } => rewrite_inlines(inlines, rewrite),
             Inline::Image { alt, .. } => rewrite_inlines(alt, rewrite),
             _ => {}

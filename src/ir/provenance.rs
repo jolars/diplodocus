@@ -40,6 +40,29 @@ pub struct Provenance {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum ProvenanceActivity {
+    /// Completed native R Markdown execution in the prepared checkout.
+    RMarkdown {
+        /// Owning workspace package.
+        package: String,
+        /// Native helper contract.
+        policy: String,
+        /// Observed interpreter version.
+        r_version: String,
+        /// Observed knitr version.
+        knitr_version: String,
+        /// Observed checkout version.
+        package_version: String,
+        /// Loaded namespace versions without library paths.
+        dependencies: BTreeMap<String, String>,
+        /// Original article source and fingerprint.
+        input: InputFingerprint,
+        /// Evaluated Markdown fingerprint.
+        output: Fingerprint,
+        /// Chunk outcomes in source order, including explicit omissions.
+        chunks: Vec<RMarkdownChunkOutcome>,
+        /// Inline evaluations in knitr processing order.
+        inline: Vec<RMarkdownInlineOutcome>,
+    },
     /// An explicit declaration or source observation.
     Declaration,
     /// A decoded documentation range mapped back to its source literal.
@@ -118,6 +141,32 @@ pub enum ProvenanceActivity {
         /// Declared environment evidence sorted by repository and relative path.
         declared_environment_inputs: Vec<InputFingerprint>,
     },
+}
+
+/// Native chunk evidence independent of a Jupyter kernel.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RMarkdownChunkOutcome {
+    /// Full chunk range in the original R Markdown input.
+    pub span: SourceSpan,
+    /// Native chunk label.
+    pub label: String,
+    /// Effective supported options observed before execution.
+    pub options: BTreeMap<String, String>,
+    /// Executed, illustrative, conditional-skip, or allowed-error.
+    pub outcome: String,
+    /// Explanation of an explicit omission or permitted error.
+    pub reason: Option<String>,
+}
+
+/// One inline R result attributed to the original expression.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RMarkdownInlineOutcome {
+    /// Expression range in the original R Markdown source.
+    pub span: SourceSpan,
+    /// Native Markdown representation of the evaluated value.
+    pub value: String,
 }
 
 /// Extraction modes understood by this schema.

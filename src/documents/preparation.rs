@@ -66,7 +66,7 @@ pub fn prepare_collection_document(
 ) -> Result<PreparedDocument, ExecutionConfigurationError> {
     collection.validate_execution()?;
     let mut parsed = parse_document(source, collection.format, ParseMode::Collection);
-    if collection.format == AuthoredFormat::Gfm {
+    if collection.format != AuthoredFormat::Qmd {
         return Ok(PreparedDocument {
             parsed,
             preparation: None,
@@ -142,7 +142,9 @@ impl PreparationContext<'_> {
         for block in blocks {
             match block {
                 Block::CodeCell(cell) => self.cell(cell, defaults),
-                Block::BlockQuote { blocks, .. } => self.blocks(blocks, defaults),
+                Block::BlockQuote { blocks, .. } | Block::Container { blocks, .. } => {
+                    self.blocks(blocks, defaults)
+                }
                 Block::Callout {
                     attributes, blocks, ..
                 } => {
@@ -198,6 +200,8 @@ impl PreparationContext<'_> {
                 }
                 Inline::Emphasis { inlines, .. }
                 | Inline::Strong { inlines, .. }
+                | Inline::Styled { inlines, .. }
+                | Inline::Citation { inlines, .. }
                 | Inline::Strikeout { inlines, .. } => self.inlines(inlines),
                 _ => {}
             }

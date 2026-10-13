@@ -31,6 +31,7 @@ mod package_docs;
 mod packages;
 mod rd_examples;
 mod references;
+mod rmarkdown;
 
 /// A failed source assembly or execution, without a publishable workspace.
 #[derive(Debug, thiserror::Error)]
@@ -100,6 +101,7 @@ pub struct WorkspaceSources {
     paths: ResolvedWorkspacePaths,
     prepared_pages: BTreeMap<String, PreparedPage>,
     package_files: BTreeMap<String, package_docs::PackageFiles>,
+    rmd_inputs: BTreeMap<String, Vec<PathBuf>>,
     selections: DeclaredSourceInputs,
     evidence: StaticProvenance,
     pub(crate) rd_assets: BTreeMap<DiagnosticPath, crate::validation::ContentAsset>,
@@ -145,6 +147,17 @@ impl WorkspaceSources {
         if fs::read(&self.configuration_path)? != self.configuration_source.as_bytes() {
             return Err(AssemblyError::InputsChanged);
         }
+        let mut configuration =
+            parse_configuration(&self.configuration_source).map_err(|source| {
+                ConfigurationError::Parse {
+                    path: self.configuration_path.clone(),
+                    source,
+                }
+            })?;
+        rmarkdown::collections(&self.configuration_path, &mut configuration)?;
+        if configuration != self.configuration {
+            return Err(AssemblyError::InputsChanged);
+        }
         let paths = resolve_workspace_paths(&self.configuration_path, &self.configuration)?;
         if paths != self.paths {
             return Err(AssemblyError::InputsChanged);
@@ -161,6 +174,9 @@ impl WorkspaceSources {
             }
         }
         if package_docs::discover(&paths, &self.workspace)? != self.package_files {
+            return Err(AssemblyError::InputsChanged);
+        }
+        if rmarkdown::inputs(&paths, &self.configuration)? != self.rmd_inputs {
             return Err(AssemblyError::InputsChanged);
         }
         let current = collect_static_provenance(
@@ -234,16 +250,22 @@ pub fn assemble_workspace(path: impl AsRef<Path>) -> Result<WorkspaceSources, As
         path: path.to_owned(),
         source,
     })?;
-    let configuration = parse_configuration(&text).map_err(|source| ConfigurationError::Parse {
-        path: path.to_owned(),
-        source,
-    })?;
+    let mut configuration =
+        parse_configuration(&text).map_err(|source| ConfigurationError::Parse {
+            path: path.to_owned(),
+            source,
+        })?;
     let config_name = DiagnosticPath::try_from(
         path.file_name()
             .and_then(|s| s.to_str())
             .unwrap_or("diplodocus.toml"),
     )
     .map_err(|_| AssemblyError::InputsChanged)?;
+    reject_errors(validate_configuration_with_source(
+        &configuration,
+        config_name.clone(),
+    ))?;
+    rmarkdown::collections(path, &mut configuration)?;
     reject_errors(validate_configuration_with_source(
         &configuration,
         config_name.clone(),
@@ -255,6 +277,25 @@ pub fn assemble_workspace(path: impl AsRef<Path>) -> Result<WorkspaceSources, As
     };
     let mut selections = DeclaredSourceInputs::default();
     let mut observed = BTreeMap::new();
+    let rmd_inputs = rmarkdown::inputs(&paths, &configuration)?;
+    for (collection, resolved) in configuration.content.iter().zip(&paths.content) {
+        if let Some(files) = rmd_inputs.get(&collection.id) {
+            let repository = &paths.repositories[resolved.repository_index];
+            selections
+                .package_documentation
+                .entry(repository.id.clone())
+                .or_default()
+                .extend(files.iter().cloned());
+            for file in files {
+                let path = repository.path.join(file);
+                observe(
+                    &mut observed,
+                    &repository.source_location(&path, None)?,
+                    fingerprint_bytes(&fs::read(path)?),
+                )?;
+            }
+        }
+    }
     packages::assemble(
         &configuration,
         &paths,
@@ -295,6 +336,7 @@ pub fn assemble_workspace(path: impl AsRef<Path>) -> Result<WorkspaceSources, As
         paths,
         prepared_pages,
         package_files,
+        rmd_inputs,
         selections,
         evidence,
         rd_assets: BTreeMap::new(),

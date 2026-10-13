@@ -119,3 +119,14 @@ blockquote, .callout { border-left: 4px solid #688b84; padding: .2rem 1rem; marg
 .align-right { text-align: right; }
 .math-display { max-width: 100%; overflow-x: auto; margin: 1rem 0; }
 .math-display:not(.math-rendered) { white-space: pre-wrap; }
+
+.article-metadata { color: var(--muted); margin-top: -.5rem; }
+.article-figure { margin: 1.5rem 0; }
+.article-figure figcaption { font-size: .95rem; }
+.article-figure figcaption p { margin: .4rem 0; }
+.footnotes { border-top: 1px solid var(--border); margin-top: 2rem; padding-top: 1rem; }
+.footnote { margin: .6rem 0; }
+.footnote-number { font-weight: 600; margin-right: .4rem; }
+.footnote > p { display: inline; }
+.bibliography-entry { margin: .8rem 0; padding-left: 1.5rem; text-indent: -1.5rem; }
+.small-caps { font-variant: small-caps; }

@@ -372,3 +372,23 @@ fn configured_metadata_must_identify_the_loaded_checkout() {
             .exists()
     );
 }
+
+#[test]
+fn prebuilt_checkout_extensions_survive_pkgload_temporary_copies() {
+    let root = workspace("stopifnot(.C('native_answer', value=0L)$value == 42L)");
+    root.write(
+        "r/NAMESPACE",
+        "export(answer)\nexport(other)\nuseDynLib(rdex)\n",
+    );
+    root.write(
+        "r/src/native.c",
+        "void native_answer(int *value) { *value = 42; }\n",
+    );
+    let output = Command::new("R")
+        .current_dir(root.path().join("r"))
+        .args(["CMD", "SHLIB", "src/native.c", "-o", "src/rdex.so"])
+        .output()
+        .unwrap();
+    success(output);
+    success(extract(&root));
+}

@@ -322,6 +322,14 @@ impl Observer {
             observe(&root.join(&package.metadata_path), &mut observed);
             if package.ecosystem == "r" {
                 observe(&root.join("NAMESPACE"), &mut observed);
+                let mut vignettes = Vec::new();
+                discover(
+                    &root.join("vignettes"),
+                    &self.output,
+                    &mut observed,
+                    &mut vignettes,
+                    &|_| true,
+                );
                 for name in [
                     "README.md",
                     "NEWS.md",
@@ -382,6 +390,7 @@ impl Observer {
             let extension = match content.format {
                 crate::documents::AuthoredFormat::Gfm => "md",
                 crate::documents::AuthoredFormat::Qmd => "qmd",
+                crate::documents::AuthoredFormat::Rmd => "rmd",
             };
             let mut pages = Vec::new();
             discover(
@@ -389,9 +398,17 @@ impl Observer {
                 &self.output,
                 &mut observed,
                 &mut pages,
-                &|p| p.extension().is_some_and(|e| e == extension),
+                &|p| {
+                    content.format == crate::documents::AuthoredFormat::Rmd
+                        || p.extension().is_some_and(|e| e == extension)
+                },
             );
             for page in pages {
+                if content.format == crate::documents::AuthoredFormat::Rmd
+                    && !page.extension().is_some_and(|e| e == "Rmd" || e == "rmd")
+                {
+                    continue;
+                }
                 self.authored_assets(&page, content, root, &mut observed);
             }
         }

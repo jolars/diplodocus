@@ -149,6 +149,32 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
             let document = page.document.expect("authored overview title");
             html.push_str(&renderer.blocks(&document.document.blocks[..1])?);
         }
+        if let Some(document) = page.document
+            && matches!(
+                document.source_format,
+                DocumentFormat::Authored {
+                    format: crate::documents::AuthoredFormat::Rmd
+                }
+            )
+            && let Some(MetadataValue::Mapping { entries, .. }) = &document.document.frontmatter
+        {
+            let metadata: Vec<_> = ["author", "date"]
+                .into_iter()
+                .filter_map(|key| entries.iter().find(|e| e.key.value == key))
+                .filter_map(|e| match &e.value {
+                    MetadataValue::Scalar { value, .. } => Some(escape(value)),
+                    _ => None,
+                })
+                .collect();
+            if !metadata.is_empty() {
+                write!(
+                    html,
+                    "<p class=\"article-metadata\">{}</p>",
+                    metadata.join(" · ")
+                )
+                .unwrap();
+            }
+        }
         if package_overview
             && let Some(owner) = &page.owner
             && let Some(PackageMetadata::R(metadata)) = &site.workspace.packages[owner].metadata
@@ -296,7 +322,12 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
             let package = page.owner.as_ref().map(|id| &site.workspace.packages[id]);
             let mut search_text = page
                 .document
-                .and_then(|document| document.raw_source.as_deref())
+                .and_then(|document| {
+                    document
+                        .generated_source
+                        .as_deref()
+                        .or(document.raw_source.as_deref())
+                })
                 .unwrap_or("")
                 .to_owned();
             if package_overview {
@@ -477,6 +508,27 @@ impl Renderer<'_, '_> {
         let mut html = String::new();
         for inline in inlines {
             match inline {
+                Inline::Styled { style, inlines, .. } => {
+                    let tag = match style {
+                        InlineStyle::Superscript => "sup",
+                        InlineStyle::Subscript => "sub",
+                        InlineStyle::SmallCaps => "span class=\"small-caps\"",
+                    };
+                    write!(
+                        html,
+                        "<{tag}>{}</{}>",
+                        self.inlines(inlines)?,
+                        tag.split(' ').next().unwrap()
+                    )
+                    .unwrap();
+                }
+                Inline::Citation { raw, inlines, .. } => {
+                    if inlines.is_empty() {
+                        html.push_str(&escape(raw));
+                    } else {
+                        html.push_str(&self.inlines(inlines)?);
+                    }
+                }
                 Inline::Math {
                     latex, fallback, ..
                 } => html.push_str(&super::math::render(
@@ -570,6 +622,67 @@ impl Renderer<'_, '_> {
         let mut html = String::new();
         for block in blocks {
             match block {
+                Block::Container {
+                    kind,
+                    identifier,
+                    blocks,
+                    ..
+                } => {
+                    let (tag, class) = match kind {
+                        DocumentContainerKind::DefinitionList => ("dl", "definition-list"),
+                        DocumentContainerKind::DefinitionTerm => ("dt", "definition-term"),
+                        DocumentContainerKind::Definition => ("dd", "definition-body"),
+                        DocumentContainerKind::Figure => ("figure", "article-figure"),
+                        DocumentContainerKind::Footnotes => ("section", "footnotes"),
+                        DocumentContainerKind::Footnote => ("div", "footnote"),
+                        DocumentContainerKind::BibliographyEntry => ("div", "bibliography-entry"),
+                        DocumentContainerKind::GeneratedChunk => ("div", "code-cell"),
+                    };
+                    write!(
+                        html,
+                        "<{tag} class=\"{class}\"{}>",
+                        identifier
+                            .as_ref()
+                            .map(|id| format!(" id=\"{}\"", escape(id)))
+                            .unwrap_or_default()
+                    )
+                    .unwrap();
+                    if *kind == DocumentContainerKind::Footnotes {
+                        html.push_str("<h2>Notes</h2>");
+                    }
+                    if *kind == DocumentContainerKind::Footnote
+                        && let Some(number) =
+                            identifier.as_ref().and_then(|id| id.rsplit('-').next())
+                    {
+                        write!(
+                            html,
+                            "<span class=\"footnote-number\">{}.</span>",
+                            escape(number)
+                        )
+                        .unwrap();
+                    }
+                    let navigation = self.document_navigation;
+                    if *kind == DocumentContainerKind::GeneratedChunk {
+                        self.document_navigation = false;
+                    }
+                    if *kind == DocumentContainerKind::Figure {
+                        if let Some(first) = blocks.first() {
+                            html.push_str(&self.blocks(std::slice::from_ref(first))?);
+                        }
+                        if blocks.len() > 1 {
+                            write!(
+                                html,
+                                "<figcaption>{}</figcaption>",
+                                self.blocks(&blocks[1..])?
+                            )
+                            .unwrap();
+                        }
+                    } else {
+                        html.push_str(&self.blocks(blocks)?);
+                    }
+                    self.document_navigation = navigation;
+                    write!(html, "</{tag}>").unwrap();
+                }
                 Block::DisplayMath {
                     latex, fallback, ..
                 } => html.push_str(&super::math::render(
@@ -593,8 +706,10 @@ impl Renderer<'_, '_> {
                         let identifier = self.heading_id(attributes, &label);
                         self.headings.push((level, identifier.clone(), label));
                         format!(" id=\"{}\"", escape(&identifier))
-                    } else {
+                    } else if self.document_navigation {
                         id(attributes)
+                    } else {
+                        String::new()
                     };
                     write!(
                         html,
@@ -843,6 +958,8 @@ fn plain(nodes: &[Inline]) -> String {
             Inline::SemanticReference { target, .. } => target.clone(),
             Inline::Emphasis { inlines, .. }
             | Inline::Strong { inlines, .. }
+            | Inline::Styled { inlines, .. }
+            | Inline::Citation { inlines, .. }
             | Inline::Strikeout { inlines, .. }
             | Inline::Link { inlines, .. } => plain(inlines),
             Inline::Image { alt, .. } => plain(alt),

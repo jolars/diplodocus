@@ -82,3 +82,26 @@ reasons, and actual R, package, and loaded namespace versions. There is no Rd
 execution cache. Timeout, cancellation, output, and cleanup failures stop
 publication. `tests/rd_examples.rs` exercises this path and generation with the
 checkout removed and R unavailable.
+
+
+## R Markdown articles
+
+The adapter in `src/assembly/rmarkdown.rs` creates effective package-owned
+collections for discovered vignettes, observes local support inputs, and runs
+knitr through a supervised native R process per article. R Markdown parsing and
+pure preparation live in `src/documents/rmarkdown.rs`. The R helper collects
+Markdown through knitr hooks, retains effective chunk options and outcomes, and
+stages PNG figures. The shared checkout loader is `src/assembly/r_runtime.R`.
+
+The original Rmd remains in `raw_source`; `generated_source` contains evaluated
+Markdown and supplies the document's byte ranges. Generated chunk containers
+keep their headings out of navigation and anchor registration. Bibliographies
+and independent local CSL styles resolve in-process through Hayagriva. Native
+execution provenance records the original and generated fingerprints and actual
+R, knitr, package, and namespace versions. Snapshot validation requires completed
+native evidence and validates the retained asset bytes. No Jupyter session or
+execution cache participates in this path.
+
+`tests/rmarkdown.rs` covers extraction, omissions, failures, and portable
+generation. The browser fixture in `tests/fixtures/r-vignettes/` exercises the
+rendered article on desktop and mobile.

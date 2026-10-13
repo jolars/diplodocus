@@ -37,6 +37,8 @@ declarations. It connects exports and S3 registrations to direct source
 definitions, then attaches supported Rd topics, aliases, usage, arguments, and
 prose. `extract`, `build`, and `serve` execute Rd examples as a required step.
 `check` reads their source without loading the package or executing examples.
+R Markdown vignettes are also discovered and executed; see
+[authored articles](authoring.md).
 
 Prepare a working checkout with R, `pkgload`, `evaluate`, the package dependencies,
 and the dependencies used by its examples. Compile native extensions beforehand;

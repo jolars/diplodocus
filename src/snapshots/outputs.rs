@@ -320,9 +320,9 @@ fn cells(blocks: &[Block], visit: &mut impl FnMut(&CodeCell)) {
     for block in blocks {
         match block {
             Block::CodeCell(cell) => visit(cell),
-            Block::BlockQuote { blocks, .. } | Block::Callout { blocks, .. } => {
-                cells(blocks, visit)
-            }
+            Block::BlockQuote { blocks, .. }
+            | Block::Container { blocks, .. }
+            | Block::Callout { blocks, .. } => cells(blocks, visit),
             Block::List { items, .. } => {
                 for item in items {
                     cells(&item.blocks, visit);
@@ -362,9 +362,9 @@ fn project(
                     .collect();
                 *ordinal += 1;
             }
-            Block::BlockQuote { blocks, .. } | Block::Callout { blocks, .. } => {
-                project(blocks, records, ordinal)?
-            }
+            Block::BlockQuote { blocks, .. }
+            | Block::Container { blocks, .. }
+            | Block::Callout { blocks, .. } => project(blocks, records, ordinal)?,
             Block::List { items, .. } => {
                 for item in items {
                     project(&mut item.blocks, records, ordinal)?;

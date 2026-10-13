@@ -62,9 +62,9 @@ fn visit_blocks<'a>(
             Block::Paragraph { inlines, .. } | Block::Heading { inlines, .. } => {
                 visit_inlines(inlines, nodes, depth + 1)?
             }
-            Block::BlockQuote { blocks, .. } | Block::Callout { blocks, .. } => {
-                visit_blocks(blocks, nodes, depth + 1)?
-            }
+            Block::BlockQuote { blocks, .. }
+            | Block::Container { blocks, .. }
+            | Block::Callout { blocks, .. } => visit_blocks(blocks, nodes, depth + 1)?,
             Block::List { items, .. } => {
                 for item in items {
                     visit_blocks(&item.blocks, nodes, depth + 1)?;
@@ -101,6 +101,8 @@ fn visit_inlines<'a>(
             } => nodes.push((*span, source_kind)),
             Inline::Emphasis { inlines, .. }
             | Inline::Strong { inlines, .. }
+            | Inline::Styled { inlines, .. }
+            | Inline::Citation { inlines, .. }
             | Inline::Strikeout { inlines, .. }
             | Inline::Link { inlines, .. } => visit_inlines(inlines, nodes, depth + 1)?,
             Inline::Image { alt, .. } => visit_inlines(alt, nodes, depth + 1)?,

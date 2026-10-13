@@ -134,6 +134,7 @@ pub fn parse_docstring(
                 name: "numpy-docstring".into(),
             },
             source_location: Some(source.clone()),
+            generated_source: None,
             raw_source: Some(text.into()),
             provenance: vec![Provenance {
                 activity: ProvenanceActivity::Declaration,

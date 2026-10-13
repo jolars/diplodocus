@@ -135,6 +135,17 @@ pub struct Document {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "kebab-case")]
 pub enum Block {
+    /// A semantic article container with an optional local anchor.
+    Container {
+        /// Presentation of the contained content.
+        kind: DocumentContainerKind,
+        /// Local anchor, when present.
+        identifier: Option<String>,
+        /// Contained document blocks.
+        blocks: Vec<Block>,
+        /// Range in the enclosing document.
+        span: SourceSpan,
+    },
     /// A display equation with an optional plain-text alternative.
     DisplayMath {
         /// Verbatim LaTeX source.
@@ -228,6 +239,40 @@ pub enum Block {
         /// Full source range.
         span: SourceSpan,
     },
+}
+
+/// Semantic containers used by evaluated articles.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum DocumentContainerKind {
+    /// Terms and their definitions.
+    DefinitionList,
+    /// One definition-list term.
+    DefinitionTerm,
+    /// One definition-list body.
+    Definition,
+    /// An image or image group followed by caption content.
+    Figure,
+    /// The article's endnotes.
+    Footnotes,
+    /// One addressable endnote.
+    Footnote,
+    /// One addressable bibliography entry.
+    BibliographyEntry,
+    /// Inert content produced by one executable chunk.
+    GeneratedChunk,
+}
+
+/// Inline formatting required by articles and citation styles.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum InlineStyle {
+    /// Raised inline content.
+    Superscript,
+    /// Lowered inline content.
+    Subscript,
+    /// Small capital letters.
+    SmallCaps,
 }
 
 /// One list item.
@@ -390,6 +435,26 @@ pub enum CalloutKind {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "kebab-case")]
 pub enum Inline {
+    /// Additional semantic inline formatting.
+    Styled {
+        /// Requested formatting.
+        style: InlineStyle,
+        /// Inline children.
+        inlines: Vec<Inline>,
+        /// Range in the enclosing document.
+        span: SourceSpan,
+    },
+    /// A citation whose formatted children are resolved from the bibliography.
+    Citation {
+        /// Original citation spelling.
+        raw: String,
+        /// Referenced bibliography keys in source order.
+        keys: Vec<String>,
+        /// Formatted, linked citation content.
+        inlines: Vec<Inline>,
+        /// Range in the enclosing document.
+        span: SourceSpan,
+    },
     /// An inline equation with an optional plain-text alternative.
     Math {
         /// Verbatim LaTeX source.

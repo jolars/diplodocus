@@ -31,6 +31,8 @@ transition.
    `src/assembly/package_docs.rs` discovers R package documents, and its native
    helper completes authors, citations, and NEWS.Rd during extraction. `src/assembly/rd_examples.rs`
    executes native Rd examples and retains text and validated PNG figures.
+   `src/assembly/rmarkdown.rs` discovers and executes R Markdown articles, with
+   native knitr collection and in-process BibTeX and CSL formatting.
 4. `src/snapshots/` validates and publishes a portable SQLite database.
    `generate` can load this database without the original sources or kernels.
 5. `src/site.rs` builds routes and navigation from the snapshot;
@@ -60,7 +62,7 @@ combined in one `cargo test` invocation.
 | Static Python, R, or Julia extraction | `src/extractors/` | `cargo test --locked --test python_surface --test r_extraction --test julia_extraction --test static_extractor_contract` |
 | Authored Markdown or QMD | `src/documents/` | `cargo test --locked --test documents --test qmd_preparation` |
 | Assembly and references | `src/assembly/`, `src/validation/` | `cargo test --locked --test workspace_assembly --test snapshot_validation` |
-| Execution and caching | `src/execution/`, `src/assembly/execution.rs` | `cargo test --locked --test execution_contract --test execution_cache --test jupyter_real_kernels --test rd_examples` |
+| Execution and caching | `src/execution/`, `src/assembly/execution.rs` | `cargo test --locked --test execution_contract --test execution_cache --test jupyter_real_kernels --test rd_examples --test rmarkdown` |
 | SQLite snapshot | `src/snapshots/` | `cargo test --locked --test snapshot_schema --test snapshots_storage --test snapshot_publication` |
 | Site or command pipeline | `src/site.rs`, `src/rendering/`, `src/commands/` | `cargo test --locked --test site_generation --test extract_command` |
 

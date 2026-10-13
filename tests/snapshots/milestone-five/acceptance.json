@@ -6535,7 +6535,7 @@
       "rd-source": "0.4.0"
     }
   },
-  "schema_version": 2,
+  "schema_version": 3,
   "target": {
     "package": "rfoo",
     "target": "api"

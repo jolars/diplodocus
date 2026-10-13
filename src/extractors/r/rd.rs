@@ -915,6 +915,7 @@ pub(super) fn attach(
             },
             source_format: DocumentFormat::Extracted { name: "rd".into() },
             source_location: Some(topic.source.clone()),
+            generated_source: None,
             raw_source: Some(topic.raw.clone()),
             provenance: vec![provenance(&topic.source, true)],
         };
@@ -1221,6 +1222,7 @@ pub(super) fn attach(
             },
             source_format: DocumentFormat::Extracted { name: "rd".into() },
             source_location: Some(topic.source.clone()),
+            generated_source: None,
             raw_source: Some(topic.raw.clone()),
             provenance: vec![document_provenance],
         });

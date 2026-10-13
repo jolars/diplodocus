@@ -56,6 +56,7 @@ if (mode === "serve-test") {
         recursive: true,
       });
     }
+    cpSync(join(root, "tests/fixtures/r-vignettes"), join(workspace, "r/vignettes"), { recursive: true });
     const internalTopics = join(root, "tests/fixtures/r-internal-topics");
     for (const directory of ["R", "man"]) {
       cpSync(join(internalTopics, directory), join(workspace, "r", directory), { recursive: true });

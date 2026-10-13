@@ -10,9 +10,9 @@ pub(crate) fn references(
             Block::Paragraph { inlines, .. } | Block::Heading { inlines, .. } => {
                 inlines_references(inlines, generated, visit)
             }
-            Block::BlockQuote { blocks, .. } | Block::Callout { blocks, .. } => {
-                references(blocks, generated, visit)
-            }
+            Block::BlockQuote { blocks, .. }
+            | Block::Container { blocks, .. }
+            | Block::Callout { blocks, .. } => references(blocks, generated, visit),
             Block::List { items, .. } => {
                 for item in items {
                     references(&item.blocks, generated, visit);
@@ -91,6 +91,8 @@ fn inlines_references(
             }
             Inline::Emphasis { inlines, .. }
             | Inline::Strong { inlines, .. }
+            | Inline::Styled { inlines, .. }
+            | Inline::Citation { inlines, .. }
             | Inline::Strikeout { inlines, .. } => inlines_references(inlines, generated, visit),
             _ => {}
         }
@@ -105,6 +107,19 @@ pub(crate) fn anchors(blocks: &[Block]) -> BTreeSet<String> {
 fn collect_anchors(blocks: &[Block], anchors: &mut BTreeSet<String>) {
     for block in blocks {
         match block {
+            Block::Container {
+                kind,
+                identifier,
+                blocks,
+                ..
+            } => {
+                if let Some(id) = identifier {
+                    anchors.insert(id.clone());
+                }
+                if *kind != DocumentContainerKind::GeneratedChunk {
+                    collect_anchors(blocks, anchors);
+                }
+            }
             Block::Heading {
                 attributes,
                 inlines,
@@ -179,6 +194,8 @@ fn inline_anchors(inlines: &[Inline], anchors: &mut BTreeSet<String>) {
             }
             Inline::Emphasis { inlines, .. }
             | Inline::Strong { inlines, .. }
+            | Inline::Styled { inlines, .. }
+            | Inline::Citation { inlines, .. }
             | Inline::Strikeout { inlines, .. } => inline_anchors(inlines, anchors),
             _ => {}
         }

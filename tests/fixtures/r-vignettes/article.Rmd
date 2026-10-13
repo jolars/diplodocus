@@ -1,0 +1,31 @@
+---
+title: R Markdown workflow
+author: Example Author
+date: "`r '2026-10-13'`"
+bibliography: references.bib
+---
+
+```{r setup, include=FALSE}
+x <- 1:4
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+This article collects R results with our renderer. The mean is `r mean(x)`.
+The equation $y = x^2$ and the research citation [@smith] accompany a
+note^[Chunks share state within this article.].
+
+## Results
+
+```{r table, echo=FALSE, results='asis'}
+knitr::kable(data.frame(x = x, square = x^2))
+```
+
+```{r figure, echo=FALSE, fig.cap='Squares of the input values.', fig.alt='Four points increasing from one to sixteen'}
+plot(x, x^2, xlab = "Input", ylab = "Square")
+```
+
+```{r illustrative, eval=FALSE}
+stop("An illustrative expression")
+```
+
+## References

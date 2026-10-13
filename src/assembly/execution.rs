@@ -172,9 +172,9 @@ fn project(
                     .collect();
                 *ordinal += 1;
             }
-            Block::BlockQuote { blocks, .. } | Block::Callout { blocks, .. } => {
-                project(blocks, cells, ordinal)
-            }
+            Block::BlockQuote { blocks, .. }
+            | Block::Container { blocks, .. }
+            | Block::Callout { blocks, .. } => project(blocks, cells, ordinal),
             Block::List { items, .. } => {
                 for item in items {
                     project(&mut item.blocks, cells, ordinal);

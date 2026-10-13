@@ -2,7 +2,7 @@
 
 Declare each source directory as a `[[content]]` collection in [workspace
 configuration](configuration.md). Set `format = "gfm"` for `.md` files or
-`format = "qmd"` for `.qmd` files. A collection's `mount` determines its URL
+`format = "qmd"` for `.qmd` files, or `format = "rmd"` for R Markdown articles. A collection's `mount` determines its URL
 prefix; an empty mount places its `index.md` at the site root. The `owner`
 determines whether pages appear in project or package navigation.
 
@@ -44,8 +44,9 @@ Plain-text execution output and errors also remain unhighlighted.
 
 Diplodocus implements these selected profiles, not the full Quarto or Pandoc
 languages. Unsupported constructs remain visible as placeholders and produce
-diagnostics. Raw authored HTML, TeX math, footnotes, and arbitrary directives
-are outside the current supported surface. Run `diplodocus check` after editing
+diagnostics. Raw authored HTML and arbitrary directives are outside the supported surface.
+R Markdown additionally supports math, footnotes, citations, simple tables, and
+definition lists. Run `diplodocus check` after editing
 a page to see parser and link diagnostics before any cell executes.
 
 ## Links and assets
@@ -57,6 +58,43 @@ local assets inside a declared source boundary and link to them with relative
 paths. Diplodocus validates local destinations and copies accepted assets into
 the generated site. External HTTP links remain external.
 
-Code fences in GFM and API documentation are always display-only. QMD cells run
+Code fences in GFM and API documentation are always display-only. R Markdown chunks execute during extraction. QMD cells run
 only when their collection explicitly authorizes execution; see [execution and
 security](execution.md) before enabling them.
+
+## R Markdown articles
+
+Diplodocus discovers `.Rmd` and `.rmd` files under an R package's `vignettes/`
+directory and mounts them beneath `vignettes`. To choose a different mount,
+declare a package-owned collection with `format = "rmd"`. Explicit collections
+replace automatic discovery for the same source files.
+
+R Markdown uses native knitr execution with no kernel or execution opt-in.
+Prepare R, pkgload, evaluate, knitr, package dependencies, and prebuilt native
+extensions before building. Each article loads the supplied checkout in a fresh
+R process. Chunks and inline R share state within that article. Relative data
+paths resolve from the article's directory. `check` validates sources and links
+without loading the package or evaluating R.
+
+Fence options and `#|` options retain knitr semantics, including setup defaults,
+computed `eval`, hidden chunks, `results = "asis"`, `knitr::kable()`, warnings,
+messages, explicit permitted errors, and multiple captioned figures. Hidden
+chunks still execute; `eval = FALSE` remains illustrative, and computed false
+conditions retain skip outcomes. Unexpected errors stop publication. Local
+support files participate in input validation and preview watching.
+
+Title, author, and evaluated date metadata appear in the article header.
+`bibliography` names one local BibTeX file or a list of files; optional `csl`
+names a local independent CSL style. Without a style, citations use Chicago
+author-date. Citations link to a formatted reference list beneath References.
+The CSL style and locale archive comes from Hayagriva and the upstream
+[Citation Style Language project](https://citationstyles.org/), with its
+CC BY-SA 3.0 attribution retained in the archive.
+
+Diplodocus renders the evaluated document itself. The `output` and `vignette`
+metadata do not select an rmarkdown HTML template, and neither rmarkdown nor
+Pandoc is required. This release supports R chunks, PNG figures, and static
+Markdown content. Other chunk engines, child documents, persistent knitr caches,
+interactive widgets, and README.Rmd rendering are unsupported. Runtime failures
+leave the previous snapshot and site available. A completed snapshot can be
+rendered with `generate` after removing the checkout and R.

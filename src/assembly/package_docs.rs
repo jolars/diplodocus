@@ -412,6 +412,7 @@ fn markdown(
             format: AuthoredFormat::Gfm,
         },
         source_location: Some(location.clone()),
+        generated_source: None,
         raw_source: Some(text),
         provenance: vec![declaration(&location)],
     })
@@ -466,9 +467,9 @@ fn heading_identifiers(blocks: &mut [Block], identifiers: &mut std::collections:
                     span: *span,
                 });
             }
-            Block::BlockQuote { blocks, .. } | Block::Callout { blocks, .. } => {
-                heading_identifiers(blocks, identifiers)
-            }
+            Block::BlockQuote { blocks, .. }
+            | Block::Container { blocks, .. }
+            | Block::Callout { blocks, .. } => heading_identifiers(blocks, identifiers),
             Block::List { items, .. } => {
                 for item in items {
                     heading_identifiers(&mut item.blocks, identifiers);
@@ -498,6 +499,7 @@ fn generated(blocks: Vec<Block>, text: String) -> SourcedDocument {
         },
         source_format: DocumentFormat::Generated,
         source_location: None,
+        generated_source: None,
         raw_source: Some(text),
         provenance: vec![],
     }
@@ -588,9 +590,9 @@ fn rebase_blocks(
             Block::Paragraph { inlines, .. } | Block::Heading { inlines, .. } => {
                 rebase_inlines(inlines, base, origin, repository)
             }
-            Block::BlockQuote { blocks, .. } | Block::Callout { blocks, .. } => {
-                rebase_blocks(blocks, base, origin, repository)
-            }
+            Block::BlockQuote { blocks, .. }
+            | Block::Container { blocks, .. }
+            | Block::Callout { blocks, .. } => rebase_blocks(blocks, base, origin, repository),
             Block::List { items, .. } => {
                 for item in items {
                     rebase_blocks(&mut item.blocks, base, origin, repository);
@@ -629,6 +631,8 @@ fn rebase_inlines(
             }
             Inline::Emphasis { inlines, .. }
             | Inline::Strong { inlines, .. }
+            | Inline::Styled { inlines, .. }
+            | Inline::Citation { inlines, .. }
             | Inline::Strikeout { inlines, .. } => {
                 rebase_inlines(inlines, base, origin, repository)
             }

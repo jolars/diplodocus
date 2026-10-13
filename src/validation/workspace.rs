@@ -602,12 +602,15 @@ impl Resolver<'_> {
         }
         // Execution has already replaced image targets with staged asset paths.
         // Links still use the owning page's source context for pages and downloads.
-        let rd_figure = spelling.starts_with("rd-example-assets/")
-            && context
-                .document
-                .provenance
-                .iter()
-                .any(|record| matches!(record.activity, ProvenanceActivity::RdExamples { .. }));
+        let rd_figure =
+            (spelling.starts_with("rd-example-assets/")
+                && context.document.provenance.iter().any(|record| {
+                    matches!(record.activity, ProvenanceActivity::RdExamples { .. })
+                }))
+                || (spelling.starts_with("rmd-assets/sha256/")
+                    && context.document.provenance.iter().any(|record| {
+                        matches!(record.activity, ProvenanceActivity::RMarkdown { .. })
+                    }));
         if (generated || rd_figure) && kind == ReferenceKind::Image {
             let path = DiagnosticPath::try_from(file.as_ref()).map_err(|_| invalid)?;
             let asset = self.generated.get(&path).ok_or(invalid)?;
@@ -656,7 +659,7 @@ impl Resolver<'_> {
         // Unselected source documents cannot silently become downloadable pages.
         if matches!(
             canonical.extension().and_then(|s| s.to_str()),
-            Some("md" | "qmd")
+            Some("md" | "qmd" | "rmd" | "Rmd")
         ) {
             return Err(invalid);
         }

@@ -23,9 +23,11 @@ use crate::ir::{
 };
 mod fragments;
 mod preparation;
+mod rmarkdown;
 
 pub use fragments::{MarkdownFragmentOrigin, MarkdownFragmentParse, parse_markdown_fragment};
 pub use preparation::{PreparedDocument, QmdPreparation, prepare_collection_document};
+pub use rmarkdown::{RmdPreparation, parse_evaluated_rmd, prepare_rmd_document};
 
 /// Authored Markdown profile selected by a content collection.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -35,6 +37,8 @@ pub enum AuthoredFormat {
     Gfm,
     /// Diplodocus's documented Quarto Markdown profile.
     Qmd,
+    /// R Markdown articles evaluated by native knitr.
+    Rmd,
 }
 
 /// A retained document plus diagnostics produced during translation or validation.
@@ -75,6 +79,7 @@ enum ParseMode {
     Authored,
     Fragment,
     Collection,
+    Evaluated,
 }
 
 fn parse_document(source: &str, format: AuthoredFormat, mode: ParseMode) -> DocumentParse {
@@ -82,9 +87,14 @@ fn parse_document(source: &str, format: AuthoredFormat, mode: ParseMode) -> Docu
     let flavor = match format {
         AuthoredFormat::Gfm => Flavor::Gfm,
         AuthoredFormat::Qmd => Flavor::Quarto,
+        AuthoredFormat::Rmd => Flavor::RMarkdown,
     };
     let mut options = ParserOptions::for_flavor(flavor);
     options.preserve_unresolved_references = true;
+    if mode == ParseMode::Evaluated {
+        options.extensions.executable_code = false;
+        options.extensions.rmarkdown_inline_code = false;
+    }
     if fragment {
         options.extensions.executable_code = false;
         options.extensions.rmarkdown_inline_code = false;
@@ -94,7 +104,7 @@ fn parse_document(source: &str, format: AuthoredFormat, mode: ParseMode) -> Docu
         options.extensions.implicit_header_references = false;
     }
     let parsed = panache_parser::parse_document(source, Some(options.clone()));
-    let fragment_sources = if fragment {
+    let fragment_sources = if fragment || mode == ParseMode::Evaluated {
         fragments::display_sources(source, parsed.document(), options)
     } else {
         HashMap::new()
@@ -112,11 +122,27 @@ fn parse_document(source: &str, format: AuthoredFormat, mode: ParseMode) -> Docu
         })
         .collect();
 
+    let footnote_definitions = parsed
+        .document()
+        .syntax()
+        .descendants()
+        .filter_map(panache_parser::syntax::FootnoteDefinition::cast)
+        .map(|note| (note.id(), note.content()))
+        .collect();
     let mut context = AdapterContext {
         format,
         fragment,
         fragment_sources,
         references,
+        evaluated: mode == ParseMode::Evaluated,
+        footnotes: Vec::new(),
+        footnote_definitions,
+        footnote_numbers: HashMap::new(),
+        math_delimiters: if format == AuthoredFormat::Rmd {
+            rmarkdown::math_delimiters(parsed.document().syntax())
+        } else {
+            Vec::new()
+        },
         diagnostics: parsed
             .errors()
             .iter()
@@ -144,11 +170,19 @@ fn parse_document(source: &str, format: AuthoredFormat, mode: ParseMode) -> Docu
                 |value| yaml_value(&value),
             )
         });
-    let blocks = parsed
+    let mut blocks: Vec<_> = parsed
         .document()
         .block_nodes()
         .filter_map(|block| context.block(block))
         .collect();
+    if !context.footnotes.is_empty() {
+        blocks.push(Block::Container {
+            kind: crate::ir::DocumentContainerKind::Footnotes,
+            identifier: Some("footnotes".into()),
+            blocks: std::mem::take(&mut context.footnotes),
+            span: span(parsed.document().syntax().text_range()),
+        });
+    }
     if mode == ParseMode::Collection && format == AuthoredFormat::Qmd {
         context
             .diagnostics
@@ -192,6 +226,11 @@ struct AdapterContext {
     fragment_sources: HashMap<TextRange, Vec<SourceSegment>>,
     references: HashMap<String, (String, Option<String>)>,
     diagnostics: Vec<Diagnostic>,
+    evaluated: bool,
+    footnotes: Vec<Block>,
+    footnote_definitions: HashMap<String, String>,
+    footnote_numbers: HashMap<String, usize>,
+    math_delimiters: Vec<SourceSpan>,
 }
 
 impl AdapterContext {
@@ -264,6 +303,18 @@ impl AdapterContext {
             }
             BlockNode::CodeBlock(code) => Some(self.code_block(code)),
             BlockNode::FencedDiv(div) => {
+                if self.evaluated
+                    && div
+                        .attributes()
+                        .is_some_and(|a| a.classes().iter().any(|c| c == "diplodocus-rmd-chunk"))
+                {
+                    return Some(Block::Container {
+                        kind: crate::ir::DocumentContainerKind::GeneratedChunk,
+                        identifier: None,
+                        blocks: div.block_nodes().filter_map(|b| self.block(b)).collect(),
+                        span: span(div.syntax().text_range()),
+                    });
+                }
                 let Some(callout) = div.quarto_callout() else {
                     return Some(self.unsupported(
                         format!("{:?}", div.syntax().kind()),
@@ -286,6 +337,29 @@ impl AdapterContext {
                 span: span(rule.text_range()),
             }),
             BlockNode::Figure(figure) => match figure.image() {
+                Some(image) if self.format == AuthoredFormat::Rmd => {
+                    let image = self.image(image);
+                    let caption = match &image {
+                        Inline::Image { alt, .. } => alt.clone(),
+                        _ => Vec::new(),
+                    };
+                    let range = span(figure.syntax().text_range());
+                    Some(Block::Container {
+                        kind: crate::ir::DocumentContainerKind::Figure,
+                        identifier: None,
+                        blocks: vec![
+                            Block::Paragraph {
+                                inlines: vec![image],
+                                span: range,
+                            },
+                            Block::Paragraph {
+                                inlines: caption,
+                                span: range,
+                            },
+                        ],
+                        span: range,
+                    })
+                }
                 Some(image) => Some(Block::Paragraph {
                     inlines: vec![self.image(image)],
                     span: span(figure.syntax().text_range()),
@@ -298,10 +372,74 @@ impl AdapterContext {
             },
             BlockNode::PandocTitleBlock(node) => Some(self.unsupported_syntax(node.syntax())),
             BlockNode::MmdTitleBlock(node) => Some(self.unsupported_syntax(node.syntax())),
+            BlockNode::DefinitionList(node) if self.format == AuthoredFormat::Rmd => {
+                let mut blocks = Vec::new();
+                for item in node.items() {
+                    for child in item.syntax().children() {
+                        let range = span(child.text_range());
+                        let (kind, content) = if child.kind()
+                            == panache_parser::syntax::SyntaxKind::TERM
+                        {
+                            (
+                                crate::ir::DocumentContainerKind::DefinitionTerm,
+                                vec![Block::Paragraph {
+                                    inlines: child
+                                        .children_with_tokens()
+                                        .map(InlineNode::cast)
+                                        .map(|i| self.inline(i))
+                                        .collect(),
+                                    span: range,
+                                }],
+                            )
+                        } else if child.kind() == panache_parser::syntax::SyntaxKind::DEFINITION {
+                            (
+                                crate::ir::DocumentContainerKind::Definition,
+                                child
+                                    .children()
+                                    .map(|n| BlockNode::cast(n.into()))
+                                    .filter_map(|b| self.block(b))
+                                    .collect(),
+                            )
+                        } else {
+                            continue;
+                        };
+                        blocks.push(Block::Container {
+                            kind,
+                            identifier: None,
+                            blocks: content,
+                            span: range,
+                        });
+                    }
+                }
+                Some(Block::Container {
+                    kind: crate::ir::DocumentContainerKind::DefinitionList,
+                    identifier: None,
+                    blocks,
+                    span: span(node.syntax().text_range()),
+                })
+            }
             BlockNode::DefinitionList(node) => Some(self.unsupported_syntax(node.syntax())),
             BlockNode::LineBlock(node) => Some(self.unsupported_syntax(node.syntax())),
+            BlockNode::FootnoteDefinition(_) if self.format == AuthoredFormat::Rmd => None,
             BlockNode::FootnoteDefinition(node) => Some(self.unsupported_syntax(node.syntax())),
+            BlockNode::DisplayMath(node) if self.format == AuthoredFormat::Rmd => {
+                Some(Block::DisplayMath {
+                    latex: node.content(),
+                    fallback: None,
+                    span: span(node.syntax().text_range()),
+                })
+            }
             BlockNode::DisplayMath(node) => Some(self.unsupported_syntax(node.syntax())),
+            BlockNode::TexBlock(node)
+                if self.format == AuthoredFormat::Rmd
+                    && rmarkdown::math_environment(&node.text()) =>
+            {
+                Some(Block::DisplayMath {
+                    latex: node.text(),
+                    fallback: None,
+                    span: span(node.syntax().text_range()),
+                })
+            }
             BlockNode::TexBlock(node) => Some(self.unsupported_syntax(node.syntax())),
             BlockNode::MystDirective(node) => Some(self.unsupported_syntax(node.syntax())),
             BlockNode::Unknown(node) => {
@@ -331,11 +469,11 @@ impl AdapterContext {
     }
 
     fn code_block(&mut self, code: CodeBlock) -> Block {
-        if self.fragment {
+        if self.fragment || self.evaluated {
             return fragments::display_code(&code, &mut self.fragment_sources)
                 .unwrap_or_else(|| self.unsupported_syntax(code.syntax()));
         }
-        if self.format == AuthoredFormat::Qmd
+        if matches!(self.format, AuthoredFormat::Qmd | AuthoredFormat::Rmd)
             && let Some(cell) = code.executable_cell()
         {
             let declarations = cell.option_declarations();
@@ -438,6 +576,9 @@ impl AdapterContext {
     }
 
     fn table(&mut self, table: PanacheTable) -> Block {
+        if self.format == AuthoredFormat::Rmd && !matches!(table, PanacheTable::Pipe(_)) {
+            return self.rmd_table(table);
+        }
         let PanacheTable::Pipe(table) = table else {
             return self.unsupported_syntax(table.syntax());
         };
@@ -511,7 +652,14 @@ impl AdapterContext {
         let fallback_range = inline.text_range();
         match inline {
             InlineNode::Text(text) => Inline::Text {
-                value: text.decoded(),
+                value: if self.math_delimiters.iter().any(|marker| {
+                    marker.start < span(text.text_range()).end
+                        && marker.end > span(text.text_range()).start
+                }) {
+                    text.decoded().replace('$', "")
+                } else {
+                    text.decoded()
+                },
                 span: span(text.text_range()),
             },
             InlineNode::Space(text) => Inline::Space {
@@ -576,6 +724,20 @@ impl AdapterContext {
                     span: span(reference.syntax().text_range()),
                 }
             }
+            InlineNode::Superscript(container) if self.format == AuthoredFormat::Rmd => {
+                Inline::Styled {
+                    style: crate::ir::InlineStyle::Superscript,
+                    inlines: container.inline_nodes().map(|i| self.inline(i)).collect(),
+                    span: span(container.syntax().text_range()),
+                }
+            }
+            InlineNode::Subscript(container) if self.format == AuthoredFormat::Rmd => {
+                Inline::Styled {
+                    style: crate::ir::InlineStyle::Subscript,
+                    inlines: container.inline_nodes().map(|i| self.inline(i)).collect(),
+                    span: span(container.syntax().text_range()),
+                }
+            }
             InlineNode::Mark(container)
             | InlineNode::Superscript(container)
             | InlineNode::Subscript(container) => self.unsupported_inline(
@@ -583,12 +745,26 @@ impl AdapterContext {
                 container.syntax().text().to_string(),
                 container.syntax().text_range(),
             ),
+            InlineNode::Math(math) if self.format == AuthoredFormat::Rmd => Inline::Math {
+                latex: math.content(),
+                fallback: None,
+                span: span(math.syntax().text_range()),
+            },
+            InlineNode::Executable(code) if self.format == AuthoredFormat::Rmd => Inline::Code {
+                value: code.syntax().text().to_string(),
+                span: span(code.syntax().text_range()),
+            },
             InlineNode::Math(math) => self.unsupported_inline(
                 format!("{:?}", math.syntax().kind()),
                 math.syntax().text().to_string(),
                 math.syntax().text_range(),
             ),
             InlineNode::Unknown(node) => {
+                if self.format == AuthoredFormat::Rmd
+                    && let Some(inline) = self.rmd_unknown(&node)
+                {
+                    return inline;
+                }
                 self.unsupported_inline(node.syntax_name(), node.source_text(), node.text_range())
             }
             _ => self.unsupported_inline(fallback_kind, fallback_raw, fallback_range),

@@ -59,6 +59,7 @@ fn snapshot(workspace: &support::TestWorkspace, reverse_inputs: bool) -> serde_j
         let extension = match collection.format {
             AuthoredFormat::Gfm => "md",
             AuthoredFormat::Qmd => "qmd",
+            AuthoredFormat::Rmd => "Rmd",
         };
         for relative in files {
             if relative.extension().and_then(|value| value.to_str()) != Some(extension) {
@@ -87,6 +88,7 @@ fn snapshot(workspace: &support::TestWorkspace, reverse_inputs: bool) -> serde_j
                     format: collection.format,
                 },
                 source_location: Some(source_location),
+                generated_source: None,
                 raw_source: None,
                 provenance: vec![Provenance {
                     activity: ProvenanceActivity::Declaration,

@@ -23,9 +23,9 @@ use super::{
 };
 
 /// Current portable workspace schema version.
-pub const WORKSPACE_SCHEMA_VERSION: u32 = 2;
+pub const WORKSPACE_SCHEMA_VERSION: u32 = 3;
 
-/// The supported schema version, serialized as the integer `2`.
+/// The supported schema version, serialized as the integer `3`.
 ///
 /// Deserialization rejects unsupported versions instead of interpreting another
 /// schema as this one. The workspace version field is required even though a
@@ -278,6 +278,9 @@ pub struct SourcedDocument {
     pub source_location: Option<SourceLocation>,
     /// Optional raw source retained for diagnostics.
     pub raw_source: Option<String>,
+    /// Evaluated Markdown whose byte ranges index the rendered document.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub generated_source: Option<String>,
     /// Document-specific evidence in source order.
     pub provenance: Vec<Provenance>,
 }

@@ -2,7 +2,7 @@
   "document": {
     "span": {
       "start": 0,
-      "end": 1903
+      "end": 2953
     },
     "frontmatter": null,
     "blocks": [
@@ -735,6 +735,329 @@
         "span": {
           "start": 1671,
           "end": 1903
+        }
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Native R Markdown execution",
+            "span": {
+              "start": 1908,
+              "end": 1935
+            }
+          }
+        ],
+        "span": {
+          "start": 1905,
+          "end": 1936
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "R package vignettes execute by default through knitr during extraction. They use",
+            "span": {
+              "start": 1937,
+              "end": 2017
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2017,
+              "end": 2018
+            }
+          },
+          {
+            "type": "text",
+            "value": "one native R process per article, with shared chunk and inline state and the",
+            "span": {
+              "start": 2018,
+              "end": 2094
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2094,
+              "end": 2095
+            }
+          },
+          {
+            "type": "text",
+            "value": "article's directory as the working directory. Rmd collections default to",
+            "span": {
+              "start": 2095,
+              "end": 2167
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2167,
+              "end": 2168
+            }
+          },
+          {
+            "type": "code",
+            "value": "mode = \"execute\"",
+            "span": {
+              "start": 2168,
+              "end": 2186
+            }
+          },
+          {
+            "type": "text",
+            "value": " and ",
+            "span": {
+              "start": 2186,
+              "end": 2191
+            }
+          },
+          {
+            "type": "code",
+            "value": "engine = \"knitr\"",
+            "span": {
+              "start": 2191,
+              "end": 2209
+            }
+          },
+          {
+            "type": "text",
+            "value": "; a kernel selector or disabled",
+            "span": {
+              "start": 2209,
+              "end": 2240
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2240,
+              "end": 2241
+            }
+          },
+          {
+            "type": "text",
+            "value": "collection is an error. Source options such as ",
+            "span": {
+              "start": 2241,
+              "end": 2288
+            }
+          },
+          {
+            "type": "code",
+            "value": "eval = FALSE",
+            "span": {
+              "start": 2288,
+              "end": 2302
+            }
+          },
+          {
+            "type": "text",
+            "value": " still retain their",
+            "span": {
+              "start": 2302,
+              "end": 2321
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2321,
+              "end": 2322
+            }
+          },
+          {
+            "type": "text",
+            "value": "native meaning. Declared environment inputs can supplement the automatically",
+            "span": {
+              "start": 2322,
+              "end": 2398
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2398,
+              "end": 2399
+            }
+          },
+          {
+            "type": "text",
+            "value": "observed article and support files.",
+            "span": {
+              "start": 2399,
+              "end": 2434
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2434,
+              "end": 2435
+            }
+          }
+        ],
+        "span": {
+          "start": 1937,
+          "end": 2435
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "The caller supplies the prepared checkout and dependencies. Diplodocus does",
+            "span": {
+              "start": 2436,
+              "end": 2511
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2511,
+              "end": 2512
+            }
+          },
+          {
+            "type": "text",
+            "value": "not install packages, compile extensions, or use persistent knitr caches. Native",
+            "span": {
+              "start": 2512,
+              "end": 2592
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2592,
+              "end": 2593
+            }
+          },
+          {
+            "type": "text",
+            "value": "processes have the same privileges as the caller. Failures, cancellation,",
+            "span": {
+              "start": 2593,
+              "end": 2666
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2666,
+              "end": 2667
+            }
+          },
+          {
+            "type": "text",
+            "value": "timeouts, changed inputs, and invalid generated content prevent publication.",
+            "span": {
+              "start": 2667,
+              "end": 2743
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2743,
+              "end": 2744
+            }
+          },
+          {
+            "type": "text",
+            "value": "Snapshots retain evaluated Markdown, chunk outcomes, inline results, validated",
+            "span": {
+              "start": 2744,
+              "end": 2822
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2822,
+              "end": 2823
+            }
+          },
+          {
+            "type": "text",
+            "value": "PNG figures, and actual runtime and dependency versions. Generation needs no R",
+            "span": {
+              "start": 2823,
+              "end": 2901
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2901,
+              "end": 2902
+            }
+          },
+          {
+            "type": "text",
+            "value": "runtime. See ",
+            "span": {
+              "start": 2902,
+              "end": 2915
+            }
+          },
+          {
+            "type": "link",
+            "inlines": [
+              {
+                "type": "text",
+                "value": "R Markdown authoring",
+                "span": {
+                  "start": 2916,
+                  "end": 2936
+                }
+              }
+            ],
+            "target": "authoring.md",
+            "title": null,
+            "attributes": {
+              "identifier": null,
+              "classes": [],
+              "key_values": []
+            },
+            "span": {
+              "start": 2915,
+              "end": 2951
+            }
+          },
+          {
+            "type": "text",
+            "value": ".",
+            "span": {
+              "start": 2951,
+              "end": 2952
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2952,
+              "end": 2953
+            }
+          }
+        ],
+        "span": {
+          "start": 2436,
+          "end": 2953
         }
       }
     ]

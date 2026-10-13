@@ -563,3 +563,22 @@ test("shared R topics retain all usages and navigate methods by class", async ({
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("/.eulergram");
   await expect(main.locator("pre code").nth(0)).toHaveText("`|.eulergram`(e1, e2)");
 });
+
+
+test("R Markdown articles render collected results", async ({ page }, info) => {
+  await page.goto("/packages/r/vignettes/article.html");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("R Markdown workflow");
+  await expect(page.locator(".article-metadata")).toContainText("Example Author");
+  await expect(page.locator("main")).toContainText("The mean is 2.5");
+  await expect(page.locator("main table tr")).toHaveCount(5);
+  await expect(page.locator("main .katex")).toHaveCount(1);
+  await expect(page.locator("main figure figcaption")).toContainText("Squares of the input values.");
+  const image = page.getByRole("img", { name: "Four points increasing from one to sixteen" });
+  await expect(image).toBeVisible();
+  expect(await image.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBeGreaterThan(0);
+  await expect(page.locator(".bibliography-entry")).toContainText("Smith");
+  await expect(page.locator(".footnotes")).toContainText("Chunks share state");
+  await expect(page.locator("main")).not.toContainText("knitr::opts_chunk");
+  await fitsViewport(page);
+  await capture(page, info, "r-vignette");
+});

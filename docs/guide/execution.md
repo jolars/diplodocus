@@ -30,3 +30,22 @@ identity on a cache hit.
 R help-topic examples execute during `extract`, `build`, and `serve` independently
 of QMD configuration. See [R extraction](extraction.md) for the prepared
 environment, illustrative regions, conditional skips, results, and figures.
+
+
+## Native R Markdown execution
+
+R package vignettes execute by default through knitr during extraction. They use
+one native R process per article, with shared chunk and inline state and the
+article's directory as the working directory. Rmd collections default to
+`mode = "execute"` and `engine = "knitr"`; a kernel selector or disabled
+collection is an error. Source options such as `eval = FALSE` still retain their
+native meaning. Declared environment inputs can supplement the automatically
+observed article and support files.
+
+The caller supplies the prepared checkout and dependencies. Diplodocus does
+not install packages, compile extensions, or use persistent knitr caches. Native
+processes have the same privileges as the caller. Failures, cancellation,
+timeouts, changed inputs, and invalid generated content prevent publication.
+Snapshots retain evaluated Markdown, chunk outcomes, inline results, validated
+PNG figures, and actual runtime and dependency versions. Generation needs no R
+runtime. See [R Markdown authoring](authoring.md).

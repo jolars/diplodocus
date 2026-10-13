@@ -10,14 +10,14 @@ use std::time::Duration;
 
 const HELPER: &str = include_str!("rd_examples.R");
 
-struct Process {
-    child: tokio::process::Child,
+pub(super) struct Process {
+    pub(super) child: tokio::process::Child,
     #[cfg(target_os = "linux")]
-    group: Option<rustix::process::Pid>,
+    pub(super) group: Option<rustix::process::Pid>,
 }
 
 impl Process {
-    fn kill(&mut self) {
+    pub(super) fn kill(&mut self) {
         #[cfg(target_os = "linux")]
         if let Some(group) = self.group {
             let _ = rustix::process::kill_process_group(group, rustix::process::Signal::KILL);
@@ -128,7 +128,13 @@ pub(super) async fn execute(
             let input_bytes = fs::read(&path)?;
             let mut command = tokio::process::Command::new("R");
             command
-                .args(["--vanilla", "--slave", "-e", HELPER, "--args"])
+                .args([
+                    "--vanilla",
+                    "--slave",
+                    "-e",
+                    &format!("{}\n{}", include_str!("r_runtime.R"), HELPER),
+                    "--args",
+                ])
                 .arg(&package.path)
                 .arg(&path)
                 .arg(&output)
@@ -235,7 +241,7 @@ pub(super) async fn execute(
     Ok(assets)
 }
 
-async fn terminate(
+pub(super) async fn terminate(
     process: &mut Process,
     deadlines: ExecutionDeadlines,
 ) -> Result<(), AssemblyError> {
