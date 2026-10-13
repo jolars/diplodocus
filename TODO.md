@@ -206,12 +206,13 @@ so regression tests do not require the sibling checkout.
   Snapshots retain `DatasetData` as a type alias with its union definition
   and semantic links from signatures. Imported and qualified `TypeAlias`
   markers from `typing` and `typing_extensions` are supported.
-- [ ] Resolve authored overrides before parsing automatically discovered R
+- [x] Resolve authored overrides before parsing automatically discovered R
   package documents. Datamonger's [community override](../datamonger/documentation/package-pages/r/community.md)
-  replaces the root [contributor guide](../datamonger/CONTRIBUTING.md), but the
-  unused guide still emits 27 `LINE_PREFIX` warnings. Diagnose unsupported
-  syntax only in documents that contribute to the assembled site, and add a
-  regression case for the guide's list syntax.
+  replaces the root [contributor guide](../datamonger/CONTRIBUTING.md), and the
+  unused guide no longer emits `LINE_PREFIX` warnings. Replaced documents retain
+  source aliases without parsing their content; explicitly included documents
+  still receive diagnostics. An isolated regression covers the guide's wrapped
+  lists and nested code fence.
 - [ ] Define how automatically discovered package documents link to repository
   files outside declared content. Datamonger's contributor guide initially
   failed on links to `spec/`, `TRUST.md`, and `OPERATIONS.md`. Consider repository

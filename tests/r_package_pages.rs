@@ -5,6 +5,7 @@ use std::future::pending;
 
 use diplodocus::assembly::{AssemblyError, assemble_workspace};
 use diplodocus::commands::{CheckOptions, ExtractOptions, check, extract, extract_with};
+use diplodocus::diagnostics::{DiagnosticCode, DiagnosticSource};
 use diplodocus::execution::ExecutionDeadlines;
 use diplodocus::ir::{PackageMetadata, ProvenanceActivity};
 use diplodocus::rendering::{RenderedSite, render_site};
@@ -18,6 +19,17 @@ fn fixture() -> support::TestWorkspace {
     root.write("r/DESCRIPTION", "Package: models\nVersion: 1.2.0\nTitle: Tools for Comparing Models\nDescription: Compare model predictions reliably.\nAuthors@R: person('Avery', 'Researcher', role=c('aut', 'cre'), email='avery@example.com')\nDate: 2026-01-01\nLicense: MIT\nURL: https://example.org (Project website), https://example.org/community (Community forum)\nBugReports: https://example.org/issues\n");
     root.write("r/NAMESPACE", "");
     root
+}
+
+fn add_authored_collection(root: &support::TestWorkspace, path: &str, mount: &str) {
+    root.write(
+        "diplodocus.toml",
+        format!(
+            "{}\n[[content]]\nid='r-docs'\nowner='rmodels'\nrepository='repo'\n\
+             path='{path}'\nmount='{mount}'\nformat='gfm'\n[content.execution]\nmode='never'\n",
+            root.read("diplodocus.toml")
+        ),
+    );
 }
 
 fn rendered(root: &support::TestWorkspace) -> RenderedSite {
@@ -119,7 +131,7 @@ fn authored_pages_override_routes_and_discovered_sources_are_not_duplicated() {
     root.write("r/docs/news.md", "# My release notes\n");
     root.write("r/README.md", "# Ignored homepage\n\n[News](NEWS.md)\n");
     root.write("r/NEWS.md", "# Automatically discovered news\n");
-    root.write("diplodocus.toml", format!("{}\n[[content]]\nid='r-docs'\nowner='rmodels'\nrepository='repo'\npath='r/docs'\nmount=''\nformat='gfm'\n[content.execution]\nmode='never'\n", root.read("diplodocus.toml")));
+    add_authored_collection(&root, "r/docs", "");
     let site = rendered(&root);
     assert!(html(&site, "packages/r/index.html").contains("An authored introduction."));
     assert!(!html(&site, "packages/r/index.html").contains("Ignored homepage"));
@@ -128,7 +140,7 @@ fn authored_pages_override_routes_and_discovered_sources_are_not_duplicated() {
 
     let root = fixture();
     root.write("r/README.md", "# My README\n");
-    root.write("diplodocus.toml", format!("{}\n[[content]]\nid='r-docs'\nowner='rmodels'\nrepository='repo'\npath='r'\nmount='guide'\nformat='gfm'\n[content.execution]\nmode='never'\n", root.read("diplodocus.toml")));
+    add_authored_collection(&root, "r", "guide");
     let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
     assert_eq!(
         sources
@@ -144,6 +156,169 @@ fn authored_pages_override_routes_and_discovered_sources_are_not_duplicated() {
         1
     );
     resolve_workspace(&sources).unwrap();
+}
+
+#[test]
+fn community_override_skips_unused_guide_syntax_and_preserves_source_links() {
+    let root = fixture();
+    root.write(
+        "CONTRIBUTING.md",
+        include_str!("fixtures/r-package-pages/CONTRIBUTING.md"),
+    );
+    root.write(
+        "r/CODE_OF_CONDUCT.md",
+        "<div>Unused conduct policy.</div>\n",
+    );
+    root.write(
+        "r/README.md",
+        "# Models\n\n[Contribute](../CONTRIBUTING.md)\n\n[Policy](CODE_OF_CONDUCT.md)\n",
+    );
+    root.write(
+        "r/docs/community.md",
+        "# Community\n\nMaintained community page.\n",
+    );
+    add_authored_collection(&root, "r/docs", "");
+
+    let report = check(CheckOptions {
+        config: root.path().join("diplodocus.toml"),
+    })
+    .unwrap();
+    assert!(report.diagnostics.is_empty(), "{:?}", report.diagnostics);
+    let site = rendered(&root);
+    let overview = html(&site, "packages/r/index.html");
+    assert!(overview.contains("href=\"community%2Ehtml\">Contribute</a>"));
+    assert!(overview.contains("href=\"community%2Ehtml\">Policy</a>"));
+    let community = html(&site, "packages/r/community.html");
+    assert!(community.contains("Maintained community page."));
+    assert!(!community.contains("Unsupported content"));
+    assert!(!community.contains("Unused conduct policy"));
+
+    root.write(
+        "r/docs/community.md",
+        "# Community\n\n<div>Authored unsupported content.</div>\n",
+    );
+    let report = check(CheckOptions {
+        config: root.path().join("diplodocus.toml"),
+    })
+    .unwrap();
+    assert_eq!(report.diagnostics.len(), 1);
+    assert_eq!(
+        report.diagnostics[0].code,
+        DiagnosticCode::UnsupportedAuthoredSyntax
+    );
+    assert!(matches!(
+        &report.diagnostics[0].source,
+        Some(DiagnosticSource::Repository { path, .. }) if path.as_str() == "r/docs/community.md"
+    ));
+}
+
+#[test]
+fn overrides_skip_invalid_overview_news_and_license_documents() {
+    for (route, source) in [
+        ("index", "README.md"),
+        ("news", "NEWS.md"),
+        ("license", "LICENSE.md"),
+    ] {
+        let root = fixture();
+        root.write(
+            format!("r/{source}"),
+            "---\ntitle: [broken\n---\n\n<div>Unused content.</div>\n",
+        );
+        root.write(
+            format!("r/docs/{route}.md"),
+            format!("# Maintained {route}\n\n[Original source](../{source})\n"),
+        );
+        add_authored_collection(&root, "r/docs", "");
+        let report = check(CheckOptions {
+            config: root.path().join("diplodocus.toml"),
+        })
+        .unwrap();
+        assert!(
+            report.diagnostics.is_empty(),
+            "{route}: {:?}",
+            report.diagnostics
+        );
+        let site = rendered(&root);
+        let page = html(&site, &format!("packages/r/{route}.html"));
+        assert!(page.contains(&format!("Maintained {route}")));
+        assert!(page.contains(&format!("href=\"{route}%2Ehtml\"")));
+        assert!(!page.contains("Unused content"));
+
+        let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+        root.write(format!("r/{source}"), [0xff]);
+        assert!(matches!(
+            sources.revalidate(),
+            Err(AssemblyError::InputsChanged)
+        ));
+        assert!(
+            check(CheckOptions {
+                config: root.path().join("diplodocus.toml"),
+            })
+            .unwrap()
+            .diagnostics
+            .is_empty()
+        );
+        root.remove(format!("r/docs/{route}.md"));
+        root.write(format!("r/{source}"), "---\ntitle: [broken\n---\n");
+        let error = check(CheckOptions {
+            config: root.path().join("diplodocus.toml"),
+        })
+        .unwrap_err();
+        assert!(
+            error
+                .diagnostics()
+                .iter()
+                .any(|diagnostic| diagnostic.code == DiagnosticCode::InvalidEmbeddedYaml)
+        );
+    }
+}
+
+#[test]
+fn explicitly_included_original_documents_still_report_unsupported_syntax() {
+    let root = fixture();
+    root.write("r/README.md", "<div>Included README content.</div>\n");
+    root.write("r/index.md", "# Maintained homepage\n");
+    add_authored_collection(&root, "r", "");
+    let report = check(CheckOptions {
+        config: root.path().join("diplodocus.toml"),
+    })
+    .unwrap();
+    assert_eq!(report.diagnostics.len(), 1);
+    assert!(matches!(
+        &report.diagnostics[0].source,
+        Some(DiagnosticSource::Repository { path, .. }) if path.as_str() == "r/README.md"
+    ));
+    let site = rendered(&root);
+    assert!(html(&site, "packages/r/index.html").contains("Maintained homepage"));
+    assert!(html(&site, "packages/r/README.html").contains("Included README content."));
+}
+
+#[test]
+fn authored_news_skips_unused_rd_parsing_and_native_conversion() {
+    let root = fixture();
+    root.write("r/NEWS.Rd", "\\section{Unclosed release notes}{");
+    root.write(
+        "r/docs/news.md",
+        "# Maintained news\n\n[Original source](../NEWS.Rd)\n",
+    );
+    add_authored_collection(&root, "r/docs", "");
+    check(CheckOptions {
+        config: root.path().join("diplodocus.toml"),
+    })
+    .unwrap();
+    let snapshot = completed(&root);
+    let site = render_site(&Site::new(&snapshot).unwrap()).unwrap();
+    let news = html(&site, "packages/r/news.html");
+    assert!(news.contains("Maintained news"));
+    assert!(news.contains("href=\"news%2Ehtml\""));
+    assert!(!news.contains("Unclosed release notes"));
+    root.remove("r/docs/news.md");
+    assert!(
+        check(CheckOptions {
+            config: root.path().join("diplodocus.toml"),
+        })
+        .is_err()
+    );
 }
 
 #[test]
@@ -343,6 +518,9 @@ async fn native_metadata_timeout_and_cancellation_leave_no_snapshot() {
 #[test]
 fn package_documentation_rejects_symlinks_outside_the_package() {
     let root = fixture();
+    root.write("r/docs/index.md", "# Maintained homepage\n");
+    root.write("r/docs/license.md", "# Maintained license\n");
+    add_authored_collection(&root, "r/docs", "");
     root.write("outside.md", "# Outside the declared package\n");
     std::os::unix::fs::symlink(
         root.path().join("outside.md"),

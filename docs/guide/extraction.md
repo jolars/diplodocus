@@ -123,10 +123,14 @@ the documented package. Native errors and timeouts prevent publication. `check`
 validates source syntax and links without evaluating this information.
 
 An explicitly authored page at the package root or a supporting page's route
-takes precedence. Files already included by authored collections are not
-duplicated automatically. README links, heading anchors, and local images use
-the normal reference and asset pipeline. Snapshots retain the metadata, native
-results, documents, and assets so `generate` works without the checkout or R.
+takes precedence. Diplodocus resolves these overrides before parsing the
+automatically discovered documents, so replaced content does not produce syntax
+diagnostics. Links to the original files resolve to the authored replacement.
+Files explicitly included by authored collections still receive diagnostics and
+are not duplicated automatically. README links, heading anchors, and local
+images use the normal reference and asset pipeline. Snapshots retain the
+metadata, native results, documents, and assets so `generate` works without the
+checkout or R.
 README.Rmd rendering remains outside this workflow.
 
 Computed names, conditional namespace directives, dynamic construction, roxygen
