@@ -5,7 +5,8 @@ packages. All three expose six operations: mean squared error, mean absolute err
 root mean squared error, mean error, R squared, and residuals.
 
 The site combines installation and quick-start pages, three shared guides, a
-Python-specific workflow, and all three package references in one left sidebar.
+Python-specific workflow, an executable R vignette, and all three package
+references in one left sidebar.
 Python functions nest under their module; the current package and API ancestors
 open automatically. A separate **On this page** area follows the page's headings.
 Each operation links to its equivalent in the other languages.
@@ -16,6 +17,8 @@ The `[presentation.logo]` table selects this image from the `tinystats` reposito
 The R package has a landing page built from its README and DESCRIPTION. Package
 information links to release notes, authors and citation information, the
 license, and community guidelines. These pages require no content collection.
+Diplodocus also discovers `r/vignettes/evaluating-predictions.Rmd` automatically.
+Its R chunks compute scores and a table, and draw a residual plot.
 
 ```text
 monorepo/
@@ -54,6 +57,7 @@ monorepo/
     R/
     man/
     tests/metrics.R
+    vignettes/evaluating-predictions.Rmd
 ```
 
 ## Build and preview
@@ -82,8 +86,10 @@ Start with the quick start, compare the metrics in the shared guides, and open
 a function under **Reference**. Then search for
 `mean_squared_error` or follow **Same API in** on a function page.
 
-The collections explicitly set `mode = "never"`. Building requires R on `PATH`
-for library discovery and native author and citation information. This example
+The shared and Python collections explicitly set `mode = "never"`. Building
+requires R on `PATH`, with `pkgload`, `knitr`, and `evaluate` available; devenv
+provides these packages. Extraction loads the R checkout to execute Rd examples
+and vignette chunks, and collects author and citation information. This example
 needs no package installation, Python or Julia runtime, or Jupyter kernel. Python
 documentation comes from NumPy-style docstrings. R documentation comes from
 the checked-in `man/*.Rd` files; Diplodocus does not run roxygen2. Julia documentation comes from Julia Markdown
@@ -93,7 +99,9 @@ The current R parser emits an `r-rd-source-attribution` warning because it track
 Rd content at file granularity. This warning does not prevent the site from
 building.
 
-The R README's code fences remain display-only. Extraction evaluates `Authors@R`
+The R README's code fences remain display-only. The vignette's chunks and inline
+R expressions execute with knitr, and Diplodocus renders the collected Markdown,
+table, and figure. Extraction also evaluates `Authors@R`
 and `inst/CITATION` with R and stores the results in the snapshot. `check` validates
 their syntax without evaluating them. Generation from a snapshot needs no R.
 
@@ -108,12 +116,13 @@ cargo run --locked -- generate --input examples/monorepo/.diplodocus/documentati
 
 You can copy `documentation.sqlite` elsewhere and pass it to an already-built
 `diplodocus generate` binary. The snapshot contains the documentation and local
-image; generation needs neither this example's sources nor language runtimes.
+images and evaluated vignette; generation needs neither this example's sources
+nor language runtimes.
 
 The [integration test](../../tests/monorepo_example.rs) copies the source example
-into a temporary directory, runs the commands with an empty `PATH`, checks the
-API links and asset, and compares the built site with one generated after the
-temporary sources have been removed.
+into a temporary directory, checks the API links, vignette, and assets, and
+compares the built site with one generated after the temporary sources have been
+removed. Generation runs with an empty `PATH`.
 
 ## Check the package calculations
 
@@ -142,9 +151,10 @@ package. Shared pages mount at the site root; package references live under
 `packages/python/`, `packages/r/`, and `packages/julia/`. The Python-owned collection mounts its
 guide at `packages/python/guides/`. The R overview lives at `packages/r/`, with
 `news.html`, `authors.html`, `license.html`, and `community.html` beneath it.
+The executable vignette lives at `packages/r/vignettes/evaluating-predictions.html`.
 Links between collections and automatically discovered package pages use ordinary
 relative source paths and are rewritten to the generated page routes.
 
 Update the package metadata, source paths, semantic references, and concept
-members together when renaming the packages or functions. Keep execution
-disabled for a static site like this one.
+members together when renaming the packages or functions. Keep `mode = "never"`
+for display-only guides; R Markdown vignettes execute during extraction.

@@ -565,6 +565,24 @@ test("shared R topics retain all usages and navigate methods by class", async ({
 });
 
 
+test("Tiny Stats vignette evaluates predictions", async ({ page }, info) => {
+  await page.goto("/packages/r/");
+  await page.getByRole("main").getByRole("link", { name: "R vignette", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Evaluating predictions in R");
+  const main = page.getByRole("main");
+  await expect(main).toContainText("The mean squared error is 1, and the mean absolute error is 0.5");
+  await expect(main.locator("table tr")).toHaveCount(6);
+  await expect(main.locator(".katex")).toHaveCount(1);
+  await expect(main.locator("figure figcaption")).toHaveText("The last prediction accounts for all of the error.");
+  const image = main.getByRole("img", { name: "Three residuals are zero; the residual for observed value four is minus two." });
+  await expect(image).toBeVisible();
+  expect(await image.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBeGreaterThan(0);
+  await fitsViewport(page);
+  await capture(page, info, "r-tinystats-vignette");
+  await main.getByRole("link", { name: "Choosing a metric", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Choosing a metric");
+});
+
 test("R Markdown articles render collected results", async ({ page }, info) => {
   await page.goto("/packages/r/vignettes/article.html");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("R Markdown workflow");

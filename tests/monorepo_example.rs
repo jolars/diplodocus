@@ -43,16 +43,16 @@ fn monorepo_example_builds_with_r_and_generates_without_sources_or_runtimes() {
     let snapshot = Snapshot::load(&database).unwrap();
     assert_eq!(snapshot.workspace().repositories.len(), 1);
     assert_eq!(snapshot.workspace().packages.len(), 3);
-    assert_eq!(snapshot.workspace().pages.len(), 14);
+    assert_eq!(snapshot.workspace().pages.len(), 15);
     assert_eq!(snapshot.workspace().concepts.len(), 6);
-    assert_eq!(snapshot.assets().len(), 3);
+    assert_eq!(snapshot.assets().len(), 4);
     assert_eq!(
         snapshot
             .assets()
             .values()
             .filter(|asset| asset.media_type == "image/png")
             .count(),
-        1
+        2
     );
     let logo = snapshot.logo().unwrap();
     assert_eq!(
@@ -72,6 +72,19 @@ fn monorepo_example_builds_with_r_and_generates_without_sources_or_runtimes() {
     assert!(runtime.citation.as_ref().unwrap().bibtex.contains("2026"));
     let site = root.path().join("site");
     let overview = fs::read_to_string(site.join("packages/r/index.html")).unwrap();
+    assert!(overview.contains("vignettes/evaluating%2Dpredictions%2Ehtml"));
+    let vignette =
+        fs::read_to_string(site.join("packages/r/vignettes/evaluating-predictions.html")).unwrap();
+    for text in [
+        "Evaluating predictions in R",
+        "The mean squared error is 1",
+        "mean absolute error is 0.5",
+        "<table>",
+        "<img ",
+        "The last prediction accounts for all of the error.",
+    ] {
+        assert!(vignette.contains(text), "{text}");
+    }
     for text in [
         "Compare predictions",
         "Package information",
