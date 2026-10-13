@@ -196,11 +196,31 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
                 && item.documentation.as_ref().is_some_and(|document| document.document.blocks.iter().any(|block|
                     matches!(block, Block::Heading { level: 2, inlines, .. } if plain(inlines) == "Usage")));
             if !shared_usage {
-                for signature in &item.signatures {
+                let overloads = match &item.language_data {
+                    Some(ItemLanguageData::Python(data)) => match &data.declaration {
+                        PythonDeclaration::Callable {
+                            role: PythonCallableRole::Family { overloads },
+                            ..
+                        } => overloads.as_slice(),
+                        _ => &[],
+                    },
+                    _ => &[],
+                };
+                for (index, signature) in item.signatures.iter().enumerate() {
+                    let anchor = overloads
+                        .get(index)
+                        .map(|member| crate::site::python_overload_anchor(&member.item));
+                    if let Some(anchor) = &anchor {
+                        renderer.identifiers.insert(anchor.clone());
+                        write!(html, "<div id=\"{}\">", escape(anchor)).unwrap();
+                    }
                     html.push_str(&highlighter.render(
                         &super::signatures::signature(&item.name, &signature.signature, ecosystem),
                         Some(ecosystem),
                     ));
+                    if anchor.is_some() {
+                        html.push_str("</div>");
+                    }
                 }
             }
             if let Some(ItemLanguageData::Julia(data)) = &item.language_data {
@@ -268,11 +288,11 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
         if let Some(concept) = page.concept {
             html.push_str(&concept_links(site, route, concept)?);
         }
-        if let Some(identity) = site
-            .routes
-            .iter()
-            .find_map(|(id, path)| (path == route).then_some(id))
-            && let DocumentIdentity::Item { item } = identity
+        if let Some(identity) = site.routes.iter().find_map(|(id, path)| {
+            let overload = matches!(id, DocumentIdentity::Item { item }
+                    if site.overload_anchors.contains_key(item));
+            (path == route && !overload).then_some(id)
+        }) && let DocumentIdentity::Item { item } = identity
         {
             for concept in site
                 .workspace

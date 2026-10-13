@@ -39,6 +39,7 @@ pub struct Site<'a> {
     pub(crate) logo: Option<&'a AssetReference>,
     pub(crate) pages: BTreeMap<String, PageModel<'a>>,
     pub(crate) routes: BTreeMap<DocumentIdentity, String>,
+    pub(crate) overload_anchors: BTreeMap<ItemReference, String>,
     pub(crate) assets: &'a BTreeMap<String, ContentAsset>,
     pub(crate) base_url: Option<url::Url>,
     pub(crate) canonical_urls: BTreeMap<String, String>,
@@ -83,6 +84,7 @@ impl<'a> Site<'a> {
             logo: snapshot.logo(),
             pages: BTreeMap::new(),
             routes: BTreeMap::new(),
+            overload_anchors: BTreeMap::new(),
             assets: snapshot.assets(),
             base_url: snapshot
                 .presentation()
@@ -197,6 +199,24 @@ impl<'a> Site<'a> {
                         item: item_id.clone(),
                     },
                 };
+                if let Some(family) = python_overload_family(item) {
+                    site.routes.insert(
+                        identity,
+                        format!(
+                            "packages/{}/reference/{}.html",
+                            workspace.packages[&family.package].slug,
+                            crate::provenance::fingerprint_bytes(family.item.as_bytes()).value
+                        ),
+                    );
+                    site.overload_anchors.insert(
+                        ItemReference {
+                            package: id.clone(),
+                            item: item_id.clone(),
+                        },
+                        python_overload_anchor(item_id),
+                    );
+                    continue;
+                }
                 let route = format!(
                     "{base}/reference/{}.html",
                     crate::provenance::fingerprint_bytes(item_id.as_bytes()).value
@@ -325,7 +345,7 @@ impl<'a> Site<'a> {
                     .get(&DocumentIdentity::Item { item: item.clone() })
                     .ok_or(SiteError::Evidence)?
                     .clone(),
-                None,
+                self.overload_anchors.get(item).map(String::as_str),
             ),
             ReferenceTarget::Asset { asset, fragment } => (
                 self.asset_route(&asset.fingerprint.value)?,
@@ -349,6 +369,26 @@ impl<'a> Site<'a> {
         };
         Ok(format!("assets/{digest}.{extension}"))
     }
+}
+
+fn python_overload_family(item: &Item) -> Option<&ItemReference> {
+    if let Some(ItemLanguageData::Python(data)) = &item.language_data
+        && let PythonDeclaration::Callable {
+            role: PythonCallableRole::Overload { family },
+            ..
+        } = &data.declaration
+    {
+        Some(family)
+    } else {
+        None
+    }
+}
+
+pub(crate) fn python_overload_anchor(item_id: &str) -> String {
+    format!(
+        "overload-{}",
+        crate::provenance::fingerprint_bytes(item_id.as_bytes()).value
+    )
 }
 
 fn encode_url_path(path: &str) -> String {
@@ -383,4 +423,67 @@ pub(crate) fn relative_url(from: &str, to: &str) -> String {
             .join("/"),
     );
     result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn overload_references_target_signatures_on_the_family_page() {
+        let root = tempfile::tempdir().unwrap();
+        let fixture = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("tests/fixtures/python-overloads");
+        for path in [
+            "diplodocus.toml",
+            "python/pyproject.toml",
+            "python/demo/__init__.py",
+            "python/demo/_api.py",
+            "python/demo/native.pyi",
+        ] {
+            let destination = root.path().join(path);
+            std::fs::create_dir_all(destination.parent().unwrap()).unwrap();
+            std::fs::copy(fixture.join(path), destination).unwrap();
+        }
+        let sources =
+            crate::assembly::assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+        let resolved = crate::validation::resolve_workspace(&sources).unwrap();
+        let snapshot = Snapshot::from_sources(&sources, &resolved).unwrap();
+        let site = Site::new(&snapshot).unwrap();
+        let rendered = crate::rendering::render_site(&site).unwrap();
+        for (id, item) in &site.workspace.packages["python"].items {
+            let Some(family) = python_overload_family(item) else {
+                continue;
+            };
+            let reference = ItemReference {
+                package: "python".into(),
+                item: id.clone(),
+            };
+            let route = &site.routes[&DocumentIdentity::Item {
+                item: family.clone(),
+            }];
+            let target = site
+                .target("index.html", &ReferenceTarget::Item { item: reference })
+                .unwrap();
+            let (destination, fragment) = target.split_once('#').unwrap();
+            assert_eq!(destination, relative_url("index.html", route));
+            let html = std::str::from_utf8(&rendered.files()[route].bytes).unwrap();
+            let fragment = percent_encoding::percent_decode_str(fragment)
+                .decode_utf8()
+                .unwrap();
+            assert!(html.contains(&format!("id=\"{fragment}\"")));
+            assert!(
+                !site
+                    .target(
+                        "index.html",
+                        &ReferenceTarget::Item {
+                            item: family.clone()
+                        }
+                    )
+                    .unwrap()
+                    .contains('#')
+            );
+        }
+        assert_eq!(site.overload_anchors.len(), 7);
+    }
 }

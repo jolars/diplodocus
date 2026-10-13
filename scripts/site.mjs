@@ -1,5 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
-import { appendFileSync, cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { appendFileSync, cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -56,6 +56,13 @@ if (mode === "serve-test") {
         recursive: true,
       });
     }
+    const pythonEntry = join(workspace, "python/src/tinystats/__init__.py");
+    const overloadSource = readFileSync(
+      join(root, "tests/fixtures/python-overloads/python/demo/_api.py"), "utf8",
+    );
+    const pythonSource = readFileSync(pythonEntry, "utf8")
+      .replace('__all__ = [', '__all__ = ["fetch_data", "Reader",');
+    writeFileSync(pythonEntry, `${pythonSource}\n${overloadSource}`);
     cpSync(join(root, "tests/fixtures/r-vignettes"), join(workspace, "r/vignettes"), { recursive: true });
     const internalTopics = join(root, "tests/fixtures/r-internal-topics");
     for (const directory of ["R", "man"]) {

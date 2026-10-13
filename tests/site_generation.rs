@@ -40,6 +40,122 @@ fn code_blocks(html: &str) -> Vec<(bool, String)> {
 }
 
 #[test]
+fn python_overloads_share_one_page_navigation_entry_and_search_result() {
+    use diplodocus::ir::{ItemLanguageData, PythonCallableRole, PythonDeclaration};
+    use diplodocus::validation::resolve_item;
+
+    let root = support::TestWorkspace::from_fixture("python-overloads");
+    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+    let artifact = tempfile::tempdir().unwrap();
+    let path = artifact.path().join("snapshot.sqlite");
+    snapshot.publish(&path).unwrap();
+    drop(sources);
+    drop(root);
+    let loaded = Snapshot::load(&path).unwrap();
+    let rendered =
+        diplodocus::rendering::render_site(&diplodocus::site::Site::new(&loaded).unwrap()).unwrap();
+    let search: Vec<serde_json::Value> =
+        serde_json::from_slice(&rendered.files()["assets/search.json"].bytes).unwrap();
+    let overview =
+        std::str::from_utf8(&rendered.files()["packages/python/index.html"].bytes).unwrap();
+    let navigation = overview
+        .split("<section class=\"nav-group\" role=\"group\" aria-label=\"API reference\">")
+        .nth(1)
+        .unwrap()
+        .split("</nav>")
+        .next()
+        .unwrap();
+    let sitemap = std::str::from_utf8(&rendered.files()["sitemap.xml"].bytes).unwrap();
+
+    for (name, count, prose) in [
+        ("demo.fetch_data", 3, Some("Retrieve one dataset")),
+        ("demo._api.Reader.read", 2, Some("Return the artifact")),
+        ("demo.native_value", 2, None),
+    ] {
+        let family = resolve_item(loaded.workspace(), Some("python"), name).unwrap();
+        let item = &loaded.workspace().packages["python"].items[&family.item];
+        let Some(ItemLanguageData::Python(data)) = &item.language_data else {
+            panic!("missing Python semantics");
+        };
+        let PythonDeclaration::Callable {
+            role: PythonCallableRole::Family { overloads },
+            ..
+        } = &data.declaration
+        else {
+            panic!("missing callable family");
+        };
+        assert_eq!(overloads.len(), count);
+        let route = format!(
+            "packages/python/reference/{}.html",
+            diplodocus::provenance::fingerprint_bytes(family.item.as_bytes()).value
+        );
+        let html = std::str::from_utf8(&rendered.files()[&route].bytes).unwrap();
+        let expected = match name {
+            "demo.fetch_data" => vec![
+                "fetch_data(name: str, *, return_info: typing.Literal[False] = False) -> str",
+                "fetch_data(name: str, *, return_info: typing.Literal[True]) -> tuple[str, str]",
+                "fetch_data(name: str, *, return_info: bool) -> str | tuple[str, str]",
+            ],
+            "demo._api.Reader.read" => vec![
+                "read(self, value: str) -> str",
+                "read(self, value: bytes) -> bytes",
+            ],
+            _ => vec![
+                "native_value(value: int) -> int",
+                "native_value(value: str) -> str",
+            ],
+        };
+        assert_eq!(
+            code_blocks(html),
+            expected
+                .iter()
+                .map(|signature| (true, (*signature).into()))
+                .collect::<Vec<_>>()
+        );
+        if let Some(prose) = prose {
+            assert!(html.contains(prose));
+        }
+        assert_eq!(
+            navigation
+                .matches(&format!("><code>{}</code></a>", item.name))
+                .count(),
+            1
+        );
+        assert_eq!(
+            search
+                .iter()
+                .filter(|entry| entry["title"] == item.qualified_name)
+                .count(),
+            1
+        );
+        assert!(sitemap.contains(&route));
+        for (index, member) in overloads.iter().enumerate() {
+            assert_eq!(
+                resolve_item(loaded.workspace(), Some("python"), &member.item).unwrap(),
+                *member
+            );
+            let digest = diplodocus::provenance::fingerprint_bytes(member.item.as_bytes()).value;
+            assert!(html.contains(&format!("id=\"overload-{digest}\"")));
+            let signature = html
+                .split(&format!("id=\"overload-{digest}\""))
+                .nth(1)
+                .unwrap()
+                .split("</div>")
+                .next()
+                .unwrap();
+            assert_eq!(code_blocks(signature), [(true, expected[index].into())]);
+            assert!(
+                !rendered
+                    .files()
+                    .contains_key(&format!("packages/python/reference/{digest}.html"))
+            );
+            assert!(!sitemap.contains(&digest));
+        }
+    }
+}
+
+#[test]
 fn highlighting_survives_snapshot_generation_without_sources() {
     let root = support::TestWorkspace::new();
     root.write(

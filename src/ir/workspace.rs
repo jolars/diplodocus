@@ -335,6 +335,10 @@ impl Item {
     /// Whether the declaration belongs in public navigation and search.
     pub fn discoverable(&self) -> bool {
         !matches!(&self.language_data, Some(super::ItemLanguageData::R(data)) if data.internal)
+            && !matches!(&self.language_data, Some(super::ItemLanguageData::Python(data))
+            if matches!(&data.declaration, super::PythonDeclaration::Callable {
+                role: super::PythonCallableRole::Overload { .. }, ..
+            }))
     }
 }
 

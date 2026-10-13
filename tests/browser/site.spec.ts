@@ -178,6 +178,29 @@ test("search finds all three APIs and follows a result", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("tinystats.mean_squared_error");
 });
 
+test("Python overloads have one searchable page with every signature", async ({ page }, info) => {
+  await page.goto("/");
+  await page.getByRole("searchbox").fill("fetch_data");
+  const result = page.locator("#search-results").getByRole("link", {
+    name: "tinystats.fetch_data · Tiny Stats for Python", exact: true,
+  });
+  await expect(result).toHaveCount(1);
+  await result.click();
+  const main = page.getByRole("main");
+  await expect(main.getByRole("heading", { level: 1 })).toHaveText("tinystats.fetch_data");
+  await expect(main).toContainText("Retrieve one dataset, optionally returning its metadata.");
+  const signatures = main.locator('[id^="overload-"]');
+  await expect(signatures).toHaveCount(3);
+  await expect(signatures.nth(0)).toContainText("Literal[False]");
+  await expect(signatures.nth(1)).toContainText("Literal[True]");
+  await expect(signatures.nth(2)).toContainText("return_info: bool");
+  await openNavigation(page, info);
+  const reference = page.getByRole("group", { name: "API reference", exact: true });
+  await expect(reference.getByRole("link", { name: "fetch_data", exact: true })).toHaveCount(1);
+  await fitsViewport(page);
+  await capture(page, info, "python-overloads");
+});
+
 test("R package overview exposes metadata and supporting documentation", async ({ page }, info) => {
   await page.goto("/packages/r/");
   const main = page.getByRole("main");

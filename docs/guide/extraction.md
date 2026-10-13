@@ -17,6 +17,11 @@ stubs supply public signatures, while implementation docstrings supply prose.
 PEP 257 and NumPy-style docstrings provide structured documentation, and simple
 `:func:` roles can become cross-references.
 
+Overloaded callables have one reference page containing their public signatures
+and implementation docstring. Navigation and search list the callable once.
+Individual overload identities remain in snapshots, and references to them link
+to the corresponding signature on the callable's page.
+
 Computed exports, conditional definitions, opaque signatures, unsupported
 decorators, and other dynamic behavior cannot be inferred safely. Diplodocus
 reports the limit instead of executing package code or guessing an API. For a

@@ -48,6 +48,8 @@ native modules are valid inputs. Reexports and proven assignment aliases use
 the defining item's identity. Every callable has a family, and overloads also
 have individually addressable signature-based identities. The
 [item identity contract](item-identity.md) defines the wire keys.
+Site generation presents one page per callable family, with signature anchors
+for individual overload references and one navigation and search entry.
 
 The supported surface includes functions, classes, methods, constructors,
 properties, constants, fields, explicit type aliases, and the supported

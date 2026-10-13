@@ -191,11 +191,11 @@ and [site configuration](../datamonger/documentation/diplodocus.toml) to reprodu
 these findings. Keep fixes covered by small, isolated fixtures in this repository
 so regression tests do not require the sibling checkout.
 
-- [ ] Consolidate Python overloads into one documented API page and search
+- [x] Consolidate Python overloads into one documented API page and search
   result. Datamonger's [`fetch_data`](../datamonger/packages/python/src/datamonger/_api.py)
-  currently produces a documented implementation page and three separate
-  overload pages without prose. Preserve all overload signatures without
-  duplicating navigation entries.
+  now has one family page with its implementation prose and all three overload
+  signatures. Individual overload references target stable signature anchors;
+  navigation and search list the callable once.
 - [ ] Prefer public Python reexport names in titles, navigation, and search.
   Display `datamonger.fetch_data` instead of `datamonger._api.fetch_data`, while
   retaining implementation locations for source links and resolving both names.
