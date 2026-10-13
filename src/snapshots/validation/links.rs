@@ -468,7 +468,9 @@ impl Links<'_> {
                 }
             }
             ItemLanguageData::R(data) => match &data.declaration {
-                RDeclaration::Dataset
+                RDeclaration::Constant
+                | RDeclaration::DeprecatedTopic
+                | RDeclaration::Dataset
                 | RDeclaration::Function
                 | RDeclaration::Constructor { .. } => Ok(()),
                 RDeclaration::S3Generic {

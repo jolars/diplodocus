@@ -172,9 +172,9 @@ exposed these compatibility, content, and presentation gaps.
 - [x] Support R Markdown vignettes with knitr chunks, inline R, math, citations,
   and generated figures. Use eulerr's seven vignettes to check the complete
   article workflow.
-- [ ] Handle documented constants and deprecated help aliases, and preserve
-  nested Rd list content. Current eulerr cases are `EULER_PANEL_PAD_PT`,
-  `eulerr_deprecated`, and `eulerr_options`; these block full-package extraction.
+- [x] Handle documented constants and deprecated help aliases, and preserve
+  nested Rd list content. Verified `EULER_PANEL_PAD_PT`, `eulerr_deprecated`,
+  and `eulerr_options` through full-package extraction and site generation.
 - [x] Build package landing pages from README and DESCRIPTION content, retain
   package metadata through assembly, and expose NEWS, citation information,
   authors, licenses, and community links.

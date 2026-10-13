@@ -162,6 +162,16 @@ impl SemanticIdentity {
         Self::r_named(name, "package")
     }
 
+    /// Build a maintained constant's key.
+    pub fn r_constant(name: &str) -> Result<Self, IdentityError> {
+        Self::r_named(name, "constant")
+    }
+
+    /// Build a standalone deprecated help topic key.
+    pub fn r_deprecated_topic(name: &str) -> Result<Self, IdentityError> {
+        Self::r_named(name, "deprecated-topic")
+    }
+
     /// Build a dataset key from its documented object name.
     pub fn r_dataset(name: &str) -> Result<Self, IdentityError> {
         Self::r_named(name, "dataset")

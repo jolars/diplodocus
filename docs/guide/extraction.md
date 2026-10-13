@@ -77,6 +77,12 @@ Dataset topics marked `\docType{data}` create documented data objects without
 requiring source bindings or exports. Their usage lists bare object names, and
 their Format and Source sections retain structured prose, lists, and links.
 
+Documented constants retain literal values and assignment aliases from maintained
+source bindings. Their usage lists bare object names. Standalone help topics
+named `*_deprecated` retain prose and aliases without requiring a function or
+inventing a callable signature. Nested Rd lists and prose between described
+entries retain their content and order.
+
 Standard S3 generics from default R packages resolve without explicit imports.
 R must be available on `PATH`. Package-wide imports use the installed
 dependencies' metadata without loading their namespaces. Documented helpers
@@ -94,7 +100,7 @@ notes, authors and citation information, licenses, and community guidelines.
 Release notes use `NEWS.md`, then `NEWS.Rd`, then plain `NEWS`. Licenses include
 the DESCRIPTION declaration, its local `file` references, and conventional
 `LICENSE`, `LICENSE.md`, `LICENCE`, and `LICENCE.md` files. Contribution guidelines
-and a code of conduct use `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md`, preferring
+and a code of conduct use `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, and `CONDUCT.md`, preferring
 package files over files at the repository root. Missing optional files do not
 create empty pages. A missing file explicitly named by License is an error.
 

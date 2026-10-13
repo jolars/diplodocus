@@ -358,3 +358,17 @@ fn package_documentation_rejects_symlinks_outside_the_package() {
     );
     assert!(assemble_workspace(root.path().join("diplodocus.toml")).is_err());
 }
+
+#[test]
+fn conventional_conduct_filename_resolves_from_contribution_guidelines() {
+    let root = fixture();
+    root.write(
+        "r/CONTRIBUTING.md",
+        "# Contributing\n\n[Policy](CONDUCT.md)\n",
+    );
+    root.write("r/CONDUCT.md", "# Conduct\n\nCommunity policy.\n");
+    let site = rendered(&root);
+    let community = html(&site, "packages/r/community.html");
+    assert!(community.contains("Community policy."));
+    assert!(community.contains("href=\"community%2Ehtml\""));
+}

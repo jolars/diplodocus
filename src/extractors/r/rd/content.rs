@@ -12,6 +12,66 @@ const DOI_PATH: &percent_encoding::AsciiSet = &percent_encoding::CONTROLS
     .add(b'%');
 
 impl Context<'_> {
+    pub(super) fn describe_blocks(&mut self, tagged: &RdTagged, path: &RdPath) -> Vec<Block> {
+        let mut blocks = vec![];
+        let mut items = vec![];
+        for (index, node) in tagged.children().iter().enumerate() {
+            let child_path = path.with_child(index);
+            if matches!(node, RdNode::Comment(_))
+                || matches!(node, RdNode::Text(text) if text.trim().is_empty())
+            {
+                continue;
+            }
+            if matches!(node, RdNode::Tagged(item) if item.tag() == &RdTag::Item) {
+                let list = RdTagged::new(RdTag::Describe, None, vec![node.clone()]);
+                let view = list.inspect_list(&child_path).expect("describe container");
+                for entry in view.items() {
+                    match entry {
+                        Ok(RdListItem::Described(item)) => {
+                            let mut body = vec![Block::Paragraph {
+                                inlines: self.inlines(item.label(), &child_path),
+                                span: self.span(),
+                            }];
+                            body.extend(self.blocks(item.body(), &child_path));
+                            items.push(ListItem {
+                                checked: None,
+                                blocks: body,
+                                span: self.span(),
+                            });
+                        }
+                        Err(error) => {
+                            self.shape(error);
+                            items.push(ListItem {
+                                checked: None,
+                                blocks: vec![self.unsupported_block("list-item", &child_path)],
+                                span: self.span(),
+                            });
+                        }
+                        _ => unreachable!("describe item"),
+                    }
+                }
+            } else {
+                // R permits prose between described entries; preserve its position.
+                if !items.is_empty() {
+                    blocks.push(Block::List {
+                        ordered: false,
+                        items: std::mem::take(&mut items),
+                        span: self.span(),
+                    });
+                }
+                blocks.extend(self.blocks(std::slice::from_ref(node), &child_path));
+            }
+        }
+        if !items.is_empty() {
+            blocks.push(Block::List {
+                ordered: false,
+                items,
+                span: self.span(),
+            });
+        }
+        blocks
+    }
+
     pub(super) fn content_block(&mut self, tagged: &RdTagged, path: &RdPath) -> Vec<Block> {
         let span = self.span();
         match tagged.tag() {

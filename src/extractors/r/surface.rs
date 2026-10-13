@@ -3,7 +3,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use crate::diagnostics::{Diagnostic, DiagnosticCode, Severity};
 use crate::ir::{
     IdentityRegistry, Item, ItemAlias, ItemAliasKind, ItemKind, ItemLanguageData, RDeclaration,
-    RGenericReference, RItemData, SemanticIdentity, SourceLocation, SourceRole,
+    RGenericReference, RItemData, SemanticIdentity, Signature, SourceLocation, SourceRole,
+    SourcedSignature,
 };
 
 use super::{
@@ -48,6 +49,11 @@ pub(super) fn reconcile(
                     .or_default()
                     .insert(name.clone());
             }
+            None if !namespace
+                .methods
+                .iter()
+                .any(|method| method.binding == *name)
+                && resolve_constant(name, &bindings, &mut BTreeSet::new()).is_some() => {}
             None if !namespace
                 .methods
                 .iter()
@@ -309,7 +315,87 @@ pub(super) fn reconcile(
         }
         result.insert(reference.item.clone(), item);
     }
+    let documented: BTreeSet<_> = topics
+        .iter()
+        .filter(|topic| topic.valid && !topic.package && !topic.dataset && topic.has_value_usage())
+        .flat_map(|topic| topic.aliases.iter())
+        .collect();
+    let mut constants = BTreeMap::<String, BTreeSet<String>>::new();
+    for name in namespace.exports.keys().chain(documented) {
+        if let Some(definition) = resolve_constant(name, &bindings, &mut BTreeSet::new()) {
+            constants
+                .entry(definition.name.clone())
+                .or_default()
+                .insert(name.clone());
+        }
+    }
+    for (name, aliases) in constants {
+        let definition = resolve_constant(&name, &bindings, &mut BTreeSet::new()).unwrap();
+        let DefinitionValue::Constant(value) = &definition.value else {
+            unreachable!()
+        };
+        let reference = registry
+            .register(&SemanticIdentity::r_constant(&name).unwrap())
+            .unwrap();
+        result.insert(
+            reference.item,
+            Item {
+                kind: ItemKind::Constant,
+                name: name.clone(),
+                qualified_name: name.clone(),
+                language_data: Some(ItemLanguageData::R(RItemData {
+                    exported: aliases
+                        .iter()
+                        .any(|alias| namespace.exports.contains_key(alias)),
+                    internal: false,
+                    help_topic: None,
+                    declaration: RDeclaration::Constant,
+                })),
+                aliases: aliases
+                    .into_iter()
+                    .filter(|alias| alias != &name)
+                    .map(|alias| ItemAlias {
+                        sources: alias_sources(&alias, &bindings)
+                            .iter()
+                            .map(|source| evidence(source, SourceRole::Definition))
+                            .collect(),
+                        qualified_name: alias,
+                        kind: ItemAliasKind::RAssignment,
+                    })
+                    .collect(),
+                signatures: vec![SourcedSignature {
+                    signature: Signature::Value {
+                        annotation: None,
+                        value: Some(value.clone()),
+                    },
+                    sources: vec![evidence(&definition.source, SourceRole::Signature)],
+                }],
+                documentation: None,
+                source_location: Some(definition.source.clone()),
+                children: vec![],
+                provenance: vec![provenance(&definition.source, false)],
+            },
+        );
+    }
     result
+}
+
+fn resolve_constant<'a>(
+    name: &str,
+    bindings: &BTreeMap<&str, Vec<&'a Definition>>,
+    seen: &mut BTreeSet<String>,
+) -> Option<&'a Definition> {
+    if !seen.insert(name.into()) {
+        return None;
+    }
+    let [definition] = bindings.get(name)?.as_slice() else {
+        return None;
+    };
+    match &definition.value {
+        DefinitionValue::Constant(_) => Some(definition),
+        DefinitionValue::Alias(target) => resolve_constant(target, bindings, seen),
+        _ => None,
+    }
 }
 
 fn dispatch_key(generic: &RGenericReference, class: &str) -> (bool, String, String, String) {
@@ -338,7 +424,7 @@ fn resolve<'a>(
     match &definition.value {
         DefinitionValue::Function { .. } => Some(definition),
         DefinitionValue::Alias(target) => resolve(target, bindings, seen),
-        DefinitionValue::Unsupported => None,
+        DefinitionValue::Constant(_) | DefinitionValue::Unsupported => None,
     }
 }
 

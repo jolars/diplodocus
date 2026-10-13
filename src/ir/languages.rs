@@ -286,6 +286,10 @@ pub struct RHelpTopic {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum RDeclaration {
+    /// A maintained binding with a statically known literal value.
+    Constant,
+    /// A standalone help topic for deprecated aliases.
+    DeprecatedTopic,
     /// A dataset documented by an Rd topic with `\docType{data}`.
     Dataset,
     /// An ordinary named function.

@@ -59,7 +59,7 @@ pub(super) fn discover(
         licenses.sort();
         licenses.dedup();
         let mut community = Vec::new();
-        for name in ["CONTRIBUTING.md", "CODE_OF_CONDUCT.md"] {
+        for name in ["CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "CONDUCT.md"] {
             let selected = optional(&package.path, name, repository)?;
             if let Some(path) = match selected {
                 Some(path) => Some(path),
