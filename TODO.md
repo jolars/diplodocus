@@ -196,10 +196,10 @@ so regression tests do not require the sibling checkout.
   now has one family page with its implementation prose and all three overload
   signatures. Individual overload references target stable signature anchors;
   navigation and search list the callable once.
-- [ ] Prefer public Python reexport names in titles, navigation, and search.
-  Display `datamonger.fetch_data` instead of `datamonger._api.fetch_data`, while
-  retaining implementation locations for source links and resolving both names.
-  Use [the root exports](../datamonger/packages/python/src/datamonger/__init__.py)
+- [x] Prefer public Python reexport names in titles, navigation, and search.
+  Datamonger's root exports now use names such as `datamonger.fetch_data`.
+  Implementation names and source locations remain in snapshots. Both names
+  resolve to the same page. Use [the root exports](../datamonger/packages/python/src/datamonger/__init__.py)
   as the motivating case.
 - [ ] Recognize annotated Python type aliases such as
   `DatasetData: TypeAlias` in [Datamonger's value objects](../datamonger/packages/python/src/datamonger/_models.py).

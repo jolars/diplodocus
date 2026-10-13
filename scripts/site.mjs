@@ -62,7 +62,8 @@ if (mode === "serve-test") {
     );
     const pythonSource = readFileSync(pythonEntry, "utf8")
       .replace('__all__ = [', '__all__ = ["fetch_data", "Reader",');
-    writeFileSync(pythonEntry, `${pythonSource}\n${overloadSource}`);
+    writeFileSync(join(workspace, "python/src/tinystats/_api.py"), overloadSource);
+    writeFileSync(pythonEntry, `${pythonSource}\nfrom ._api import Reader, fetch_data\n`);
     cpSync(join(root, "tests/fixtures/r-vignettes"), join(workspace, "r/vignettes"), { recursive: true });
     const internalTopics = join(root, "tests/fixtures/r-internal-topics");
     for (const directory of ["R", "man"]) {

@@ -50,6 +50,12 @@ have individually addressable signature-based identities. The
 [item identity contract](item-identity.md) defines the wire keys.
 Site generation presents one page per callable family, with signature anchors
 for individual overload references and one navigation and search entry.
+Display names prefer canonical or reexport paths outside private source modules,
+then paths with fewer components. Equal-ranked canonical names take precedence;
+ties between reexports use lexical order. Class and constructor names beginning
+with underscores do not make a path private. Display selection does not change
+identities, aliases, source locations, or provenance. Search indexes the defining
+name and retained aliases alongside the selected display name.
 
 The supported surface includes functions, classes, methods, constructors,
 properties, constants, fields, explicit type aliases, and the supported

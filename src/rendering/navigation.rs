@@ -223,6 +223,12 @@ fn item_tree(
     if !item.discoverable() {
         return (String::new(), false);
     }
+    let destination = &site.routes[&DocumentIdentity::Item {
+        item: ItemReference {
+            package: package_id.into(),
+            item: item_id.into(),
+        },
+    }];
     let title = if package.ecosystem == "julia" && item.kind == crate::ir::ItemKind::Method {
         item.signatures
             .first()
@@ -230,15 +236,16 @@ fn item_tree(
                 super::signatures::signature(&item.name, &signature.signature, "julia")
             })
             .unwrap_or_else(|| item.name.clone())
+    } else if package.ecosystem == "python" {
+        site.pages[destination]
+            .title
+            .rsplit('.')
+            .next()
+            .unwrap()
+            .to_owned()
     } else {
         item.name.clone()
     };
-    let destination = &site.routes[&DocumentIdentity::Item {
-        item: ItemReference {
-            package: package_id.into(),
-            item: item_id.into(),
-        },
-    }];
     let mut active = destination == route;
     let mut children = String::new();
     for child in &item.children {

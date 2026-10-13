@@ -180,6 +180,19 @@ impl<'a> Site<'a> {
             site.routes.insert(identity, route);
         }
         for (id, package) in &workspace.packages {
+            let private_modules: Vec<_> = package
+                .items
+                .values()
+                .filter(|item| {
+                    item.kind == ItemKind::Module
+                        && item
+                            .qualified_name
+                            .split('.')
+                            .skip(1)
+                            .any(|part| part.starts_with('_'))
+                })
+                .map(|item| item.qualified_name.as_str())
+                .collect();
             let base = format!("packages/{}", package.slug);
             let route = format!("{base}/index.html");
             if !site.pages.contains_key(&route) {
@@ -221,7 +234,9 @@ impl<'a> Site<'a> {
                     "{base}/reference/{}.html",
                     crate::provenance::fingerprint_bytes(item_id.as_bytes()).value
                 );
-                let title = if package.ecosystem == "julia" && item.kind == ItemKind::Method {
+                let title = if package.ecosystem == "python" {
+                    python_display_name(item, &private_modules).to_owned()
+                } else if package.ecosystem == "julia" && item.kind == ItemKind::Method {
                     item.signatures
                         .first()
                         .map(|signature| {
@@ -382,6 +397,33 @@ fn python_overload_family(item: &Item) -> Option<&ItemReference> {
     } else {
         None
     }
+}
+
+fn python_display_name<'a>(item: &'a Item, private_modules: &[&str]) -> &'a str {
+    std::iter::once(item.qualified_name.as_str())
+        .chain(
+            item.aliases
+                .iter()
+                .filter(|alias| alias.kind == ItemAliasKind::PythonReexport)
+                .map(|alias| alias.qualified_name.as_str()),
+        )
+        .min_by_key(|name| {
+            // Class and constructor names may start with underscores even on
+            // an explicitly exported API, so only source module paths rank lower.
+            let private = private_modules.iter().any(|module| {
+                *name == *module
+                    || name
+                        .strip_prefix(*module)
+                        .is_some_and(|suffix| suffix.starts_with('.'))
+            });
+            (
+                private,
+                name.split('.').count(),
+                *name != item.qualified_name.as_str(),
+                *name,
+            )
+        })
+        .expect("the canonical name is always a candidate")
 }
 
 pub(crate) fn python_overload_anchor(item_id: &str) -> String {

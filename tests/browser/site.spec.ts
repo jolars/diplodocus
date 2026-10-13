@@ -199,6 +199,15 @@ test("Python overloads have one searchable page with every signature", async ({ 
   await expect(reference.getByRole("link", { name: "fetch_data", exact: true })).toHaveCount(1);
   await fitsViewport(page);
   await capture(page, info, "python-overloads");
+  const destination = page.url();
+  await page.getByRole("searchbox").fill("tinystats._api.fetch_data");
+  const canonicalResult = page.locator("#search-results").getByRole("link", {
+    name: "tinystats.fetch_data · Tiny Stats for Python", exact: true,
+  });
+  await expect(canonicalResult).toHaveCount(1);
+  await canonicalResult.click();
+  await expect(page).toHaveURL(destination);
+  await capture(page, info, "python-public-reexport-search");
 });
 
 test("R package overview exposes metadata and supporting documentation", async ({ page }, info) => {

@@ -192,6 +192,11 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
                 .as_ref()
                 .map(|p| site.workspace.packages[p].ecosystem.as_str())
                 .unwrap_or("");
+            let name = if ecosystem == "python" {
+                page.title.rsplit('.').next().unwrap_or(&item.name)
+            } else {
+                &item.name
+            };
             let shared_usage = matches!(&item.language_data, Some(ItemLanguageData::R(data)) if data.help_topic.is_some())
                 && item.documentation.as_ref().is_some_and(|document| document.document.blocks.iter().any(|block|
                     matches!(block, Block::Heading { level: 2, inlines, .. } if plain(inlines) == "Usage")));
@@ -215,7 +220,7 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
                         write!(html, "<div id=\"{}\">", escape(anchor)).unwrap();
                     }
                     html.push_str(&highlighter.render(
-                        &super::signatures::signature(&item.name, &signature.signature, ecosystem),
+                        &super::signatures::signature(name, &signature.signature, ecosystem),
                         Some(ecosystem),
                     ));
                     if anchor.is_some() {
@@ -359,6 +364,16 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
                     )
                 ));
             }
+            if let Some(item) = page.item
+                && package.is_some_and(|package| package.ecosystem == "python")
+            {
+                search_text.push('\n');
+                search_text.push_str(&item.qualified_name);
+                for alias in &item.aliases {
+                    search_text.push('\n');
+                    search_text.push_str(&alias.qualified_name);
+                }
+            }
             search.push(serde_json::json!({"title": page.title, "path": route.split('/').map(crate::site::encode).collect::<Vec<_>>().join("/"), "package": package.map(|p| &p.name), "ecosystem": package.map(|p| &p.ecosystem), "api": page.item.is_some(), "text": search_text}));
         }
         files.insert(
@@ -453,7 +468,11 @@ fn concept_links(site: &Site<'_>, route: &str, concept: &Concept) -> Result<Stri
             "<li><a href=\"{}\">{}: <code>{}</code></a></li>",
             escape(&relative_url(route, target)),
             escape(&package.name),
-            escape(&package.items[&item.item].qualified_name)
+            escape(if package.ecosystem == "python" {
+                &site.pages[target].title
+            } else {
+                &package.items[&item.item].qualified_name
+            })
         )
         .unwrap();
     }

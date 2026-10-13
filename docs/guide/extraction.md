@@ -22,6 +22,12 @@ and implementation docstring. Navigation and search list the callable once.
 Individual overload identities remain in snapshots, and references to them link
 to the corresponding signature on the callable's page.
 
+Python pages prefer public reexport names over private implementation paths.
+For example, a function defined as `datamonger._api.fetch_data` and exported as
+`datamonger.fetch_data` uses the latter name in its heading, navigation, and
+search result. Both names remain searchable and resolve to the same page.
+Snapshots retain the defining name, source location, and export evidence.
+
 Computed exports, conditional definitions, opaque signatures, unsupported
 decorators, and other dynamic behavior cannot be inferred safely. Diplodocus
 reports the limit instead of executing package code or guessing an API. For a
