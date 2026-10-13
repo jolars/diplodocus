@@ -235,9 +235,18 @@ impl Context<'_> {
                 Stmt::AnnAssign(value) => {
                     if let Expr::Name(name) = &*value.target {
                         if name.id == "__all__" && module { continue; }
-                        let mut declaration = self.declaration(name.id.to_string(), DeclarationKind::Assignment, statement);
-                        let signature = Signature::Value { annotation: Some(self.expressions.expression(&value.annotation)),
-                            value: value.value.as_deref().map(|value| self.assignment_value(value)) };
+                        let annotation = self.expressions.expression(&value.annotation);
+                        let is_type_alias = matches!(&annotation, crate::ir::SignatureExpression::Name { name, .. }
+                            if matches!(name.as_str(), "typing.TypeAlias" | "typing_extensions.TypeAlias"));
+                        let kind = if is_type_alias { DeclarationKind::TypeAlias } else { DeclarationKind::Assignment };
+                        let mut declaration = self.declaration(name.id.to_string(), kind, statement);
+                        let signature = Signature::Value {
+                            annotation: (!is_type_alias).then_some(annotation),
+                            value: value.value.as_deref().map(|value| if is_type_alias {
+                                self.expressions.expression(value)
+                            } else {
+                                self.assignment_value(value)
+                            }) };
                         declaration.signature = Some(self.signature(signature, &declaration.source));
                         declaration.docstring = self.docstring(body.get(index + 1));
                         declarations.push(declaration);

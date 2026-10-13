@@ -201,10 +201,11 @@ so regression tests do not require the sibling checkout.
   Implementation names and source locations remain in snapshots. Both names
   resolve to the same page. Use [the root exports](../datamonger/packages/python/src/datamonger/__init__.py)
   as the motivating case.
-- [ ] Recognize annotated Python type aliases such as
+- [x] Recognize annotated Python type aliases such as
   `DatasetData: TypeAlias` in [Datamonger's value objects](../datamonger/packages/python/src/datamonger/_models.py).
-  The current snapshot classifies `DatasetData` as a constant. Preserve its
-  union definition and links from signatures as a type alias.
+  Snapshots retain `DatasetData` as a type alias with its union definition
+  and semantic links from signatures. Imported and qualified `TypeAlias`
+  markers from `typing` and `typing_extensions` are supported.
 - [ ] Resolve authored overrides before parsing automatically discovered R
   package documents. Datamonger's [community override](../datamonger/documentation/package-pages/r/community.md)
   replaces the root [contributor guide](../datamonger/CONTRIBUTING.md), but the
