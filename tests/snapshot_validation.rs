@@ -108,6 +108,72 @@ fn changed(
 }
 
 #[test]
+fn repository_hyperlinks_retain_their_policy_without_a_checkout() {
+    let root = support::TestWorkspace::new();
+    root.write("diplodocus.toml", "[project]\nname='Repository links'\n[[repository]]\nid='repo'\npath='.'\nurl='https://github.com/example/models'\nrevision='v2'\n[[package]]\nid='rmodels'\nname='Models'\nslug='r'\necosystem='r'\nrepository='repo'\npath='r'\nmetadata-path='DESCRIPTION'\ntargets=[{id='api',extractor='r',path='.',role='public-api'}]\n");
+    root.write("r/NAMESPACE", "");
+    root.write("r/DESCRIPTION", "Package: models\nVersion: 1.0.0\nTitle: Models\nDescription: Compare models.\nLicense: MIT\n");
+    root.write("CONTRIBUTING.md", "[Trust](TRUST.md#details)\n");
+    root.write("TRUST.md", "# Details\n");
+    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+    drop((sources, root));
+    for case in [
+        "repository",
+        "path",
+        "fragment",
+        "external",
+        "origin",
+        "revision",
+        "authored",
+    ] {
+        let result = changed(&snapshot, |export| {
+            if matches!(case, "origin" | "revision") {
+                let repository = record(export, "repository");
+                if case == "origin" {
+                    repository["canonical_url"] =
+                        "https://user:password@github.com/example/models".into();
+                } else {
+                    repository["revision"] = Value::Null;
+                }
+                return;
+            }
+            if case == "authored" {
+                let page = export["records"]
+                    .as_array_mut()
+                    .unwrap()
+                    .iter_mut()
+                    .find(|record| {
+                        record["kind"] == "page" && record["content"]["kind"]["role"] == "community"
+                    })
+                    .unwrap();
+                page["content"]["kind"] = json!({"kind": "authored", "collection": "missing"});
+                return;
+            }
+            let target = export["records"]
+                .as_array_mut()
+                .unwrap()
+                .iter_mut()
+                .filter(|record| record["kind"] == "document")
+                .flat_map(|record| record["content"]["references"].as_array_mut().unwrap())
+                .find(|reference| reference["target"]["kind"] == "repository")
+                .map(|reference| &mut reference["target"])
+                .unwrap();
+            match case {
+                "repository" => target["repository"] = "missing".into(),
+                "path" => target["path"] = "../TRUST.md".into(),
+                "fragment" => target["fragment"] = "substituted".into(),
+                "external" => {
+                    *target = json!({"kind": "external", "url": "https://example.com/substituted"})
+                }
+                _ => unreachable!(),
+            }
+        });
+        assert!(result.is_err(), "accepted {case}");
+    }
+}
+
+#[test]
 fn rejects_inconsistent_r_metadata_and_package_page_ownership() {
     let snapshot = snapshot();
     for field in ["version", "source", "name", "owner"] {

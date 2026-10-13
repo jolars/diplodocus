@@ -8,7 +8,7 @@ combines these two stages. See the [command reference](cli.md) for paths and
 options.
 
 The snapshot manifest has separate storage, documentation IR, and record
-encoding versions. The current reader accepts storage version 2, IR version 3,
+encoding versions. The current reader accepts storage version 2, IR version 4,
 and encoding version 1. It rejects other combinations rather than migrating
 them. If a newer Diplodocus cannot read an older snapshot, extract a new one
 from the original sources before generating the site. The producer's package

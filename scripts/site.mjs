@@ -56,6 +56,14 @@ if (mode === "serve-test") {
         recursive: true,
       });
     }
+    const configuration = join(workspace, "diplodocus.toml");
+    writeFileSync(configuration, readFileSync(configuration, "utf8")
+      .replace('url = "https://github.com/jolars/diplodocus"\n', 'url = "https://github.com/jolars/diplodocus"\nrevision = "main"\n'));
+    mkdirSync(join(workspace, "spec"));
+    writeFileSync(join(workspace, "spec/README.md"), "# Contract\n\nA repository specification.\n");
+    writeFileSync(join(workspace, "TRUST.md"), "# Trust\n\nA repository trust policy.\n");
+    writeFileSync(join(workspace, "OPERATIONS.md"), "# Operations\n\nRepository operations.\n");
+    appendFileSync(join(workspace, "r/CONTRIBUTING.md"), "\nRead the [specification](../spec/README.md#contract), [trust policy](../TRUST.md), and [operations guide](../OPERATIONS.md) before contributing.\n\nSee the [documentation](../docs/index.md) for the shared guide.\n");
     const pythonEntry = join(workspace, "python/src/tinystats/__init__.py");
     const overloadSource = readFileSync(
       join(root, "tests/fixtures/python-overloads/python/demo/_api.py"), "utf8",

@@ -13,7 +13,9 @@ use crate::execution::assets::{validate_authored_image_bytes, validate_image_byt
 use crate::ir::*;
 use crate::provenance::fingerprint_bytes;
 
+mod repository_links;
 mod walk;
+pub(crate) use repository_links::repository_target_url;
 pub(crate) use walk::{anchors as document_anchors, references as document_references};
 
 pub(crate) fn semantic_target<'a>(
@@ -81,6 +83,17 @@ pub enum ReferenceTarget {
         /// Optional decoded fragment, such as a PDF page.
         fragment: Option<String>,
     },
+    /// An existing undeclared target in the discovered document's repository.
+    Repository {
+        /// Repository containing the canonical target.
+        repository: String,
+        /// Canonical repository-relative file or directory.
+        path: DiagnosticPath,
+        /// Whether the target is a directory rather than a regular file.
+        directory: bool,
+        /// Decoded fragment delegated to the repository host.
+        fragment: Option<String>,
+    },
     /// An explicitly allowed external hyperlink, never fetched.
     External {
         /// Original URL accepted by the URL parser.
@@ -145,6 +158,14 @@ pub struct ResolvedWorkspace {
     assets: BTreeMap<String, ContentAsset>,
     diagnostics: BTreeSet<Diagnostic>,
     inputs: BTreeMap<PathBuf, AssetObservation>,
+    repository_targets: BTreeMap<PathBuf, RepositoryTargetObservation>,
+}
+
+#[derive(Debug)]
+struct RepositoryTargetObservation {
+    path: PathBuf,
+    boundary: PathBuf,
+    directory: bool,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -170,11 +191,14 @@ impl ResolvedWorkspace {
     pub fn diagnostics(&self) -> &BTreeSet<Diagnostic> {
         &self.diagnostics
     }
-    /// Local assets consumed by this resolution, for declared-input watching.
+    /// Local assets and repository targets checked by this resolution.
     pub fn input_paths(&self) -> impl Iterator<Item = &Path> {
-        self.inputs.keys().map(PathBuf::as_path)
+        self.inputs
+            .keys()
+            .chain(self.repository_targets.keys())
+            .map(PathBuf::as_path)
     }
-    /// Check selected asset containment and bytes again before publication.
+    /// Recheck asset bytes and repository target containment and type.
     pub fn revalidate(&self) -> Result<(), AssemblyError> {
         for (selected, observation) in &self.inputs {
             let AssetObservation {
@@ -193,6 +217,17 @@ impl ResolvedWorkspace {
                 boundary,
             )?;
             if resolved != *path || fingerprint_bytes(&fs::read(path)?) != *fingerprint {
+                return Err(AssemblyError::InputsChanged);
+            }
+        }
+        for (selected, observation) in &self.repository_targets {
+            let resolved = crate::paths::resolve_repository_target(
+                selected
+                    .strip_prefix(&observation.boundary)
+                    .map_err(|_| AssemblyError::InputsChanged)?,
+                &observation.boundary,
+            )?;
+            if resolved != observation.path || resolved.is_dir() != observation.directory {
                 return Err(AssemblyError::InputsChanged);
             }
         }
@@ -396,6 +431,7 @@ fn resolve(
             assets: BTreeMap::new(),
             diagnostics: workspace.diagnostics.clone(),
             inputs: BTreeMap::new(),
+            repository_targets: BTreeMap::new(),
         },
     };
     resolution
@@ -656,13 +692,6 @@ impl Resolver<'_> {
                 fragment,
             });
         }
-        // Unselected source documents cannot silently become downloadable pages.
-        if matches!(
-            canonical.extension().and_then(|s| s.to_str()),
-            Some("md" | "qmd" | "rmd" | "Rmd")
-        ) {
-            return Err(invalid);
-        }
         let boundary = self
             .sources
             .paths()
@@ -671,8 +700,18 @@ impl Resolver<'_> {
             .map(|c| &c.path)
             .chain(self.sources.paths().packages.iter().map(|p| &p.path))
             .filter(|root| canonical.starts_with(root))
-            .max_by_key(|root| root.components().count())
-            .ok_or(invalid)?;
+            .max_by_key(|root| root.components().count());
+        // Unselected documents remain source links rather than downloadable pages.
+        if canonical.is_dir()
+            || matches!(
+                canonical.extension().and_then(|s| s.to_str()),
+                Some("md" | "qmd" | "rmd" | "Rmd")
+            )
+            || boundary.is_none()
+        {
+            return self.repository_link(context, kind, candidate, fragment);
+        }
+        let boundary = boundary.ok_or(invalid)?;
         let path = crate::paths::resolve_input_file(
             boundary,
             "asset",

@@ -2,7 +2,7 @@
   "document": {
     "span": {
       "start": 0,
-      "end": 10245
+      "end": 11249
     },
     "frontmatter": null,
     "blocks": [
@@ -2756,47 +2756,315 @@
         "inlines": [
           {
             "type": "text",
-            "value": "Computed names, conditional namespace directives, dynamic construction, roxygen",
+            "value": "Automatically discovered package pages can also link to existing repository",
             "span": {
               "start": 8207,
-              "end": 8286
+              "end": 8282
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 8286,
-              "end": 8287
+              "start": 8282,
+              "end": 8283
+            }
+          },
+          {
+            "type": "text",
+            "value": "files outside the declared content, such as ",
+            "span": {
+              "start": 8283,
+              "end": 8327
+            }
+          },
+          {
+            "type": "code",
+            "value": "spec/README.md",
+            "span": {
+              "start": 8327,
+              "end": 8343
+            }
+          },
+          {
+            "type": "text",
+            "value": ", ",
+            "span": {
+              "start": 8343,
+              "end": 8345
+            }
+          },
+          {
+            "type": "code",
+            "value": "TRUST.md",
+            "span": {
+              "start": 8345,
+              "end": 8355
+            }
+          },
+          {
+            "type": "text",
+            "value": ", and",
+            "span": {
+              "start": 8355,
+              "end": 8360
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 8360,
+              "end": 8361
+            }
+          },
+          {
+            "type": "code",
+            "value": "OPERATIONS.md",
+            "span": {
+              "start": 8361,
+              "end": 8376
+            }
+          },
+          {
+            "type": "text",
+            "value": " in a root contributor guide. Declared pages and their source",
+            "span": {
+              "start": 8376,
+              "end": 8437
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 8437,
+              "end": 8438
+            }
+          },
+          {
+            "type": "text",
+            "value": "aliases resolve to site pages first. Other local documents and directories use",
+            "span": {
+              "start": 8438,
+              "end": 8516
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 8516,
+              "end": 8517
+            }
+          },
+          {
+            "type": "text",
+            "value": "a repository URL, as do files outside package and content asset boundaries.",
+            "span": {
+              "start": 8517,
+              "end": 8592
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 8592,
+              "end": 8593
+            }
+          },
+          {
+            "type": "text",
+            "value": "This fallback requires a ",
+            "span": {
+              "start": 8593,
+              "end": 8618
+            }
+          },
+          {
+            "type": "link",
+            "inlines": [
+              {
+                "type": "text",
+                "value": "repository URL or source-link template",
+                "span": {
+                  "start": 8619,
+                  "end": 8657
+                }
+              }
+            ],
+            "target": "configuration.md",
+            "title": null,
+            "attributes": {
+              "identifier": null,
+              "classes": [],
+              "key_values": []
+            },
+            "span": {
+              "start": 8618,
+              "end": 8676
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 8676,
+              "end": 8677
+            }
+          },
+          {
+            "type": "text",
+            "value": "and a declared or observed revision. Missing targets, invalid site anchors,",
+            "span": {
+              "start": 8677,
+              "end": 8752
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 8752,
+              "end": 8753
+            }
+          },
+          {
+            "type": "text",
+            "value": "and paths that leave the source repository remain errors, including symlinks",
+            "span": {
+              "start": 8753,
+              "end": 8829
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 8829,
+              "end": 8830
+            }
+          },
+          {
+            "type": "text",
+            "value": "that leave and reenter it. Diplodocus checks the target's existence and type",
+            "span": {
+              "start": 8830,
+              "end": 8906
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 8906,
+              "end": 8907
+            }
+          },
+          {
+            "type": "text",
+            "value": "without parsing it, reading its contents, or including it in the site.",
+            "span": {
+              "start": 8907,
+              "end": 8977
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 8977,
+              "end": 8978
+            }
+          },
+          {
+            "type": "text",
+            "value": "Fragments on repository links pass to the host without local anchor validation.",
+            "span": {
+              "start": 8978,
+              "end": 9057
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 9057,
+              "end": 9058
+            }
+          },
+          {
+            "type": "text",
+            "value": "Images still require local asset validation. Explicitly authored pages,",
+            "span": {
+              "start": 9058,
+              "end": 9129
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 9129,
+              "end": 9130
+            }
+          },
+          {
+            "type": "text",
+            "value": "including package overrides and R Markdown articles, keep the usual link rules.",
+            "span": {
+              "start": 9130,
+              "end": 9209
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 9209,
+              "end": 9210
+            }
+          }
+        ],
+        "span": {
+          "start": 8207,
+          "end": 9210
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Computed names, conditional namespace directives, dynamic construction, roxygen",
+            "span": {
+              "start": 9211,
+              "end": 9290
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 9290,
+              "end": 9291
             }
           },
           {
             "type": "text",
             "value": "generation, and unsupported Rd markup are not evaluated. Unsupported markup",
             "span": {
-              "start": 8287,
-              "end": 8362
+              "start": 9291,
+              "end": 9366
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 8362,
-              "end": 8363
+              "start": 9366,
+              "end": 9367
             }
           },
           {
             "type": "text",
             "value": "stays visible with a diagnostic. For exact parser and identity rules, see the",
             "span": {
-              "start": 8363,
-              "end": 8440
+              "start": 9367,
+              "end": 9444
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 8440,
-              "end": 8441
+              "start": 9444,
+              "end": 9445
             }
           },
           {
@@ -2806,23 +3074,23 @@
                 "type": "text",
                 "value": "Python extraction",
                 "span": {
-                  "start": 8442,
-                  "end": 8459
+                  "start": 9446,
+                  "end": 9463
                 }
               },
               {
                 "type": "soft-break",
                 "span": {
-                  "start": 8459,
-                  "end": 8460
+                  "start": 9463,
+                  "end": 9464
                 }
               },
               {
                 "type": "text",
                 "value": "contract",
                 "span": {
-                  "start": 8460,
-                  "end": 8468
+                  "start": 9464,
+                  "end": 9472
                 }
               }
             ],
@@ -2834,23 +3102,23 @@
               "key_values": []
             },
             "span": {
-              "start": 8441,
-              "end": 8546
+              "start": 9445,
+              "end": 9550
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 8546,
-              "end": 8547
+              "start": 9550,
+              "end": 9551
             }
           },
           {
             "type": "text",
             "value": "or ",
             "span": {
-              "start": 8547,
-              "end": 8550
+              "start": 9551,
+              "end": 9554
             }
           },
           {
@@ -2860,23 +3128,23 @@
                 "type": "text",
                 "value": "R extraction",
                 "span": {
-                  "start": 8551,
-                  "end": 8563
+                  "start": 9555,
+                  "end": 9567
                 }
               },
               {
                 "type": "soft-break",
                 "span": {
-                  "start": 8563,
-                  "end": 8564
+                  "start": 9567,
+                  "end": 9568
                 }
               },
               {
                 "type": "text",
                 "value": "contract",
                 "span": {
-                  "start": 8564,
-                  "end": 8572
+                  "start": 9568,
+                  "end": 9576
                 }
               }
             ],
@@ -2888,36 +3156,36 @@
               "key_values": []
             },
             "span": {
-              "start": 8550,
-              "end": 8645
+              "start": 9554,
+              "end": 9649
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 8645,
-              "end": 8646
+              "start": 9649,
+              "end": 9650
             }
           },
           {
             "type": "text",
             "value": "in the source repository.",
             "span": {
-              "start": 8646,
-              "end": 8671
+              "start": 9650,
+              "end": 9675
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 8671,
-              "end": 8672
+              "start": 9675,
+              "end": 9676
             }
           }
         ],
         "span": {
-          "start": 8207,
-          "end": 8672
+          "start": 9211,
+          "end": 9676
         }
       },
       {
@@ -2933,14 +3201,14 @@
             "type": "text",
             "value": "Julia",
             "span": {
-              "start": 8676,
-              "end": 8681
+              "start": 9680,
+              "end": 9685
             }
           }
         ],
         "span": {
-          "start": 8673,
-          "end": 8682
+          "start": 9677,
+          "end": 9686
         }
       },
       {
@@ -2950,146 +3218,146 @@
             "type": "text",
             "value": "Julia extraction reads ",
             "span": {
-              "start": 8683,
-              "end": 8706
+              "start": 9687,
+              "end": 9710
             }
           },
           {
             "type": "code",
             "value": "Project.toml",
             "span": {
-              "start": 8706,
-              "end": 8720
+              "start": 9710,
+              "end": 9724
             }
           },
           {
             "type": "text",
             "value": ", an explicit ",
             "span": {
-              "start": 8720,
-              "end": 8734
+              "start": 9724,
+              "end": 9738
             }
           },
           {
             "type": "code",
             "value": ".jl",
             "span": {
-              "start": 8734,
-              "end": 8739
+              "start": 9738,
+              "end": 9743
             }
           },
           {
             "type": "text",
             "value": " entry file, and its",
             "span": {
-              "start": 8739,
-              "end": 8759
+              "start": 9743,
+              "end": 9763
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 8759,
-              "end": 8760
+              "start": 9763,
+              "end": 9764
             }
           },
           {
             "type": "text",
             "value": "unconditional literal includes. Declare ",
             "span": {
-              "start": 8760,
-              "end": 8800
+              "start": 9764,
+              "end": 9804
             }
           },
           {
             "type": "code",
             "value": "ecosystem = \"julia\"",
             "span": {
-              "start": 8800,
-              "end": 8821
+              "start": 9804,
+              "end": 9825
             }
           },
           {
             "type": "text",
             "value": ",",
             "span": {
-              "start": 8821,
-              "end": 8822
+              "start": 9825,
+              "end": 9826
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 8822,
-              "end": 8823
+              "start": 9826,
+              "end": 9827
             }
           },
           {
             "type": "code",
             "value": "metadata-path = \"Project.toml\"",
             "span": {
-              "start": 8823,
-              "end": 8855
+              "start": 9827,
+              "end": 9859
             }
           },
           {
             "type": "text",
             "value": ", and a target with ",
             "span": {
-              "start": 8855,
-              "end": 8875
+              "start": 9859,
+              "end": 9879
             }
           },
           {
             "type": "code",
             "value": "extractor = \"julia\"",
             "span": {
-              "start": 8875,
-              "end": 8896
+              "start": 9879,
+              "end": 9900
             }
           },
           {
             "type": "text",
             "value": " and",
             "span": {
-              "start": 8896,
-              "end": 8900
+              "start": 9900,
+              "end": 9904
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 8900,
-              "end": 8901
+              "start": 9904,
+              "end": 9905
             }
           },
           {
             "type": "code",
             "value": "path = \"src/MyPackage.jl\"",
             "span": {
-              "start": 8901,
-              "end": 8928
+              "start": 9905,
+              "end": 9932
             }
           },
           {
             "type": "text",
             "value": ". Source directories are not valid Julia targets.",
             "span": {
-              "start": 8928,
-              "end": 8977
+              "start": 9932,
+              "end": 9981
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 8977,
-              "end": 8978
+              "start": 9981,
+              "end": 9982
             }
           }
         ],
         "span": {
-          "start": 8683,
-          "end": 8978
+          "start": 9687,
+          "end": 9982
         }
       },
       {
@@ -3099,128 +3367,128 @@
             "type": "text",
             "value": "Exported, ",
             "span": {
-              "start": 8979,
-              "end": 8989
+              "start": 9983,
+              "end": 9993
             }
           },
           {
             "type": "code",
             "value": "public",
             "span": {
-              "start": 8989,
-              "end": 8997
+              "start": 9993,
+              "end": 10001
             }
           },
           {
             "type": "text",
             "value": ", and documented declarations form the maintained surface.",
             "span": {
-              "start": 8997,
-              "end": 9055
+              "start": 10001,
+              "end": 10059
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 9055,
-              "end": 9056
+              "start": 10059,
+              "end": 10060
             }
           },
           {
             "type": "text",
             "value": "Functions have a family page and separate pages for their supplied methods.",
             "span": {
-              "start": 9056,
-              "end": 9131
+              "start": 10060,
+              "end": 10135
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 9131,
-              "end": 9132
+              "start": 10135,
+              "end": 10136
             }
           },
           {
             "type": "text",
             "value": "Types retain fields and explicit constructors. Static imports and aliases",
             "span": {
-              "start": 9132,
-              "end": 9205
+              "start": 10136,
+              "end": 10209
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 9205,
-              "end": 9206
+              "start": 10209,
+              "end": 10210
             }
           },
           {
             "type": "text",
             "value": "resolve to maintained declarations. Julia Markdown docstrings supply prose,",
             "span": {
-              "start": 9206,
-              "end": 9281
+              "start": 10210,
+              "end": 10285
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 9281,
-              "end": 9282
+              "start": 10285,
+              "end": 10286
             }
           },
           {
             "type": "text",
             "value": "lists, tables, admonitions, and inert code examples. API ",
             "span": {
-              "start": 9282,
-              "end": 9339
+              "start": 10286,
+              "end": 10343
             }
           },
           {
             "type": "code",
             "value": "@ref",
             "span": {
-              "start": 9339,
-              "end": 9345
+              "start": 10343,
+              "end": 10349
             }
           },
           {
             "type": "text",
             "value": " links can name a",
             "span": {
-              "start": 9345,
-              "end": 9362
+              "start": 10349,
+              "end": 10366
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 9362,
-              "end": 9363
+              "start": 10366,
+              "end": 10367
             }
           },
           {
             "type": "text",
             "value": "family or select a method, and they preserve their labels.",
             "span": {
-              "start": 9363,
-              "end": 9421
+              "start": 10367,
+              "end": 10425
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 9421,
-              "end": 9422
+              "start": 10425,
+              "end": 10426
             }
           }
         ],
         "span": {
-          "start": 8979,
-          "end": 9422
+          "start": 9983,
+          "end": 10426
         }
       },
       {
@@ -3230,97 +3498,97 @@
             "type": "text",
             "value": "During extraction, unresolved public bindings trigger Julia type reflection in",
             "span": {
-              "start": 9423,
-              "end": 9501
+              "start": 10427,
+              "end": 10505
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 9501,
-              "end": 9502
+              "start": 10505,
+              "end": 10506
             }
           },
           {
             "type": "text",
             "value": "the configured package project. Prepare Julia and the package dependencies",
             "span": {
-              "start": 9502,
-              "end": 9576
+              "start": 10506,
+              "end": 10580
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 9576,
-              "end": 9577
+              "start": 10580,
+              "end": 10581
             }
           },
           {
             "type": "text",
             "value": "before building. The helper verifies the supplied checkout and completes",
             "span": {
-              "start": 9577,
-              "end": 9649
+              "start": 10581,
+              "end": 10653
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 9649,
-              "end": 9650
+              "start": 10653,
+              "end": 10654
             }
           },
           {
             "type": "text",
             "value": "exported types generated by macros, retaining runtime provenance separately from",
             "span": {
-              "start": 9650,
-              "end": 9730
+              "start": 10654,
+              "end": 10734
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 9730,
-              "end": 9731
+              "start": 10734,
+              "end": 10735
             }
           },
           {
             "type": "text",
             "value": "source facts. ",
             "span": {
-              "start": 9731,
-              "end": 9745
+              "start": 10735,
+              "end": 10749
             }
           },
           {
             "type": "code",
             "value": "check",
             "span": {
-              "start": 9745,
-              "end": 9752
+              "start": 10749,
+              "end": 10756
             }
           },
           {
             "type": "text",
             "value": " stays static and reports unresolved generated declarations.",
             "span": {
-              "start": 9752,
-              "end": 9812
+              "start": 10756,
+              "end": 10816
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 9812,
-              "end": 9813
+              "start": 10816,
+              "end": 10817
             }
           }
         ],
         "span": {
-          "start": 9423,
-          "end": 9813
+          "start": 10427,
+          "end": 10817
         }
       },
       {
@@ -3330,60 +3598,60 @@
             "type": "text",
             "value": "Computed includes, conditional declarations, unsupported macros, unresolved",
             "span": {
-              "start": 9814,
-              "end": 9889
+              "start": 10818,
+              "end": 10893
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 9889,
-              "end": 9890
+              "start": 10893,
+              "end": 10894
             }
           },
           {
             "type": "text",
             "value": "functions, and unavailable reexports still produce diagnostics. Extraction does",
             "span": {
-              "start": 9890,
-              "end": 9969
+              "start": 10894,
+              "end": 10973
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 9969,
-              "end": 9970
+              "start": 10973,
+              "end": 10974
             }
           },
           {
             "type": "text",
             "value": "not infer runtime methods or execute doctests. Unsupported documentation syntax",
             "span": {
-              "start": 9970,
-              "end": 10049
+              "start": 10974,
+              "end": 11053
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 10049,
-              "end": 10050
+              "start": 11053,
+              "end": 11054
             }
           },
           {
             "type": "text",
             "value": "remains visible with warnings. The",
             "span": {
-              "start": 10050,
-              "end": 10084
+              "start": 11054,
+              "end": 11088
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 10084,
-              "end": 10085
+              "start": 11088,
+              "end": 11089
             }
           },
           {
@@ -3393,23 +3661,23 @@
                 "type": "text",
                 "value": "Julia extraction",
                 "span": {
-                  "start": 10086,
-                  "end": 10102
+                  "start": 11090,
+                  "end": 11106
                 }
               },
               {
                 "type": "soft-break",
                 "span": {
-                  "start": 10102,
-                  "end": 10103
+                  "start": 11106,
+                  "end": 11107
                 }
               },
               {
                 "type": "text",
                 "value": "contract",
                 "span": {
-                  "start": 10103,
-                  "end": 10111
+                  "start": 11107,
+                  "end": 11115
                 }
               }
             ],
@@ -3421,36 +3689,36 @@
               "key_values": []
             },
             "span": {
-              "start": 10085,
-              "end": 10188
+              "start": 11089,
+              "end": 11192
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 10188,
-              "end": 10189
+              "start": 11192,
+              "end": 11193
             }
           },
           {
             "type": "text",
             "value": "defines the supported subset and method identity rules.",
             "span": {
-              "start": 10189,
-              "end": 10244
+              "start": 11193,
+              "end": 11248
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 10244,
-              "end": 10245
+              "start": 11248,
+              "end": 11249
             }
           }
         ],
         "span": {
-          "start": 9814,
-          "end": 10245
+          "start": 10818,
+          "end": 11249
         }
       }
     ]

@@ -133,6 +133,20 @@ metadata, native results, documents, and assets so `generate` works without the
 checkout or R.
 README.Rmd rendering remains outside this workflow.
 
+Automatically discovered package pages can also link to existing repository
+files outside the declared content, such as `spec/README.md`, `TRUST.md`, and
+`OPERATIONS.md` in a root contributor guide. Declared pages and their source
+aliases resolve to site pages first. Other local documents and directories use
+a repository URL, as do files outside package and content asset boundaries.
+This fallback requires a [repository URL or source-link template](configuration.md)
+and a declared or observed revision. Missing targets, invalid site anchors,
+and paths that leave the source repository remain errors, including symlinks
+that leave and reenter it. Diplodocus checks the target's existence and type
+without parsing it, reading its contents, or including it in the site.
+Fragments on repository links pass to the host without local anchor validation.
+Images still require local asset validation. Explicitly authored pages,
+including package overrides and R Markdown articles, keep the usual link rules.
+
 Computed names, conditional namespace directives, dynamic construction, roxygen
 generation, and unsupported Rd markup are not evaluated. Unsupported markup
 stays visible with a diagnostic. For exact parser and identity rules, see the

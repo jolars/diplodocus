@@ -20,6 +20,37 @@ starting R. Julia extraction reads `Project.toml`, an explicit `.jl` entry file,
 and its literal includes without starting Julia. The [extraction
 guide](extraction.md) describes their supported inputs and limits.
 
+### Repository links
+
+Automatically discovered package pages use repository links for existing local
+targets that are not site pages or accepted downloads. For GitHub, set the
+repository's `url` to `https://github.com/OWNER/REPO`. Diplodocus constructs
+`blob` links for files and `tree` links for directories, using the declared
+`revision` or the observed Git commit. It does not guess a default branch.
+An optional `.git` suffix and trailing slash are accepted.
+
+For other hosts, supply `source-link-template`. The template must contain
+`{revision}` and `{path}`. Diplodocus encodes the revision as one URL segment
+and encodes each component of the canonical repository-relative path. An
+optional `{kind}` expands to `blob` for files or `tree` for directories;
+directory links require it in a custom template. Unknown placeholders are
+errors when the fallback is needed. Templates with `{line}` use `1`, but
+the template's fragment is replaced with the authored fragment or removed
+for a whole-file link. The resulting URL must use HTTP or HTTPS without
+credentials. For example:
+
+```toml
+[[repository]]
+id = "core"
+path = ".."
+revision = "v1.2.0"
+source-link-template = "https://forge.example/team/core/{kind}/{revision}/{path}"
+```
+
+Repository links retain their canonical target and repository identity in the
+snapshot. Generation derives the URL from that snapshot without accessing the
+checkout or fetching the destination.
+
 ## Authored content
 
 Each `[[content]]` collection names a repository, source directory, mount,

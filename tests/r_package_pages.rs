@@ -11,7 +11,7 @@ use diplodocus::ir::{PackageMetadata, ProvenanceActivity};
 use diplodocus::rendering::{RenderedSite, render_site};
 use diplodocus::site::Site;
 use diplodocus::snapshots::Snapshot;
-use diplodocus::validation::resolve_workspace;
+use diplodocus::validation::{ReferenceTarget, resolve_workspace};
 
 fn fixture() -> support::TestWorkspace {
     let root = support::TestWorkspace::new();
@@ -30,6 +30,294 @@ fn add_authored_collection(root: &support::TestWorkspace, path: &str, mount: &st
             root.read("diplodocus.toml")
         ),
     );
+}
+
+fn repository_settings(root: &support::TestWorkspace, settings: &str) {
+    root.write(
+        "diplodocus.toml",
+        root.read("diplodocus.toml").replace(
+            "path='.'\n[[package]]",
+            &format!("path='.'\n{settings}\n[[package]]"),
+        ),
+    );
+}
+
+#[test]
+fn discovered_package_links_fall_back_to_existing_repository_targets() {
+    let root = fixture();
+    repository_settings(
+        &root,
+        "url='https://github.com/example/models.git/'\nrevision='release/v2'",
+    );
+    root.write("CONTRIBUTING.md", "# Contributing\n\n[Specification](spec/README.md#contract)\n[Trust](TRUST.md)\n[Operations](OPERATIONS.md)\n[Schema](spec/schema.json)\n[Directory](spec/)\n[Encoded](spec/a%20%23%25%C3%A9.md#part%20one)\n[Policy](r/CODE_OF_CONDUCT.md#policy)\n");
+    root.write(
+        "spec/README.md",
+        "<div>Unselected, unsupported markup.</div>\n",
+    );
+    root.write("TRUST.md", "---\ntitle: [invalid\n---\n");
+    root.write("OPERATIONS.md", "# Operations\n");
+    root.write("spec/schema.json", "{}\n");
+    root.write("spec/a #%é.md", "# Encoded name\n");
+    root.write(
+        "r/CODE_OF_CONDUCT.md",
+        "# Policy\n\n[Trust again](../TRUST.md)\n",
+    );
+    root.write("r/README.md", "# Models\n\n[Community](../CONTRIBUTING.md)\n[Download](data.csv)\n![Diagram](diagram.svg)\n[Unselected](internal.md)\n");
+    root.write("r/internal.md", "# Internal guide\n");
+    root.write("r/data.csv", "x\n1\n");
+    root.write(
+        "r/diagram.svg",
+        "<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12'/>",
+    );
+    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let resolved = resolve_workspace(&sources).unwrap();
+    assert!(resolved.diagnostics().is_empty());
+    assert_eq!(resolved.assets().len(), 2);
+    assert!(!resolved.records().iter().flat_map(|d| &d.references).any(|r|
+        matches!(&r.target, ReferenceTarget::Repository { path, .. } if path.as_str().contains("CODE_OF_CONDUCT"))));
+    let snapshot = Snapshot::from_sources(&sources, &resolved).unwrap();
+    let portable = tempfile::tempdir().unwrap();
+    let database = portable.path().join("snapshot.sqlite");
+    snapshot.publish(&database).unwrap();
+    drop((snapshot, resolved, sources, root));
+    let loaded = Snapshot::load(database).unwrap();
+    let site = render_site(&Site::new(&loaded).unwrap()).unwrap();
+    let community = html(&site, "packages/r/community.html");
+    let overview = html(&site, "packages/r/index.html");
+    for target in [
+        "blob/release%2Fv2/spec/README.md#contract",
+        "blob/release%2Fv2/TRUST.md",
+        "blob/release%2Fv2/OPERATIONS.md",
+        "blob/release%2Fv2/spec/schema.json",
+        "tree/release%2Fv2/spec",
+        "blob/release%2Fv2/spec/a%20%23%25%C3%A9.md#part%20one",
+        "blob/release%2Fv2/r/internal.md",
+    ] {
+        let href = format!("href=\"https://github.com/example/models/{target}\"");
+        assert!(
+            community.contains(&href) || overview.contains(&href),
+            "{target}"
+        );
+    }
+    assert!(community.contains("href=\"community%2Ehtml#policy\""));
+    assert!(overview.contains("href=\"community%2Ehtml\""));
+    assert!(
+        !site
+            .files()
+            .keys()
+            .any(|path| path.as_str().contains("TRUST"))
+    );
+}
+
+#[test]
+fn repository_templates_support_other_forges_and_preserve_authored_fragments() {
+    let root = fixture();
+    repository_settings(
+        &root,
+        "revision='v2'\nsource-link-template='https://forge.example/models/{kind}/{revision}/{path}#L{line}'",
+    );
+    root.write(
+        "CONTRIBUTING.md",
+        "[Policy](TRUST.md#details) [File](TRUST.md) [Directory](spec/)\n",
+    );
+    root.write("TRUST.md", "# Trust\n");
+    root.write("spec/schema.json", "{}\n");
+    let site = rendered(&root);
+    let community = html(&site, "packages/r/community.html");
+    for url in [
+        "https://forge.example/models/blob/v2/TRUST.md#details",
+        "https://forge.example/models/blob/v2/TRUST.md",
+        "https://forge.example/models/tree/v2/spec",
+    ] {
+        assert!(community.contains(&format!("href=\"{url}\"")), "{url}");
+    }
+}
+
+#[test]
+fn file_templates_do_not_require_a_directory_placeholder() {
+    let root = fixture();
+    repository_settings(
+        &root,
+        "revision='release/v2'\nsource-link-template='https://forge.example/models/blob/{revision}/{path}#L{line}'",
+    );
+    root.write("CONTRIBUTING.md", "[Trust](TRUST.md)\n");
+    root.write("TRUST.md", "# Trust\n");
+    let site = rendered(&root);
+    assert!(
+        html(&site, "packages/r/community.html")
+            .contains("href=\"https://forge.example/models/blob/release%2Fv2/TRUST.md\"")
+    );
+    root.write("CONTRIBUTING.md", "[Directory](spec/)\n");
+    root.write("spec/schema.json", "{}\n");
+    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    assert!(resolve_workspace(&sources).is_err());
+}
+
+#[test]
+fn repository_fallback_uses_the_observed_git_revision() {
+    let root = fixture();
+    repository_settings(&root, "url='https://github.com/example/models'");
+    root.write("CONTRIBUTING.md", "[Trust](TRUST.md)\n");
+    root.write("TRUST.md", "# Trust\n");
+    let git = |args: &[&str]| {
+        let output = std::process::Command::new("git")
+            .arg("-C")
+            .arg(root.path())
+            .args(args)
+            .env("GIT_CONFIG_NOSYSTEM", "1")
+            .env("GIT_CONFIG_GLOBAL", "/dev/null")
+            .env("GIT_AUTHOR_NAME", "Package Link Test")
+            .env("GIT_AUTHOR_EMAIL", "test@example.org")
+            .env("GIT_COMMITTER_NAME", "Package Link Test")
+            .env("GIT_COMMITTER_EMAIL", "test@example.org")
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        String::from_utf8(output.stdout).unwrap().trim().to_owned()
+    };
+    git(&["init", "--quiet"]);
+    git(&["add", "."]);
+    git(&[
+        "-c",
+        "commit.gpgsign=false",
+        "commit",
+        "--quiet",
+        "-m",
+        "fixture",
+    ]);
+    let revision = git(&["rev-parse", "HEAD"]);
+    let site = rendered(&root);
+    assert!(html(&site, "packages/r/community.html").contains(&format!(
+        "href=\"https://github.com/example/models/blob/{revision}/TRUST.md\""
+    )));
+}
+
+#[test]
+fn repository_fallback_requires_a_supported_origin_and_known_revision() {
+    for settings in [
+        "",
+        "url='https://github.com/example/models'",
+        "revision='v2'",
+        "url='https://forge.example/models'\nrevision='v2'",
+        "url='https://github.com/example/models/tree/main'\nrevision='v2'",
+        "url='https://user:password@github.com/example/models'\nrevision='v2'",
+        "revision='v2'\nsource-link-template='javascript:{revision}/{path}'",
+        "revision='v2'\nsource-link-template='https://user:password@forge.example/{revision}/{path}'",
+        "revision='v2'\nsource-link-template='https://forge.example/{unknown}/{revision}/{path}'",
+        "revision='v2'\nsource-link-template='https://forge.example/main/{path}'",
+    ] {
+        let root = fixture();
+        repository_settings(&root, settings);
+        root.write("CONTRIBUTING.md", "[Trust](TRUST.md)\n");
+        root.write("TRUST.md", "# Trust\n");
+        let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+        assert!(resolve_workspace(&sources).is_err(), "{settings}");
+    }
+}
+
+#[test]
+fn missing_targets_invalid_page_anchors_and_images_do_not_use_repository_fallback() {
+    for link in [
+        "[Missing](MISSING.md)",
+        "[Missing directory](missing/)",
+        "[Bad anchor](r/README.md#missing)",
+        "![Remote image](TRUST.md)",
+        "![Undeclared image](diagram.svg)",
+    ] {
+        let root = fixture();
+        repository_settings(
+            &root,
+            "url='https://github.com/example/models'\nrevision='v2'",
+        );
+        root.write("CONTRIBUTING.md", format!("# Contributing\n\n{link}\n"));
+        root.write("r/README.md", "# Models\n");
+        root.write("TRUST.md", "# Trust\n");
+        root.write("diagram.svg", "<svg xmlns='http://www.w3.org/2000/svg'/>");
+        let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+        let error = resolve_workspace(&sources).unwrap_err();
+        assert!(
+            error
+                .diagnostics()
+                .iter()
+                .any(|d| d.code == DiagnosticCode::UnresolvedDocumentReference
+                    && d.source.is_some()
+                    && d.span.is_some()),
+            "{link}"
+        );
+    }
+}
+
+#[test]
+fn authored_package_overrides_keep_strict_local_reference_rules() {
+    let root = fixture();
+    repository_settings(
+        &root,
+        "url='https://github.com/example/models'\nrevision='v2'",
+    );
+    root.write("CONTRIBUTING.md", "# Original\n");
+    root.write("TRUST.md", "# Trust\n");
+    root.write(
+        "r/docs/community.md",
+        "# Authored community\n\n[Trust](../../TRUST.md)\n",
+    );
+    add_authored_collection(&root, "r/docs", "");
+    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    assert!(resolve_workspace(&sources).is_err());
+}
+
+#[test]
+fn repository_targets_are_rechecked_before_snapshot_publication() {
+    let root = fixture();
+    repository_settings(
+        &root,
+        "url='https://github.com/example/models'\nrevision='v2'",
+    );
+    root.write("CONTRIBUTING.md", "[Trust](TRUST.md)\n");
+    root.write("TRUST.md", "# Trust\n");
+    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let resolved = resolve_workspace(&sources).unwrap();
+    assert!(
+        resolved
+            .input_paths()
+            .any(|path| path == root.path().join("TRUST.md"))
+    );
+    root.remove("TRUST.md");
+    assert!(resolved.revalidate().is_err());
+    assert!(Snapshot::from_sources(&sources, &resolved).is_err());
+}
+
+#[cfg(unix)]
+#[test]
+fn repository_fallback_rejects_symlink_escapes_and_retargeted_aliases() {
+    let root = fixture();
+    repository_settings(
+        &root,
+        "url='https://github.com/example/models'\nrevision='v2'",
+    );
+    let outside = tempfile::tempdir().unwrap();
+    fs::write(outside.path().join("TRUST.md"), "# Outside\n").unwrap();
+    std::os::unix::fs::symlink(root.path(), outside.path().join("back")).unwrap();
+    std::os::unix::fs::symlink(outside.path(), root.path().join("outside")).unwrap();
+    root.write("TRUST.md", "# Trust\n");
+    for target in ["outside/TRUST.md", "outside/back/TRUST.md"] {
+        root.write("CONTRIBUTING.md", format!("[Trust]({target})\n"));
+        let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+        assert!(resolve_workspace(&sources).is_err(), "{target}");
+    }
+    root.write("CONTRIBUTING.md", "[Trust](alias.md)\n");
+    std::os::unix::fs::symlink("TRUST.md", root.path().join("alias.md")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let resolved = resolve_workspace(&sources).unwrap();
+    assert!(resolved.records().iter().flat_map(|d| &d.references).any(
+        |r| matches!(&r.target, ReferenceTarget::Repository { path, .. } if path.as_str() == "TRUST.md")
+    ));
+    root.remove("alias.md");
+    std::os::unix::fs::symlink("outside/TRUST.md", root.path().join("alias.md")).unwrap();
+    assert!(resolved.revalidate().is_err());
 }
 
 fn rendered(root: &support::TestWorkspace) -> RenderedSite {

@@ -347,6 +347,10 @@ impl<'a> Site<'a> {
     pub(crate) fn target(&self, from: &str, target: &ReferenceTarget) -> Result<String, SiteError> {
         let (route, fragment) = match target {
             ReferenceTarget::External { url } => return Ok(url.clone()),
+            ReferenceTarget::Repository { .. } => {
+                return crate::validation::repository_target_url(self.workspace, target)
+                    .ok_or(SiteError::Evidence);
+            }
             ReferenceTarget::Anchor { fragment } => return Ok(format!("#{}", encode(fragment))),
             ReferenceTarget::Page { page, fragment } => (
                 self.routes

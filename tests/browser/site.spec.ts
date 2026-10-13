@@ -129,6 +129,26 @@ test("navbar logo loads on nested pages and links home", async ({ page }, info) 
   await capture(page, info, "navbar-logo");
 });
 
+test("discovered community links preserve repository and site destinations", async ({ page }, info) => {
+  await page.goto("/packages/r/community.html");
+  const main = page.getByRole("main");
+  await expect(main.getByRole("heading", { level: 1 })).toHaveText("Community");
+  for (const [label, path] of [
+    ["specification", "spec/README.md#contract"],
+    ["trust policy", "TRUST.md"],
+    ["operations guide", "OPERATIONS.md"],
+  ]) {
+    await expect(main.getByRole("link", { name: label, exact: true }))
+      .toHaveAttribute("href", `https://github.com/jolars/diplodocus/blob/main/${path}`);
+  }
+  await expect(main.getByRole("link", { name: "documentation", exact: true }))
+    .toHaveAttribute("href", "../../index%2Ehtml");
+  await fitsViewport(page);
+  await capture(page, info, "r-community");
+  await main.getByRole("link", { name: "documentation", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Tiny Stats");
+});
+
 test("footer identifies the docs and exposes project, license, and generator links", async ({ page }, info) => {
   for (const path of ["/", "/guides/comparing-predictions.html", "/packages/r/"]) {
     await page.goto(path);
