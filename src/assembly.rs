@@ -25,6 +25,8 @@ use crate::provenance::{
 };
 
 mod authored;
+mod julia_runtime;
+pub(crate) use julia_runtime::assemble_for_extraction;
 #[cfg(target_os = "linux")]
 mod execution;
 mod package_docs;
@@ -245,7 +247,13 @@ impl ExecutedWorkspace {
 /// Reports malformed declarations, unsafe paths, conflicting fragments,
 /// unresolved concepts, source diagnostics, I/O, or changed input observations.
 pub fn assemble_workspace(path: impl AsRef<Path>) -> Result<WorkspaceSources, AssemblyError> {
-    let path = path.as_ref();
+    assemble_with_julia(path.as_ref(), BTreeMap::new())
+}
+
+fn assemble_with_julia(
+    path: &Path,
+    mut julia_results: BTreeMap<(String, String), crate::extractors::julia::JuliaExtraction>,
+) -> Result<WorkspaceSources, AssemblyError> {
     let text = fs::read_to_string(path).map_err(|source| ConfigurationError::Read {
         path: path.to_owned(),
         source,
@@ -302,6 +310,7 @@ pub fn assemble_workspace(path: impl AsRef<Path>) -> Result<WorkspaceSources, As
         &mut workspace,
         &mut selections,
         &mut observed,
+        &mut julia_results,
     )?;
     let prepared_pages = authored::assemble(
         &configuration,

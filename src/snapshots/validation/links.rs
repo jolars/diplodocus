@@ -242,6 +242,31 @@ impl Links<'_> {
                 self.diagnostic_source(source)?;
             }
             match &record.activity {
+                ProvenanceActivity::JuliaRuntime {
+                    target,
+                    policy,
+                    julia_version,
+                    package_name,
+                    package_uuid,
+                    package_version,
+                    dependencies,
+                } => {
+                    require(
+                        self.0.packages.get(&target.package).is_some_and(|p| {
+                            p.extraction_targets
+                                .get(&target.target)
+                                .is_some_and(|t| t.extractor == "julia")
+                        }) && policy == "julia-runtime-v1"
+                            && !julia_version.is_empty()
+                            && !package_name.is_empty()
+                            && !package_uuid.is_empty()
+                            && !package_version.is_empty()
+                            && !dependencies.is_empty()
+                            && record.source.is_none()
+                            && record.span.is_none(),
+                        "Julia runtime provenance",
+                    )?;
+                }
                 ProvenanceActivity::RMarkdown {
                     package,
                     policy,

@@ -18,6 +18,7 @@ use crate::provenance::{BuiltinExtractor, ExtractionObservation, fingerprint_byt
 
 pub mod docstrings;
 mod metadata;
+pub(crate) mod runtime;
 mod signatures;
 mod source;
 mod surface;

@@ -7,8 +7,9 @@ implementation.
 
 The [prepared-environment decision](../decisions/0003-prepared-environment.md)
 changes the intended extraction contract to allow runtime assistance and require
-example execution. R extraction uses native helpers to complete authors and
-citations and now loads the checkout to execute Rd examples. Python, Julia, and
+example execution. Julia extraction completes unresolved exported types through
+native reflection while `check` remains static. R extraction uses native helpers
+to complete authors and citations and now loads the checkout to execute Rd examples. Python, Julia, and
 QMD default-execution changes remain pending. The pipeline and test map below
 describe the current implementation; [remaining work](../../TODO.md) tracks the
 transition.
@@ -21,8 +22,10 @@ transition.
 
 1. `src/configuration.rs` and `src/paths.rs` load declarations and resolve
    source boundaries.
-2. `src/extractors/` reads Python, R, and Julia packages without importing or running
-   them. `src/documents/` parses Markdown and QMD. `src/assembly/` combines
+2. `src/extractors/` reads Python, R, and Julia sources. During extraction,
+   `src/assembly/julia_runtime.rs` loads the prepared Julia checkout when public
+   types need runtime completion. `check` uses source analysis alone.
+   `src/documents/` parses Markdown and QMD. `src/assembly/` combines
    those inputs into the types in `src/ir/`.
 3. `src/validation/` resolves references and assets. On Linux,
    `src/execution/` runs authorized QMD cells through Jupyter and validates

@@ -126,7 +126,8 @@ verified during extraction.
 ## Implementation transition
 
 This decision changes the intended contract, not the current binary. Current
-source adapters still analyze declarations statically. Extraction executes R Rd
+source adapters still analyze declarations statically, and Julia extraction now
+completes unresolved exported types through native reflection. Extraction executes R Rd
 examples in the prepared checkout environment; Python and Julia API examples
 remain inert, and QMD execution still requires the existing explicit configuration.
 The guides and language-specific implementation references describe that behavior until the

@@ -40,6 +40,23 @@ pub struct Provenance {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum ProvenanceActivity {
+    /// Julia type reflection in the verified supplied checkout.
+    JuliaRuntime {
+        /// Owning extraction target.
+        target: TargetReference,
+        /// Native helper contract.
+        policy: String,
+        /// Observed Julia interpreter version.
+        julia_version: String,
+        /// Loaded package identity and version.
+        package_name: String,
+        /// Loaded package UUID.
+        package_uuid: String,
+        /// Loaded package version.
+        package_version: String,
+        /// Loaded dependency UUIDs and versions, without library paths.
+        dependencies: BTreeMap<String, String>,
+    },
     /// Completed native R Markdown execution in the prepared checkout.
     RMarkdown {
         /// Owning workspace package.

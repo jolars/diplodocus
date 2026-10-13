@@ -67,6 +67,7 @@ let
 in
 {
   packages = with pkgs; [
+    julia
     actionlint
     cargo-audit
     cargo-deny
