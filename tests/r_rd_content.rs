@@ -230,7 +230,7 @@ fn rd_help_labels_local_aliases_and_external_urls_survive_snapshot_loading() {
         .values()
         .filter(|file| file.media_type.starts_with("text/html"))
         .map(|file| std::str::from_utf8(&file.bytes).unwrap())
-        .find(|html| html.contains("<h1><code>rd_content</code></h1>"))
+        .find(|html| html.contains("<p class=\"api-name\"><code>rd_content</code></p>"))
         .unwrap();
     assert!(html.contains("><em>friendly label</em></a>"));
     assert!(html.contains("><code>rd_content()</code></a>"));
@@ -334,7 +334,7 @@ fn math_and_help_evidence_render_without_the_source_workspace() {
         .values()
         .filter(|file| file.media_type.starts_with("text/html"))
         .map(|file| std::str::from_utf8(&file.bytes).unwrap())
-        .find(|html| html.contains("<h1><code>rd_content</code></h1>"))
+        .find(|html| html.contains("<p class=\"api-name\"><code>rd_content</code></p>"))
         .unwrap();
     assert_eq!(
         html.matches("class=\"math math-rendered math-display\"")
@@ -371,7 +371,7 @@ fn invalid_and_untrusted_equations_have_readable_escaped_output() {
         .values()
         .filter(|file| file.media_type.starts_with("text/html"))
         .map(|file| std::str::from_utf8(&file.bytes).unwrap())
-        .find(|html| html.contains("<h1><code>rd_content</code></h1>"))
+        .find(|html| html.contains("<p class=\"api-name\"><code>rd_content</code></p>"))
         .unwrap();
     assert!(html.contains("&lt;fallback&gt;"));
     assert!(html.contains("math-fallback"));

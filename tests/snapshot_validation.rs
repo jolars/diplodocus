@@ -819,8 +819,9 @@ fn legacy_rd_fallback_payloads_never_render_as_document_copies() {
         .values()
         .filter(|file| file.media_type.starts_with("text/html"))
         .map(|file| std::str::from_utf8(&file.bytes).unwrap())
-        .find(|html| html.contains("<h1><code>experimental_summary</code></h1>"))
+        .find(|html| html.contains("<p class=\"api-name\"><code>experimental_summary</code></p>"))
         .unwrap();
+    assert!(html.contains("<h1>Example</h1>"));
     assert!(html.contains("Before "));
     assert!(html.contains(" after."));
     assert!(html.contains("[Unsupported Rd: \\Sexpr]"));

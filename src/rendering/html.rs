@@ -60,7 +60,7 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
         if let Some(url) = site.canonical_urls.get(route) {
             write!(html, "<link rel=\"canonical\" href=\"{}\">", escape(url)).unwrap();
         }
-        write!(html, "<title>{} · {}</title><link rel=\"stylesheet\" href=\"{}\"><script defer src=\"{}\"></script><script defer src=\"{}\"></script>", escape(&page.title), escape(site.title()), escape(&relative_url(route, "assets/site.css")), escape(&relative_url(route, "assets/search.js")), escape(&relative_url(route, "assets/nav.js"))).unwrap();
+        write!(html, "<title>{} · {}</title><link rel=\"stylesheet\" href=\"{}\"><script defer src=\"{}\"></script><script defer src=\"{}\"></script><script defer src=\"{}\"></script>", escape(&page.title), escape(site.title()), escape(&relative_url(route, "assets/site.css")), escape(&relative_url(route, "assets/search.js")), escape(&relative_url(route, "assets/nav.js")), escape(&relative_url(route, "assets/code.js"))).unwrap();
         if page_math {
             write!(
                 html,
@@ -133,7 +133,9 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
                 )
             });
         if !authored_title {
-            let title = if page.item.is_some() {
+            let title = if let Some(inlines) = page.item.and_then(super::r_topics::title) {
+                renderer.inlines(inlines)?
+            } else if page.item.is_some() {
                 format!(
                     "<code>{}</code>",
                     escape(
@@ -148,6 +150,17 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
         } else if package_overview {
             let document = page.document.expect("authored overview title");
             html.push_str(&renderer.blocks(&document.document.blocks[..1])?);
+        }
+        if let Some(item) = page.item
+            && matches!(&item.language_data, Some(ItemLanguageData::R(_)))
+        {
+            write!(
+                html,
+                "<p class=\"api-name\"><code>{}</code></p>",
+                escape(&item.qualified_name)
+            )
+            .unwrap();
+            html.push_str(&super::r_topics::source_links(site, item));
         }
         if let Some(document) = page.document
             && matches!(
@@ -186,6 +199,21 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
             )
             .unwrap();
         }
+        let mut rd_body_start = None;
+        if let Some(item) = page.item
+            && matches!(&item.language_data, Some(ItemLanguageData::R(_)))
+            && let Some(document) = page.document
+        {
+            let title_end = usize::from(super::r_topics::title(item).is_some());
+            let introduction_end = document.document.blocks[title_end..]
+                .iter()
+                .position(|block| matches!(block, Block::Heading { .. }))
+                .map_or(document.document.blocks.len(), |index| index + title_end);
+            html.push_str(
+                &renderer.blocks(&document.document.blocks[title_end..introduction_end])?,
+            );
+            rd_body_start = Some(introduction_end);
+        }
         if let Some(item) = page.item {
             let ecosystem = page
                 .owner
@@ -197,10 +225,10 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
             } else {
                 &item.name
             };
-            let shared_usage = matches!(&item.language_data, Some(ItemLanguageData::R(data)) if data.help_topic.is_some())
+            let rd_usage = matches!(&item.language_data, Some(ItemLanguageData::R(_)))
                 && item.documentation.as_ref().is_some_and(|document| document.document.blocks.iter().any(|block|
                     matches!(block, Block::Heading { level: 2, inlines, .. } if plain(inlines) == "Usage")));
-            if !shared_usage {
+            if !rd_usage {
                 let overloads = match &item.language_data {
                     Some(ItemLanguageData::Python(data)) => match &data.declaration {
                         PythonDeclaration::Callable {
@@ -264,12 +292,23 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
             }
         }
         if let Some(document) = page.document {
-            let blocks = if package_overview && authored_title {
+            let blocks = if let Some(start) = rd_body_start {
+                &document.document.blocks[start..]
+            } else if (package_overview && authored_title)
+                || page.item.and_then(super::r_topics::title).is_some()
+            {
                 &document.document.blocks[1..]
             } else {
                 &document.document.blocks
             };
             html.push_str(&renderer.blocks(blocks)?);
+        }
+        if page.reference_index {
+            html.push_str(&super::r_topics::index(
+                site,
+                route,
+                page.owner.as_deref().expect("reference index owner"),
+            ));
         }
         if let (Some(item), Some(owner)) = (page.item, page.owner.as_deref()) {
             html.push_str(&super::r_topics::navigation(
@@ -308,7 +347,11 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
                 html.push_str(&concept_links(site, route, concept)?);
             }
         }
-        if page.document.is_none() && page.item.is_none() && page.concept.is_none() {
+        if page.document.is_none()
+            && page.item.is_none()
+            && page.concept.is_none()
+            && !page.reference_index
+        {
             html.push_str("<ul>");
             for (path, candidate) in &site.pages {
                 if candidate.visible
@@ -374,7 +417,11 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
                     search_text.push_str(&alias.qualified_name);
                 }
             }
-            search.push(serde_json::json!({"title": page.title, "path": route.split('/').map(crate::site::encode).collect::<Vec<_>>().join("/"), "package": package.map(|p| &p.name), "ecosystem": package.map(|p| &p.ecosystem), "api": page.item.is_some(), "text": search_text}));
+            let search_title = page
+                .item
+                .filter(|item| matches!(&item.language_data, Some(ItemLanguageData::R(_))))
+                .map_or(page.title.as_str(), |item| item.qualified_name.as_str());
+            search.push(serde_json::json!({"title": search_title, "path": route.split('/').map(crate::site::encode).collect::<Vec<_>>().join("/"), "package": package.map(|p| &p.name), "ecosystem": package.map(|p| &p.ecosystem), "api": page.item.is_some(), "text": search_text}));
         }
         files.insert(
             route.clone(),
@@ -408,6 +455,13 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
         "assets/nav.js".into(),
         file(
             NAV_SCRIPT.as_bytes().to_vec(),
+            "text/javascript; charset=utf-8",
+        ),
+    );
+    files.insert(
+        "assets/code.js".into(),
+        file(
+            include_str!("code.js").as_bytes().to_vec(),
             "text/javascript; charset=utf-8",
         ),
     );
@@ -986,7 +1040,7 @@ fn unsupported_rd_label(source_kind: &str) -> Option<String> {
         .map(|kind| format!("[Unsupported Rd: {kind}]"))
 }
 
-fn plain(nodes: &[Inline]) -> String {
+pub(super) fn plain(nodes: &[Inline]) -> String {
     nodes
         .iter()
         .map(|node| match node {

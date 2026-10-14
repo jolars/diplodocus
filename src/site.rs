@@ -55,6 +55,7 @@ pub(crate) struct PageModel<'a> {
     pub item: Option<&'a Item>,
     pub concept: Option<&'a Concept>,
     pub visible: bool,
+    pub reference_index: bool,
 }
 impl PageModel<'_> {
     fn empty(title: String, owner: Option<String>, visible: bool) -> Self {
@@ -69,6 +70,7 @@ impl PageModel<'_> {
             item: None,
             concept: None,
             visible,
+            reference_index: false,
         }
     }
 }
@@ -205,6 +207,23 @@ impl<'a> Site<'a> {
                     ),
                 )?;
             }
+            let r_routes = if package.ecosystem == "r" {
+                let reference = format!("{base}/reference/index.html");
+                if package.items.values().any(Item::discoverable)
+                    && !site.pages.contains_key(&reference)
+                {
+                    let mut model = PageModel::empty(
+                        "Reference".into(),
+                        Some(id.clone()),
+                        package.visibility != PackageVisibility::Hidden,
+                    );
+                    model.reference_index = true;
+                    site.insert(reference, model)?;
+                }
+                crate::rendering::r_topics::routes(package)
+            } else {
+                BTreeMap::new()
+            };
             for (item_id, item) in &package.items {
                 let identity = DocumentIdentity::Item {
                     item: ItemReference {
@@ -230,10 +249,12 @@ impl<'a> Site<'a> {
                     );
                     continue;
                 }
-                let route = format!(
-                    "{base}/reference/{}.html",
-                    crate::provenance::fingerprint_bytes(item_id.as_bytes()).value
-                );
+                let route = r_routes.get(item_id).cloned().unwrap_or_else(|| {
+                    format!(
+                        "{base}/reference/{}.html",
+                        crate::provenance::fingerprint_bytes(item_id.as_bytes()).value
+                    )
+                });
                 let title = if package.ecosystem == "python" {
                     python_display_name(item, &private_modules).to_owned()
                 } else if package.ecosystem == "julia" && item.kind == ItemKind::Method {
@@ -246,6 +267,9 @@ impl<'a> Site<'a> {
                                 "julia",
                             )
                         })
+                        .unwrap_or_else(|| item.qualified_name.clone())
+                } else if package.ecosystem == "r" {
+                    crate::rendering::r_topics::page_title(item)
                         .unwrap_or_else(|| item.qualified_name.clone())
                 } else {
                     item.qualified_name.clone()
@@ -438,19 +462,16 @@ pub(crate) fn python_overload_anchor(item_id: &str) -> String {
 }
 
 fn encode_url_path(path: &str) -> String {
+    path.split('/').map(encode).collect::<Vec<_>>().join("/")
+}
+
+pub(crate) fn encode(value: &str) -> String {
     const SEGMENT: &percent_encoding::AsciiSet = &percent_encoding::NON_ALPHANUMERIC
         .remove(b'-')
         .remove(b'_')
         .remove(b'.')
         .remove(b'~');
-    path.split('/')
-        .map(|segment| percent_encoding::utf8_percent_encode(segment, SEGMENT).to_string())
-        .collect::<Vec<_>>()
-        .join("/")
-}
-
-pub(crate) fn encode(value: &str) -> String {
-    percent_encoding::utf8_percent_encode(value, percent_encoding::NON_ALPHANUMERIC).to_string()
+    percent_encoding::utf8_percent_encode(value, SEGMENT).to_string()
 }
 pub(crate) fn relative_url(from: &str, to: &str) -> String {
     let a: Vec<_> = from.split('/').collect();

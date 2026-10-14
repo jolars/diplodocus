@@ -99,8 +99,8 @@ fn discovered_package_links_fall_back_to_existing_repository_targets() {
             "{target}"
         );
     }
-    assert!(community.contains("href=\"community%2Ehtml#policy\""));
-    assert!(overview.contains("href=\"community%2Ehtml\""));
+    assert!(community.contains("href=\"community.html#policy\""));
+    assert!(overview.contains("href=\"community.html\""));
     assert!(
         !site
             .files()
@@ -403,7 +403,7 @@ fn readme_links_assets_headings_and_news_are_portable() {
     let overview = html(&site, "packages/r/index.html");
     assert_eq!(overview.matches("<h1").count(), 1);
     assert!(overview.contains(">Models for R</h1>"));
-    assert!(overview.contains("news%2Ehtml#changes"));
+    assert!(overview.contains("news.html#changes"));
     assert!(overview.contains("<img "));
     assert!(html(&site, "packages/r/news.html").contains("New prediction metric."));
     assert!(!html(&site, "packages/r/news.html").contains("Old plain release notes."));
@@ -474,8 +474,8 @@ fn community_override_skips_unused_guide_syntax_and_preserves_source_links() {
     assert!(report.diagnostics.is_empty(), "{:?}", report.diagnostics);
     let site = rendered(&root);
     let overview = html(&site, "packages/r/index.html");
-    assert!(overview.contains("href=\"community%2Ehtml\">Contribute</a>"));
-    assert!(overview.contains("href=\"community%2Ehtml\">Policy</a>"));
+    assert!(overview.contains("href=\"community.html\">Contribute</a>"));
+    assert!(overview.contains("href=\"community.html\">Policy</a>"));
     let community = html(&site, "packages/r/community.html");
     assert!(community.contains("Maintained community page."));
     assert!(!community.contains("Unsupported content"));
@@ -529,7 +529,7 @@ fn overrides_skip_invalid_overview_news_and_license_documents() {
         let site = rendered(&root);
         let page = html(&site, &format!("packages/r/{route}.html"));
         assert!(page.contains(&format!("Maintained {route}")));
-        assert!(page.contains(&format!("href=\"{route}%2Ehtml\"")));
+        assert!(page.contains(&format!("href=\"{route}.html\"")));
         assert!(!page.contains("Unused content"));
 
         let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
@@ -598,7 +598,7 @@ fn authored_news_skips_unused_rd_parsing_and_native_conversion() {
     let site = render_site(&Site::new(&snapshot).unwrap()).unwrap();
     let news = html(&site, "packages/r/news.html");
     assert!(news.contains("Maintained news"));
-    assert!(news.contains("href=\"news%2Ehtml\""));
+    assert!(news.contains("href=\"news.html\""));
     assert!(!news.contains("Unclosed release notes"));
     root.remove("r/docs/news.md");
     assert!(
@@ -627,12 +627,12 @@ fn community_fallbacks_rebase_links_and_license_sources_resolve_to_detail_pages(
     );
     let site = rendered(&root);
     let overview = html(&site, "packages/r/index.html");
-    assert!(overview.contains("href=\"license%2Ehtml\""));
-    assert!(overview.contains("href=\"community%2Ehtml\""));
+    assert!(overview.contains("href=\"license.html\""));
+    assert!(overview.contains("href=\"community.html\""));
     let community = html(&site, "packages/r/community.html");
     assert!(community.contains("Code of conduct"));
-    assert!(community.contains("href=\"index%2Ehtml\""));
-    assert!(community.contains("href=\"community%2Ehtml\""));
+    assert!(community.contains("href=\"index.html\""));
+    assert!(community.contains("href=\"community.html\""));
 }
 
 #[test]
@@ -836,5 +836,5 @@ fn conventional_conduct_filename_resolves_from_contribution_guidelines() {
     let site = rendered(&root);
     let community = html(&site, "packages/r/community.html");
     assert!(community.contains("Community policy."));
-    assert!(community.contains("href=\"community%2Ehtml\""));
+    assert!(community.contains("href=\"community.html\""));
 }

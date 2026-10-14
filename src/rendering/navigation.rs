@@ -192,6 +192,14 @@ fn package_pages(html: &mut String, site: &Site<'_>, route: &str, id: &str) {
         return;
     }
     html.push_str("<section class=\"nav-group\" role=\"group\" aria-label=\"API reference\"><h2>API reference</h2><ul>");
+    if package.ecosystem == "r" {
+        link(
+            html,
+            route,
+            &format!("packages/{}/reference/index.html", package.slug),
+            "Reference overview",
+        );
+    }
     let children: BTreeSet<_> = package
         .items
         .values()

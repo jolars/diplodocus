@@ -77,6 +77,15 @@ declaration's page. Topic aliases resolve to a primary declaration, while
 method aliases resolve to their own pages. Links between declarations and
 methods grouped by S3 class make the complete topic navigable.
 
+R reference pages use the Rd title as their heading and show the description
+before usage. URLs use readable API names, or the topic name for a shared
+topic's primary declaration. The reference overview lists each topic with its
+title and introductory summary. Code blocks have syntax highlighting and copy
+buttons. Usage appears once, including the complete shared topic's signatures.
+Source links point to the recorded R and Rd files when the repository has a
+revision and a GitHub URL or a supported `source-link-template`. These links
+remain available when generating from a snapshot without the checkout.
+
 Rd content supports labeled local and package-qualified help links, equations,
 aligned tables, custom sections, named return entries, HTML and platform
 conditionals, and DOI links. Equations render natively with `katex-rs` and bundled

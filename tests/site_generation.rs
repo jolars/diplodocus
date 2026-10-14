@@ -112,7 +112,7 @@ fn python_reexports_use_public_labels_and_retain_implementation_evidence() {
         assert!(!search.iter().any(|entry| entry["title"] == canonical));
         if public == "demo.load_data" {
             let destination = format!(
-                "{}%2Ehtml",
+                "{}.html",
                 route
                     .rsplit('/')
                     .next()
@@ -561,7 +561,7 @@ fn eulerr_datasets_survive_snapshots_and_render_bare_usage_format_and_source() {
             .values()
             .filter(|file| file.media_type.starts_with("text/html"))
             .map(|file| std::str::from_utf8(&file.bytes).unwrap())
-            .find(|html| html.contains(&format!("<h1><code>{name}</code></h1>")))
+            .find(|html| html.contains(&format!("<p class=\"api-name\"><code>{name}</code></p>")))
             .unwrap();
         assert!(html.contains(format));
         assert_eq!(
@@ -569,7 +569,7 @@ fn eulerr_datasets_survive_snapshots_and_render_bare_usage_format_and_source() {
                 .iter()
                 .filter(|(highlighted, text)| *highlighted && text == name)
                 .count(),
-            2
+            1
         );
         assert!(!html.contains(&format!("{name}()")));
         assert!(html.contains(">Format</h2>"));
@@ -622,7 +622,12 @@ fn shared_r_topics_and_method_navigation_survive_generation_without_sources() {
             .values()
             .filter(|file| file.media_type.starts_with("text/html"))
             .map(|file| std::str::from_utf8(&file.bytes).unwrap())
-            .find(|html| html.contains(&format!("<h1><code>{}</code></h1>", item.qualified_name)))
+            .find(|html| {
+                html.contains(&format!(
+                    "<p class=\"api-name\"><code>{}</code></p>",
+                    item.qualified_name
+                ))
+            })
             .unwrap();
         let blocks = code_blocks(html);
         let Some(ItemLanguageData::R(data)) = &item.language_data else {
@@ -658,12 +663,11 @@ fn shared_r_topics_and_method_navigation_survive_generation_without_sources() {
                 .find(|(_, file)| {
                     std::str::from_utf8(&file.bytes)
                         .unwrap()
-                        .contains(&format!("<h1><code>{name}</code></h1>"))
+                        .contains(&format!("<p class=\"api-name\"><code>{name}</code></p>"))
                 })
                 .unwrap();
             let filename = target.rsplit('/').next().unwrap();
-            let href =
-                percent_encoding::utf8_percent_encode(filename, percent_encoding::NON_ALPHANUMERIC);
+            let href = filename;
             assert!(html.contains(&format!("href=\"{href}\"")));
         }
     }
@@ -724,7 +728,7 @@ fn internal_r_topics_survive_snapshots_without_public_navigation_or_search() {
                 .next()
                 .unwrap();
             assert!(!nav.contains(name));
-            found |= html.contains(&format!("<h1><code>{name}</code></h1>"));
+            found |= html.contains(&format!("<p class=\"api-name\"><code>{name}</code></p>"));
         }
         assert!(found, "The internal topic remains addressable: {name}");
     }
@@ -759,7 +763,7 @@ fn unsupported_rd_renders_compact_markers_and_authored_source_stays_visible() {
         .values()
         .filter(|file| file.media_type.starts_with("text/html"))
         .map(|file| std::str::from_utf8(&file.bytes).unwrap())
-        .find(|html| html.contains("<h1><code>experimental_summary</code></h1>"))
+        .find(|html| html.contains("<p class=\"api-name\"><code>experimental_summary</code></p>"))
         .unwrap();
     assert!(html.contains("[Unsupported Rd: \\Sexpr]"));
     assert!(html.contains("[Unsupported Rd: examples]"));
@@ -1031,14 +1035,14 @@ format = "gfm"
     let page = std::str::from_utf8(&rendered.files()["packages/r/vignettes/evaluating.html"].bytes)
         .unwrap();
     assert!(
-        global_sections(page).contains("href=\"../../../index%2Ehtml\""),
+        global_sections(page).contains("href=\"../../../index.html\""),
         "{}",
         global_sections(page)
     );
-    assert!(global_sections(page).contains("href=\"../index%2Ehtml\" aria-current=\"true\">R"));
+    assert!(global_sections(page).contains("href=\"../index.html\" aria-current=\"true\">R"));
     assert!(page.contains("aria-label=\"R\""));
     assert!(page.contains("aria-label=\"R workflows\""));
-    assert!(page.contains("href=\"evaluating%2Ehtml\" aria-current=\"page\">Evaluating a model"));
+    assert!(page.contains("href=\"evaluating.html\" aria-current=\"page\">Evaluating a model"));
     assert!(!page.contains("aria-label=\"API reference\""));
     assert!(!page.contains("aria-label=\"Shared concepts\""));
     let home = std::str::from_utf8(&rendered.files()["index.html"].bytes).unwrap();

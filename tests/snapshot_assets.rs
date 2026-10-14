@@ -150,7 +150,7 @@ fn checked_in_images_and_downloads_survive_without_a_checkout() {
                 asset.path.as_str(),
                 format!("content-assets/sha256/{}", asset.fingerprint.value)
             );
-            let mut url = format!("../assets/{}%2E{extension}", asset.fingerprint.value);
+            let mut url = format!("../assets/{}.{extension}", asset.fingerprint.value);
             if reference.spelling == "report.pdf#page=2" {
                 assert_eq!(fragment.as_deref(), Some("page=2"));
                 url.push_str("#page%3D2");
@@ -261,11 +261,11 @@ async fn generated_figures_survive_without_sources_staging_or_execution_cache() 
     let rendered = render_site(&Site::new(&loaded).unwrap()).unwrap();
     let html = std::str::from_utf8(&rendered.files()["guide/index.html"].bytes).unwrap();
     let visible_digest = fingerprint_bytes(visible.as_bytes()).value;
-    assert!(html.contains(&format!("src=\"../assets/{visible_digest}%2Esvg\"")));
+    assert!(html.contains(&format!("src=\"../assets/{visible_digest}.svg\"")));
     for (extension, _, bytes) in &expected[..3] {
         let digest = fingerprint_bytes(bytes).value;
-        assert!(!html.contains(&format!("src=\"../assets/{digest}%2E{extension}\"")));
+        assert!(!html.contains(&format!("src=\"../assets/{digest}.{extension}\"")));
     }
     let png_digest = fingerprint_bytes(&expected[1].2).value;
-    assert!(html.contains(&format!("href=\"../assets/{png_digest}%2Epng\"")));
+    assert!(html.contains(&format!("href=\"../assets/{png_digest}.png\"")));
 }

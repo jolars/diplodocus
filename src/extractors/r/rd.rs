@@ -42,6 +42,8 @@ impl Topic {
 }
 
 enum Part {
+    Title(Box<Block>),
+    Introduction(Vec<Block>),
     Blocks(Vec<Block>),
     Usage,
     Arguments(Vec<(Vec<String>, ListItem)>),
@@ -266,14 +268,14 @@ pub(super) fn parse(
                 }
             }
             RdTag::Arguments => parts.push(Part::Arguments(arguments.clone())),
-            RdTag::Title => parts.push(Part::Blocks(vec![Block::Heading {
+            RdTag::Title => parts.push(Part::Title(Box::new(Block::Heading {
                 level: 2,
                 attributes: Attributes::default(),
                 inlines: context.inlines(tagged.children(), &path),
                 span: context.span(),
-            }])),
+            }))),
             RdTag::Description => {
-                parts.push(Part::Blocks(context.blocks(tagged.children(), &path)))
+                parts.push(Part::Introduction(context.blocks(tagged.children(), &path)))
             }
             RdTag::Details
             | RdTag::Value
@@ -957,7 +959,8 @@ pub(super) fn attach(
             .parts
             .iter()
             .filter_map(|part| match part {
-                Part::Blocks(blocks) => Some(blocks.clone()),
+                Part::Title(title) => Some(vec![title.as_ref().clone()]),
+                Part::Introduction(blocks) | Part::Blocks(blocks) => Some(blocks.clone()),
                 _ => None,
             })
             .flatten()
@@ -1234,8 +1237,21 @@ pub(super) fn attach(
             }
         }
         let mut blocks = vec![];
+        // Rd generators often place the description after usage and arguments.
+        // Readers need the topic's purpose before its calling conventions.
+        for part in &topic.parts {
+            if let Part::Title(title) = part {
+                blocks.push(title.as_ref().clone());
+            }
+        }
+        for part in &topic.parts {
+            if let Part::Introduction(content) = part {
+                blocks.extend(content.clone());
+            }
+        }
         for part in &topic.parts {
             match part {
+                Part::Title(_) | Part::Introduction(_) => {}
                 Part::Blocks(content) => blocks.extend(content.clone()),
                 Part::Usage if !topic.usages.is_empty() => {
                     blocks.push(heading("Usage", span));

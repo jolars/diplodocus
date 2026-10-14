@@ -54,7 +54,7 @@ fn logo_survives_snapshot_generation_without_sources_on_every_page() {
     for (route, prefix) in [("index.html", ""), ("guide/nested.html", "../")] {
         let html = std::str::from_utf8(&rendered.files()[route].bytes).unwrap();
         assert!(html.contains(&format!(
-            "<a class=\"brand\" href=\"{prefix}index%2Ehtml\"><img class=\"brand-logo\" src=\"{prefix}assets/{digest}%2Esvg\" alt=\"\"><span>Logo &amp; docs</span></a>"
+            "<a class=\"brand\" href=\"{prefix}index.html\"><img class=\"brand-logo\" src=\"{prefix}assets/{digest}.svg\" alt=\"\"><span>Logo &amp; docs</span></a>"
         )));
     }
 }
@@ -116,7 +116,7 @@ fn unconfigured_logo_keeps_the_title_only() {
             .unwrap();
     let html = std::str::from_utf8(&rendered.files()["index.html"].bytes).unwrap();
     assert!(
-        html.contains("<a class=\"brand\" href=\"index%2Ehtml\"><span>Logo &amp; docs</span></a>")
+        html.contains("<a class=\"brand\" href=\"index.html\"><span>Logo &amp; docs</span></a>")
     );
     assert!(!html.contains("brand-logo"));
     assert!(!snapshot.canonical_export().unwrap().contains("logo"));

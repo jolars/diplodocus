@@ -178,7 +178,7 @@ exposed these compatibility, content, and presentation gaps.
 - [x] Build package landing pages from README and DESCRIPTION content, retain
   package metadata through assembly, and expose NEWS, citation information,
   authors, licenses, and community links.
-- [ ] Improve reference presentation with descriptive titles and URLs, source
+- [x] Improve reference presentation with descriptive titles and URLs, source
   links, introductory prose before usage, topic summaries, syntax
   highlighting, and copy buttons. Remove duplicate signature blocks.
 - [ ] Rank exact API names ahead of suffix matches in search, index readable

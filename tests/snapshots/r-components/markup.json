@@ -41,6 +41,120 @@
       "type": "heading"
     },
     {
+      "inlines": [
+        {
+          "span": {
+            "end": 429,
+            "start": 0
+          },
+          "type": "text",
+          "value": "First paragraph with "
+        },
+        {
+          "span": {
+            "end": 429,
+            "start": 0
+          },
+          "type": "code",
+          "value": "x"
+        },
+        {
+          "span": {
+            "end": 429,
+            "start": 0
+          },
+          "type": "text",
+          "value": ", "
+        },
+        {
+          "attributes": {
+            "classes": [],
+            "identifier": null,
+            "key_values": []
+          },
+          "inlines": [
+            {
+              "span": {
+                "end": 429,
+                "start": 0
+              },
+              "type": "text",
+              "value": "https://example.org"
+            }
+          ],
+          "span": {
+            "end": 429,
+            "start": 0
+          },
+          "target": "https://example.org",
+          "title": null,
+          "type": "link"
+        },
+        {
+          "span": {
+            "end": 429,
+            "start": 0
+          },
+          "type": "text",
+          "value": ", and "
+        },
+        {
+          "attributes": {
+            "classes": [],
+            "identifier": null,
+            "key_values": []
+          },
+          "inlines": [
+            {
+              "span": {
+                "end": 429,
+                "start": 0
+              },
+              "type": "text",
+              "value": "f"
+            }
+          ],
+          "span": {
+            "end": 429,
+            "start": 0
+          },
+          "target": "@ref f",
+          "title": null,
+          "type": "link"
+        },
+        {
+          "span": {
+            "end": 429,
+            "start": 0
+          },
+          "type": "text",
+          "value": ".\n"
+        }
+      ],
+      "span": {
+        "end": 429,
+        "start": 0
+      },
+      "type": "paragraph"
+    },
+    {
+      "inlines": [
+        {
+          "span": {
+            "end": 429,
+            "start": 0
+          },
+          "type": "text",
+          "value": "Second paragraph."
+        }
+      ],
+      "span": {
+        "end": 429,
+        "start": 0
+      },
+      "type": "paragraph"
+    },
+    {
       "attributes": {
         "classes": [],
         "identifier": null,
@@ -259,120 +373,6 @@
         "start": 0
       },
       "type": "list"
-    },
-    {
-      "inlines": [
-        {
-          "span": {
-            "end": 429,
-            "start": 0
-          },
-          "type": "text",
-          "value": "First paragraph with "
-        },
-        {
-          "span": {
-            "end": 429,
-            "start": 0
-          },
-          "type": "code",
-          "value": "x"
-        },
-        {
-          "span": {
-            "end": 429,
-            "start": 0
-          },
-          "type": "text",
-          "value": ", "
-        },
-        {
-          "attributes": {
-            "classes": [],
-            "identifier": null,
-            "key_values": []
-          },
-          "inlines": [
-            {
-              "span": {
-                "end": 429,
-                "start": 0
-              },
-              "type": "text",
-              "value": "https://example.org"
-            }
-          ],
-          "span": {
-            "end": 429,
-            "start": 0
-          },
-          "target": "https://example.org",
-          "title": null,
-          "type": "link"
-        },
-        {
-          "span": {
-            "end": 429,
-            "start": 0
-          },
-          "type": "text",
-          "value": ", and "
-        },
-        {
-          "attributes": {
-            "classes": [],
-            "identifier": null,
-            "key_values": []
-          },
-          "inlines": [
-            {
-              "span": {
-                "end": 429,
-                "start": 0
-              },
-              "type": "text",
-              "value": "f"
-            }
-          ],
-          "span": {
-            "end": 429,
-            "start": 0
-          },
-          "target": "@ref f",
-          "title": null,
-          "type": "link"
-        },
-        {
-          "span": {
-            "end": 429,
-            "start": 0
-          },
-          "type": "text",
-          "value": ".\n"
-        }
-      ],
-      "span": {
-        "end": 429,
-        "start": 0
-      },
-      "type": "paragraph"
-    },
-    {
-      "inlines": [
-        {
-          "span": {
-            "end": 429,
-            "start": 0
-          },
-          "type": "text",
-          "value": "Second paragraph."
-        }
-      ],
-      "span": {
-        "end": 429,
-        "start": 0
-      },
-      "type": "paragraph"
     },
     {
       "attributes": {

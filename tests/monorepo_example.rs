@@ -72,7 +72,7 @@ fn monorepo_example_builds_with_r_and_generates_without_sources_or_runtimes() {
     assert!(runtime.citation.as_ref().unwrap().bibtex.contains("2026"));
     let site = root.path().join("site");
     let overview = fs::read_to_string(site.join("packages/r/index.html")).unwrap();
-    assert!(overview.contains("vignettes/evaluating%2Dpredictions%2Ehtml"));
+    assert!(overview.contains("vignettes/evaluating-predictions.html"));
     let vignette =
         fs::read_to_string(site.join("packages/r/vignettes/evaluating-predictions.html")).unwrap();
     for text in [
@@ -101,7 +101,7 @@ fn monorepo_example_builds_with_r_and_generates_without_sources_or_runtimes() {
         ("license.html", "Permission is hereby granted"),
         ("community.html", "Contributing to Tiny Stats"),
     ] {
-        assert!(overview.contains(&format!("href=\"{}\"", file.replace('.', "%2E"))));
+        assert!(overview.contains(&format!("href=\"{}\"", file)));
         assert!(
             fs::read_to_string(site.join("packages/r").join(file))
                 .unwrap()
