@@ -233,10 +233,15 @@ so regression tests do not require the sibling checkout.
   values and canonical digest, and renders tables and a plot. Installed-package
   tests forbid network retrieval. A small Diplodocus fixture covers package
   data lookup, execution failure, and generation without sources or runtimes.
-- [ ] Improve the motivating package's source documentation: add explanations
-  for Python dataclass fields and `BUNDLED_REGISTRY`, and Rd topics or aliases
-  for the eight undocumented R S3 methods listed in the assessment. Track these
-  as Datamonger content fixes rather than extractor failures.
+- [x] Improve the motivating package's source documentation. Datamonger's
+  [Python value objects](../datamonger/packages/python/src/datamonger/_models.py)
+  now explain all 48 public dataclass fields, and `BUNDLED_REGISTRY` documents
+  its pinned index and fallback behavior. Three Rd topics cover all eight
+  previously undocumented R S3 methods. The
+  [assessment follow-up](../datamonger/documentation/assessment.md#source-documentation-follow-up)
+  tracks these as Datamonger content fixes. An isolated build retains prose for
+  all 49 extracted Python fields and the constant, plus all eight R methods;
+  their 53 API pages pass desktop and mobile browser checks.
 
 ## Scope held for later
 
