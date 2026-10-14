@@ -191,6 +191,13 @@ and [site configuration](../datamonger/documentation/diplodocus.toml) to reprodu
 these findings. Keep fixes covered by small, isolated fixtures in this repository
 so regression tests do not require the sibling checkout.
 
+- [x] Execute Python and Julia API doctests, verify expected output, and retain
+  portable outcomes and actual runtime observations. Cover state, expected
+  errors, explicit Python skips, unavailable prerequisites, failure preservation,
+  and generation without sources or runtimes in `tests/api_examples.rs`.
+- [x] Include Julia method prose and resolved references on function overview
+  pages so equivalent API links reach useful documentation directly.
+
 - [x] Consolidate Python overloads into one documented API page and search
   result. Datamonger's [`fetch_data`](../datamonger/packages/python/src/datamonger/_api.py)
   now has one family page with its implementation prose and all three overload

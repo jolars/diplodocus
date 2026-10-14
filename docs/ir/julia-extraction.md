@@ -2,7 +2,8 @@
 
 This page describes the source adapter and its runtime type completion. The
 [prepared-environment decision](../decisions/0003-prepared-environment.md)
-also requires Julia example execution, which remains pending.
+also requires Julia example execution, implemented by the native doctest adapter
+in the extraction command pipeline.
 
 The `julia` adapter reads an explicit `.jl` entry file and `Project.toml` with
 Rust libraries. Fatou provides Julia syntax, documentation attachments, string
@@ -126,8 +127,11 @@ existing family or method. Conflicting attachments produce errors.
 
 Prose, headings, emphasis, inline code, links, images, lists, block quotes,
 tables, common admonitions, thematic breaks, and code blocks become portable
-document nodes. Docstring headings begin below the API page title. Julia examples, REPL examples, `jldoctest`, `@example`, and
-`@repl` fences remain inert code blocks. Extraction does not execute doctests.
+document nodes. Docstring headings begin below the API page title. Source parsing
+retains code blocks without execution. The command pipeline executes `jldoctest`
+fences with expected-output verification; ordinary Julia fences remain illustrative.
+Unsupported executable directives fail extraction. See the
+[extraction guide](../guide/extraction.md) for the supported native subset.
 Math, footnotes, interpolation, unsupported admonitions, and other Documenter
 directives retain their source visibly with warnings. A docstring that requires
 evaluation remains an opaque document with a warning.

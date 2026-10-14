@@ -43,7 +43,7 @@ fn failure(output: &Output, diagnostic: &str) {
 }
 
 fn static_workspace() -> support::TestWorkspace {
-    let root = support::acceptance_workspace();
+    let root = support::prepared_acceptance_workspace();
     let mut config = support::fixture_configuration(&root, CONFIG);
     for collection in config["content"].as_array_mut().unwrap() {
         collection.as_table_mut().unwrap().insert(
@@ -109,6 +109,18 @@ fn cli_paths_and_completed_snapshot_match_the_contract() {
                 expected.documentation.as_ref().unwrap().raw_source
             );
             item.documentation = expected.documentation.clone();
+        }
+    }
+    for (id, item) in &mut completed_packages.get_mut("pyfoo").unwrap().items {
+        let expected = &static_packages["pyfoo"].items[id];
+        if let Some(document) = &mut item.documentation {
+            document.provenance.retain(|p| {
+                !matches!(
+                    p.activity,
+                    diplodocus::ir::ProvenanceActivity::ApiExamples { .. }
+                )
+            });
+            assert_eq!(item.documentation, expected.documentation);
         }
     }
     assert_eq!(completed_packages, static_packages);
@@ -460,7 +472,7 @@ fn cli_validation_and_publication_failures_preserve_the_previous_snapshot() {
 fn cli_executes_python_and_r_and_publishes_portable_outputs_and_assets() {
     use diplodocus::ir::{ExecutionOrigin, ProvenanceActivity};
 
-    let root = support::acceptance_workspace();
+    let root = support::prepared_acceptance_workspace();
     let portable = tempfile::tempdir().unwrap();
     let path = portable.path().join("documentation.sqlite");
     success(&extract(root.path(), Some(&path), false));

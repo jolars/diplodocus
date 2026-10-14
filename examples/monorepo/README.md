@@ -90,10 +90,12 @@ The shared and Python collections explicitly set `mode = "never"`. Building
 requires R on `PATH`, with `pkgload`, `knitr`, and `evaluate` available; devenv
 provides these packages. Extraction loads the R checkout to execute Rd examples
 and vignette chunks, and collects author and citation information. This example
-needs no package installation, Python or Julia runtime, or Jupyter kernel. Python
+needs Python and Julia on `PATH` to verify API doctests, alongside R. It needs
+no package installation or Jupyter kernel. Python
 documentation comes from NumPy-style docstrings. R documentation comes from
 the checked-in `man/*.Rd` files; Diplodocus does not run roxygen2. Julia documentation comes from Julia Markdown
-docstrings, and its methods have separate pages. Doctests remain inert.
+docstrings. Function overviews include method prose, and each method also has a
+separate page. Extraction verifies Python and Julia doctest output.
 
 The current R parser emits an `r-rd-source-attribution` warning because it tracks
 Rd content at file granularity. This warning does not prevent the site from

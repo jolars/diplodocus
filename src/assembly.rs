@@ -24,6 +24,7 @@ use crate::provenance::{
     fingerprint_bytes,
 };
 
+mod api_examples;
 mod authored;
 mod julia_runtime;
 pub(crate) use julia_runtime::assemble_for_extraction;

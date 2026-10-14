@@ -51,6 +51,9 @@ pub(super) async fn extract_attempt(
         .complete_package_metadata(deadlines, &mut cancellation)
         .await?;
     sources
+        .execute_api_examples(deadlines, &mut cancellation)
+        .await?;
+    sources
         .execute_rd_examples(deadlines, &mut cancellation)
         .await?;
     sources

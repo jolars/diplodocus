@@ -27,12 +27,23 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
     for (route, page) in &site.pages {
         let page_math = page
             .document
-            .is_some_and(|document| super::math::contains_math(&document.document.blocks));
+            .is_some_and(|document| super::math::contains_math(&document.document.blocks))
+            || page.item.is_some_and(|item| {
+                julia_members(item).iter().any(|member| {
+                    site.workspace.packages[&member.package].items[&member.item]
+                        .documentation
+                        .as_ref()
+                        .is_some_and(|document| {
+                            super::math::contains_math(&document.document.blocks)
+                        })
+                })
+            });
         uses_math |= page_math;
         let mut renderer = Renderer {
             site,
             page,
             route,
+            document_route: route,
             math_context: &math_context,
             highlighter: &highlighter,
             cell: 0,
@@ -256,15 +267,8 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
                     }
                 }
             }
-            if let Some(ItemLanguageData::Julia(data)) = &item.language_data {
-                let members = match &data.declaration {
-                    JuliaDeclaration::Callable {
-                        role: JuliaCallableRole::Family { methods },
-                        ..
-                    } => methods.as_slice(),
-                    JuliaDeclaration::Type { constructors, .. } => constructors.as_slice(),
-                    _ => &[],
-                };
+            if matches!(&item.language_data, Some(ItemLanguageData::Julia(_))) {
+                let members = julia_members(item);
                 if !members.is_empty() {
                     html.push_str("<h2>Methods</h2><ul>");
                     for member in members {
@@ -281,11 +285,28 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
                             .unwrap_or_else(|| method.name.clone());
                         write!(
                             html,
-                            "<li><a href=\"{}\"><code>{}</code></a></li>",
+                            "<li><a href=\"{}\"><code>{}</code></a>",
                             escape(&relative_url(route, target)),
                             escape(&title)
                         )
                         .unwrap();
+                        if let Some(document) = &method.documentation {
+                            // Method references keep their own resolution context on the family page.
+                            let mut method_renderer = Renderer {
+                                site,
+                                page: &site.pages[target],
+                                route,
+                                document_route: target,
+                                math_context: &math_context,
+                                highlighter: &highlighter,
+                                cell: 0,
+                                headings: Vec::new(),
+                                identifiers: BTreeSet::new(),
+                                document_navigation: false,
+                            };
+                            html.push_str(&method_renderer.blocks(&document.document.blocks)?);
+                        }
+                        html.push_str("</li>");
                     }
                     html.push_str("</ul>");
                 }
@@ -398,6 +419,18 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
                 })
                 .unwrap_or("")
                 .to_owned();
+            if let Some(item) = page.item {
+                for member in julia_members(item) {
+                    if let Some(raw) = site.workspace.packages[&member.package].items[&member.item]
+                        .documentation
+                        .as_ref()
+                        .and_then(|d| d.raw_source.as_deref())
+                    {
+                        search_text.push('\n');
+                        search_text.push_str(raw);
+                    }
+                }
+            }
             if package_overview {
                 search_text.push_str(&format!(
                     "\n{}",
@@ -475,6 +508,20 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
     super::sitemap::render(site, &mut files)?;
     Ok(RenderedSite { files })
 }
+
+fn julia_members(item: &Item) -> &[ItemReference] {
+    match &item.language_data {
+        Some(ItemLanguageData::Julia(data)) => match &data.declaration {
+            JuliaDeclaration::Callable {
+                role: JuliaCallableRole::Family { methods },
+                ..
+            } => methods,
+            JuliaDeclaration::Type { constructors, .. } => constructors,
+            _ => &[],
+        },
+        _ => &[],
+    }
+}
 fn file(bytes: Vec<u8>, media_type: &str) -> RenderedFile {
     RenderedFile {
         bytes,
@@ -539,6 +586,7 @@ struct Renderer<'a, 'b> {
     site: &'a Site<'b>,
     page: &'a PageModel<'b>,
     route: &'a str,
+    document_route: &'a str,
     cell: usize,
     headings: Vec<(usize, String, String)>,
     identifiers: BTreeSet<String>,
@@ -595,6 +643,16 @@ impl Renderer<'_, '_> {
                     .find(|r| r.kind == kind && r.spelling == spelling)
             })
             .ok_or(SiteError::Evidence)?;
+        if self.document_route != self.route
+            && let crate::validation::ReferenceTarget::Anchor { fragment } = &reference.target
+        {
+            // Embedded headings link to their method page to avoid ambiguous local anchors.
+            return Ok(format!(
+                "{}#{}",
+                relative_url(self.route, self.document_route),
+                crate::site::encode(fragment)
+            ));
+        }
         self.site.target(self.route, &reference.target)
     }
     fn inlines(&self, inlines: &[Inline]) -> Result<String, SiteError> {
@@ -834,8 +892,48 @@ impl Renderer<'_, '_> {
                 }
                 Block::ThematicBreak { .. } => html.push_str("<hr>"),
                 Block::CodeBlock {
-                    source, language, ..
-                } => html.push_str(&self.highlighter.render(source, language.as_deref())),
+                    source,
+                    language,
+                    span,
+                    ..
+                } => {
+                    let julia_doctest = language
+                        .as_deref()
+                        .is_some_and(|l| l.starts_with("jldoctest"));
+                    let hidden: Vec<_> = self
+                        .page
+                        .document
+                        .into_iter()
+                        .flat_map(|d| &d.provenance)
+                        .filter_map(|p| match &p.activity {
+                            ProvenanceActivity::ApiExamples {
+                                language, examples, ..
+                            } if language == "julia" => Some(examples),
+                            _ => None,
+                        })
+                        .flatten()
+                        .filter(|e| {
+                            span.start <= e.span.start
+                                && e.span.end <= span.end
+                                && e.options.get("output").is_some_and(|v| v == "false")
+                        })
+                        .map(|e| e.source.as_str())
+                        .collect();
+                    let hidden_source = hidden.join("\n");
+                    let source = if hidden.is_empty() {
+                        source
+                    } else {
+                        &hidden_source
+                    };
+                    html.push_str(&self.highlighter.render(
+                        source,
+                        if julia_doctest {
+                            Some("julia")
+                        } else {
+                            language.as_deref()
+                        },
+                    ));
+                }
                 Block::CodeCell(cell) => html.push_str(&self.code_cell(cell)?),
                 Block::Table {
                     caption,

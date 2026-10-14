@@ -31,6 +31,14 @@ R help-topic examples execute during `extract`, `build`, and `serve` independent
 of QMD configuration. See [R extraction](extraction.md) for the prepared
 environment, illustrative regions, conditional skips, results, and figures.
 
+Python doctest transcripts and Julia `jldoctest` fences also execute during
+extraction, using the prepared checkout and native interpreter. Expected-output
+mismatches, unexpected errors, missing dependencies, and unsupported executable
+syntax prevent publication. Snapshots retain checked outcomes and literal
+results. See the [API extraction guide](extraction.md) for comparison, setup,
+scope, and explicit skip rules. These adapters do not use Jupyter or an execution
+cache.
+
 
 ## Native R Markdown execution
 

@@ -30,7 +30,7 @@ Snapshots retain the defining name, source location, and export evidence.
 
 Computed exports, conditional definitions, opaque signatures, unsupported
 decorators, and other dynamic behavior cannot be inferred safely. Diplodocus
-reports the limit instead of executing package code or guessing an API. For a
+reports the limit instead of guessing an API. For a
 public function decorated with `contextlib.contextmanager`, it preserves the
 parameters and renders a generator's `Iterator[T]` or `Generator[T, ...]` return
 annotation as `AbstractContextManager[T]`. An unsupported decorator on a public
@@ -38,6 +38,15 @@ declaration produces a diagnostic, and its callable signature is omitted because
 the wrapper may change it. Unsupported decorators on internal declarations do
 not prevent extraction of the public surface unless those declarations are
 reexported.
+
+Python doctest transcripts execute during `extract`, `build`, and `serve` through
+the caller's `python` interpreter (Python 3.11 or newer). Prepare the checkout and
+its example dependencies first. Diplodocus loads the selected checkout, verifies
+the module's source path, and starts a fresh process per API document. Examples
+within one document share the defining module's globals. The standard library
+`doctest` runner checks expected output and exceptions, supports comparison
+directives, and records explicit `+SKIP` outcomes. Output mismatches and unexpected
+errors prevent publication. Ordinary code fences remain illustrative.
 
 ## R
 
@@ -173,7 +182,8 @@ unconditional literal includes. Declare `ecosystem = "julia"`,
 `path = "src/MyPackage.jl"`. Source directories are not valid Julia targets.
 
 Exported, `public`, and documented declarations form the maintained surface.
-Functions have a family page and separate pages for their supplied methods.
+Functions have a family page that includes method prose and separate pages for
+their supplied methods.
 Types retain fields and explicit constructors. Static imports and aliases
 resolve to maintained declarations. Julia Markdown docstrings supply prose,
 lists, tables, admonitions, and inert code examples. API `@ref` links can name a
@@ -187,8 +197,22 @@ source facts. `check` stays static and reports unresolved generated declarations
 
 Computed includes, conditional declarations, unsupported macros, unresolved
 functions, and unavailable reexports still produce diagnostics. Extraction does
-not infer runtime methods or execute doctests. Unsupported documentation syntax
+not infer runtime methods. Unsupported documentation syntax
 remains visible with warnings. The
 [Julia extraction
 contract](https://github.com/jolars/diplodocus/blob/main/docs/ir/julia-extraction.md)
 defines the supported subset and method identity rules.
+
+Julia `jldoctest` fences execute during extraction in the prepared package project.
+The native adapter supports REPL transcripts, script examples with `# output`,
+expected errors, named blocks that share state within one API document, and
+block-level `setup`, `teardown`, and `output` options. Anonymous blocks get fresh
+modules; separate API documents use fresh processes. REPL semicolons suppress
+display, and multiline input uses seven spaces for continuation lines. Hidden
+output still participates in comparison. Unsupported options, including filters
+and `@meta` setup, fail extraction. Ordinary Julia fences remain illustrative.
+
+Both adapters retain literal outputs, outcomes, source fingerprints, and runtime
+and dependency observations in snapshots. They do not install dependencies or
+cache API execution. `check` does not load packages or execute doctests;
+`generate` needs no interpreter or source checkout.
