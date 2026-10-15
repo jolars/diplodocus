@@ -1,7 +1,24 @@
 # Installation
 
-Diplodocus is under active development. Until its first crate release, build the
-CLI from a source checkout with the pinned Rust toolchain and dependencies:
+Starting with the next release, install the latest prebuilt CLI on Linux or
+macOS with:
+
+```sh
+curl --proto '=https' --tlsv1.2 -LsSf https://diplodocus.cc/install | sh
+```
+
+This script downloads and runs the latest release's cargo-dist installer. It
+installs the executable in Cargo's binary directory, normally `~/.cargo/bin`.
+Language runtimes and package dependencies must be installed separately.
+
+On Windows, run this in PowerShell:
+
+```powershell
+irm https://diplodocus.cc/install.ps1 | iex
+```
+
+You can also build the CLI from a source checkout with the pinned Rust toolchain
+and dependencies:
 
 ```console
 git clone https://github.com/jolars/diplodocus.git

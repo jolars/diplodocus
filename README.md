@@ -28,13 +28,13 @@ and Apple Silicon, and Windows archives support x86-64.
 On Linux or macOS, install the latest binary with:
 
 ```sh
-curl --proto '=https' --tlsv1.2 -LsSf https://github.com/jolars/diplodocus/releases/latest/download/diplodocus-installer.sh | sh
+curl --proto '=https' --tlsv1.2 -LsSf https://diplodocus.cc/install | sh
 ```
 
 On Windows, run this in PowerShell:
 
 ```powershell
-irm https://github.com/jolars/diplodocus/releases/latest/download/diplodocus-installer.ps1 | iex
+irm https://diplodocus.cc/install.ps1 | iex
 ```
 
 The installers place the executable in Cargo's binary directory, normally
@@ -112,8 +112,10 @@ The `Documentation` workflow checks and builds this repository's Diplodocus
 site on pull requests and `main`. A `v*` tag, or a manual dispatch on `main`,
 also deploys the generated site as static assets on Cloudflare Workers. It uses
 the `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN` repository secrets. The
-Worker serves [diplodocus.cc](https://diplodocus.cc/). The project-site test
-checks links and search paths at the domain root.
+Worker serves [diplodocus.cc](https://diplodocus.cc/). The build adds hosting
+assets with `sh scripts/docs-assets.sh`, including `/install` and `/install.ps1`,
+which download and run the latest cargo-dist installers from GitHub releases.
+The project-site test checks links and search paths at the domain root.
 
 ## Releases
 
