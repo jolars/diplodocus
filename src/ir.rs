@@ -241,7 +241,44 @@ pub enum Block {
     },
 }
 
-/// Semantic containers used by evaluated articles.
+/// A term and its explanatory content before conversion to document blocks.
+#[derive(Clone)]
+pub(crate) struct DescriptionEntry {
+    pub term: Vec<Block>,
+    pub description: Vec<Block>,
+    pub span: SourceSpan,
+}
+
+impl Block {
+    pub(crate) fn description_list(entries: Vec<DescriptionEntry>, span: SourceSpan) -> Self {
+        Self::Container {
+            kind: DocumentContainerKind::DefinitionList,
+            identifier: None,
+            blocks: entries
+                .into_iter()
+                .flat_map(|entry| {
+                    [
+                        Self::Container {
+                            kind: DocumentContainerKind::DefinitionTerm,
+                            identifier: None,
+                            blocks: entry.term,
+                            span: entry.span,
+                        },
+                        Self::Container {
+                            kind: DocumentContainerKind::Definition,
+                            identifier: None,
+                            blocks: entry.description,
+                            span: entry.span,
+                        },
+                    ]
+                })
+                .collect(),
+            span,
+        }
+    }
+}
+
+/// Semantic containers shared by extracted documentation and articles.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum DocumentContainerKind {

@@ -419,6 +419,11 @@ test("equivalent APIs link in both directions", async ({ page }, info) => {
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("tinystats.mean_squared_error");
   await expect(page.getByRole("heading", { level: 1 }).locator("code")).toHaveText("tinystats.mean_squared_error");
   await fitsViewport(page);
+  const parameters = page.locator("#parameters + dl");
+  await expect(parameters.locator(":scope > dt")).toHaveText(["actual : list of float", "predicted : list of float"]);
+  await expect(parameters.locator(":scope > dd")).toHaveCount(2);
+  await expect(page.locator("#returns + dl > dt")).toHaveText("float");
+  await expect(page.locator("#raises + dl > dt")).toHaveText("ValueError");
   await capture(page, info, "python-api");
   const sameApi = page.locator("section").filter({ has: page.getByRole("heading", { name: "Same API in", exact: true }) });
   await expect(sameApi.getByRole("link")).toHaveCount(2);
@@ -432,6 +437,8 @@ test("equivalent APIs link in both directions", async ({ page }, info) => {
   await expect(figure).toHaveJSProperty("complete", true);
   expect(await figure.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
   await expect(figure).toHaveAttribute("src", /assets\/[a-f0-9]{64}\.png$/);
+  await expect(page.locator("#arguments + dl > dt")).toHaveText(["actual", "predicted"]);
+  await expect(page.locator("#arguments + dl > dd")).toHaveCount(2);
   await capture(page, info, "r-api");
   await page.getByRole("link", { name: "Tiny Stats for Python: tinystats.mean_squared_error", exact: true }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("tinystats.mean_squared_error");

@@ -131,11 +131,14 @@
           }
         },
         {
-          "type": "list",
-          "ordered": false,
-          "items": [
+          "type": "container",
+          "kind": "definition-list",
+          "identifier": null,
+          "blocks": [
             {
-              "checked": null,
+              "type": "container",
+              "kind": "definition-term",
+              "identifier": null,
               "blocks": [
                 {
                   "type": "paragraph",
@@ -153,7 +156,18 @@
                     "start": 76,
                     "end": 109
                   }
-                },
+                }
+              ],
+              "span": {
+                "start": 76,
+                "end": 127
+              }
+            },
+            {
+              "type": "container",
+              "kind": "definition",
+              "identifier": null,
+              "blocks": [
                 {
                   "type": "paragraph",
                   "inlines": [
@@ -207,11 +221,14 @@
           }
         },
         {
-          "type": "list",
-          "ordered": false,
-          "items": [
+          "type": "container",
+          "kind": "definition-list",
+          "identifier": null,
+          "blocks": [
             {
-              "checked": null,
+              "type": "container",
+              "kind": "definition-term",
+              "identifier": null,
               "blocks": [
                 {
                   "type": "paragraph",
@@ -229,7 +246,18 @@
                     "start": 145,
                     "end": 158
                   }
-                },
+                }
+              ],
+              "span": {
+                "start": 145,
+                "end": 173
+              }
+            },
+            {
+              "type": "container",
+              "kind": "definition",
+              "identifier": null,
+              "blocks": [
                 {
                   "type": "paragraph",
                   "inlines": [
@@ -283,11 +311,14 @@
           }
         },
         {
-          "type": "list",
-          "ordered": false,
-          "items": [
+          "type": "container",
+          "kind": "definition-list",
+          "identifier": null,
+          "blocks": [
             {
-              "checked": null,
+              "type": "container",
+              "kind": "definition-term",
+              "identifier": null,
               "blocks": [
                 {
                   "type": "paragraph",
@@ -305,7 +336,18 @@
                     "start": 189,
                     "end": 199
                   }
-                },
+                }
+              ],
+              "span": {
+                "start": 189,
+                "end": 218
+              }
+            },
+            {
+              "type": "container",
+              "kind": "definition",
+              "identifier": null,
+              "blocks": [
                 {
                   "type": "paragraph",
                   "inlines": [

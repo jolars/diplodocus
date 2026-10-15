@@ -48,11 +48,14 @@
           }
         },
         {
-          "type": "list",
-          "ordered": false,
-          "items": [
+          "type": "container",
+          "kind": "definition-list",
+          "identifier": null,
+          "blocks": [
             {
-              "checked": null,
+              "type": "container",
+              "kind": "definition-term",
+              "identifier": null,
               "blocks": [
                 {
                   "type": "paragraph",
@@ -72,6 +75,16 @@
                   }
                 }
               ],
+              "span": {
+                "start": 33,
+                "end": 40
+              }
+            },
+            {
+              "type": "container",
+              "kind": "definition",
+              "identifier": null,
+              "blocks": [],
               "span": {
                 "start": 33,
                 "end": 40

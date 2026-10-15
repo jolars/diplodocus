@@ -8,8 +8,8 @@ use pydocstring::syntax::{Parsed, SyntaxElement, SyntaxKind, SyntaxNode};
 
 use crate::diagnostics::{Diagnostic, DiagnosticCode, DiagnosticSource, Severity};
 use crate::ir::{
-    Attributes, Block, Document, DocumentFormat, Inline, ListItem, Provenance, ProvenanceActivity,
-    SourceLocation, SourceSegment, SourceSpan, SourcedDocument,
+    Attributes, Block, DescriptionEntry, Document, DocumentFormat, Inline, ListItem, Provenance,
+    ProvenanceActivity, SourceLocation, SourceSegment, SourceSpan, SourcedDocument,
 };
 use crate::provenance::PANACHE_VERSION;
 
@@ -48,8 +48,8 @@ pub struct DocstringParse {
 /// Gaps and absent maps retain the enclosing source and produce a warning for
 /// nonempty documentation. Invalid maps are rejected as a whole.
 ///
-/// Parameters, returns, exceptions, and references use headings and list entries
-/// in the existing document vocabulary. NumPy examples are display code only.
+/// Parameters, attributes, returns, and exceptions use shared description lists.
+/// References retain citation lists. NumPy examples are display code only.
 /// Unsupported syntax remains a visible, escaped placeholder. Neither links nor
 /// raw markup grant rendering trust or execution authority.
 pub fn parse_docstring(
@@ -217,6 +217,7 @@ impl Context<'_> {
             span: span(header.range()),
         }];
         let examples = section.kind() == SectionKind::FreeText(FreeSectionKind::Examples);
+        let descriptions = section.kind() != SectionKind::References;
         let mut items = Vec::new();
         for element in node.children() {
             let SyntaxElement::Node(child) = element else {
@@ -229,7 +230,7 @@ impl Context<'_> {
                 items.push(self.entry(child));
                 continue;
             }
-            flush_items(&mut blocks, &mut items);
+            flush_items(&mut blocks, &mut items, descriptions);
             if is_prose(child.kind()) {
                 if examples && !child.range().is_empty() {
                     blocks.extend(self.examples(child));
@@ -240,11 +241,11 @@ impl Context<'_> {
                 blocks.push(self.unsupported(child));
             }
         }
-        flush_items(&mut blocks, &mut items);
+        flush_items(&mut blocks, &mut items, descriptions);
         blocks
     }
 
-    fn entry(&mut self, node: &SyntaxNode) -> ListItem {
+    fn entry(&mut self, node: &SyntaxNode) -> DescriptionEntry {
         let entry_span = span(node.range());
         let description = node.find_node(SyntaxKind::DESCRIPTION);
         let end = description.map_or(entry_span.end, |d| span(d.range()).start);
@@ -253,19 +254,16 @@ impl Context<'_> {
             start: entry_span.start,
             end: entry_span.start + header.len(),
         };
-        let mut blocks = vec![Block::Paragraph {
+        let term = vec![Block::Paragraph {
             inlines: vec![Inline::Code {
                 value: header.into(),
                 span: header_span,
             }],
             span: header_span,
         }];
-        if let Some(description) = description {
-            blocks.extend(self.prose(description));
-        }
-        ListItem {
-            checked: None,
-            blocks,
+        DescriptionEntry {
+            term,
+            description: description.map(|node| self.prose(node)).unwrap_or_default(),
             span: entry_span,
         }
     }
@@ -435,15 +433,28 @@ fn is_prose(kind: SyntaxKind) -> bool {
     )
 }
 
-fn flush_items(blocks: &mut Vec<Block>, items: &mut Vec<ListItem>) {
+fn flush_items(blocks: &mut Vec<Block>, items: &mut Vec<DescriptionEntry>, descriptions: bool) {
     if let (Some(first), Some(last)) = (items.first(), items.last()) {
-        blocks.push(Block::List {
-            ordered: false,
-            span: SourceSpan {
-                start: first.span.start,
-                end: last.span.end,
-            },
-            items: std::mem::take(items),
+        let span = SourceSpan {
+            start: first.span.start,
+            end: last.span.end,
+        };
+        let entries = std::mem::take(items);
+        blocks.push(if descriptions {
+            Block::description_list(entries, span)
+        } else {
+            Block::List {
+                ordered: false,
+                items: entries
+                    .into_iter()
+                    .map(|entry| ListItem {
+                        checked: None,
+                        blocks: entry.term.into_iter().chain(entry.description).collect(),
+                        span: entry.span,
+                    })
+                    .collect(),
+                span,
+            }
         });
     }
 }

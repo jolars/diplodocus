@@ -43,7 +43,9 @@ fn code_count(blocks: &[Block]) -> usize {
         .map(|block| match block {
             Block::CodeCell(_) => panic!("docstrings must never create executable cells"),
             Block::CodeBlock { .. } => 1,
-            Block::BlockQuote { blocks, .. } | Block::Callout { blocks, .. } => code_count(blocks),
+            Block::BlockQuote { blocks, .. }
+            | Block::Callout { blocks, .. }
+            | Block::Container { blocks, .. } => code_count(blocks),
             Block::List { items, .. } => items.iter().map(|item| code_count(&item.blocks)).sum(),
             _ => 0,
         })
@@ -138,12 +140,14 @@ fn required_sections_preserve_entries_and_markup() {
         .document
         .blocks
         .iter()
-        .filter_map(|block| {
-            if let Block::List { items, .. } = block {
-                Some(items.len())
-            } else {
-                None
-            }
+        .filter_map(|block| match block {
+            Block::Container {
+                kind: ir::DocumentContainerKind::DefinitionList,
+                blocks,
+                ..
+            } => Some(blocks.len() / 2),
+            Block::List { items, .. } => Some(items.len()),
+            _ => None,
         })
         .collect();
     assert_eq!(entries, [1, 1, 1, 1]);
@@ -368,6 +372,7 @@ fn attributes_untyped_parameters_nested_lists_and_literal_examples_are_structure
                         walk(&item.blocks, lists, code);
                     }
                 }
+                Block::Container { blocks, .. } => walk(blocks, lists, code),
                 Block::CodeBlock { source, .. } => code.push(source.clone()),
                 Block::Unsupported { raw, .. } => panic!("unsupported: {raw}"),
                 _ => {}
@@ -377,7 +382,7 @@ fn attributes_untyped_parameters_nested_lists_and_literal_examples_are_structure
     let mut lists = 0;
     let mut code = vec![];
     walk(&parsed.document.document.blocks, &mut lists, &mut code);
-    assert!(lists >= 4, "{:#?}", parsed.document.document.blocks);
+    assert_eq!(lists, 2, "{:#?}", parsed.document.document.blocks);
     assert_eq!(code, ["values = {'A': 2}\ndraw(values)"]);
 }
 

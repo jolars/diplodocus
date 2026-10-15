@@ -10,8 +10,8 @@ use rd_ast::{
 
 use crate::diagnostics::{Diagnostic, DiagnosticCode, Severity};
 use crate::ir::{
-    Attributes, Block, Document, DocumentContainerKind, DocumentFormat, IdentityRegistry, Inline,
-    Item, ItemAlias, ItemAliasKind, ItemKind, ItemLanguageData, ItemReference, ListItem, Parameter,
+    Attributes, Block, DescriptionEntry, Document, DocumentFormat, IdentityRegistry, Inline, Item,
+    ItemAlias, ItemAliasKind, ItemKind, ItemLanguageData, ItemReference, ListItem, Parameter,
     ParameterKind, RDeclaration, RGenericReference, RHelpTopic, RItemData, SemanticIdentity,
     Signature, SignatureExpression, SourceEvidence, SourceLocation, SourceRole, SourceSpan,
     SourcedDocument, SourcedSignature,
@@ -48,7 +48,7 @@ enum Part {
     Introduction(Vec<Block>),
     Blocks(Vec<Block>),
     Usage,
-    Arguments(Vec<(Vec<String>, ListItem)>),
+    Arguments(Vec<(Vec<String>, DescriptionEntry)>),
 }
 
 struct Usage {
@@ -210,22 +210,22 @@ pub(super) fn parse(
                             valid = false;
                             continue;
                         };
-                        let mut blocks = vec![Block::Paragraph {
+                        let term = vec![Block::Paragraph {
                             inlines: vec![Inline::Code {
                                 value: names.trim().into(),
                                 span: context.span(),
                             }],
                             span: context.span(),
                         }];
-                        blocks.extend(context.blocks(argument.description_ref()));
+                        let description = context.blocks(argument.description_ref());
                         arguments.push((
                             names
                                 .split(',')
                                 .map(|name| name.trim().trim_matches('`').to_owned())
                                 .collect(),
-                            ListItem {
-                                checked: None,
-                                blocks,
+                            DescriptionEntry {
+                                term,
+                                description,
                                 span: context.span(),
                             },
                         ));
@@ -1266,33 +1266,11 @@ pub(super) fn attach(
                 }
                 Part::Usage => {}
                 Part::Arguments(arguments) => {
-                    let entries: Vec<_> = arguments
-                        .iter()
-                        .flat_map(|(_, entry)| {
-                            [
-                                Block::Container {
-                                    kind: DocumentContainerKind::DefinitionTerm,
-                                    identifier: None,
-                                    blocks: entry.blocks[..1].to_vec(),
-                                    span: entry.span,
-                                },
-                                Block::Container {
-                                    kind: DocumentContainerKind::Definition,
-                                    identifier: None,
-                                    blocks: entry.blocks[1..].to_vec(),
-                                    span: entry.span,
-                                },
-                            ]
-                        })
-                        .collect();
+                    let entries: Vec<_> =
+                        arguments.iter().map(|(_, entry)| entry.clone()).collect();
                     if !entries.is_empty() {
                         blocks.push(heading("Arguments", span));
-                        blocks.push(Block::Container {
-                            kind: DocumentContainerKind::DefinitionList,
-                            identifier: None,
-                            blocks: entries,
-                            span,
-                        });
+                        blocks.push(Block::description_list(entries, span));
                     }
                 }
             }
