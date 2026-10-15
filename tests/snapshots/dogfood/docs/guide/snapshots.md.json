@@ -2,7 +2,7 @@
   "document": {
     "span": {
       "start": 0,
-      "end": 4031
+      "end": 5502
     },
     "frontmatter": null,
     "blocks": [
@@ -1305,6 +1305,559 @@
         "span": {
           "start": 3794,
           "end": 4031
+        }
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Markdown for agents",
+            "span": {
+              "start": 4035,
+              "end": 4054
+            }
+          }
+        ],
+        "span": {
+          "start": 4032,
+          "end": 4055
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Every full site build includes a ",
+            "span": {
+              "start": 4056,
+              "end": 4089
+            }
+          },
+          {
+            "type": "code",
+            "value": ".md",
+            "span": {
+              "start": 4089,
+              "end": 4094
+            }
+          },
+          {
+            "type": "text",
+            "value": " sibling for each HTML page, rendered",
+            "span": {
+              "start": 4094,
+              "end": 4131
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 4131,
+              "end": 4132
+            }
+          },
+          {
+            "type": "text",
+            "value": "from the same validated content without the navigation or page chrome. HTML",
+            "span": {
+              "start": 4132,
+              "end": 4207
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 4207,
+              "end": 4208
+            }
+          },
+          {
+            "type": "text",
+            "value": "pages advertise this representation with a ",
+            "span": {
+              "start": 4208,
+              "end": 4251
+            }
+          },
+          {
+            "type": "code",
+            "value": "rel=\"alternate\"",
+            "span": {
+              "start": 4251,
+              "end": 4268
+            }
+          },
+          {
+            "type": "text",
+            "value": " link.",
+            "span": {
+              "start": 4268,
+              "end": 4274
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 4274,
+              "end": 4275
+            }
+          },
+          {
+            "type": "code",
+            "value": "diplodocus serve",
+            "span": {
+              "start": 4275,
+              "end": 4293
+            }
+          },
+          {
+            "type": "text",
+            "value": " returns it at the HTML URL when a client requests",
+            "span": {
+              "start": 4293,
+              "end": 4343
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 4343,
+              "end": 4344
+            }
+          },
+          {
+            "type": "code",
+            "value": "Accept: text/markdown",
+            "span": {
+              "start": 4344,
+              "end": 4367
+            }
+          },
+          {
+            "type": "text",
+            "value": ". HTML remains the default, and both representations",
+            "span": {
+              "start": 4367,
+              "end": 4419
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 4419,
+              "end": 4420
+            }
+          },
+          {
+            "type": "text",
+            "value": "include ",
+            "span": {
+              "start": 4420,
+              "end": 4428
+            }
+          },
+          {
+            "type": "code",
+            "value": "Vary: Accept",
+            "span": {
+              "start": 4428,
+              "end": 4442
+            }
+          },
+          {
+            "type": "text",
+            "value": ". Explicit quality values are honored: Markdown must have",
+            "span": {
+              "start": 4442,
+              "end": 4499
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 4499,
+              "end": 4500
+            }
+          },
+          {
+            "type": "text",
+            "value": "a positive quality at least as high as an explicitly requested HTML type.",
+            "span": {
+              "start": 4500,
+              "end": 4573
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 4573,
+              "end": 4574
+            }
+          }
+        ],
+        "span": {
+          "start": 4056,
+          "end": 4574
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Static hosting needs a server or edge handler to negotiate HTTP responses.",
+            "span": {
+              "start": 4575,
+              "end": 4649
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 4649,
+              "end": 4650
+            }
+          },
+          {
+            "type": "text",
+            "value": "Builds include a Cloudflare Worker entry point, so Workers deployments can use",
+            "span": {
+              "start": 4650,
+              "end": 4728
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 4728,
+              "end": 4729
+            }
+          },
+          {
+            "type": "text",
+            "value": "negotiation without writing application code. For a build in ",
+            "span": {
+              "start": 4729,
+              "end": 4790
+            }
+          },
+          {
+            "type": "code",
+            "value": "site/",
+            "span": {
+              "start": 4790,
+              "end": 4797
+            }
+          },
+          {
+            "type": "text",
+            "value": ", configure",
+            "span": {
+              "start": 4797,
+              "end": 4808
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 4808,
+              "end": 4809
+            }
+          },
+          {
+            "type": "text",
+            "value": "Wrangler as follows, alongside your account and domain settings:",
+            "span": {
+              "start": 4809,
+              "end": 4873
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 4873,
+              "end": 4874
+            }
+          }
+        ],
+        "span": {
+          "start": 4575,
+          "end": 4874
+        }
+      },
+      {
+        "type": "code-block",
+        "language": "toml",
+        "source": "main = \"./site/__diplodocus/worker.js\"\ncompatibility_date = \"2026-10-06\"\n\n[assets]\ndirectory = \"./site\"\nbinding = \"ASSETS\"\nrun_worker_first = true\n",
+        "source_segments": [
+          {
+            "text": "main = \"./site/__diplodocus/worker.js\"",
+            "span": {
+              "start": 4883,
+              "end": 4921
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 4921,
+              "end": 4922
+            }
+          },
+          {
+            "text": "compatibility_date = \"2026-10-06\"",
+            "span": {
+              "start": 4922,
+              "end": 4955
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 4955,
+              "end": 4956
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 4956,
+              "end": 4957
+            }
+          },
+          {
+            "text": "[assets]",
+            "span": {
+              "start": 4957,
+              "end": 4965
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 4965,
+              "end": 4966
+            }
+          },
+          {
+            "text": "directory = \"./site\"",
+            "span": {
+              "start": 4966,
+              "end": 4986
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 4986,
+              "end": 4987
+            }
+          },
+          {
+            "text": "binding = \"ASSETS\"",
+            "span": {
+              "start": 4987,
+              "end": 5005
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 5005,
+              "end": 5006
+            }
+          },
+          {
+            "text": "run_worker_first = true",
+            "span": {
+              "start": 5006,
+              "end": 5029
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 5029,
+              "end": 5030
+            }
+          }
+        ],
+        "span": {
+          "start": 4875,
+          "end": 5034
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Other hosts can map HTML requests to the corresponding ",
+            "span": {
+              "start": 5035,
+              "end": 5090
+            }
+          },
+          {
+            "type": "code",
+            "value": ".md",
+            "span": {
+              "start": 5090,
+              "end": 5095
+            }
+          },
+          {
+            "type": "text",
+            "value": " file when the",
+            "span": {
+              "start": 5095,
+              "end": 5109
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 5109,
+              "end": 5110
+            }
+          },
+          {
+            "type": "text",
+            "value": "client accepts Markdown. Set ",
+            "span": {
+              "start": 5110,
+              "end": 5139
+            }
+          },
+          {
+            "type": "code",
+            "value": "Content-Type: text/markdown; charset=utf-8",
+            "span": {
+              "start": 5139,
+              "end": 5183
+            }
+          },
+          {
+            "type": "text",
+            "value": " and",
+            "span": {
+              "start": 5183,
+              "end": 5187
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 5187,
+              "end": 5188
+            }
+          },
+          {
+            "type": "code",
+            "value": "Vary: Accept",
+            "span": {
+              "start": 5188,
+              "end": 5202
+            }
+          },
+          {
+            "type": "text",
+            "value": " on negotiated responses, including the HTML variant. Hosts",
+            "span": {
+              "start": 5202,
+              "end": 5261
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 5261,
+              "end": 5262
+            }
+          },
+          {
+            "type": "text",
+            "value": "without negotiation can still serve the advertised ",
+            "span": {
+              "start": 5262,
+              "end": 5313
+            }
+          },
+          {
+            "type": "code",
+            "value": ".md",
+            "span": {
+              "start": 5313,
+              "end": 5318
+            }
+          },
+          {
+            "type": "text",
+            "value": " URLs directly.",
+            "span": {
+              "start": 5318,
+              "end": 5333
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 5333,
+              "end": 5334
+            }
+          },
+          {
+            "type": "text",
+            "value": "No token estimate is emitted because Diplodocus does not select a tokenizer.",
+            "span": {
+              "start": 5334,
+              "end": 5410
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 5410,
+              "end": 5411
+            }
+          }
+        ],
+        "span": {
+          "start": 5035,
+          "end": 5411
+        }
+      },
+      {
+        "type": "code-block",
+        "language": "console",
+        "source": "curl -H 'Accept: text/markdown' https://your-site.example/guide/index.html\n",
+        "source_segments": [
+          {
+            "text": "curl -H 'Accept: text/markdown' https://your-site.example/guide/index.html",
+            "span": {
+              "start": 5423,
+              "end": 5497
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 5497,
+              "end": 5498
+            }
+          }
+        ],
+        "span": {
+          "start": 5412,
+          "end": 5502
         }
       }
     ]

@@ -603,22 +603,20 @@ fn acceptance_fixture_checks_without_julia_and_retains_structured_markdown() {
         &std::fs::read(workspace.path().join("site/assets/search.json")).unwrap(),
     )
     .unwrap();
-    let generic_method = search
+    let norm = search
         .as_array()
         .unwrap()
         .iter()
-        .find(|entry| {
-            entry["title"]
-                .as_str()
-                .is_some_and(|title| title.contains("values::AbstractVector"))
-        })
+        .find(|entry| entry["title"] == "TinyGeometry.norm")
         .unwrap();
-    assert!(
-        generic_method["title"]
-            .as_str()
-            .unwrap()
-            .starts_with("TinyGeometry.norm(")
-    );
+    let html = std::fs::read_to_string(
+        workspace
+            .path()
+            .join("site")
+            .join(norm["path"].as_str().unwrap()),
+    )
+    .unwrap();
+    assert!(html.contains("values::AbstractVector"));
     let second = support::TestWorkspace::new();
     for path in support::files_under(&fixture) {
         second.write(&path, std::fs::read(fixture.join(&path)).unwrap());

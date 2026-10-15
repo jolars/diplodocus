@@ -263,28 +263,23 @@ fn julia_function_overviews_include_method_prose_and_resolved_references() {
     let html = fs::read_to_string(site.join(entry["path"].as_str().unwrap())).unwrap();
     assert!(html.contains("An answer."));
     assert!(html.contains("the other function</a>"));
-    let method = search
-        .as_array()
-        .unwrap()
+    assert!(!search.as_array().unwrap().iter().any(|e| {
+        e["title"]
+            .as_str()
+            .is_some_and(|t| t.starts_with("ApiExamples.answer("))
+    }));
+    let snapshot = Snapshot::load(root.path().join(".diplodocus/documentation.sqlite")).unwrap();
+    let (method_id, _) = snapshot.workspace().packages["api"]
+        .items
         .iter()
-        .find(|e| {
-            e["title"]
-                .as_str()
-                .is_some_and(|t| t.starts_with("ApiExamples.answer("))
-        })
+        .find(|(_, item)| item.kind == diplodocus::ir::ItemKind::Method && item.name == "answer")
         .unwrap();
-    let method_path = method["path"].as_str().unwrap();
-    let filename = std::path::Path::new(method_path)
-        .file_name()
-        .unwrap()
-        .to_str()
-        .unwrap();
-    assert!(html.contains(&format!("href=\"{filename}#details\"")));
-    assert!(
-        fs::read_to_string(site.join(method_path))
-            .unwrap()
-            .contains("id=\"details\"")
+    let anchor = format!(
+        "method-{}-details",
+        diplodocus::provenance::fingerprint_bytes(method_id.as_bytes()).value
     );
+    assert!(html.contains(&format!("href=\"#{anchor}\"")));
+    assert!(html.contains(&format!("id=\"{anchor}\"")));
     assert!(
         entry["text"]
             .as_str()

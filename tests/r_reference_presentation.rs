@@ -126,7 +126,7 @@ fn formatted_titles_and_route_collisions_remain_distinct() {
     let routes: Vec<_> = rendered
         .files()
         .keys()
-        .filter(|path| path.starts_with("packages/r/reference/a-b-"))
+        .filter(|path| path.starts_with("packages/r/reference/a-b-") && path.ends_with(".html"))
         .collect();
     assert_eq!(routes.len(), 2);
     assert!(html(&rendered, "packages/r/reference/index.html").contains("<h1>Reference</h1>"));
