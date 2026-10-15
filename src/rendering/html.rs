@@ -19,8 +19,23 @@ const FRAGMENT: &percent_encoding::AsciiSet = &percent_encoding::NON_ALPHANUMERI
 
 /// Render one complete site from its prepared model, with no source or database I/O.
 pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
+    render(site, true)
+}
+
+/// Render document bodies, assets, and a JSON index for an existing website.
+///
+/// `documents.json` describes each fragment's path, title, semantic identities,
+/// package, and headings. Links use the same relative paths as the built-in
+/// site. Consumers that change those paths must map links and asset references
+/// to their own URLs. This integration format is experimental.
+pub fn render_fragments(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
+    render(site, false)
+}
+
+fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> {
     let mut files = BTreeMap::new();
     let mut search = Vec::new();
+    let mut documents = Vec::new();
     let mut uses_math = false;
     let math_context = katex::KatexContext::default();
     let highlighter = super::highlighting::Highlighter::new();
@@ -57,59 +72,64 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
         renderer
             .identifiers
             .extend(["main", "search", "search-results"].map(str::to_owned));
-        let mut html = String::from(
-            "<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">",
-        );
-        if let Some(description) = &site.presentation.description {
-            write!(
-                html,
-                "<meta name=\"description\" content=\"{}\">",
-                escape(description)
-            )
-            .unwrap();
-        }
-        if let Some(url) = site.canonical_urls.get(route) {
-            write!(html, "<link rel=\"canonical\" href=\"{}\">", escape(url)).unwrap();
-        }
-        write!(html, "<title>{} · {}</title><link rel=\"stylesheet\" href=\"{}\"><script defer src=\"{}\"></script><script defer src=\"{}\"></script><script defer src=\"{}\"></script>", escape(&page.title), escape(site.title()), escape(&relative_url(route, "assets/site.css")), escape(&relative_url(route, "assets/search.js")), escape(&relative_url(route, "assets/nav.js")), escape(&relative_url(route, "assets/code.js"))).unwrap();
-        if page_math {
-            write!(
-                html,
-                "<link rel=\"stylesheet\" href=\"{}\">",
-                escape(&relative_url(route, "assets/katex/katex.min.css"))
-            )
-            .unwrap();
-        }
-        html.push_str("</head><body><a class=\"skip-link\" href=\"#main\">Skip to content</a>");
-        write!(
-            html,
-            "<header><a class=\"brand\" href=\"{}\">",
-            escape(&relative_url(route, "index.html")),
-        )
-        .unwrap();
-        if let Some(logo) = site.logo {
-            write!(
-                html,
-                "<img class=\"brand-logo\" src=\"{}\" alt=\"\">",
-                escape(&relative_url(
-                    route,
-                    &site.asset_route(&logo.fingerprint.value)?
-                ))
-            )
-            .unwrap();
-        }
-        write!(html, "<span>{}</span></a>", escape(site.title())).unwrap();
-        super::navigation::sections(&mut html, site, route, "desktop-sections");
-        html.push_str("<form role=\"search\"><label for=\"search\">Search documentation</label><input id=\"search\" type=\"search\" autocomplete=\"off\"><ul id=\"search-results\" aria-live=\"polite\"></ul></form></header><div class=\"layout\"><nav aria-label=\"Documentation\"><details class=\"nav-disclosure\" open><summary>Browse documentation</summary>");
-        super::navigation::sections(&mut html, site, route, "mobile-sections");
-        super::navigation::contextual(&mut html, site, route);
         let package_overview =
             super::package_metadata::is_overview(site, route, page.owner.as_deref());
-        html.push_str("</details></nav><div class=\"page-content\">");
-        if package_overview {
-            html.push_str("<main id=\"main\" class=\"package-overview\"><div class=\"package-overview-body\">");
-        } else {
-            html.push_str("<main id=\"main\">");
+        let mut html = String::new();
+        if standalone {
+            html = String::from(
+                "<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">",
+            );
+            if let Some(description) = &site.presentation.description {
+                write!(
+                    html,
+                    "<meta name=\"description\" content=\"{}\">",
+                    escape(description)
+                )
+                .unwrap();
+            }
+            if let Some(url) = site.canonical_urls.get(route) {
+                write!(html, "<link rel=\"canonical\" href=\"{}\">", escape(url)).unwrap();
+            }
+            write!(html, "<title>{} · {}</title><link rel=\"stylesheet\" href=\"{}\"><script defer src=\"{}\"></script><script defer src=\"{}\"></script><script defer src=\"{}\"></script>", escape(&page.title), escape(site.title()), escape(&relative_url(route, "assets/site.css")), escape(&relative_url(route, "assets/search.js")), escape(&relative_url(route, "assets/nav.js")), escape(&relative_url(route, "assets/code.js"))).unwrap();
+            if page_math {
+                write!(
+                    html,
+                    "<link rel=\"stylesheet\" href=\"{}\">",
+                    escape(&relative_url(route, "assets/katex/katex.min.css"))
+                )
+                .unwrap();
+            }
+            html.push_str("</head><body><a class=\"skip-link\" href=\"#main\">Skip to content</a>");
+            write!(
+                html,
+                "<header><a class=\"brand\" href=\"{}\">",
+                escape(&relative_url(route, "index.html")),
+            )
+            .unwrap();
+            if let Some(logo) = site.logo {
+                write!(
+                    html,
+                    "<img class=\"brand-logo\" src=\"{}\" alt=\"\">",
+                    escape(&relative_url(
+                        route,
+                        &site.asset_route(&logo.fingerprint.value)?
+                    ))
+                )
+                .unwrap();
+            }
+            write!(html, "<span>{}</span></a>", escape(site.title())).unwrap();
+            super::navigation::sections(&mut html, site, route, "desktop-sections");
+            html.push_str("<form role=\"search\"><label for=\"search\">Search documentation</label><input id=\"search\" type=\"search\" autocomplete=\"off\"><ul id=\"search-results\" aria-live=\"polite\"></ul></form></header><div class=\"layout\"><nav aria-label=\"Documentation\"><details class=\"nav-disclosure\" open><summary>Browse documentation</summary>");
+            super::navigation::sections(&mut html, site, route, "mobile-sections");
+            super::navigation::contextual(&mut html, site, route);
+            html.push_str("</details></nav><div class=\"page-content\">");
+            if package_overview {
+                html.push_str("<main id=\"main\" class=\"package-overview\"><div class=\"package-overview-body\">");
+            } else {
+                html.push_str("<main id=\"main\">");
+            }
+        } else if package_overview {
+            html.push_str("<div class=\"package-overview-body\">");
         }
         if let Some(owner) = &page.owner {
             let package = &site.workspace.packages[owner];
@@ -171,6 +191,12 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
                 escape(&item.qualified_name)
             )
             .unwrap();
+            html.push_str(&super::r_topics::source_links(site, item));
+        }
+        if !standalone
+            && let Some(item) = page.item
+            && !matches!(&item.language_data, Some(ItemLanguageData::R(_)))
+        {
             html.push_str(&super::r_topics::source_links(site, item));
         }
         if let Some(document) = page.document
@@ -402,11 +428,29 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
                 page.owner.as_deref().expect("package overview owner"),
             ));
         }
-        html.push_str("</main>");
-        html.push_str(&renderer.page_navigation());
-        html.push_str("</div></div>");
-        super::footer::render(&mut html, &site.presentation.footer);
-        html.push_str("</body></html>\n");
+        if standalone {
+            html.push_str("</main>");
+            html.push_str(&renderer.page_navigation());
+            html.push_str("</div></div>");
+            super::footer::render(&mut html, &site.presentation.footer);
+            html.push_str("</body></html>\n");
+        } else {
+            let identities: Vec<_> = site
+                .routes
+                .iter()
+                .filter(|(_, path)| *path == route)
+                .map(|(identity, _)| identity)
+                .collect();
+            documents.push(serde_json::json!({
+                "path": route,
+                "title": page.title,
+                "package": page.owner,
+                "qualified_name": page.item.map(|item| &item.qualified_name),
+                "visible": page.visible,
+                "identities": identities,
+                "headings": renderer.headings,
+            }));
+        }
         if page.visible {
             let package = page.owner.as_ref().map(|id| &site.workspace.packages[id]);
             let mut search_text = page
@@ -472,32 +516,43 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
             file(asset.bytes.clone(), &asset.media_type),
         );
     }
-    let style = format!(
-        "{STYLE}\n{}",
+    let style = if standalone {
+        format!(
+            "{STYLE}\n{}",
+            super::highlighting::stylesheet().map_err(|_| SiteError::Evidence)?
+        )
+    } else {
         super::highlighting::stylesheet().map_err(|_| SiteError::Evidence)?
-    );
+    };
     files.insert(
-        "assets/site.css".into(),
+        if standalone {
+            "assets/site.css"
+        } else {
+            "assets/content.css"
+        }
+        .into(),
         file(style.into_bytes(), "text/css; charset=utf-8"),
     );
-    files.insert(
-        "assets/search.js".into(),
-        file(SEARCH.as_bytes().to_vec(), "text/javascript; charset=utf-8"),
-    );
-    files.insert(
-        "assets/nav.js".into(),
-        file(
-            NAV_SCRIPT.as_bytes().to_vec(),
-            "text/javascript; charset=utf-8",
-        ),
-    );
-    files.insert(
-        "assets/code.js".into(),
-        file(
-            include_str!("code.js").as_bytes().to_vec(),
-            "text/javascript; charset=utf-8",
-        ),
-    );
+    if standalone {
+        files.insert(
+            "assets/search.js".into(),
+            file(SEARCH.as_bytes().to_vec(), "text/javascript; charset=utf-8"),
+        );
+        files.insert(
+            "assets/nav.js".into(),
+            file(
+                NAV_SCRIPT.as_bytes().to_vec(),
+                "text/javascript; charset=utf-8",
+            ),
+        );
+        files.insert(
+            "assets/code.js".into(),
+            file(
+                include_str!("code.js").as_bytes().to_vec(),
+                "text/javascript; charset=utf-8",
+            ),
+        );
+    }
     files.insert(
         "assets/search.json".into(),
         file(
@@ -505,7 +560,20 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
             "application/json",
         ),
     );
-    super::sitemap::render(site, &mut files)?;
+    if standalone {
+        super::sitemap::render(site, &mut files)?;
+    } else {
+        files.insert(
+            "documents.json".into(),
+            file(
+                serde_json::to_vec(
+                    &serde_json::json!({"format_version": 1, "documents": documents}),
+                )
+                .map_err(|_| SiteError::Evidence)?,
+                "application/json",
+            ),
+        );
+    }
     Ok(RenderedSite { files })
 }
 
