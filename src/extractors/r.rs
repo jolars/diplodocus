@@ -525,7 +525,7 @@ fn finish_provenance(result: &mut RExtraction) {
         parsers.insert(
             "arity-parser".into(),
             ParserProvenance {
-                version: "0.6.0".into(),
+                version: "0.6.1".into(),
                 role: "r-metadata-namespace-source".into(),
                 settings: grammars,
             },
@@ -562,7 +562,7 @@ fn finish_provenance(result: &mut RExtraction) {
             parsers.insert(
                 name.into(),
                 ParserProvenance {
-                    version: "0.4.0".into(),
+                    version: "0.5.0".into(),
                     role: role.into(),
                     settings,
                 },
@@ -613,11 +613,11 @@ fn provenance(source: &SourceLocation, rd: bool) -> Provenance {
     ]);
     if rd {
         tools.extend([
-            ("rd-source".into(), "0.4.0".into()),
-            ("rd-ast".into(), "0.4.0".into()),
+            ("rd-source".into(), "0.5.0".into()),
+            ("rd-ast".into(), "0.5.0".into()),
         ]);
     } else {
-        tools.insert("arity-parser".into(), "0.6.0".into());
+        tools.insert("arity-parser".into(), "0.6.1".into());
     }
     Provenance {
         activity: ProvenanceActivity::Declaration,

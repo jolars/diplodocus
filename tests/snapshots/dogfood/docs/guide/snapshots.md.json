@@ -2,7 +2,7 @@
   "document": {
     "span": {
       "start": 0,
-      "end": 1335
+      "end": 2604
     },
     "frontmatter": null,
     "blocks": [
@@ -419,6 +419,377 @@
         "span": {
           "start": 865,
           "end": 1335
+        }
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Use a snapshot in an existing site",
+            "span": {
+              "start": 1339,
+              "end": 1373
+            }
+          }
+        ],
+        "span": {
+          "start": 1336,
+          "end": 1374
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "SQLite is a supported consumption boundary. Read the manifest's storage, IR,",
+            "span": {
+              "start": 1375,
+              "end": 1451
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1451,
+              "end": 1452
+            }
+          },
+          {
+            "type": "text",
+            "value": "and encoding versions before interpreting records. Package and item records",
+            "span": {
+              "start": 1452,
+              "end": 1527
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1527,
+              "end": 1528
+            }
+          },
+          {
+            "type": "text",
+            "value": "contain structured JSON; documents retain semantic link targets rather than",
+            "span": {
+              "start": 1528,
+              "end": 1603
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1603,
+              "end": 1604
+            }
+          },
+          {
+            "type": "text",
+            "value": "site URLs. The ",
+            "span": {
+              "start": 1604,
+              "end": 1619
+            }
+          },
+          {
+            "type": "code",
+            "value": "assets",
+            "span": {
+              "start": 1619,
+              "end": 1627
+            }
+          },
+          {
+            "type": "text",
+            "value": " table carries retained image and download bytes. A",
+            "span": {
+              "start": 1627,
+              "end": 1678
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1678,
+              "end": 1679
+            }
+          },
+          {
+            "type": "text",
+            "value": "consumer can query these records directly and choose its own presentation.",
+            "span": {
+              "start": 1679,
+              "end": 1753
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1753,
+              "end": 1754
+            }
+          }
+        ],
+        "span": {
+          "start": 1375,
+          "end": 1754
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "An experimental Rust API, ",
+            "span": {
+              "start": 1755,
+              "end": 1781
+            }
+          },
+          {
+            "type": "code",
+            "value": "diplodocus::rendering::render_fragments",
+            "span": {
+              "start": 1781,
+              "end": 1822
+            }
+          },
+          {
+            "type": "text",
+            "value": ", reuses the",
+            "span": {
+              "start": 1822,
+              "end": 1834
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1834,
+              "end": 1835
+            }
+          },
+          {
+            "type": "text",
+            "value": "built-in document renderer without its page shell. To try it from this checkout:",
+            "span": {
+              "start": 1835,
+              "end": 1915
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1915,
+              "end": 1916
+            }
+          }
+        ],
+        "span": {
+          "start": 1755,
+          "end": 1916
+        }
+      },
+      {
+        "type": "code-block",
+        "language": "console",
+        "source": "cargo run --locked --example export-fragments -- \\\n  --input documentation.sqlite --output fragments\n",
+        "source_segments": [
+          {
+            "text": "cargo run --locked --example export-fragments -- \\",
+            "span": {
+              "start": 1928,
+              "end": 1978
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 1978,
+              "end": 1979
+            }
+          },
+          {
+            "text": "  --input documentation.sqlite --output fragments",
+            "span": {
+              "start": 1979,
+              "end": 2028
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 2028,
+              "end": 2029
+            }
+          }
+        ],
+        "span": {
+          "start": 1917,
+          "end": 2033
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "The output includes document bodies, ",
+            "span": {
+              "start": 2034,
+              "end": 2071
+            }
+          },
+          {
+            "type": "code",
+            "value": "documents.json",
+            "span": {
+              "start": 2071,
+              "end": 2087
+            }
+          },
+          {
+            "type": "text",
+            "value": " with semantic identities",
+            "span": {
+              "start": 2087,
+              "end": 2112
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2112,
+              "end": 2113
+            }
+          },
+          {
+            "type": "text",
+            "value": "and heading metadata, search records, syntax colors, and retained assets. Links",
+            "span": {
+              "start": 2113,
+              "end": 2192
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2192,
+              "end": 2193
+            }
+          },
+          {
+            "type": "text",
+            "value": "remain relative to the exported document paths. The host must map those links",
+            "span": {
+              "start": 2193,
+              "end": 2270
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2270,
+              "end": 2271
+            }
+          },
+          {
+            "type": "text",
+            "value": "when it supplies different routes, and provide its own layout and navigation.",
+            "span": {
+              "start": 2271,
+              "end": 2348
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2348,
+              "end": 2349
+            }
+          },
+          {
+            "type": "text",
+            "value": "The fragment export format is experimental and does not change the SQLite",
+            "span": {
+              "start": 2349,
+              "end": 2422
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2422,
+              "end": 2423
+            }
+          },
+          {
+            "type": "text",
+            "value": "storage contract. The ",
+            "span": {
+              "start": 2423,
+              "end": 2445
+            }
+          },
+          {
+            "type": "link",
+            "inlines": [
+              {
+                "type": "text",
+                "value": "Eunoia experiment",
+                "span": {
+                  "start": 2446,
+                  "end": 2463
+                }
+              }
+            ],
+            "target": "https://github.com/jolars/diplodocus/tree/main/examples/eunoia",
+            "title": null,
+            "attributes": {
+              "identifier": null,
+              "classes": [],
+              "key_values": []
+            },
+            "span": {
+              "start": 2445,
+              "end": 2528
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2528,
+              "end": 2529
+            }
+          },
+          {
+            "type": "text",
+            "value": "shows an existing SvelteKit site consuming both SQL records and fragments.",
+            "span": {
+              "start": 2529,
+              "end": 2603
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2603,
+              "end": 2604
+            }
+          }
+        ],
+        "span": {
+          "start": 2034,
+          "end": 2604
         }
       }
     ]

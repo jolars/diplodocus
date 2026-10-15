@@ -29,7 +29,7 @@ pub mod surface;
 pub use extraction::{PythonExtraction, extract_target};
 pub use model::*;
 
-const RUFF_VERSION: &str = "0.0.14";
+const RUFF_VERSION: &str = "0.0.17";
 
 /// Parse one explicitly selected Python module file or package directory.
 ///

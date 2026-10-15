@@ -12,43 +12,44 @@ const DOI_PATH: &percent_encoding::AsciiSet = &percent_encoding::CONTROLS
     .add(b'%');
 
 impl Context<'_> {
-    pub(super) fn describe_blocks(&mut self, tagged: &RdTagged, path: &RdPath) -> Vec<Block> {
+    pub(super) fn describe_blocks(&mut self, cursor: &RdNodeRef<'_>) -> Vec<Block> {
         let mut blocks = vec![];
         let mut items = vec![];
-        for (index, node) in tagged.children().iter().enumerate() {
-            let child_path = path.with_child(index);
+        let list = cursor.inspect_list().expect("describe container").unwrap();
+        let mut entries = list.items();
+        let children = cursor.children();
+        for (index, child) in children.iter().enumerate() {
+            let node = child.node();
+            let child_path = child.path();
             if matches!(node, RdNode::Comment(_))
                 || matches!(node, RdNode::Text(text) if text.trim().is_empty())
             {
                 continue;
             }
+            let entry = entries.next().expect("nontrivia describe entry");
             if matches!(node, RdNode::Tagged(item) if item.tag() == &RdTag::Item) {
-                let list = RdTagged::new(RdTag::Describe, None, vec![node.clone()]);
-                let view = list.inspect_list(&child_path).expect("describe container");
-                for entry in view.items() {
-                    match entry {
-                        Ok(RdListItem::Described(item)) => {
-                            let mut body = vec![Block::Paragraph {
-                                inlines: self.inlines(item.label(), &child_path),
-                                span: self.span(),
-                            }];
-                            body.extend(self.blocks(item.body(), &child_path));
-                            items.push(ListItem {
-                                checked: None,
-                                blocks: body,
-                                span: self.span(),
-                            });
-                        }
-                        Err(error) => {
-                            self.shape(error);
-                            items.push(ListItem {
-                                checked: None,
-                                blocks: vec![self.unsupported_block("list-item", &child_path)],
-                                span: self.span(),
-                            });
-                        }
-                        _ => unreachable!("describe item"),
+                match entry {
+                    Ok(RdListItem::Described(item)) => {
+                        let mut body = vec![Block::Paragraph {
+                            inlines: self.inlines(item.label_ref()),
+                            span: self.span(),
+                        }];
+                        body.extend(self.blocks(item.body_ref()));
+                        items.push(ListItem {
+                            checked: None,
+                            blocks: body,
+                            span: self.span(),
+                        });
                     }
+                    Err(error) => {
+                        self.shape(error);
+                        items.push(ListItem {
+                            checked: None,
+                            blocks: vec![self.unsupported_block("list-item", child_path)],
+                            span: self.span(),
+                        });
+                    }
+                    _ => unreachable!("describe item"),
                 }
             } else {
                 // R permits prose between described entries; preserve its position.
@@ -59,7 +60,7 @@ impl Context<'_> {
                         span: self.span(),
                     });
                 }
-                blocks.extend(self.blocks(std::slice::from_ref(node), &child_path));
+                blocks.extend(self.blocks(children.slice(index..index + 1).unwrap()));
             }
         }
         if !items.is_empty() {
@@ -72,68 +73,54 @@ impl Context<'_> {
         blocks
     }
 
-    pub(super) fn content_block(&mut self, tagged: &RdTagged, path: &RdPath) -> Vec<Block> {
+    pub(super) fn content_block(&mut self, cursor: &RdNodeRef<'_>) -> Vec<Block> {
+        let tagged = cursor.node().as_tagged().expect("block markup");
+        let path = cursor.path();
         let span = self.span();
         match tagged.tag() {
-            RdTag::Tabular => {
-                let mut table = tagged.clone();
-                if let Some(body) = tagged.children().get(1).and_then(RdNode::as_group) {
-                    let mut nodes = body.children().to_vec();
-                    let end = nodes.iter().rposition(|node| {
-                        !matches!(node, RdNode::Text(text) if text.trim().is_empty())
-                            && !matches!(node, RdNode::Comment(_))
-                    });
-                    // R ignores whitespace after the final row separator.
-                    if end.is_some_and(|index| matches!(&nodes[index], RdNode::Tagged(tagged) if tagged.tag() == &RdTag::Cr)) {
-                        nodes.truncate(end.unwrap() + 1);
-                        let mut children = tagged.children().to_vec();
-                        children[1] = RdNode::group(nodes);
-                        table = RdTagged::new(tagged.tag().clone(), tagged.option().map(<[RdNode]>::to_vec), children);
+            RdTag::Tabular => match cursor.inspect_tabular() {
+                Ok(Some(table)) => {
+                    for error in table.diagnostics() {
+                        self.error(DiagnosticCode::RRdInformationLoss, error.to_string());
                     }
+                    vec![Block::Table {
+                        caption: vec![],
+                        alignments: table
+                            .columns()
+                            .iter()
+                            .map(|column| match column {
+                                RdColumnAlign::Left => TableAlignment::Left,
+                                RdColumnAlign::Center => TableAlignment::Center,
+                                RdColumnAlign::Right => TableAlignment::Right,
+                                _ => TableAlignment::Default,
+                            })
+                            .collect(),
+                        rows: table
+                            .rows()
+                            .iter()
+                            .map(|row| TableRow {
+                                header: false,
+                                cells: row
+                                    .cells()
+                                    .iter()
+                                    .map(|cell| TableCell {
+                                        blocks: self.blocks(cell.nodes_ref()),
+                                        span,
+                                    })
+                                    .collect(),
+                                span,
+                            })
+                            .collect(),
+                        span,
+                    }]
                 }
-                match table.inspect_tabular(path) {
-                    Ok(table) => {
-                        for error in table.diagnostics() {
-                            self.error(DiagnosticCode::RRdInformationLoss, error.to_string());
-                        }
-                        vec![Block::Table {
-                            caption: vec![],
-                            alignments: table
-                                .columns()
-                                .iter()
-                                .map(|column| match column {
-                                    RdColumnAlign::Left => TableAlignment::Left,
-                                    RdColumnAlign::Center => TableAlignment::Center,
-                                    RdColumnAlign::Right => TableAlignment::Right,
-                                    _ => TableAlignment::Default,
-                                })
-                                .collect(),
-                            rows: table
-                                .rows()
-                                .iter()
-                                .map(|row| TableRow {
-                                    header: false,
-                                    cells: row
-                                        .cells()
-                                        .iter()
-                                        .map(|cell| TableCell {
-                                            blocks: self.blocks(cell.nodes(), cell.path()),
-                                            span,
-                                        })
-                                        .collect(),
-                                    span,
-                                })
-                                .collect(),
-                            span,
-                        }]
-                    }
-                    Err(error) => {
-                        self.shape(error);
-                        vec![self.unsupported_block("tabular", path)]
-                    }
+                Ok(None) => unreachable!("tabular node"),
+                Err(error) => {
+                    self.shape(error);
+                    vec![self.unsupported_block("tabular", path)]
                 }
-            }
-            RdTag::Deqn => match self.equation(tagged, path) {
+            },
+            RdTag::Deqn => match self.equation(cursor) {
                 Some((latex, fallback)) => vec![Block::DisplayMath {
                     latex,
                     fallback,
@@ -153,13 +140,13 @@ impl Context<'_> {
                     );
                     return vec![self.unsupported_block(tagged.tag().as_rd_tag(), path)];
                 }
-                let label = children[0].as_group().unwrap().children();
-                let body = children[1].as_group().unwrap().children();
+                let label = cursor.children().get(0).unwrap().children();
+                let body = cursor.children().get(1).unwrap().children();
                 if tagged.tag() == &RdTag::Item {
-                    let mut inlines = self.inlines(label, path);
+                    let mut inlines = self.inlines(label);
                     code_style(&mut inlines);
                     let mut blocks = vec![Block::Paragraph { inlines, span }];
-                    blocks.extend(self.blocks(body, path));
+                    blocks.extend(self.blocks(body));
                     vec![Block::List {
                         ordered: false,
                         items: vec![ListItem {
@@ -177,10 +164,10 @@ impl Context<'_> {
                             3
                         },
                         attributes: Attributes::default(),
-                        inlines: self.inlines(label, path),
+                        inlines: self.inlines(label),
                         span,
                     }];
-                    blocks.extend(self.blocks(body, path));
+                    blocks.extend(self.blocks(body));
                     blocks
                 }
             }
@@ -188,15 +175,16 @@ impl Context<'_> {
         }
     }
 
-    fn equation(&mut self, tagged: &RdTagged, path: &RdPath) -> Option<(String, Option<String>)> {
-        match tagged.inspect_equation(path) {
-            Ok(equation) => {
+    fn equation(&mut self, cursor: &RdNodeRef<'_>) -> Option<(String, Option<String>)> {
+        match cursor.inspect_equation() {
+            Ok(Some(equation)) => {
                 let fallback = match equation.ascii() {
                     Some(nodes) => Some(plain(nodes)?),
                     None => None,
                 };
                 Some((plain(equation.latex())?, fallback))
             }
+            Ok(None) => unreachable!("equation node"),
             Err(error) => {
                 self.shape(error);
                 None
@@ -204,20 +192,22 @@ impl Context<'_> {
         }
     }
 
-    pub(super) fn equation_inline(&mut self, tagged: &RdTagged, path: &RdPath) -> Inline {
-        match self.equation(tagged, path) {
+    pub(super) fn equation_inline(&mut self, cursor: &RdNodeRef<'_>) -> Inline {
+        match self.equation(cursor) {
             Some((latex, fallback)) => Inline::Math {
                 latex,
                 fallback,
                 span: self.span(),
             },
-            None => self.unsupported_inline("eqn", path),
+            None => self.unsupported_inline("eqn", cursor.path()),
         }
     }
 
-    pub(super) fn help_link(&mut self, tagged: &RdTagged, path: &RdPath) -> Inline {
-        let link = match tagged.inspect_link(path) {
-            Ok(link) => link,
+    pub(super) fn help_link(&mut self, cursor: &RdNodeRef<'_>) -> Inline {
+        let path = cursor.path();
+        let link = match cursor.inspect_link() {
+            Ok(Some(link)) => link,
+            Ok(None) => unreachable!("link node"),
             Err(error) => {
                 self.shape(error);
                 return self.unsupported_inline("link", path);
@@ -244,7 +234,7 @@ impl Context<'_> {
             return self.unsupported_inline("link", path);
         };
         Inline::Link {
-            inlines: self.inlines(link.display(), path),
+            inlines: self.inlines(link.display_ref()),
             target: format!("@ref {target}"),
             title: None,
             attributes: Attributes::default(),
@@ -252,7 +242,7 @@ impl Context<'_> {
         }
     }
 
-    pub(super) fn doi_link(&mut self, tagged: &RdTagged, path: &RdPath) -> Inline {
+    pub(super) fn doi_link(&mut self, tagged: &RdTagged, path: &RdAstPath) -> Inline {
         match plain(tagged.children()).filter(|doi| {
             doi.starts_with("10.") && doi.contains('/') && !doi.chars().any(char::is_whitespace)
         }) {
@@ -293,6 +283,45 @@ pub(super) fn code_style(inlines: &mut [Inline]) {
             | Inline::Emphasis { inlines, .. }
             | Inline::Strong { inlines, .. } => code_style(inlines),
             _ => {}
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn nested_link_errors_retain_canonical_paths() {
+        for content in [
+            r"\arguments{\item{x}{\link{\emph{bad}}}}",
+            r"\description{{\itemize{\item First\item {\link{\emph{bad}}}}}}",
+            r"\description{\describe{\item{First}{Before.}Between.\item{Second}{\link{\emph{bad}}}}}",
+            r"\details{\tabular{ll}{\tab \link{\emph{bad}}\cr}}",
+        ] {
+            let text = format!(r"\name{{topic}}\title{{Topic}}{content}");
+            let parsed = rd_source::parse(text.as_bytes()).unwrap();
+            let expected: Vec<_> = parsed
+                .document()
+                .walk()
+                .filter_map(|cursor| cursor.inspect_link().err())
+                .map(|error| error.to_string())
+                .collect();
+            assert_eq!(expected.len(), 1, "{content}");
+
+            let source = SourceLocation {
+                repository: "r".into(),
+                path: "man/topic.Rd".try_into().unwrap(),
+                span: None,
+            };
+            let mut diagnostics = vec![];
+            assert!(parse(&text, &source, &mut diagnostics, "unix").is_some());
+            let actual: Vec<_> = diagnostics
+                .iter()
+                .filter(|diagnostic| diagnostic.code == DiagnosticCode::RRdInformationLoss)
+                .map(|diagnostic| diagnostic.message.clone())
+                .collect();
+            assert_eq!(actual, expected, "{content}");
         }
     }
 }

@@ -1,18 +1,13 @@
 use super::*;
 
 impl Context<'_> {
-    pub(super) fn select_conditionals(
-        &mut self,
-        nodes: &[RdNode],
-        path: &RdPath,
-        os_type: &str,
-    ) -> Vec<RdNode> {
+    pub(super) fn prepare_nodes(&mut self, nodes: RdNodesRef<'_>, os_type: &str) -> Vec<RdNode> {
         let mut selected = Vec::new();
-        for (index, node) in nodes.iter().enumerate() {
-            let path = path.with_child(index);
+        for cursor in nodes {
+            let node = cursor.node();
             match node {
                 RdNode::Tagged(tagged) if matches!(tagged.tag(), RdTag::If | RdTag::IfElse) => {
-                    match node.inspect_conditional(&path) {
+                    match cursor.inspect_conditional() {
                         Ok(Some(conditional)) => {
                             let formats: Vec<_> =
                                 conditional.format().split(',').map(str::trim).collect();
@@ -29,11 +24,13 @@ impl Context<'_> {
                                 .iter()
                                 .any(|format| matches!(*format, "html" | "TRUE"));
                             let branch = if matches {
-                                conditional.then_branch()
+                                Some(conditional.then_branch_ref())
                             } else {
-                                conditional.else_branch().unwrap_or_default()
+                                conditional.else_branch_ref()
                             };
-                            selected.extend(self.select_conditionals(branch, &path, os_type));
+                            if let Some(branch) = branch {
+                                selected.extend(self.prepare_nodes(branch, os_type));
+                            }
                         }
                         Err(error) => {
                             self.shape(error);
@@ -65,23 +62,42 @@ impl Context<'_> {
                     }
                     let matches = format.unwrap().trim() == os_type;
                     if matches == (tagged.tag() == &RdTag::IfDef) {
-                        selected.extend(self.select_conditionals(
-                            body.unwrap().children(),
-                            &path,
-                            os_type,
-                        ));
+                        selected.extend(
+                            self.prepare_nodes(
+                                cursor.children().get(1).unwrap().children(),
+                                os_type,
+                            ),
+                        );
                     }
                 }
-                RdNode::Tagged(tagged) => selected.push(RdNode::tagged(
-                    tagged.tag().clone(),
-                    tagged.option().map(<[RdNode]>::to_vec),
-                    self.select_conditionals(tagged.children(), &path, os_type),
+                RdNode::Tagged(tagged) => {
+                    let mut children = self.prepare_nodes(cursor.children(), os_type);
+                    if tagged.tag() == &RdTag::Tabular
+                        && let Some(RdNode::Group(body)) = children.get_mut(1)
+                    {
+                        let mut nodes = body.children().to_vec();
+                        let end = nodes.iter().rposition(|node| {
+                            !matches!(node, RdNode::Text(text) if text.trim().is_empty())
+                                && !matches!(node, RdNode::Comment(_))
+                        });
+                        // R ignores whitespace after the final row separator. Normalize it
+                        // before creating the document whose cursors inspect the table.
+                        if let Some(end) = end
+                            && matches!(&nodes[end], RdNode::Tagged(tagged) if tagged.tag() == &RdTag::Cr)
+                        {
+                            nodes.truncate(end + 1);
+                            children[1] = RdNode::group(nodes);
+                        }
+                    }
+                    selected.push(RdNode::tagged(
+                        tagged.tag().clone(),
+                        tagged.option().map(<[RdNode]>::to_vec),
+                        children,
+                    ));
+                }
+                RdNode::Group(_) => selected.push(RdNode::group(
+                    self.prepare_nodes(cursor.children(), os_type),
                 )),
-                RdNode::Group(group) => selected.push(RdNode::group(self.select_conditionals(
-                    group.children(),
-                    &path,
-                    os_type,
-                ))),
                 _ => selected.push(node.clone()),
             }
         }

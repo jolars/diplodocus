@@ -8,9 +8,9 @@ fn build_versions_follow_selected_edges_and_reject_ambiguity() {
     let lock = include_str!("../Cargo.lock");
     assert_eq!(
         build_metadata::selected_version(lock, env!("CARGO_PKG_VERSION"), "toml").unwrap(),
-        "1.1.6+spec-1.1.0"
+        "1.1.8+spec-1.1.0"
     );
-    let ambiguous = lock.replace("\"toml 1.1.6+spec-1.1.0\"", "\"toml\"");
+    let ambiguous = lock.replace("\"toml 1.1.8+spec-1.1.0\"", "\"toml\"");
     assert!(
         build_metadata::selected_version(&ambiguous, env!("CARGO_PKG_VERSION"), "toml").is_err()
     );

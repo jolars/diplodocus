@@ -77,9 +77,9 @@ invoked parsers.
 | Component | Version | Role and recorded settings |
 | --- | --- | --- |
 | `pyproject-toml` | `0.13.7` | Parse PEP 621 metadata, PEP 440 versions, and PEP 508 dependencies. No build-backend metadata hooks are permitted. |
-| `ruff_python_parser` | `0.0.14` | Parse `.py` and `.pyi`; record `source_type` for each input and the `target_version` selected from the package's declared Python requirement. |
-| `ruff_python_ast` | `0.0.14` | Supply the typed syntax consumed by the semantic adapter. |
-| `ruff_text_size` | `0.0.14` | Define Ruff's zero-based, half-open UTF-8 byte ranges. |
+| `ruff_python_parser` | `0.0.17` | Parse `.py` and `.pyi`; record `source_type` for each input and the `target_version` selected from the package's declared Python requirement. |
+| `ruff_python_ast` | `0.0.17` | Supply the typed syntax consumed by the semantic adapter. |
+| `ruff_text_size` | `0.0.17` | Define Ruff's zero-based, half-open UTF-8 byte ranges. |
 | `pydocstring` | `0.4.1` | Parse PEP 257 prose and NumPy-style sections; record `style = "numpy"`. |
 
 All five releases are exact pins in `Cargo.toml`. The production adapter must
@@ -117,10 +117,10 @@ extractor retains raw input and never invents a source range it cannot prove.
 
 | Component | Version | Role and recorded settings |
 | --- | --- | --- |
-| `arity-parser` | `0.6.0` | Parse `DESCRIPTION`, `NAMESPACE`, maintained R source, and supported Rd usage calls; record the selected grammar as `dcf`, `namespace`, or `r` for each input. Conditional namespace expressions and R calls remain unevaluated. |
-| `rd-source` | `0.4.0` | Parse checked-in `Rd` bytes and provide native diagnostics. Dynamic markup remains unresolved. |
+| `arity-parser` | `0.6.1` | Parse `DESCRIPTION`, `NAMESPACE`, maintained R source, and supported Rd usage calls; record the selected grammar as `dcf`, `namespace`, or `r` for each input. Conditional namespace expressions and R calls remain unevaluated. |
+| `rd-source` | `0.5.0` | Parse checked-in `Rd` bytes and provide native diagnostics. Dynamic markup remains unresolved. |
 | `rd-rds` | `0.5.0` | Read installed namespace metadata and lazy-load indexes without loading packages. |
-| `rd-ast` | `0.4.0` | Interpret supported `Rd` semantics through strict shape-checking views, with default features disabled. Lossy convenience projections are not authoritative. |
+| `rd-ast` | `0.5.0` | Interpret supported `Rd` semantics through strict shape-checking views, with default features disabled. Lossy convenience projections are not authoritative. |
 
 All three releases are exact pins in `Cargo.toml`. The extractor records both
 `rd-source` and `rd-ast`: parsing can remain unchanged while the semantic view
@@ -143,8 +143,9 @@ implicit capabilities:
 
 The manifest does not claim roxygen generation, package installation, namespace
 loading, source evaluation, dynamic `Rd` evaluation, or exact ranges for
-successful `Rd` nodes. Until an exact `Rd` source map exists, those nodes carry
-file-level provenance and one `r-rd-source-attribution` warning per Rd file.
+successful `Rd` nodes. The adapter does not map transformed `Rd` nodes back to
+source bytes. Those nodes carry file-level provenance and one
+`r-rd-source-attribution` warning per Rd file.
 The [R extraction contract](../ir/r-extraction.md) defines the production API,
 supported subset, and coarse document-range behavior.
 
@@ -156,7 +157,7 @@ supported subset, and coarse document-range behavior.
 | --- | --- | --- |
 | `fatou-parser` | `0.8.1` | Parse Julia declarations, decode docstrings with source maps, and parse Julia Markdown. Record `grammar = "julia-superset"`, `includes = "unconditional-literal"`, `surface = "public-or-documented"`, and `documentation = "julia-markdown-inert"`. |
 | `rowan` | `0.17.0` | Supply Fatou's syntax tree and zero-based, half-open UTF-8 byte ranges. |
-| `toml` | `1.1.6` | Read static Project.toml fields with their source ranges. |
+| `toml` | `1.1.8` | Read static Project.toml fields with their source ranges. |
 
 All three releases are exact pins in `Cargo.toml`. Fatou is a published crate;
 extraction does not depend on a sibling checkout or a Julia installation.

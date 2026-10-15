@@ -193,13 +193,15 @@ Unsupported example or usage forms retain a placeholder and the original
 file. Malformed files remain in `inputs`, even when their documentation cannot
 be attached.
 
-`rd-source` provides exact native diagnostic ranges. Its successful semantic
-nodes lack byte ranges, so each successfully parsed Rd file produces exactly
-one `r-rd-source-attribution` warning. Documents and Rd aliases carry file-level
-source locations with no span. Required document-node spans cover the entire
-retained Rd input, and code blocks have no exact source segments. These coarse
-ranges identify the enclosing file, not a proven fragment. Structural `RdPath`
-values in diagnostics never substitute for byte offsets.
+`rd-source` provides exact native diagnostic ranges and a source map for its
+parsed AST. The adapter selects conditional branches and normalizes tables
+without carrying that map through the transformations, so each successfully
+parsed Rd file produces one `r-rd-source-attribution` warning. Documents and Rd
+aliases carry file-level source locations with no span. Required document-node
+spans cover the entire retained Rd input, and code blocks have no exact source
+segments. These coarse ranges identify the enclosing file, not a proven
+fragment. Structural `RdAstPath` values in diagnostics never substitute for byte
+offsets.
 
 ## Diagnostics and provenance
 
@@ -224,9 +226,9 @@ Diagnostics sort in the common deterministic order and retain exact ranges
 only when a parser supplies them.
 
 Provenance records static mode, the seven implemented R capabilities, content
-fingerprints, and actual parser use. `arity-parser` 0.6.0 handles DCF, namespace,
-R source, and supported Rd usage calls. `rd-source` 0.4.0 handles Rd syntax, and
-`rd-ast` 0.4.0 supplies strict semantic views with default features disabled.
+fingerprints, and actual parser use. `arity-parser` 0.6.1 handles DCF, namespace,
+R source, and supported Rd usage calls. `rd-source` 0.5.0 handles Rd syntax, and
+`rd-ast` 0.5.0 supplies strict semantic views with default features disabled.
 Parser records are present only when used; undecodable input claims no parser
 use. See the [extractor contract](../spikes/static-extractor-contract.md) for
 the capability manifest.

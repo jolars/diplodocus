@@ -108,7 +108,7 @@
         "span": null,
         "tools": {
           "diplodocus": "[DIPLODOCUS_VERSION]",
-          "panache-parser": "0.30.0",
+          "panache-parser": "0.32.0",
           "pydocstring": "0.4.1"
         }
       }

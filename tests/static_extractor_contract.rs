@@ -10,7 +10,7 @@ fn parser_versions_are_pinned_and_match_the_contract() {
             "| `fatou-parser` | `0.8.1` |",
         ),
         ("rowan", "rowan = \"=0.17.0\"", "| `rowan` | `0.17.0` |"),
-        ("toml", "toml = \"=1.1.6\"", "| `toml` | `1.1.6` |"),
+        ("toml", "toml = \"=1.1.8\"", "| `toml` | `1.1.8` |"),
         (
             "pyproject-toml",
             "pyproject-toml = \"=0.13.7\"",
@@ -18,18 +18,18 @@ fn parser_versions_are_pinned_and_match_the_contract() {
         ),
         (
             "ruff_python_parser",
-            "ruff_python_parser = \"=0.0.14\"",
-            "| `ruff_python_parser` | `0.0.14` |",
+            "ruff_python_parser = \"=0.0.17\"",
+            "| `ruff_python_parser` | `0.0.17` |",
         ),
         (
             "ruff_python_ast",
-            "ruff_python_ast = \"=0.0.14\"",
-            "| `ruff_python_ast` | `0.0.14` |",
+            "ruff_python_ast = \"=0.0.17\"",
+            "| `ruff_python_ast` | `0.0.17` |",
         ),
         (
             "ruff_text_size",
-            "ruff_text_size = \"=0.0.14\"",
-            "| `ruff_text_size` | `0.0.14` |",
+            "ruff_text_size = \"=0.0.17\"",
+            "| `ruff_text_size` | `0.0.17` |",
         ),
         (
             "pydocstring",
@@ -38,18 +38,18 @@ fn parser_versions_are_pinned_and_match_the_contract() {
         ),
         (
             "arity-parser",
-            "arity-parser = \"=0.6.0\"",
-            "| `arity-parser` | `0.6.0` |",
+            "arity-parser = \"=0.6.1\"",
+            "| `arity-parser` | `0.6.1` |",
         ),
         (
             "rd-source",
-            "rd-source = \"=0.4.0\"",
-            "| `rd-source` | `0.4.0` |",
+            "rd-source = \"=0.5.0\"",
+            "| `rd-source` | `0.5.0` |",
         ),
         (
             "rd-ast",
-            "rd-ast = { version = \"=0.4.0\", default-features = false }",
-            "| `rd-ast` | `0.4.0` |",
+            "rd-ast = { version = \"=0.5.0\", default-features = false }",
+            "| `rd-ast` | `0.5.0` |",
         ),
         (
             "rd-rds",
