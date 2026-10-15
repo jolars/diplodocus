@@ -94,8 +94,8 @@ needs Python and Julia on `PATH` to verify API doctests, alongside R. It needs
 no package installation or Jupyter kernel. Python
 documentation comes from NumPy-style docstrings. R documentation comes from
 the checked-in `man/*.Rd` files; Diplodocus does not run roxygen2. Julia documentation comes from Julia Markdown
-docstrings. Function overviews include method prose, and each method also has a
-separate page. Extraction verifies Python and Julia doctest output.
+docstrings. Function pages include method signatures and prose, with anchors for
+links to individual methods. Extraction verifies Python and Julia doctest output.
 
 The current R parser emits an `r-rd-source-attribution` warning because it tracks
 Rd content at file granularity. This warning does not prevent the site from

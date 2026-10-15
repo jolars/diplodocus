@@ -150,6 +150,45 @@ pub(super) fn page(
     if let Some(document) = page.document {
         output.push_str(&renderer.blocks(&document.document.blocks)?);
     }
+    if let Some(item) = page.item {
+        let members = super::html::julia_members(item);
+        if !members.is_empty() {
+            anchor(&mut output, "methods");
+            output.push_str("## Methods\n\n");
+        }
+        for member in members {
+            let method_page = &site.embedded_pages[member];
+            let method = method_page.item.expect("embedded Julia method");
+            anchor(&mut output, &site.overload_anchors[member]);
+            for signature in &method.signatures {
+                writeln!(
+                    output,
+                    "### {}\n",
+                    code(&super::signatures::signature_for_site(
+                        site,
+                        &method.name,
+                        &signature.signature,
+                        "julia"
+                    ))
+                )
+                .unwrap();
+            }
+            output.push_str(&sources(site, method));
+            if let Some(document) = method_page.document {
+                let mut method_renderer = Markdown {
+                    site,
+                    route,
+                    page: method_page,
+                    resolved: method_page.resolved,
+                    identifiers: BTreeSet::new(),
+                    headings: true,
+                    heading_offset: 2,
+                    cell: 0,
+                };
+                output.push_str(&method_renderer.blocks(&document.document.blocks)?);
+            }
+        }
+    }
     if let Some(class) = &page.python_class {
         for member in &class.members {
             if member.inherited {
@@ -257,6 +296,14 @@ impl Markdown<'_, '_> {
             })
             .ok_or(SiteError::Evidence)?
             .target;
+        if let ReferenceTarget::Anchor { fragment } = target
+            && let Some(prefix) = &self.page.anchor_prefix
+        {
+            return Ok(format!(
+                "#{}",
+                crate::site::encode(&format!("{prefix}-{fragment}"))
+            ));
+        }
         self.site.target(self.route, target)
     }
 
@@ -365,6 +412,12 @@ impl Markdown<'_, '_> {
                             }
                             id
                         };
+                        let identifier = self
+                            .page
+                            .anchor_prefix
+                            .as_ref()
+                            .map(|prefix| format!("{prefix}-{identifier}"))
+                            .unwrap_or(identifier);
                         anchor(&mut output, &identifier);
                     }
                     writeln!(

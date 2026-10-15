@@ -532,7 +532,7 @@ test("page TOC stays close to content when the window narrows", async ({ page },
   await capture(page, info, "medium-without-toc");
 });
 
-test("Julia families link to documented methods", async ({ page }, info) => {
+test("Julia functions include methods on one page", async ({ page }, info) => {
   await page.goto("/guides/comparing-predictions.html");
   await page.getByRole("main").getByRole("link", { name: "juliastats::TinyStats.mean_squared_error", exact: true }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("TinyStats.mean_squared_error");
@@ -542,10 +542,12 @@ test("Julia families link to documented methods", async ({ page }, info) => {
   await capture(page, info, "julia-family");
   await page.getByRole("main").getByRole("link", { name: "vector method", exact: true }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("TinyStats.mean_squared_error");
-  await expect(page.getByRole("main").getByText("Method", { exact: true })).toBeVisible();
-  await expect(page.getByRole("main").locator("pre code")).toHaveText("mean_squared_error(observed::AbstractVector, predicted::AbstractVector)");
-  await expect(page.getByRole("main").getByText("Calculate mean squared error for numeric vectors.", { exact: true })).toBeVisible();
-  await expect(page.getByRole("navigation", { name: "Documentation" }).locator('[aria-current="page"]')).toHaveText("mean_squared_error(observed::AbstractVector, predicted::AbstractVector)");
+  await expect(page).toHaveURL(/#method-/);
+  const method = page.getByRole("main").locator('section[id^="method-"]').first();
+  await expect(method).toBeInViewport();
+  await expect(method.getByRole("heading", { level: 3 })).toHaveText("mean_squared_error(observed::AbstractVector, predicted::AbstractVector)");
+  await expect(method).toContainText("Calculate mean squared error for numeric vectors.");
+  await expect(page.getByRole("navigation", { name: "Documentation" }).locator('[aria-current="page"]')).toHaveText("mean_squared_error");
   await fitsViewport(page);
   await capture(page, info, "julia-method");
 });

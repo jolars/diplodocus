@@ -235,7 +235,7 @@ fn item_tree(
         package: package_id.into(),
         item: item_id.into(),
     };
-    if package.ecosystem == "python" && site.overload_anchors.contains_key(&reference) {
+    if site.overload_anchors.contains_key(&reference) {
         return (String::new(), false);
     }
     let destination = &site.routes[&DocumentIdentity::Item { item: reference }];

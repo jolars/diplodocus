@@ -366,57 +366,6 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                     .unwrap();
                 }
             }
-            if matches!(&item.language_data, Some(ItemLanguageData::Julia(_))) {
-                let members = julia_members(item);
-                if !members.is_empty() {
-                    html.push_str("<h2>Methods</h2><ul>");
-                    for member in members {
-                        let method = &site.workspace.packages[&member.package].items[&member.item];
-                        let target = &site.routes[&DocumentIdentity::Item {
-                            item: member.clone(),
-                        }];
-                        let title = method
-                            .signatures
-                            .first()
-                            .map(|s| {
-                                super::signatures::signature_for_site(
-                                    site,
-                                    &method.name,
-                                    &s.signature,
-                                    "julia",
-                                )
-                            })
-                            .unwrap_or_else(|| method.name.clone());
-                        write!(
-                            html,
-                            "<li><a href=\"{}\"><code>{}</code></a>",
-                            escape(&site.url(route, target)),
-                            escape(&title)
-                        )
-                        .unwrap();
-                        if let Some(document) = &method.documentation {
-                            // Method references keep their own resolution context on the family page.
-                            let mut method_renderer = Renderer {
-                                site,
-                                page: &site.pages[target],
-                                resolved: site.pages[target].resolved,
-                                route,
-                                document_route: target,
-                                math_context: &math_context,
-                                highlighter: &highlighter,
-                                cell: 0,
-                                headings: Vec::new(),
-                                identifiers: BTreeSet::new(),
-                                document_navigation: false,
-                                heading_offset: 0,
-                            };
-                            html.push_str(&method_renderer.blocks(&document.document.blocks)?);
-                        }
-                        html.push_str("</li>");
-                    }
-                    html.push_str("</ul>");
-                }
-            }
         }
         if let Some(document) = page.document {
             let blocks = if let Some(start) = rd_body_start {
@@ -429,6 +378,70 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                 &document.document.blocks
             };
             html.push_str(&renderer.blocks(blocks)?);
+        }
+        if let Some(item) = page.item {
+            let members = julia_members(item);
+            if !members.is_empty() {
+                html.push_str("<h2 id=\"methods\">Methods</h2>");
+                renderer
+                    .headings
+                    .push((2, "methods".into(), "Methods".into()));
+                for member in members {
+                    let method = &site.workspace.packages[&member.package].items[&member.item];
+                    let method_page = &site.embedded_pages[member];
+                    let anchor = &site.overload_anchors[member];
+                    renderer.headings.push((
+                        3,
+                        anchor.clone(),
+                        method
+                            .signatures
+                            .first()
+                            .map(|s| {
+                                super::signatures::signature(&method.name, &s.signature, "julia")
+                            })
+                            .unwrap_or_else(|| method.name.clone()),
+                    ));
+                    let title = method
+                        .signatures
+                        .first()
+                        .map(|s| {
+                            super::signatures::signature_for_site(
+                                site,
+                                &method.name,
+                                &s.signature,
+                                "julia",
+                            )
+                        })
+                        .unwrap_or_else(|| method.name.clone());
+                    write!(
+                        html,
+                        "<section id=\"{}\"><h3><code>{}</code></h3>",
+                        escape(anchor),
+                        escape(&title)
+                    )
+                    .unwrap();
+                    if let Some(document) = &method.documentation {
+                        // Method references keep their own resolution context on the family page.
+                        let mut method_renderer = Renderer {
+                            site,
+                            page: method_page,
+                            resolved: method_page.resolved,
+                            route,
+                            document_route: route,
+                            math_context: &math_context,
+                            highlighter: &highlighter,
+                            cell: 0,
+                            headings: Vec::new(),
+                            identifiers: BTreeSet::new(),
+                            document_navigation: true,
+                            heading_offset: 2,
+                        };
+                        html.push_str(&method_renderer.blocks(&document.document.blocks)?);
+                        renderer.headings.extend(method_renderer.headings);
+                    }
+                    html.push_str("</section>");
+                }
+            }
         }
         html.push_str(&renderer.python_members()?);
         if page.reference_index {
@@ -699,7 +712,7 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
     Ok(RenderedSite { files })
 }
 
-fn julia_members(item: &Item) -> &[ItemReference] {
+pub(super) fn julia_members(item: &Item) -> &[ItemReference] {
     match &item.language_data {
         Some(ItemLanguageData::Julia(data)) => match &data.declaration {
             JuliaDeclaration::Callable {
@@ -882,8 +895,14 @@ impl Renderer<'_, '_> {
         Ok(html)
     }
     fn heading_id(&mut self, attributes: &Attributes, label: &str) -> String {
+        let prefix = self
+            .page
+            .anchor_prefix
+            .as_ref()
+            .map(|anchor| format!("{anchor}-"))
+            .unwrap_or_default();
         if let Some(identifier) = &attributes.identifier {
-            return identifier.value.clone();
+            return format!("{prefix}{}", identifier.value);
         }
         let slug = label
             .to_lowercase()
@@ -892,7 +911,8 @@ impl Renderer<'_, '_> {
             .collect::<Vec<_>>()
             .join("-");
         let base = if slug.is_empty() { "section" } else { &slug };
-        let mut identifier = base.to_owned();
+        let base = format!("{prefix}{base}");
+        let mut identifier = base.clone();
         let mut suffix = 2;
         while !self.identifiers.insert(identifier.clone()) {
             identifier = format!("{base}-{suffix}");
@@ -938,6 +958,14 @@ impl Renderer<'_, '_> {
                 "{}#{}",
                 self.site.url(self.route, self.document_route),
                 crate::site::encode(fragment)
+            ));
+        }
+        if let crate::validation::ReferenceTarget::Anchor { fragment } = &reference.target
+            && let Some(anchor) = &self.page.anchor_prefix
+        {
+            return Ok(format!(
+                "#{}",
+                crate::site::encode(&format!("{anchor}-{fragment}"))
             ));
         }
         self.site.target(self.route, &reference.target)

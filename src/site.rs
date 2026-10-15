@@ -42,6 +42,7 @@ pub struct Site<'a> {
     pub(crate) presentation: &'a PresentationDefaults,
     pub(crate) logo: Option<&'a AssetReference>,
     pub(crate) pages: BTreeMap<String, PageModel<'a>>,
+    pub(crate) embedded_pages: BTreeMap<ItemReference, PageModel<'a>>,
     pub(crate) routes: BTreeMap<DocumentIdentity, String>,
     pub(crate) overload_anchors: BTreeMap<ItemReference, String>,
     pub(crate) assets: &'a BTreeMap<String, ContentAsset>,
@@ -51,6 +52,7 @@ pub struct Site<'a> {
 }
 pub(crate) struct PageModel<'a> {
     pub title: String,
+    pub anchor_prefix: Option<String>,
     pub owner: Option<String>,
     pub document: Option<&'a SourcedDocument>,
     pub resolved: Option<&'a ResolvedDocument>,
@@ -68,6 +70,7 @@ impl PageModel<'_> {
     fn empty(title: String, owner: Option<String>, visible: bool) -> Self {
         Self {
             title,
+            anchor_prefix: None,
             owner,
             document: None,
             resolved: None,
@@ -94,6 +97,7 @@ impl<'a> Site<'a> {
             presentation: snapshot.presentation(),
             logo: snapshot.logo(),
             pages: BTreeMap::new(),
+            embedded_pages: BTreeMap::new(),
             routes: BTreeMap::new(),
             overload_anchors: BTreeMap::new(),
             assets: snapshot.assets(),
@@ -323,6 +327,35 @@ impl<'a> Site<'a> {
                 if package.ecosystem == "python" {
                     model.python_class =
                         crate::rendering::python::class(id, package, item_id, &records);
+                }
+                if let Some(ItemLanguageData::Julia(data)) = &item.language_data
+                    && let JuliaDeclaration::Callable {
+                        role: JuliaCallableRole::Method { family, .. },
+                        ..
+                    } = &data.declaration
+                {
+                    let reference = ItemReference {
+                        package: id.clone(),
+                        item: item_id.clone(),
+                    };
+                    site.routes.insert(
+                        identity,
+                        format!(
+                            "packages/{}/reference/{}.html",
+                            workspace.packages[&family.package].slug,
+                            crate::provenance::fingerprint_bytes(family.item.as_bytes()).value
+                        ),
+                    );
+                    site.overload_anchors.insert(
+                        reference.clone(),
+                        format!(
+                            "method-{}",
+                            crate::provenance::fingerprint_bytes(item_id.as_bytes()).value
+                        ),
+                    );
+                    model.anchor_prefix = site.overload_anchors.get(&reference).cloned();
+                    site.embedded_pages.insert(reference, model);
+                    continue;
                 }
                 site.insert(route.clone(), model)?;
                 site.routes.insert(identity, route);

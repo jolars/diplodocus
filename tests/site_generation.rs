@@ -1068,3 +1068,125 @@ format = "gfm"
         .unwrap();
     assert!(page.contains("aria-label=\"Vignettes\""));
 }
+
+#[test]
+fn julia_methods_share_function_pages_and_preserve_reference_context() {
+    use diplodocus::ir::{ItemKind, ItemLanguageData, JuliaCallableRole, JuliaDeclaration};
+
+    let root = support::TestWorkspace::new();
+    root.write(
+        "diplodocus.toml",
+        r#"
+[project]
+name = "Julia methods"
+[[repository]]
+id = "repo"
+path = "."
+[[package]]
+id = "demo"
+name = "Demo"
+slug = "julia"
+ecosystem = "julia"
+repository = "repo"
+path = "."
+metadata-path = "Project.toml"
+targets = [{ id = "api", extractor = "julia", path = "src/Demo.jl", role = "public-api" }]
+"#,
+    );
+    root.write(
+        "Project.toml",
+        "name = \"Demo\"\nuuid = \"12345678-1234-1234-1234-123456789abc\"\nversion = \"1.0.0\"\n",
+    );
+    root.write(
+        "src/Demo.jl",
+        r#"
+module Demo
+export score, Point
+"""
+Calculate a score.
+
+See [integer method](@ref score(::Int)).
+"""
+function score end
+"""
+Score an integer.
+
+# Details
+
+See [details](#details) and [`score`](@ref).
+"""
+score(x::Int) = x
+"""
+Score a string.
+
+# Details
+
+See [details](#details).
+"""
+score(x::String) = length(x)
+"A point."
+struct Point
+    x::Int
+end
+"Construct a point from text."
+Point(x::String) = Point(parse(Int, x))
+end
+"#,
+    );
+    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("snapshot.sqlite");
+    snapshot.publish(&path).unwrap();
+    drop(sources);
+    drop(root);
+    let snapshot = Snapshot::load(&path).unwrap();
+    let site = diplodocus::site::Site::new(&snapshot).unwrap();
+    let rendered = diplodocus::rendering::render_site(&site).unwrap();
+    let fragments = diplodocus::rendering::render_fragments(&site).unwrap();
+    let package = &snapshot.workspace().packages["demo"];
+    let search: Vec<serde_json::Value> =
+        serde_json::from_slice(&rendered.files()["assets/search.json"].bytes).unwrap();
+    assert!(
+        !search
+            .iter()
+            .any(|entry| entry["title"].as_str().unwrap().contains("(::"))
+    );
+    for (id, method) in &package.items {
+        if method.kind != ItemKind::Method {
+            continue;
+        }
+        let Some(ItemLanguageData::Julia(data)) = &method.language_data else {
+            panic!("Julia method");
+        };
+        let JuliaDeclaration::Callable {
+            role: JuliaCallableRole::Method { family, .. },
+            ..
+        } = &data.declaration
+        else {
+            panic!("method family");
+        };
+        let route = format!(
+            "packages/julia/reference/{}.html",
+            diplodocus::provenance::fingerprint_bytes(family.item.as_bytes()).value
+        );
+        let fingerprint = diplodocus::provenance::fingerprint_bytes(id.as_bytes()).value;
+        let anchor = format!("method-{fingerprint}");
+        assert!(
+            !rendered
+                .files()
+                .contains_key(&format!("packages/julia/reference/{fingerprint}.html"))
+        );
+        let html = std::str::from_utf8(&rendered.files()[&route].bytes).unwrap();
+        assert!(html.contains(&format!("<section id=\"{anchor}\">")));
+        let markdown =
+            std::str::from_utf8(&fragments.files()[&route.replace(".html", ".md")].bytes).unwrap();
+        assert!(markdown.contains(&format!("id=\"{anchor}\"")));
+        if method.name == "score" {
+            assert!(html.contains(&format!("id=\"{anchor}-details\"")));
+            assert!(html.contains(&format!("href=\"#{anchor}-details\"")));
+            assert!(markdown.contains(&format!("id=\"{anchor}-details\"")));
+            assert!(markdown.contains(&format!("#{anchor}-details")));
+        }
+    }
+}
