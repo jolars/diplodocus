@@ -41,6 +41,19 @@ The installers place the executable in Cargo's binary directory, normally
 `~/.cargo/bin`. You can also build from crates.io with
 `cargo install --locked diplodocus`.
 
+With Nix, run the CLI directly or build it locally:
+
+```console
+nix run github:jolars/diplodocus -- --help
+nix build .#diplodocus
+```
+
+The flake provides `diplodocus` and default packages and apps for Linux on
+x86-64 and ARM64, and macOS on Apple Silicon. It reads the package version from
+`Cargo.toml` and
+uses the pinned Rust toolchain. Development and the full test suite use
+`devenv shell`; the Nix package checks that the installed CLI starts.
+
 Language runtimes and package environments must be installed separately.
 QMD cell execution currently requires Linux; other platforms can extract APIs
 and render snapshots without executing QMD cells.
