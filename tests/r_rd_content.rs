@@ -230,7 +230,7 @@ fn rd_help_labels_local_aliases_and_external_urls_survive_snapshot_loading() {
         .values()
         .filter(|file| file.media_type.starts_with("text/html"))
         .map(|file| std::str::from_utf8(&file.bytes).unwrap())
-        .find(|html| html.contains("<h1><code>rd_content</code></h1>"))
+        .find(|html| html.contains("<p class=\"api-name\"><code>rd_content</code></p>"))
         .unwrap();
     assert!(html.contains("><em>friendly label</em></a>"));
     assert!(html.contains("><code>rd_content()</code></a>"));
@@ -334,7 +334,7 @@ fn math_and_help_evidence_render_without_the_source_workspace() {
         .values()
         .filter(|file| file.media_type.starts_with("text/html"))
         .map(|file| std::str::from_utf8(&file.bytes).unwrap())
-        .find(|html| html.contains("<h1><code>rd_content</code></h1>"))
+        .find(|html| html.contains("<p class=\"api-name\"><code>rd_content</code></p>"))
         .unwrap();
     assert_eq!(
         html.matches("class=\"math math-rendered math-display\"")
@@ -371,7 +371,7 @@ fn invalid_and_untrusted_equations_have_readable_escaped_output() {
         .values()
         .filter(|file| file.media_type.starts_with("text/html"))
         .map(|file| std::str::from_utf8(&file.bytes).unwrap())
-        .find(|html| html.contains("<h1><code>rd_content</code></h1>"))
+        .find(|html| html.contains("<p class=\"api-name\"><code>rd_content</code></p>"))
         .unwrap();
     assert!(html.contains("&lt;fallback&gt;"));
     assert!(html.contains("math-fallback"));
@@ -440,4 +440,112 @@ fn ambiguous_workspace_help_aliases_require_a_package_qualifier() {
     );
     let sources = assemble_workspace(workspace.path().join("workspace/diplodocus.toml")).unwrap();
     assert!(resolve_workspace(&sources).is_ok());
+}
+
+#[test]
+fn grouped_nested_lists_retain_block_structure() {
+    let workspace = fixture();
+    replace_topic(
+        &workspace,
+        r"\description{\describe{\item{Options}{Before {\itemize{\item First\item Second {\enumerate{\item Nested}}}} After.}}}",
+    );
+    let result = extract(&workspace);
+    assert!(
+        !result
+            .diagnostics
+            .iter()
+            .any(|d| d.severity == Severity::Error || d.code.as_str() == "unsupported-rd"),
+        "{:?}",
+        result.diagnostics
+    );
+    let doc = result
+        .items
+        .values()
+        .find(|item| item.name == "rd_content")
+        .unwrap()
+        .documentation
+        .as_ref()
+        .unwrap();
+    fn lists(blocks: &[Block], counts: &mut Vec<(bool, usize)>) {
+        for block in blocks {
+            if let Block::List { ordered, items, .. } = block {
+                counts.push((*ordered, items.len()));
+                for item in items {
+                    lists(&item.blocks, counts);
+                }
+            }
+        }
+    }
+    let mut counts = vec![];
+    lists(&doc.document.blocks, &mut counts);
+    assert_eq!(counts, vec![(false, 1), (false, 2), (true, 1)]);
+    let encoded = serde_json::to_string(&doc.document).unwrap();
+    for text in ["Before", "First", "Second", "Nested", "After."] {
+        assert!(encoded.contains(text));
+    }
+}
+
+#[test]
+fn constants_and_deprecated_aliases_survive_snapshot_and_link_resolution() {
+    let workspace = fixture();
+    workspace.write("r/R/constants.R", "PAD <- 3");
+    workspace.write("r/man/PAD.Rd", r"\name{PAD}\alias{PAD}\title{Padding}\usage{PAD}\description{Padding in points.}\keyword{internal}");
+    workspace.write("r/man/deprecated.Rd", r"\name{foo_deprecated}\alias{foo_deprecated}\alias{old_api}\title{Deprecated APIs}\description{Use the new API.}\keyword{internal}");
+    replace_topic(&workspace, r"\description{\link{PAD} and \link{old_api}.}");
+    let sources = assemble_workspace(workspace.path().join("workspace/diplodocus.toml")).unwrap();
+    let resolved = resolve_workspace(&sources).unwrap();
+    for spelling in ["@ref PAD", "@ref old_api"] {
+        assert!(resolved.records().iter().flat_map(|record| &record.references).any(|reference| reference.spelling == spelling && matches!(&reference.target, ReferenceTarget::Item { item } if item.package == "rfoo")));
+    }
+    let snapshot = Snapshot::from_sources(&sources, &resolved).unwrap();
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("snapshot.sqlite");
+    snapshot.publish(&path).unwrap();
+    let expected = snapshot.canonical_export().unwrap();
+    drop(workspace);
+    drop(sources);
+    let loaded = Snapshot::load(&path).unwrap();
+    assert_eq!(loaded.canonical_export().unwrap(), expected);
+    let rendered =
+        diplodocus::rendering::render_site(&diplodocus::site::Site::new(&loaded).unwrap()).unwrap();
+    let pages: Vec<_> = rendered
+        .files()
+        .values()
+        .filter(|file| file.media_type.starts_with("text/html"))
+        .map(|file| std::str::from_utf8(&file.bytes).unwrap())
+        .collect();
+    assert!(pages.iter().any(|html| html.contains("Padding in points.")));
+    assert!(pages.iter().any(|html| html.contains("Use the new API.")));
+}
+
+#[test]
+fn described_lists_preserve_interstitial_prose_and_nested_content() {
+    let workspace = fixture();
+    replace_topic(
+        &workspace,
+        r"\description{\describe{\item{First}{Before \itemize{\item Nested}.}Between.\item{Second}{After.}}}",
+    );
+    let result = extract(&workspace);
+    assert!(
+        !result
+            .diagnostics
+            .iter()
+            .any(|d| d.severity == Severity::Error || d.code.as_str() == "unsupported-rd"),
+        "{:?}",
+        result.diagnostics
+    );
+    let doc = result
+        .items
+        .values()
+        .find(|item| item.name == "rd_content")
+        .unwrap()
+        .documentation
+        .as_ref()
+        .unwrap();
+    let encoded = serde_json::to_string(&doc.document).unwrap();
+    let positions: Vec<_> = ["First", "Before", "Nested", "Between.", "Second", "After."]
+        .iter()
+        .map(|text| encoded.find(text).unwrap())
+        .collect();
+    assert!(positions.windows(2).all(|pair| pair[0] < pair[1]));
 }

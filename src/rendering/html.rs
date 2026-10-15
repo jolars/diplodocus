@@ -19,20 +19,46 @@ const FRAGMENT: &percent_encoding::AsciiSet = &percent_encoding::NON_ALPHANUMERI
 
 /// Render one complete site from its prepared model, with no source or database I/O.
 pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
+    render(site, true)
+}
+
+/// Render document bodies, assets, and a JSON index for an existing website.
+///
+/// `documents.json` describes each fragment's path, title, semantic identities,
+/// package, and headings. Links use the same relative paths as the built-in
+/// site. Consumers that change those paths must map links and asset references
+/// to their own URLs. This integration format is experimental.
+pub fn render_fragments(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
+    render(site, false)
+}
+
+fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> {
     let mut files = BTreeMap::new();
     let mut search = Vec::new();
+    let mut documents = Vec::new();
     let mut uses_math = false;
     let math_context = katex::KatexContext::default();
     let highlighter = super::highlighting::Highlighter::new();
     for (route, page) in &site.pages {
         let page_math = page
             .document
-            .is_some_and(|document| super::math::contains_math(&document.document.blocks));
+            .is_some_and(|document| super::math::contains_math(&document.document.blocks))
+            || page.item.is_some_and(|item| {
+                julia_members(item).iter().any(|member| {
+                    site.workspace.packages[&member.package].items[&member.item]
+                        .documentation
+                        .as_ref()
+                        .is_some_and(|document| {
+                            super::math::contains_math(&document.document.blocks)
+                        })
+                })
+            });
         uses_math |= page_math;
         let mut renderer = Renderer {
             site,
             page,
             route,
+            document_route: route,
             math_context: &math_context,
             highlighter: &highlighter,
             cell: 0,
@@ -46,59 +72,64 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
         renderer
             .identifiers
             .extend(["main", "search", "search-results"].map(str::to_owned));
-        let mut html = String::from(
-            "<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">",
-        );
-        if let Some(description) = &site.presentation.description {
-            write!(
-                html,
-                "<meta name=\"description\" content=\"{}\">",
-                escape(description)
-            )
-            .unwrap();
-        }
-        if let Some(url) = site.canonical_urls.get(route) {
-            write!(html, "<link rel=\"canonical\" href=\"{}\">", escape(url)).unwrap();
-        }
-        write!(html, "<title>{} · {}</title><link rel=\"stylesheet\" href=\"{}\"><script defer src=\"{}\"></script><script defer src=\"{}\"></script>", escape(&page.title), escape(site.title()), escape(&relative_url(route, "assets/site.css")), escape(&relative_url(route, "assets/search.js")), escape(&relative_url(route, "assets/nav.js"))).unwrap();
-        if page_math {
-            write!(
-                html,
-                "<link rel=\"stylesheet\" href=\"{}\">",
-                escape(&relative_url(route, "assets/katex/katex.min.css"))
-            )
-            .unwrap();
-        }
-        html.push_str("</head><body><a class=\"skip-link\" href=\"#main\">Skip to content</a>");
-        write!(
-            html,
-            "<header><a class=\"brand\" href=\"{}\">",
-            escape(&relative_url(route, "index.html")),
-        )
-        .unwrap();
-        if let Some(logo) = site.logo {
-            write!(
-                html,
-                "<img class=\"brand-logo\" src=\"{}\" alt=\"\">",
-                escape(&relative_url(
-                    route,
-                    &site.asset_route(&logo.fingerprint.value)?
-                ))
-            )
-            .unwrap();
-        }
-        write!(html, "<span>{}</span></a>", escape(site.title())).unwrap();
-        super::navigation::sections(&mut html, site, route, "desktop-sections");
-        html.push_str("<form role=\"search\"><label for=\"search\">Search documentation</label><input id=\"search\" type=\"search\" autocomplete=\"off\"><ul id=\"search-results\" aria-live=\"polite\"></ul></form></header><div class=\"layout\"><nav aria-label=\"Documentation\"><details class=\"nav-disclosure\" open><summary>Browse documentation</summary>");
-        super::navigation::sections(&mut html, site, route, "mobile-sections");
-        super::navigation::contextual(&mut html, site, route);
         let package_overview =
             super::package_metadata::is_overview(site, route, page.owner.as_deref());
-        html.push_str("</details></nav><div class=\"page-content\">");
-        if package_overview {
-            html.push_str("<main id=\"main\" class=\"package-overview\"><div class=\"package-overview-body\">");
-        } else {
-            html.push_str("<main id=\"main\">");
+        let mut html = String::new();
+        if standalone {
+            html = String::from(
+                "<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">",
+            );
+            if let Some(description) = &site.presentation.description {
+                write!(
+                    html,
+                    "<meta name=\"description\" content=\"{}\">",
+                    escape(description)
+                )
+                .unwrap();
+            }
+            if let Some(url) = site.canonical_urls.get(route) {
+                write!(html, "<link rel=\"canonical\" href=\"{}\">", escape(url)).unwrap();
+            }
+            write!(html, "<title>{} · {}</title><link rel=\"stylesheet\" href=\"{}\"><script defer src=\"{}\"></script><script defer src=\"{}\"></script><script defer src=\"{}\"></script>", escape(&page.title), escape(site.title()), escape(&relative_url(route, "assets/site.css")), escape(&relative_url(route, "assets/search.js")), escape(&relative_url(route, "assets/nav.js")), escape(&relative_url(route, "assets/code.js"))).unwrap();
+            if page_math {
+                write!(
+                    html,
+                    "<link rel=\"stylesheet\" href=\"{}\">",
+                    escape(&relative_url(route, "assets/katex/katex.min.css"))
+                )
+                .unwrap();
+            }
+            html.push_str("</head><body><a class=\"skip-link\" href=\"#main\">Skip to content</a>");
+            write!(
+                html,
+                "<header><a class=\"brand\" href=\"{}\">",
+                escape(&relative_url(route, "index.html")),
+            )
+            .unwrap();
+            if let Some(logo) = site.logo {
+                write!(
+                    html,
+                    "<img class=\"brand-logo\" src=\"{}\" alt=\"\">",
+                    escape(&relative_url(
+                        route,
+                        &site.asset_route(&logo.fingerprint.value)?
+                    ))
+                )
+                .unwrap();
+            }
+            write!(html, "<span>{}</span></a>", escape(site.title())).unwrap();
+            super::navigation::sections(&mut html, site, route, "desktop-sections");
+            html.push_str("<form role=\"search\"><label for=\"search\">Search documentation</label><input id=\"search\" type=\"search\" autocomplete=\"off\"><ul id=\"search-results\" aria-live=\"polite\"></ul></form></header><div class=\"layout\"><nav aria-label=\"Documentation\"><details class=\"nav-disclosure\" open><summary>Browse documentation</summary>");
+            super::navigation::sections(&mut html, site, route, "mobile-sections");
+            super::navigation::contextual(&mut html, site, route);
+            html.push_str("</details></nav><div class=\"page-content\">");
+            if package_overview {
+                html.push_str("<main id=\"main\" class=\"package-overview\"><div class=\"package-overview-body\">");
+            } else {
+                html.push_str("<main id=\"main\">");
+            }
+        } else if package_overview {
+            html.push_str("<div class=\"package-overview-body\">");
         }
         if let Some(owner) = &page.owner {
             let package = &site.workspace.packages[owner];
@@ -133,7 +164,9 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
                 )
             });
         if !authored_title {
-            let title = if page.item.is_some() {
+            let title = if let Some(inlines) = page.item.and_then(super::r_topics::title) {
+                renderer.inlines(inlines)?
+            } else if page.item.is_some() {
                 format!(
                     "<code>{}</code>",
                     escape(
@@ -148,6 +181,23 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
         } else if package_overview {
             let document = page.document.expect("authored overview title");
             html.push_str(&renderer.blocks(&document.document.blocks[..1])?);
+        }
+        if let Some(item) = page.item
+            && matches!(&item.language_data, Some(ItemLanguageData::R(_)))
+        {
+            write!(
+                html,
+                "<p class=\"api-name\"><code>{}</code></p>",
+                escape(&item.qualified_name)
+            )
+            .unwrap();
+            html.push_str(&super::r_topics::source_links(site, item));
+        }
+        if !standalone
+            && let Some(item) = page.item
+            && !matches!(&item.language_data, Some(ItemLanguageData::R(_)))
+        {
+            html.push_str(&super::r_topics::source_links(site, item));
         }
         if let Some(document) = page.document
             && matches!(
@@ -186,32 +236,65 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
             )
             .unwrap();
         }
+        let mut rd_body_start = None;
+        if let Some(item) = page.item
+            && matches!(&item.language_data, Some(ItemLanguageData::R(_)))
+            && let Some(document) = page.document
+        {
+            let title_end = usize::from(super::r_topics::title(item).is_some());
+            let introduction_end = document.document.blocks[title_end..]
+                .iter()
+                .position(|block| matches!(block, Block::Heading { .. }))
+                .map_or(document.document.blocks.len(), |index| index + title_end);
+            html.push_str(
+                &renderer.blocks(&document.document.blocks[title_end..introduction_end])?,
+            );
+            rd_body_start = Some(introduction_end);
+        }
         if let Some(item) = page.item {
             let ecosystem = page
                 .owner
                 .as_ref()
                 .map(|p| site.workspace.packages[p].ecosystem.as_str())
                 .unwrap_or("");
-            let shared_usage = matches!(&item.language_data, Some(ItemLanguageData::R(data)) if data.help_topic.is_some())
+            let name = if ecosystem == "python" {
+                page.title.rsplit('.').next().unwrap_or(&item.name)
+            } else {
+                &item.name
+            };
+            let rd_usage = matches!(&item.language_data, Some(ItemLanguageData::R(_)))
                 && item.documentation.as_ref().is_some_and(|document| document.document.blocks.iter().any(|block|
                     matches!(block, Block::Heading { level: 2, inlines, .. } if plain(inlines) == "Usage")));
-            if !shared_usage {
-                for signature in &item.signatures {
-                    html.push_str(&highlighter.render(
-                        &super::signatures::signature(&item.name, &signature.signature, ecosystem),
-                        Some(ecosystem),
-                    ));
-                }
-            }
-            if let Some(ItemLanguageData::Julia(data)) = &item.language_data {
-                let members = match &data.declaration {
-                    JuliaDeclaration::Callable {
-                        role: JuliaCallableRole::Family { methods },
-                        ..
-                    } => methods.as_slice(),
-                    JuliaDeclaration::Type { constructors, .. } => constructors.as_slice(),
+            if !rd_usage {
+                let overloads = match &item.language_data {
+                    Some(ItemLanguageData::Python(data)) => match &data.declaration {
+                        PythonDeclaration::Callable {
+                            role: PythonCallableRole::Family { overloads },
+                            ..
+                        } => overloads.as_slice(),
+                        _ => &[],
+                    },
                     _ => &[],
                 };
+                for (index, signature) in item.signatures.iter().enumerate() {
+                    let anchor = overloads
+                        .get(index)
+                        .map(|member| crate::site::python_overload_anchor(&member.item));
+                    if let Some(anchor) = &anchor {
+                        renderer.identifiers.insert(anchor.clone());
+                        write!(html, "<div id=\"{}\">", escape(anchor)).unwrap();
+                    }
+                    html.push_str(&highlighter.render(
+                        &super::signatures::signature(name, &signature.signature, ecosystem),
+                        Some(ecosystem),
+                    ));
+                    if anchor.is_some() {
+                        html.push_str("</div>");
+                    }
+                }
+            }
+            if matches!(&item.language_data, Some(ItemLanguageData::Julia(_))) {
+                let members = julia_members(item);
                 if !members.is_empty() {
                     html.push_str("<h2>Methods</h2><ul>");
                     for member in members {
@@ -228,23 +311,51 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
                             .unwrap_or_else(|| method.name.clone());
                         write!(
                             html,
-                            "<li><a href=\"{}\"><code>{}</code></a></li>",
+                            "<li><a href=\"{}\"><code>{}</code></a>",
                             escape(&relative_url(route, target)),
                             escape(&title)
                         )
                         .unwrap();
+                        if let Some(document) = &method.documentation {
+                            // Method references keep their own resolution context on the family page.
+                            let mut method_renderer = Renderer {
+                                site,
+                                page: &site.pages[target],
+                                route,
+                                document_route: target,
+                                math_context: &math_context,
+                                highlighter: &highlighter,
+                                cell: 0,
+                                headings: Vec::new(),
+                                identifiers: BTreeSet::new(),
+                                document_navigation: false,
+                            };
+                            html.push_str(&method_renderer.blocks(&document.document.blocks)?);
+                        }
+                        html.push_str("</li>");
                     }
                     html.push_str("</ul>");
                 }
             }
         }
         if let Some(document) = page.document {
-            let blocks = if package_overview && authored_title {
+            let blocks = if let Some(start) = rd_body_start {
+                &document.document.blocks[start..]
+            } else if (package_overview && authored_title)
+                || page.item.and_then(super::r_topics::title).is_some()
+            {
                 &document.document.blocks[1..]
             } else {
                 &document.document.blocks
             };
             html.push_str(&renderer.blocks(blocks)?);
+        }
+        if page.reference_index {
+            html.push_str(&super::r_topics::index(
+                site,
+                route,
+                page.owner.as_deref().expect("reference index owner"),
+            ));
         }
         if let (Some(item), Some(owner)) = (page.item, page.owner.as_deref()) {
             html.push_str(&super::r_topics::navigation(
@@ -268,11 +379,11 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
         if let Some(concept) = page.concept {
             html.push_str(&concept_links(site, route, concept)?);
         }
-        if let Some(identity) = site
-            .routes
-            .iter()
-            .find_map(|(id, path)| (path == route).then_some(id))
-            && let DocumentIdentity::Item { item } = identity
+        if let Some(identity) = site.routes.iter().find_map(|(id, path)| {
+            let overload = matches!(id, DocumentIdentity::Item { item }
+                    if site.overload_anchors.contains_key(item));
+            (path == route && !overload).then_some(id)
+        }) && let DocumentIdentity::Item { item } = identity
         {
             for concept in site
                 .workspace
@@ -283,7 +394,11 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
                 html.push_str(&concept_links(site, route, concept)?);
             }
         }
-        if page.document.is_none() && page.item.is_none() && page.concept.is_none() {
+        if page.document.is_none()
+            && page.item.is_none()
+            && page.concept.is_none()
+            && !page.reference_index
+        {
             html.push_str("<ul>");
             for (path, candidate) in &site.pages {
                 if candidate.visible
@@ -313,11 +428,29 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
                 page.owner.as_deref().expect("package overview owner"),
             ));
         }
-        html.push_str("</main>");
-        html.push_str(&renderer.page_navigation());
-        html.push_str("</div></div>");
-        super::footer::render(&mut html, &site.presentation.footer);
-        html.push_str("</body></html>\n");
+        if standalone {
+            html.push_str("</main>");
+            html.push_str(&renderer.page_navigation());
+            html.push_str("</div></div>");
+            super::footer::render(&mut html, &site.presentation.footer);
+            html.push_str("</body></html>\n");
+        } else {
+            let identities: Vec<_> = site
+                .routes
+                .iter()
+                .filter(|(_, path)| *path == route)
+                .map(|(identity, _)| identity)
+                .collect();
+            documents.push(serde_json::json!({
+                "path": route,
+                "title": page.title,
+                "package": page.owner,
+                "qualified_name": page.item.map(|item| &item.qualified_name),
+                "visible": page.visible,
+                "identities": identities,
+                "headings": renderer.headings,
+            }));
+        }
         if page.visible {
             let package = page.owner.as_ref().map(|id| &site.workspace.packages[id]);
             let mut search_text = page
@@ -330,6 +463,18 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
                 })
                 .unwrap_or("")
                 .to_owned();
+            if let Some(item) = page.item {
+                for member in julia_members(item) {
+                    if let Some(raw) = site.workspace.packages[&member.package].items[&member.item]
+                        .documentation
+                        .as_ref()
+                        .and_then(|d| d.raw_source.as_deref())
+                    {
+                        search_text.push('\n');
+                        search_text.push_str(raw);
+                    }
+                }
+            }
             if package_overview {
                 search_text.push_str(&format!(
                     "\n{}",
@@ -339,7 +484,21 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
                     )
                 ));
             }
-            search.push(serde_json::json!({"title": page.title, "path": route.split('/').map(crate::site::encode).collect::<Vec<_>>().join("/"), "package": package.map(|p| &p.name), "ecosystem": package.map(|p| &p.ecosystem), "api": page.item.is_some(), "text": search_text}));
+            if let Some(item) = page.item
+                && package.is_some_and(|package| package.ecosystem == "python")
+            {
+                search_text.push('\n');
+                search_text.push_str(&item.qualified_name);
+                for alias in &item.aliases {
+                    search_text.push('\n');
+                    search_text.push_str(&alias.qualified_name);
+                }
+            }
+            let search_title = page
+                .item
+                .filter(|item| matches!(&item.language_data, Some(ItemLanguageData::R(_))))
+                .map_or(page.title.as_str(), |item| item.qualified_name.as_str());
+            search.push(serde_json::json!({"title": search_title, "path": route.split('/').map(crate::site::encode).collect::<Vec<_>>().join("/"), "package": package.map(|p| &p.name), "ecosystem": package.map(|p| &p.ecosystem), "api": page.item.is_some(), "text": search_text}));
         }
         files.insert(
             route.clone(),
@@ -357,25 +516,43 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
             file(asset.bytes.clone(), &asset.media_type),
         );
     }
-    let style = format!(
-        "{STYLE}\n{}",
+    let style = if standalone {
+        format!(
+            "{STYLE}\n{}",
+            super::highlighting::stylesheet().map_err(|_| SiteError::Evidence)?
+        )
+    } else {
         super::highlighting::stylesheet().map_err(|_| SiteError::Evidence)?
-    );
+    };
     files.insert(
-        "assets/site.css".into(),
+        if standalone {
+            "assets/site.css"
+        } else {
+            "assets/content.css"
+        }
+        .into(),
         file(style.into_bytes(), "text/css; charset=utf-8"),
     );
-    files.insert(
-        "assets/search.js".into(),
-        file(SEARCH.as_bytes().to_vec(), "text/javascript; charset=utf-8"),
-    );
-    files.insert(
-        "assets/nav.js".into(),
-        file(
-            NAV_SCRIPT.as_bytes().to_vec(),
-            "text/javascript; charset=utf-8",
-        ),
-    );
+    if standalone {
+        files.insert(
+            "assets/search.js".into(),
+            file(SEARCH.as_bytes().to_vec(), "text/javascript; charset=utf-8"),
+        );
+        files.insert(
+            "assets/nav.js".into(),
+            file(
+                NAV_SCRIPT.as_bytes().to_vec(),
+                "text/javascript; charset=utf-8",
+            ),
+        );
+        files.insert(
+            "assets/code.js".into(),
+            file(
+                include_str!("code.js").as_bytes().to_vec(),
+                "text/javascript; charset=utf-8",
+            ),
+        );
+    }
     files.insert(
         "assets/search.json".into(),
         file(
@@ -383,8 +560,35 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
             "application/json",
         ),
     );
-    super::sitemap::render(site, &mut files)?;
+    if standalone {
+        super::sitemap::render(site, &mut files)?;
+    } else {
+        files.insert(
+            "documents.json".into(),
+            file(
+                serde_json::to_vec(
+                    &serde_json::json!({"format_version": 1, "documents": documents}),
+                )
+                .map_err(|_| SiteError::Evidence)?,
+                "application/json",
+            ),
+        );
+    }
     Ok(RenderedSite { files })
+}
+
+fn julia_members(item: &Item) -> &[ItemReference] {
+    match &item.language_data {
+        Some(ItemLanguageData::Julia(data)) => match &data.declaration {
+            JuliaDeclaration::Callable {
+                role: JuliaCallableRole::Family { methods },
+                ..
+            } => methods,
+            JuliaDeclaration::Type { constructors, .. } => constructors,
+            _ => &[],
+        },
+        _ => &[],
+    }
 }
 fn file(bytes: Vec<u8>, media_type: &str) -> RenderedFile {
     RenderedFile {
@@ -433,7 +637,11 @@ fn concept_links(site: &Site<'_>, route: &str, concept: &Concept) -> Result<Stri
             "<li><a href=\"{}\">{}: <code>{}</code></a></li>",
             escape(&relative_url(route, target)),
             escape(&package.name),
-            escape(&package.items[&item.item].qualified_name)
+            escape(if package.ecosystem == "python" {
+                &site.pages[target].title
+            } else {
+                &package.items[&item.item].qualified_name
+            })
         )
         .unwrap();
     }
@@ -446,6 +654,7 @@ struct Renderer<'a, 'b> {
     site: &'a Site<'b>,
     page: &'a PageModel<'b>,
     route: &'a str,
+    document_route: &'a str,
     cell: usize,
     headings: Vec<(usize, String, String)>,
     identifiers: BTreeSet<String>,
@@ -502,6 +711,16 @@ impl Renderer<'_, '_> {
                     .find(|r| r.kind == kind && r.spelling == spelling)
             })
             .ok_or(SiteError::Evidence)?;
+        if self.document_route != self.route
+            && let crate::validation::ReferenceTarget::Anchor { fragment } = &reference.target
+        {
+            // Embedded headings link to their method page to avoid ambiguous local anchors.
+            return Ok(format!(
+                "{}#{}",
+                relative_url(self.route, self.document_route),
+                crate::site::encode(fragment)
+            ));
+        }
         self.site.target(self.route, &reference.target)
     }
     fn inlines(&self, inlines: &[Inline]) -> Result<String, SiteError> {
@@ -741,8 +960,48 @@ impl Renderer<'_, '_> {
                 }
                 Block::ThematicBreak { .. } => html.push_str("<hr>"),
                 Block::CodeBlock {
-                    source, language, ..
-                } => html.push_str(&self.highlighter.render(source, language.as_deref())),
+                    source,
+                    language,
+                    span,
+                    ..
+                } => {
+                    let julia_doctest = language
+                        .as_deref()
+                        .is_some_and(|l| l.starts_with("jldoctest"));
+                    let hidden: Vec<_> = self
+                        .page
+                        .document
+                        .into_iter()
+                        .flat_map(|d| &d.provenance)
+                        .filter_map(|p| match &p.activity {
+                            ProvenanceActivity::ApiExamples {
+                                language, examples, ..
+                            } if language == "julia" => Some(examples),
+                            _ => None,
+                        })
+                        .flatten()
+                        .filter(|e| {
+                            span.start <= e.span.start
+                                && e.span.end <= span.end
+                                && e.options.get("output").is_some_and(|v| v == "false")
+                        })
+                        .map(|e| e.source.as_str())
+                        .collect();
+                    let hidden_source = hidden.join("\n");
+                    let source = if hidden.is_empty() {
+                        source
+                    } else {
+                        &hidden_source
+                    };
+                    html.push_str(&self.highlighter.render(
+                        source,
+                        if julia_doctest {
+                            Some("julia")
+                        } else {
+                            language.as_deref()
+                        },
+                    ));
+                }
                 Block::CodeCell(cell) => html.push_str(&self.code_cell(cell)?),
                 Block::Table {
                     caption,
@@ -947,7 +1206,7 @@ fn unsupported_rd_label(source_kind: &str) -> Option<String> {
         .map(|kind| format!("[Unsupported Rd: {kind}]"))
 }
 
-fn plain(nodes: &[Inline]) -> String {
+pub(super) fn plain(nodes: &[Inline]) -> String {
     nodes
         .iter()
         .map(|node| match node {

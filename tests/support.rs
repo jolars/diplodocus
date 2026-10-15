@@ -67,6 +67,39 @@ pub fn acceptance_workspace() -> TestWorkspace {
     TestWorkspace::from_fixture("acceptance")
 }
 
+pub fn prepared_acceptance_workspace() -> TestWorkspace {
+    let workspace = acceptance_workspace();
+    // Command tests supply the extension before extraction; parser tests use the stubs alone.
+    let output = std::process::Command::new("python")
+        .args([
+            "-c",
+            r#"
+import os, pathlib, subprocess, sys, sysconfig
+root = pathlib.Path(sys.argv[1])
+destination = root / 'python/python/foo' / ('_native' + sysconfig.get_config_var('EXT_SUFFIX'))
+arguments = [os.environ.get('CC', 'cc'), '-shared', '-fPIC',
+             '-I' + sysconfig.get_path('include'),
+             str(root / 'python/native/native.c'), '-o', str(destination)]
+if sys.platform == 'darwin':
+    arguments.extend(['-undefined', 'dynamic_lookup'])
+subprocess.run(arguments, check=True)
+sys.path.insert(0, str(root / 'python/python'))
+from foo import NativeWorkspace, native_mean
+assert NativeWorkspace(3).dimension == 3
+assert native_mean([1.0, 3.0]) == 2.0
+"#,
+        ])
+        .arg(workspace.path())
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    workspace
+}
+
 pub fn shared_r_workspace() -> TestWorkspace {
     let workspace = TestWorkspace::new();
     workspace.write("workspace/diplodocus.toml", "[project]\nname='Shared R help'\n\

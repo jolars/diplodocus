@@ -40,6 +40,44 @@ pub struct Provenance {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum ProvenanceActivity {
+    /// Completed Python or Julia API doctests in the supplied checkout.
+    ApiExamples {
+        /// Owning workspace package.
+        package: String,
+        /// Native language adapter.
+        language: String,
+        /// Versioned preparation and comparison contract.
+        policy: String,
+        /// Observed interpreter version.
+        runtime_version: String,
+        /// Verified checkout identity.
+        package_name: String,
+        /// Version read from the loaded checkout's metadata.
+        package_version: String,
+        /// Loaded dependency versions without library paths.
+        dependencies: BTreeMap<String, String>,
+        /// Decoded documentation source and fingerprint.
+        input: InputFingerprint,
+        /// Example outcomes in source order.
+        examples: Vec<ApiExampleOutcome>,
+    },
+    /// Julia type reflection in the verified supplied checkout.
+    JuliaRuntime {
+        /// Owning extraction target.
+        target: TargetReference,
+        /// Native helper contract.
+        policy: String,
+        /// Observed Julia interpreter version.
+        julia_version: String,
+        /// Loaded package identity and version.
+        package_name: String,
+        /// Loaded package UUID.
+        package_uuid: String,
+        /// Loaded package version.
+        package_version: String,
+        /// Loaded dependency UUIDs and versions, without library paths.
+        dependencies: BTreeMap<String, String>,
+    },
     /// Completed native R Markdown execution in the prepared checkout.
     RMarkdown {
         /// Owning workspace package.
@@ -141,6 +179,26 @@ pub enum ProvenanceActivity {
         /// Declared environment evidence sorted by repository and relative path.
         declared_environment_inputs: Vec<InputFingerprint>,
     },
+}
+
+/// One checked transcript expression or script in an API document.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ApiExampleOutcome {
+    /// Example range in the decoded documentation.
+    pub span: SourceSpan,
+    /// Submitted source, including supported comparison directives.
+    pub source: String,
+    /// Authored expected output.
+    pub expected: String,
+    /// Actual literal output, empty for explicitly skipped examples.
+    pub actual: String,
+    /// Executed, expected-error, or explicit-skip.
+    pub outcome: String,
+    /// Explanation of an explicit omission.
+    pub reason: Option<String>,
+    /// Effective language-specific comparison and setup options.
+    pub options: BTreeMap<String, String>,
 }
 
 /// Native chunk evidence independent of a Jupyter kernel.

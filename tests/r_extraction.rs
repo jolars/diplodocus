@@ -411,6 +411,15 @@ fn eulerr_source_resolves_registered_generics_and_documented_helpers() {
         }
     }
     let result = extract(&workspace);
+    let failures: Vec<_> = result
+        .diagnostics
+        .iter()
+        .filter(|d| d.severity == Severity::Error)
+        .collect();
+    assert!(failures.is_empty(), "{failures:?}");
+    for name in ["EULER_PANEL_PAD_PT", "eulerr_deprecated", "eulerr_options"] {
+        assert!(item(&result, name).documentation.is_some(), "{name}");
+    }
     let method_count = result.items.values().filter(|item| matches!(&item.language_data, Some(ItemLanguageData::R(data)) if matches!(data.declaration, RDeclaration::S3Method { .. }))).count();
     assert_eq!(
         method_count,
@@ -1449,4 +1458,188 @@ fn all_acceptance_cases_have_their_registered_r_diagnostics() {
         expected.sort();
         assert_eq!(actual, expected, "{}", case.id);
     }
+}
+
+#[test]
+fn documented_constants_retain_values_aliases_and_source() {
+    let workspace = small(
+        "PAD <- 3\nalias <- PAD\nprivate <- 9",
+        "export(alias)",
+        &format!(
+            "{}\\alias{{alias}}\\keyword{{internal}}",
+            topic("PAD", "PAD")
+        ),
+    );
+    let result = extract(&workspace);
+    assert!(
+        !result
+            .diagnostics
+            .iter()
+            .any(|d| d.severity == Severity::Error),
+        "{:?}",
+        result.diagnostics
+    );
+    assert_eq!(result.items.len(), 1);
+    let constant = item(&result, "PAD");
+    assert!(matches!(constant.kind, diplodocus::ir::ItemKind::Constant));
+    assert!(
+        matches!(&constant.signatures[0].signature, diplodocus::ir::Signature::Value { value: Some(diplodocus::ir::SignatureExpression::Literal { text }), .. } if text == "3")
+    );
+    assert!(
+        constant
+            .aliases
+            .iter()
+            .any(|alias| alias.qualified_name == "alias")
+    );
+    assert_eq!(
+        constant.source_location.as_ref().unwrap().path.as_str(),
+        "R/api.R"
+    );
+    assert!(!constant.discoverable());
+}
+
+#[test]
+fn deprecated_help_topics_preserve_aliases_without_inventing_functions() {
+    let result = extract(&small(
+        "",
+        "",
+        r"\name{rfoo_deprecated}\alias{rfoo_deprecated}\alias{old_api}\title{Deprecated functions}\description{Use newer APIs.}\keyword{internal}",
+    ));
+    assert!(
+        !result
+            .diagnostics
+            .iter()
+            .any(|d| d.severity == Severity::Error),
+        "{:?}",
+        result.diagnostics
+    );
+    let help = item(&result, "rfoo_deprecated");
+    assert!(help.signatures.is_empty());
+    assert!(help.documentation.is_some());
+    assert!(
+        help.aliases
+            .iter()
+            .any(|alias| alias.qualified_name == "old_api")
+    );
+    assert!(!help.discoverable());
+}
+
+#[test]
+fn documented_constants_require_unambiguous_maintained_bindings() {
+    for source in [
+        "",
+        "PAD <- 3\nPAD <- 4",
+        "if (TRUE) PAD <- 3",
+        "PAD <- unknown()",
+        "PAD <- alias\nalias <- PAD",
+    ] {
+        let result = extract(&small(source, "", &topic("PAD", "PAD")));
+        assert!(result.items.is_empty(), "{source}");
+        assert!(
+            codes(&result).contains(&"r-unresolved-definition"),
+            "{source}"
+        );
+    }
+}
+
+#[test]
+fn eulerr_constant_deprecated_and_options_topics_extract_without_content_loss() {
+    let workspace = small(
+        "EULER_PANEL_PAD_PT <- 3\neulerr_options <- function(...) NULL",
+        "export(eulerr_options)",
+        "",
+    );
+    for (name, text) in [
+        (
+            "EULER_PANEL_PAD_PT",
+            include_str!("fixtures/r-help-topics/EULER_PANEL_PAD_PT.Rd"),
+        ),
+        (
+            "eulerr_deprecated",
+            include_str!("fixtures/r-help-topics/eulerr_deprecated.Rd"),
+        ),
+        (
+            "eulerr_options",
+            include_str!("fixtures/r-help-topics/eulerr_options.Rd"),
+        ),
+    ] {
+        workspace.write(format!("r/man/{name}.Rd"), text);
+    }
+    let result = extract(&workspace);
+    assert!(
+        !result
+            .diagnostics
+            .iter()
+            .any(|d| d.severity == Severity::Error || d.code.as_str() == "unsupported-rd"),
+        "{:?}",
+        result.diagnostics
+    );
+    assert_eq!(result.items.len(), 3);
+    for name in ["EULER_PANEL_PAD_PT", "eulerr_deprecated", "eulerr_options"] {
+        let doc = item(&result, name).documentation.as_ref().unwrap();
+        assert_eq!(
+            doc.raw_source.as_deref(),
+            Some(workspace.read(format!("r/man/{name}.Rd")).as_str())
+        );
+    }
+    let options = item(&result, "eulerr_options")
+        .documentation
+        .as_ref()
+        .unwrap();
+    let text = serde_json::to_string(&options.document).unwrap();
+    for label in [
+        "pointsize",
+        "patterns",
+        "annotations",
+        "glyphs",
+        "complement",
+        "composition",
+        "#'",
+    ] {
+        assert!(text.contains(label), "{label}");
+    }
+}
+
+#[test]
+fn deprecated_topics_attach_to_maintained_functions_when_available() {
+    let result = extract(&small(
+        "old_api <- function(x) x",
+        "export(old_api)",
+        r"\name{foo-deprecated}\alias{foo-deprecated}\alias{old_api}\title{Deprecated APIs}\description{Use another API.}",
+    ));
+    assert!(
+        !result
+            .diagnostics
+            .iter()
+            .any(|d| d.severity == Severity::Error),
+        "{:?}",
+        result.diagnostics
+    );
+    assert_eq!(result.items.len(), 1);
+    let function = item(&result, "old_api");
+    assert!(
+        matches!(&function.language_data, Some(ItemLanguageData::R(data)) if matches!(data.declaration, RDeclaration::Function))
+    );
+    assert!(function.documentation.is_some());
+    assert!(
+        function
+            .aliases
+            .iter()
+            .any(|alias| alias.qualified_name == "foo-deprecated")
+    );
+}
+
+#[test]
+fn constants_without_usage_are_documented_but_cannot_register_as_methods() {
+    let rd = r"\name{PAD}\alias{PAD}\title{Padding}\description{Padding in points.}";
+    let result = extract(&small("PAD <- 3", "", rd));
+    assert!(
+        !result
+            .diagnostics
+            .iter()
+            .any(|d| d.severity == Severity::Error)
+    );
+    assert!(item(&result, "PAD").documentation.is_some());
+    let result = extract(&small("PAD <- 3", "S3method(print, PAD, PAD)", rd));
+    assert!(codes(&result).contains(&"r-unresolved-definition"));
 }

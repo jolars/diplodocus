@@ -28,6 +28,7 @@ pub(super) enum DefinitionValue {
         signature: Box<SourcedSignature>,
         declaration: RDeclaration,
     },
+    Constant(SignatureExpression),
     Alias(String),
     Unsupported,
 }
@@ -105,6 +106,13 @@ pub(super) fn parse(
                     .filter(|name| !name.contains('\\'))
                     .map(|name| DefinitionValue::Alias(name.into()))
                     .unwrap_or(DefinitionValue::Unsupported),
+                Some(
+                    expr @ (Expr::Name(_)
+                    | Expr::StringLiteral(_)
+                    | Expr::FloatLiteral(_)
+                    | Expr::IntLiteral(_)
+                    | Expr::ComplexLiteral(_)),
+                ) => DefinitionValue::Constant(expression(expr.syntax().clone())),
                 _ => DefinitionValue::Unsupported,
             }
         };

@@ -32,7 +32,9 @@ pub(super) async fn extract_attempt(
     deadlines: ExecutionDeadlines,
     mut cancellation: ExecutionCancellation<'_>,
 ) -> Result<PathBuf, CommandError> {
-    let mut sources = assemble_workspace(&options.config)?;
+    let mut sources =
+        crate::assembly::assemble_for_extraction(&options.config, deadlines, &mut cancellation)
+            .await?;
     let resolved = resolve_workspace(&sources)?;
     let output = options.output.unwrap_or_else(|| {
         sources
@@ -47,6 +49,9 @@ pub(super) async fn extract_attempt(
     }
     sources
         .complete_package_metadata(deadlines, &mut cancellation)
+        .await?;
+    sources
+        .execute_api_examples(deadlines, &mut cancellation)
         .await?;
     sources
         .execute_rd_examples(deadlines, &mut cancellation)

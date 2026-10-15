@@ -212,7 +212,7 @@
           },
           {
             "type": "text",
-            "value": "encoding versions. The current reader accepts storage version 2, IR version 3,",
+            "value": "encoding versions. The current reader accepts storage version 2, IR version 5,",
             "span": {
               "start": 492,
               "end": 570

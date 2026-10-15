@@ -547,7 +547,7 @@ fn documented_aliases_keep_their_documentation_on_the_canonical_family() {
 }
 
 #[test]
-fn acceptance_fixture_builds_without_julia_and_retains_structured_markdown() {
+fn acceptance_fixture_checks_without_julia_and_retains_structured_markdown() {
     use diplodocus::ir::Block;
     use diplodocus::snapshots::Snapshot;
     use std::path::Path;
@@ -559,7 +559,7 @@ fn acceptance_fixture_builds_without_julia_and_retains_structured_markdown() {
     }
     let output = Command::new(env!("CARGO_BIN_EXE_diplodocus"))
         .current_dir(workspace.path())
-        .args(["build"])
+        .args(["check"])
         .env("PATH", "")
         .output()
         .unwrap();
@@ -569,8 +569,17 @@ fn acceptance_fixture_builds_without_julia_and_retains_structured_markdown() {
         String::from_utf8_lossy(&output.stderr)
     );
     assert!(!workspace.path().join("julia-was-executed").exists());
-    let snapshot =
-        Snapshot::load(workspace.path().join(".diplodocus/documentation.sqlite")).unwrap();
+    let sources =
+        diplodocus::assembly::assemble_workspace(workspace.path().join("diplodocus.toml")).unwrap();
+    let resolved = diplodocus::validation::resolve_workspace(&sources).unwrap();
+    let snapshot = Snapshot::from_sources(&sources, &resolved).unwrap();
+    let path = workspace.path().join("static.sqlite");
+    snapshot.publish(&path).unwrap();
+    diplodocus::commands::generate(diplodocus::commands::GenerateOptions {
+        input: path,
+        output: workspace.path().join("site"),
+    })
+    .unwrap();
     let package = &snapshot.workspace().packages["geometry"];
     let point = package
         .items

@@ -115,6 +115,28 @@ pub(crate) fn resolve_input_file(
     resolver.child(field, declared, boundary, PathType::File)
 }
 
+/// Check a repository hyperlink without reading or discovering its target.
+pub(crate) fn resolve_repository_target(
+    declared: &Path,
+    boundary: &Path,
+) -> Result<PathBuf, PathResolutionError> {
+    let resolver = Resolver {
+        configuration_path: boundary,
+    };
+    let field = "repository hyperlink";
+    let current_boundary = resolver.canonicalize(field, boundary)?;
+    if current_boundary != boundary {
+        return Err(resolver.error(
+            field,
+            PathResolutionErrorKind::OutsideBoundary {
+                path: current_boundary,
+                boundary: boundary.to_owned(),
+            },
+        ));
+    }
+    resolver.child(field, declared, boundary, PathType::FileOrDirectory)
+}
+
 /// Normalize a relative spelling without losing case or Unicode identity.
 pub(crate) fn portable_relative_path(
     configuration_path: &Path,

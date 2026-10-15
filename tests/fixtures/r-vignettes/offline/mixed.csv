@@ -1,0 +1,6 @@
+measurement,count,label,enabled
+1.5,1,alpha,true
+-0.0,,"quoted, value",false
+,3,"says ""hello""",
+2e1,4,,true
+0,5,omega,false

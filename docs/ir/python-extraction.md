@@ -2,7 +2,8 @@
 
 This page describes the current source adapter. The [prepared-environment
 decision](../decisions/0003-prepared-environment.md) supersedes its runtime
-prohibition and inert-example contract; those changes are not yet implemented.
+prohibition and inert-example contract. The source adapter stays static, while
+the extraction command pipeline executes Python doctests in the verified checkout.
 
 `extractors::python::extract_target` consumes one resolved repository, package,
 and extraction target. It returns a schema-versioned `PythonExtraction`
@@ -48,6 +49,14 @@ native modules are valid inputs. Reexports and proven assignment aliases use
 the defining item's identity. Every callable has a family, and overloads also
 have individually addressable signature-based identities. The
 [item identity contract](item-identity.md) defines the wire keys.
+Site generation presents one page per callable family, with signature anchors
+for individual overload references and one navigation and search entry.
+Display names prefer canonical or reexport paths outside private source modules,
+then paths with fewer components. Equal-ranked canonical names take precedence;
+ties between reexports use lexical order. Class and constructor names beginning
+with underscores do not make a path private. Display selection does not change
+identities, aliases, source locations, or provenance. Search indexes the defining
+name and retained aliases alongside the selected display name.
 
 The supported surface includes functions, classes, methods, constructors,
 properties, constants, fields, explicit type aliases, and the supported

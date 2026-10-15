@@ -9,6 +9,7 @@ pub(super) fn assemble(
     workspace: &mut Workspace,
     selections: &mut DeclaredSourceInputs,
     observed: &mut ObservedInputs,
+    julia_results: &mut BTreeMap<(String, String), julia::JuliaExtraction>,
 ) -> Result<(), AssemblyError> {
     for (index, declaration) in configuration.packages.iter().enumerate() {
         let resolved = &paths.packages[index];
@@ -39,7 +40,9 @@ pub(super) fn assemble(
             );
             let fragment = match target.extractor.as_str() {
                 "julia" => {
-                    let result = julia::extract_target(repository, resolved, selected);
+                    let result = julia_results
+                        .remove(&(declaration.id.clone(), target.id.clone()))
+                        .unwrap_or_else(|| julia::extract_target(repository, resolved, selected));
                     Fragment {
                         metadata: None,
                         version: result.metadata.and_then(|metadata| metadata.version),

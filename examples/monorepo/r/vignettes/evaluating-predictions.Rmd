@@ -1,0 +1,73 @@
+---
+title: Evaluating predictions in R
+author: Diplodocus Contributors
+---
+
+Tiny Stats compares predictions with observed values. This walkthrough computes
+error scores and plots residuals so you can see which observations account for
+the error.
+
+```{r setup, include=FALSE}
+library(tinystats)
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+## Start with predictions
+
+Suppose a model predicts four responses. The first three predictions match their
+observations, but the last prediction is too high.
+
+```{r predictions}
+observed <- c(1, 2, 3, 4)
+predicted <- c(1, 2, 3, 6)
+errors <- residuals(observed, predicted)
+errors
+```
+
+[`residuals`] subtracts each prediction from its observation. A negative residual
+means the model predicted too high. Here, the last residual is `r tail(errors, 1)`.
+
+## Compare error scores
+
+[`mean_squared_error`] averages the squared residuals,
+$\mathrm{MSE} = \frac{1}{n}\sum_{i=1}^{n}(y_i - \hat{y}_i)^2$.
+[`mean_absolute_error`] averages their absolute values. Squaring gives larger
+errors more weight, while absolute error stays in the response's units.
+
+```{r scores, results='asis'}
+scores <- data.frame(
+  Metric = c("Mean squared error", "Mean absolute error",
+             "Root mean squared error", "Mean error", "R squared"),
+  Value = c(mean_squared_error(observed, predicted),
+            mean_absolute_error(observed, predicted),
+            root_mean_squared_error(observed, predicted),
+            mean_error(observed, predicted),
+            r_squared(observed, predicted))
+)
+knitr::kable(scores, digits = 2)
+```
+
+The mean squared error is `r mean_squared_error(observed, predicted)`, and the
+mean absolute error is `r mean_absolute_error(observed, predicted)`. The mean
+error of `r mean_error(observed, predicted)` indicates that predictions are too
+high on average. R squared compares the squared error with the variation in the
+observations; it requires observations that are not constant.
+
+## Inspect residuals
+
+A single score can hide where a model fails. Plot the residuals against the
+observations and use the zero line to identify exact predictions.
+
+```{r residual-plot, echo=FALSE, fig.width=6, fig.height=4, fig.cap='The last prediction accounts for all of the error.', fig.alt='Three residuals are zero; the residual for observed value four is minus two.'}
+plot(observed, errors, pch = 19, col = "#2563eb",
+     xlab = "Observed value", ylab = "Residual", ylim = c(-2.5, 0.5))
+abline(h = 0, lty = 2, col = "gray50")
+```
+
+All of the error comes from the last observation. Check this case before using
+the average scores to judge the model. For larger datasets, look for trends,
+changing spread, or groups of unusual residuals.
+
+Read [Choosing a metric](../../docs/guides/choosing-a-metric.md) for the tradeoffs
+between scores, or use [`root_mean_squared_error`] to report a score in the
+response's units.

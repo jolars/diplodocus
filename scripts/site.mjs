@@ -1,5 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
-import { appendFileSync, cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { appendFileSync, cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -56,6 +56,22 @@ if (mode === "serve-test") {
         recursive: true,
       });
     }
+    const configuration = join(workspace, "diplodocus.toml");
+    writeFileSync(configuration, readFileSync(configuration, "utf8")
+      .replace('url = "https://github.com/jolars/diplodocus"\n', 'url = "https://github.com/jolars/diplodocus"\nrevision = "main"\n'));
+    mkdirSync(join(workspace, "spec"));
+    writeFileSync(join(workspace, "spec/README.md"), "# Contract\n\nA repository specification.\n");
+    writeFileSync(join(workspace, "TRUST.md"), "# Trust\n\nA repository trust policy.\n");
+    writeFileSync(join(workspace, "OPERATIONS.md"), "# Operations\n\nRepository operations.\n");
+    appendFileSync(join(workspace, "r/CONTRIBUTING.md"), "\nRead the [specification](../spec/README.md#contract), [trust policy](../TRUST.md), and [operations guide](../OPERATIONS.md) before contributing.\n\nSee the [documentation](../docs/index.md) for the shared guide.\n");
+    const pythonEntry = join(workspace, "python/src/tinystats/__init__.py");
+    const overloadSource = readFileSync(
+      join(root, "tests/fixtures/python-overloads/python/demo/_api.py"), "utf8",
+    );
+    const pythonSource = readFileSync(pythonEntry, "utf8")
+      .replace('__all__ = [', '__all__ = ["fetch_data", "Reader",');
+    writeFileSync(join(workspace, "python/src/tinystats/_api.py"), overloadSource);
+    writeFileSync(pythonEntry, `${pythonSource}\nfrom ._api import Reader, fetch_data\n`);
     cpSync(join(root, "tests/fixtures/r-vignettes"), join(workspace, "r/vignettes"), { recursive: true });
     const internalTopics = join(root, "tests/fixtures/r-internal-topics");
     for (const directory of ["R", "man"]) {

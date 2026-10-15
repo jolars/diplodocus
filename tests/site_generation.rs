@@ -40,6 +40,265 @@ fn code_blocks(html: &str) -> Vec<(bool, String)> {
 }
 
 #[test]
+fn python_reexports_use_public_labels_and_retain_implementation_evidence() {
+    use diplodocus::validation::resolve_item;
+
+    let root = support::TestWorkspace::from_fixture("python-overloads");
+    root.write("python/demo/_api.py", root.read("python/demo/_api.py").replace(
+        "Retrieve one dataset, optionally returning its metadata.",
+        "Retrieve one dataset, optionally returning its metadata.\n\n    See :func:`demo.load_data` and :func:`demo._api.fetch_data`.",
+    ));
+    root.write(
+        "python/demo/__init__.py",
+        "from ._api import Reader as DataReader\n\
+        from ._api import fetch_data as load_data, fetch_data as z_data\n\
+        from .native import native_value\n\
+        __all__ = ['DataReader', 'load_data', 'z_data', 'native_value']\n",
+    );
+    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let original_items = sources.workspace().packages["python"].items.clone();
+    let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+    let artifact = tempfile::tempdir().unwrap();
+    let path = artifact.path().join("snapshot.sqlite");
+    snapshot.publish(&path).unwrap();
+    drop(sources);
+    drop(root);
+    let loaded = Snapshot::load(&path).unwrap();
+    let rendered =
+        diplodocus::rendering::render_site(&diplodocus::site::Site::new(&loaded).unwrap()).unwrap();
+    assert_eq!(loaded.workspace().packages["python"].items, original_items);
+    let search: Vec<serde_json::Value> =
+        serde_json::from_slice(&rendered.files()["assets/search.json"].bytes).unwrap();
+
+    for (public, canonical) in [
+        ("demo.load_data", "demo._api.fetch_data"),
+        ("demo.DataReader", "demo._api.Reader"),
+        ("demo.DataReader.read", "demo._api.Reader.read"),
+        ("demo.native_value", "demo.native.native_value"),
+    ] {
+        let reference = resolve_item(loaded.workspace(), Some("python"), public).unwrap();
+        assert_eq!(
+            reference,
+            resolve_item(loaded.workspace(), Some("python"), canonical).unwrap()
+        );
+        let item = &loaded.workspace().packages["python"].items[&reference.item];
+        assert_eq!(item.qualified_name, canonical);
+        assert_eq!(
+            item.source_location.as_ref().unwrap().path.as_str(),
+            if canonical.starts_with("demo.native.") {
+                "python/demo/native.pyi"
+            } else {
+                "python/demo/_api.py"
+            }
+        );
+        let entries: Vec<_> = search
+            .iter()
+            .filter(|entry| entry["title"] == public)
+            .collect();
+        assert_eq!(entries.len(), 1);
+        assert!(entries[0]["text"].as_str().unwrap().contains(canonical));
+        let route = format!(
+            "packages/python/reference/{}.html",
+            diplodocus::provenance::fingerprint_bytes(reference.item.as_bytes()).value
+        );
+        let html = std::str::from_utf8(&rendered.files()[&route].bytes).unwrap();
+        assert!(html.contains(&format!("<title>{public} · Python overloads</title>")));
+        assert!(html.contains(&format!("<h1><code>{public}</code></h1>")));
+        let label = public.rsplit('.').next().unwrap();
+        assert!(
+            html.contains(&format!("><code>{label}</code></a>"))
+                || html.contains(&format!("<summary><code>{label}</code></summary>"))
+        );
+        assert!(!search.iter().any(|entry| entry["title"] == canonical));
+        if public == "demo.load_data" {
+            let destination = format!(
+                "{}.html",
+                route
+                    .rsplit('/')
+                    .next()
+                    .unwrap()
+                    .strip_suffix(".html")
+                    .unwrap()
+            );
+            for spelling in [public, canonical] {
+                assert!(html.contains(&format!(
+                    "<a href=\"{destination}\"><code>{spelling}</code></a>"
+                )));
+            }
+            assert!(
+                code_blocks(html)
+                    .iter()
+                    .all(|(_, source)| source.starts_with("load_data("))
+            );
+            assert_eq!(
+                reference,
+                resolve_item(loaded.workspace(), Some("python"), "demo.z_data").unwrap()
+            );
+            assert!(entries[0]["text"].as_str().unwrap().contains("demo.z_data"));
+        }
+    }
+}
+
+#[test]
+fn python_reexport_labels_are_stable_and_prefer_public_modules() {
+    use diplodocus::validation::resolve_item;
+
+    let root = support::TestWorkspace::from_fixture("python-overloads");
+    root.write(
+        "python/demo/public_api.py",
+        "from ._api import fetch_data as lookup\n",
+    );
+    for exports in [
+        "from ._api import Reader as _PublicReader\n__all__ = ['_PublicReader']\n",
+        "from ._api import fetch_data as z_data, fetch_data as a_data\n__all__ = ['z_data', 'a_data']\n",
+        "from ._api import fetch_data as a_data, fetch_data as z_data\n__all__ = ['a_data', 'z_data']\n",
+    ] {
+        root.write("python/demo/__init__.py", exports);
+        let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+        let snapshot =
+            Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+        let rendered =
+            diplodocus::rendering::render_site(&diplodocus::site::Site::new(&snapshot).unwrap())
+                .unwrap();
+        let family =
+            resolve_item(snapshot.workspace(), Some("python"), "demo._api.fetch_data").unwrap();
+        let route = format!(
+            "packages/python/reference/{}.html",
+            diplodocus::provenance::fingerprint_bytes(family.item.as_bytes()).value
+        );
+        let html = std::str::from_utf8(&rendered.files()[&route].bytes).unwrap();
+        let name = if exports.contains("_PublicReader") {
+            "demo.public_api.lookup"
+        } else {
+            "demo.a_data"
+        };
+        assert!(html.contains(&format!("<h1><code>{name}</code></h1>")));
+        if exports.contains("_PublicReader") {
+            let search: Vec<serde_json::Value> =
+                serde_json::from_slice(&rendered.files()["assets/search.json"].bytes).unwrap();
+            assert!(
+                search
+                    .iter()
+                    .any(|entry| entry["title"] == "demo._PublicReader.read")
+            );
+        }
+    }
+}
+
+#[test]
+fn python_overloads_share_one_page_navigation_entry_and_search_result() {
+    use diplodocus::ir::{ItemLanguageData, PythonCallableRole, PythonDeclaration};
+    use diplodocus::validation::resolve_item;
+
+    let root = support::TestWorkspace::from_fixture("python-overloads");
+    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+    let artifact = tempfile::tempdir().unwrap();
+    let path = artifact.path().join("snapshot.sqlite");
+    snapshot.publish(&path).unwrap();
+    drop(sources);
+    drop(root);
+    let loaded = Snapshot::load(&path).unwrap();
+    let rendered =
+        diplodocus::rendering::render_site(&diplodocus::site::Site::new(&loaded).unwrap()).unwrap();
+    let search: Vec<serde_json::Value> =
+        serde_json::from_slice(&rendered.files()["assets/search.json"].bytes).unwrap();
+    let overview =
+        std::str::from_utf8(&rendered.files()["packages/python/index.html"].bytes).unwrap();
+    let navigation = overview
+        .split("<section class=\"nav-group\" role=\"group\" aria-label=\"API reference\">")
+        .nth(1)
+        .unwrap()
+        .split("</nav>")
+        .next()
+        .unwrap();
+    let sitemap = std::str::from_utf8(&rendered.files()["sitemap.xml"].bytes).unwrap();
+
+    for (name, count, prose) in [
+        ("demo.fetch_data", 3, Some("Retrieve one dataset")),
+        ("demo.Reader.read", 2, Some("Return the artifact")),
+        ("demo.native_value", 2, None),
+    ] {
+        let family = resolve_item(loaded.workspace(), Some("python"), name).unwrap();
+        let item = &loaded.workspace().packages["python"].items[&family.item];
+        let Some(ItemLanguageData::Python(data)) = &item.language_data else {
+            panic!("missing Python semantics");
+        };
+        let PythonDeclaration::Callable {
+            role: PythonCallableRole::Family { overloads },
+            ..
+        } = &data.declaration
+        else {
+            panic!("missing callable family");
+        };
+        assert_eq!(overloads.len(), count);
+        let route = format!(
+            "packages/python/reference/{}.html",
+            diplodocus::provenance::fingerprint_bytes(family.item.as_bytes()).value
+        );
+        let html = std::str::from_utf8(&rendered.files()[&route].bytes).unwrap();
+        let expected = match name {
+            "demo.fetch_data" => vec![
+                "fetch_data(name: str, *, return_info: typing.Literal[False] = False) -> str",
+                "fetch_data(name: str, *, return_info: typing.Literal[True]) -> tuple[str, str]",
+                "fetch_data(name: str, *, return_info: bool) -> str | tuple[str, str]",
+            ],
+            "demo.Reader.read" => vec![
+                "read(self, value: str) -> str",
+                "read(self, value: bytes) -> bytes",
+            ],
+            _ => vec![
+                "native_value(value: int) -> int",
+                "native_value(value: str) -> str",
+            ],
+        };
+        assert_eq!(
+            code_blocks(html),
+            expected
+                .iter()
+                .map(|signature| (true, (*signature).into()))
+                .collect::<Vec<_>>()
+        );
+        if let Some(prose) = prose {
+            assert!(html.contains(prose));
+        }
+        assert_eq!(
+            navigation
+                .matches(&format!("><code>{}</code></a>", item.name))
+                .count(),
+            1
+        );
+        assert_eq!(
+            search.iter().filter(|entry| entry["title"] == name).count(),
+            1
+        );
+        assert!(sitemap.contains(&route));
+        for (index, member) in overloads.iter().enumerate() {
+            assert_eq!(
+                resolve_item(loaded.workspace(), Some("python"), &member.item).unwrap(),
+                *member
+            );
+            let digest = diplodocus::provenance::fingerprint_bytes(member.item.as_bytes()).value;
+            assert!(html.contains(&format!("id=\"overload-{digest}\"")));
+            let signature = html
+                .split(&format!("id=\"overload-{digest}\""))
+                .nth(1)
+                .unwrap()
+                .split("</div>")
+                .next()
+                .unwrap();
+            assert_eq!(code_blocks(signature), [(true, expected[index].into())]);
+            assert!(
+                !rendered
+                    .files()
+                    .contains_key(&format!("packages/python/reference/{digest}.html"))
+            );
+            assert!(!sitemap.contains(&digest));
+        }
+    }
+}
+
+#[test]
 fn highlighting_survives_snapshot_generation_without_sources() {
     let root = support::TestWorkspace::new();
     root.write(
@@ -302,7 +561,7 @@ fn eulerr_datasets_survive_snapshots_and_render_bare_usage_format_and_source() {
             .values()
             .filter(|file| file.media_type.starts_with("text/html"))
             .map(|file| std::str::from_utf8(&file.bytes).unwrap())
-            .find(|html| html.contains(&format!("<h1><code>{name}</code></h1>")))
+            .find(|html| html.contains(&format!("<p class=\"api-name\"><code>{name}</code></p>")))
             .unwrap();
         assert!(html.contains(format));
         assert_eq!(
@@ -310,7 +569,7 @@ fn eulerr_datasets_survive_snapshots_and_render_bare_usage_format_and_source() {
                 .iter()
                 .filter(|(highlighted, text)| *highlighted && text == name)
                 .count(),
-            2
+            1
         );
         assert!(!html.contains(&format!("{name}()")));
         assert!(html.contains(">Format</h2>"));
@@ -363,7 +622,12 @@ fn shared_r_topics_and_method_navigation_survive_generation_without_sources() {
             .values()
             .filter(|file| file.media_type.starts_with("text/html"))
             .map(|file| std::str::from_utf8(&file.bytes).unwrap())
-            .find(|html| html.contains(&format!("<h1><code>{}</code></h1>", item.qualified_name)))
+            .find(|html| {
+                html.contains(&format!(
+                    "<p class=\"api-name\"><code>{}</code></p>",
+                    item.qualified_name
+                ))
+            })
             .unwrap();
         let blocks = code_blocks(html);
         let Some(ItemLanguageData::R(data)) = &item.language_data else {
@@ -399,12 +663,11 @@ fn shared_r_topics_and_method_navigation_survive_generation_without_sources() {
                 .find(|(_, file)| {
                     std::str::from_utf8(&file.bytes)
                         .unwrap()
-                        .contains(&format!("<h1><code>{name}</code></h1>"))
+                        .contains(&format!("<p class=\"api-name\"><code>{name}</code></p>"))
                 })
                 .unwrap();
             let filename = target.rsplit('/').next().unwrap();
-            let href =
-                percent_encoding::utf8_percent_encode(filename, percent_encoding::NON_ALPHANUMERIC);
+            let href = filename;
             assert!(html.contains(&format!("href=\"{href}\"")));
         }
     }
@@ -465,7 +728,7 @@ fn internal_r_topics_survive_snapshots_without_public_navigation_or_search() {
                 .next()
                 .unwrap();
             assert!(!nav.contains(name));
-            found |= html.contains(&format!("<h1><code>{name}</code></h1>"));
+            found |= html.contains(&format!("<p class=\"api-name\"><code>{name}</code></p>"));
         }
         assert!(found, "The internal topic remains addressable: {name}");
     }
@@ -500,7 +763,7 @@ fn unsupported_rd_renders_compact_markers_and_authored_source_stays_visible() {
         .values()
         .filter(|file| file.media_type.starts_with("text/html"))
         .map(|file| std::str::from_utf8(&file.bytes).unwrap())
-        .find(|html| html.contains("<h1><code>experimental_summary</code></h1>"))
+        .find(|html| html.contains("<p class=\"api-name\"><code>experimental_summary</code></p>"))
         .unwrap();
     assert!(html.contains("[Unsupported Rd: \\Sexpr]"));
     assert!(html.contains("[Unsupported Rd: examples]"));
@@ -772,14 +1035,14 @@ format = "gfm"
     let page = std::str::from_utf8(&rendered.files()["packages/r/vignettes/evaluating.html"].bytes)
         .unwrap();
     assert!(
-        global_sections(page).contains("href=\"../../../index%2Ehtml\""),
+        global_sections(page).contains("href=\"../../../index.html\""),
         "{}",
         global_sections(page)
     );
-    assert!(global_sections(page).contains("href=\"../index%2Ehtml\" aria-current=\"true\">R"));
+    assert!(global_sections(page).contains("href=\"../index.html\" aria-current=\"true\">R"));
     assert!(page.contains("aria-label=\"R\""));
     assert!(page.contains("aria-label=\"R workflows\""));
-    assert!(page.contains("href=\"evaluating%2Ehtml\" aria-current=\"page\">Evaluating a model"));
+    assert!(page.contains("href=\"evaluating.html\" aria-current=\"page\">Evaluating a model"));
     assert!(!page.contains("aria-label=\"API reference\""));
     assert!(!page.contains("aria-label=\"Shared concepts\""));
     let home = std::str::from_utf8(&rendered.files()["index.html"].bytes).unwrap();

@@ -2,7 +2,7 @@
   "document": {
     "span": {
       "start": 0,
-      "end": 2953
+      "end": 3431
     },
     "frontmatter": null,
     "blocks": [
@@ -738,6 +738,168 @@
         }
       },
       {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Python doctest transcripts and Julia ",
+            "span": {
+              "start": 1904,
+              "end": 1941
+            }
+          },
+          {
+            "type": "code",
+            "value": "jldoctest",
+            "span": {
+              "start": 1941,
+              "end": 1952
+            }
+          },
+          {
+            "type": "text",
+            "value": " fences also execute during",
+            "span": {
+              "start": 1952,
+              "end": 1979
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 1979,
+              "end": 1980
+            }
+          },
+          {
+            "type": "text",
+            "value": "extraction, using the prepared checkout and native interpreter. Expected-output",
+            "span": {
+              "start": 1980,
+              "end": 2059
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2059,
+              "end": 2060
+            }
+          },
+          {
+            "type": "text",
+            "value": "mismatches, unexpected errors, missing dependencies, and unsupported executable",
+            "span": {
+              "start": 2060,
+              "end": 2139
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2139,
+              "end": 2140
+            }
+          },
+          {
+            "type": "text",
+            "value": "syntax prevent publication. Snapshots retain checked outcomes and literal",
+            "span": {
+              "start": 2140,
+              "end": 2213
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2213,
+              "end": 2214
+            }
+          },
+          {
+            "type": "text",
+            "value": "results. See the ",
+            "span": {
+              "start": 2214,
+              "end": 2231
+            }
+          },
+          {
+            "type": "link",
+            "inlines": [
+              {
+                "type": "text",
+                "value": "API extraction guide",
+                "span": {
+                  "start": 2232,
+                  "end": 2252
+                }
+              }
+            ],
+            "target": "extraction.md",
+            "title": null,
+            "attributes": {
+              "identifier": null,
+              "classes": [],
+              "key_values": []
+            },
+            "span": {
+              "start": 2231,
+              "end": 2268
+            }
+          },
+          {
+            "type": "text",
+            "value": " for comparison, setup,",
+            "span": {
+              "start": 2268,
+              "end": 2291
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2291,
+              "end": 2292
+            }
+          },
+          {
+            "type": "text",
+            "value": "scope, and explicit skip rules. These adapters do not use Jupyter or an execution",
+            "span": {
+              "start": 2292,
+              "end": 2373
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2373,
+              "end": 2374
+            }
+          },
+          {
+            "type": "text",
+            "value": "cache.",
+            "span": {
+              "start": 2374,
+              "end": 2380
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2380,
+              "end": 2381
+            }
+          }
+        ],
+        "span": {
+          "start": 1904,
+          "end": 2381
+        }
+      },
+      {
         "type": "heading",
         "level": 2,
         "attributes": {
@@ -750,14 +912,14 @@
             "type": "text",
             "value": "Native R Markdown execution",
             "span": {
-              "start": 1908,
-              "end": 1935
+              "start": 2386,
+              "end": 2413
             }
           }
         ],
         "span": {
-          "start": 1905,
-          "end": 1936
+          "start": 2383,
+          "end": 2414
         }
       },
       {
@@ -767,151 +929,151 @@
             "type": "text",
             "value": "R package vignettes execute by default through knitr during extraction. They use",
             "span": {
-              "start": 1937,
-              "end": 2017
+              "start": 2415,
+              "end": 2495
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2017,
-              "end": 2018
+              "start": 2495,
+              "end": 2496
             }
           },
           {
             "type": "text",
             "value": "one native R process per article, with shared chunk and inline state and the",
             "span": {
-              "start": 2018,
-              "end": 2094
+              "start": 2496,
+              "end": 2572
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2094,
-              "end": 2095
+              "start": 2572,
+              "end": 2573
             }
           },
           {
             "type": "text",
             "value": "article's directory as the working directory. Rmd collections default to",
             "span": {
-              "start": 2095,
-              "end": 2167
+              "start": 2573,
+              "end": 2645
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2167,
-              "end": 2168
+              "start": 2645,
+              "end": 2646
             }
           },
           {
             "type": "code",
             "value": "mode = \"execute\"",
             "span": {
-              "start": 2168,
-              "end": 2186
+              "start": 2646,
+              "end": 2664
             }
           },
           {
             "type": "text",
             "value": " and ",
             "span": {
-              "start": 2186,
-              "end": 2191
+              "start": 2664,
+              "end": 2669
             }
           },
           {
             "type": "code",
             "value": "engine = \"knitr\"",
             "span": {
-              "start": 2191,
-              "end": 2209
+              "start": 2669,
+              "end": 2687
             }
           },
           {
             "type": "text",
             "value": "; a kernel selector or disabled",
             "span": {
-              "start": 2209,
-              "end": 2240
+              "start": 2687,
+              "end": 2718
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2240,
-              "end": 2241
+              "start": 2718,
+              "end": 2719
             }
           },
           {
             "type": "text",
             "value": "collection is an error. Source options such as ",
             "span": {
-              "start": 2241,
-              "end": 2288
+              "start": 2719,
+              "end": 2766
             }
           },
           {
             "type": "code",
             "value": "eval = FALSE",
             "span": {
-              "start": 2288,
-              "end": 2302
+              "start": 2766,
+              "end": 2780
             }
           },
           {
             "type": "text",
             "value": " still retain their",
             "span": {
-              "start": 2302,
-              "end": 2321
+              "start": 2780,
+              "end": 2799
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2321,
-              "end": 2322
+              "start": 2799,
+              "end": 2800
             }
           },
           {
             "type": "text",
             "value": "native meaning. Declared environment inputs can supplement the automatically",
             "span": {
-              "start": 2322,
-              "end": 2398
+              "start": 2800,
+              "end": 2876
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2398,
-              "end": 2399
+              "start": 2876,
+              "end": 2877
             }
           },
           {
             "type": "text",
             "value": "observed article and support files.",
             "span": {
-              "start": 2399,
-              "end": 2434
+              "start": 2877,
+              "end": 2912
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2434,
-              "end": 2435
+              "start": 2912,
+              "end": 2913
             }
           }
         ],
         "span": {
-          "start": 1937,
-          "end": 2435
+          "start": 2415,
+          "end": 2913
         }
       },
       {
@@ -921,98 +1083,98 @@
             "type": "text",
             "value": "The caller supplies the prepared checkout and dependencies. Diplodocus does",
             "span": {
-              "start": 2436,
-              "end": 2511
+              "start": 2914,
+              "end": 2989
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2511,
-              "end": 2512
+              "start": 2989,
+              "end": 2990
             }
           },
           {
             "type": "text",
             "value": "not install packages, compile extensions, or use persistent knitr caches. Native",
             "span": {
-              "start": 2512,
-              "end": 2592
+              "start": 2990,
+              "end": 3070
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2592,
-              "end": 2593
+              "start": 3070,
+              "end": 3071
             }
           },
           {
             "type": "text",
             "value": "processes have the same privileges as the caller. Failures, cancellation,",
             "span": {
-              "start": 2593,
-              "end": 2666
+              "start": 3071,
+              "end": 3144
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2666,
-              "end": 2667
+              "start": 3144,
+              "end": 3145
             }
           },
           {
             "type": "text",
             "value": "timeouts, changed inputs, and invalid generated content prevent publication.",
             "span": {
-              "start": 2667,
-              "end": 2743
+              "start": 3145,
+              "end": 3221
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2743,
-              "end": 2744
+              "start": 3221,
+              "end": 3222
             }
           },
           {
             "type": "text",
             "value": "Snapshots retain evaluated Markdown, chunk outcomes, inline results, validated",
             "span": {
-              "start": 2744,
-              "end": 2822
+              "start": 3222,
+              "end": 3300
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2822,
-              "end": 2823
+              "start": 3300,
+              "end": 3301
             }
           },
           {
             "type": "text",
             "value": "PNG figures, and actual runtime and dependency versions. Generation needs no R",
             "span": {
-              "start": 2823,
-              "end": 2901
+              "start": 3301,
+              "end": 3379
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2901,
-              "end": 2902
+              "start": 3379,
+              "end": 3380
             }
           },
           {
             "type": "text",
             "value": "runtime. See ",
             "span": {
-              "start": 2902,
-              "end": 2915
+              "start": 3380,
+              "end": 3393
             }
           },
           {
@@ -1022,8 +1184,8 @@
                 "type": "text",
                 "value": "R Markdown authoring",
                 "span": {
-                  "start": 2916,
-                  "end": 2936
+                  "start": 3394,
+                  "end": 3414
                 }
               }
             ],
@@ -1035,29 +1197,29 @@
               "key_values": []
             },
             "span": {
-              "start": 2915,
-              "end": 2951
+              "start": 3393,
+              "end": 3429
             }
           },
           {
             "type": "text",
             "value": ".",
             "span": {
-              "start": 2951,
-              "end": 2952
+              "start": 3429,
+              "end": 3430
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2952,
-              "end": 2953
+              "start": 3430,
+              "end": 3431
             }
           }
         ],
         "span": {
-          "start": 2436,
-          "end": 2953
+          "start": 2914,
+          "end": 3431
         }
       }
     ]

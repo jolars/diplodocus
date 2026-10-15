@@ -33,6 +33,10 @@ mean_absolute_error(observed, predicted)
 Read the [shared metric guide](../docs/guides/choosing-a-metric.md) to choose a
 score, or inspect [`residuals`] to examine individual errors.
 
+The [R vignette](vignettes/evaluating-predictions.Rmd) walks through computed
+scores and a residual plot. Diplodocus discovers it automatically and runs its R
+chunks when extracting the documentation.
+
 ## Package information
 
 See the [release notes](NEWS.md), [citation](inst/CITATION),

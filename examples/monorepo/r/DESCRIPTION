@@ -13,3 +13,4 @@ License: MIT + file LICENSE
 URL: https://github.com/jolars/diplodocus (Project website)
 BugReports: https://github.com/jolars/diplodocus/issues
 Encoding: UTF-8
+Suggests: knitr

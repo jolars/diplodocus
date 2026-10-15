@@ -35,6 +35,83 @@ fn success(output: Output) {
 }
 
 #[test]
+fn package_data_articles_execute_and_generate_without_the_source_package() {
+    let root = workspace(
+        r#"---
+title: Offline fixture
+---
+```{r setup, include=FALSE}
+library(demo)
+input <- system.file("extdata", "mixed.csv", package="demo", mustWork=TRUE)
+values <- read.csv(input, colClasses=c("numeric", "character", "character", "logical"), na.strings="")
+stopifnot(identical(dim(values), c(5L, 4L)), identical(values$measurement, c(1.5, -0.0, NA_real_, 20, 0)))
+```
+Retrieved `r nrow(values)` rows and `r ncol(values)` columns from the bundled fixture.
+
+```{r values, results='asis'}
+knitr::kable(values)
+```
+```{r measurements, echo=FALSE, fig.cap='Four observed measurements; the third row is missing.', fig.alt='Four measurements at rows one, two, four, and five.'}
+plot(seq_len(nrow(values)), values$measurement)
+```
+"#,
+    );
+    root.write(
+        "r/inst/extdata/mixed.csv",
+        fs::read(support::fixture_path("r-vignettes/offline/mixed.csv")).unwrap(),
+    );
+    success(run(&root, "check"));
+    success(run(&root, "build"));
+    let path = root
+        .path()
+        .join("site/packages/demo/vignettes/article.html");
+    let html = fs::read_to_string(&path).unwrap();
+    for expected in [
+        "Retrieved 5 rows and 4 columns",
+        "quoted, value",
+        "<table",
+        "<figure ",
+        "Four observed measurements; the third row is missing.",
+    ] {
+        assert!(html.contains(expected), "missing {expected}");
+    }
+    let database = root.path().join(".diplodocus/documentation.sqlite");
+    let snapshot = fs::read(&database).unwrap();
+    root.write(
+        "r/inst/extdata/mixed.csv",
+        "measurement,count,label,enabled\n99,1,changed,true\n",
+    );
+    let output = run(&root, "build");
+    assert!(!output.status.success());
+    assert!(String::from_utf8_lossy(&output.stderr).contains("R Markdown execution failed"));
+    assert_eq!(fs::read(&database).unwrap(), snapshot);
+    assert_eq!(fs::read_to_string(&path).unwrap(), html);
+    fs::remove_dir_all(root.path().join("r")).unwrap();
+    success(
+        Command::new(env!("CARGO_BIN_EXE_diplodocus"))
+            .current_dir(root.path())
+            .env("PATH", "")
+            .args([
+                "generate",
+                "--input",
+                ".diplodocus/documentation.sqlite",
+                "--output",
+                "portable-site",
+            ])
+            .output()
+            .unwrap(),
+    );
+    assert_eq!(
+        fs::read_to_string(
+            root.path()
+                .join("portable-site/packages/demo/vignettes/article.html")
+        )
+        .unwrap(),
+        html
+    );
+}
+
+#[test]
 fn default_execution_collects_content_and_survives_without_sources_or_r() {
     let root = workspace(
         r#"---

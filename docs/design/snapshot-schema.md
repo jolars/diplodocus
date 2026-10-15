@@ -11,20 +11,28 @@ IR into separate rows.
   | Manifest field     | Current value | Governs                                                                                                                                        |
   | ---                | ---           | ---                                                                                                                                            |
   | `storage_version`  | `2`           | SQLite tables, columns, keys, record kinds, splitting entities into rows, and storage-specific envelopes. Defined by `STORAGE_SCHEMA_VERSION`. |
-  | `ir_version`       | `3`           | Semantic IR field shapes and meaning, including nested documents, signatures, and language extensions. Defined by `WORKSPACE_SCHEMA_VERSION`.  |
+  | `ir_version`       | `5`           | Semantic IR field shapes and meaning, including nested documents, signatures, and language extensions. Defined by `WORKSPACE_SCHEMA_VERSION`.  |
   | `encoding_version` | `1`           | Canonical record encoding, fingerprint inputs, and text export. Defined by `RECORD_ENCODING_VERSION`.                                          |
 
 These versions are independent: a table-layout change requires a storage version
 change; an incompatible signature or language-extension change requires an IR
 version change even if the SQL tables stay the same. Changing canonical hashing
 or export rules requires an encoding version change. A change may affect more
-than one version. The current reader accepts only `(2, 3, 1)` and rejects any
+than one version. The current reader accepts only `(2, 5, 1)` and rejects any
 unsupported component; it does not migrate snapshots automatically.
 
 Storage version 2 adds the required `presentation` record. Version 1 snapshots
 must be extracted again. Presentation defaults are storage metadata outside the IR.
 
-IR version 3 adds R Markdown execution evidence, evaluated document source,
+IR version 5 adds completed Python and Julia API doctest outcomes, runtime
+observations, and decoded documentation fingerprints. Version 4 snapshots must
+be extracted again. Storage and canonical encoding versions are unchanged.
+
+IR version 4 added repository hyperlink targets for automatically discovered
+package documents. Version 3 snapshots must be extracted again. Storage and
+canonical encoding versions are unchanged.
+
+IR version 3 added R Markdown execution evidence, evaluated document source,
 citations, inline formatting, and article containers. Version 2 snapshots must
 be extracted again. Storage and canonical encoding versions are unchanged.
 
@@ -32,7 +40,7 @@ IR version 2 added inline and display equations and installed R help-link
 evidence. Version 1 snapshots must be extracted again. The canonical record
 encoding remains at version 1.
 
-The workspace record also carries `schema_version: 3`, which must agree with
+The workspace record also carries `schema_version: 5`, which must agree with
 `manifest.ir_version`. Nested JSON inherits the containing snapshot's versions;
 there is no additional version wrapper on every syntax node or signature.
 Consumers must read the manifest before interpreting a detached record.
@@ -183,6 +191,7 @@ require a repository or package row.
   | `ReferenceTarget` with `kind: "anchor"`                                    | `fragment` names an anchor in the containing document                                                                          |
   | `ReferenceTarget` with `kind: "asset"`                                     | `asset.fingerprint.value` joins `assets.digest`; `fragment` is nullable                                                        |
   | `ReferenceTarget` with `kind: "external"`                                  | `url` is an accepted external hyperlink, not a local entity                                                                    |
+  | `ReferenceTarget` with `kind: "repository"`                                | `repository` names the source repository; `path` is its canonical relative target, `directory` selects file or directory semantics, and `fragment` is nullable |
   | Execution row `id`                                                         | `('page', '', id)`; execution collection, source, and policy agree with that authored page                                     |
   | `AssetReference` in documents or execution records                         | `fingerprint.algorithm` is `sha256`; `fingerprint.value` joins `assets.digest`                                                 |
 
@@ -562,7 +571,20 @@ WHERE i.kind = 'item' AND i.owner = ?1 AND i.id = ?2;
 
 ### Resolved documents
 
-Documents retain semantic reference targets rather than site URLs:
+Documents retain semantic reference targets rather than site URLs.
+
+Repository targets retain a repository ID, a canonical `DiagnosticPath`, a
+`directory` boolean, and a nullable decoded fragment. Extraction checks each
+target's existence, type, and containment component by component, then rechecks
+it before snapshot creation. It does not parse or store the linked file's
+contents. Loading requires an ordinary relative hyperlink on an automatically
+discovered package page, the same source repository, the original authored
+fragment, and a usable repository URL or template with a known revision.
+Generation constructs the URL from these records without consulting the
+checkout. The repository host handles fragment anchors; declared page anchors
+continue to receive local validation.
+
+Read the resolved references in document order:
 
 ```sql
 SELECT id, json_extract(content, '$.references') AS references_json

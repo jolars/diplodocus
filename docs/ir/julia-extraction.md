@@ -1,14 +1,41 @@
 # Julia extraction contract
 
-This page describes the current source adapter. The [prepared-environment
-decision](../decisions/0003-prepared-environment.md) supersedes its runtime
-prohibition and inert-example contract; those changes are not yet implemented.
+This page describes the source adapter and its runtime type completion. The
+[prepared-environment decision](../decisions/0003-prepared-environment.md)
+also requires Julia example execution, implemented by the native doctest adapter
+in the extraction command pipeline.
 
 The `julia` adapter reads an explicit `.jl` entry file and `Project.toml` with
 Rust libraries. Fatou provides Julia syntax, documentation attachments, string
 decoding, source maps, and Julia Markdown. Diplodocus determines the maintained
-API, assigns identities, and resolves references. Extraction never starts
-Julia, expands macros, loads a package, reads a depot, or installs dependencies.
+API, assigns identities, and resolves references. `check` uses this static
+adapter without starting Julia. During `extract`, `build`, and `serve`, unresolved
+public bindings trigger native type completion in the prepared checkout.
+
+## Runtime type completion
+
+Diplodocus starts Julia with startup and history files disabled and activates the
+configured package project. The caller must provide Julia and the package's
+dependencies. Diplodocus never installs or resolves dependencies. The helper
+loads the package by its Project.toml name and UUID and verifies that its entry
+file matches the supplied checkout. Loading another release, missing
+prerequisites, errors, cancellation, and timeouts prevent snapshot publication.
+
+The helper observes exported types defined by the root module, their type
+parameters, supertypes, mutability, and fields. This completes macro-generated
+exception types such as Datamonger's 15 `@define_error` exports. It does not
+synthesize constructor methods or source locations. Existing source declarations
+retain their source evidence; incompatible observed type flavors produce errors.
+Unresolved functions, external types, dynamic includes, and unsupported source
+syntax remain errors.
+
+Runtime-derived types and fields carry `julia-runtime` provenance with the helper
+policy, Julia version, verified package identity and version, and loaded
+dependency UUIDs and versions. These records contain no local paths or invented
+source ranges. Static parser extraction evidence remains separate. Completed
+snapshots can be generated without the checkout or Julia. `check` continues to
+diagnose unresolved generated declarations and does not prove that runtime
+extraction will succeed.
 
 ## Configuration and inputs
 
@@ -100,8 +127,11 @@ existing family or method. Conflicting attachments produce errors.
 
 Prose, headings, emphasis, inline code, links, images, lists, block quotes,
 tables, common admonitions, thematic breaks, and code blocks become portable
-document nodes. Docstring headings begin below the API page title. Julia examples, REPL examples, `jldoctest`, `@example`, and
-`@repl` fences remain inert code blocks. Extraction does not execute doctests.
+document nodes. Docstring headings begin below the API page title. Source parsing
+retains code blocks without execution. The command pipeline executes `jldoctest`
+fences with expected-output verification; ordinary Julia fences remain illustrative.
+Unsupported executable directives fail extraction. See the
+[extraction guide](../guide/extraction.md) for the supported native subset.
 Math, footnotes, interpolation, unsupported admonitions, and other Documenter
 directives retain their source visibly with warnings. A docstring that requires
 evaluation remains an opaque document with a warning.

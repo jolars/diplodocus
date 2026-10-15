@@ -52,6 +52,18 @@ h2 { margin-top: 2rem; font-size: 1.5rem; }
 h3 { font-size: 1.15rem; }
 .package { margin: 0 0 1rem; color: var(--muted); font-size: .8rem; }
 pre { padding: 1rem; background: #edf1f0; overflow: auto; border-radius: .3rem; line-height: 1.5; }
+.code-block { min-width: 0; margin: 1rem 0; background: #edf1f0; border-radius: .3rem; }
+.code-block pre { margin: 0; }
+.code-toolbar { display: flex; justify-content: flex-end; align-items: center; gap: .75rem; padding: .4rem .6rem 0; font-size: .75rem; color: var(--muted); }
+.code-toolbar button { flex-shrink: 0; padding: .25rem .6rem; border: 1px solid var(--border); border-radius: .25rem; background: white; color: var(--link); font: inherit; cursor: pointer; }
+.code-toolbar button:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+.copy-buffer { position: fixed; top: 0; left: -10000px; }
+.api-name { margin-top: -1rem; color: var(--muted); }
+.source-links { color: var(--muted); font-size: .8rem; }
+.reference-topics { list-style: none; padding: 0; }
+.reference-topics > li { padding: 1rem 0; border-bottom: 1px solid var(--border); }
+.reference-topics p { margin: .3rem 0 0; }
+.topic-title { font-weight: 650; }
 code { font-family: var(--font-code); font-size: .88em; }
 img { max-width: 100%; height: auto; }
 figure { margin: 1.5rem 0; }

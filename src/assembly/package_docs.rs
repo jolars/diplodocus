@@ -59,7 +59,7 @@ pub(super) fn discover(
         licenses.sort();
         licenses.dedup();
         let mut community = Vec::new();
-        for name in ["CONTRIBUTING.md", "CODE_OF_CONDUCT.md"] {
+        for name in ["CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "CONDUCT.md"] {
             let selected = optional(&package.path, name, repository)?;
             if let Some(path) = match selected {
                 Some(path) => Some(path),
@@ -136,8 +136,8 @@ pub(super) fn assemble(
         let repository = &paths.repositories[package.repository_index];
         for path in selected.paths() {
             let location = repository.source_location(path, None)?;
-            let text = fs::read_to_string(path)?;
-            observe(observed, &location, fingerprint_bytes(text.as_bytes()))?;
+            let bytes = fs::read(path)?;
+            observe(observed, &location, fingerprint_bytes(&bytes))?;
             selections
                 .package_documentation
                 .entry(repository.id.clone())
@@ -152,6 +152,34 @@ pub(super) fn assemble(
             Some(PackageMetadata::R(metadata)) => metadata.description.clone(),
             _ => unreachable!(),
         };
+        let overview_overridden = register_authored_override(
+            workspace,
+            id,
+            PackagePageRole::Overview,
+            repository,
+            selected.readme.iter(),
+        )?;
+        let news_overridden = register_authored_override(
+            workspace,
+            id,
+            PackagePageRole::News,
+            repository,
+            selected.news.iter(),
+        )?;
+        let license_overridden = register_authored_override(
+            workspace,
+            id,
+            PackagePageRole::License,
+            repository,
+            &selected.licenses,
+        )?;
+        let community_overridden = register_authored_override(
+            workspace,
+            id,
+            PackagePageRole::Community,
+            repository,
+            &selected.community,
+        )?;
         for expression in metadata
             .fields
             .get("Authors@R")
@@ -177,7 +205,9 @@ pub(super) fn assemble(
                 )]));
             }
         }
-        if let Some(path) = &selected.news
+        if !news_overridden
+            && let Some(path) = &selected.news
+            && !already_authored(workspace, repository, path)
             && path.extension().is_some_and(|extension| extension == "Rd")
         {
             let parsed = rd_source::parse(fs::read(path)?.as_slice()).map_err(|error| {
@@ -201,28 +231,31 @@ pub(super) fn assemble(
                 )]));
             }
         }
-        let overview = if let Some(path) = selected
-            .readme
-            .as_ref()
-            .filter(|path| !already_authored(workspace, repository, path))
-        {
-            markdown(workspace, id, repository, path, true)?
-        } else {
-            generated(
-                vec![paragraph(
-                    metadata.description.as_deref().unwrap_or(&metadata.title),
-                )],
-                metadata
-                    .description
-                    .clone()
-                    .unwrap_or_else(|| metadata.title.clone()),
-            )
-        };
-        insert(workspace, id, PackagePageRole::Overview, overview);
-        if let Some(path) = selected
-            .news
-            .as_ref()
-            .filter(|path| !already_authored(workspace, repository, path))
+        if !overview_overridden {
+            let overview = if let Some(path) = selected
+                .readme
+                .as_ref()
+                .filter(|path| !already_authored(workspace, repository, path))
+            {
+                markdown(workspace, id, repository, path, true)?
+            } else {
+                generated(
+                    vec![paragraph(
+                        metadata.description.as_deref().unwrap_or(&metadata.title),
+                    )],
+                    metadata
+                        .description
+                        .clone()
+                        .unwrap_or_else(|| metadata.title.clone()),
+                )
+            };
+            insert(workspace, id, PackagePageRole::Overview, overview);
+        }
+        if !news_overridden
+            && let Some(path) = selected
+                .news
+                .as_ref()
+                .filter(|path| !already_authored(workspace, repository, path))
         {
             let document = if path.extension().is_some_and(|extension| extension == "md") {
                 markdown(workspace, id, repository, path, false)?
@@ -231,7 +264,7 @@ pub(super) fn assemble(
             };
             insert(workspace, id, PackagePageRole::News, document);
         }
-        if metadata.license.is_some() || !selected.licenses.is_empty() {
+        if !license_overridden && (metadata.license.is_some() || !selected.licenses.is_empty()) {
             let mut document = generated(Vec::new(), String::new());
             if let Some(license) = &metadata.license {
                 document.document.blocks.push(paragraph(license));
@@ -252,18 +285,20 @@ pub(super) fn assemble(
             }
             insert(workspace, id, PackagePageRole::License, document);
         }
-        let mut community = generated(Vec::new(), String::new());
-        for path in selected
-            .community
-            .iter()
-            .filter(|path| !already_authored(workspace, repository, path))
-            .collect::<Vec<_>>()
-        {
-            let addition = markdown(workspace, id, repository, path, false)?;
-            merge(&mut community, addition, repository);
-        }
-        if !community.document.blocks.is_empty() {
-            insert(workspace, id, PackagePageRole::Community, community);
+        if !community_overridden {
+            let mut community = generated(Vec::new(), String::new());
+            for path in selected
+                .community
+                .iter()
+                .filter(|path| !already_authored(workspace, repository, path))
+                .collect::<Vec<_>>()
+            {
+                let addition = markdown(workspace, id, repository, path, false)?;
+                merge(&mut community, addition, repository);
+            }
+            if !community.document.blocks.is_empty() {
+                insert(workspace, id, PackagePageRole::Community, community);
+            }
         }
         if metadata.fields.contains_key("Authors@R")
             || metadata.fields.contains_key("Author")
@@ -327,6 +362,36 @@ fn authored_override(workspace: &Workspace, id: &str, role: PackagePageRole) -> 
                 });
         matches.then(|| page_id.clone())
     })
+}
+
+fn register_authored_override<'a>(
+    workspace: &mut Workspace,
+    id: &str,
+    role: PackagePageRole,
+    repository: &ResolvedRepositoryPaths,
+    paths: impl IntoIterator<Item = &'a PathBuf>,
+) -> Result<bool, AssemblyError> {
+    let Some(page_id) = authored_override(workspace, id, role) else {
+        return Ok(false);
+    };
+    // Source aliases keep incoming links working without parsing replaced content.
+    let aliases = paths
+        .into_iter()
+        .filter(|path| !already_authored(workspace, repository, path))
+        .map(|path| {
+            repository
+                .source_location(path, None)
+                .map(|source| declaration(&source))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    workspace
+        .pages
+        .get_mut(&page_id)
+        .expect("authored override")
+        .document
+        .provenance
+        .extend(aliases);
+    Ok(true)
 }
 
 pub(super) fn page_id(id: &str, role: PackagePageRole) -> String {
@@ -678,14 +743,18 @@ impl WorkspaceSources {
             let Some(PackageMetadata::R(metadata)) = &self.workspace.packages[&id].metadata else {
                 continue;
             };
+            let news = files.news.as_ref().filter(|path| {
+                path.extension().is_some_and(|extension| extension == "Rd")
+                    && self
+                        .workspace
+                        .pages
+                        .contains_key(&page_id(&id, PackagePageRole::News))
+            });
             let result = native::complete(
                 &id,
                 package,
                 files.citation.as_deref(),
-                files
-                    .news
-                    .as_deref()
-                    .filter(|path| path.extension().is_some_and(|extension| extension == "Rd")),
+                news.map(PathBuf::as_path),
                 &metadata.description.source,
                 deadlines,
                 cancellation,
@@ -728,12 +797,7 @@ impl WorkspaceSources {
                     [&metadata.description.source.path]
                     .clone(),
             }];
-            for path in files.citation.iter().chain(
-                files
-                    .news
-                    .iter()
-                    .filter(|path| path.extension().is_some_and(|extension| extension == "Rd")),
-            ) {
+            for path in files.citation.iter().chain(news) {
                 let repository = &self.paths.repositories[package.repository_index];
                 let source = repository.source_location(path, None)?;
                 inputs.push(InputFingerprint {

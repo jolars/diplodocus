@@ -242,6 +242,71 @@ impl Links<'_> {
                 self.diagnostic_source(source)?;
             }
             match &record.activity {
+                ProvenanceActivity::ApiExamples {
+                    package,
+                    language,
+                    policy,
+                    runtime_version,
+                    package_name,
+                    package_version,
+                    input,
+                    examples,
+                    ..
+                } => {
+                    require(
+                        self.0.packages.get(package).is_some_and(|p| {
+                            p.ecosystem == *language && p.version.as_ref() == Some(package_version)
+                        }) && matches!(language.as_str(), "python" | "julia")
+                            && *policy == format!("{language}-doctest-v1")
+                            && !runtime_version.is_empty()
+                            && !package_name.is_empty()
+                            && !examples.is_empty()
+                            && examples.iter().all(|e| {
+                                e.span.start < e.span.end
+                                    && !e.source.trim().is_empty()
+                                    && match e.outcome.as_str() {
+                                        "executed" | "expected-error" => e.reason.is_none(),
+                                        "explicit-skip" => {
+                                            language == "python"
+                                                && e.reason.as_deref()
+                                                    == Some("doctest +SKIP directive")
+                                                && e.options
+                                                    .get("SKIP")
+                                                    .is_some_and(|v| v == "true")
+                                                && e.actual.is_empty()
+                                        }
+                                        _ => false,
+                                    }
+                            }),
+                        "API example execution provenance",
+                    )?;
+                    self.source(&input.source)?;
+                }
+                ProvenanceActivity::JuliaRuntime {
+                    target,
+                    policy,
+                    julia_version,
+                    package_name,
+                    package_uuid,
+                    package_version,
+                    dependencies,
+                } => {
+                    require(
+                        self.0.packages.get(&target.package).is_some_and(|p| {
+                            p.extraction_targets
+                                .get(&target.target)
+                                .is_some_and(|t| t.extractor == "julia")
+                        }) && policy == "julia-runtime-v1"
+                            && !julia_version.is_empty()
+                            && !package_name.is_empty()
+                            && !package_uuid.is_empty()
+                            && !package_version.is_empty()
+                            && !dependencies.is_empty()
+                            && record.source.is_none()
+                            && record.span.is_none(),
+                        "Julia runtime provenance",
+                    )?;
+                }
                 ProvenanceActivity::RMarkdown {
                     package,
                     policy,
@@ -468,7 +533,9 @@ impl Links<'_> {
                 }
             }
             ItemLanguageData::R(data) => match &data.declaration {
-                RDeclaration::Dataset
+                RDeclaration::Constant
+                | RDeclaration::DeprecatedTopic
+                | RDeclaration::Dataset
                 | RDeclaration::Function
                 | RDeclaration::Constructor { .. } => Ok(()),
                 RDeclaration::S3Generic {
@@ -571,6 +638,33 @@ impl Links<'_> {
             )?;
         }
         for record in &document.provenance {
+            if let ProvenanceActivity::ApiExamples {
+                input,
+                examples,
+                language,
+                ..
+            } = &record.activity
+            {
+                let raw = document
+                    .raw_source
+                    .as_deref()
+                    .ok_or(SnapshotError::Invalid("API example source"))?;
+                require(
+                    matches!(&document.source_format, DocumentFormat::Extracted { name }
+                        if (language == "python" && name == "numpy-docstring")
+                            || (language == "julia" && name == "julia-markdown"))
+                        && document.source_location.as_ref() == Some(&input.source)
+                        && crate::provenance::fingerprint_bytes(raw.as_bytes())
+                            == input.fingerprint
+                        && examples
+                            .iter()
+                            .all(|e| raw.get(e.span.start..e.span.end).is_some())
+                        && examples
+                            .windows(2)
+                            .all(|pair| pair[0].span.end <= pair[1].span.start),
+                    "API example source association",
+                )?;
+            }
             if let ProvenanceActivity::RdExamples {
                 input,
                 package,

@@ -21,6 +21,8 @@ mod bindings;
 mod declarations;
 #[path = "surface/exports.rs"]
 mod exports;
+#[path = "surface/signatures.rs"]
+mod signatures;
 use bindings::Binding;
 
 /// Reconciled items and unprocessed documentation keyed by canonical item ID.
@@ -462,6 +464,7 @@ pub fn reconcile(package: &ParsedPythonPackage) -> PythonSurface {
             normalize_evidence(&mut alias.sources);
         }
     }
+    signatures::resolve(&mut builder.items, &builder.registry);
     builder.diagnostics.sort();
     builder.diagnostics.dedup();
     PythonSurface {

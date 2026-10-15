@@ -64,6 +64,22 @@ maps behavior to fixtures. The real Python and R kernel tests run through the
 devenv environment. The [browser workflow](../development/browser.md) covers
 site and preview checks.
 
+## Python and Julia API doctests
+
+The adapters in `src/assembly/api_examples.rs`, `api_examples.py`, and
+`api_examples.jl` execute recognized API doctests during extraction. Python uses
+the standard library runner and defining module globals. Julia uses supervised
+native sessions with REPL and script comparison, named block scopes, and
+block-level setup and teardown. Both verify the loaded checkout, retain literal
+results and actual runtime observations as `ApiExamples` provenance, and prevent
+publication after mismatches or unexpected errors. There is no API execution cache.
+
+Source assembly remains static for parser and snapshot component tests. The
+command pipeline runs the adapters before constructing the completed snapshot.
+`tests/api_examples.rs` covers state, expected errors, explicit Python skips,
+missing prerequisites, failure preservation, overview rendering, and generation
+after removing the checkout and runtime environment.
+
 ## R help-topic examples
 
 R examples run through the native helper in `src/assembly/rd_examples.rs` and

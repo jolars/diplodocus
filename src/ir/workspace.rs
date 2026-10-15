@@ -23,9 +23,9 @@ use super::{
 };
 
 /// Current portable workspace schema version.
-pub const WORKSPACE_SCHEMA_VERSION: u32 = 3;
+pub const WORKSPACE_SCHEMA_VERSION: u32 = 5;
 
-/// The supported schema version, serialized as the integer `3`.
+/// The supported schema version, serialized as the integer `5`.
 ///
 /// Deserialization rejects unsupported versions instead of interpreting another
 /// schema as this one. The workspace version field is required even though a
@@ -335,6 +335,10 @@ impl Item {
     /// Whether the declaration belongs in public navigation and search.
     pub fn discoverable(&self) -> bool {
         !matches!(&self.language_data, Some(super::ItemLanguageData::R(data)) if data.internal)
+            && !matches!(&self.language_data, Some(super::ItemLanguageData::Python(data))
+            if matches!(&data.declaration, super::PythonDeclaration::Callable {
+                role: super::PythonCallableRole::Overload { .. }, ..
+            }))
     }
 }
 

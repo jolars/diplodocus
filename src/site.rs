@@ -39,6 +39,7 @@ pub struct Site<'a> {
     pub(crate) logo: Option<&'a AssetReference>,
     pub(crate) pages: BTreeMap<String, PageModel<'a>>,
     pub(crate) routes: BTreeMap<DocumentIdentity, String>,
+    pub(crate) overload_anchors: BTreeMap<ItemReference, String>,
     pub(crate) assets: &'a BTreeMap<String, ContentAsset>,
     pub(crate) base_url: Option<url::Url>,
     pub(crate) canonical_urls: BTreeMap<String, String>,
@@ -54,6 +55,7 @@ pub(crate) struct PageModel<'a> {
     pub item: Option<&'a Item>,
     pub concept: Option<&'a Concept>,
     pub visible: bool,
+    pub reference_index: bool,
 }
 impl PageModel<'_> {
     fn empty(title: String, owner: Option<String>, visible: bool) -> Self {
@@ -68,6 +70,7 @@ impl PageModel<'_> {
             item: None,
             concept: None,
             visible,
+            reference_index: false,
         }
     }
 }
@@ -83,6 +86,7 @@ impl<'a> Site<'a> {
             logo: snapshot.logo(),
             pages: BTreeMap::new(),
             routes: BTreeMap::new(),
+            overload_anchors: BTreeMap::new(),
             assets: snapshot.assets(),
             base_url: snapshot
                 .presentation()
@@ -178,6 +182,19 @@ impl<'a> Site<'a> {
             site.routes.insert(identity, route);
         }
         for (id, package) in &workspace.packages {
+            let private_modules: Vec<_> = package
+                .items
+                .values()
+                .filter(|item| {
+                    item.kind == ItemKind::Module
+                        && item
+                            .qualified_name
+                            .split('.')
+                            .skip(1)
+                            .any(|part| part.starts_with('_'))
+                })
+                .map(|item| item.qualified_name.as_str())
+                .collect();
             let base = format!("packages/{}", package.slug);
             let route = format!("{base}/index.html");
             if !site.pages.contains_key(&route) {
@@ -190,6 +207,23 @@ impl<'a> Site<'a> {
                     ),
                 )?;
             }
+            let r_routes = if package.ecosystem == "r" {
+                let reference = format!("{base}/reference/index.html");
+                if package.items.values().any(Item::discoverable)
+                    && !site.pages.contains_key(&reference)
+                {
+                    let mut model = PageModel::empty(
+                        "Reference".into(),
+                        Some(id.clone()),
+                        package.visibility != PackageVisibility::Hidden,
+                    );
+                    model.reference_index = true;
+                    site.insert(reference, model)?;
+                }
+                crate::rendering::r_topics::routes(package)
+            } else {
+                BTreeMap::new()
+            };
             for (item_id, item) in &package.items {
                 let identity = DocumentIdentity::Item {
                     item: ItemReference {
@@ -197,11 +231,33 @@ impl<'a> Site<'a> {
                         item: item_id.clone(),
                     },
                 };
-                let route = format!(
-                    "{base}/reference/{}.html",
-                    crate::provenance::fingerprint_bytes(item_id.as_bytes()).value
-                );
-                let title = if package.ecosystem == "julia" && item.kind == ItemKind::Method {
+                if let Some(family) = python_overload_family(item) {
+                    site.routes.insert(
+                        identity,
+                        format!(
+                            "packages/{}/reference/{}.html",
+                            workspace.packages[&family.package].slug,
+                            crate::provenance::fingerprint_bytes(family.item.as_bytes()).value
+                        ),
+                    );
+                    site.overload_anchors.insert(
+                        ItemReference {
+                            package: id.clone(),
+                            item: item_id.clone(),
+                        },
+                        python_overload_anchor(item_id),
+                    );
+                    continue;
+                }
+                let route = r_routes.get(item_id).cloned().unwrap_or_else(|| {
+                    format!(
+                        "{base}/reference/{}.html",
+                        crate::provenance::fingerprint_bytes(item_id.as_bytes()).value
+                    )
+                });
+                let title = if package.ecosystem == "python" {
+                    python_display_name(item, &private_modules).to_owned()
+                } else if package.ecosystem == "julia" && item.kind == ItemKind::Method {
                     item.signatures
                         .first()
                         .map(|signature| {
@@ -211,6 +267,9 @@ impl<'a> Site<'a> {
                                 "julia",
                             )
                         })
+                        .unwrap_or_else(|| item.qualified_name.clone())
+                } else if package.ecosystem == "r" {
+                    crate::rendering::r_topics::page_title(item)
                         .unwrap_or_else(|| item.qualified_name.clone())
                 } else {
                     item.qualified_name.clone()
@@ -312,6 +371,10 @@ impl<'a> Site<'a> {
     pub(crate) fn target(&self, from: &str, target: &ReferenceTarget) -> Result<String, SiteError> {
         let (route, fragment) = match target {
             ReferenceTarget::External { url } => return Ok(url.clone()),
+            ReferenceTarget::Repository { .. } => {
+                return crate::validation::repository_target_url(self.workspace, target)
+                    .ok_or(SiteError::Evidence);
+            }
             ReferenceTarget::Anchor { fragment } => return Ok(format!("#{}", encode(fragment))),
             ReferenceTarget::Page { page, fragment } => (
                 self.routes
@@ -325,7 +388,7 @@ impl<'a> Site<'a> {
                     .get(&DocumentIdentity::Item { item: item.clone() })
                     .ok_or(SiteError::Evidence)?
                     .clone(),
-                None,
+                self.overload_anchors.get(item).map(String::as_str),
             ),
             ReferenceTarget::Asset { asset, fragment } => (
                 self.asset_route(&asset.fingerprint.value)?,
@@ -351,20 +414,64 @@ impl<'a> Site<'a> {
     }
 }
 
+fn python_overload_family(item: &Item) -> Option<&ItemReference> {
+    if let Some(ItemLanguageData::Python(data)) = &item.language_data
+        && let PythonDeclaration::Callable {
+            role: PythonCallableRole::Overload { family },
+            ..
+        } = &data.declaration
+    {
+        Some(family)
+    } else {
+        None
+    }
+}
+
+fn python_display_name<'a>(item: &'a Item, private_modules: &[&str]) -> &'a str {
+    std::iter::once(item.qualified_name.as_str())
+        .chain(
+            item.aliases
+                .iter()
+                .filter(|alias| alias.kind == ItemAliasKind::PythonReexport)
+                .map(|alias| alias.qualified_name.as_str()),
+        )
+        .min_by_key(|name| {
+            // Class and constructor names may start with underscores even on
+            // an explicitly exported API, so only source module paths rank lower.
+            let private = private_modules.iter().any(|module| {
+                *name == *module
+                    || name
+                        .strip_prefix(*module)
+                        .is_some_and(|suffix| suffix.starts_with('.'))
+            });
+            (
+                private,
+                name.split('.').count(),
+                *name != item.qualified_name.as_str(),
+                *name,
+            )
+        })
+        .expect("the canonical name is always a candidate")
+}
+
+pub(crate) fn python_overload_anchor(item_id: &str) -> String {
+    format!(
+        "overload-{}",
+        crate::provenance::fingerprint_bytes(item_id.as_bytes()).value
+    )
+}
+
 fn encode_url_path(path: &str) -> String {
+    path.split('/').map(encode).collect::<Vec<_>>().join("/")
+}
+
+pub(crate) fn encode(value: &str) -> String {
     const SEGMENT: &percent_encoding::AsciiSet = &percent_encoding::NON_ALPHANUMERIC
         .remove(b'-')
         .remove(b'_')
         .remove(b'.')
         .remove(b'~');
-    path.split('/')
-        .map(|segment| percent_encoding::utf8_percent_encode(segment, SEGMENT).to_string())
-        .collect::<Vec<_>>()
-        .join("/")
-}
-
-pub(crate) fn encode(value: &str) -> String {
-    percent_encoding::utf8_percent_encode(value, percent_encoding::NON_ALPHANUMERIC).to_string()
+    percent_encoding::utf8_percent_encode(value, SEGMENT).to_string()
 }
 pub(crate) fn relative_url(from: &str, to: &str) -> String {
     let a: Vec<_> = from.split('/').collect();
@@ -383,4 +490,67 @@ pub(crate) fn relative_url(from: &str, to: &str) -> String {
             .join("/"),
     );
     result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn overload_references_target_signatures_on_the_family_page() {
+        let root = tempfile::tempdir().unwrap();
+        let fixture = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("tests/fixtures/python-overloads");
+        for path in [
+            "diplodocus.toml",
+            "python/pyproject.toml",
+            "python/demo/__init__.py",
+            "python/demo/_api.py",
+            "python/demo/native.pyi",
+        ] {
+            let destination = root.path().join(path);
+            std::fs::create_dir_all(destination.parent().unwrap()).unwrap();
+            std::fs::copy(fixture.join(path), destination).unwrap();
+        }
+        let sources =
+            crate::assembly::assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+        let resolved = crate::validation::resolve_workspace(&sources).unwrap();
+        let snapshot = Snapshot::from_sources(&sources, &resolved).unwrap();
+        let site = Site::new(&snapshot).unwrap();
+        let rendered = crate::rendering::render_site(&site).unwrap();
+        for (id, item) in &site.workspace.packages["python"].items {
+            let Some(family) = python_overload_family(item) else {
+                continue;
+            };
+            let reference = ItemReference {
+                package: "python".into(),
+                item: id.clone(),
+            };
+            let route = &site.routes[&DocumentIdentity::Item {
+                item: family.clone(),
+            }];
+            let target = site
+                .target("index.html", &ReferenceTarget::Item { item: reference })
+                .unwrap();
+            let (destination, fragment) = target.split_once('#').unwrap();
+            assert_eq!(destination, relative_url("index.html", route));
+            let html = std::str::from_utf8(&rendered.files()[route].bytes).unwrap();
+            let fragment = percent_encoding::percent_decode_str(fragment)
+                .decode_utf8()
+                .unwrap();
+            assert!(html.contains(&format!("id=\"{fragment}\"")));
+            assert!(
+                !site
+                    .target(
+                        "index.html",
+                        &ReferenceTarget::Item {
+                            item: family.clone()
+                        }
+                    )
+                    .unwrap()
+                    .contains('#')
+            );
+        }
+        assert_eq!(site.overload_anchors.len(), 7);
+    }
 }

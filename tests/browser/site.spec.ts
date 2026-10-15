@@ -1,7 +1,6 @@
 import { expect, test as base, type Page, type TestInfo } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
-import { createHash } from "node:crypto";
 
 const test = base.extend<{ browserErrors: string[] }>({
   baseURL: async ({}, use) => {
@@ -129,6 +128,26 @@ test("navbar logo loads on nested pages and links home", async ({ page }, info) 
   await capture(page, info, "navbar-logo");
 });
 
+test("discovered community links preserve repository and site destinations", async ({ page }, info) => {
+  await page.goto("/packages/r/community.html");
+  const main = page.getByRole("main");
+  await expect(main.getByRole("heading", { level: 1 })).toHaveText("Community");
+  for (const [label, path] of [
+    ["specification", "spec/README.md#contract"],
+    ["trust policy", "TRUST.md"],
+    ["operations guide", "OPERATIONS.md"],
+  ]) {
+    await expect(main.getByRole("link", { name: label, exact: true }))
+      .toHaveAttribute("href", `https://github.com/jolars/diplodocus/blob/main/${path}`);
+  }
+  await expect(main.getByRole("link", { name: "documentation", exact: true }))
+    .toHaveAttribute("href", "../../index.html");
+  await fitsViewport(page);
+  await capture(page, info, "r-community");
+  await main.getByRole("link", { name: "documentation", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Tiny Stats");
+});
+
 test("footer identifies the docs and exposes project, license, and generator links", async ({ page }, info) => {
   for (const path of ["/", "/guides/comparing-predictions.html", "/packages/r/"]) {
     await page.goto(path);
@@ -176,6 +195,38 @@ test("search finds all three APIs and follows a result", async ({ page }) => {
   await expect(results.getByRole("link", { name: "TinyStats.mean_squared_error · Tiny Stats for Julia", exact: true })).toBeVisible();
   await python.click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("tinystats.mean_squared_error");
+});
+
+test("Python overloads have one searchable page with every signature", async ({ page }, info) => {
+  await page.goto("/");
+  await page.getByRole("searchbox").fill("fetch_data");
+  const result = page.locator("#search-results").getByRole("link", {
+    name: "tinystats.fetch_data · Tiny Stats for Python", exact: true,
+  });
+  await expect(result).toHaveCount(1);
+  await result.click();
+  const main = page.getByRole("main");
+  await expect(main.getByRole("heading", { level: 1 })).toHaveText("tinystats.fetch_data");
+  await expect(main).toContainText("Retrieve one dataset, optionally returning its metadata.");
+  const signatures = main.locator('[id^="overload-"]');
+  await expect(signatures).toHaveCount(3);
+  await expect(signatures.nth(0)).toContainText("Literal[False]");
+  await expect(signatures.nth(1)).toContainText("Literal[True]");
+  await expect(signatures.nth(2)).toContainText("return_info: bool");
+  await openNavigation(page, info);
+  const reference = page.getByRole("group", { name: "API reference", exact: true });
+  await expect(reference.getByRole("link", { name: "fetch_data", exact: true })).toHaveCount(1);
+  await fitsViewport(page);
+  await capture(page, info, "python-overloads");
+  const destination = page.url();
+  await page.getByRole("searchbox").fill("tinystats._api.fetch_data");
+  const canonicalResult = page.locator("#search-results").getByRole("link", {
+    name: "tinystats.fetch_data · Tiny Stats for Python", exact: true,
+  });
+  await expect(canonicalResult).toHaveCount(1);
+  await canonicalResult.click();
+  await expect(page).toHaveURL(destination);
+  await capture(page, info, "python-public-reexport-search");
 });
 
 test("R package overview exposes metadata and supporting documentation", async ({ page }, info) => {
@@ -237,10 +288,8 @@ test("internal R helpers and grid hooks remain addressable but undiscoverable", 
     await page.getByRole("searchbox").fill(name);
     await expect(page.locator("#search-results").getByRole("link")).toHaveCount(0);
   }
-  const item = "sid1:r:function:setup_gpar";
-  const route = createHash("sha256").update(item).digest("hex");
-  await page.goto(`/packages/r/reference/${route}.html`);
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("setup_gpar");
+  await page.goto("/packages/r/reference/setup_gpar.html");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Internal helper");
   await expect(page.getByRole("main")).toContainText("Prepare parameters.");
   await fitsViewport(page);
   await capture(page, info, "r-internal-helper");
@@ -256,13 +305,13 @@ for (const [name, format, source] of [
     await page.goto("/packages/r/");
     await page.getByRole("searchbox").fill(name!);
     await page.locator("#search-results").getByRole("link", { name: `${name} · Tiny Stats for R`, exact: true }).click();
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText(name!);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText({ fruits: "Fruits", organisms: "Organisms", pain: "Pain distribution data", plants: "Plants" }[name!]);
     const main = page.getByRole("main");
     await expect(main.getByRole("heading", { name: "Usage", exact: true })).toBeVisible();
     await expect(main.getByRole("heading", { name: "Format", exact: true })).toBeVisible();
     await expect(main).toContainText(format!);
     await expect(main).not.toContainText(`${name}()`);
-    await expect(main.locator("pre code")).toHaveText([name!, name!]);
+    await expect(main.locator("pre code")).toHaveText([name!]);
     if (source) {
       await expect(main.getByRole("heading", { name: "Source", exact: true })).toBeVisible();
       await expect(main).toContainText(source);
@@ -349,14 +398,14 @@ test("equivalent APIs link in both directions", async ({ page }, info) => {
   await expect(sameApi.getByRole("link")).toHaveCount(2);
   await expect(sameApi.locator("code")).toHaveText(["TinyStats.mean_squared_error", "mean_squared_error"]);
   await sameApi.getByRole("link", { name: "Tiny Stats for R: mean_squared_error", exact: true }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "mean_squared_error", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Mean squared error", exact: true })).toBeVisible();
   await fitsViewport(page);
   await expect(page.getByRole("main")).toContainText("[1] 0.5");
   const figure = page.getByRole("main").getByRole("img", { name: "Example figure", exact: true });
   await expect(figure).toBeVisible();
   await expect(figure).toHaveJSProperty("complete", true);
   expect(await figure.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
-  await expect(figure).toHaveAttribute("src", /assets\/[a-f0-9]{64}(?:\.|%2E)png$/);
+  await expect(figure).toHaveAttribute("src", /assets\/[a-f0-9]{64}\.png$/);
   await capture(page, info, "r-api");
   await page.getByRole("link", { name: "Tiny Stats for Python: tinystats.mean_squared_error", exact: true }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("tinystats.mean_squared_error");
@@ -490,7 +539,7 @@ test("structured Rd renders math, tables, sections, and help labels", async ({ p
   const link = page.getByRole("navigation", { name: "Documentation" }).getByRole("link", { name: "rd_content", exact: true });
   await openNavigation(page, info);
   await link.click();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("rd_content");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Structured R documentation");
   await expect(page.locator(".math-display .katex")).toHaveCount(4);
   await expect(page.locator(".math:not(.math-display) .katex")).toHaveCount(2);
   await expect(page.locator(".katex-mathml math")).toHaveCount(6);
@@ -545,25 +594,96 @@ test("shared R topics retain all usages and navigate methods by class", async ({
   await page.evaluate(() => window.scrollTo(0, 0));
   await capture(page, info, "r-shared-generic");
   await methods.getByRole("link", { name: "fit.model", exact: true }).click();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("fit.model");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Fit a Model");
   await expect(main.locator("pre code")).toHaveCount(3);
   await expect(main).toContainText("Response values for the default method.");
   await fitsViewport(page);
   await capture(page, info, "r-shared-method");
   await main.getByRole("link", { name: "model-fitting", exact: true }).click();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("fit");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Fit a Model");
   await main.getByRole("link", { name: "eulergram-compose", exact: true }).click();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("|.eulergram");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Compose Euler Diagrams");
   await expect(main.locator("pre code").nth(0)).toHaveText("`|.eulergram`(e1, e2)");
   await expect(main.locator("pre code").nth(1)).toHaveText("`/.eulergram`(e1, e2)");
   await expect(methods.getByRole("heading", { name: "Class eulergram", exact: true })).toBeVisible();
   await fitsViewport(page);
   await capture(page, info, "r-shared-operators");
   await methods.getByRole("link", { name: "/.eulergram", exact: true }).click();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("/.eulergram");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Compose Euler Diagrams");
   await expect(main.locator("pre code").nth(0)).toHaveText("`|.eulergram`(e1, e2)");
 });
 
+test("R references show descriptions, summaries, readable URLs, and source links", async ({ page }, info) => {
+  await page.goto("/packages/r/reference/index.html");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Reference");
+  const topics = page.locator(".reference-topics");
+  await expect(topics.getByRole("link", { name: "fit", exact: true })).toHaveCount(1);
+  await expect(topics.getByRole("link", { name: "fit.model", exact: true })).toHaveCount(0);
+  await expect(topics).toContainText("Fit a model with class-specific arguments.");
+  await expect(topics).not.toContainText("setup_gpar");
+  await fitsViewport(page);
+  await capture(page, info, "r-reference-index");
+  await topics.getByRole("link", { name: "mean_squared_error", exact: true }).click();
+  await expect(page).toHaveURL(/\/reference\/mean_squared_error\.html$/);
+  await expect(page).toHaveTitle("Mean squared error · Tiny Stats");
+  const main = page.getByRole("main");
+  await expect(main.getByRole("heading", { level: 1 })).toHaveText("Mean squared error");
+  await expect(main.locator(".api-name code")).toHaveText("mean_squared_error");
+  await expect(main.locator("pre code").first()).toHaveText("mean_squared_error(actual, predicted)");
+  const description = main.getByText("Compute the mean squared difference between observations and predictions.", { exact: true });
+  const usage = main.getByRole("heading", { name: "Usage", exact: true });
+  expect((await description.boundingBox())!.y).toBeLessThan((await usage.boundingBox())!.y);
+  await expect(main.locator(".source-links a")).toHaveCount(2);
+  await expect(main.locator(".source-links").getByRole("link", { name: "r/man/mean_squared_error.Rd", exact: true })).toHaveAttribute("href", "https://github.com/jolars/diplodocus/blob/main/r/man/mean_squared_error.Rd");
+  await expect(main.locator("pre.syntax-code").first().locator('span[class^="syntax-"]').first()).toBeVisible();
+  await fitsViewport(page);
+});
+
+test("copy buttons preserve highlighted code and support keyboard and fallback copying", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.goto("/packages/r/reference/mean_squared_error.html");
+  const block = page.getByRole("main").locator(".code-block").first();
+  const source = await block.locator("pre code").textContent();
+  const copy = block.getByRole("button", { name: "Copy code", exact: true });
+  await copy.focus();
+  await page.keyboard.press("Enter");
+  await expect(block.getByRole("status")).toHaveText("Copied");
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(source);
+
+  await page.evaluate(async () => {
+    await navigator.clipboard.writeText("Before fallback copying");
+    navigator.clipboard.writeText = async () => { throw new Error("Clipboard permission denied"); };
+  });
+  await copy.click();
+  await expect(block.getByRole("status")).toHaveText("Copied");
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(source);
+  await expect(copy).toBeFocused();
+  await expect(page.locator(".copy-buffer")).toHaveCount(0);
+
+  await page.evaluate(() => { document.execCommand = () => false; });
+  await copy.click();
+  await expect(block.getByRole("status")).toHaveText("Unable to copy. Select the code to copy it.");
+  await expect(block.locator("pre code")).toHaveText(source!);
+});
+
+
+test("Tiny Stats vignette evaluates predictions", async ({ page }, info) => {
+  await page.goto("/packages/r/");
+  await page.getByRole("main").getByRole("link", { name: "R vignette", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Evaluating predictions in R");
+  const main = page.getByRole("main");
+  await expect(main).toContainText("The mean squared error is 1, and the mean absolute error is 0.5");
+  await expect(main.locator("table tr")).toHaveCount(6);
+  await expect(main.locator(".katex")).toHaveCount(1);
+  await expect(main.locator("figure figcaption")).toHaveText("The last prediction accounts for all of the error.");
+  const image = main.getByRole("img", { name: "Three residuals are zero; the residual for observed value four is minus two." });
+  await expect(image).toBeVisible();
+  expect(await image.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBeGreaterThan(0);
+  await fitsViewport(page);
+  await capture(page, info, "r-tinystats-vignette");
+  await main.getByRole("link", { name: "Choosing a metric", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Choosing a metric");
+});
 
 test("R Markdown articles render collected results", async ({ page }, info) => {
   await page.goto("/packages/r/vignettes/article.html");

@@ -24,6 +24,7 @@ pub(super) struct Topic {
     name: String,
     pub(super) package: bool,
     pub(super) dataset: bool,
+    deprecated: bool,
     pub(super) aliases: Vec<String>,
     pub(super) internal: bool,
     parts: Vec<Part>,
@@ -34,7 +35,15 @@ pub(super) struct Topic {
     pub(super) uses_r: bool,
 }
 
+impl Topic {
+    pub(super) fn has_value_usage(&self) -> bool {
+        self.usages.is_empty() || self.usages.iter().any(|usage| usage.arguments.is_none())
+    }
+}
+
 enum Part {
+    Title(Box<Block>),
+    Introduction(Vec<Block>),
     Blocks(Vec<Block>),
     Usage,
     Arguments(Vec<(Vec<String>, ListItem)>),
@@ -157,6 +166,8 @@ pub(super) fn parse(
         .as_ref()
         .is_some_and(|kind| kind.trim() == "package");
     let dataset = doc_type.as_ref().is_some_and(|kind| kind.trim() == "data");
+    let deprecated = (name.ends_with("_deprecated") || name.ends_with("-deprecated"))
+        && document.inspect_usage().ok().flatten().is_none();
     let internal = !package
         && document.nodes().iter().any(|node| {
             matches!(node, RdNode::Tagged(tagged) if *tagged.tag() == RdTag::Keyword
@@ -257,14 +268,14 @@ pub(super) fn parse(
                 }
             }
             RdTag::Arguments => parts.push(Part::Arguments(arguments.clone())),
-            RdTag::Title => parts.push(Part::Blocks(vec![Block::Heading {
+            RdTag::Title => parts.push(Part::Title(Box::new(Block::Heading {
                 level: 2,
                 attributes: Attributes::default(),
                 inlines: context.inlines(tagged.children(), &path),
                 span: context.span(),
-            }])),
+            }))),
             RdTag::Description => {
-                parts.push(Part::Blocks(context.blocks(tagged.children(), &path)))
+                parts.push(Part::Introduction(context.blocks(tagged.children(), &path)))
             }
             RdTag::Details
             | RdTag::Value
@@ -316,6 +327,7 @@ pub(super) fn parse(
         name: name.trim().into(),
         package,
         dataset,
+        deprecated,
         internal,
         aliases,
         parts,
@@ -367,7 +379,21 @@ impl Context<'_> {
         let mut result = vec![];
         let mut paragraph = vec![];
         let mut line_has_content = false;
-        for (index, node) in nodes.iter().enumerate() {
+        // Bare braces group Rd content without creating a paragraph boundary.
+        fn ungroup<'a>(nodes: &'a [RdNode], output: &mut Vec<&'a RdNode>) {
+            for node in nodes {
+                match node {
+                    RdNode::Group(group) => ungroup(group.children(), output),
+                    RdNode::Tagged(tagged) if tagged.tag().as_rd_tag() == "LIST" => {
+                        ungroup(tagged.children(), output);
+                    }
+                    _ => output.push(node),
+                }
+            }
+        }
+        let mut content = vec![];
+        ungroup(nodes, &mut content);
+        for (index, node) in content.into_iter().enumerate() {
             let child_path = path.with_child(index);
             if let RdNode::Text(text) = node {
                 let text = text.replace("\r\n", "\n");
@@ -401,6 +427,10 @@ impl Context<'_> {
                     RdTag::Itemize | RdTag::Enumerate | RdTag::Describe => {
                         flush(&mut result, &mut paragraph, self.span());
                         line_has_content = false;
+                        if tagged.tag() == &RdTag::Describe && tagged.option().is_none() {
+                            result.extend(self.describe_blocks(tagged, &child_path));
+                            continue;
+                        }
                         match tagged.inspect_list(&child_path) {
                             Ok(list) => {
                                 let mut items = vec![];
@@ -666,7 +696,10 @@ impl Context<'_> {
         }
         let mut result = vec![];
         for expr in parsed.cst.children_with_tokens().filter_map(Expr::cast) {
-            if dataset {
+            if matches!(&expr, Expr::Name(name) if !name.is_reserved_constant())
+                || matches!(&expr, Expr::StringLiteral(name) if name.is_backtick())
+                || dataset
+            {
                 let bare = matches!(&expr, Expr::Name(name) if !name.is_reserved_constant())
                     || matches!(&expr, Expr::StringLiteral(name) if name.is_backtick());
                 if let Some(name) = bare.then(|| source::static_name(&expr)).flatten() {
@@ -766,8 +799,16 @@ pub(super) fn attach(
     if !namespace.valid {
         return;
     }
-    for topic in topics.iter().filter(|topic| topic.valid && topic.dataset) {
-        let identity = SemanticIdentity::r_dataset(&topic.name).expect("static topic name");
+    for topic in topics
+        .iter()
+        .filter(|topic| topic.valid && (topic.dataset || topic.deprecated))
+    {
+        let identity = if topic.dataset {
+            SemanticIdentity::r_dataset(&topic.name)
+        } else {
+            SemanticIdentity::r_deprecated_topic(&topic.name)
+        }
+        .expect("static topic name");
         let id = identity.item_id().to_owned();
         if items.contains_key(&id) {
             continue;
@@ -783,6 +824,10 @@ pub(super) fn attach(
                             .any(|alias| alias.qualified_name == *name)
                 })
         }) {
+            // Existing deprecated functions keep their maintained identities.
+            if topic.deprecated {
+                continue;
+            }
             diagnostics.push(diagnostic(
                 DiagnosticCode::RConflictingSurface,
                 Severity::Error,
@@ -797,7 +842,11 @@ pub(super) fn attach(
         items.insert(
             id,
             Item {
-                kind: ItemKind::Constant,
+                kind: if topic.dataset {
+                    ItemKind::Constant
+                } else {
+                    ItemKind::Namespace
+                },
                 name: topic.name.clone(),
                 qualified_name: topic.name.clone(),
                 language_data: Some(ItemLanguageData::R(RItemData {
@@ -806,7 +855,11 @@ pub(super) fn attach(
                         .any(|name| namespace.exports.contains_key(name)),
                     internal: topic.internal,
                     help_topic: None,
-                    declaration: RDeclaration::Dataset,
+                    declaration: if topic.dataset {
+                        RDeclaration::Dataset
+                    } else {
+                        RDeclaration::DeprecatedTopic
+                    },
                 })),
                 aliases: topic
                     .aliases
@@ -821,17 +874,21 @@ pub(super) fn attach(
                         }],
                     })
                     .collect(),
-                signatures: vec![SourcedSignature {
-                    signature: Signature::Value {
-                        annotation: None,
-                        value: None,
-                    },
-                    sources: vec![SourceEvidence {
-                        source: topic.source.clone(),
-                        role: SourceRole::Documentation,
-                        parsers: BTreeSet::from(["rd-source".into(), "rd-ast".into()]),
-                    }],
-                }],
+                signatures: if topic.deprecated {
+                    vec![]
+                } else {
+                    vec![SourcedSignature {
+                        signature: Signature::Value {
+                            annotation: None,
+                            value: None,
+                        },
+                        sources: vec![SourceEvidence {
+                            source: topic.source.clone(),
+                            role: SourceRole::Documentation,
+                            parsers: BTreeSet::from(["rd-source".into(), "rd-ast".into()]),
+                        }],
+                    }]
+                },
                 documentation: None,
                 source_location: Some(topic.source.clone()),
                 children: vec![],
@@ -902,7 +959,8 @@ pub(super) fn attach(
             .parts
             .iter()
             .filter_map(|part| match part {
-                Part::Blocks(blocks) => Some(blocks.clone()),
+                Part::Title(title) => Some(vec![title.as_ref().clone()]),
+                Part::Introduction(blocks) | Part::Blocks(blocks) => Some(blocks.clone()),
                 _ => None,
             })
             .flatten()
@@ -949,7 +1007,7 @@ pub(super) fn attach(
     }
     let mut names = BTreeMap::<String, String>::new();
     for (id, item) in items.iter() {
-        if item.kind == ItemKind::Namespace {
+        if item.kind == ItemKind::Namespace && item.language_data.is_none() {
             continue;
         }
         names.insert(item.qualified_name.clone(), id.clone());
@@ -1087,7 +1145,7 @@ pub(super) fn attach(
         }
     }
     for (id, item) in items {
-        if item.kind == ItemKind::Namespace {
+        if item.kind == ItemKind::Namespace && item.language_data.is_none() {
             continue;
         }
         let Some(candidates) = candidates.get(id) else {
@@ -1179,8 +1237,21 @@ pub(super) fn attach(
             }
         }
         let mut blocks = vec![];
+        // Rd generators often place the description after usage and arguments.
+        // Readers need the topic's purpose before its calling conventions.
+        for part in &topic.parts {
+            if let Part::Title(title) = part {
+                blocks.push(title.as_ref().clone());
+            }
+        }
+        for part in &topic.parts {
+            if let Part::Introduction(content) = part {
+                blocks.extend(content.clone());
+            }
+        }
         for part in &topic.parts {
             match part {
+                Part::Title(_) | Part::Introduction(_) => {}
                 Part::Blocks(content) => blocks.extend(content.clone()),
                 Part::Usage if !topic.usages.is_empty() => {
                     blocks.push(heading("Usage", span));
@@ -1231,7 +1302,7 @@ pub(super) fn attach(
 
 fn usage_matches(usage: &Usage, item: &Item, names: &BTreeMap<String, String>, id: &str) -> bool {
     let dataset = matches!(&item.language_data,
-        Some(ItemLanguageData::R(data)) if matches!(data.declaration, RDeclaration::Dataset));
+        Some(ItemLanguageData::R(data)) if matches!(data.declaration, RDeclaration::Dataset | RDeclaration::Constant));
     if dataset != usage.arguments.is_none() {
         return false;
     }

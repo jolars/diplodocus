@@ -3269,7 +3269,10 @@
             "returns": {
               "kind": "name",
               "name": "foo.model.FooModel",
-              "target": null
+              "target": {
+                "item": "sid1:python:class:foo.model.FooModel",
+                "package": "pyfoo"
+              }
             }
           },
           "sources": [
@@ -3419,12 +3422,18 @@
                 {
                   "kind": "name",
                   "name": "foo.model.FooModel",
-                  "target": null
+                  "target": {
+                    "item": "sid1:python:class:foo.model.FooModel",
+                    "package": "pyfoo"
+                  }
                 },
                 {
                   "kind": "name",
                   "name": "foo.model.FitDiagnostics",
-                  "target": null
+                  "target": {
+                    "item": "sid1:python:class:foo.model.FitDiagnostics",
+                    "package": "pyfoo"
+                  }
                 }
               ],
               "constructor": {
@@ -3663,7 +3672,10 @@
             "returns": {
               "kind": "name",
               "name": "foo.model.FooModel",
-              "target": null
+              "target": {
+                "item": "sid1:python:class:foo.model.FooModel",
+                "package": "pyfoo"
+              }
             }
           },
           "sources": [
@@ -3893,12 +3905,18 @@
                 {
                   "kind": "name",
                   "name": "foo.model.FooModel",
-                  "target": null
+                  "target": {
+                    "item": "sid1:python:class:foo.model.FooModel",
+                    "package": "pyfoo"
+                  }
                 },
                 {
                   "kind": "name",
                   "name": "foo.model.FitDiagnostics",
-                  "target": null
+                  "target": {
+                    "item": "sid1:python:class:foo.model.FitDiagnostics",
+                    "package": "pyfoo"
+                  }
                 }
               ],
               "constructor": {
@@ -4900,7 +4918,10 @@
             "returns": {
               "kind": "name",
               "name": "foo.model.FooModel",
-              "target": null
+              "target": {
+                "item": "sid1:python:class:foo.model.FooModel",
+                "package": "pyfoo"
+              }
             }
           },
           "sources": [
@@ -6934,7 +6955,7 @@
       "ruff_text_size": "0.0.14"
     }
   },
-  "schema_version": 3,
+  "schema_version": 5,
   "target": {
     "package": "pyfoo",
     "target": "api"

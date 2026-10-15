@@ -8,6 +8,10 @@ shared navigation, semantic cross-references, and search. The project is under
 active development; the [current status and remaining work](TODO.md) describe
 what still needs attention.
 
+The extracted SQLite snapshot can also supply package documentation to an
+existing website or a custom renderer. The [Eunoia integration experiment](examples/eunoia/README.md)
+demonstrates direct SQL queries and reusable HTML fragments inside SvelteKit.
+
 The accepted [prepared-environment
 contract](docs/decisions/0003-prepared-environment.md) will require usable package
 environments and execution of documentation examples, and allow runtime-assisted

@@ -179,6 +179,23 @@
               "type": "heading"
             },
             {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 479,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Compute three summary statistics for a numeric vector.\n"
+                }
+              ],
+              "span": {
+                "end": 479,
+                "start": 0
+              },
+              "type": "paragraph"
+            },
+            {
               "attributes": {
                 "classes": [],
                 "identifier": null,
@@ -319,23 +336,6 @@
                   },
                   "type": "text",
                   "value": "A named numeric vector containing the minimum, median, and maximum.\n"
-                }
-              ],
-              "span": {
-                "end": 479,
-                "start": 0
-              },
-              "type": "paragraph"
-            },
-            {
-              "inlines": [
-                {
-                  "span": {
-                    "end": 479,
-                    "start": 0
-                  },
-                  "type": "text",
-                  "value": "Compute three summary statistics for a numeric vector.\n"
                 }
               ],
               "span": {
@@ -659,6 +659,23 @@
                 "start": 0
               },
               "type": "heading"
+            },
+            {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Create a fitted model directly, or predict responses from one.\n"
+                }
+              ],
+              "span": {
+                "end": 972,
+                "start": 0
+              },
+              "type": "paragraph"
             },
             {
               "attributes": {
@@ -1099,23 +1116,6 @@
               "type": "paragraph"
             },
             {
-              "inlines": [
-                {
-                  "span": {
-                    "end": 972,
-                    "start": 0
-                  },
-                  "type": "text",
-                  "value": "Create a fitted model directly, or predict responses from one.\n"
-                }
-              ],
-              "span": {
-                "end": 972,
-                "start": 0
-              },
-              "type": "paragraph"
-            },
-            {
               "attributes": {
                 "classes": [
                   {
@@ -1462,6 +1462,23 @@
               "type": "heading"
             },
             {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 506,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Compute the mean squared difference between observed and predicted responses.\n"
+                }
+              ],
+              "span": {
+                "end": 506,
+                "start": 0
+              },
+              "type": "paragraph"
+            },
+            {
               "attributes": {
                 "classes": [],
                 "identifier": null,
@@ -1669,23 +1686,6 @@
                   },
                   "type": "text",
                   "value": "One numeric mean squared error.\n"
-                }
-              ],
-              "span": {
-                "end": 506,
-                "start": 0
-              },
-              "type": "paragraph"
-            },
-            {
-              "inlines": [
-                {
-                  "span": {
-                    "end": 506,
-                    "start": 0
-                  },
-                  "type": "text",
-                  "value": "Compute the mean squared difference between observed and predicted responses.\n"
                 }
               ],
               "span": {
@@ -1991,6 +1991,23 @@
                 "start": 0
               },
               "type": "heading"
+            },
+            {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Fit a deterministic baseline model through an S3 generic.\n"
+                }
+              ],
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "paragraph"
             },
             {
               "attributes": {
@@ -2587,23 +2604,6 @@
                   },
                   "type": "text",
                   "value": "supplied model with its fitted values replaced.\n"
-                }
-              ],
-              "span": {
-                "end": 1508,
-                "start": 0
-              },
-              "type": "paragraph"
-            },
-            {
-              "inlines": [
-                {
-                  "span": {
-                    "end": 1508,
-                    "start": 0
-                  },
-                  "type": "text",
-                  "value": "Fit a deterministic baseline model through an S3 generic.\n"
                 }
               ],
               "span": {
@@ -3067,6 +3067,23 @@
               "type": "heading"
             },
             {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Fit a deterministic baseline model through an S3 generic.\n"
+                }
+              ],
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "paragraph"
+            },
+            {
               "attributes": {
                 "classes": [],
                 "identifier": null,
@@ -3661,23 +3678,6 @@
                   },
                   "type": "text",
                   "value": "supplied model with its fitted values replaced.\n"
-                }
-              ],
-              "span": {
-                "end": 1508,
-                "start": 0
-              },
-              "type": "paragraph"
-            },
-            {
-              "inlines": [
-                {
-                  "span": {
-                    "end": 1508,
-                    "start": 0
-                  },
-                  "type": "text",
-                  "value": "Fit a deterministic baseline model through an S3 generic.\n"
                 }
               ],
               "span": {
@@ -4220,6 +4220,23 @@
               "type": "heading"
             },
             {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 1508,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Fit a deterministic baseline model through an S3 generic.\n"
+                }
+              ],
+              "span": {
+                "end": 1508,
+                "start": 0
+              },
+              "type": "paragraph"
+            },
+            {
               "attributes": {
                 "classes": [],
                 "identifier": null,
@@ -4823,23 +4840,6 @@
               "type": "paragraph"
             },
             {
-              "inlines": [
-                {
-                  "span": {
-                    "end": 1508,
-                    "start": 0
-                  },
-                  "type": "text",
-                  "value": "Fit a deterministic baseline model through an S3 generic.\n"
-                }
-              ],
-              "span": {
-                "end": 1508,
-                "start": 0
-              },
-              "type": "paragraph"
-            },
-            {
               "attributes": {
                 "classes": [],
                 "identifier": null,
@@ -5356,6 +5356,23 @@
               "type": "heading"
             },
             {
+              "inlines": [
+                {
+                  "span": {
+                    "end": 972,
+                    "start": 0
+                  },
+                  "type": "text",
+                  "value": "Create a fitted model directly, or predict responses from one.\n"
+                }
+              ],
+              "span": {
+                "end": 972,
+                "start": 0
+              },
+              "type": "paragraph"
+            },
+            {
               "attributes": {
                 "classes": [],
                 "identifier": null,
@@ -5785,23 +5802,6 @@
                   },
                   "type": "text",
                   "value": "predictions.\n"
-                }
-              ],
-              "span": {
-                "end": 972,
-                "start": 0
-              },
-              "type": "paragraph"
-            },
-            {
-              "inlines": [
-                {
-                  "span": {
-                    "end": 972,
-                    "start": 0
-                  },
-                  "type": "text",
-                  "value": "Create a fitted model directly, or predict responses from one.\n"
                 }
               ],
               "span": {
@@ -6535,7 +6535,7 @@
       "rd-source": "0.4.0"
     }
   },
-  "schema_version": 3,
+  "schema_version": 5,
   "target": {
     "package": "rfoo",
     "target": "api"

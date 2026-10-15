@@ -1892,7 +1892,10 @@
             "returns": {
               "kind": "name",
               "name": "foo.model.FooModel",
-              "target": null
+              "target": {
+                "package": "pyfoo",
+                "item": "sid1:python:class:foo.model.FooModel"
+              }
             }
           },
           "sources": [
@@ -2048,12 +2051,18 @@
                 {
                   "kind": "name",
                   "name": "foo.model.FooModel",
-                  "target": null
+                  "target": {
+                    "package": "pyfoo",
+                    "item": "sid1:python:class:foo.model.FooModel"
+                  }
                 },
                 {
                   "kind": "name",
                   "name": "foo.model.FitDiagnostics",
-                  "target": null
+                  "target": {
+                    "package": "pyfoo",
+                    "item": "sid1:python:class:foo.model.FitDiagnostics"
+                  }
                 }
               ]
             }
@@ -2320,7 +2329,10 @@
             "returns": {
               "kind": "name",
               "name": "foo.model.FooModel",
-              "target": null
+              "target": {
+                "package": "pyfoo",
+                "item": "sid1:python:class:foo.model.FooModel"
+              }
             }
           },
           "sources": [
@@ -2556,12 +2568,18 @@
                 {
                   "kind": "name",
                   "name": "foo.model.FooModel",
-                  "target": null
+                  "target": {
+                    "package": "pyfoo",
+                    "item": "sid1:python:class:foo.model.FooModel"
+                  }
                 },
                 {
                   "kind": "name",
                   "name": "foo.model.FitDiagnostics",
-                  "target": null
+                  "target": {
+                    "package": "pyfoo",
+                    "item": "sid1:python:class:foo.model.FitDiagnostics"
+                  }
                 }
               ]
             }
@@ -2937,7 +2955,10 @@
             "returns": {
               "kind": "name",
               "name": "foo.model.FooModel",
-              "target": null
+              "target": {
+                "package": "pyfoo",
+                "item": "sid1:python:class:foo.model.FooModel"
+              }
             }
           },
           "sources": [

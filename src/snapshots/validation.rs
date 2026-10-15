@@ -301,6 +301,50 @@ impl Snapshot {
                         }
                         used_assets.insert(asset.fingerprint.value.clone());
                     }
+                    ReferenceTarget::Repository {
+                        repository,
+                        fragment,
+                        ..
+                    } => {
+                        let decoded = percent_encoding::percent_decode_str(&spelling)
+                            .decode_utf8()
+                            .map_err(|_| SnapshotError::Invalid("repository hyperlink spelling"))?;
+                        let authored_fragment = spelling
+                            .split_once('#')
+                            .map(|(_, fragment)| {
+                                percent_encoding::percent_decode_str(fragment)
+                                    .decode_utf8()
+                                    .map(|fragment| fragment.into_owned())
+                            })
+                            .transpose()
+                            .map_err(|_| SnapshotError::Invalid("repository hyperlink fragment"))?;
+                        require(
+                            kind == ReferenceKind::Link
+                                && matches!(&identity, DocumentIdentity::Page { page }
+                                    if matches!(workspace.pages[page].kind, PageKind::PackageDocumentation { .. }))
+                                && document
+                                    .source_location
+                                    .as_ref()
+                                    .is_some_and(|source| source.repository == *repository)
+                                && !spelling.is_empty()
+                                && !decoded.starts_with('/')
+                                && !spelling.starts_with('#')
+                                && !decoded.chars().any(|c| c.is_control() || c == '\\')
+                                && !spelling.contains('?')
+                                && url::Url::parse(&spelling).is_err()
+                                && url::Url::parse(&decoded).is_err()
+                                && fragment
+                                    .as_ref()
+                                    .is_none_or(|fragment| !fragment.chars().any(char::is_control))
+                                && fragment == &authored_fragment
+                                && crate::validation::repository_target_url(
+                                    workspace,
+                                    &reference.target,
+                                )
+                                .is_some(),
+                            "repository hyperlink policy",
+                        )?;
+                    }
                     ReferenceTarget::External { url } => {
                         let parsed = url::Url::parse(url)
                             .map_err(|_| SnapshotError::Invalid("external URL"))?;

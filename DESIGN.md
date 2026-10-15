@@ -9,9 +9,15 @@ implementation status report.
 
 ## Purpose
 
-Diplodocus is a documentation generator for polyglot software projects,
+Diplodocus extracts and prepares documentation for polyglot software projects,
 including both monorepos and product families spread across several
 repositories.
+
+Its portable SQLite snapshot is also an independent output for existing
+documentation sites and custom presentation. The built-in static site generator
+provides a complete default frontend. Consumers may query the documented SQL
+format and render the structured records themselves, or reuse Diplodocus's
+experimental document fragments within their own frontend.
 
 Its central goal is to provide **one coherent documentation website** for
 packages implemented in different languages, rather than composing sites
@@ -40,13 +46,14 @@ assembly is a later concern.
 
 ## Core principles
 
-### One renderer
+### One documentation model
 
-Diplodocus owns the generated HTML. Extractors and content adapters supply a
-shared structured model, giving the renderer control over navigation, search,
-URLs, and language-specific presentation. Delegating HTML generation to rustdoc,
-pkgdown, Sphinx, or Documenter.jl would divide that control among independent
-systems and is outside the design.
+Extractors and content adapters supply a shared structured model. The built-in
+renderer owns its generated HTML, navigation, search, URLs, and language-specific
+presentation. Existing sites can supply their own layout and URLs while reusing
+document bodies, signatures, assets, and semantic identities. The built-in
+frontend renders the shared model itself. It does not merge independently
+generated pages from rustdoc, pkgdown, Sphinx, or Documenter.jl.
 
 Unsupported constructs must produce visible diagnostics rather than silent
 information loss.
