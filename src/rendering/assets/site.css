@@ -65,7 +65,7 @@ pre { padding: 1rem; background: #edf1f0; overflow: auto; border-radius: .3rem; 
 .reference-topics > li { padding: 1rem 0; border-bottom: 1px solid var(--border); }
 .reference-topics p { margin: .3rem 0 0; }
 .topic-title { font-weight: 650; }
-code { font-family: var(--font-code); font-size: .88em; }
+code { font-family: var(--font-code); font-size: 1em; }
 img { max-width: 100%; height: auto; }
 figure { margin: 1.5rem 0; }
 .caption, figcaption { color: var(--muted); font-size: .9rem; }
