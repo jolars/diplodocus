@@ -18,6 +18,33 @@ environments and execution of documentation examples, and allow runtime-assisted
 extraction. Implementation is pending; the workflows below describe current
 behavior.
 
+## Installation
+
+Starting with the next release, download a prebuilt archive for Linux, macOS, or
+Windows from [GitHub releases](https://github.com/jolars/diplodocus/releases). Linux archives
+include GNU and musl builds for x86-64 and ARM64; macOS archives support Intel
+and Apple Silicon, and Windows archives support x86-64.
+
+On Linux or macOS, install the latest binary with:
+
+```sh
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/jolars/diplodocus/releases/latest/download/diplodocus-installer.sh | sh
+```
+
+On Windows, run this in PowerShell:
+
+```powershell
+irm https://github.com/jolars/diplodocus/releases/latest/download/diplodocus-installer.ps1 | iex
+```
+
+The installers place the executable in Cargo's binary directory, normally
+`~/.cargo/bin`. You can also build from crates.io with
+`cargo install --locked diplodocus`.
+
+Language runtimes and package environments must be installed separately.
+QMD cell execution currently requires Linux; other platforms can extract APIs
+and render snapshots without executing QMD cells.
+
 ## Start here
 
 The [Diplodocus guide](https://diplodocus.cc/) is built from this
@@ -86,15 +113,27 @@ Repository administrators must configure:
 - A `RELEASE_TOKEN` repository secret containing a fine-grained personal access
   token, bot token, or GitHub App token with read/write access to contents, pull
   requests, and issues. A token other than the workflow `GITHUB_TOKEN` is
-  required so Versionary-created tags trigger the publishing workflow.
+  required so Versionary-created tags trigger the publishing workflows.
 - A protected GitHub Actions environment named `release`, with the desired
   deployment reviewers and branch or tag restrictions.
 - A crates.io trusted publisher for `jolars/diplodocus`, the
   `.github/workflows/publish-crates.yml` workflow, and the `release`
   environment.
 
-Publishing runs only for an explicit `v*` tag or a manual workflow dispatch and
-uses `cargo publish --locked` with crates.io's short-lived OIDC token.
+The cargo-dist `Release` workflow builds binary archives, shell and PowerShell
+installers, checksums, and GitHub attestations when a version tag is pushed. It
+attaches these assets to the release created by Versionary and preserves its
+release notes. Pull requests validate the distribution plan without publishing.
+The crates.io publishing workflow remains independent.
+
+Distribution settings live in `dist-workspace.toml`. To change them, install the
+configured cargo-dist version with
+`cargo install --locked cargo-dist --version 0.33.0`, edit the settings, and run
+`dist generate`. Commit the regenerated `.github/workflows/release.yml` with the configuration. Use
+`dist generate --check` and `dist plan` to validate changes locally.
+
+Crates.io publishing runs only for an explicit `v*` tag or a manual workflow
+dispatch and uses `cargo publish --locked` with crates.io's short-lived OIDC token.
 
 ## License
 
