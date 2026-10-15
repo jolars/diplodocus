@@ -62,7 +62,7 @@ pub struct ProjectConfiguration {
 
 /// Portable site metadata, independent of extraction and execution policy.
 ///
-/// The built-in theme escapes text and renders the logo as a validated image.
+/// The built-in theme escapes text and uses validated branding images.
 /// No local theme paths, output directories, or execution authority belong here.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, rename_all = "kebab-case", deny_unknown_fields)]
@@ -74,6 +74,9 @@ pub struct PresentationDefaults {
     /// Optional image shown before the site title in the navbar's home link.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub logo: Option<LogoDefaults>,
+    /// Optional site-wide image and accessible description for link previews.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub open_graph: Option<OpenGraphDefaults>,
     /// Public site root, including any hosting prefix; `None` omits crawler metadata.
     #[serde(
         deserialize_with = "deserialize_site_url",
@@ -96,6 +99,18 @@ pub struct LogoDefaults {
     pub repository: String,
     /// Normalized repository-relative path to an SVG, PNG, or JPEG file.
     pub path: DiagnosticPath,
+}
+
+/// A checked-in social preview image within an explicitly declared repository.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+pub struct OpenGraphDefaults {
+    /// ID of the repository containing the image.
+    pub repository: String,
+    /// Normalized repository-relative path to a PNG or JPEG file.
+    pub path: DiagnosticPath,
+    /// Accessible description of the image, without HTML or Markdown.
+    pub alt: String,
 }
 
 impl PresentationDefaults {

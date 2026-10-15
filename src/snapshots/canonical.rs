@@ -79,6 +79,9 @@ pub(super) fn records(snapshot: &Snapshot) -> Result<Vec<Record>, SnapshotError>
     if let Some(logo) = &snapshot.logo {
         presentation["logo-asset"] = serde_json::to_value(logo)?;
     }
+    if let Some(image) = &snapshot.open_graph {
+        presentation["open-graph-asset"] = serde_json::to_value(image)?;
+    }
     values.insert(
         Key {
             kind: "presentation".into(),

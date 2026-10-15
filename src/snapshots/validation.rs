@@ -170,6 +170,31 @@ impl Snapshot {
         )?;
         let mut used_assets = BTreeSet::new();
         require(
+            self.presentation.open_graph.is_some() == self.open_graph.is_some(),
+            "Open Graph presentation evidence",
+        )?;
+        if let (Some(declaration), Some(image)) = (&self.presentation.open_graph, &self.open_graph)
+        {
+            require(
+                self.presentation.site_url.is_some()
+                    && !declaration.alt.trim().is_empty()
+                    && workspace.repositories.contains_key(&declaration.repository),
+                "Open Graph presentation settings",
+            )?;
+            let stored = self
+                .assets
+                .get(&image.fingerprint.value)
+                .ok_or(SnapshotError::Invalid("missing Open Graph asset"))?;
+            require(
+                stored.fingerprint == image.fingerprint
+                    && matches!(stored.media_type.as_str(), "image/png" | "image/jpeg")
+                    && image.path.as_str()
+                        == format!("content-assets/sha256/{}", image.fingerprint.value),
+                "Open Graph asset metadata",
+            )?;
+            used_assets.insert(image.fingerprint.value.clone());
+        }
+        require(
             self.presentation.logo.is_some() == self.logo.is_some(),
             "logo presentation evidence",
         )?;

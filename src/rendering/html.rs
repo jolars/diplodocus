@@ -111,6 +111,7 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
             if let Some(url) = site.canonical_urls.get(route) {
                 write!(html, "<link rel=\"canonical\" href=\"{}\">", escape(url)).unwrap();
             }
+            super::social::render(&mut html, site, route, &page.title)?;
             write!(html, "<title>{} · {}</title><link rel=\"stylesheet\" href=\"{}\"><script defer src=\"{}\"></script><script defer src=\"{}\"></script><script defer src=\"{}\"></script>", escape(&page.title), escape(site.title()), escape(&site.url(route, "assets/site.css")), escape(&site.url(route, "assets/search.js")), escape(&site.url(route, "assets/nav.js")), escape(&site.url(route, "assets/code.js"))).unwrap();
             if page_math {
                 write!(

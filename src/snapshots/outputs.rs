@@ -116,6 +116,7 @@ impl Snapshot {
             workspace,
             presentation: executed.sources().configuration().presentation.clone(),
             logo: resolved.logo().cloned(),
+            open_graph: resolved.open_graph().cloned(),
             documents: resolved.records().to_vec(),
             assets: resolved.assets().clone(),
             producer: env!("CARGO_PKG_VERSION").into(),

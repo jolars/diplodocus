@@ -54,6 +54,15 @@ fn real_project_site_builds_and_resolves_at_its_domain_root() {
     let home = fs::read_to_string(output.join("index.html")).unwrap();
     assert!(home.contains("<h1>Diplodocus</h1>"));
     assert!(home.contains("This guide is built by Diplodocus"));
+    let image_bytes = fs::read(workspace.path().join("assets/brand/og.png")).unwrap();
+    let digest = diplodocus::provenance::fingerprint_bytes(&image_bytes).value;
+    let image_route = format!("assets/{digest}.png");
+    assert_eq!(fs::read(output.join(&image_route)).unwrap(), image_bytes);
+    assert!(home.contains(&format!(
+        "<meta property=\"og:image\" content=\"https://diplodocus.cc/{image_route}\">"
+    )));
+    assert!(home.contains("<meta property=\"og:image:width\" content=\"1200\">"));
+    assert!(home.contains("<meta property=\"og:image:height\" content=\"630\">"));
     assert!(!output.join("guide/index.html").exists());
     let example = fs::read_to_string(output.join("examples/stateful.html")).unwrap();
     assert!(example.contains("Total: 12"));
@@ -67,6 +76,9 @@ fn real_project_site_builds_and_resolves_at_its_domain_root() {
         }
         let route = path.to_str().unwrap().replace('\\', "/");
         let html = fs::read_to_string(output.join(&path)).unwrap();
+        assert!(html.contains(&format!(
+            "<meta property=\"og:image\" content=\"https://diplodocus.cc/{image_route}\">"
+        )));
         let dom = html5ever::parse_document(RcDom::default(), Default::default()).one(html);
         let mut urls = Vec::new();
         let mut ids = BTreeSet::new();

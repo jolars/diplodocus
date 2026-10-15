@@ -121,7 +121,7 @@ The `records` kinds are:
   | Kind         | Owner      | ID                            | Content                                                                                                                                              |
   | ---          | ---        | ---                           | ---                                                                                                                                                  |
   | `workspace`  | Empty      | Empty                         | `schema_version`, `name`, `relationships`, `diagnostics`, `provenance`                                                                               |
-  | `presentation` | Empty    | Empty                         | `title`, `description`, optional `logo`, `logo-asset`, `site-url`, `canonical-url-style`, and `footer`                                                |
+  | `presentation` | Empty    | Empty                         | `title`, `description`, optional `logo`, `logo-asset`, `open-graph`, `open-graph-asset`, `site-url`, `canonical-url-style`, and `footer`                     |
   | `repository` | Empty      | Repository ID                 | `canonical_url`, `source_link_template`, `revision`, `dirty`, `declared_input_fingerprint`                                                           |
   | `package`    | Empty      | Package ID                    | `slug`, `name`, `ecosystem`, `version`, optional `metadata`, `repository`, `path`, `metadata_path`, `kind`, `visibility`                             |
   | `target`     | Package ID | Target ID                     | `extractor`, `path`, `role`                                                                                                                          |
@@ -148,6 +148,15 @@ The asset reference uses `content-assets/sha256/<digest>` and identifies image
 bytes in the `assets` table. Loading validates the repository, reference, media
 type, and bytes without accessing the original logo path. A logo counts as a
 used asset even when no document refers to it.
+
+An Open Graph image uses the same storage pattern: `open-graph` retains the
+repository, repository-relative path, and nonempty `alt` text, while
+`open-graph-asset` references the embedded image bytes. Both fields must be
+present together, and `site-url` must be configured. Only PNG and JPEG images
+are accepted. Loading validates this evidence without accessing the checkout.
+The image counts as a used asset and shares stored bytes with matching navbar
+or document images. Writers omit both fields when no image is configured,
+preserving compatibility with earlier storage-version-2 snapshots.
 
 Each page has exactly one `document` row. An item or concept has one precisely
 when its `documentation` is non-null. This row stores resolution metadata; the

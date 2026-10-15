@@ -314,6 +314,11 @@ impl Observer {
         {
             observe(&root.join(logo.path.as_str()), &mut observed);
         }
+        if let Some(image) = &config.presentation.open_graph
+            && let Some(root) = roots.get(image.repository.as_str())
+        {
+            observe(&root.join(image.path.as_str()), &mut observed);
+        }
         for package in &config.packages {
             let Some(root) = roots.get(package.repository.as_str()) else {
                 continue;
@@ -638,6 +643,23 @@ mod tests {
         .unwrap();
         assert_ne!(observer.capture(), created);
         fs::remove_file(logo).unwrap();
+        assert_eq!(observer.capture(), missing);
+    }
+
+    #[test]
+    fn watches_open_graph_image_creation_edits_and_removal() {
+        let root = tempfile::tempdir().unwrap();
+        let config = root.path().join("diplodocus.toml");
+        fs::write(&config, "[project]\nname='Observe'\n[presentation]\nsite-url='https://example.test/'\n[presentation.open-graph]\nrepository='repo'\npath='og.png'\nalt='A preview'\n[[repository]]\nid='repo'\npath='.'\n").unwrap();
+        let mut observer = Observer::new(&config, &root.path().join("site")).unwrap();
+        let missing = observer.capture();
+        let image = root.path().join("og.png");
+        fs::write(&image, b"first image").unwrap();
+        let created = observer.capture();
+        assert_ne!(created, missing);
+        fs::write(&image, b"updated image").unwrap();
+        assert_ne!(observer.capture(), created);
+        fs::remove_file(image).unwrap();
         assert_eq!(observer.capture(), missing);
     }
 

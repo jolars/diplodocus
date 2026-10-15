@@ -121,6 +121,7 @@ pub fn own_documentation_workspace() -> TestWorkspace {
         "diplodocus.toml",
         "devenv.lock",
         "assets/brand/diplodocus-logo.png",
+        "assets/brand/og.png",
     ] {
         workspace.write(relative, fs::read(root.join(relative)).unwrap());
     }

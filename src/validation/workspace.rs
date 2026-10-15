@@ -155,6 +155,7 @@ pub struct ContentAsset {
 pub struct ResolvedWorkspace {
     records: Vec<ResolvedDocument>,
     logo: Option<AssetReference>,
+    open_graph: Option<AssetReference>,
     assets: BTreeMap<String, ContentAsset>,
     diagnostics: BTreeSet<Diagnostic>,
     inputs: BTreeMap<PathBuf, AssetObservation>,
@@ -186,6 +187,10 @@ impl ResolvedWorkspace {
     /// Validated navbar image retained with the other portable asset bytes.
     pub fn logo(&self) -> Option<&AssetReference> {
         self.logo.as_ref()
+    }
+    /// Validated social preview image retained with the other portable assets.
+    pub fn open_graph(&self) -> Option<&AssetReference> {
+        self.open_graph.as_ref()
     }
     /// All source and resolution warnings in deterministic order.
     pub fn diagnostics(&self) -> &BTreeSet<Diagnostic> {
@@ -428,6 +433,7 @@ fn resolve(
         result: ResolvedWorkspace {
             records: vec![],
             logo: None,
+            open_graph: None,
             assets: BTreeMap::new(),
             diagnostics: workspace.diagnostics.clone(),
             inputs: BTreeMap::new(),
@@ -438,38 +444,73 @@ fn resolve(
         .result
         .diagnostics
         .extend(relationships::validate(workspace));
-    if let Some(logo) = &sources.configuration().presentation.logo {
+    let presentation = &sources.configuration().presentation;
+    for (field, declaration, raster_only) in [
+        (
+            "presentation.logo.path",
+            presentation
+                .logo
+                .as_ref()
+                .map(|image| (&image.repository, &image.path)),
+            false,
+        ),
+        (
+            "presentation.open-graph.path",
+            presentation
+                .open_graph
+                .as_ref()
+                .map(|image| (&image.repository, &image.path)),
+            true,
+        ),
+    ] {
+        let Some((repository, image_path)) = declaration else {
+            continue;
+        };
         let root = &sources
             .paths()
             .repositories
             .iter()
-            .find(|r| r.id == logo.repository)
-            .expect("validated logo repository")
+            .find(|r| r.id == *repository)
+            .expect("validated presentation image repository")
             .path;
-        let path = crate::paths::resolve_input_file(
-            root,
-            "presentation.logo.path",
-            Path::new(logo.path.as_str()),
-            root,
-        )
-        .map_err(AssemblyError::from)?;
-        match resolution.collect_asset(
-            root.join(logo.path.as_str()),
-            path,
-            root,
-            ReferenceKind::Image,
-        ) {
-            Ok(asset) => resolution.result.logo = Some(asset),
+        let path =
+            crate::paths::resolve_input_file(root, field, Path::new(image_path.as_str()), root)
+                .map_err(AssemblyError::from)?;
+        let asset = resolution
+            .collect_asset(
+                root.join(image_path.as_str()),
+                path,
+                root,
+                ReferenceKind::Image,
+            )
+            .and_then(|asset| {
+                let media_type = &resolution.result.assets[&asset.fingerprint.value].media_type;
+                if raster_only && !matches!(media_type.as_str(), "image/png" | "image/jpeg") {
+                    Err(DiagnosticCode::UnresolvedDocumentReference)
+                } else {
+                    Ok(asset)
+                }
+            });
+        match asset {
+            Ok(asset) => {
+                if raster_only {
+                    resolution.result.open_graph = Some(asset);
+                } else {
+                    resolution.result.logo = Some(asset);
+                }
+            }
             Err(code) => {
                 resolution.result.diagnostics.insert(
                     Diagnostic::new(
                         code,
                         Severity::Error,
-                        "presentation.logo.path must name a valid SVG, PNG, or JPEG image.",
+                        if raster_only {
+                            "presentation.open-graph.path must name a valid PNG or JPEG image."
+                        } else {
+                            "presentation.logo.path must name a valid SVG, PNG, or JPEG image."
+                        },
                     )
-                    .with_entity(DiagnosticEntity::ConfigurationField {
-                        path: "presentation.logo.path".into(),
-                    }),
+                    .with_entity(DiagnosticEntity::ConfigurationField { path: field.into() }),
                 );
             }
         }
@@ -771,7 +812,7 @@ impl Resolver<'_> {
             if old.path != observation.path || old.fingerprint != observation.fingerprint {
                 return Err(invalid);
             }
-            // A logo and a document can share bytes under different declared roots.
+            // Branding and document images can share bytes under different declared roots.
             // Retain the narrower boundary for the publication recheck.
             if observation.boundary.starts_with(&old.boundary) {
                 *old = observation;

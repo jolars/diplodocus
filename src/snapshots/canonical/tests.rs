@@ -26,6 +26,7 @@ fn fixture() -> Snapshot {
         },
         documents: Vec::new(),
         logo: None,
+        open_graph: None,
         assets: BTreeMap::new(),
         producer: "canonical-fixture".into(),
         executions: BTreeMap::new(),

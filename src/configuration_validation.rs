@@ -53,16 +53,56 @@ pub fn validate_configuration(configuration: &WorkspaceConfiguration) -> Vec<Dia
             &mut diagnostics,
         );
     }
-    if let Some(logo) = &configuration.presentation.logo {
+    for (field, repository) in [
+        (
+            "presentation.logo.repository",
+            configuration
+                .presentation
+                .logo
+                .as_ref()
+                .map(|image| &image.repository),
+        ),
+        (
+            "presentation.open-graph.repository",
+            configuration
+                .presentation
+                .open_graph
+                .as_ref()
+                .map(|image| &image.repository),
+        ),
+    ] {
+        let Some(repository) = repository else {
+            continue;
+        };
         check_repository(
             &repositories,
-            &logo.repository,
-            "presentation.logo.repository",
-            DiagnosticEntity::ConfigurationField {
-                path: "presentation.logo.repository".into(),
-            },
+            repository,
+            field,
+            DiagnosticEntity::ConfigurationField { path: field.into() },
             &mut diagnostics,
         );
+    }
+    if let Some(image) = &configuration.presentation.open_graph {
+        for (invalid, field, message) in [
+            (
+                configuration.presentation.site_url.is_none(),
+                "presentation.site-url",
+                "presentation.site-url is required when presentation.open-graph is configured",
+            ),
+            (
+                image.alt.trim().is_empty(),
+                "presentation.open-graph.alt",
+                "presentation.open-graph.alt must describe the preview image",
+            ),
+        ] {
+            if invalid {
+                diagnostics.push(error(
+                    DiagnosticCode::InvalidConfiguration,
+                    message.into(),
+                    DiagnosticEntity::ConfigurationField { path: field.into() },
+                ));
+            }
+        }
     }
     for (index, package) in configuration.packages.iter().enumerate() {
         let entity = DiagnosticEntity::Package {

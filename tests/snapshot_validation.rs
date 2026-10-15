@@ -290,6 +290,58 @@ fn rejects_incomplete_or_forged_logo_evidence_with_valid_fingerprints() {
 }
 
 #[test]
+fn rejects_forged_open_graph_evidence_with_valid_fingerprints() {
+    let root = support::TestWorkspace::new();
+    root.write("diplodocus.toml", "[project]\nname='Preview'\n[presentation]\nsite-url='https://example.test/'\n[presentation.open-graph]\nrepository='docs'\npath='og.png'\nalt='A dinosaur'\n[[repository]]\nid='docs'\npath='.'\n");
+    let mut bytes = std::io::Cursor::new(Vec::new());
+    image::RgbImage::from_pixel(4, 2, image::Rgb([10, 20, 40]))
+        .write_to(&mut bytes, image::ImageFormat::Png)
+        .unwrap();
+    root.write("og.png", bytes.into_inner());
+    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+    for case in [
+        "declaration",
+        "reference",
+        "repository",
+        "path",
+        "digest",
+        "media",
+        "bytes",
+        "site-url",
+        "alt",
+    ] {
+        let result = changed(&snapshot, |export| {
+            let presentation = record(export, "presentation");
+            match case {
+                "declaration" => {
+                    presentation.as_object_mut().unwrap().remove("open-graph");
+                }
+                "reference" => {
+                    presentation
+                        .as_object_mut()
+                        .unwrap()
+                        .remove("open-graph-asset");
+                }
+                "repository" => presentation["open-graph"]["repository"] = "missing".into(),
+                "path" => presentation["open-graph-asset"]["path"] = "elsewhere/og.png".into(),
+                "digest" => {
+                    presentation["open-graph-asset"]["fingerprint"]["value"] = "0".repeat(64).into()
+                }
+                "site-url" => {
+                    presentation.as_object_mut().unwrap().remove("site-url");
+                }
+                "alt" => presentation["open-graph"]["alt"] = " ".into(),
+                "media" => export["assets"][0]["media_type"] = "application/octet-stream".into(),
+                "bytes" => export["assets"] = json!([]),
+                _ => unreachable!(),
+            }
+        });
+        assert!(result.is_err(), "accepted {case}");
+    }
+}
+
+#[test]
 fn rejects_inconsistent_shared_r_help_topics() {
     let snapshot = snapshot();
     for case in [

@@ -93,7 +93,8 @@ enable it when the collection forbids it. `check` never runs cells. `extract`,
 
 ## Presentation
 
-An optional table controls the site name, logo, HTML description, public URL, and footer:
+An optional table controls the site name, logo, link preview image, HTML
+description, public URL, and footer:
 
 ```toml
 [presentation]
@@ -140,6 +141,29 @@ the title's link to the homepage. The title supplies the accessible link name.
 Omitting `[presentation.logo]` leaves the navbar with the title alone. `serve`
 watches the logo file and rebuilds when it changes.
 
+To use a shared image when people post links to your documentation, set
+`site-url` and declare an Open Graph image:
+
+```toml
+[presentation.open-graph]
+repository = "docs"
+path = "assets/og.png"
+alt = "Foo documentation, with the project mascot beside an open book."
+```
+
+The image must be a PNG or JPEG inside the declared repository. `alt` describes
+what the image contains and must not be empty. A 1200 by 630 pixel image works
+well for a wide preview. The image can live outside content collections and
+follows the same path and symlink rules as the navbar logo.
+
+Every generated HTML page receives Open Graph metadata and a large-image
+Twitter card. The preview uses that page's title and canonical URL, the site
+name and description, and the shared image with its dimensions and alt text.
+Image URLs are absolute and include any hosting prefix from `site-url`.
+Diplodocus validates and stores the image in the snapshot, so `generate` needs
+no source checkout. `serve` watches the image for changes. Omitting the table
+omits social preview metadata.
+
 The footer appears at the bottom of every page. All its fields are optional,
 and omitting the table produces no footer. `docs-version` is a free-form label
 such as `v1.0.0`, `dev`, or `main`; it identifies the documentation release or
@@ -172,7 +196,8 @@ as `/docs/index.html` and `/docs/installation.html`. Use `clean` when your host
 serves index pages at directory URLs and other HTML pages without their
 extension. For example, those URLs become `/docs/` and `/docs/installation`. The
 Diplodocus documentation uses `clean` to match Cloudflare's default static asset
-routing. This setting changes sitemap URLs and canonical links; output
+routing. This setting changes sitemap URLs, canonical links, and Open Graph
+page URLs; output
 filenames, navigation links, and local preview routes retain their file paths.
 Clean URLs require matching support from your host. Ambiguous routes, such as
 `foo.html` alongside `foo/index.html`, fail generation before site publication.

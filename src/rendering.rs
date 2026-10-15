@@ -14,6 +14,7 @@ pub(crate) mod python;
 pub(crate) mod r_topics;
 mod signatures;
 mod sitemap;
+mod social;
 pub use fragments::{FragmentDocument, FragmentIndex};
 pub use html::{render_fragments, render_site};
 pub use publish::{RenderedFile, RenderedSite};

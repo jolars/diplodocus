@@ -31,6 +31,7 @@ pub struct Snapshot {
     workspace: Workspace,
     presentation: PresentationDefaults,
     logo: Option<AssetReference>,
+    open_graph: Option<AssetReference>,
     documents: Vec<ResolvedDocument>,
     assets: BTreeMap<String, ContentAsset>,
     producer: String,
@@ -78,6 +79,7 @@ impl Snapshot {
             workspace,
             presentation: sources.configuration().presentation.clone(),
             logo: resolved.logo().cloned(),
+            open_graph: resolved.open_graph().cloned(),
             documents: resolved.records().to_vec(),
             assets: resolved.assets().clone(),
             producer: env!("CARGO_PKG_VERSION").into(),
@@ -99,6 +101,10 @@ impl Snapshot {
     /// Portable navbar image, available without the original repository.
     pub fn logo(&self) -> Option<&AssetReference> {
         self.logo.as_ref()
+    }
+    /// Portable social preview image, available without the original repository.
+    pub fn open_graph(&self) -> Option<&AssetReference> {
+        self.open_graph.as_ref()
     }
     /// Diplodocus version that originally produced this snapshot.
     pub fn producer(&self) -> &str {

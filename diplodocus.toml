@@ -2,13 +2,18 @@
 name = "Diplodocus"
 
 [presentation]
-description = "Guides for building Python and R documentation with Diplodocus."
+description = "Guides for building Python, R, and Julia documentation with Diplodocus."
 site-url = "https://diplodocus.cc/"
 canonical-url-style = "clean"
 
 [presentation.logo]
 repository = "diplodocus"
 path = "assets/brand/diplodocus-logo.png"
+
+[presentation.open-graph]
+repository = "diplodocus"
+path = "assets/brand/og.png"
+alt = "Diplodocus: Polyglot documentation for monorepos. A dinosaur writes in an open book."
 
 [presentation.footer]
 docs-version = "dev"
