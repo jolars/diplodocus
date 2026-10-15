@@ -4,9 +4,14 @@ These are generated PNG concepts, not final vector artwork. `book-mark.png`
 combines the two open pages and diplodocus into one shape. `book-mascot.png` is
 a more literal alternative. `writing-diplodocus.png` explores a more playful
 character writing in a book; `writing-diplodocus-illustrated.png` shows the
-same idea with more illustration detail. The selected illustrated concept has
+same idea with more illustration detail. That earlier illustrated concept has
 an editable [SVG redraw](../../../assets/brand/diplodocus-logo.svg) and a
-[favicon](../../../assets/brand/favicon.svg) in `assets/brand/`.
+[favicon](../../../assets/brand/favicon.svg) in `assets/brand/`. The current
+[package logo](../../../assets/brand/diplodocus-logo.png) is the fifth remake,
+generated from scratch in a vector art style. `remake-v1.png` through
+`remake-v4.png` preserve the other attempts, with their prompts in matching
+`.prompt.txt` files. The selected logo's
+[prompt](../../../assets/brand/diplodocus-logo.prompt.txt) lives with the artwork.
 
 Both images were generated with the built-in image generation tool on a
 transparent background. Their prompts follow.

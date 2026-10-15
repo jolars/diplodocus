@@ -6,6 +6,10 @@ description = "Guides for building Python and R documentation with Diplodocus."
 site-url = "https://diplodocus.cc/"
 canonical-url-style = "clean"
 
+[presentation.logo]
+repository = "diplodocus"
+path = "assets/brand/diplodocus-logo.png"
+
 [presentation.footer]
 docs-version = "dev"
 copyright = "© 2026 Johan Larsson"

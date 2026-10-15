@@ -3,7 +3,7 @@ set -eu
 
 output=${1:-site/docs}
 cp assets/brand/favicon.ico "$output/favicon.ico"
-cp assets/brand/favicon.svg "$output/favicon.svg"
+cp assets/brand/favicon.png "$output/favicon.png"
 cp assets/brand/apple-touch-icon.png "$output/apple-touch-icon.png"
 cp scripts/diplodocus-installer.sh "$output/install"
 cp scripts/diplodocus-installer.ps1 "$output/install.ps1"
