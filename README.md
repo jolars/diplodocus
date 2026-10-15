@@ -1,4 +1,4 @@
-# Diplodocus <img src="https://raw.githubusercontent.com/jolars/diplodocus/refs/heads/main/assets/brand/diplodocus-logo.png" align="right" width="139" alt="Diplodocus writing in an open book" />
+# Diplodocus <img src="https://raw.githubusercontent.com/jolars/diplodocus/refs/heads/main/assets/brand/diplodocus-logo-small.png" align="right" width="139" alt="Diplodocus writing in an open book" />
 
 [![CI](https://github.com/jolars/diplodocus/actions/workflows/ci.yml/badge.svg)](https://github.com/jolars/diplodocus/actions/workflows/ci.yml)
 [![crates.io](https://img.shields.io/crates/v/diplodocus.svg)](https://crates.io/crates/diplodocus)
