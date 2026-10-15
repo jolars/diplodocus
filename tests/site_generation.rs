@@ -1190,3 +1190,34 @@ end
         }
     }
 }
+
+#[test]
+fn standalone_pages_include_the_same_markdown_as_fragments() {
+    let root = support::TestWorkspace::from_fixture("python-overloads");
+    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+    let site = diplodocus::site::Site::new(&snapshot).unwrap();
+    let standalone = diplodocus::rendering::render_site(&site).unwrap();
+    let fragments = diplodocus::rendering::render_fragments(&site).unwrap();
+    let mut count = 0;
+    for (path, file) in standalone.files() {
+        if let Some(stem) = path.strip_suffix(".html") {
+            let markdown = &standalone.files()[&format!("{stem}.md")];
+            assert_eq!(markdown.media_type, "text/markdown; charset=utf-8");
+            assert_eq!(
+                markdown.bytes,
+                fragments.files()[&format!("{stem}.md")].bytes
+            );
+            let html = std::str::from_utf8(&file.bytes).unwrap();
+            assert!(html.contains("rel=\"alternate\" type=\"text/markdown\""));
+            assert!(
+                !std::str::from_utf8(&markdown.bytes)
+                    .unwrap()
+                    .contains("<!doctype html>")
+            );
+            count += 1;
+        }
+    }
+    assert!(count > 0);
+    assert!(standalone.files().contains_key("__diplodocus/worker.js"));
+}

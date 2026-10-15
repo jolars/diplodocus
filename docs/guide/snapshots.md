@@ -83,3 +83,38 @@ pages.
 Fragment format versions are independent of the SQLite storage contract. The
 [Eunoia experiment](https://github.com/jolars/diplodocus/tree/main/examples/eunoia)
 also demonstrates direct SQL consumption inside an existing SvelteKit site.
+
+## Markdown for agents
+
+Every full site build includes a `.md` sibling for each HTML page, rendered
+from the same validated content without the navigation or page chrome. HTML
+pages advertise this representation with a `rel="alternate"` link.
+`diplodocus serve` returns it at the HTML URL when a client requests
+`Accept: text/markdown`. HTML remains the default, and both representations
+include `Vary: Accept`. Explicit quality values are honored: Markdown must have
+a positive quality at least as high as an explicitly requested HTML type.
+
+Static hosting needs a server or edge handler to negotiate HTTP responses.
+Builds include a Cloudflare Worker entry point, so Workers deployments can use
+negotiation without writing application code. For a build in `site/`, configure
+Wrangler as follows, alongside your account and domain settings:
+
+```toml
+main = "./site/__diplodocus/worker.js"
+compatibility_date = "2026-10-06"
+
+[assets]
+directory = "./site"
+binding = "ASSETS"
+run_worker_first = true
+```
+
+Other hosts can map HTML requests to the corresponding `.md` file when the
+client accepts Markdown. Set `Content-Type: text/markdown; charset=utf-8` and
+`Vary: Accept` on negotiated responses, including the HTML variant. Hosts
+without negotiation can still serve the advertised `.md` URLs directly.
+No token estimate is emitted because Diplodocus does not select a tokenizer.
+
+```console
+curl -H 'Accept: text/markdown' https://your-site.example/guide/index.html
+```

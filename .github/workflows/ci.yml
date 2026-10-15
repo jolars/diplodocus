@@ -82,6 +82,8 @@ jobs:
           key: browser
       - name: Install browser tooling
         run: devenv shell -- npm ci --ignore-scripts
+      - name: Test Markdown negotiation in Workers
+        run: devenv shell -- node --test scripts/markdown-worker.test.mjs
       - name: Test and capture the example site
         run: devenv shell -- site-capture
       - name: Upload browser reports, screenshots, and failure traces

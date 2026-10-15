@@ -33,12 +33,25 @@ pub fn render_fragments(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
 
 fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> {
     let mut files = BTreeMap::new();
+    if standalone {
+        files.insert(
+            "__diplodocus/worker.js".into(),
+            file(
+                include_bytes!("markdown_worker.js").to_vec(),
+                "text/javascript; charset=utf-8",
+            ),
+        );
+    }
     let mut search = Vec::new();
     let mut documents = Vec::new();
     let mut uses_math = false;
     let math_context = katex::KatexContext::default();
     let highlighter = super::highlighting::Highlighter::new();
     for (route, page) in &site.pages {
+        let markdown_path = format!(
+            "{}.md",
+            route.strip_suffix(".html").ok_or(SiteError::Evidence)?
+        );
         let page_math = page
             .document
             .is_some_and(|document| super::math::contains_math(&document.document.blocks))
@@ -121,6 +134,12 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                 )
                 .unwrap();
             }
+            write!(
+                html,
+                "<link rel=\"alternate\" type=\"text/markdown\" href=\"{}\">",
+                escape(&site.url(route, &markdown_path))
+            )
+            .unwrap();
             html.push_str("</head><body><a class=\"skip-link\" href=\"#main\">Skip to content</a>");
             write!(
                 html,
@@ -523,6 +542,13 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                 page.owner.as_deref().expect("package overview owner"),
             ));
         }
+        files.insert(
+            markdown_path.clone(),
+            file(
+                super::markdown::page(site, route, page)?.into_bytes(),
+                "text/markdown; charset=utf-8",
+            ),
+        );
         if standalone {
             html.push_str("</main>");
             html.push_str(&renderer.page_navigation());
@@ -536,17 +562,6 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                 .filter(|(_, path)| *path == route)
                 .map(|(identity, _)| identity.clone())
                 .collect();
-            let markdown_path = format!(
-                "{}.md",
-                route.strip_suffix(".html").ok_or(SiteError::Evidence)?
-            );
-            files.insert(
-                markdown_path.clone(),
-                file(
-                    super::markdown::page(site, route, page)?.into_bytes(),
-                    "text/markdown; charset=utf-8",
-                ),
-            );
             documents.push(super::FragmentDocument {
                 path: route.clone(),
                 markdown_path,

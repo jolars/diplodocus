@@ -208,10 +208,36 @@ async fn response(
                 p.into()
             }
         });
+    let accept = std::str::from_utf8(&bytes)
+        .unwrap_or("")
+        .lines()
+        .skip(1)
+        .filter_map(|line| line.split_once(':'))
+        .filter(|(name, _)| name.eq_ignore_ascii_case("accept"))
+        .map(|(_, value)| value)
+        .collect::<Vec<_>>()
+        .join(",");
+    let markdown = accepts_markdown(&accept);
+    let markdown_path = path
+        .as_deref()
+        .and_then(|p| p.strip_suffix(".html"))
+        .map(|p| format!("{p}.md"));
     let file = path
         .as_ref()
         .filter(|p| crate::diagnostics::DiagnosticPath::try_from(p.as_str()).is_ok())
         .and_then(|p| generation.site.files().get(p));
+    let negotiable = file.is_some_and(|file| file.media_type.starts_with("text/html"))
+        && markdown_path
+            .as_ref()
+            .is_some_and(|p| generation.site.files().contains_key(p));
+    let file = if negotiable && markdown {
+        markdown_path
+            .as_ref()
+            .and_then(|p| generation.site.files().get(p))
+    } else {
+        file
+    };
+    let vary = if negotiable { "Vary: Accept\r\n" } else { "" };
     let (status, media, content) = if !matches!(method, "GET" | "HEAD") {
         (
             "405 Method Not Allowed",
@@ -238,12 +264,35 @@ async fn response(
             Cow::Borrowed(b"Not found\n".as_slice()),
         )
     };
-    socket.write_all(format!("HTTP/1.1 {status}\r\nContent-Type: {media}\r\nContent-Length: {}\r\nCache-Control: no-cache\r\nX-Content-Type-Options: nosniff\r\nConnection: close\r\n\r\n", content.len()).as_bytes()).await?;
+    socket.write_all(format!("HTTP/1.1 {status}\r\nContent-Type: {media}\r\n{vary}Content-Length: {}\r\nCache-Control: no-cache\r\nX-Content-Type-Options: nosniff\r\nConnection: close\r\n\r\n", content.len()).as_bytes()).await?;
     if method != "HEAD" {
         socket.write_all(&content).await?;
     }
     socket.shutdown().await
 }
+fn accepts_markdown(accept: &str) -> bool {
+    let mut markdown = 0.0_f32;
+    let mut html = 0.0_f32;
+    for range in accept.split(',') {
+        let mut parts = range.trim().split(';');
+        let media = parts.next().unwrap_or("").trim();
+        let quality = parts
+            .filter_map(|part| part.trim().split_once('='))
+            .find(|(key, _)| key.eq_ignore_ascii_case("q"))
+            .map_or(1.0, |(_, value)| value.parse::<f32>().unwrap_or(0.0));
+        if !(0.0..=1.0).contains(&quality) {
+            continue;
+        }
+        if media.eq_ignore_ascii_case("text/markdown") {
+            markdown = markdown.max(quality);
+        }
+        if media.eq_ignore_ascii_case("text/html") {
+            html = html.max(quality);
+        }
+    }
+    markdown > 0.0 && markdown >= html
+}
+
 fn with_live_reload(html: &[u8], revision: u64) -> Vec<u8> {
     let marker = b"</body>";
     let Some(position) = html
@@ -590,6 +639,104 @@ fn discover(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn http_negotiates_markdown_and_preserves_head_and_assets() {
+        let root = tempfile::tempdir().unwrap();
+        let config = root.path().join("diplodocus.toml");
+        fs::write(&config, "[project]\nname='Negotiation'\n[[repository]]\nid='repo'\npath='.'\n[[content]]\nid='guide'\nowner='project'\nrepository='repo'\npath='docs'\nmount='guide'\nformat='gfm'\n").unwrap();
+        fs::create_dir(root.path().join("docs")).unwrap();
+        fs::write(
+            root.path().join("docs/index.md"),
+            "# Guide\n\nAgent content.\n",
+        )
+        .unwrap();
+        let sources = assemble_workspace(&config).unwrap();
+        let snapshot = crate::snapshots::Snapshot::from_sources(
+            &sources,
+            &resolve_workspace(&sources).unwrap(),
+        )
+        .unwrap();
+        let site = crate::site::Site::new(&snapshot).unwrap();
+        let generation = ServedGeneration {
+            site: crate::rendering::render_site(&site).unwrap(),
+            revision: 7,
+        };
+        for (method, target, accept, media) in [
+            ("GET", "/guide/", "text/markdown", "text/markdown"),
+            (
+                "GET",
+                "/guide/index.html?query=1",
+                "TEXT/MARKDOWN",
+                "text/markdown",
+            ),
+            ("HEAD", "/guide/", "text/markdown", "text/markdown"),
+            ("GET", "/guide/", "*/*", "text/html"),
+            ("GET", "/guide/", "text/markdown;q=0", "text/html"),
+            (
+                "GET",
+                "/assets/search.json",
+                "text/markdown",
+                "application/json",
+            ),
+        ] {
+            let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+            let mut client = TcpStream::connect(listener.local_addr().unwrap())
+                .await
+                .unwrap();
+            let (socket, _) = listener.accept().await.unwrap();
+            let request = format!(
+                "{method} {target} HTTP/1.1\r\nHost: localhost\r\nAccept: {accept}\r\n\r\n"
+            );
+            let server = response(socket, &generation, true);
+            let client = async {
+                client.write_all(request.as_bytes()).await.unwrap();
+                let mut bytes = Vec::new();
+                client.read_to_end(&mut bytes).await.unwrap();
+                String::from_utf8(bytes).unwrap()
+            };
+            let (result, response) = tokio::join!(server, client);
+            result.unwrap();
+            let (headers, body) = response.split_once("\r\n\r\n").unwrap();
+            assert!(headers.contains("200 OK"), "{response}");
+            assert!(
+                headers.contains(&format!("Content-Type: {media}")),
+                "{headers}"
+            );
+            if target.starts_with("/guide/") {
+                assert!(headers.contains("Vary: Accept"));
+            }
+            if method == "HEAD" {
+                assert!(body.is_empty());
+            } else if media == "text/markdown" {
+                assert!(body.contains("Agent content."));
+                assert!(!body.contains("<script>"));
+            }
+        }
+    }
+
+    #[test]
+    fn markdown_accept_quality_and_browser_defaults() {
+        for accept in [
+            "text/markdown",
+            "TEXT/MARKDOWN; charset=utf-8",
+            "text/html, text/markdown",
+            "text/markdown;q=0.8, */*;q=0.1",
+        ] {
+            assert!(accepts_markdown(accept), "{accept}");
+        }
+        for accept in [
+            "",
+            "*/*",
+            "text/html",
+            "text/markdown;q=0",
+            "text/markdown;q=0.2,text/html;q=0.9",
+            "text/markdown;q=invalid",
+            "text/markdown;q=NaN",
+        ] {
+            assert!(!accepts_markdown(accept), "{accept}");
+        }
+    }
 
     #[test]
     fn generated_storage_does_not_trigger_rebuilds_but_source_edits_do() {
