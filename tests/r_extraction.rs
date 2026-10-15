@@ -1274,18 +1274,26 @@ g(y)}
             .blocks
             .iter()
             .find_map(|block| match block {
-                Block::List { items, .. } => Some(items),
+                Block::Container {
+                    kind: diplodocus::ir::DocumentContainerKind::DefinitionList,
+                    blocks,
+                    ..
+                } => Some(blocks),
                 _ => None,
             })
             .unwrap();
-        let Block::Paragraph { inlines, .. } = &entries[0].blocks[0] else {
+        let Block::Container { kind, blocks, .. } = &entries[0] else {
+            panic!()
+        };
+        assert_eq!(*kind, diplodocus::ir::DocumentContainerKind::DefinitionTerm);
+        let Block::Paragraph { inlines, .. } = &blocks[0] else {
             panic!()
         };
         assert!(
             matches!(&inlines[0], diplodocus::ir::Inline::Code { value, .. } if value == "x, y")
         );
         assert!(
-            serde_json::to_string(&entries[0])
+            serde_json::to_string(&entries[1])
                 .unwrap()
                 .contains("Shared description.")
         );

@@ -142,3 +142,14 @@ blockquote, .callout { border-left: 4px solid #688b84; padding: .2rem 1rem; marg
 .footnote > p { display: inline; }
 .bibliography-entry { margin: .8rem 0; padding-left: 1.5rem; text-indent: -1.5rem; }
 .small-caps { font-variant: small-caps; }
+
+.definition-list { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 3fr); column-gap: 1.5rem; row-gap: .8rem; }
+.definition-term { font-weight: 600; }
+.definition-body { min-width: 0; margin: 0; }
+.definition-term > :first-child, .definition-body > :first-child { margin-top: 0; }
+.definition-term > :last-child, .definition-body > :last-child { margin-bottom: 0; }
+@media (max-width: 760px) {
+  .definition-list { display: block; }
+  .definition-term { margin-top: 1rem; }
+  .definition-body { margin-top: .35rem; }
+}
