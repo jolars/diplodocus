@@ -1,6 +1,9 @@
 //! Decode before classifying URLs; normalization must not erase traversal evidence.
 use super::AuthoredOutputContext;
-use html5ever::tokenizer::{BufferQueue, Token, TokenSink, TokenSinkResult, Tokenizer};
+use html5ever::{
+    local_name,
+    tokenizer::{BufferQueue, Token, TokenSink, TokenSinkResult, Tokenizer},
+};
 use percent_encoding::percent_decode_str;
 use std::cell::RefCell;
 
@@ -16,7 +19,7 @@ impl TokenSink for EntityDecoder {
     fn process_token(&self, token: Token, _: u64) -> TokenSinkResult<()> {
         if let Token::TagToken(tag) = token {
             for attribute in tag.attrs {
-                if attribute.name.local.as_ref() == "href" {
+                if attribute.name.local == local_name!("href") {
                     self.0.replace(Some(attribute.value.to_string()));
                 }
             }

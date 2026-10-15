@@ -4,8 +4,8 @@ use arity_parser::namespace::{self, DirectiveKind};
 use arity_parser::parser;
 use arity_parser::syntax::SyntaxNode;
 use rd_ast::{
-    RdDynamicMarkupEvent, RdDynamicMarkupState, RdInlineSpanKind, RdNode, RdPath, RdPathSegment,
-    RdSexprResults, RdSexprStage, RdShapeErrorKind, RdTag, text_contents,
+    RdDynamicMarkupEvent, RdDynamicMarkupState, RdInlineSpanKind, RdNode, RdSexprResults,
+    RdSexprStage, RdShapeErrorKind, RdTag, text_contents_lossy,
 };
 use rd_source::{DiagnosticCode, Severity};
 
@@ -123,9 +123,9 @@ fn r_exploratory_output_matches_golden() {
         json!({
             "path": format!("man/{}", path.display()),
             "range": null,
-            "name": text_contents(document.inspect_name().unwrap().unwrap()).trim(),
-            "aliases": document.aliases().collect::<Vec<_>>(),
-            "keywords": document.keywords().collect::<Vec<_>>(),
+            "name": text_contents_lossy(document.inspect_name().unwrap().unwrap().body()).trim(),
+            "aliases": document.aliases_lossy().collect::<Vec<_>>(),
+            "keywords": document.keywords_lossy().collect::<Vec<_>>(),
             "nodes": rd_node_observations(document.nodes()),
             "dynamic": dynamic,
         })
@@ -470,7 +470,7 @@ fn rd_source_parses_every_acceptance_document() {
 
         let document = parsed.document();
         assert_eq!(
-            text_contents(document.inspect_name().unwrap().unwrap()).trim(),
+            text_contents_lossy(document.inspect_name().unwrap().unwrap().body()).trim(),
             topic
         );
         assert!(document.inspect_title().unwrap().is_some());
@@ -478,7 +478,7 @@ fn rd_source_parses_every_acceptance_document() {
         assert!(document.inspect_description().unwrap().is_some());
         assert!(document.inspect_value().unwrap().is_some());
         assert!(document.inspect_examples().unwrap().is_some());
-        assert!(document.aliases().any(|alias| alias == topic));
+        assert!(document.aliases_lossy().any(|alias| alias == topic));
     }
 }
 
@@ -488,12 +488,12 @@ fn rd_ast_exposes_the_acceptance_semantics_without_evaluation() {
     let document = fit.document();
 
     assert_eq!(
-        document.aliases().collect::<Vec<_>>(),
+        document.aliases_lossy().collect::<Vec<_>>(),
         ["fit", "fit.default", "fit.foo_model"]
     );
     assert!(document.inspect_details().unwrap().is_some());
     assert!(document.inspect_references().unwrap().is_some());
-    assert_eq!(document.keywords().collect::<Vec<_>>(), ["models"]);
+    assert_eq!(document.keywords_lossy().collect::<Vec<_>>(), ["models"]);
 
     let arguments = document
         .inspect_arguments()
@@ -503,17 +503,18 @@ fn rd_ast_exposes_the_acceptance_semantics_without_evaluation() {
     assert_eq!(
         arguments
             .iter()
-            .map(|argument| text_contents(argument.name).trim().to_owned())
+            .map(|argument| text_contents_lossy(argument.name()).trim().to_owned())
             .collect::<Vec<_>>(),
         ["x", "...", "y", "solver", "tolerance", "features", "target"]
     );
 
-    let root = RdPath::new(vec![]);
     let methods = document
-        .usage()
+        .inspect_usage()
         .unwrap()
+        .unwrap()
+        .body_ref()
         .iter()
-        .filter_map(|node| node.method(&root))
+        .filter_map(|node| node.method_lossy())
         .map(|method| (method.generic().to_owned(), method.qualifier().to_owned()))
         .collect::<Vec<_>>();
     assert_eq!(
@@ -524,9 +525,9 @@ fn rd_ast_exposes_the_acceptance_semantics_without_evaluation() {
         ]
     );
 
-    let inline_kinds = rd_nodes(document.nodes())
-        .into_iter()
-        .filter_map(|(node, path)| node.inline_span(&path))
+    let inline_kinds = document
+        .walk()
+        .filter_map(|node| node.inline_span_lossy())
         .map(|span| span.kind())
         .collect::<Vec<_>>();
     assert!(inline_kinds.contains(&RdInlineSpanKind::Code));
@@ -573,15 +574,18 @@ fn rd_source_reports_unknown_markup_and_preserves_an_opaque_node() {
     assert_eq!(diagnostic.code(), &DiagnosticCode::UnknownTag);
     assert_eq!(&source[diagnostic.span().bytes()], r"\unknown");
 
-    let unknown = rd_nodes(parsed.document().nodes())
-        .into_iter()
-        .find_map(|(node, _)| {
-            node.as_tagged()
+    let unknown = parsed
+        .document()
+        .walk()
+        .find_map(|cursor| {
+            cursor
+                .node()
+                .as_tagged()
                 .filter(|tagged| matches!(tagged.tag(), RdTag::Unknown(_)))
         })
         .expect("unknown Rd node");
     assert_eq!(unknown.tag(), &RdTag::Unknown(r"\unknown".into()));
-    assert_eq!(text_contents(unknown.children()), "payload");
+    assert_eq!(text_contents_lossy(unknown.children()), "payload");
     support::assert_json_golden(
         &serde_json::json!({
             "source": source,
@@ -625,30 +629,6 @@ fn rd_strict_views_report_information_loss_with_structural_paths() {
 fn parse_rd_fixture(file: &str) -> rd_source::Parsed {
     let source = support::load_fixture(format!("{R_FIXTURE}/man/{file}"));
     rd_source::parse(source.as_bytes()).unwrap_or_else(|error| panic!("{file}: {error}"))
-}
-
-fn rd_nodes(nodes: &[RdNode]) -> Vec<(&RdNode, RdPath)> {
-    fn walk<'a>(node: &'a RdNode, path: RdPath, output: &mut Vec<(&'a RdNode, RdPath)>) {
-        output.push((node, path.clone()));
-        let children = match node {
-            RdNode::Tagged(tagged) => tagged.children(),
-            RdNode::Group(group) => group.children(),
-            _ => return,
-        };
-        for (index, child) in children.iter().enumerate() {
-            walk(child, path.with_child(index), output);
-        }
-    }
-
-    let mut output = Vec::new();
-    for (index, node) in nodes.iter().enumerate() {
-        walk(
-            node,
-            RdPath::new(vec![RdPathSegment::TopLevel(index)]),
-            &mut output,
-        );
-    }
-    output
 }
 
 fn named_function(root: &SyntaxNode, name: &str) -> FunctionExpr {

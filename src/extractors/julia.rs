@@ -219,7 +219,7 @@ fn read_input(
                 .parsers
                 .entry("toml".into())
                 .or_insert(ParserProvenance {
-                    version: "1.1.6".into(),
+                    version: "1.1.8".into(),
                     role: "julia-metadata".into(),
                     settings: BTreeMap::new(),
                 });

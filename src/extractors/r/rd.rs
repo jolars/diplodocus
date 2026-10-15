@@ -4,7 +4,9 @@ use arity_parser::{
     ast::{AstNode, Expr, HasArgList},
     parser,
 };
-use rd_ast::{RdListItem, RdListKind, RdNode, RdPath, RdPathSegment, RdShapeError, RdTag};
+use rd_ast::{
+    RdAstPath, RdListItem, RdListKind, RdNode, RdNodeRef, RdNodesRef, RdShapeError, RdTag,
+};
 
 use crate::diagnostics::{Diagnostic, DiagnosticCode, Severity};
 use crate::ir::{
@@ -117,11 +119,8 @@ pub(super) fn parse(
         diagnostics,
         uses_r: false,
     };
-    let document = rd_ast::RdDocument::new(context.select_conditionals(
-        parsed.document().nodes(),
-        &RdPath::new(vec![]),
-        os_type,
-    ));
+    let document =
+        rd_ast::RdDocument::new(context.prepare_nodes(parsed.document().top_level(), os_type));
     let mut valid = !parsed
         .diagnostics()
         .iter()
@@ -152,7 +151,7 @@ pub(super) fn parse(
         .inspect_name()
         .ok()
         .flatten()
-        .and_then(plain)
+        .and_then(|field| plain(field.body()))
         .unwrap_or_default();
     if name.trim().is_empty() {
         context.error(
@@ -161,7 +160,11 @@ pub(super) fn parse(
         );
         valid = false;
     }
-    let doc_type = document.inspect_doc_type().ok().flatten().and_then(plain);
+    let doc_type = document
+        .inspect_doc_type()
+        .ok()
+        .flatten()
+        .and_then(|field| plain(field.body()));
     let package = doc_type
         .as_ref()
         .is_some_and(|kind| kind.trim() == "package");
@@ -199,7 +202,7 @@ pub(super) fn parse(
             for argument in entries {
                 match argument {
                     Ok(argument) => {
-                        let Some(names) = plain(argument.name) else {
+                        let Some(names) = plain(argument.name()) else {
                             context.error(
                                 DiagnosticCode::RRdInformationLoss,
                                 "Rd argument names must be static text.",
@@ -214,7 +217,7 @@ pub(super) fn parse(
                             }],
                             span: context.span(),
                         }];
-                        blocks.extend(context.blocks(argument.description, &RdPath::new(vec![])));
+                        blocks.extend(context.blocks(argument.description_ref()));
                         arguments.push((
                             names
                                 .split(',')
@@ -241,14 +244,15 @@ pub(super) fn parse(
     }
     let mut parts = vec![];
     let mut usages = vec![];
-    for (index, node) in document.nodes().iter().enumerate() {
-        let path = RdPath::new(vec![RdPathSegment::TopLevel(index)]);
+    for (index, cursor) in document.top_level().iter().enumerate() {
+        let node = cursor.node();
+        let path = cursor.path();
         let RdNode::Tagged(tagged) = node else {
             if !matches!(node, RdNode::Comment(_))
                 && plain(std::slice::from_ref(node)).is_none_or(|s| !s.trim().is_empty())
             {
                 parts.push(Part::Blocks(
-                    context.blocks(std::slice::from_ref(node), &path),
+                    context.blocks(document.top_level().slice(index..index + 1).unwrap()),
                 ));
             }
             continue;
@@ -257,11 +261,9 @@ pub(super) fn parse(
             RdTag::Name | RdTag::Alias => {}
             RdTag::DocType if package || dataset => {}
             RdTag::Usage => {
-                let parsed = context.usages(tagged.children(), &path, dataset);
+                let parsed = context.usages(cursor.children(), dataset);
                 if parsed.is_empty() && !tagged.children().is_empty() {
-                    parts.push(Part::Blocks(vec![
-                        context.unsupported_block("usage", &path),
-                    ]));
+                    parts.push(Part::Blocks(vec![context.unsupported_block("usage", path)]));
                 } else {
                     usages.extend(parsed);
                     parts.push(Part::Usage);
@@ -271,12 +273,10 @@ pub(super) fn parse(
             RdTag::Title => parts.push(Part::Title(Box::new(Block::Heading {
                 level: 2,
                 attributes: Attributes::default(),
-                inlines: context.inlines(tagged.children(), &path),
+                inlines: context.inlines(cursor.children()),
                 span: context.span(),
             }))),
-            RdTag::Description => {
-                parts.push(Part::Introduction(context.blocks(tagged.children(), &path)))
-            }
+            RdTag::Description => parts.push(Part::Introduction(context.blocks(cursor.children()))),
             RdTag::Details
             | RdTag::Value
             | RdTag::References
@@ -300,7 +300,7 @@ pub(super) fn parse(
                     _ => "Concepts",
                 };
                 let mut blocks = vec![heading(title, context.span())];
-                blocks.extend(context.blocks(tagged.children(), &path));
+                blocks.extend(context.blocks(cursor.children()));
                 parts.push(Part::Blocks(blocks));
             }
             RdTag::Examples => {
@@ -312,14 +312,14 @@ pub(super) fn parse(
                     });
                 }
                 let mut blocks = vec![title];
-                match context.code(tagged.children(), &path, &mut BTreeMap::new()) {
+                match context.code(cursor.children(), &mut BTreeMap::new()) {
                     Some(code) => blocks.push(code_block(code.trim().into(), context.span())),
-                    None => blocks.push(context.unsupported_block("examples", &path)),
+                    None => blocks.push(context.unsupported_block("examples", path)),
                 }
                 parts.push(Part::Blocks(blocks));
             }
             _ => parts.push(Part::Blocks(
-                context.blocks(std::slice::from_ref(node), &path),
+                context.blocks(document.top_level().slice(index..index + 1).unwrap()),
             )),
         }
     }
@@ -356,7 +356,7 @@ impl Context<'_> {
         self.error(DiagnosticCode::RRdInformationLoss, error.to_string());
     }
 
-    fn unsupported(&mut self, kind: &str, path: &RdPath) {
+    fn unsupported(&mut self, kind: &str, path: &RdAstPath) {
         self.diagnostics.push(diagnostic(
             DiagnosticCode::UnsupportedRd,
             Severity::Warning,
@@ -365,7 +365,7 @@ impl Context<'_> {
         ));
     }
 
-    fn unsupported_block(&mut self, kind: &str, path: &RdPath) -> Block {
+    fn unsupported_block(&mut self, kind: &str, path: &RdAstPath) -> Block {
         self.unsupported(kind, path);
         Block::Unsupported {
             source_kind: format!("rd-{kind}"),
@@ -375,26 +375,27 @@ impl Context<'_> {
         }
     }
 
-    fn blocks(&mut self, nodes: &[RdNode], path: &RdPath) -> Vec<Block> {
+    fn blocks(&mut self, nodes: RdNodesRef<'_>) -> Vec<Block> {
         let mut result = vec![];
         let mut paragraph = vec![];
         let mut line_has_content = false;
         // Bare braces group Rd content without creating a paragraph boundary.
-        fn ungroup<'a>(nodes: &'a [RdNode], output: &mut Vec<&'a RdNode>) {
-            for node in nodes {
-                match node {
-                    RdNode::Group(group) => ungroup(group.children(), output),
+        fn ungroup<'a>(nodes: RdNodesRef<'a>, output: &mut Vec<RdNodeRef<'a>>) {
+            for cursor in nodes {
+                match cursor.node() {
+                    RdNode::Group(_) => ungroup(cursor.children(), output),
                     RdNode::Tagged(tagged) if tagged.tag().as_rd_tag() == "LIST" => {
-                        ungroup(tagged.children(), output);
+                        ungroup(cursor.children(), output);
                     }
-                    _ => output.push(node),
+                    _ => output.push(cursor),
                 }
             }
         }
         let mut content = vec![];
         ungroup(nodes, &mut content);
-        for (index, node) in content.into_iter().enumerate() {
-            let child_path = path.with_child(index);
+        for cursor in content {
+            let node = cursor.node();
+            let child_path = cursor.path();
             if let RdNode::Text(text) = node {
                 let text = text.replace("\r\n", "\n");
                 // Rd can split a blank line across adjacent text nodes.
@@ -421,37 +422,37 @@ impl Context<'_> {
                     | RdTag::Item => {
                         flush(&mut result, &mut paragraph, self.span());
                         line_has_content = false;
-                        result.extend(self.content_block(tagged, &child_path));
+                        result.extend(self.content_block(&cursor));
                         continue;
                     }
                     RdTag::Itemize | RdTag::Enumerate | RdTag::Describe => {
                         flush(&mut result, &mut paragraph, self.span());
                         line_has_content = false;
                         if tagged.tag() == &RdTag::Describe && tagged.option().is_none() {
-                            result.extend(self.describe_blocks(tagged, &child_path));
+                            result.extend(self.describe_blocks(&cursor));
                             continue;
                         }
-                        match tagged.inspect_list(&child_path) {
-                            Ok(list) => {
+                        match cursor.inspect_list() {
+                            Ok(Some(list)) => {
                                 let mut items = vec![];
                                 for entry in list.items() {
                                     let blocks = match entry {
                                         Ok(RdListItem::Delimited(item)) => {
-                                            self.blocks(item.body(), item.path())
+                                            self.blocks(item.body_ref())
                                         }
                                         Ok(RdListItem::Described(item)) => {
                                             let mut blocks = vec![Block::Paragraph {
-                                                inlines: self.inlines(item.label(), item.path()),
+                                                inlines: self.inlines(item.label_ref()),
                                                 span: self.span(),
                                             }];
-                                            blocks.extend(self.blocks(item.body(), item.path()));
+                                            blocks.extend(self.blocks(item.body_ref()));
                                             blocks
                                         }
                                         Err(error) => {
                                             self.shape(error);
-                                            vec![self.unsupported_block("list-item", &child_path)]
+                                            vec![self.unsupported_block("list-item", child_path)]
                                         }
-                                        _ => vec![self.unsupported_block("list-item", &child_path)],
+                                        _ => vec![self.unsupported_block("list-item", child_path)],
                                     };
                                     items.push(ListItem {
                                         checked: None,
@@ -465,9 +466,10 @@ impl Context<'_> {
                                     span: self.span(),
                                 });
                             }
+                            Ok(None) => unreachable!("list node"),
                             Err(error) => {
                                 self.shape(error);
-                                result.push(self.unsupported_block("list", &child_path));
+                                result.push(self.unsupported_block("list", child_path));
                             }
                         }
                         continue;
@@ -483,14 +485,14 @@ impl Context<'_> {
                                 span: self.span(),
                             });
                         } else {
-                            result.push(self.unsupported_block("preformatted", &child_path));
+                            result.push(self.unsupported_block("preformatted", child_path));
                         }
                         continue;
                     }
                     _ => {}
                 }
             }
-            let inlines = self.inline_node(node, &child_path);
+            let inlines = self.inline_node(&cursor);
             line_has_content |= !inlines.is_empty();
             paragraph.extend(inlines);
         }
@@ -498,15 +500,16 @@ impl Context<'_> {
         result
     }
 
-    fn inlines(&mut self, nodes: &[RdNode], path: &RdPath) -> Vec<Inline> {
+    fn inlines(&mut self, nodes: RdNodesRef<'_>) -> Vec<Inline> {
         nodes
             .iter()
-            .enumerate()
-            .flat_map(|(index, node)| self.inline_node(node, &path.with_child(index)))
+            .flat_map(|cursor| self.inline_node(&cursor))
             .collect()
     }
 
-    fn inline_node(&mut self, node: &RdNode, path: &RdPath) -> Vec<Inline> {
+    fn inline_node(&mut self, cursor: &RdNodeRef<'_>) -> Vec<Inline> {
+        let node = cursor.node();
+        let path = cursor.path();
         let mut result = vec![];
         let span = self.span();
         match node {
@@ -517,14 +520,14 @@ impl Context<'_> {
                 })
             }
             RdNode::Comment(_) => {}
-            RdNode::Group(group) => result.extend(self.inlines(group.children(), path)),
+            RdNode::Group(_) => result.extend(self.inlines(cursor.children())),
             RdNode::Tagged(tagged) => match tagged.tag() {
                 RdTag::Emph | RdTag::Var | RdTag::Dfn => result.push(Inline::Emphasis {
-                    inlines: self.inlines(tagged.children(), path),
+                    inlines: self.inlines(cursor.children()),
                     span,
                 }),
                 RdTag::Strong | RdTag::Bold => result.push(Inline::Strong {
-                    inlines: self.inlines(tagged.children(), path),
+                    inlines: self.inlines(cursor.children()),
                     span,
                 }),
                 RdTag::Code
@@ -539,7 +542,7 @@ impl Context<'_> {
                     if let Some(value) = plain(tagged.children()) {
                         result.push(Inline::Code { value, span });
                     } else {
-                        let mut inlines = self.inlines(tagged.children(), path);
+                        let mut inlines = self.inlines(cursor.children());
                         if tagged.tag() == &RdTag::Code {
                             content::code_style(&mut inlines);
                         }
@@ -556,7 +559,7 @@ impl Context<'_> {
                         value: open.into(),
                         span,
                     });
-                    result.extend(self.inlines(tagged.children(), path));
+                    result.extend(self.inlines(cursor.children()));
                     result.push(Inline::Text {
                         value: close.into(),
                         span,
@@ -592,11 +595,11 @@ impl Context<'_> {
                         result.push(self.unsupported_inline(tagged.tag().as_rd_tag(), path));
                     }
                 }
-                RdTag::Href => match tagged.inspect_href(path) {
-                    Ok(link) => {
+                RdTag::Href => match cursor.inspect_href() {
+                    Ok(Some(link)) => {
                         if let Some(target) = plain(link.url()) {
                             result.push(Inline::Link {
-                                inlines: self.inlines(link.display(), path),
+                                inlines: self.inlines(link.display_ref()),
                                 target,
                                 title: None,
                                 attributes: Attributes::default(),
@@ -606,13 +609,14 @@ impl Context<'_> {
                             result.push(self.unsupported_inline("href", path));
                         }
                     }
+                    Ok(None) => unreachable!("href node"),
                     Err(error) => {
                         self.shape(error);
                         result.push(self.unsupported_inline("href", path));
                     }
                 },
-                RdTag::Link => result.push(self.help_link(tagged, path)),
-                RdTag::Eqn => result.push(self.equation_inline(tagged, path)),
+                RdTag::Link => result.push(self.help_link(cursor)),
+                RdTag::Eqn => result.push(self.equation_inline(cursor)),
                 RdTag::Doi => result.push(self.doi_link(tagged, path)),
                 _ => result.push(self.unsupported_inline(tagged.tag().as_rd_tag(), path)),
             },
@@ -621,7 +625,7 @@ impl Context<'_> {
         result
     }
 
-    fn unsupported_inline(&mut self, kind: &str, path: &RdPath) -> Inline {
+    fn unsupported_inline(&mut self, kind: &str, path: &RdAstPath) -> Inline {
         self.unsupported(kind, path);
         Inline::Unsupported {
             source_kind: format!("rd-{kind}"),
@@ -633,23 +637,19 @@ impl Context<'_> {
 
     fn code(
         &mut self,
-        nodes: &[RdNode],
-        path: &RdPath,
+        nodes: RdNodesRef<'_>,
         methods: &mut BTreeMap<String, (String, String)>,
     ) -> Option<String> {
         let mut result = String::new();
-        for (index, node) in nodes.iter().enumerate() {
-            let path = path.with_child(index);
-            match node {
+        for cursor in nodes {
+            match cursor.node() {
                 RdNode::Text(text) | RdNode::RCode(text) | RdNode::Verb(text) => {
                     result.push_str(text)
                 }
                 RdNode::Comment(_) => {}
-                RdNode::Group(group) => {
-                    result.push_str(&self.code(group.children(), &path, methods)?)
-                }
+                RdNode::Group(_) => result.push_str(&self.code(cursor.children(), methods)?),
                 RdNode::Tagged(tagged) => match tagged.tag() {
-                    RdTag::Method | RdTag::S3Method => match node.inspect_method(&path) {
+                    RdTag::Method | RdTag::S3Method => match cursor.inspect_method() {
                         Ok(Some(method)) => {
                             let name = format!("{}.{}", method.generic(), method.qualifier());
                             methods.insert(
@@ -669,7 +669,7 @@ impl Context<'_> {
                         if tagged.tag() != &RdTag::Code {
                             result.push_str(&format!("\n# {}\n", tagged.tag().as_rd_tag()));
                         }
-                        result.push_str(&self.code(tagged.children(), &path, methods)?);
+                        result.push_str(&self.code(cursor.children(), methods)?);
                     }
                     _ => return None,
                 },
@@ -679,10 +679,10 @@ impl Context<'_> {
         Some(result)
     }
 
-    fn usages(&mut self, nodes: &[RdNode], path: &RdPath, dataset: bool) -> Vec<Usage> {
+    fn usages(&mut self, nodes: RdNodesRef<'_>, dataset: bool) -> Vec<Usage> {
         let mut methods = BTreeMap::new();
-        let Some(code) = self.code(nodes, path, &mut methods) else {
-            self.unsupported("usage", path);
+        let Some(code) = self.code(nodes.clone(), &mut methods) else {
+            self.unsupported("usage", nodes.container_path());
             return vec![];
         };
         self.uses_r = true;
@@ -1283,7 +1283,7 @@ pub(super) fn attach(
         if topic.uses_r {
             document_provenance
                 .tools
-                .insert("arity-parser".into(), "0.6.0".into());
+                .insert("arity-parser".into(), "0.6.1".into());
         }
         item.documentation = Some(SourcedDocument {
             document: Document {

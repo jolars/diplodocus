@@ -619,8 +619,8 @@ fn complete_r_extraction_matches_portable_acceptance_ir() {
         panic!()
     };
     assert_eq!(inputs["r"].len(), 9);
-    assert_eq!(parsers["arity-parser"].version, "0.6.0");
-    assert_eq!(parsers["rd-source"].version, "0.4.0");
+    assert_eq!(parsers["arity-parser"].version, "0.6.1");
+    assert_eq!(parsers["rd-source"].version, "0.5.0");
     assert_eq!(capabilities.len(), 7);
     let bytes = serde_json::to_string(&result).unwrap();
     assert!(!bytes.contains(workspace.path().to_str().unwrap()));
