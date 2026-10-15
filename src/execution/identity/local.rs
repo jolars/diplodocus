@@ -75,10 +75,32 @@ mod generated {
 }
 
 impl BuildObservation {
-    /// Read the running executable and combine it with build-time locked metadata.
+    /// Observe the running executable and combine it with build-time locked metadata.
+    ///
+    /// Linux keeps the running image immutable, so concurrent pages share one observation.
     pub async fn observe() -> Result<Self, IdentityError> {
-        let executable = std::env::current_exe().map_err(|_| IdentityError)?;
-        let (_, bytes) = read_regular(&executable).await?;
+        #[cfg(target_os = "linux")]
+        {
+            static OBSERVATION: tokio::sync::OnceCell<BuildObservation> =
+                tokio::sync::OnceCell::const_new();
+            OBSERVATION.get_or_try_init(Self::read).await.cloned()
+        }
+        #[cfg(not(target_os = "linux"))]
+        Self::read().await
+    }
+
+    async fn read() -> Result<Self, IdentityError> {
+        // The original pathname may now name a replacement from a rebuild or upgrade.
+        #[cfg(target_os = "linux")]
+        let bytes = tokio::fs::read("/proc/self/exe")
+            .await
+            .map_err(|_| IdentityError)?;
+        #[cfg(not(target_os = "linux"))]
+        let bytes = {
+            let executable = std::env::current_exe().map_err(|_| IdentityError)?;
+            let (_, bytes) = read_regular(&executable).await?;
+            bytes
+        };
         Ok(Self {
             engine_version: env!("CARGO_PKG_VERSION").into(),
             executable_digest: fingerprint(&content_digest(&bytes))?,

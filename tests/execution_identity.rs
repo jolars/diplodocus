@@ -848,6 +848,46 @@ async fn current_build_observation_hashes_the_running_executable() {
     );
 }
 
+#[cfg(target_os = "linux")]
+#[test]
+fn current_build_observation_survives_executable_replacement() {
+    const CHILD: &str = "DIPLODOCUS_TEST_REPLACED_EXECUTABLE";
+    if std::env::var_os(CHILD).is_some() {
+        let executable = std::env::current_exe().unwrap();
+        let bytes = std::fs::read(&executable).unwrap();
+        let expected = diplodocus::provenance::fingerprint_bytes(&bytes);
+        let replacement = executable.with_extension("replacement");
+        std::fs::write(&replacement, b"replacement executable").unwrap();
+        std::fs::rename(replacement, executable).unwrap();
+        tokio::runtime::Runtime::new().unwrap().block_on(async {
+            use diplodocus::execution::identity::BuildObservation;
+            let first = BuildObservation::observe().await.unwrap();
+            assert_eq!(first.executable_digest, expected);
+            assert_eq!(first, BuildObservation::observe().await.unwrap());
+        });
+        return;
+    }
+
+    let directory = tempfile::tempdir().unwrap();
+    let executable = directory.path().join("execution-identity");
+    std::fs::copy(std::env::current_exe().unwrap(), &executable).unwrap();
+    let output = std::process::Command::new(executable)
+        .args([
+            "--exact",
+            "current_build_observation_survives_executable_replacement",
+            "--nocapture",
+        ])
+        .env(CHILD, "1")
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
 #[tokio::test]
 async fn post_cleanup_rejects_changed_cwd_even_with_identical_source() {
     use diplodocus::execution::identity::snapshot_inputs;

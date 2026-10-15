@@ -29,8 +29,18 @@ jobs:
       - run: cargo clippy --locked --all-targets --all-features -- -D warnings
 
   test:
-    name: test
+    name: test (${{ matrix.suite }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - suite: unit
+            args: --lib --bins --examples --benches
+          - suite: integration
+            args: --test '*'
+          - suite: snapshots
+            args: ''
     steps:
       - uses: actions/checkout@v7
       - uses: cachix/install-nix-action@v31
@@ -43,10 +53,12 @@ jobs:
         run: devenv shell -- true
       - uses: Swatinem/rust-cache@v2
         with:
-          key: test
+          key: test-${{ matrix.suite }}
       - name: Run tests
-        run: devenv shell -- cargo test --locked --all-targets
+        if: matrix.suite != 'snapshots'
+        run: devenv shell -- cargo test --locked ${{ matrix.args }}
       - name: Check snapshots with insertion-ordered JSON maps
+        if: matrix.suite == 'snapshots'
         run: |
           devenv shell -- cargo test --locked --lib snapshots:: --features serde_json/preserve_order
           devenv shell -- cargo test --locked --features serde_json/preserve_order \
