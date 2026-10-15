@@ -41,7 +41,10 @@ exposed. Redundant aliases such as `from .model import fit as fit` count as
 explicit. Unaliased imports used for annotations do not become public by
 default. Underscore-prefixed modules require public reexports to expose their
 items. A public reexport retains the canonical defining module without
-promoting its unrelated private declarations.
+promoting its unrelated private declarations. An implementation module retained
+this way stays private: its metadata remains available, while its module prose,
+navigation entry, and search result are omitted. Explicitly reexporting the
+module itself still exposes its public API.
 
 Maintained stubs select the public declaration surface and signatures.
 Implementation prose and constant values retain separate evidence. Stub-only
@@ -69,16 +72,32 @@ becomes an unparameterized context manager. Unknown decorators on public
 declarations produce diagnostics and leave callable signatures unspecified;
 unknown decorators on internal declarations do not fail the public surface
 unless those declarations are reexported. Conditional declarations, generic
-type parameters, and opaque signature expressions produce diagnostics.
+type parameters, and opaque signature expressions produce diagnostics. An
+import-only `if typing.TYPE_CHECKING:` block, including imported aliases of the
+guard, qualifies annotations without creating runtime exports. Other conditional
+definitions remain unsupported.
+
+Dataclass extraction accepts the boolean `init`, `frozen`, `repr`, `eq`, `order`,
+and `unsafe_hash` options. Constructor metadata preserves field order and omits
+fields with `field(init=False)`. Field expressions retain `default` and
+`default_factory` arguments for presentation without evaluating factories.
 
 ## Documentation and evidence
 
-Parameters, Returns, Raises, Notes, References, and Examples become structured
-headings, entries, prose, and display code. Simple `:func:` roles become semantic
-references, including the acceptance corpus's references to `fit`. Other
-unsupported roles, directives, sections, and raw HTML remain visible
-placeholders. Neither docstring examples nor their hashpipe options authorize
-execution.
+Parameters, Attributes, Returns, Raises, Notes, References, and Examples become
+structured headings, entries, prose, and display code. Entries may omit a
+redundant type when they have a description. Nested lists retain their structure,
+and indented literal examples introduced by `::` become Python display code.
+
+Sphinx `func`, `class`, `meth`, `attr`, `data`, `exc`, `mod`, and `obj` roles,
+including their `py:` forms and shortened `~` labels, retain code labels and
+semantic links. Extraction resolves names against the enclosing class, defining
+module, and public package aliases. References to inherited members use retained
+same-package base definitions. An unavailable private or external target renders
+as readable code with a source-attributed warning; ambiguous targets remain
+errors. Other unsupported roles, directives, sections, and raw HTML remain
+visible placeholders. Neither docstring examples nor their hashpipe options
+authorize execution in the source adapter.
 
 Document ranges address decoded UTF-8 text. Proven unchanged-byte segments map
 diagnostics back to original Python source. Escapes, missing mappings, and
@@ -93,7 +112,7 @@ Portable paths are repository-relative, and no timestamp or checkout root is
 introduced by extraction.
 
 `tests/milestone_four.rs` combines the passes against the acceptance workspace:
-26 canonical items, four overload members, 16 attached documents, and no
+26 canonical items, four overload members, 15 attached documents, and no
 baseline diagnostics. It compares relocated workspaces, checks the isolated
 dynamic-export warning, and verifies that import failures and build-backend
 hooks are not executed. Component tests cover malformed inputs, conflicting

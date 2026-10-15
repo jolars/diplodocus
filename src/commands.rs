@@ -196,6 +196,18 @@ pub fn generate(options: GenerateOptions) -> Result<(), CommandError> {
     Ok(())
 }
 
+/// Generate embeddable HTML and Markdown from a completed snapshot.
+///
+/// An optional versioned JSON URL map changes public links while preserving
+/// fragment artifact paths. Neither source checkouts nor runtimes are used.
+pub fn generate_fragments(
+    options: GenerateOptions,
+    url_map: Option<PathBuf>,
+) -> Result<(), CommandError> {
+    pipeline::generate_fragments_attempt(&options.input, &options.output, url_map.as_deref())?;
+    Ok(())
+}
+
 fn assembly_diagnostics(error: &AssemblyError) -> &[Diagnostic] {
     match error {
         AssemblyError::Diagnostics(diagnostics) => diagnostics,

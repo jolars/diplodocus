@@ -1,5 +1,123 @@
 use crate::ir::{ParameterKind, Signature, SignatureExpression};
 
+pub(super) fn signature_for_site(
+    site: &crate::site::Site<'_>,
+    name: &str,
+    value: &Signature,
+    ecosystem: &str,
+) -> String {
+    if ecosystem != "python" {
+        return signature(name, value, ecosystem);
+    }
+    let names = public_names(site);
+    let mut value = value.clone();
+    match &mut value {
+        Signature::Callable {
+            parameters,
+            returns,
+        } => {
+            for parameter in parameters {
+                if let Some(annotation) = &mut parameter.annotation {
+                    qualify(annotation, &names);
+                }
+                if let Some(default) = &mut parameter.default {
+                    qualify(default, &names);
+                }
+            }
+            if let Some(returns) = returns {
+                qualify(returns, &names);
+            }
+        }
+        Signature::Value { annotation, value } => {
+            if let Some(annotation) = annotation {
+                qualify(annotation, &names);
+            }
+            if let Some(value) = value {
+                qualify(value, &names);
+            }
+        }
+        Signature::LanguageSpecific { syntax, .. } => qualify(syntax, &names),
+    }
+    signature(name, &value, ecosystem)
+}
+
+pub(super) fn expression_for_site(
+    site: &crate::site::Site<'_>,
+    value: &SignatureExpression,
+    ecosystem: &str,
+) -> String {
+    let mut value = value.clone();
+    if ecosystem == "python" {
+        qualify(&mut value, &public_names(site));
+    }
+    expression(&value, ecosystem)
+}
+
+struct PublicNames {
+    aliases: std::collections::BTreeMap<String, String>,
+    private_modules: Vec<String>,
+}
+
+fn public_names(site: &crate::site::Site<'_>) -> PublicNames {
+    let mut names = std::collections::BTreeMap::new();
+    let mut private_modules = Vec::new();
+    for page in site.pages.values() {
+        if let (Some(item), Some(public)) = (page.item, page.public_name.as_ref()) {
+            if item.kind == crate::ir::ItemKind::Module && !item.discoverable() {
+                private_modules.push(item.qualified_name.clone());
+            }
+            names.insert(item.qualified_name.clone(), public.clone());
+            for alias in &item.aliases {
+                names.insert(alias.qualified_name.clone(), public.clone());
+            }
+        }
+    }
+    PublicNames {
+        aliases: names,
+        private_modules,
+    }
+}
+
+fn qualify(value: &mut SignatureExpression, names: &PublicNames) {
+    match value {
+        SignatureExpression::Name { name, .. } => {
+            if let Some(public) = names.aliases.get(name) {
+                *name = public.clone();
+            } else if let Some(local) = names
+                .private_modules
+                .iter()
+                .find_map(|module| {
+                    name.strip_prefix(module)
+                        .and_then(|suffix| suffix.strip_prefix('.'))
+                })
+                .map(str::to_owned)
+            {
+                // Local type variables and aliases remain descriptive names;
+                // displaying a private module would suggest a supported import.
+                *name = local;
+            }
+        }
+        SignatureExpression::Apply {
+            constructor,
+            arguments,
+        } => {
+            qualify(constructor, names);
+            for argument in arguments {
+                qualify(argument, names);
+            }
+        }
+        SignatureExpression::Sequence { items }
+        | SignatureExpression::LanguageSpecific {
+            children: items, ..
+        } => {
+            for item in items {
+                qualify(item, names);
+            }
+        }
+        SignatureExpression::Literal { .. } => {}
+    }
+}
+
 pub(super) fn signature(name: &str, signature: &Signature, ecosystem: &str) -> String {
     match signature {
         Signature::Callable {
@@ -108,7 +226,7 @@ pub(super) fn signature(name: &str, signature: &Signature, ecosystem: &str) -> S
         }
     }
 }
-fn expression(value: &SignatureExpression, ecosystem: &str) -> String {
+pub(super) fn expression(value: &SignatureExpression, ecosystem: &str) -> String {
     match value {
         SignatureExpression::Name { name, .. } => name.clone(),
         SignatureExpression::Literal { text } => text.clone(),

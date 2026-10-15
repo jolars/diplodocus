@@ -3725,7 +3725,7 @@
       "language_data": {
         "language": "python",
         "data": {
-          "visibility": "public",
+          "visibility": "private",
           "declaration": {
             "kind": "module",
             "source": "stub-only",
@@ -4485,29 +4485,6 @@
           "source": {
             "start": 3,
             "end": 48
-          }
-        }
-      ]
-    },
-    "sid1:python:module:foo._native": {
-      "text": "Public declarations for the compiled ``foo._native`` extension.",
-      "source": {
-        "repository": "python",
-        "path": "python/foo/_native.pyi",
-        "span": {
-          "start": 0,
-          "end": 69
-        }
-      },
-      "segments": [
-        {
-          "decoded": {
-            "start": 0,
-            "end": 63
-          },
-          "source": {
-            "start": 3,
-            "end": 66
           }
         }
       ]

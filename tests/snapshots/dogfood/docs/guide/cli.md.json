@@ -2,7 +2,7 @@
   "document": {
     "span": {
       "start": 0,
-      "end": 3458
+      "end": 3715
     },
     "frontmatter": null,
     "blocks": [
@@ -1938,11 +1938,205 @@
               "start": 2733,
               "end": 2834
             }
+          },
+          {
+            "checked": null,
+            "blocks": [
+              {
+                "type": "paragraph",
+                "inlines": [
+                  {
+                    "type": "code",
+                    "value": "--format <FORMAT>",
+                    "span": {
+                      "start": 2837,
+                      "end": 2856
+                    }
+                  },
+                  {
+                    "type": "soft-break",
+                    "span": {
+                      "start": 2856,
+                      "end": 2857
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 2837,
+                  "end": 2857
+                }
+              },
+              {
+                "type": "paragraph",
+                "inlines": [
+                  {
+                    "type": "text",
+                    "value": "    Output complete site pages or embeddable HTML and Markdown fragments",
+                    "span": {
+                      "start": 2858,
+                      "end": 2930
+                    }
+                  },
+                  {
+                    "type": "soft-break",
+                    "span": {
+                      "start": 2930,
+                      "end": 2931
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 2858,
+                  "end": 2931
+                }
+              },
+              {
+                "type": "paragraph",
+                "inlines": [
+                  {
+                    "type": "text",
+                    "value": "    Default value: ",
+                    "span": {
+                      "start": 2932,
+                      "end": 2951
+                    }
+                  },
+                  {
+                    "type": "code",
+                    "value": "site",
+                    "span": {
+                      "start": 2951,
+                      "end": 2957
+                    }
+                  },
+                  {
+                    "type": "soft-break",
+                    "span": {
+                      "start": 2957,
+                      "end": 2958
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 2932,
+                  "end": 2958
+                }
+              },
+              {
+                "type": "paragraph",
+                "inlines": [
+                  {
+                    "type": "text",
+                    "value": "    Possible values: ",
+                    "span": {
+                      "start": 2959,
+                      "end": 2980
+                    }
+                  },
+                  {
+                    "type": "code",
+                    "value": "site",
+                    "span": {
+                      "start": 2980,
+                      "end": 2986
+                    }
+                  },
+                  {
+                    "type": "text",
+                    "value": ", ",
+                    "span": {
+                      "start": 2986,
+                      "end": 2988
+                    }
+                  },
+                  {
+                    "type": "code",
+                    "value": "fragments",
+                    "span": {
+                      "start": 2988,
+                      "end": 2999
+                    }
+                  },
+                  {
+                    "type": "soft-break",
+                    "span": {
+                      "start": 2999,
+                      "end": 3000
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 2959,
+                  "end": 3000
+                }
+              }
+            ],
+            "span": {
+              "start": 2835,
+              "end": 3000
+            }
+          },
+          {
+            "checked": null,
+            "blocks": [
+              {
+                "type": "paragraph",
+                "inlines": [
+                  {
+                    "type": "code",
+                    "value": "--url-map <PATH>",
+                    "span": {
+                      "start": 3003,
+                      "end": 3021
+                    }
+                  },
+                  {
+                    "type": "soft-break",
+                    "span": {
+                      "start": 3021,
+                      "end": 3022
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 3003,
+                  "end": 3022
+                }
+              },
+              {
+                "type": "paragraph",
+                "inlines": [
+                  {
+                    "type": "text",
+                    "value": "    Public document and asset URL map (requires --format fragments)",
+                    "span": {
+                      "start": 3023,
+                      "end": 3090
+                    }
+                  },
+                  {
+                    "type": "soft-break",
+                    "span": {
+                      "start": 3090,
+                      "end": 3091
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 3023,
+                  "end": 3091
+                }
+              }
+            ],
+            "span": {
+              "start": 3001,
+              "end": 3091
+            }
           }
         ],
         "span": {
           "start": 2668,
-          "end": 2834
+          "end": 3091
         }
       },
       {
@@ -1958,14 +2152,14 @@
             "type": "code",
             "value": "diplodocus serve",
             "span": {
-              "start": 2838,
-              "end": 2856
+              "start": 3095,
+              "end": 3113
             }
           }
         ],
         "span": {
-          "start": 2835,
-          "end": 2857
+          "start": 3092,
+          "end": 3114
         }
       },
       {
@@ -1975,21 +2169,21 @@
             "type": "text",
             "value": "Build and serve a site, rebuilding when declared inputs change",
             "span": {
-              "start": 2858,
-              "end": 2920
+              "start": 3115,
+              "end": 3177
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2920,
-              "end": 2921
+              "start": 3177,
+              "end": 3178
             }
           }
         ],
         "span": {
-          "start": 2858,
-          "end": 2921
+          "start": 3115,
+          "end": 3178
         }
       },
       {
@@ -2002,43 +2196,43 @@
                 "type": "text",
                 "value": "Usage:",
                 "span": {
-                  "start": 2924,
-                  "end": 2930
+                  "start": 3181,
+                  "end": 3187
                 }
               }
             ],
             "span": {
-              "start": 2922,
-              "end": 2932
+              "start": 3179,
+              "end": 3189
             }
           },
           {
             "type": "text",
             "value": " ",
             "span": {
-              "start": 2932,
-              "end": 2933
+              "start": 3189,
+              "end": 3190
             }
           },
           {
             "type": "code",
             "value": "diplodocus serve [OPTIONS]",
             "span": {
-              "start": 2933,
-              "end": 2961
+              "start": 3190,
+              "end": 3218
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2961,
-              "end": 2962
+              "start": 3218,
+              "end": 3219
             }
           }
         ],
         "span": {
-          "start": 2922,
-          "end": 2962
+          "start": 3179,
+          "end": 3219
         }
       },
       {
@@ -2054,14 +2248,14 @@
             "type": "text",
             "value": "Options",
             "span": {
-              "start": 2967,
-              "end": 2974
+              "start": 3224,
+              "end": 3231
             }
           }
         ],
         "span": {
-          "start": 2963,
-          "end": 2975
+          "start": 3220,
+          "end": 3232
         }
       },
       {
@@ -2078,21 +2272,21 @@
                     "type": "code",
                     "value": "--config <PATH>",
                     "span": {
-                      "start": 2978,
-                      "end": 2995
+                      "start": 3235,
+                      "end": 3252
                     }
                   },
                   {
                     "type": "soft-break",
                     "span": {
-                      "start": 2995,
-                      "end": 2996
+                      "start": 3252,
+                      "end": 3253
                     }
                   }
                 ],
                 "span": {
-                  "start": 2978,
-                  "end": 2996
+                  "start": 3235,
+                  "end": 3253
                 }
               },
               {
@@ -2102,21 +2296,21 @@
                     "type": "text",
                     "value": "    Path to the workspace configuration file",
                     "span": {
-                      "start": 2997,
-                      "end": 3041
+                      "start": 3254,
+                      "end": 3298
                     }
                   },
                   {
                     "type": "soft-break",
                     "span": {
-                      "start": 3041,
-                      "end": 3042
+                      "start": 3298,
+                      "end": 3299
                     }
                   }
                 ],
                 "span": {
-                  "start": 2997,
-                  "end": 3042
+                  "start": 3254,
+                  "end": 3299
                 }
               },
               {
@@ -2126,35 +2320,35 @@
                     "type": "text",
                     "value": "    Default value: ",
                     "span": {
-                      "start": 3043,
-                      "end": 3062
+                      "start": 3300,
+                      "end": 3319
                     }
                   },
                   {
                     "type": "code",
                     "value": "./diplodocus.toml",
                     "span": {
-                      "start": 3062,
-                      "end": 3081
+                      "start": 3319,
+                      "end": 3338
                     }
                   },
                   {
                     "type": "soft-break",
                     "span": {
-                      "start": 3081,
-                      "end": 3082
+                      "start": 3338,
+                      "end": 3339
                     }
                   }
                 ],
                 "span": {
-                  "start": 3043,
-                  "end": 3082
+                  "start": 3300,
+                  "end": 3339
                 }
               }
             ],
             "span": {
-              "start": 2976,
-              "end": 3082
+              "start": 3233,
+              "end": 3339
             }
           },
           {
@@ -2167,21 +2361,21 @@
                     "type": "code",
                     "value": "--output <PATH>",
                     "span": {
-                      "start": 3085,
-                      "end": 3102
+                      "start": 3342,
+                      "end": 3359
                     }
                   },
                   {
                     "type": "soft-break",
                     "span": {
-                      "start": 3102,
-                      "end": 3103
+                      "start": 3359,
+                      "end": 3360
                     }
                   }
                 ],
                 "span": {
-                  "start": 3085,
-                  "end": 3103
+                  "start": 3342,
+                  "end": 3360
                 }
               },
               {
@@ -2191,21 +2385,21 @@
                     "type": "text",
                     "value": "    Directory in which to write the generated site",
                     "span": {
-                      "start": 3104,
-                      "end": 3154
+                      "start": 3361,
+                      "end": 3411
                     }
                   },
                   {
                     "type": "soft-break",
                     "span": {
-                      "start": 3154,
-                      "end": 3155
+                      "start": 3411,
+                      "end": 3412
                     }
                   }
                 ],
                 "span": {
-                  "start": 3104,
-                  "end": 3155
+                  "start": 3361,
+                  "end": 3412
                 }
               },
               {
@@ -2215,35 +2409,35 @@
                     "type": "text",
                     "value": "    Default value: ",
                     "span": {
-                      "start": 3156,
-                      "end": 3175
+                      "start": 3413,
+                      "end": 3432
                     }
                   },
                   {
                     "type": "code",
                     "value": "./site",
                     "span": {
-                      "start": 3175,
-                      "end": 3183
+                      "start": 3432,
+                      "end": 3440
                     }
                   },
                   {
                     "type": "soft-break",
                     "span": {
-                      "start": 3183,
-                      "end": 3184
+                      "start": 3440,
+                      "end": 3441
                     }
                   }
                 ],
                 "span": {
-                  "start": 3156,
-                  "end": 3184
+                  "start": 3413,
+                  "end": 3441
                 }
               }
             ],
             "span": {
-              "start": 3083,
-              "end": 3184
+              "start": 3340,
+              "end": 3441
             }
           },
           {
@@ -2256,21 +2450,21 @@
                     "type": "code",
                     "value": "--host <ADDRESS>",
                     "span": {
-                      "start": 3187,
-                      "end": 3205
+                      "start": 3444,
+                      "end": 3462
                     }
                   },
                   {
                     "type": "soft-break",
                     "span": {
-                      "start": 3205,
-                      "end": 3206
+                      "start": 3462,
+                      "end": 3463
                     }
                   }
                 ],
                 "span": {
-                  "start": 3187,
-                  "end": 3206
+                  "start": 3444,
+                  "end": 3463
                 }
               },
               {
@@ -2280,21 +2474,21 @@
                     "type": "text",
                     "value": "    Address on which to serve the generated site",
                     "span": {
-                      "start": 3207,
-                      "end": 3255
+                      "start": 3464,
+                      "end": 3512
                     }
                   },
                   {
                     "type": "soft-break",
                     "span": {
-                      "start": 3255,
-                      "end": 3256
+                      "start": 3512,
+                      "end": 3513
                     }
                   }
                 ],
                 "span": {
-                  "start": 3207,
-                  "end": 3256
+                  "start": 3464,
+                  "end": 3513
                 }
               },
               {
@@ -2304,35 +2498,35 @@
                     "type": "text",
                     "value": "    Default value: ",
                     "span": {
-                      "start": 3257,
-                      "end": 3276
+                      "start": 3514,
+                      "end": 3533
                     }
                   },
                   {
                     "type": "code",
                     "value": "127.0.0.1",
                     "span": {
-                      "start": 3276,
-                      "end": 3287
+                      "start": 3533,
+                      "end": 3544
                     }
                   },
                   {
                     "type": "soft-break",
                     "span": {
-                      "start": 3287,
-                      "end": 3288
+                      "start": 3544,
+                      "end": 3545
                     }
                   }
                 ],
                 "span": {
-                  "start": 3257,
-                  "end": 3288
+                  "start": 3514,
+                  "end": 3545
                 }
               }
             ],
             "span": {
-              "start": 3185,
-              "end": 3288
+              "start": 3442,
+              "end": 3545
             }
           },
           {
@@ -2345,21 +2539,21 @@
                     "type": "code",
                     "value": "--port <PORT>",
                     "span": {
-                      "start": 3291,
-                      "end": 3306
+                      "start": 3548,
+                      "end": 3563
                     }
                   },
                   {
                     "type": "soft-break",
                     "span": {
-                      "start": 3306,
-                      "end": 3307
+                      "start": 3563,
+                      "end": 3564
                     }
                   }
                 ],
                 "span": {
-                  "start": 3291,
-                  "end": 3307
+                  "start": 3548,
+                  "end": 3564
                 }
               },
               {
@@ -2369,21 +2563,21 @@
                     "type": "text",
                     "value": "    Port on which to serve the generated site",
                     "span": {
-                      "start": 3308,
-                      "end": 3353
+                      "start": 3565,
+                      "end": 3610
                     }
                   },
                   {
                     "type": "soft-break",
                     "span": {
-                      "start": 3353,
-                      "end": 3354
+                      "start": 3610,
+                      "end": 3611
                     }
                   }
                 ],
                 "span": {
-                  "start": 3308,
-                  "end": 3354
+                  "start": 3565,
+                  "end": 3611
                 }
               },
               {
@@ -2393,35 +2587,35 @@
                     "type": "text",
                     "value": "    Default value: ",
                     "span": {
-                      "start": 3355,
-                      "end": 3374
+                      "start": 3612,
+                      "end": 3631
                     }
                   },
                   {
                     "type": "code",
                     "value": "8000",
                     "span": {
-                      "start": 3374,
-                      "end": 3380
+                      "start": 3631,
+                      "end": 3637
                     }
                   },
                   {
                     "type": "soft-break",
                     "span": {
-                      "start": 3380,
-                      "end": 3381
+                      "start": 3637,
+                      "end": 3638
                     }
                   }
                 ],
                 "span": {
-                  "start": 3355,
-                  "end": 3381
+                  "start": 3612,
+                  "end": 3638
                 }
               }
             ],
             "span": {
-              "start": 3289,
-              "end": 3381
+              "start": 3546,
+              "end": 3638
             }
           },
           {
@@ -2434,21 +2628,21 @@
                     "type": "code",
                     "value": "--live-reload",
                     "span": {
-                      "start": 3384,
-                      "end": 3399
+                      "start": 3641,
+                      "end": 3656
                     }
                   },
                   {
                     "type": "soft-break",
                     "span": {
-                      "start": 3399,
-                      "end": 3400
+                      "start": 3656,
+                      "end": 3657
                     }
                   }
                 ],
                 "span": {
-                  "start": 3384,
-                  "end": 3400
+                  "start": 3641,
+                  "end": 3657
                 }
               },
               {
@@ -2458,33 +2652,33 @@
                     "type": "text",
                     "value": "    Refresh open browser pages after successful rebuilds",
                     "span": {
-                      "start": 3401,
-                      "end": 3457
+                      "start": 3658,
+                      "end": 3714
                     }
                   },
                   {
                     "type": "soft-break",
                     "span": {
-                      "start": 3457,
-                      "end": 3458
+                      "start": 3714,
+                      "end": 3715
                     }
                   }
                 ],
                 "span": {
-                  "start": 3401,
-                  "end": 3458
+                  "start": 3658,
+                  "end": 3715
                 }
               }
             ],
             "span": {
-              "start": 3382,
-              "end": 3458
+              "start": 3639,
+              "end": 3715
             }
           }
         ],
         "span": {
-          "start": 2976,
-          "end": 3458
+          "start": 3233,
+          "end": 3715
         }
       }
     ]

@@ -2,7 +2,7 @@ use std::fmt::Write;
 use std::sync::OnceLock;
 
 use crate::ir::{PackageMetadata, PackagePageRole};
-use crate::site::{Site, relative_url};
+use crate::site::Site;
 
 use super::html::escape;
 
@@ -52,7 +52,7 @@ pub(super) fn panel(site: &Site<'_>, route: &str, id: &str) -> String {
     ] {
         let destination = format!("packages/{}/{}", package.slug, role.filename());
         if site.pages.contains_key(&destination) {
-            link(&mut html, &relative_url(route, &destination), role.title());
+            link(&mut html, &site.url(route, &destination), role.title());
         }
     }
     static URLS: OnceLock<regex::Regex> = OnceLock::new();

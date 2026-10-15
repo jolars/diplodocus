@@ -231,12 +231,14 @@ fn item_tree(
     if !item.discoverable() {
         return (String::new(), false);
     }
-    let destination = &site.routes[&DocumentIdentity::Item {
-        item: ItemReference {
-            package: package_id.into(),
-            item: item_id.into(),
-        },
-    }];
+    let reference = ItemReference {
+        package: package_id.into(),
+        item: item_id.into(),
+    };
+    if package.ecosystem == "python" && site.overload_anchors.contains_key(&reference) {
+        return (String::new(), false);
+    }
+    let destination = &site.routes[&DocumentIdentity::Item { item: reference }];
     let title = if package.ecosystem == "julia" && item.kind == crate::ir::ItemKind::Method {
         item.signatures
             .first()
@@ -256,10 +258,12 @@ fn item_tree(
     };
     let mut active = destination == route;
     let mut children = String::new();
-    for child in &item.children {
-        let (html, child_active) = item_tree(site, route, package_id, package, child, visited);
-        children.push_str(&html);
-        active |= child_active;
+    if package.ecosystem != "python" || item.kind != crate::ir::ItemKind::Class {
+        for child in &item.children {
+            let (html, child_active) = item_tree(site, route, package_id, package, child, visited);
+            children.push_str(&html);
+            active |= child_active;
+        }
     }
     let mut html = String::new();
     if children.is_empty() {

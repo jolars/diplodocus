@@ -10,7 +10,11 @@ pub(super) struct Binding {
 
 pub(super) fn imports(module: &ParsedModule) -> BTreeMap<String, Vec<Binding>> {
     let mut bindings: BTreeMap<String, Vec<Binding>> = BTreeMap::new();
-    for import in &module.imports {
+    for import in module
+        .imports
+        .iter()
+        .filter(|import| !import.annotation_only)
+    {
         let base = import_base(module, import);
         for name in &import.names {
             let ordinary = import.level == 0 && import.module.is_none();

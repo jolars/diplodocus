@@ -104,6 +104,18 @@ Generate a site using only a completed snapshot
 
     Default value: `./site`
 
+- `--format <FORMAT>`
+
+    Output complete site pages or embeddable HTML and Markdown fragments
+
+    Default value: `site`
+
+    Possible values: `site`, `fragments`
+
+- `--url-map <PATH>`
+
+    Public document and asset URL map (requires --format fragments)
+
 ## `diplodocus serve`
 
 Build and serve a site, rebuilding when declared inputs change

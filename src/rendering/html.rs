@@ -8,7 +8,7 @@ use crate::configuration::ConceptKind;
 use crate::execution::ValidatedRepresentationRef;
 use crate::execution::output_safety::{HtmlAttribute, HtmlNode};
 use crate::ir::*;
-use crate::site::{PageModel, Site, SiteError, relative_url};
+use crate::site::{PageModel, Site, SiteError};
 use crate::validation::{DocumentIdentity, ReferenceKind};
 
 const FRAGMENT: &percent_encoding::AsciiSet = &percent_encoding::NON_ALPHANUMERIC
@@ -24,10 +24,9 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
 
 /// Render document bodies, assets, and a JSON index for an existing website.
 ///
-/// `documents.json` describes each fragment's path, title, semantic identities,
-/// package, and headings. Links use the same relative paths as the built-in
-/// site. Consumers that change those paths must map links and asset references
-/// to their own URLs. This integration format is experimental.
+/// `documents.json` is a versioned [`super::FragmentIndex`] describing HTML and
+/// Markdown artifacts, public names, semantic identities, and heading anchors.
+/// Apply [`crate::site::UrlMap`] to the site to mount links on another website.
 pub fn render_fragments(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
     render(site, false)
 }
@@ -52,11 +51,20 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                             super::math::contains_math(&document.document.blocks)
                         })
                 })
+            })
+            || page.python_class.as_ref().is_some_and(|class| {
+                class.members.iter().any(|member| {
+                    !member.inherited
+                        && member.item.documentation.as_ref().is_some_and(|document| {
+                            super::math::contains_math(&document.document.blocks)
+                        })
+                })
             });
         uses_math |= page_math;
         let mut renderer = Renderer {
             site,
             page,
+            resolved: page.resolved,
             route,
             document_route: route,
             math_context: &math_context,
@@ -68,10 +76,23 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                 .map(|document| document.anchors.clone())
                 .unwrap_or_default(),
             document_navigation: true,
+            heading_offset: 0,
         };
         renderer
             .identifiers
             .extend(["main", "search", "search-results"].map(str::to_owned));
+        if let Some(class) = &page.python_class {
+            renderer.identifiers.extend(
+                class
+                    .members
+                    .iter()
+                    .filter(|member| !member.inherited)
+                    .map(|member| member.anchor.clone()),
+            );
+            if !class.constructors.is_empty() {
+                renderer.identifiers.insert("constructor".into());
+            }
+        }
         let package_overview =
             super::package_metadata::is_overview(site, route, page.owner.as_deref());
         let mut html = String::new();
@@ -90,12 +111,12 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
             if let Some(url) = site.canonical_urls.get(route) {
                 write!(html, "<link rel=\"canonical\" href=\"{}\">", escape(url)).unwrap();
             }
-            write!(html, "<title>{} · {}</title><link rel=\"stylesheet\" href=\"{}\"><script defer src=\"{}\"></script><script defer src=\"{}\"></script><script defer src=\"{}\"></script>", escape(&page.title), escape(site.title()), escape(&relative_url(route, "assets/site.css")), escape(&relative_url(route, "assets/search.js")), escape(&relative_url(route, "assets/nav.js")), escape(&relative_url(route, "assets/code.js"))).unwrap();
+            write!(html, "<title>{} · {}</title><link rel=\"stylesheet\" href=\"{}\"><script defer src=\"{}\"></script><script defer src=\"{}\"></script><script defer src=\"{}\"></script>", escape(&page.title), escape(site.title()), escape(&site.url(route, "assets/site.css")), escape(&site.url(route, "assets/search.js")), escape(&site.url(route, "assets/nav.js")), escape(&site.url(route, "assets/code.js"))).unwrap();
             if page_math {
                 write!(
                     html,
                     "<link rel=\"stylesheet\" href=\"{}\">",
-                    escape(&relative_url(route, "assets/katex/katex.min.css"))
+                    escape(&site.url(route, "assets/katex/katex.min.css"))
                 )
                 .unwrap();
             }
@@ -103,17 +124,14 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
             write!(
                 html,
                 "<header><a class=\"brand\" href=\"{}\">",
-                escape(&relative_url(route, "index.html")),
+                escape(&site.url(route, "index.html")),
             )
             .unwrap();
             if let Some(logo) = site.logo {
                 write!(
                     html,
                     "<img class=\"brand-logo\" src=\"{}\" alt=\"\">",
-                    escape(&relative_url(
-                        route,
-                        &site.asset_route(&logo.fingerprint.value)?
-                    ))
+                    escape(&site.url(route, &site.asset_route(&logo.fingerprint.value)?))
                 )
                 .unwrap();
             }
@@ -285,12 +303,67 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                         write!(html, "<div id=\"{}\">", escape(anchor)).unwrap();
                     }
                     html.push_str(&highlighter.render(
-                        &super::signatures::signature(name, &signature.signature, ecosystem),
+                        &super::signatures::signature_for_site(
+                            site,
+                            name,
+                            &signature.signature,
+                            ecosystem,
+                        ),
                         Some(ecosystem),
                     ));
                     if anchor.is_some() {
                         html.push_str("</div>");
                     }
+                }
+            }
+            if let Some(class) = &page.python_class {
+                if !class.bases.is_empty() {
+                    write!(
+                        html,
+                        "<p>Bases: {}</p>",
+                        class
+                            .bases
+                            .iter()
+                            .map(|base| format!(
+                                "<code>{}</code>",
+                                escape(&super::signatures::expression_for_site(
+                                    site, base, "python"
+                                ))
+                            ))
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    )
+                    .unwrap();
+                }
+                if !class.constructors.is_empty() {
+                    html.push_str("<div id=\"constructor\">");
+                }
+                for signature in &class.constructors {
+                    html.push_str(&highlighter.render(
+                        &super::signatures::signature_for_site(site, name, signature, "python"),
+                        Some("python"),
+                    ));
+                }
+                if !class.constructors.is_empty() {
+                    html.push_str("</div>");
+                }
+                if let Some(owner) = &class.constructor_owner
+                    && site.workspace.packages[&owner.package].items[&owner.item].qualified_name
+                        != item.qualified_name
+                {
+                    let target = site.target(
+                        route,
+                        &crate::validation::ReferenceTarget::Item {
+                            item: owner.clone(),
+                        },
+                    )?;
+                    write!(
+                        html,
+                        "<p>Constructor inherited from <a href=\"{}\"><code>{}</code></a>.</p>",
+                        escape(&target),
+                        escape(&site.workspace.packages[&owner.package].items[&owner.item].name)
+                    )
+                    .unwrap();
                 }
             }
             if matches!(&item.language_data, Some(ItemLanguageData::Julia(_))) {
@@ -306,13 +379,18 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                             .signatures
                             .first()
                             .map(|s| {
-                                super::signatures::signature(&method.name, &s.signature, "julia")
+                                super::signatures::signature_for_site(
+                                    site,
+                                    &method.name,
+                                    &s.signature,
+                                    "julia",
+                                )
                             })
                             .unwrap_or_else(|| method.name.clone());
                         write!(
                             html,
                             "<li><a href=\"{}\"><code>{}</code></a>",
-                            escape(&relative_url(route, target)),
+                            escape(&site.url(route, target)),
                             escape(&title)
                         )
                         .unwrap();
@@ -321,6 +399,7 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                             let mut method_renderer = Renderer {
                                 site,
                                 page: &site.pages[target],
+                                resolved: site.pages[target].resolved,
                                 route,
                                 document_route: target,
                                 math_context: &math_context,
@@ -329,6 +408,7 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                                 headings: Vec::new(),
                                 identifiers: BTreeSet::new(),
                                 document_navigation: false,
+                                heading_offset: 0,
                             };
                             html.push_str(&method_renderer.blocks(&document.document.blocks)?);
                         }
@@ -350,6 +430,7 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
             };
             html.push_str(&renderer.blocks(blocks)?);
         }
+        html.push_str(&renderer.python_members()?);
         if page.reference_index {
             html.push_str(&super::r_topics::index(
                 site,
@@ -408,7 +489,7 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                     write!(
                         html,
                         "<li><a href=\"{}\">{}</a></li>",
-                        escape(&relative_url(route, path)),
+                        escape(&site.url(route, path)),
                         if candidate.item.is_some() {
                             format!("<code>{}</code>", escape(&candidate.title))
                         } else {
@@ -439,17 +520,35 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                 .routes
                 .iter()
                 .filter(|(_, path)| *path == route)
-                .map(|(identity, _)| identity)
+                .map(|(identity, _)| identity.clone())
                 .collect();
-            documents.push(serde_json::json!({
-                "path": route,
-                "title": page.title,
-                "package": page.owner,
-                "qualified_name": page.item.map(|item| &item.qualified_name),
-                "visible": page.visible,
-                "identities": identities,
-                "headings": renderer.headings,
-            }));
+            let markdown_path = format!(
+                "{}.md",
+                route.strip_suffix(".html").ok_or(SiteError::Evidence)?
+            );
+            files.insert(
+                markdown_path.clone(),
+                file(
+                    super::markdown::page(site, route, page)?.into_bytes(),
+                    "text/markdown; charset=utf-8",
+                ),
+            );
+            documents.push(super::FragmentDocument {
+                path: route.clone(),
+                markdown_path,
+                url: site.url("index.html", route),
+                title: page.title.clone(),
+                package: page.owner.clone(),
+                package_version: page
+                    .owner
+                    .as_ref()
+                    .and_then(|id| site.workspace.packages[id].version.clone()),
+                qualified_name: page.item.map(|item| item.qualified_name.clone()),
+                public_name: page.public_name.clone(),
+                visible: page.visible,
+                identities,
+                headings: renderer.headings,
+            });
         }
         if page.visible {
             let package = page.owner.as_ref().map(|id| &site.workspace.packages[id]);
@@ -469,6 +568,25 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                         .documentation
                         .as_ref()
                         .and_then(|d| d.raw_source.as_deref())
+                    {
+                        search_text.push('\n');
+                        search_text.push_str(raw);
+                    }
+                }
+            }
+            if let Some(class) = &page.python_class {
+                for member in &class.members {
+                    search_text.push('\n');
+                    search_text.push_str(&member.item.qualified_name);
+                    for alias in &member.item.aliases {
+                        search_text.push('\n');
+                        search_text.push_str(&alias.qualified_name);
+                    }
+                    if let Some(raw) = member
+                        .item
+                        .documentation
+                        .as_ref()
+                        .and_then(|document| document.raw_source.as_deref())
                     {
                         search_text.push('\n');
                         search_text.push_str(raw);
@@ -498,7 +616,7 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                 .item
                 .filter(|item| matches!(&item.language_data, Some(ItemLanguageData::R(_))))
                 .map_or(page.title.as_str(), |item| item.qualified_name.as_str());
-            search.push(serde_json::json!({"title": search_title, "path": route.split('/').map(crate::site::encode).collect::<Vec<_>>().join("/"), "package": package.map(|p| &p.name), "ecosystem": package.map(|p| &p.ecosystem), "api": page.item.is_some(), "text": search_text}));
+            search.push(serde_json::json!({"title": search_title, "path": site.url("index.html",route), "package": package.map(|p| &p.name), "ecosystem": package.map(|p| &p.ecosystem), "api": page.item.is_some(), "text": search_text}));
         }
         files.insert(
             route.clone(),
@@ -522,7 +640,7 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
             super::highlighting::stylesheet().map_err(|_| SiteError::Evidence)?
         )
     } else {
-        super::highlighting::stylesheet().map_err(|_| SiteError::Evidence)?
+        super::highlighting::fragment_stylesheet().map_err(|_| SiteError::Evidence)?
     };
     files.insert(
         if standalone {
@@ -566,13 +684,17 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
         files.insert(
             "documents.json".into(),
             file(
-                serde_json::to_vec(
-                    &serde_json::json!({"format_version": 1, "documents": documents}),
-                )
+                serde_json::to_vec(&super::FragmentIndex {
+                    format_version: 2,
+                    documents,
+                })
                 .map_err(|_| SiteError::Evidence)?,
                 "application/json",
             ),
         );
+    }
+    if let Some(map) = &site.url_map {
+        map.validate_assets(&files)?;
     }
     Ok(RenderedSite { files })
 }
@@ -635,7 +757,7 @@ fn concept_links(site: &Site<'_>, route: &str, concept: &Concept) -> Result<Stri
         write!(
             html,
             "<li><a href=\"{}\">{}: <code>{}</code></a></li>",
-            escape(&relative_url(route, target)),
+            escape(&site.url(route, target)),
             escape(&package.name),
             escape(if package.ecosystem == "python" {
                 &site.pages[target].title
@@ -653,14 +775,112 @@ struct Renderer<'a, 'b> {
     math_context: &'a katex::KatexContext,
     site: &'a Site<'b>,
     page: &'a PageModel<'b>,
+    resolved: Option<&'b crate::validation::ResolvedDocument>,
     route: &'a str,
     document_route: &'a str,
     cell: usize,
     headings: Vec<(usize, String, String)>,
     identifiers: BTreeSet<String>,
     document_navigation: bool,
+    heading_offset: usize,
 }
 impl Renderer<'_, '_> {
+    fn python_members(&mut self) -> Result<String, SiteError> {
+        let Some(class) = &self.page.python_class else {
+            return Ok(String::new());
+        };
+        let mut html = String::new();
+        for member in class.members.iter().filter(|member| !member.inherited) {
+            self.identifiers.insert(member.anchor.clone());
+            self.headings
+                .push((2, member.anchor.clone(), member.item.name.clone()));
+            write!(
+                html,
+                "<section><h2 id=\"{}\"><code>{}</code></h2>",
+                escape(&member.anchor),
+                escape(&member.item.name)
+            )
+            .unwrap();
+            html.push_str(&super::r_topics::source_links(self.site, member.item));
+            let overloads = match &member.item.language_data {
+                Some(ItemLanguageData::Python(data)) => match &data.declaration {
+                    PythonDeclaration::Callable {
+                        role: PythonCallableRole::Family { overloads },
+                        ..
+                    } => overloads.as_slice(),
+                    _ => &[],
+                },
+                _ => &[],
+            };
+            for (index, signature) in super::python::member_signatures(member.item)
+                .iter()
+                .enumerate()
+            {
+                let anchor = overloads
+                    .get(index)
+                    .map(|overload| crate::site::python_overload_anchor(&overload.item));
+                if let Some(anchor) = &anchor {
+                    write!(html, "<div id=\"{}\">", escape(anchor)).unwrap();
+                }
+                html.push_str(&self.highlighter.render(
+                    &super::signatures::signature_for_site(
+                        self.site,
+                        &member.item.name,
+                        signature,
+                        "python",
+                    ),
+                    Some("python"),
+                ));
+                if anchor.is_some() {
+                    html.push_str("</div>");
+                }
+            }
+            if let Some(document) = &member.item.documentation {
+                // A method's short references resolve in its defining context.
+                let mut renderer = Renderer {
+                    site: self.site,
+                    page: self.page,
+                    resolved: member.resolved,
+                    route: self.route,
+                    document_route: self.route,
+                    math_context: self.math_context,
+                    highlighter: self.highlighter,
+                    cell: 0,
+                    headings: Vec::new(),
+                    identifiers: BTreeSet::new(),
+                    document_navigation: false,
+                    heading_offset: 1,
+                };
+                html.push_str(&renderer.blocks(&document.document.blocks)?);
+            }
+            html.push_str("</section>");
+        }
+        let inherited: Vec<_> = class
+            .members
+            .iter()
+            .filter(|member| member.inherited)
+            .collect();
+        if !inherited.is_empty() {
+            html.push_str("<h2>Inherited members</h2><ul>");
+            for member in inherited {
+                let target = self.site.target(
+                    self.route,
+                    &crate::validation::ReferenceTarget::Item {
+                        item: member.reference.clone(),
+                    },
+                )?;
+                write!(
+                    html,
+                    "<li><a href=\"{}\"><code>{}</code></a></li>",
+                    escape(&target),
+                    escape(&member.item.name)
+                )
+                .unwrap();
+            }
+            html.push_str("</ul>");
+        }
+        Ok(html)
+    }
     fn heading_id(&mut self, attributes: &Attributes, label: &str) -> String {
         if let Some(identifier) = &attributes.identifier {
             return identifier.value.clone();
@@ -703,7 +923,6 @@ impl Renderer<'_, '_> {
 
     fn reference(&self, kind: ReferenceKind, spelling: &str) -> Result<String, SiteError> {
         let reference = self
-            .page
             .resolved
             .and_then(|d| {
                 d.references
@@ -717,7 +936,7 @@ impl Renderer<'_, '_> {
             // Embedded headings link to their method page to avoid ambiguous local anchors.
             return Ok(format!(
                 "{}#{}",
-                relative_url(self.route, self.document_route),
+                self.site.url(self.route, self.document_route),
                 crate::site::encode(fragment)
             ));
         }
@@ -919,7 +1138,7 @@ impl Renderer<'_, '_> {
                     inlines,
                     ..
                 } => {
-                    let level = (*level).clamp(1, 6);
+                    let level = (*level + self.heading_offset).clamp(1, 6);
                     let label = plain(inlines);
                     let identifier = if self.document_navigation && level > 1 {
                         let identifier = self.heading_id(attributes, &label);
@@ -1131,7 +1350,7 @@ impl Renderer<'_, '_> {
                         write!(
                             html,
                             "<figure><img src=\"{}\" alt=\"{}\">",
-                            escape(&relative_url(
+                            escape(&self.site.url(
                                 self.route,
                                 &self.site.asset_route(&asset.reference.fingerprint.value)?
                             )),
@@ -1181,7 +1400,7 @@ impl Renderer<'_, '_> {
                     for (key, value) in attributes {
                         let value = match value {
                             HtmlAttribute::Text(value) => value.clone(),
-                            HtmlAttribute::Asset(asset) => relative_url(
+                            HtmlAttribute::Asset(asset) => self.site.url(
                                 self.route,
                                 &self.site.asset_route(&asset.reference.fingerprint.value)?,
                             ),

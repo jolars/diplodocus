@@ -111,7 +111,7 @@ fn complete_python_extraction_matches_portable_acceptance_ir() {
         .values()
         .filter(|item| item.documentation.is_some())
         .count();
-    assert_eq!(documented, 16);
+    assert_eq!(documented, 15);
     let fit = first
         .items
         .values()

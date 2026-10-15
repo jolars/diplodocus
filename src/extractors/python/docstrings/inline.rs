@@ -8,19 +8,41 @@ pub(super) fn parse_line(
     diagnostics: &mut Vec<Diagnostic>,
     panache_used: &mut bool,
 ) -> Vec<Inline> {
-    if let Some((start, end, target_start, target_end)) = function_reference(text) {
+    if let Some((start, end, target_start, target_end)) = sphinx_reference(text) {
         let mut inlines = parse_piece(&text[..start], offset, diagnostics, panache_used);
-        inlines.push(Inline::SemanticReference {
-            target: text[target_start..target_end].into(),
-            span: SourceSpan {
-                start: offset + start,
-                end: offset + end,
-            },
-            target_span: SourceSpan {
-                start: offset + target_start,
-                end: offset + target_end,
-            },
-        });
+        let payload = &text[target_start..target_end];
+        let span = SourceSpan {
+            start: offset + start,
+            end: offset + end,
+        };
+        let target_span = SourceSpan {
+            start: offset + target_start,
+            end: offset + target_end,
+        };
+        if text[start..].starts_with(":func:`") && !payload.starts_with('~') {
+            inlines.push(Inline::SemanticReference {
+                target: payload.into(),
+                span,
+                target_span,
+            });
+        } else {
+            let target = payload.trim_start_matches('~');
+            let label = if payload.starts_with('~') {
+                target.rsplit('.').next().unwrap_or(target)
+            } else {
+                target
+            };
+            inlines.push(Inline::Link {
+                target: format!("@ref {target}"),
+                inlines: vec![Inline::Code {
+                    value: label.into(),
+                    span: target_span,
+                }],
+                title: None,
+                attributes: Attributes::default(),
+                span,
+            });
+        }
         inlines.extend(parse_piece(
             &text[end..],
             offset + end,
@@ -96,7 +118,7 @@ fn parse_piece(
     inlines
 }
 
-fn function_reference(text: &str) -> Option<(usize, usize, usize, usize)> {
+fn sphinx_reference(text: &str) -> Option<(usize, usize, usize, usize)> {
     let bytes = text.as_bytes();
     let mut index = 0;
     while index < bytes.len() {
@@ -108,15 +130,23 @@ fn function_reference(text: &str) -> Option<(usize, usize, usize, usize)> {
                 .map_or(bytes.len(), |end| index + width + end + width);
             continue;
         }
-        if bytes[index] == b':' && text[index..].starts_with(":func:`") {
-            let start = index + ":func:`".len();
+        if bytes[index] == b':' {
+            let prefix = ["func", "class", "meth", "attr", "data", "exc", "mod", "obj"]
+                .into_iter()
+                .flat_map(|role| [format!(":{role}:`"), format!(":py:{role}:`")])
+                .find(|prefix| text[index..].starts_with(prefix));
+            let Some(prefix) = prefix else {
+                index += 1;
+                continue;
+            };
+            let start = index + prefix.len();
             if let Some(length) = text[start..].find('`') {
                 let end = start + length;
                 let target = &text[start..end];
                 if !target.is_empty()
                     && target
                         .chars()
-                        .all(|c| c.is_alphanumeric() || matches!(c, '_' | '.' | ':'))
+                        .all(|c| c.is_alphanumeric() || matches!(c, '_' | '.' | ':' | '~'))
                 {
                     return Some((index, end + 1, start, end));
                 }

@@ -383,7 +383,9 @@ impl Builder<'_> {
                                 matches!(
                                     python(&self.items[*child]).declaration,
                                     PythonDeclaration::Field
-                                )
+                                ) && !self.items[*child].signatures.iter().any(|signature| {
+                                    matches!(&signature.signature, Signature::Value { value: Some(value), .. } if field_init_disabled(value))
+                                })
                             })
                             .map(|id| ItemReference {
                                 package: self.package.into(),
@@ -565,9 +567,20 @@ fn callable_kind(name: &str, in_class: bool, decorators: &[PythonDecorator]) -> 
 fn valid_dataclass(expression: &SignatureExpression) -> bool {
     match expression {
         SignatureExpression::Name { .. } => true,
-        SignatureExpression::LanguageSpecific { name, children, .. } if name == "call" => children.iter().skip(1).all(|child| matches!(child, SignatureExpression::LanguageSpecific { name, children, .. } if matches!(name.as_str(), "keyword:init" | "keyword:frozen") && matches!(children.as_slice(), [SignatureExpression::Literal { text }] if matches!(text.as_str(), "True" | "False")))),
+        SignatureExpression::LanguageSpecific { name, children, .. } if name == "call" => children.iter().skip(1).all(|child| matches!(child, SignatureExpression::LanguageSpecific { name, children, .. } if matches!(name.as_str(), "keyword:init" | "keyword:frozen" | "keyword:repr" | "keyword:eq" | "keyword:order" | "keyword:unsafe_hash") && matches!(children.as_slice(), [SignatureExpression::Literal { text }] if matches!(text.as_str(), "True" | "False")))),
         _ => false,
     }
+}
+
+fn field_init_disabled(expression: &SignatureExpression) -> bool {
+    let SignatureExpression::LanguageSpecific { name, children, .. } = expression else {
+        return false;
+    };
+    name == "call"
+        && matches!(children.first(), Some(SignatureExpression::Name { name, .. }) if name == "dataclasses.field")
+        && children.iter().skip(1).any(|child| matches!(child,
+            SignatureExpression::LanguageSpecific { name, children, .. }
+            if name == "keyword:init" && matches!(children.as_slice(), [SignatureExpression::Literal { text }] if text == "False")))
 }
 
 fn dataclass_options(expression: &SignatureExpression) -> (bool, bool) {

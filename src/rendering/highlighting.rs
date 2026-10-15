@@ -47,6 +47,42 @@ pub(super) fn stylesheet() -> Result<String, syntect::Error> {
     css_for_theme_with_class_style(&theme, CLASS_STYLE)
 }
 
+pub(super) fn fragment_stylesheet() -> Result<String, syntect::Error> {
+    let themes = two_face::theme::extra();
+    let mut css = String::new();
+    for (selector, name) in [
+        (
+            ".diplodocus-content",
+            two_face::theme::EmbeddedThemeName::Github,
+        ),
+        (
+            ".dark .diplodocus-content",
+            two_face::theme::EmbeddedThemeName::OneHalfDark,
+        ),
+    ] {
+        let mut theme = themes[name].clone();
+        theme.settings.background = None;
+        let rules = css_for_theme_with_class_style(&theme, CLASS_STYLE)?;
+        // Scope every selector, including comma-separated syntax alternatives,
+        // because a host may retain this stylesheet across client navigation.
+        for rule in rules.split_inclusive('}') {
+            if let Some((selectors, body)) = rule.split_once('{') {
+                css.push_str(
+                    &selectors
+                        .split(',')
+                        .map(|part| format!("{selector} {}", part.trim()))
+                        .collect::<Vec<_>>()
+                        .join(",\n"),
+                );
+                css.push_str(" {");
+                css.push_str(body);
+                css.push('\n');
+            }
+        }
+    }
+    Ok(css)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

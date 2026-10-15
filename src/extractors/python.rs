@@ -22,6 +22,7 @@ pub mod docstrings;
 mod extraction;
 mod metadata;
 mod model;
+mod references;
 mod signatures;
 mod source;
 pub mod surface;

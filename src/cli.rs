@@ -59,6 +59,18 @@ pub(super) struct GenerateArgs {
     /// Directory in which to write the generated site.
     #[arg(long, value_name = "PATH", default_value = "./site")]
     pub(super) output: PathBuf,
+    /// Output complete site pages or embeddable HTML and Markdown fragments.
+    #[arg(long, value_enum, default_value = "site")]
+    pub(super) format: GenerateFormat,
+    /// Public document and asset URL map (requires --format fragments).
+    #[arg(long, value_name = "PATH")]
+    pub(super) url_map: Option<PathBuf>,
+}
+
+#[derive(Debug, Clone, Copy, clap::ValueEnum)]
+pub(super) enum GenerateFormat {
+    Site,
+    Fragments,
 }
 
 #[derive(Debug, Args)]

@@ -8,7 +8,7 @@ use crate::ir::{
     Block, DocumentFormat, Inline, Item, ItemLanguageData, ItemReference, Package, RDeclaration,
     RGenericReference,
 };
-use crate::site::{Site, SiteError, relative_url};
+use crate::site::{Site, SiteError};
 use crate::validation::{DocumentIdentity, ReferenceTarget};
 
 pub(crate) fn title(item: &Item) -> Option<&[Inline]> {
@@ -135,7 +135,7 @@ pub(super) fn index(site: &Site<'_>, route: &str, owner: &str) -> String {
         write!(
             html,
             "<li><a href=\"{}\"><code>{}</code></a>",
-            escape(&relative_url(route, target)),
+            escape(&site.url(route, target)),
             escape(&item.name)
         )
         .unwrap();
@@ -250,7 +250,7 @@ fn link(site: &Site<'_>, route: &str, item: &ItemReference, label: &str) -> Stri
     };
     format!(
         "<a href=\"{}\"{current}><code>{}</code></a>",
-        escape(&relative_url(route, destination)),
+        escape(&site.url(route, destination)),
         escape(label)
     )
 }

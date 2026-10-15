@@ -1,16 +1,20 @@
 //! Rendering of validated site models into static output.
 
 mod footer;
+mod fragments;
 mod highlighting;
 mod html;
 mod katex_assets;
+mod markdown;
 mod math;
 mod navigation;
 mod package_metadata;
 mod publish;
+pub(crate) mod python;
 pub(crate) mod r_topics;
 mod signatures;
 mod sitemap;
+pub use fragments::{FragmentDocument, FragmentIndex};
 pub use html::{render_fragments, render_site};
 pub use publish::{RenderedFile, RenderedSite};
 

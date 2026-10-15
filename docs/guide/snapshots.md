@@ -30,18 +30,56 @@ contain structured JSON; documents retain semantic link targets rather than
 site URLs. The `assets` table carries retained image and download bytes. A
 consumer can query these records directly and choose its own presentation.
 
-An experimental Rust API, `diplodocus::rendering::render_fragments`, reuses the
-built-in document renderer without its page shell. To try it from this checkout:
+The fragment renderer reuses the built-in API presentation without its page
+shell. Export HTML and Markdown with the normal command-line interface:
 
 ```console
-cargo run --locked --example export-fragments -- \
+diplodocus generate --format fragments \
   --input documentation.sqlite --output fragments
 ```
 
-The output includes document bodies, `documents.json` with semantic identities
-and heading metadata, search records, syntax colors, and retained assets. Links
-remain relative to the exported document paths. The host must map those links
-when it supplies different routes, and provide its own layout and navigation.
-The fragment export format is experimental and does not change the SQLite
-storage contract. The [Eunoia experiment](https://github.com/jolars/diplodocus/tree/main/examples/eunoia)
-shows an existing SvelteKit site consuming both SQL records and fragments.
+The output includes HTML and Markdown bodies, a version 2 `documents.json`
+manifest, search records, syntax colors, and retained assets. Each document
+descriptor records its artifact paths, preferred public API name, package
+version, semantic identities, visibility, and heading anchors. Python class
+pages include constructors, fields, and methods. Inherited members link to
+their defining class. The Rust equivalents are
+`diplodocus::rendering::render_fragments` and its typed `FragmentIndex`.
+
+Links remain relative by default. A host can read the first manifest, assign
+public URLs, and render again using a version 1 URL map:
+
+```json
+{
+  "format_version": 1,
+  "documents": {
+    "packages/example/reference/item.html": "/docs/reference/example/fit/"
+  },
+  "assets": {
+    "assets/content.css": "/_reference/content.css"
+  }
+}
+```
+
+```console
+diplodocus generate --format fragments --input documentation.sqlite \
+  --output fragments --url-map urls.json
+```
+
+Keys name the original artifact paths. Mapping changes links in HTML, Markdown,
+and search without changing artifact filenames. Unknown keys, unsafe URLs, and
+colliding destinations fail before publication. Member and overload anchors
+remain intact, as do external and repository source links. Unmapped paths keep
+their default relative URLs; hosts should map every local destination used by
+the pages they publish.
+
+The host supplies layout, navigation, and content typography. Wrap HTML bodies
+in `.diplodocus-content` to use the scoped syntax stylesheet. A `.dark` ancestor
+selects its dark colors. Retain the exported assets and load the KaTeX stylesheet
+when rendering math. Filter public navigation using each descriptor's
+`visible` flag and `public_name`; internal support documents are not public API
+pages.
+
+Fragment format versions are independent of the SQLite storage contract. The
+[Eunoia experiment](https://github.com/jolars/diplodocus/tree/main/examples/eunoia)
+also demonstrates direct SQL consumption inside an existing SvelteKit site.

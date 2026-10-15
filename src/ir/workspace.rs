@@ -336,6 +336,8 @@ impl Item {
     pub fn discoverable(&self) -> bool {
         !matches!(&self.language_data, Some(super::ItemLanguageData::R(data)) if data.internal)
             && !matches!(&self.language_data, Some(super::ItemLanguageData::Python(data))
+                if data.visibility == super::PythonVisibility::Private)
+            && !matches!(&self.language_data, Some(super::ItemLanguageData::Python(data))
             if matches!(&data.declaration, super::PythonDeclaration::Callable {
                 role: super::PythonCallableRole::Overload { .. }, ..
             }))

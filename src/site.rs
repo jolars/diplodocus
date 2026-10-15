@@ -12,6 +12,10 @@ use crate::ir::*;
 use crate::snapshots::Snapshot;
 use crate::validation::{ContentAsset, DocumentIdentity, ReferenceTarget, ResolvedDocument};
 
+#[path = "site_urls.rs"]
+mod urls;
+pub use urls::UrlMap;
+
 /// Site construction, rendering, or publication failed.
 #[derive(Debug, thiserror::Error)]
 pub enum SiteError {
@@ -43,6 +47,7 @@ pub struct Site<'a> {
     pub(crate) assets: &'a BTreeMap<String, ContentAsset>,
     pub(crate) base_url: Option<url::Url>,
     pub(crate) canonical_urls: BTreeMap<String, String>,
+    pub(crate) url_map: Option<UrlMap>,
 }
 pub(crate) struct PageModel<'a> {
     pub title: String,
@@ -56,6 +61,8 @@ pub(crate) struct PageModel<'a> {
     pub concept: Option<&'a Concept>,
     pub visible: bool,
     pub reference_index: bool,
+    pub public_name: Option<String>,
+    pub python_class: Option<crate::rendering::python::PythonClass<'a>>,
 }
 impl PageModel<'_> {
     fn empty(title: String, owner: Option<String>, visible: bool) -> Self {
@@ -71,6 +78,8 @@ impl PageModel<'_> {
             concept: None,
             visible,
             reference_index: false,
+            public_name: None,
+            python_class: None,
         }
     }
 }
@@ -93,6 +102,7 @@ impl<'a> Site<'a> {
                 .site_base_url()
                 .map_err(|message| SiteError::CrawlerMetadata(message.into()))?,
             canonical_urls: BTreeMap::new(),
+            url_map: None,
         };
         let records: BTreeMap<_, _> = snapshot
             .documents()
@@ -182,6 +192,11 @@ impl<'a> Site<'a> {
             site.routes.insert(identity, route);
         }
         for (id, package) in &workspace.packages {
+            let python_owners = if package.ecosystem == "python" {
+                crate::rendering::python::member_owners(package)
+            } else {
+                BTreeMap::new()
+            };
             let private_modules: Vec<_> = package
                 .items
                 .values()
@@ -232,12 +247,13 @@ impl<'a> Site<'a> {
                     },
                 };
                 if let Some(family) = python_overload_family(item) {
+                    let owner = python_owners.get(&family.item).unwrap_or(&family.item);
                     site.routes.insert(
                         identity,
                         format!(
                             "packages/{}/reference/{}.html",
                             workspace.packages[&family.package].slug,
-                            crate::provenance::fingerprint_bytes(family.item.as_bytes()).value
+                            crate::provenance::fingerprint_bytes(owner.as_bytes()).value
                         ),
                     );
                     site.overload_anchors.insert(
@@ -246,6 +262,23 @@ impl<'a> Site<'a> {
                             item: item_id.clone(),
                         },
                         python_overload_anchor(item_id),
+                    );
+                    continue;
+                }
+                if let Some(owner) = python_owners.get(item_id) {
+                    site.routes.insert(
+                        identity,
+                        format!(
+                            "{base}/reference/{}.html",
+                            crate::provenance::fingerprint_bytes(owner.as_bytes()).value
+                        ),
+                    );
+                    site.overload_anchors.insert(
+                        ItemReference {
+                            package: id.clone(),
+                            item: item_id.clone(),
+                        },
+                        crate::rendering::python::member_anchor(item),
                     );
                     continue;
                 }
@@ -282,6 +315,15 @@ impl<'a> Site<'a> {
                 model.document = item.documentation.as_ref();
                 model.resolved = records.get(&identity).copied();
                 model.item = Some(item);
+                model.public_name = Some(if package.ecosystem == "python" {
+                    python_display_name(item, &private_modules).to_owned()
+                } else {
+                    item.qualified_name.clone()
+                });
+                if package.ecosystem == "python" {
+                    model.python_class =
+                        crate::rendering::python::class(id, package, item_id, &records);
+                }
                 site.insert(route.clone(), model)?;
                 site.routes.insert(identity, route);
             }
@@ -352,6 +394,24 @@ impl<'a> Site<'a> {
         }
         Ok(())
     }
+
+    /// Map generated document and asset routes into an existing website.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error for unknown artifact paths, unsafe URLs, or colliding
+    /// destinations. Unmapped paths retain their default relative URLs.
+    pub fn with_url_map(mut self, map: UrlMap) -> Result<Self, SiteError> {
+        map.validate(&self)?;
+        self.url_map = Some(map);
+        Ok(self)
+    }
+
+    pub(crate) fn url(&self, from: &str, to: &str) -> String {
+        self.url_map
+            .as_ref()
+            .map_or_else(|| relative_url(from, to), |map| map.url(from, to))
+    }
     pub(crate) fn title(&self) -> &str {
         self.presentation
             .title
@@ -395,7 +455,7 @@ impl<'a> Site<'a> {
                 fragment.as_deref(),
             ),
         };
-        let mut url = relative_url(from, &route);
+        let mut url = self.url(from, &route);
         if let Some(fragment) = fragment {
             url.push('#');
             url.push_str(&encode(fragment));
@@ -539,18 +599,21 @@ mod tests {
                 .decode_utf8()
                 .unwrap();
             assert!(html.contains(&format!("id=\"{fragment}\"")));
-            assert!(
-                !site
-                    .target(
-                        "index.html",
-                        &ReferenceTarget::Item {
-                            item: family.clone()
-                        }
-                    )
-                    .unwrap()
-                    .contains('#')
-            );
+            let family_target = site
+                .target(
+                    "index.html",
+                    &ReferenceTarget::Item {
+                        item: family.clone(),
+                    },
+                )
+                .unwrap();
+            let expected = if let Some(anchor) = site.overload_anchors.get(family) {
+                format!("{}#{}", relative_url("index.html", route), encode(anchor))
+            } else {
+                relative_url("index.html", route)
+            };
+            assert_eq!(family_target, expected);
         }
-        assert_eq!(site.overload_anchors.len(), 7);
+        assert_eq!(site.overload_anchors.len(), 8);
     }
 }

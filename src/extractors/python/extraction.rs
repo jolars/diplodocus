@@ -47,6 +47,7 @@ pub fn extract_target(
 ) -> PythonExtraction {
     let parsed = parse_target(repository, package, target);
     let mut surface = surface::reconcile(&parsed);
+    let references = super::references::PythonReferences::new(&surface.items);
     let mut provenance = parsed.provenance;
     let mut documentation_inputs = BTreeMap::<_, BTreeSet<String>>::new();
     for (id, docstring) in surface.docstrings {
@@ -64,6 +65,7 @@ pub fn extract_target(
         );
         let mut document =
             docstrings::parse_docstring(&docstring.text, docstring.source, Some(&source_map));
+        references.normalize(&mut document, &surface.items[&id].qualified_name);
         documentation_inputs.entry(input_key).or_default().extend(
             document
                 .document

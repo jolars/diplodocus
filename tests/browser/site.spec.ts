@@ -229,6 +229,32 @@ test("Python overloads have one searchable page with every signature", async ({ 
   await capture(page, info, "python-public-reexport-search");
 });
 
+test("Python classes retain overloaded methods on their class page", async ({ page }, info) => {
+  await page.goto("/");
+  await page.getByRole("searchbox").fill("Reader.read");
+  const result = page.locator("#search-results").getByRole("link", {
+    name: "tinystats.Reader · Tiny Stats for Python", exact: true,
+  });
+  await expect(result).toHaveCount(1);
+  await expect(page.locator("#search-results").getByRole("link", {
+    name: "tinystats.Reader.read · Tiny Stats for Python", exact: true,
+  })).toHaveCount(0);
+  await result.click();
+  const main = page.getByRole("main");
+  await expect(main.getByRole("heading", { level: 1 })).toHaveText("tinystats.Reader");
+  await expect(main.getByRole("heading", { level: 2, name: "read", exact: true })).toHaveAttribute("id", "read");
+  await expect(main.locator('[id^="overload-"]')).toHaveCount(2);
+  await expect(main).toContainText("read(value: str) -> str");
+  await expect(main).toContainText("read(value: bytes) -> bytes");
+  await expect(main).toContainText("Return the artifact in its original representation.");
+  await openNavigation(page, info);
+  const reference = page.getByRole("group", { name: "API reference", exact: true });
+  await expect(reference.getByRole("link", { name: "Reader", exact: true })).toHaveCount(1);
+  await expect(reference.getByRole("link", { name: "read", exact: true })).toHaveCount(0);
+  await fitsViewport(page);
+  await capture(page, info, "python-class");
+});
+
 test("R package overview exposes metadata and supporting documentation", async ({ page }, info) => {
   await page.goto("/packages/r/");
   const main = page.getByRole("main");

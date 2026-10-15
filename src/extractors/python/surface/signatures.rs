@@ -33,10 +33,16 @@ pub(super) fn resolve(items: &mut BTreeMap<String, Item>, registry: &IdentityReg
                 }
             }
         }
-        if let Some(ItemLanguageData::Python(data)) = &mut item.language_data
-            && let PythonDeclaration::TypeAlias { target } = &mut data.declaration
-        {
-            expression(target, registry, &retained);
+        if let Some(ItemLanguageData::Python(data)) = &mut item.language_data {
+            match &mut data.declaration {
+                PythonDeclaration::TypeAlias { target } => expression(target, registry, &retained),
+                PythonDeclaration::Class { bases, .. } => {
+                    for base in bases {
+                        expression(base, registry, &retained);
+                    }
+                }
+                _ => {}
+            }
         }
     }
 }

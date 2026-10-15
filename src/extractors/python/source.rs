@@ -71,8 +71,10 @@ pub(super) fn parse(
     let mut context = Context {
         module_name: &module.name,
         is_package,
+        annotation_imports: vec![],
         expressions: Expressions {
             names: BTreeMap::new(),
+            annotation_names: BTreeMap::new(),
             locals: BTreeMap::new(),
             qualify_locals: true,
             text,
@@ -82,15 +84,18 @@ pub(super) fn parse(
     };
     module.docstring = context.docstring(body.first());
     module.declarations = context.declarations(body, true, &module.name);
+    module.imports.append(&mut context.annotation_imports);
     for statement in body {
         match statement {
             Stmt::Import(value) => module.imports.push(ParsedImport {
+                annotation_only: false,
                 module: None,
                 level: 0,
                 names: imports(&value.names),
                 source: context.location(statement),
             }),
             Stmt::ImportFrom(value) => module.imports.push(ParsedImport {
+                annotation_only: false,
                 module: value.module.as_ref().map(ToString::to_string),
                 level: value.level,
                 names: imports(&value.names),
@@ -102,6 +107,9 @@ pub(super) fn parse(
             module.exports.push(operation);
         }
     }
+    module
+        .imports
+        .sort_by_key(|import| import.source.span.map(|span| span.start));
     module
 }
 
@@ -118,6 +126,7 @@ fn imports(names: &[ast::Alias]) -> Vec<ImportedName> {
 struct Context<'a> {
     module_name: &'a str,
     is_package: bool,
+    annotation_imports: Vec<ParsedImport>,
     expressions: Expressions<'a>,
 }
 
@@ -235,7 +244,7 @@ impl Context<'_> {
                 Stmt::AnnAssign(value) => {
                     if let Expr::Name(name) = &*value.target {
                         if name.id == "__all__" && module { continue; }
-                        let annotation = self.expressions.expression(&value.annotation);
+                        let annotation = self.expressions.annotation(&value.annotation);
                         let is_type_alias = matches!(&annotation, crate::ir::SignatureExpression::Name { name, .. }
                             if matches!(name.as_str(), "typing.TypeAlias" | "typing_extensions.TypeAlias"));
                         let kind = if is_type_alias { DeclarationKind::TypeAlias } else { DeclarationKind::Assignment };
@@ -266,6 +275,11 @@ impl Context<'_> {
                         self.bind_local(name.id.as_str());
                     }
                 }
+                Stmt::If(value) if module && self.type_checking_guard(value) => {
+                    for statement in &value.body {
+                        self.annotation_import(statement);
+                    }
+                }
                 Stmt::If(_) | Stmt::For(_) | Stmt::While(_) | Stmt::Try(_) | Stmt::With(_) | Stmt::Match(_) =>
                     self.unsupported(statement, "Conditional or dynamically scoped declarations cannot define an authoritative static surface."),
                 Stmt::Import(_) | Stmt::ImportFrom(_) if !module =>
@@ -278,6 +292,109 @@ impl Context<'_> {
         self.expressions.names = saved_names;
         self.expressions.locals = saved_locals;
         declarations
+    }
+
+    fn type_checking_guard(&self, value: &ast::StmtIf) -> bool {
+        if !value.elif_else_clauses.is_empty()
+            || !value.body.iter().all(|statement| match statement {
+                Stmt::Import(_) => true,
+                Stmt::ImportFrom(value) => value.names.iter().all(|name| name.name.as_str() != "*"),
+                _ => false,
+            })
+        {
+            return false;
+        }
+        let Some(name) = super::signatures::dotted_name(&value.test) else {
+            return false;
+        };
+        let (head, suffix) = name.split_once('.').unwrap_or((&name, ""));
+        let head = self
+            .expressions
+            .names
+            .get(head)
+            .map_or(head, String::as_str);
+        let name = if suffix.is_empty() {
+            head.into()
+        } else {
+            format!("{head}.{suffix}")
+        };
+        matches!(
+            name.as_str(),
+            "typing.TYPE_CHECKING" | "typing_extensions.TYPE_CHECKING"
+        )
+    }
+
+    fn annotation_import(&mut self, statement: &Stmt) {
+        let import = match statement {
+            Stmt::Import(value) => ParsedImport {
+                annotation_only: true,
+                module: None,
+                level: 0,
+                names: imports(&value.names),
+                source: self.location(statement),
+            },
+            Stmt::ImportFrom(value) => ParsedImport {
+                annotation_only: true,
+                module: value.module.as_ref().map(ToString::to_string),
+                level: value.level,
+                names: imports(&value.names),
+                source: self.location(statement),
+            },
+            _ => unreachable!("validated annotation-only import"),
+        };
+        // These bindings qualify annotations without establishing runtime exports.
+        let mut parts: Vec<_> = self.module_name.split('.').collect();
+        if !self.is_package {
+            parts.pop();
+        }
+        if import.level as usize > parts.len() {
+            self.unsupported(
+                statement,
+                "An annotation-only relative import escapes its containing package.",
+            );
+            self.annotation_imports.push(import);
+            return;
+        }
+        let mut base = if import.level == 0 {
+            String::new()
+        } else {
+            parts.truncate(
+                parts
+                    .len()
+                    .saturating_add(1)
+                    .saturating_sub(import.level as usize),
+            );
+            parts.join(".")
+        };
+        if let Some(module) = &import.module {
+            if !base.is_empty() {
+                base.push('.');
+            }
+            base.push_str(module);
+        }
+        for name in &import.names {
+            let ordinary = import.level == 0 && import.module.is_none();
+            let local = name.alias.clone().unwrap_or_else(|| {
+                if ordinary {
+                    name.name.split('.').next().unwrap().into()
+                } else {
+                    name.name.clone()
+                }
+            });
+            let canonical = if ordinary {
+                if name.alias.is_some() {
+                    name.name.clone()
+                } else {
+                    local.clone()
+                }
+            } else if base.is_empty() {
+                name.name.clone()
+            } else {
+                format!("{base}.{}", name.name)
+            };
+            self.expressions.annotation_names.insert(local, canonical);
+        }
+        self.annotation_imports.push(import);
     }
 
     fn bind_local(&mut self, name: &str) {

@@ -4,7 +4,7 @@ use std::path::{Component, Path};
 
 use crate::assembly::WorkspaceExecution;
 use crate::execution::{ExecutionCancellation, ExecutionDeadlines};
-use crate::rendering::{RenderedSite, render_site};
+use crate::rendering::{RenderedSite, render_fragments, render_site};
 use crate::site::Site;
 use crate::snapshots::Snapshot;
 use crate::validation::resolve_executed_workspace;
@@ -130,6 +130,25 @@ pub(super) fn generate_attempt(
     }
     let site = Site::new(&snapshot)?;
     let rendered = render_site(&site)?;
+    rendered.publish(output)?;
+    Ok(rendered)
+}
+
+pub(super) fn generate_fragments_attempt(
+    input: &Path,
+    output: &Path,
+    map: Option<&Path>,
+) -> Result<RenderedSite, CommandError> {
+    reject_overlap(output, input)?;
+    let snapshot = Snapshot::load(input)?;
+    let mut site = Site::new(&snapshot)?;
+    if let Some(path) = map {
+        reject_overlap(output, path)?;
+        let urls = serde_json::from_slice(&fs::read(path)?)
+            .map_err(|error| crate::site::SiteError::Route(format!("invalid URL map: {error}")))?;
+        site = site.with_url_map(urls)?;
+    }
+    let rendered = render_fragments(&site)?;
     rendered.publish(output)?;
     Ok(rendered)
 }

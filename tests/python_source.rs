@@ -27,6 +27,59 @@ fn parse(workspace: &support::TestWorkspace) -> ParsedPythonPackage {
 }
 
 #[test]
+fn type_checking_imports_qualify_annotations_without_runtime_exports() {
+    let workspace = support::TestWorkspace::from_fixture("acceptance/python");
+    workspace.write("python/foo/annotations.py", "from typing import TYPE_CHECKING as checking\nif checking:\n    import plotly.graph_objects as go\n    from matplotlib.axes import Axes\ndef draw(ax: Axes = Axes) -> go.Figure: ...\n__all__ = ['draw']\n");
+    let result = parse(&workspace);
+    assert!(result.diagnostics.is_empty(), "{:?}", result.diagnostics);
+    let module = result
+        .modules
+        .iter()
+        .find(|module| module.name == "foo.annotations")
+        .unwrap();
+    assert_eq!(
+        module
+            .imports
+            .iter()
+            .filter(|import| import.annotation_only)
+            .count(),
+        2
+    );
+    let Signature::Callable {
+        parameters,
+        returns,
+    } = &module.declarations[0].signature.as_ref().unwrap().signature
+    else {
+        panic!("callable");
+    };
+    assert!(
+        matches!(&parameters[0].annotation, Some(diplodocus::ir::SignatureExpression::Name { name, .. }) if name == "matplotlib.axes.Axes")
+    );
+    assert!(
+        matches!(returns, Some(diplodocus::ir::SignatureExpression::Name { name, .. }) if name == "plotly.graph_objects.Figure")
+    );
+    assert!(
+        matches!(&parameters[0].default, Some(diplodocus::ir::SignatureExpression::Name { name, .. }) if name == "Axes")
+    );
+    let surface = diplodocus::extractors::python::surface::reconcile(&result);
+    assert!(surface.diagnostics.is_empty(), "{:?}", surface.diagnostics);
+    assert!(
+        !surface
+            .items
+            .values()
+            .any(|item| item.qualified_name.ends_with(".Axes")
+                || item.qualified_name.ends_with(".go"))
+    );
+    workspace.write("python/foo/annotations.py", "import typing as t\nif t.TYPE_CHECKING:\n    from matplotlib.axes import Axes\n    class RuntimeClass: ...\n");
+    assert!(
+        parse(&workspace)
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code.as_str() == "python-unsupported-syntax")
+    );
+}
+
+#[test]
 fn acceptance_sources_are_parsed_without_importing_native_code() {
     let workspace = support::TestWorkspace::from_fixture("acceptance/python");
     let result = parse(&workspace);

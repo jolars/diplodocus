@@ -323,7 +323,7 @@ fn examples_keep_explanatory_prose_outside_display_code() {
 }
 
 #[test]
-fn unsupported_rst_roles_and_directives_keep_their_original_spelling() {
+fn sphinx_roles_are_links_and_unsupported_directives_keep_their_spelling() {
     let text = "Use :class:`Thing` here.\n\nNotes\n-----\n.. math:: x + y\n";
     let parsed = parse(text);
     assert!(
@@ -335,9 +335,11 @@ fn unsupported_rst_roles_and_directives_keep_their_original_spelling() {
     let Block::Paragraph { inlines, .. } = &parsed.document.document.blocks[0] else {
         panic!("prose")
     };
-    assert!(inlines.iter().any(
-        |inline| matches!(inline, Inline::Unsupported { raw, .. } if raw.contains(":class:`Thing`"))
-    ));
+    assert!(
+        inlines
+            .iter()
+            .any(|inline| matches!(inline, Inline::Link { target, .. } if target == "@ref Thing"))
+    );
 }
 
 #[test]
@@ -350,6 +352,33 @@ fn code_quoting_rst_syntax_is_not_interpreted() {
     assert!(inlines.iter().any(
         |inline| matches!(inline, Inline::Code { value, .. } if value.contains(":class:`Thing`"))
     ));
+}
+
+#[test]
+fn attributes_untyped_parameters_nested_lists_and_literal_examples_are_structured() {
+    let text = "Documented result.\n\nAttributes\n----------\nvalue:\n    Stored value.\n\nParameters\n----------\nvalues:\n    Supported input forms:\n\n    * An area mapping.\n      Continued explanation.\n      * A nested :class:`Thing` entry.\n    * A matrix.\n\n    Example::\n\n        values = {'A': 2}\n        draw(values)\n\n    Normal prose resumes.\n";
+    let parsed = parse(text);
+    assert!(parsed.diagnostics.is_empty(), "{:?}", parsed.diagnostics);
+    fn walk(blocks: &[Block], lists: &mut usize, code: &mut Vec<String>) {
+        for block in blocks {
+            match block {
+                Block::List { items, .. } => {
+                    *lists += 1;
+                    for item in items {
+                        walk(&item.blocks, lists, code);
+                    }
+                }
+                Block::CodeBlock { source, .. } => code.push(source.clone()),
+                Block::Unsupported { raw, .. } => panic!("unsupported: {raw}"),
+                _ => {}
+            }
+        }
+    }
+    let mut lists = 0;
+    let mut code = vec![];
+    walk(&parsed.document.document.blocks, &mut lists, &mut code);
+    assert!(lists >= 4, "{:#?}", parsed.document.document.blocks);
+    assert_eq!(code, ["values = {'A': 2}\ndraw(values)"]);
 }
 
 #[test]

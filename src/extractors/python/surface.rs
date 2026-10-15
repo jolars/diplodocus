@@ -351,7 +351,9 @@ pub fn reconcile(package: &ParsedPythonPackage) -> PythonSurface {
         let qualified = &builder.items[&id].qualified_name;
         for surface in &surfaces {
             if qualified.starts_with(&format!("{}.", surface.name)) {
-                visible.insert(surface.id.clone(), PythonVisibility::Public);
+                visible
+                    .entry(surface.id.clone())
+                    .or_insert(PythonVisibility::Private);
             }
         }
     }
@@ -452,6 +454,14 @@ pub fn reconcile(package: &ParsedPythonPackage) -> PythonSurface {
     }
     builder.items.retain(|id, _| visible.contains_key(id));
     builder.docstrings.retain(|id, _| visible.contains_key(id));
+    // Defining modules remain addressable support records, without publishing
+    // implementation prose as part of the package's public documentation.
+    builder.docstrings.retain(|id, _| {
+        !matches!(
+            &python(&builder.items[id]).declaration,
+            PythonDeclaration::Module { .. }
+        ) || python(&builder.items[id]).visibility != PythonVisibility::Private
+    });
     let retained: BTreeSet<_> = builder.items.keys().cloned().collect();
     for item in builder.items.values_mut() {
         item.children.retain(|id| retained.contains(id));

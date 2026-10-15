@@ -91,20 +91,22 @@ fn python_reexports_use_public_labels_and_retain_implementation_evidence() {
                 "python/demo/_api.py"
             }
         );
+        let page_name = public.strip_suffix(".read").unwrap_or(public);
+        let page_reference = resolve_item(loaded.workspace(), Some("python"), page_name).unwrap();
         let entries: Vec<_> = search
             .iter()
-            .filter(|entry| entry["title"] == public)
+            .filter(|entry| entry["title"] == page_name)
             .collect();
         assert_eq!(entries.len(), 1);
         assert!(entries[0]["text"].as_str().unwrap().contains(canonical));
         let route = format!(
             "packages/python/reference/{}.html",
-            diplodocus::provenance::fingerprint_bytes(reference.item.as_bytes()).value
+            diplodocus::provenance::fingerprint_bytes(page_reference.item.as_bytes()).value
         );
         let html = std::str::from_utf8(&rendered.files()[&route].bytes).unwrap();
-        assert!(html.contains(&format!("<title>{public} · Python overloads</title>")));
-        assert!(html.contains(&format!("<h1><code>{public}</code></h1>")));
-        let label = public.rsplit('.').next().unwrap();
+        assert!(html.contains(&format!("<title>{page_name} · Python overloads</title>")));
+        assert!(html.contains(&format!("<h1><code>{page_name}</code></h1>")));
+        let label = page_name.rsplit('.').next().unwrap();
         assert!(
             html.contains(&format!("><code>{label}</code></a>"))
                 || html.contains(&format!("<summary><code>{label}</code></summary>"))
@@ -176,11 +178,13 @@ fn python_reexport_labels_are_stable_and_prefer_public_modules() {
         if exports.contains("_PublicReader") {
             let search: Vec<serde_json::Value> =
                 serde_json::from_slice(&rendered.files()["assets/search.json"].bytes).unwrap();
-            assert!(
-                search
-                    .iter()
-                    .any(|entry| entry["title"] == "demo._PublicReader.read")
-            );
+            assert!(search.iter().any(|entry| {
+                entry["title"] == "demo._PublicReader"
+                    && entry["text"]
+                        .as_str()
+                        .unwrap()
+                        .contains("demo._PublicReader.read")
+            }));
         }
     }
 }
@@ -232,9 +236,11 @@ fn python_overloads_share_one_page_navigation_entry_and_search_result() {
             panic!("missing callable family");
         };
         assert_eq!(overloads.len(), count);
+        let page_name = name.strip_suffix(".read").unwrap_or(name);
+        let page_reference = resolve_item(loaded.workspace(), Some("python"), page_name).unwrap();
         let route = format!(
             "packages/python/reference/{}.html",
-            diplodocus::provenance::fingerprint_bytes(family.item.as_bytes()).value
+            diplodocus::provenance::fingerprint_bytes(page_reference.item.as_bytes()).value
         );
         let html = std::str::from_utf8(&rendered.files()[&route].bytes).unwrap();
         let expected = match name {
@@ -243,10 +249,7 @@ fn python_overloads_share_one_page_navigation_entry_and_search_result() {
                 "fetch_data(name: str, *, return_info: typing.Literal[True]) -> tuple[str, str]",
                 "fetch_data(name: str, *, return_info: bool) -> str | tuple[str, str]",
             ],
-            "demo.Reader.read" => vec![
-                "read(self, value: str) -> str",
-                "read(self, value: bytes) -> bytes",
-            ],
+            "demo.Reader.read" => vec!["read(value: str) -> str", "read(value: bytes) -> bytes"],
             _ => vec![
                 "native_value(value: int) -> int",
                 "native_value(value: str) -> str",
@@ -264,12 +267,18 @@ fn python_overloads_share_one_page_navigation_entry_and_search_result() {
         }
         assert_eq!(
             navigation
-                .matches(&format!("><code>{}</code></a>", item.name))
+                .matches(&format!(
+                    "><code>{}</code></a>",
+                    loaded.workspace().packages["python"].items[&page_reference.item].name
+                ))
                 .count(),
             1
         );
         assert_eq!(
-            search.iter().filter(|entry| entry["title"] == name).count(),
+            search
+                .iter()
+                .filter(|entry| entry["title"] == page_name)
+                .count(),
             1
         );
         assert!(sitemap.contains(&route));

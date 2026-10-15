@@ -2,7 +2,7 @@
   "document": {
     "span": {
       "start": 0,
-      "end": 2604
+      "end": 4031
     },
     "frontmatter": null,
     "blocks": [
@@ -549,93 +549,77 @@
         "inlines": [
           {
             "type": "text",
-            "value": "An experimental Rust API, ",
+            "value": "The fragment renderer reuses the built-in API presentation without its page",
             "span": {
               "start": 1755,
-              "end": 1781
-            }
-          },
-          {
-            "type": "code",
-            "value": "diplodocus::rendering::render_fragments",
-            "span": {
-              "start": 1781,
-              "end": 1822
-            }
-          },
-          {
-            "type": "text",
-            "value": ", reuses the",
-            "span": {
-              "start": 1822,
-              "end": 1834
+              "end": 1830
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1834,
-              "end": 1835
+              "start": 1830,
+              "end": 1831
             }
           },
           {
             "type": "text",
-            "value": "built-in document renderer without its page shell. To try it from this checkout:",
+            "value": "shell. Export HTML and Markdown with the normal command-line interface:",
             "span": {
-              "start": 1835,
-              "end": 1915
+              "start": 1831,
+              "end": 1902
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1915,
-              "end": 1916
+              "start": 1902,
+              "end": 1903
             }
           }
         ],
         "span": {
           "start": 1755,
-          "end": 1916
+          "end": 1903
         }
       },
       {
         "type": "code-block",
         "language": "console",
-        "source": "cargo run --locked --example export-fragments -- \\\n  --input documentation.sqlite --output fragments\n",
+        "source": "diplodocus generate --format fragments \\\n  --input documentation.sqlite --output fragments\n",
         "source_segments": [
           {
-            "text": "cargo run --locked --example export-fragments -- \\",
+            "text": "diplodocus generate --format fragments \\",
             "span": {
-              "start": 1928,
-              "end": 1978
+              "start": 1915,
+              "end": 1955
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 1978,
-              "end": 1979
+              "start": 1955,
+              "end": 1956
             }
           },
           {
             "text": "  --input documentation.sqlite --output fragments",
             "span": {
-              "start": 1979,
-              "end": 2028
+              "start": 1956,
+              "end": 2005
             }
           },
           {
             "text": "\n",
             "span": {
-              "start": 2028,
-              "end": 2029
+              "start": 2005,
+              "end": 2006
             }
           }
         ],
         "span": {
-          "start": 1917,
-          "end": 2033
+          "start": 1904,
+          "end": 2010
         }
       },
       {
@@ -643,101 +627,632 @@
         "inlines": [
           {
             "type": "text",
-            "value": "The output includes document bodies, ",
+            "value": "The output includes HTML and Markdown bodies, a version 2 ",
             "span": {
-              "start": 2034,
-              "end": 2071
+              "start": 2011,
+              "end": 2069
             }
           },
           {
             "type": "code",
             "value": "documents.json",
             "span": {
-              "start": 2071,
-              "end": 2087
-            }
-          },
-          {
-            "type": "text",
-            "value": " with semantic identities",
-            "span": {
-              "start": 2087,
-              "end": 2112
+              "start": 2069,
+              "end": 2085
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2112,
-              "end": 2113
+              "start": 2085,
+              "end": 2086
             }
           },
           {
             "type": "text",
-            "value": "and heading metadata, search records, syntax colors, and retained assets. Links",
+            "value": "manifest, search records, syntax colors, and retained assets. Each document",
             "span": {
-              "start": 2113,
-              "end": 2192
+              "start": 2086,
+              "end": 2161
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2192,
-              "end": 2193
+              "start": 2161,
+              "end": 2162
             }
           },
           {
             "type": "text",
-            "value": "remain relative to the exported document paths. The host must map those links",
+            "value": "descriptor records its artifact paths, preferred public API name, package",
             "span": {
-              "start": 2193,
-              "end": 2270
+              "start": 2162,
+              "end": 2235
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2270,
-              "end": 2271
+              "start": 2235,
+              "end": 2236
             }
           },
           {
             "type": "text",
-            "value": "when it supplies different routes, and provide its own layout and navigation.",
+            "value": "version, semantic identities, visibility, and heading anchors. Python class",
             "span": {
-              "start": 2271,
-              "end": 2348
+              "start": 2236,
+              "end": 2311
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2348,
-              "end": 2349
+              "start": 2311,
+              "end": 2312
             }
           },
           {
             "type": "text",
-            "value": "The fragment export format is experimental and does not change the SQLite",
+            "value": "pages include constructors, fields, and methods. Inherited members link to",
             "span": {
-              "start": 2349,
-              "end": 2422
+              "start": 2312,
+              "end": 2386
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2422,
-              "end": 2423
+              "start": 2386,
+              "end": 2387
             }
           },
           {
             "type": "text",
-            "value": "storage contract. The ",
+            "value": "their defining class. The Rust equivalents are",
             "span": {
-              "start": 2423,
-              "end": 2445
+              "start": 2387,
+              "end": 2433
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2433,
+              "end": 2434
+            }
+          },
+          {
+            "type": "code",
+            "value": "diplodocus::rendering::render_fragments",
+            "span": {
+              "start": 2434,
+              "end": 2475
+            }
+          },
+          {
+            "type": "text",
+            "value": " and its typed ",
+            "span": {
+              "start": 2475,
+              "end": 2490
+            }
+          },
+          {
+            "type": "code",
+            "value": "FragmentIndex",
+            "span": {
+              "start": 2490,
+              "end": 2505
+            }
+          },
+          {
+            "type": "text",
+            "value": ".",
+            "span": {
+              "start": 2505,
+              "end": 2506
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2506,
+              "end": 2507
+            }
+          }
+        ],
+        "span": {
+          "start": 2011,
+          "end": 2507
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Links remain relative by default. A host can read the first manifest, assign",
+            "span": {
+              "start": 2508,
+              "end": 2584
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2584,
+              "end": 2585
+            }
+          },
+          {
+            "type": "text",
+            "value": "public URLs, and render again using a version 1 URL map:",
+            "span": {
+              "start": 2585,
+              "end": 2641
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 2641,
+              "end": 2642
+            }
+          }
+        ],
+        "span": {
+          "start": 2508,
+          "end": 2642
+        }
+      },
+      {
+        "type": "code-block",
+        "language": "json",
+        "source": "{\n  \"format_version\": 1,\n  \"documents\": {\n    \"packages/example/reference/item.html\": \"/docs/reference/example/fit/\"\n  },\n  \"assets\": {\n    \"assets/content.css\": \"/_reference/content.css\"\n  }\n}\n",
+        "source_segments": [
+          {
+            "text": "{",
+            "span": {
+              "start": 2651,
+              "end": 2652
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 2652,
+              "end": 2653
+            }
+          },
+          {
+            "text": "  \"format_version\": 1,",
+            "span": {
+              "start": 2653,
+              "end": 2675
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 2675,
+              "end": 2676
+            }
+          },
+          {
+            "text": "  \"documents\": {",
+            "span": {
+              "start": 2676,
+              "end": 2692
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 2692,
+              "end": 2693
+            }
+          },
+          {
+            "text": "    \"packages/example/reference/item.html\": \"/docs/reference/example/fit/\"",
+            "span": {
+              "start": 2693,
+              "end": 2767
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 2767,
+              "end": 2768
+            }
+          },
+          {
+            "text": "  },",
+            "span": {
+              "start": 2768,
+              "end": 2772
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 2772,
+              "end": 2773
+            }
+          },
+          {
+            "text": "  \"assets\": {",
+            "span": {
+              "start": 2773,
+              "end": 2786
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 2786,
+              "end": 2787
+            }
+          },
+          {
+            "text": "    \"assets/content.css\": \"/_reference/content.css\"",
+            "span": {
+              "start": 2787,
+              "end": 2838
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 2838,
+              "end": 2839
+            }
+          },
+          {
+            "text": "  }",
+            "span": {
+              "start": 2839,
+              "end": 2842
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 2842,
+              "end": 2843
+            }
+          },
+          {
+            "text": "}",
+            "span": {
+              "start": 2843,
+              "end": 2844
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 2844,
+              "end": 2845
+            }
+          }
+        ],
+        "span": {
+          "start": 2643,
+          "end": 2849
+        }
+      },
+      {
+        "type": "code-block",
+        "language": "console",
+        "source": "diplodocus generate --format fragments --input documentation.sqlite \\\n  --output fragments --url-map urls.json\n",
+        "source_segments": [
+          {
+            "text": "diplodocus generate --format fragments --input documentation.sqlite \\",
+            "span": {
+              "start": 2861,
+              "end": 2930
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 2930,
+              "end": 2931
+            }
+          },
+          {
+            "text": "  --output fragments --url-map urls.json",
+            "span": {
+              "start": 2931,
+              "end": 2971
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 2971,
+              "end": 2972
+            }
+          }
+        ],
+        "span": {
+          "start": 2850,
+          "end": 2976
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Keys name the original artifact paths. Mapping changes links in HTML, Markdown,",
+            "span": {
+              "start": 2977,
+              "end": 3056
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 3056,
+              "end": 3057
+            }
+          },
+          {
+            "type": "text",
+            "value": "and search without changing artifact filenames. Unknown keys, unsafe URLs, and",
+            "span": {
+              "start": 3057,
+              "end": 3135
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 3135,
+              "end": 3136
+            }
+          },
+          {
+            "type": "text",
+            "value": "colliding destinations fail before publication. Member and overload anchors",
+            "span": {
+              "start": 3136,
+              "end": 3211
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 3211,
+              "end": 3212
+            }
+          },
+          {
+            "type": "text",
+            "value": "remain intact, as do external and repository source links. Unmapped paths keep",
+            "span": {
+              "start": 3212,
+              "end": 3290
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 3290,
+              "end": 3291
+            }
+          },
+          {
+            "type": "text",
+            "value": "their default relative URLs; hosts should map every local destination used by",
+            "span": {
+              "start": 3291,
+              "end": 3368
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 3368,
+              "end": 3369
+            }
+          },
+          {
+            "type": "text",
+            "value": "the pages they publish.",
+            "span": {
+              "start": 3369,
+              "end": 3392
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 3392,
+              "end": 3393
+            }
+          }
+        ],
+        "span": {
+          "start": 2977,
+          "end": 3393
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "The host supplies layout, navigation, and content typography. Wrap HTML bodies",
+            "span": {
+              "start": 3394,
+              "end": 3472
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 3472,
+              "end": 3473
+            }
+          },
+          {
+            "type": "text",
+            "value": "in ",
+            "span": {
+              "start": 3473,
+              "end": 3476
+            }
+          },
+          {
+            "type": "code",
+            "value": ".diplodocus-content",
+            "span": {
+              "start": 3476,
+              "end": 3497
+            }
+          },
+          {
+            "type": "text",
+            "value": " to use the scoped syntax stylesheet. A ",
+            "span": {
+              "start": 3497,
+              "end": 3537
+            }
+          },
+          {
+            "type": "code",
+            "value": ".dark",
+            "span": {
+              "start": 3537,
+              "end": 3544
+            }
+          },
+          {
+            "type": "text",
+            "value": " ancestor",
+            "span": {
+              "start": 3544,
+              "end": 3553
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 3553,
+              "end": 3554
+            }
+          },
+          {
+            "type": "text",
+            "value": "selects its dark colors. Retain the exported assets and load the KaTeX stylesheet",
+            "span": {
+              "start": 3554,
+              "end": 3635
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 3635,
+              "end": 3636
+            }
+          },
+          {
+            "type": "text",
+            "value": "when rendering math. Filter public navigation using each descriptor's",
+            "span": {
+              "start": 3636,
+              "end": 3705
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 3705,
+              "end": 3706
+            }
+          },
+          {
+            "type": "code",
+            "value": "visible",
+            "span": {
+              "start": 3706,
+              "end": 3715
+            }
+          },
+          {
+            "type": "text",
+            "value": " flag and ",
+            "span": {
+              "start": 3715,
+              "end": 3725
+            }
+          },
+          {
+            "type": "code",
+            "value": "public_name",
+            "span": {
+              "start": 3725,
+              "end": 3738
+            }
+          },
+          {
+            "type": "text",
+            "value": "; internal support documents are not public API",
+            "span": {
+              "start": 3738,
+              "end": 3785
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 3785,
+              "end": 3786
+            }
+          },
+          {
+            "type": "text",
+            "value": "pages.",
+            "span": {
+              "start": 3786,
+              "end": 3792
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 3792,
+              "end": 3793
+            }
+          }
+        ],
+        "span": {
+          "start": 3394,
+          "end": 3793
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Fragment format versions are independent of the SQLite storage contract. The",
+            "span": {
+              "start": 3794,
+              "end": 3870
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 3870,
+              "end": 3871
             }
           },
           {
@@ -747,8 +1262,8 @@
                 "type": "text",
                 "value": "Eunoia experiment",
                 "span": {
-                  "start": 2446,
-                  "end": 2463
+                  "start": 3872,
+                  "end": 3889
                 }
               }
             ],
@@ -760,36 +1275,36 @@
               "key_values": []
             },
             "span": {
-              "start": 2445,
-              "end": 2528
+              "start": 3871,
+              "end": 3954
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2528,
-              "end": 2529
+              "start": 3954,
+              "end": 3955
             }
           },
           {
             "type": "text",
-            "value": "shows an existing SvelteKit site consuming both SQL records and fragments.",
+            "value": "also demonstrates direct SQL consumption inside an existing SvelteKit site.",
             "span": {
-              "start": 2529,
-              "end": 2603
+              "start": 3955,
+              "end": 4030
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 2603,
-              "end": 2604
+              "start": 4030,
+              "end": 4031
             }
           }
         ],
         "span": {
-          "start": 2034,
-          "end": 2604
+          "start": 3794,
+          "end": 4031
         }
       }
     ]

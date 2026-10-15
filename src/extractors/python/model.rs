@@ -167,6 +167,9 @@ pub struct ParsedDecorator {
 /// A module-scope import; a missing module and zero level is an ordinary import.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ParsedImport {
+    /// An import guarded by `typing.TYPE_CHECKING`, used only for annotations.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub annotation_only: bool,
     /// Module of a `from` import, absent for `from . import` and ordinary imports.
     pub module: Option<String>,
     /// Number of leading relative-import dots; zero means absolute.

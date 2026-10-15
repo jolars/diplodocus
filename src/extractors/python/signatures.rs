@@ -10,6 +10,7 @@ use super::{diagnostic, located};
 
 pub(super) struct Expressions<'a> {
     pub names: BTreeMap<String, String>,
+    pub annotation_names: BTreeMap<String, String>,
     pub locals: BTreeMap<String, String>,
     pub qualify_locals: bool,
     pub text: &'a str,
@@ -53,7 +54,7 @@ impl Expressions<'_> {
             returns: function
                 .returns
                 .as_deref()
-                .map(|value| self.expression(value)),
+                .map(|value| self.annotation(value)),
         }
     }
 
@@ -69,9 +70,21 @@ impl Expressions<'_> {
             annotation: value
                 .annotation
                 .as_deref()
-                .map(|value| self.expression(value)),
+                .map(|value| self.annotation(value)),
             default: default.map(|value| self.expression(value)),
         }
+    }
+
+    pub fn annotation(&mut self, value: &Expr) -> SignatureExpression {
+        let saved = self.names.clone();
+        for (name, target) in &self.annotation_names {
+            self.names
+                .entry(name.clone())
+                .or_insert_with(|| target.clone());
+        }
+        let expression = self.expression(value);
+        self.names = saved;
+        expression
     }
 
     pub fn expression(&mut self, value: &Expr) -> SignatureExpression {

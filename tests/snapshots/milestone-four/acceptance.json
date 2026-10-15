@@ -848,16 +848,28 @@
                   "value": " "
                 },
                 {
+                  "attributes": {
+                    "classes": [],
+                    "identifier": null,
+                    "key_values": []
+                  },
+                  "inlines": [
+                    {
+                      "span": {
+                        "end": 48,
+                        "start": 45
+                      },
+                      "type": "code",
+                      "value": "fit"
+                    }
+                  ],
                   "span": {
                     "end": 49,
                     "start": 38
                   },
-                  "target": "fit",
-                  "target_span": {
-                    "end": 48,
-                    "start": 45
-                  },
-                  "type": "semantic-reference"
+                  "target": "@ref foo.model.fit",
+                  "title": null,
+                  "type": "link"
                 },
                 {
                   "span": {
@@ -1094,16 +1106,28 @@
                   "value": " "
                 },
                 {
+                  "attributes": {
+                    "classes": [],
+                    "identifier": null,
+                    "key_values": []
+                  },
+                  "inlines": [
+                    {
+                      "span": {
+                        "end": 35,
+                        "start": 32
+                      },
+                      "type": "code",
+                      "value": "fit"
+                    }
+                  ],
                   "span": {
                     "end": 36,
                     "start": 25
                   },
-                  "target": "fit",
-                  "target_span": {
-                    "end": 35,
-                    "start": 32
-                  },
-                  "type": "semantic-reference"
+                  "target": "@ref foo.model.fit",
+                  "title": null,
+                  "type": "link"
                 },
                 {
                   "span": {
@@ -5922,84 +5946,7 @@
         "sid1:python:class:foo._native.NativeWorkspace",
         "sid1:python:function:foo._native.native_mean"
       ],
-      "documentation": {
-        "document": {
-          "blocks": [
-            {
-              "inlines": [
-                {
-                  "span": {
-                    "end": 37,
-                    "start": 0
-                  },
-                  "type": "text",
-                  "value": "Public declarations for the compiled "
-                },
-                {
-                  "span": {
-                    "end": 52,
-                    "start": 37
-                  },
-                  "type": "code",
-                  "value": "foo._native"
-                },
-                {
-                  "span": {
-                    "end": 63,
-                    "start": 52
-                  },
-                  "type": "text",
-                  "value": " extension."
-                }
-              ],
-              "span": {
-                "end": 63,
-                "start": 0
-              },
-              "type": "paragraph"
-            }
-          ],
-          "frontmatter": null,
-          "span": {
-            "end": 63,
-            "start": 0
-          }
-        },
-        "provenance": [
-          {
-            "activity": {
-              "kind": "declaration"
-            },
-            "source": {
-              "kind": "repository",
-              "path": "python/foo/_native.pyi",
-              "repository": "python"
-            },
-            "span": {
-              "end": 69,
-              "start": 0
-            },
-            "tools": {
-              "diplodocus": "[DIPLODOCUS_VERSION]",
-              "panache-parser": "0.32.0",
-              "pydocstring": "0.4.1"
-            }
-          }
-        ],
-        "raw_source": "Public declarations for the compiled ``foo._native`` extension.",
-        "source_format": {
-          "kind": "extracted",
-          "name": "numpy-docstring"
-        },
-        "source_location": {
-          "path": "python/foo/_native.pyi",
-          "repository": "python",
-          "span": {
-            "end": 69,
-            "start": 0
-          }
-        }
-      },
+      "documentation": null,
       "kind": "module",
       "language_data": {
         "data": {
@@ -6011,7 +5958,7 @@
             "source": "stub-only"
           },
           "decorators": [],
-          "visibility": "public"
+          "visibility": "private"
         },
         "language": "python"
       },

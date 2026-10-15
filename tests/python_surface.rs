@@ -141,6 +141,7 @@ fn all(module: &mut ParsedModule, names: &[&str]) {
 
 fn import(module: &mut ParsedModule, from: &str, name: &str, alias: Option<&str>, level: u32) {
     module.imports.push(ParsedImport {
+        annotation_only: false,
         module: Some(from.into()),
         level,
         names: vec![ImportedName {
@@ -764,6 +765,7 @@ fn module_alias_members_resolve_transitively() {
         .declarations
         .push(function(&implementation, "f", "int"));
     root.imports.push(ParsedImport {
+        annotation_only: false,
         module: None,
         level: 0,
         names: vec![ImportedName {
@@ -851,8 +853,9 @@ fn private_modules_need_public_reexports_to_expose_their_members() {
     let module_id = SemanticIdentity::python("foo._private", PythonIdentityKind::Module).unwrap();
     assert_eq!(
         data(&exported.items[module_id.item_id()]).visibility,
-        PythonVisibility::Public
+        PythonVisibility::Private
     );
+    assert!(!exported.items[module_id.item_id()].discoverable());
     root.imports.clear();
     import(&mut root, "", "_private", Some("api"), 1);
     let exported_module = reconcile(&package(vec![root, private]));

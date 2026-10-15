@@ -17,6 +17,7 @@ use crate::provenance::PANACHE_VERSION;
 mod inline;
 #[path = "docstrings/mapping.rs"]
 mod mapping;
+mod prose;
 
 /// A caller-proven, byte-identical region of decoded text and original source.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -165,6 +166,14 @@ impl Context<'_> {
     fn missing(&mut self, node: &SyntaxNode) {
         for child in node.children() {
             if child.range().is_empty() {
+                if child.kind() == SyntaxKind::TYPE
+                    && node.kind() == SyntaxKind::ENTRY
+                    && node
+                        .find_node(SyntaxKind::DESCRIPTION)
+                        .is_some_and(|description| !description.range().is_empty())
+                {
+                    continue;
+                }
                 self.warn(
                     DiagnosticCode::PythonIncompleteDocstring,
                     format!(
@@ -184,6 +193,7 @@ impl Context<'_> {
         if !matches!(
             section.kind(),
             SectionKind::Parameters
+                | SectionKind::Attributes
                 | SectionKind::Returns
                 | SectionKind::Raises
                 | SectionKind::References
@@ -268,6 +278,10 @@ impl Context<'_> {
     }
 
     fn prose_lines(&mut self, lines: impl IntoIterator<Item = SourceSpan>) -> Vec<Block> {
+        let lines: Vec<_> = lines.into_iter().collect();
+        if let Some(blocks) = self.structured_prose(&lines) {
+            return blocks;
+        }
         let mut blocks = Vec::new();
         let mut inlines = Vec::new();
         let mut paragraph_span: Option<SourceSpan> = None;

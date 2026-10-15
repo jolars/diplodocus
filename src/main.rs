@@ -7,7 +7,7 @@ use diplodocus::commands::{
 
 mod cli;
 
-use cli::{Cli, Command};
+use cli::{Cli, Command, GenerateFormat};
 
 fn main() -> ExitCode {
     match dispatch(Cli::parse()) {
@@ -44,10 +44,21 @@ fn dispatch(cli: Cli) -> Result<(), CommandError> {
             config: args.config,
             output: args.output,
         }),
-        Command::Generate(args) => commands::generate(GenerateOptions {
-            input: args.input,
-            output: args.output,
-        }),
+        Command::Generate(args) => {
+            let options = GenerateOptions {
+                input: args.input,
+                output: args.output,
+            };
+            match args.format {
+                GenerateFormat::Site if args.url_map.is_some() => {
+                    Err(CommandError::Site(diplodocus::site::SiteError::Route(
+                        "--url-map requires --format fragments".into(),
+                    )))
+                }
+                GenerateFormat::Site => commands::generate(options),
+                GenerateFormat::Fragments => commands::generate_fragments(options, args.url_map),
+            }
+        }
         Command::Serve(args) => commands::serve(ServeOptions {
             config: args.config,
             output: args.output,

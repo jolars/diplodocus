@@ -1,5 +1,10 @@
 # Package documentation inside Eunoia
 
+Eunoia now integrates the complete Python API through the supported
+`generate --format fragments` command, including mapped HTML and Markdown
+links. See Eunoia's `web/PYTHON-DOCS.md` for that build. This directory retains
+the original disposable Python/R experiment and its custom SQL example.
+
 This experiment uses a portable Diplodocus SQLite snapshot in a disposable copy
 of Eunoia's existing SvelteKit website. Eunoia supplies its layout, navigation,
 routes, and interactive components. Diplodocus supplies package documentation.
@@ -93,8 +98,9 @@ the two `euler` implementations.
 
 The Python source slice contains the unchanged `_fit.py` and a generated
 `__init__.py` that exports only `euler`. This is a documentation slice, not a
-complete runnable Python package. Whole-package extraction currently rejects
-type-checking conditionals and Eunoia's generic dataclass decorator. The fitting
+complete runnable Python package. The initial trial exposed unsupported
+type-checking imports and dataclass options; the Python adapter now handles
+those constructs and extracts the untouched package. The fitting
 docstring has no executable doctest syntax, so this experiment provides no
 Python execution coverage.
 
@@ -108,9 +114,7 @@ become unavailable. Building Eunoia itself still requires its own frontend
 dependencies and WASM package.
 
 The experiment supports keeping SQLite as an independent consumption contract.
-It also exposes the next integration decisions: a supported URL mapping API,
-host-controlled content styles, and integration of semantic links and search
-with host-authored pages. The adapter remaps search records but does not add a
-search UI or Markdown representations for the generated reference pages.
-The fragment API and its `documents.json` envelope are
-experimental; this example does not establish a stable framework plugin API.
+The supported fragment exporter now provides URL mapping, scoped syntax styles,
+and Markdown representations. This experiment's adapter still remaps its own
+search records and does not add a search UI or Markdown representations to its
+disposable website. It does not establish a framework plugin API.
