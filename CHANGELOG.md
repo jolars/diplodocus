@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.0](https://github.com/jolars/diplodocus/compare/v0.2.0...v0.3.0) (2026-10-15)
+
+### Features
+
+- add a flake for building diplodocus ([`487e1c0`](https://github.com/jolars/diplodocus/commit/487e1c0a661e6857fceb4a6624df10e2349acb2a))
+- add binaries to releases ([`41eef5b`](https://github.com/jolars/diplodocus/commit/41eef5b3e3fcd06f23abbbdf6ef40f319bcba2c5))
+- **python:** support embedded API references ([`72c8f35`](https://github.com/jolars/diplodocus/commit/72c8f353f4a597119213f200721f9bd250a1c7f6))
+
 ## [0.2.0](https://github.com/jolars/diplodocus/compare/v0.1.0...v0.2.0) (2026-10-15)
 
 ### Breaking changes
