@@ -4,9 +4,11 @@
   const toc = document.querySelector('.toc-disclosure');
   const wide = matchMedia('(min-width:1100px)');
   disclosure.open = !narrow.matches;
+  disclosure.dataset.ready = '';
   narrow.addEventListener('change', event => { disclosure.open = !event.matches; });
   if (toc) {
     toc.open = wide.matches;
+    toc.dataset.ready = '';
     wide.addEventListener('change', event => { toc.open = event.matches; });
   }
   // Branding and extra package tabs can change the sticky header's height.

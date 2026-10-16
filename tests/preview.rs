@@ -27,6 +27,16 @@ async fn request(port: u16, path: &str) -> Option<String> {
         .ok()?;
     String::from_utf8(bytes).ok()
 }
+async fn revision(port: u16) -> u64 {
+    request(port, "/__diplodocus/revision")
+        .await
+        .unwrap()
+        .split_once("\r\n\r\n")
+        .unwrap()
+        .1
+        .parse()
+        .unwrap()
+}
 async fn until(mut condition: impl AsyncFnMut() -> bool) {
     tokio::time::timeout(Duration::from_secs(45), async {
         loop {
@@ -215,14 +225,15 @@ async fn preview_tracks_missing_assets_and_configuration_changes() {
         .unwrap()
         .port();
     let (stop, stopped) = tokio::sync::oneshot::channel();
+    let options = ServeOptions {
+        config: root.path().join("diplodocus.toml"),
+        output: root.path().join("site"),
+        host: std::net::Ipv4Addr::LOCALHOST.into(),
+        port,
+        live_reload: true,
+    };
     let task = tokio::spawn(serve_with(
-        ServeOptions {
-            config: root.path().join("diplodocus.toml"),
-            output: root.path().join("site"),
-            host: std::net::Ipv4Addr::LOCALHOST.into(),
-            port,
-            live_reload: true,
-        },
+        options.clone(),
         ExecutionDeadlines::default(),
         Box::pin(async {
             let _ = stopped.await;
@@ -254,11 +265,12 @@ async fn preview_tracks_missing_assets_and_configuration_changes() {
             .unwrap()
             .contains("/__diplodocus/revision")
     );
+    let initial_revision = revision(port).await;
     assert!(
-        request(port, "/__diplodocus/revision")
+        request(port, "/")
             .await
             .unwrap()
-            .ends_with("\r\n\r\n0")
+            .contains(&format!("const served='{initial_revision}'"))
     );
     assert!(
         !root
@@ -269,12 +281,7 @@ async fn preview_tracks_missing_assets_and_configuration_changes() {
     root.write("guide/index.md", "# Added asset\n\n![New](new.svg)\n");
     tokio::time::sleep(Duration::from_millis(600)).await;
     assert!(request(port, "/").await.unwrap().contains("Original"));
-    assert!(
-        request(port, "/__diplodocus/revision")
-            .await
-            .unwrap()
-            .ends_with("\r\n\r\n0")
-    );
+    assert_eq!(revision(port).await, initial_revision);
     assert_eq!(files(&root.path().join("site")), previous);
     root.write(
         "guide/new.svg",
@@ -286,12 +293,7 @@ async fn preview_tracks_missing_assets_and_configuration_changes() {
             .is_some_and(|s| s.contains("Added asset"))
     })
     .await;
-    assert!(
-        request(port, "/__diplodocus/revision")
-            .await
-            .unwrap()
-            .ends_with("\r\n\r\n1")
-    );
+    assert_eq!(revision(port).await, initial_revision.wrapping_add(1));
     root.write(
         "guide/new.svg",
         "<svg xmlns='http://www.w3.org/2000/svg'><circle r='5'/></svg>",
@@ -329,6 +331,32 @@ async fn preview_tracks_missing_assets_and_configuration_changes() {
             .is_some_and(|s| s.contains("Restored input"))
     })
     .await;
+    let previous_revision = revision(port).await;
+    stop.send(()).unwrap();
+    task.await.unwrap().unwrap();
+
+    let (stop, stopped) = tokio::sync::oneshot::channel();
+    let task = tokio::spawn(serve_with(
+        options,
+        ExecutionDeadlines::default(),
+        Box::pin(async {
+            let _ = stopped.await;
+        }),
+    ));
+    until(async || {
+        request(port, "/")
+            .await
+            .is_some_and(|s| s.contains("Restored input"))
+    })
+    .await;
+    let restarted_revision = revision(port).await;
+    assert_ne!(restarted_revision, previous_revision);
+    assert!(
+        request(port, "/")
+            .await
+            .unwrap()
+            .contains(&format!("const served='{restarted_revision}'"))
+    );
     stop.send(()).unwrap();
     task.await.unwrap().unwrap();
 }

@@ -2,11 +2,19 @@ version: "3"
 
 tasks:
   preview:
-    desc: Build and serve the R/Python monorepo example.
+    desc: Watch the generator and serve the monorepo example.
     cmds:
       - >-
+        devenv shell -- watchexec --restart --shell=none
+        --stop-signal SIGTERM --stop-timeout 30s --debounce 500ms
+        --watch src
+        --watch Cargo.toml --watch Cargo.lock --watch build.rs
+        --watch rust-toolchain.toml --watch docs/cli-intro.md
+        --
         cargo run --locked -- serve
         --config "${DIPLODOCUS_EXAMPLE_CONFIG:-examples/monorepo/diplodocus.toml}"
         --output "${DIPLODOCUS_SITE_OUTPUT:-site/monorepo}"
         --host 127.0.0.1
+        --port "${DIPLODOCUS_SITE_PORT:-8000}"
         --live-reload
+        {{.CLI_ARGS}}

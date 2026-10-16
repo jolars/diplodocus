@@ -248,3 +248,90 @@ fn ambiguous_clean_urls_fail_before_replacing_a_site() {
         assert_eq!(std::fs::read(output.join("sitemap.xml")).unwrap(), before);
     }
 }
+
+#[test]
+fn page_links_and_search_resolve_directly_to_public_urls() {
+    fn references(node: &Handle, urls: &mut Vec<String>) {
+        if let NodeData::Element { name, attrs, .. } = &node.data {
+            let attribute = match name.local.as_ref() {
+                "a" => Some("href"),
+                "img" => Some("src"),
+                _ => None,
+            };
+            if let Some(attribute) = attribute {
+                urls.extend(
+                    attrs
+                        .borrow()
+                        .iter()
+                        .filter(|a| a.name.local.as_ref() == attribute)
+                        .map(|a| a.value.to_string()),
+                );
+            }
+        }
+        for child in node.children.borrow().iter() {
+            references(child, urls);
+        }
+    }
+
+    for style in ["file", "clean"] {
+        let root = workspace(&format!(
+            "[presentation]\nsite-url='https://example.test/docs/'\ncanonical-url-style='{style}'"
+        ));
+        root.write(
+            "diplodocus.toml",
+            root.read("diplodocus.toml")
+                .replace("format='gfm'", "format='qmd'"),
+        );
+        root.write("docs/guide/index.md", "# Guide\n\n[Home](../index.md) and [start](start.md#details).\n\n![Diagram](../diagram.svg)\n");
+        root.write(
+            "docs/guide/start.md",
+            "# Start\n\n[Guide](index.md) and [home](../index.md).\n\n## Details {#details}\n",
+        );
+        root.write(
+            "docs/diagram.svg",
+            "<svg xmlns='http://www.w3.org/2000/svg' width='20' height='10'></svg>",
+        );
+        let snapshot = snapshot(&root);
+        let rendered = render(&snapshot);
+        let public_urls = locations(&rendered);
+        for (route, file) in rendered
+            .files()
+            .iter()
+            .filter(|(p, _)| p.ends_with(".html"))
+        {
+            let html = std::str::from_utf8(&file.bytes).unwrap();
+            let dom = html5ever::parse_document(RcDom::default(), Default::default()).one(html);
+            let mut canonicals = Vec::new();
+            canonical(&dom.document, &mut canonicals);
+            let base = url::Url::parse(&canonicals[0]).unwrap();
+            let mut urls = Vec::new();
+            references(&dom.document, &mut urls);
+            for reference in urls {
+                let mut target = base.join(&reference).unwrap();
+                target.set_fragment(None);
+                if target.path().starts_with("/docs/assets/") {
+                    let asset = target.path().strip_prefix("/docs/").unwrap();
+                    assert!(
+                        rendered.files().contains_key(asset),
+                        "{route} -> {reference}"
+                    );
+                } else {
+                    assert!(
+                        public_urls.iter().any(|url| url == target.as_str()),
+                        "{style}: {base} -> {reference} -> {target}"
+                    );
+                }
+            }
+        }
+        let search: Vec<serde_json::Value> =
+            serde_json::from_slice(&rendered.files()["assets/search.json"].bytes).unwrap();
+        let base = url::Url::parse("https://example.test/docs/").unwrap();
+        for entry in search {
+            let url = base.join(entry["path"].as_str().unwrap()).unwrap();
+            assert!(
+                public_urls.iter().any(|public| public == url.as_str()),
+                "search -> {url}"
+            );
+        }
+    }
+}

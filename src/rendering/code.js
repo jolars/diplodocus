@@ -34,4 +34,16 @@
       status.textContent = copied ? 'Copied' : 'Unable to copy. Select the code to copy it.';
     });
   }
+  // Short blocks do not need a tab stop, but overflow must remain keyboard accessible.
+  const focusOverflow = pre => {
+    if (pre.scrollWidth > pre.clientWidth) pre.tabIndex = 0;
+    else pre.removeAttribute('tabindex');
+  };
+  const observer = new ResizeObserver(entries => {
+    for (const { target } of entries) focusOverflow(target);
+  });
+  for (const pre of document.querySelectorAll('main pre')) {
+    focusOverflow(pre);
+    observer.observe(pre);
+  }
 })();

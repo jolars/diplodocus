@@ -837,3 +837,40 @@ test("R Markdown articles render collected results", async ({ page }, info) => {
   await fitsViewport(page);
   await capture(page, info, "r-vignette");
 });
+
+test("delayed navigation initialization preserves the initial layout", async ({ page }) => {
+  let release!: () => void;
+  const ready = new Promise<void>(resolve => { release = resolve; });
+  await page.route("**/assets/nav.js", async route => {
+    const response = await route.fetch();
+    await ready;
+    await route.fulfill({ response });
+  });
+  try {
+    await page.goto("/guides/comparing-predictions.html", { waitUntil: "commit" });
+    await page.getByRole("main").waitFor();
+    await page.waitForFunction(() => getComputedStyle(document.querySelector("main")!).paddingTop === "32px" || getComputedStyle(document.querySelector("main")!).paddingTop === "24px");
+    const before = await page.getByRole("main").boundingBox();
+    release();
+    await page.waitForLoadState("networkidle");
+    const after = await page.getByRole("main").boundingBox();
+    expect(after!.y).toBeCloseTo(before!.y, 0);
+  } finally {
+    release();
+    await page.unrouteAll({ behavior: "ignoreErrors" });
+  }
+});
+
+test("overflowing code can be scrolled with the keyboard", async ({ page }) => {
+  await page.goto("/guides/comparing-predictions.html");
+  const blocks = page.locator("main pre");
+  const index = await blocks.evaluateAll(elements => elements.findIndex(el => el.scrollWidth > el.clientWidth));
+  expect(index).toBeGreaterThanOrEqual(0);
+  const block = blocks.nth(index);
+  await expect(block).toHaveAttribute("tabindex", "0");
+  await block.locator("..").getByRole("button", { name: "Copy code", exact: true }).focus();
+  await page.keyboard.press("Tab");
+  await expect(block).toBeFocused();
+  await page.keyboard.press("ArrowRight");
+  await expect.poll(() => block.evaluate(el => el.scrollLeft)).toBeGreaterThan(0);
+});

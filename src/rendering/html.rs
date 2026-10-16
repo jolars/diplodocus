@@ -129,7 +129,7 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
         let mut html = String::new();
         if standalone {
             html = String::from(
-                "<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">",
+                "<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><script>document.documentElement.classList.add('js')</script>",
             );
             if let Some(description) = &site.presentation.description {
                 write!(

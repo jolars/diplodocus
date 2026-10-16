@@ -198,9 +198,9 @@ as `/docs/index.html` and `/docs/installation.html`. Use `clean` when your host
 serves index pages at directory URLs and other HTML pages without their
 extension. For example, those URLs become `/docs/` and `/docs/installation`. The
 Diplodocus documentation uses `clean` to match Cloudflare's default static asset
-routing. This setting changes sitemap URLs, canonical links, and Open Graph
-page URLs; output
-filenames, navigation links, and local preview routes retain their file paths.
+routing. This setting changes page links, search results, sitemap URLs,
+canonical links, and Open Graph page URLs. Output filenames retain their file
+paths, and the local preview serves both clean URLs and generated file paths.
 Clean URLs require matching support from your host. Ambiguous routes, such as
 `foo.html` alongside `foo/index.html`, fail generation before site publication.
 

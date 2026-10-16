@@ -99,13 +99,7 @@ if (mode === "serve-test") {
     rmSync(workspace, { recursive: true, force: true });
   }
 } else if (mode === "dev") {
-  process.exitCode = await run(build(), [
-    "serve", "--config", "examples/monorepo/diplodocus.toml",
-    "--output", process.env.DIPLODOCUS_SITE_OUTPUT ?? "site/monorepo",
-    "--host", "127.0.0.1", "--port", process.env.DIPLODOCUS_SITE_PORT ?? "8000",
-    "--live-reload",
-    ...args,
-  ]);
+  process.exitCode = await run("go-task", ["--silent", "preview", "--", ...args]);
 } else if (mode === "test" || mode === "capture") {
   process.env.DIPLODOCUS_BROWSER_BINARY = build();
   const artifacts = process.env.DIPLODOCUS_BROWSER_ARTIFACTS

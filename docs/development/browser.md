@@ -27,10 +27,14 @@ development tools; the generated site has no Node runtime dependency.
 site-dev
 ```
 
-Open <http://127.0.0.1:8000/>. Editing the example's documentation triggers a
-rebuild and refreshes open pages after a successful build. Restart this command
-after changing Rust so the preview uses the new renderer. Stop the server with
+Open <http://127.0.0.1:8000/>. `site-dev` runs `task preview`, which watches the
+generator's Rust, embedded CSS and JavaScript, and build inputs. Changes trigger
+recompilation, restart the server, and refresh open pages. Editing the example's
+documentation rebuilds the site within the running server. Stop the preview with
 Ctrl-C.
+
+The preview task enters devenv so the watcher is available when launched from an
+editor with an older environment.
 
 ```console
 site-test
@@ -107,6 +111,7 @@ The source copy is removed when its server stops. To choose locations explicitly
 
 | Variable | Applies to | Default |
 |:---------|:-----------|:--------|
+| `DIPLODOCUS_EXAMPLE_CONFIG` | Interactive preview | `examples/monorepo/diplodocus.toml` |
 | `DIPLODOCUS_SITE_PORT` | Interactive preview | `8000` |
 | `DIPLODOCUS_SITE_OUTPUT` | Interactive preview | `site/monorepo` |
 | `DIPLODOCUS_BROWSER_PORT` | Automated preview | `0`, assigned by the OS |

@@ -40,7 +40,7 @@ pub(crate) fn signature_title(
 /// Use this for `PlainText` representations, stderr, and normalized error text.
 /// Keep the IR's original bytes and escape only at this final HTML boundary.
 pub fn render_preformatted_text(text: &str) -> String {
-    let mut html = String::from("<pre><code>");
+    let mut html = String::from("<pre tabindex=\"0\"><code>");
     for ch in text.chars() {
         match ch {
             '&' => html.push_str("&amp;"),

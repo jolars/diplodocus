@@ -28,5 +28,6 @@ fixtures. Keep generated artifacts out of version control.
 ## Browser workflow
 
 See [the browser workflow](docs/development/browser.md) for preview commands,
-test artifacts, interactive inspection, and dependency updates. Restart
-`site-dev` after changing Rust; its watcher observes documentation inputs.
+test artifacts, interactive inspection, and dependency updates. `site-dev` and
+`task preview` recompile and restart after generator changes and rebuild after
+documentation changes.

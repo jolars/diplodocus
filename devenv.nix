@@ -83,6 +83,7 @@ in
     cargo-msrv
     nodejs
     go-task
+    watchexec
   ];
 
   languages = {

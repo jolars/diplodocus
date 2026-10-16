@@ -44,7 +44,11 @@ fn reference_titles_routes_introductions_and_summaries_survive_without_sources()
                 .unwrap()
                 < page.find(">Usage</h2>").unwrap()
         );
-        assert_eq!(page.matches("<pre class=\"syntax-code\">").count(), 3);
+        assert_eq!(
+            page.matches("<pre class=\"syntax-code\" tabindex=\"0\">")
+                .count(),
+            3
+        );
         assert!(page.contains("<span class=\"syntax-"));
         assert!(page.contains("src=\"../../../assets/code.js\""));
         assert!(page.contains("https://github.com/example/shared/blob/release%2Fv1/man/fit.Rd"));

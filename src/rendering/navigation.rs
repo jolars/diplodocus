@@ -5,7 +5,7 @@ use std::fmt::Write;
 
 use super::html::escape;
 use crate::ir::{ItemReference, Package};
-use crate::site::{Site, relative_url};
+use crate::site::Site;
 use crate::validation::DocumentIdentity;
 
 pub(super) fn repositories(html: &mut String, site: &Site<'_>) {
@@ -37,7 +37,7 @@ pub(super) fn sections(html: &mut String, site: &Site<'_>, route: &str, class: &
     )
     .unwrap();
     let owner = site.pages[route].owner.as_deref();
-    section_link(html, route, "index.html", "Guide", owner.is_none());
+    section_link(html, site, route, "index.html", "Guide", owner.is_none());
     let mut packages: Vec<_> = site
         .workspace
         .packages
@@ -58,6 +58,7 @@ pub(super) fn sections(html: &mut String, site: &Site<'_>, route: &str, class: &
     for (id, package) in packages {
         section_link(
             html,
+            site,
             route,
             &format!("packages/{}/index.html", package.slug),
             package_label(site, package),
@@ -67,13 +68,20 @@ pub(super) fn sections(html: &mut String, site: &Site<'_>, route: &str, class: &
     html.push_str("</ul></nav>");
 }
 
-fn section_link(html: &mut String, route: &str, destination: &str, label: &str, active: bool) {
+fn section_link(
+    html: &mut String,
+    site: &Site<'_>,
+    route: &str,
+    destination: &str,
+    label: &str,
+    active: bool,
+) {
     // The current section stays selected even when its landing page is not open.
     let current = if active { " aria-current=\"true\"" } else { "" };
     write!(
         html,
         "<li><a href=\"{}\"{current}>{}</a></li>",
-        escape(&relative_url(route, destination)),
+        escape(&site.url(route, destination)),
         escape(label)
     )
     .unwrap();
@@ -119,7 +127,7 @@ pub(super) fn contextual(html: &mut String, site: &Site<'_>, route: &str) {
             })
             .map(|(destination, page)| (destination.clone(), page.title.clone()))
             .collect::<Vec<_>>();
-        group(html, route, "Shared concepts", &concepts);
+        group(html, site, route, "Shared concepts", &concepts);
     }
 }
 
@@ -156,7 +164,7 @@ fn document_groups(
             root.push((destination.clone(), page.title.clone()));
         }
     }
-    group(html, route, label, &root);
+    group(html, site, route, label, &root);
     for (directory, mut pages) in groups {
         let overview = format!("{base}{directory}/index.html");
         let label = site
@@ -177,11 +185,17 @@ fn document_groups(
                 *title = "Overview".into();
             }
         }
-        group(html, route, &label, &pages);
+        group(html, site, route, &label, &pages);
     }
 }
 
-pub(super) fn group(html: &mut String, route: &str, label: &str, links: &[(String, String)]) {
+pub(super) fn group(
+    html: &mut String,
+    site: &Site<'_>,
+    route: &str,
+    label: &str,
+    links: &[(String, String)],
+) {
     if links.is_empty() {
         return;
     }
@@ -193,7 +207,7 @@ pub(super) fn group(html: &mut String, route: &str, label: &str, links: &[(Strin
     )
     .unwrap();
     for (destination, title) in links {
-        link(html, route, destination, title);
+        link(html, site, route, destination, title);
     }
     html.push_str("</ul></section>");
 }
@@ -218,6 +232,7 @@ fn package_pages(html: &mut String, site: &Site<'_>, route: &str, id: &str) {
     if package.ecosystem == "r" {
         link(
             html,
+            site,
             route,
             &format!("packages/{}/reference/index.html", package.slug),
             "Reference overview",
@@ -297,6 +312,7 @@ fn item_tree(
     if children.is_empty() {
         link_label(
             &mut html,
+            site,
             route,
             destination,
             &format!("<code>{}</code>", escape(&title)),
@@ -309,18 +325,18 @@ fn item_tree(
             escape(&title)
         )
         .unwrap();
-        link(&mut html, route, destination, "Overview");
+        link(&mut html, site, route, destination, "Overview");
         html.push_str(&children);
         html.push_str("</ul></details></li>");
     }
     (html, active)
 }
 
-fn link(html: &mut String, route: &str, destination: &str, title: &str) {
-    link_label(html, route, destination, &escape(title));
+fn link(html: &mut String, site: &Site<'_>, route: &str, destination: &str, title: &str) {
+    link_label(html, site, route, destination, &escape(title));
 }
 
-fn link_label(html: &mut String, route: &str, destination: &str, label: &str) {
+fn link_label(html: &mut String, site: &Site<'_>, route: &str, destination: &str, label: &str) {
     let active = if destination == route {
         " aria-current=\"page\""
     } else {
@@ -329,7 +345,7 @@ fn link_label(html: &mut String, route: &str, destination: &str, label: &str) {
     write!(
         html,
         "<li><a href=\"{}\"{active}>{}</a></li>",
-        escape(&relative_url(route, destination)),
+        escape(&site.url(route, destination)),
         label
     )
     .unwrap();

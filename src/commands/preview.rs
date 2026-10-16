@@ -53,7 +53,8 @@ async fn run(
     };
     let current = Arc::new(RwLock::new(Arc::new(ServedGeneration {
         site: initial,
-        revision: 0,
+        // Open pages must also detect a new server after the generator recompiles.
+        revision: getrandom::u64().map_err(std::io::Error::other)?,
     })));
     let http = tokio::spawn(http(
         listener,
@@ -81,7 +82,7 @@ async fn run(
                         let mut current = current.write().expect("preview generation lock");
                         *current = Arc::new(ServedGeneration {
                             site,
-                            revision: current.revision + 1,
+                            revision: current.revision.wrapping_add(1),
                         });
                         eprintln!("Rebuilt documentation.");
                     }
@@ -165,6 +166,17 @@ async fn response(
                 p.into()
             }
         });
+    let path = path.map(|path| {
+        let clean = format!("{path}.html");
+        if !generation.site.files().contains_key(&path)
+            && !path.ends_with(".html")
+            && generation.site.files().contains_key(&clean)
+        {
+            clean
+        } else {
+            path
+        }
+    });
     let accept = std::str::from_utf8(&bytes)
         .unwrap_or("")
         .lines()
@@ -265,7 +277,7 @@ fn with_live_reload(html: &[u8], revision: u64) -> Vec<u8> {
     content.extend_from_slice(&html[position..]);
     content
 }
-const LIVE_RELOAD: &str = r#"<script>(()=>{const served=__REVISION__;async function check(){try{const response=await fetch('/__diplodocus/revision',{cache:'no-store'});if(response.ok&&Number(await response.text())!==served){location.reload();return}}catch{}setTimeout(check,1000)}setTimeout(check,1000)})()</script>"#;
+const LIVE_RELOAD: &str = r#"<script>(()=>{const served='__REVISION__';async function check(){try{const response=await fetch('/__diplodocus/revision',{cache:'no-store'});if(response.ok&&await response.text()!==served){location.reload();return}}catch{}setTimeout(check,1000)}setTimeout(check,1000)})()</script>"#;
 
 #[cfg(test)]
 mod tests {
@@ -281,6 +293,11 @@ mod tests {
         fs::write(
             root.path().join("docs/index.md"),
             "# Guide\n\nAgent content.\n",
+        )
+        .unwrap();
+        fs::write(
+            root.path().join("docs/start.md"),
+            "# Start\n\nAgent content.\n",
         )
         .unwrap();
         let sources = assemble_workspace(&config).unwrap();
@@ -303,6 +320,9 @@ mod tests {
                 "text/markdown",
             ),
             ("HEAD", "/guide/", "text/markdown", "text/markdown"),
+            ("GET", "/guide/start", "text/markdown", "text/markdown"),
+            ("HEAD", "/guide/start", "text/markdown", "text/markdown"),
+            ("GET", "/guide/start", "text/html", "text/html"),
             ("GET", "/guide/", "*/*", "text/html"),
             ("GET", "/guide/", "text/markdown;q=0", "text/html"),
             (

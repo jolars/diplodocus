@@ -34,6 +34,19 @@ fn collect_urls(
     }
 }
 
+fn artifact_route(output: &std::path::Path, path: &str) -> String {
+    let decoded = percent_encoding::percent_decode_str(path)
+        .decode_utf8()
+        .unwrap();
+    if decoded.is_empty() || decoded.ends_with('/') {
+        format!("{decoded}index.html")
+    } else if output.join(decoded.as_ref()).is_file() {
+        decoded.into_owned()
+    } else {
+        format!("{decoded}.html")
+    }
+}
+
 #[test]
 fn real_project_site_builds_and_resolves_at_its_domain_root() {
     let workspace = support::own_documentation_workspace();
@@ -111,27 +124,26 @@ fn real_project_site_builds_and_resolves_at_its_domain_root() {
     );
 
     for (route, (urls, _)) in &pages {
-        let base = url::Url::parse(&format!("https://diplodocus.cc/{route}")).unwrap();
+        let public = if route == "index.html" {
+            ""
+        } else {
+            route.strip_suffix(".html").unwrap()
+        };
+        let base = url::Url::parse(&format!("https://diplodocus.cc/{public}")).unwrap();
         for reference in urls {
             let target = base.join(reference).unwrap();
             if target.host_str() != Some("diplodocus.cc") {
                 continue;
             }
             let path = target.path().strip_prefix('/').unwrap();
-            let path = if path.is_empty() { "index.html" } else { path };
-            let path = percent_encoding::percent_decode_str(path)
-                .decode_utf8()
-                .unwrap();
-            assert!(
-                output.join(path.as_ref()).is_file(),
-                "{route} -> {reference}"
-            );
+            let path = artifact_route(&output, path);
+            assert!(output.join(&path).is_file(), "{route} -> {reference}");
             if let Some(fragment) = target.fragment() {
                 let fragment = percent_encoding::percent_decode_str(fragment)
                     .decode_utf8()
                     .unwrap();
                 assert!(
-                    pages[path.as_ref()].1.contains(fragment.as_ref()),
+                    pages[&path].1.contains(fragment.as_ref()),
                     "{route} -> {reference}"
                 );
             }
@@ -143,10 +155,8 @@ fn real_project_site_builds_and_resolves_at_its_domain_root() {
     assert_eq!(search.len(), pages.len());
     for entry in &search {
         let path = entry["path"].as_str().unwrap();
-        let route = percent_encoding::percent_decode_str(path)
-            .decode_utf8()
-            .unwrap();
-        assert!(pages.contains_key(route.as_ref()), "search -> {path}");
+        let route = artifact_route(&output, if path == "./" { "" } else { path });
+        assert!(pages.contains_key(&route), "search -> {path}");
     }
     for (title, route) in [
         ("Diplodocus", "index.html"),
@@ -164,7 +174,11 @@ fn real_project_site_builds_and_resolves_at_its_domain_root() {
             percent_encoding::percent_decode_str(path)
                 .decode_utf8()
                 .unwrap(),
-            route
+            if route == "index.html" {
+                "./"
+            } else {
+                route.strip_suffix(".html").unwrap()
+            }
         );
         assert!(output.join(route).is_file());
     }

@@ -475,7 +475,7 @@ async fn protocol_text_output_respects_prepared_asis_and_inert_markdown() {
         };
         assert_eq!(
             crate::rendering::render_preformatted_text(text),
-            "<pre><code>&lt;stderr&gt;&amp;literal\n</code></pre>"
+            "<pre tabindex=\"0\"><code>&lt;stderr&gt;&amp;literal\n</code></pre>"
         );
         let display = outputs.last().unwrap();
         assert_eq!(display.selected_mime_type.as_deref(), Some("text/markdown"));

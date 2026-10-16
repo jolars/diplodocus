@@ -419,21 +419,12 @@ impl<'a> Site<'a> {
     }
 
     fn assign_canonical_urls(&mut self) -> Result<(), SiteError> {
-        let Some(base) = &self.base_url else {
-            return Ok(());
-        };
         let mut assigned = BTreeSet::new();
         for route in self.pages.keys() {
             let public_route = match self.presentation.canonical_url_style {
                 CanonicalUrlStyle::File => route.as_str(),
                 CanonicalUrlStyle::Clean => {
-                    let public_route = if route == "index.html" {
-                        ""
-                    } else if let Some(directory) = route.strip_suffix("/index.html") {
-                        &route[..directory.len() + 1]
-                    } else {
-                        route.strip_suffix(".html").ok_or(SiteError::Evidence)?
-                    };
+                    let public_route = clean_route(route);
                     let file_alias = format!("{}.html", public_route.trim_end_matches('/'));
                     let index_alias = format!("{}/index.html", public_route.trim_end_matches('/'));
                     if [file_alias, index_alias]
@@ -448,6 +439,9 @@ impl<'a> Site<'a> {
                     }
                     public_route
                 }
+            };
+            let Some(base) = &self.base_url else {
+                continue;
             };
             let url = base
                 .join(&encode_url_path(public_route))
@@ -473,9 +467,28 @@ impl<'a> Site<'a> {
     }
 
     pub(crate) fn url(&self, from: &str, to: &str) -> String {
-        self.url_map
-            .as_ref()
-            .map_or_else(|| relative_url(from, to), |map| map.url(from, to))
+        if let Some(map) = &self.url_map {
+            return map.url(from, to);
+        }
+        let public = |route| {
+            if self.presentation.canonical_url_style == CanonicalUrlStyle::Clean
+                && self.pages.contains_key(route)
+            {
+                clean_route(route)
+            } else {
+                route
+            }
+        };
+        let (path, fragment) = to.split_once('#').map_or((to, None), |(p, f)| (p, Some(f)));
+        let mut url = relative_url(public(from), public(path));
+        if url.is_empty() {
+            url.push_str("./");
+        }
+        if let Some(fragment) = fragment {
+            url.push('#');
+            url.push_str(fragment);
+        }
+        url
     }
     pub(crate) fn title(&self) -> &str {
         self.presentation
@@ -536,6 +549,16 @@ impl<'a> Site<'a> {
             _ => "bin",
         };
         Ok(format!("assets/{digest}.{extension}"))
+    }
+}
+
+fn clean_route(route: &str) -> &str {
+    if route == "index.html" {
+        ""
+    } else if route.ends_with("/index.html") {
+        route.strip_suffix("index.html").unwrap()
+    } else {
+        route.strip_suffix(".html").unwrap_or(route)
     }
 }
 

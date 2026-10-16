@@ -83,7 +83,7 @@ pub struct PresentationDefaults {
         skip_serializing_if = "Option::is_none"
     )]
     pub site_url: Option<String>,
-    /// Public URL spelling used by canonical links and the sitemap.
+    /// Public URL spelling used by page links, search, and crawler metadata.
     #[serde(skip_serializing_if = "CanonicalUrlStyle::is_default")]
     pub canonical_url_style: CanonicalUrlStyle,
     /// Optional notices and links shown at the bottom of every page.
@@ -182,7 +182,7 @@ fn deserialize_footer_url<'de, D: Deserializer<'de>>(deserializer: D) -> Result<
     Ok(value)
 }
 
-/// How a host exposes the generated HTML files to crawlers.
+/// How a host exposes the generated HTML files.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum CanonicalUrlStyle {

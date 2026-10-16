@@ -3,6 +3,10 @@ use syntect::parsing::SyntaxSet;
 use syntect::util::LinesWithEndings;
 
 const CLASS_STYLE: ClassStyle = ClassStyle::SpacedPrefixed { prefix: "syntax-" };
+const LIGHT_THEME: two_face::theme::EmbeddedThemeName =
+    two_face::theme::EmbeddedThemeName::ColdarkCold;
+const DARK_THEME: two_face::theme::EmbeddedThemeName =
+    two_face::theme::EmbeddedThemeName::ColdarkDark;
 
 pub(super) struct Highlighter {
     syntaxes: SyntaxSet,
@@ -33,7 +37,7 @@ impl Highlighter {
             }
         }
         format!(
-            "<pre class=\"syntax-code\"><code>{}</code></pre>",
+            "<pre class=\"syntax-code\" tabindex=\"0\"><code>{}</code></pre>",
             generator.finalize()
         )
     }
@@ -41,28 +45,17 @@ impl Highlighter {
 
 pub(super) fn stylesheet() -> Result<String, syntect::Error> {
     let themes = two_face::theme::extra();
-    let mut theme = themes[two_face::theme::EmbeddedThemeName::Github].clone();
-    // Keep source and output blocks on the site's shared background.
-    theme.settings.background = None;
-    css_for_theme_with_class_style(&theme, CLASS_STYLE)
+    css_for_theme_with_class_style(&themes[LIGHT_THEME], CLASS_STYLE)
 }
 
 pub(super) fn fragment_stylesheet() -> Result<String, syntect::Error> {
     let themes = two_face::theme::extra();
     let mut css = String::new();
-    for (selector, name) in [
-        (
-            ".diplodocus-content",
-            two_face::theme::EmbeddedThemeName::Github,
-        ),
-        (
-            ".dark .diplodocus-content",
-            two_face::theme::EmbeddedThemeName::OneHalfDark,
-        ),
+    for (selector, theme) in [
+        (".diplodocus-content", LIGHT_THEME),
+        (".dark .diplodocus-content", DARK_THEME),
     ] {
-        let mut theme = themes[name].clone();
-        theme.settings.background = None;
-        let rules = css_for_theme_with_class_style(&theme, CLASS_STYLE)?;
+        let rules = css_for_theme_with_class_style(&themes[theme], CLASS_STYLE)?;
         // Scope every selector, including comma-separated syntax alternatives,
         // because a host may retain this stylesheet across client navigation.
         for rule in rules.split_inclusive('}') {
@@ -86,6 +79,63 @@ pub(super) fn fragment_stylesheet() -> Result<String, syntect::Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn bundled_themes_meet_normal_text_contrast_with_a_light_default() {
+        fn colors(css: &str, property: &str) -> Vec<syntect::highlighting::Color> {
+            let prefix = format!("{property}: #");
+            css.lines()
+                .filter_map(|line| line.trim().strip_prefix(&prefix))
+                .map(|value| {
+                    let value = value.strip_suffix(';').unwrap();
+                    assert_eq!(value.len(), 6, "Expected opaque CSS colors: {value}");
+                    let rgb = u32::from_str_radix(value, 16).unwrap();
+                    syntect::highlighting::Color {
+                        r: (rgb >> 16) as u8,
+                        g: (rgb >> 8) as u8,
+                        b: rgb as u8,
+                        a: 255,
+                    }
+                })
+                .collect()
+        }
+
+        fn luminance(color: syntect::highlighting::Color) -> f64 {
+            let channel = |value: u8| {
+                let value = f64::from(value) / 255.0;
+                if value <= 0.04045 {
+                    value / 12.92
+                } else {
+                    ((value + 0.055) / 1.055).powf(2.4)
+                }
+            };
+            0.2126 * channel(color.r) + 0.7152 * channel(color.g) + 0.0722 * channel(color.b)
+        }
+
+        let themes = two_face::theme::extra();
+        for theme in [LIGHT_THEME, DARK_THEME] {
+            // Syntect emits opaque CSS colors even when theme metadata has alpha.
+            let css = if theme == LIGHT_THEME {
+                stylesheet().unwrap()
+            } else {
+                css_for_theme_with_class_style(&themes[theme], CLASS_STYLE).unwrap()
+            };
+            let backgrounds = colors(&css, "background-color");
+            assert_eq!(backgrounds.len(), 1, "{theme:?} uses scoped backgrounds");
+            let background = luminance(backgrounds[0]);
+            if theme == LIGHT_THEME {
+                assert!(background > 0.5, "Code blocks should be light by default");
+            }
+            let foregrounds = colors(&css, "color");
+            assert!(!foregrounds.is_empty());
+            for foreground in foregrounds {
+                let foreground = luminance(foreground);
+                let contrast =
+                    (foreground.max(background) + 0.05) / (foreground.min(background) + 0.05);
+                assert!(contrast >= 4.5, "{theme:?}: {contrast}:1");
+            }
+        }
+    }
 
     fn code_text(html: &str) -> String {
         let document = roxmltree::Document::parse(html).unwrap();
@@ -118,7 +168,7 @@ mod tests {
         ] {
             let html = highlighter.render(source, Some(language));
             assert!(
-                html.starts_with("<pre class=\"syntax-code\">"),
+                html.starts_with("<pre class=\"syntax-code\" tabindex=\"0\">"),
                 "{language}"
             );
             assert!(html.contains("<span class=\"syntax-"), "{language}");
