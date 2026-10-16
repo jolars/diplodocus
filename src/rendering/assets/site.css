@@ -88,7 +88,7 @@ blockquote, .callout { border-left: 4px solid #688b84; padding: .2rem 1rem; marg
   .nav-disclosure > summary { display: none; }
 }
 @media (min-width: 1100px) {
-  .page-content:has(.page-toc) { grid-template-columns: minmax(0, 1fr) 12rem; }
+  .page-content:has(.page-toc) { grid-template-columns: minmax(0, 52rem) minmax(12rem, 1fr); }
   main { grid-row: 1; }
   .page-toc { position: sticky; top: var(--header-height); grid-column: 2; grid-row: 1; max-height: calc(100dvh - var(--header-height)); padding: 2rem 0; overflow-y: auto; }
   .toc-disclosure > summary { list-style: none; cursor: default; }

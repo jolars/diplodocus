@@ -122,6 +122,8 @@ test("navbar and sidebars share outer margins", async ({ page }, info) => {
     if (width >= 1100) {
       const toc = (await page.locator(".page-toc").boundingBox())!;
       expect(toc.x + toc.width).toBeCloseTo(search.x + search.width, 0);
+      const article = (await page.getByRole("main").boundingBox())!;
+      expect(toc.x).toBeCloseTo(article.x + article.width, 0);
     }
     await fitsViewport(page);
     await capture(page, info, `navbar-alignment-${width}`);
