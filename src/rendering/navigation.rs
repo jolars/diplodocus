@@ -73,6 +73,7 @@ fn package_label<'a>(site: &Site<'_>, package: &'a Package) -> &'a str {
             "python" => "Python",
             "r" => "R",
             "julia" => "Julia",
+            "rust" => "Rust",
             _ => &package.name,
         }
     } else {
@@ -258,7 +259,12 @@ fn item_tree(
     };
     let mut active = destination == route;
     let mut children = String::new();
-    if package.ecosystem != "python" || item.kind != crate::ir::ItemKind::Class {
+    let expand = match package.ecosystem.as_str() {
+        "rust" => item.kind == crate::ir::ItemKind::Module,
+        "python" => item.kind != crate::ir::ItemKind::Class,
+        _ => true,
+    };
+    if expand {
         for child in &item.children {
             let (html, child_active) = item_tree(site, route, package_id, package, child, visited);
             children.push_str(&html);

@@ -82,12 +82,22 @@ pub(crate) fn routes(package: &Package) -> BTreeMap<String, String> {
 }
 
 pub(super) fn source_links(site: &Site<'_>, item: &Item) -> String {
+    source_locations(
+        site,
+        item.source_location.iter().chain(
+            item.documentation
+                .as_ref()
+                .and_then(|doc| doc.source_location.as_ref()),
+        ),
+    )
+}
+
+pub(super) fn source_locations<'a>(
+    site: &Site<'_>,
+    sources: impl IntoIterator<Item = &'a crate::ir::SourceLocation>,
+) -> String {
     let mut links = BTreeMap::new();
-    for source in item.source_location.iter().chain(
-        item.documentation
-            .as_ref()
-            .and_then(|doc| doc.source_location.as_ref()),
-    ) {
+    for source in sources {
         let target = ReferenceTarget::Repository {
             repository: source.repository.clone(),
             path: source.path.clone(),

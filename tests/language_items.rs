@@ -260,7 +260,7 @@ fn golden_families_have_addressable_members_and_canonical_aliases() {
     for (package, members) in &items {
         for (id, item) in members {
             let targets = match item.language_data.as_ref().unwrap() {
-                ItemLanguageData::Julia(_) => {
+                ItemLanguageData::Julia(_) | ItemLanguageData::Rust(_) => {
                     unreachable!("This fixture contains Python and R families.")
                 }
                 ItemLanguageData::Python(data) => match &data.declaration {

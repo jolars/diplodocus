@@ -110,7 +110,138 @@ pub(super) fn validate(workspace: &Workspace) -> Result {
         for id in package.extraction_targets.keys() {
             require(!id.is_empty(), "empty target identity")?;
         }
+        for (target_id, target) in &package.extraction_targets {
+            if target.extractor == "rust" {
+                require(package.ecosystem == "rust", "Rust extraction ecosystem")?;
+                require(
+                    workspace
+                        .provenance
+                        .iter()
+                        .filter(|record| {
+                            matches!(&record.activity,
+                    ProvenanceActivity::RustDoctests { target, .. }
+                    if target.package == *package_id && target.target == *target_id)
+                        })
+                        .count()
+                        == 1,
+                    "Rust target requires completed native doctests",
+                )?;
+                require(
+                    workspace.provenance.iter().any(|record| {
+                        matches!(&record.activity,
+                    ProvenanceActivity::Extraction { target, mode: ExtractionMode::Compiler, .. }
+                    if target.package == *package_id && target.target == *target_id)
+                    }),
+                    "Rust target requires compiler extraction evidence",
+                )?;
+            }
+        }
         for (item_id, item) in &package.items {
+            if let Some(ItemLanguageData::Rust(data)) = &item.language_data {
+                require(package.ecosystem == "rust", "Rust item ecosystem")?;
+                let mut owners = std::collections::BTreeSet::from([item_id.as_str()]);
+                let mut owner = data.owner.as_ref();
+                while let Some(reference) = owner {
+                    require(
+                        reference.package == *package_id && owners.insert(&reference.item),
+                        "Rust member owner cycle or package",
+                    )?;
+                    links.item(reference)?;
+                    let Some(ItemLanguageData::Rust(parent)) =
+                        &package.items[&reference.item].language_data
+                    else {
+                        return Err(SnapshotError::Invalid("Rust member owner language"));
+                    };
+                    owner = parent.owner.as_ref();
+                }
+                if let Some(context) = &data.implementation {
+                    let owner = data
+                        .owner
+                        .as_ref()
+                        .ok_or(SnapshotError::Invalid("Rust implementation member owner"))?;
+                    let Some(ItemLanguageData::Rust(parent)) =
+                        &package.items[&owner.item].language_data
+                    else {
+                        return Err(SnapshotError::Invalid("Rust implementation member owner"));
+                    };
+                    require(
+                        parent.implementations.iter().any(|implementation| {
+                            implementation.identity == *context
+                                && implementation.members.iter().any(|member| {
+                                    member.package == *package_id && member.item == *item_id
+                                })
+                        }),
+                        "Rust implementation member association",
+                    )?;
+                }
+                if data.declaration == RustDeclarationKind::Implementation {
+                    let owner = data.owner.as_ref().ok_or(SnapshotError::Invalid(
+                        "Rust implementation documentation owner",
+                    ))?;
+                    let Some(ItemLanguageData::Rust(parent)) =
+                        &package.items[&owner.item].language_data
+                    else {
+                        return Err(SnapshotError::Invalid(
+                            "Rust implementation documentation owner",
+                        ));
+                    };
+                    require(
+                        parent.implementations.iter().any(|implementation| {
+                            implementation
+                                .documentation_item
+                                .as_ref()
+                                .is_some_and(|reference| {
+                                    reference.package == *package_id && reference.item == *item_id
+                                })
+                        }),
+                        "Rust implementation documentation association",
+                    )?;
+                }
+                let mut implementation_documents = std::collections::BTreeSet::new();
+                for implementation in &data.implementations {
+                    if let Some(reference) = &implementation.documentation_item {
+                        links.item(reference)?;
+                        require(
+                            reference.package == *package_id,
+                            "Rust implementation documentation package",
+                        )?;
+                        let document = &package.items[&reference.item];
+                        require(
+                            matches!(&document.language_data, Some(ItemLanguageData::Rust(document_data))
+                            if document_data.declaration == RustDeclarationKind::Implementation
+                                && document_data.owner.as_ref().is_some_and(|owner| owner.package == *package_id && owner.item == *item_id))
+                                && document.documentation.is_some()
+                                && implementation_documents.insert(reference),
+                            "Rust implementation documentation ownership",
+                        )?;
+                    }
+                    if let Some(reference) = &implementation.trait_target {
+                        links.item(reference)?;
+                        let trait_item =
+                            &workspace.packages[&reference.package].items[&reference.item];
+                        require(
+                            implementation
+                                .trait_name
+                                .as_ref()
+                                .is_some_and(|name| !name.is_empty())
+                                && matches!(&trait_item.language_data, Some(ItemLanguageData::Rust(trait_data))
+                                if trait_data.declaration == RustDeclarationKind::Trait),
+                            "Rust implementation trait target",
+                        )?;
+                    }
+                    for member in &implementation.members {
+                        links.item(member)?;
+                        require(
+                            member.package == *package_id
+                                && matches!(&package.items[&member.item].language_data,
+                                Some(ItemLanguageData::Rust(member_data))
+                                if member_data.owner.as_ref().is_some_and(|owner| owner.package == *package_id && owner.item == *item_id)
+                                    && member_data.implementation.as_ref() == Some(&implementation.identity)),
+                            "Rust implementation ownership",
+                        )?;
+                    }
+                }
+            }
             if let Some(ItemLanguageData::R(data)) = &item.language_data
                 && let Some(topic) = &data.help_topic
             {
@@ -191,6 +322,63 @@ fn route(value: &str) -> Result {
     )
 }
 
+fn rust_doctest_outcome(example: &RustDoctestOutcome, host: &str) -> bool {
+    let flag = |name: &str| match example.attributes.get(name).map(String::as_str) {
+        Some("true") => Some(true),
+        Some("false") => Some(false),
+        _ => None,
+    };
+    let (Some(no_run), Some(compile_fail), Some(should_panic), Some(true)) = (
+        flag("no_run"),
+        flag("compile_fail"),
+        flag("should_panic"),
+        flag("rust"),
+    ) else {
+        return false;
+    };
+    if compile_fail && !no_run {
+        return false;
+    }
+    let ignored = match example.attributes.get("ignore").map(String::as_str) {
+        Some("All") => true,
+        Some("None") => false,
+        Some(value) => {
+            let Ok(value) = serde_json::from_str::<serde_json::Value>(value) else {
+                return false;
+            };
+            let Some(targets) = value.get("Some").and_then(serde_json::Value::as_array) else {
+                return false;
+            };
+            if !targets
+                .iter()
+                .all(|target| target.as_str().is_some_and(|target| !target.is_empty()))
+            {
+                return false;
+            }
+            targets
+                .iter()
+                .any(|target| host.contains(target.as_str().expect("checked target string")))
+        }
+        None => return false,
+    };
+    if ignored {
+        return example.outcome == RustDoctestStatus::ExplicitSkip
+            && example
+                .reason
+                .as_ref()
+                .is_some_and(|reason| !reason.is_empty())
+            && example.output.is_empty();
+    }
+    let expected = if compile_fail || (should_panic && !no_run) {
+        RustDoctestStatus::ExpectedError
+    } else if no_run {
+        RustDoctestStatus::CompileOnly
+    } else {
+        RustDoctestStatus::Executed
+    };
+    example.outcome == expected && example.reason.is_none()
+}
+
 struct Links<'a>(&'a Workspace);
 
 impl Links<'_> {
@@ -242,6 +430,51 @@ impl Links<'_> {
                 self.diagnostic_source(source)?;
             }
             match &record.activity {
+                ProvenanceActivity::RustDoctests {
+                    target,
+                    policy,
+                    package_name,
+                    package_version,
+                    compiler_version,
+                    host,
+                    inputs,
+                    examples,
+                    ..
+                } => {
+                    require(
+                        self.0.packages.get(&target.package).is_some_and(|package| {
+                            package.ecosystem == "rust"
+                                && package.version.as_ref() == Some(package_version)
+                                && package
+                                    .extraction_targets
+                                    .get(&target.target)
+                                    .is_some_and(|target| target.extractor == "rust")
+                        }) && policy == "rustdoc-doctest-v1"
+                            && !package_name.is_empty()
+                            && !compiler_version.is_empty()
+                            && !host.is_empty()
+                            && !inputs.is_empty()
+                            && record.source.is_none()
+                            && record.span.is_none(),
+                        "Rust doctest provenance",
+                    )?;
+                    let mut names = std::collections::BTreeSet::new();
+                    for example in examples {
+                        require(
+                            !example.name.is_empty()
+                                && names.insert(&example.name)
+                                && example.line > 0,
+                            "Rust doctest identity",
+                        )?;
+                        require(rust_doctest_outcome(example, host), "Rust doctest outcome")?;
+                        if let Some(source) = &example.source {
+                            self.source(source)?;
+                        }
+                    }
+                    for input in inputs {
+                        self.source(&input.source)?;
+                    }
+                }
                 ProvenanceActivity::ApiExamples {
                     package,
                     language,
@@ -475,6 +708,35 @@ impl Links<'_> {
 
     fn language(&self, data: &ItemLanguageData) -> Result {
         match data {
+            ItemLanguageData::Rust(data) => {
+                require(
+                    !data.public_path.is_empty() && !data.public_path.chars().any(char::is_control),
+                    "Rust public path",
+                )?;
+                if let Some(owner) = &data.owner {
+                    self.item(owner)?;
+                }
+                let mut identities = std::collections::BTreeSet::new();
+                for implementation in &data.implementations {
+                    require(
+                        !implementation.identity.is_empty()
+                            && identities.insert(&implementation.identity),
+                        "Rust implementation identity",
+                    )?;
+                    self.expression(&implementation.signature)?;
+                    if let Some(item) = &implementation.documentation_item {
+                        self.item(item)?;
+                    }
+                    if let Some(source) = &implementation.source_location {
+                        self.source(source)?;
+                    }
+                    if let Some(target) = &implementation.trait_target {
+                        self.item(target)?;
+                    }
+                    self.items(&implementation.members)?;
+                }
+                Ok(())
+            }
             ItemLanguageData::Julia(data) => match &data.declaration {
                 JuliaDeclaration::Callable { role, .. } => match role {
                     JuliaCallableRole::Family { methods } => self.items(methods),
@@ -756,5 +1018,296 @@ impl Links<'_> {
             }
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod rust_tests {
+    use super::*;
+    use std::collections::BTreeMap;
+
+    fn reference(item: &str) -> ItemReference {
+        ItemReference {
+            package: "sample".into(),
+            item: item.into(),
+        }
+    }
+
+    fn rust_item(name: &str, declaration: RustDeclarationKind, owner: Option<&str>) -> Item {
+        Item {
+            kind: ItemKind::Type,
+            name: name.into(),
+            qualified_name: format!("sample::{name}"),
+            language_data: Some(ItemLanguageData::Rust(RustItemData {
+                declaration,
+                public_path: format!("sample::{name}"),
+                owner: owner.map(reference),
+                implementation: None,
+                implementations: Vec::new(),
+                attributes: Vec::new(),
+            })),
+            aliases: Vec::new(),
+            signatures: Vec::new(),
+            documentation: None,
+            source_location: None,
+            children: Vec::new(),
+            provenance: Vec::new(),
+        }
+    }
+
+    fn rust_data<'a>(workspace: &'a mut Workspace, item: &str) -> &'a mut RustItemData {
+        let Some(ItemLanguageData::Rust(data)) = &mut workspace
+            .packages
+            .get_mut("sample")
+            .unwrap()
+            .items
+            .get_mut(item)
+            .unwrap()
+            .language_data
+        else {
+            panic!("Rust test item")
+        };
+        data
+    }
+
+    fn workspace() -> Workspace {
+        let mut type_item = rust_item("Type", RustDeclarationKind::Struct, None);
+        let Some(ItemLanguageData::Rust(data)) = &mut type_item.language_data else {
+            unreachable!()
+        };
+        data.implementations.push(RustImplementation {
+            identity: "impl Trait for Type".into(),
+            signature: SignatureExpression::Literal {
+                text: "impl Trait for Type".into(),
+            },
+            documentation_item: Some(reference("docs")),
+            source_location: None,
+            trait_name: Some("Trait".into()),
+            trait_target: Some(reference("trait")),
+            members: vec![reference("method")],
+            is_synthetic: false,
+            is_blanket: false,
+        });
+        let mut method = rust_item("method", RustDeclarationKind::Method, Some("type"));
+        let Some(ItemLanguageData::Rust(data)) = &mut method.language_data else {
+            unreachable!()
+        };
+        data.implementation = Some("impl Trait for Type".into());
+        let mut docs = rust_item(
+            "implementation",
+            RustDeclarationKind::Implementation,
+            Some("type"),
+        );
+        docs.documentation = Some(SourcedDocument {
+            document: Document {
+                span: SourceSpan { start: 0, end: 0 },
+                frontmatter: None,
+                blocks: Vec::new(),
+            },
+            source_format: DocumentFormat::Extracted {
+                name: "rustdoc".into(),
+            },
+            source_location: None,
+            raw_source: None,
+            generated_source: None,
+            provenance: Vec::new(),
+        });
+        let package = Package {
+            slug: "sample".into(),
+            name: "Sample".into(),
+            ecosystem: "rust".into(),
+            version: Some("0.1.0".into()),
+            metadata: None,
+            repository: "repo".into(),
+            path: None,
+            metadata_path: "Cargo.toml".try_into().unwrap(),
+            kind: PackageKind::Package,
+            visibility: PackageVisibility::Public,
+            extraction_targets: BTreeMap::new(),
+            items: BTreeMap::from([
+                ("type".into(), type_item),
+                ("method".into(), method),
+                ("docs".into(), docs),
+                (
+                    "trait".into(),
+                    rust_item("Trait", RustDeclarationKind::Trait, None),
+                ),
+            ]),
+        };
+        Workspace {
+            repositories: BTreeMap::from([(
+                "repo".into(),
+                Repository {
+                    canonical_url: None,
+                    source_link_template: None,
+                    revision: None,
+                    dirty: None,
+                    declared_input_fingerprint: None,
+                },
+            )]),
+            packages: BTreeMap::from([("sample".into(), package)]),
+            ..Workspace::default()
+        }
+    }
+
+    #[test]
+    fn rejects_rust_implementation_documents_owned_by_another_type() {
+        let valid = workspace();
+        validate(&valid).unwrap();
+        let mut wrong_owner = valid.clone();
+        rust_data(&mut wrong_owner, "docs").owner = Some(reference("trait"));
+        assert!(validate(&wrong_owner).is_err());
+
+        let mut wrong_document = valid.clone();
+        wrong_document
+            .packages
+            .get_mut("sample")
+            .unwrap()
+            .items
+            .remove("docs");
+        rust_data(&mut wrong_document, "type").implementations[0].documentation_item =
+            Some(reference("method"));
+        assert!(validate(&wrong_document).is_err());
+
+        let mut orphan = valid.clone();
+        rust_data(&mut orphan, "type").implementations[0].documentation_item = None;
+        assert!(validate(&orphan).is_err());
+    }
+
+    #[test]
+    fn rejects_missing_rust_implementation_and_member_references() {
+        let valid = workspace();
+        validate(&valid).unwrap();
+        for missing in ["docs", "method", "trait", "type"] {
+            let mut corrupted = valid.clone();
+            corrupted
+                .packages
+                .get_mut("sample")
+                .unwrap()
+                .items
+                .remove(missing);
+            assert!(validate(&corrupted).is_err(), "accepted missing {missing}");
+        }
+        let mut missing_implementation = valid.clone();
+        rust_data(&mut missing_implementation, "type")
+            .implementations
+            .clear();
+        assert!(validate(&missing_implementation).is_err());
+        let mut missing_context = valid.clone();
+        rust_data(&mut missing_context, "method").implementation = None;
+        assert!(validate(&missing_context).is_err());
+        let mut wrong_trait = valid.clone();
+        rust_data(&mut wrong_trait, "type").implementations[0].trait_target =
+            Some(reference("type"));
+        assert!(validate(&wrong_trait).is_err());
+    }
+
+    #[test]
+    fn rejects_cross_package_rust_owners_and_implementation_documents() {
+        let mut valid = workspace();
+        let mut foreign = valid.packages["sample"].clone();
+        foreign.slug = "foreign".into();
+        foreign.items.clear();
+        let mut item = rust_item("foreign", RustDeclarationKind::Struct, None);
+        item.language_data = None;
+        foreign.items.insert("existing".into(), item);
+        valid.packages.insert("foreign".into(), foreign);
+        validate(&valid).unwrap();
+        let foreign = ItemReference {
+            package: "foreign".into(),
+            item: "existing".into(),
+        };
+        let mut wrong_owner = valid.clone();
+        rust_data(&mut wrong_owner, "method").owner = Some(foreign.clone());
+        assert!(validate(&wrong_owner).is_err());
+        let mut wrong_document = valid;
+        wrong_document
+            .packages
+            .get_mut("sample")
+            .unwrap()
+            .items
+            .remove("docs");
+        rust_data(&mut wrong_document, "type").implementations[0].documentation_item =
+            Some(foreign);
+        assert!(validate(&wrong_document).is_err());
+    }
+
+    fn example(
+        outcome: RustDoctestStatus,
+        no_run: bool,
+        compile_fail: bool,
+        should_panic: bool,
+        ignore: &str,
+    ) -> RustDoctestOutcome {
+        RustDoctestOutcome {
+            name: "src/lib.rs - (line 1)".into(),
+            source: None,
+            line: 1,
+            code: "assert!(true);".into(),
+            attributes: BTreeMap::from([
+                ("no_run".into(), no_run.to_string()),
+                ("compile_fail".into(), compile_fail.to_string()),
+                ("should_panic".into(), should_panic.to_string()),
+                ("rust".into(), "true".into()),
+                ("ignore".into(), ignore.into()),
+            ]),
+            outcome,
+            output: String::new(),
+            reason: (outcome == RustDoctestStatus::ExplicitSkip)
+                .then(|| "Native ignore attribute.".into()),
+        }
+    }
+
+    #[test]
+    fn rust_doctest_statuses_require_their_native_semantic_flags() {
+        let host = "x86_64-unknown-linux-gnu";
+        for valid in [
+            example(RustDoctestStatus::Executed, false, false, false, "None"),
+            example(RustDoctestStatus::CompileOnly, true, false, false, "None"),
+            example(RustDoctestStatus::CompileOnly, true, false, true, "None"),
+            example(RustDoctestStatus::ExpectedError, true, true, false, "None"),
+            example(RustDoctestStatus::ExpectedError, false, false, true, "None"),
+            example(RustDoctestStatus::ExplicitSkip, false, false, false, "All"),
+            example(
+                RustDoctestStatus::ExplicitSkip,
+                false,
+                false,
+                false,
+                r#"{"Some":["linux"]}"#,
+            ),
+            example(
+                RustDoctestStatus::Executed,
+                false,
+                false,
+                false,
+                r#"{"Some":["windows"]}"#,
+            ),
+        ] {
+            assert!(rust_doctest_outcome(&valid, host), "{valid:?}");
+        }
+        for invalid in [
+            example(RustDoctestStatus::Executed, true, false, false, "None"),
+            example(RustDoctestStatus::Executed, false, false, true, "None"),
+            example(RustDoctestStatus::Executed, false, false, false, "All"),
+            example(RustDoctestStatus::CompileOnly, true, true, false, "None"),
+            example(
+                RustDoctestStatus::ExpectedError,
+                false,
+                false,
+                false,
+                "None",
+            ),
+            example(RustDoctestStatus::ExpectedError, false, true, false, "None"),
+            example(RustDoctestStatus::ExplicitSkip, false, false, false, "None"),
+            example(
+                RustDoctestStatus::ExplicitSkip,
+                false,
+                false,
+                false,
+                r#"{"Some":["windows"]}"#,
+            ),
+        ] {
+            assert!(!rust_doctest_outcome(&invalid, host), "{invalid:?}");
+        }
     }
 }

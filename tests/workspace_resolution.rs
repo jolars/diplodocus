@@ -175,6 +175,31 @@ fn item_resolution_prefers_the_owner_then_requires_workspace_uniqueness() {
 }
 
 #[test]
+fn julia_unqualified_links_prefer_the_owning_module_over_other_packages() {
+    let root = support::TestWorkspace::new();
+    let mut configuration =
+        "[project]\nname='Julia lookup'\n[[repository]]\nid='repo'\npath='.'\n".to_owned();
+    for (index, name) in ["First", "Second"].iter().enumerate() {
+        root.write(format!("{name}/Project.toml"), format!("name='{name}'\nversion='0.1.0'\nuuid='00000000-0000-0000-0000-00000000000{index}'\n"));
+        root.write(
+            format!("{name}/src/{name}.jl"),
+            format!("module {name}\nexport fit\nfit(x) = x\nend\n"),
+        );
+        configuration.push_str(&format!("[[package]]\nid='{name}'\nname='{name}'\nslug='module{index}'\necosystem='julia'\nrepository='repo'\npath='{name}'\nmetadata-path='Project.toml'\ntargets=[{{id='api',extractor='julia',path='src/{name}.jl',role='public-api'}}]\n"));
+    }
+    root.write("diplodocus.toml", configuration);
+    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let workspace = sources.workspace();
+    let local = resolve_item(workspace, Some("First"), "fit").unwrap();
+    assert_eq!(local.package, "First");
+    assert_eq!(resolve_item(workspace, None, "First::fit").unwrap(), local);
+    assert_eq!(
+        resolve_item(workspace, None, "fit"),
+        Err(DiagnosticCode::AmbiguousItemReference)
+    );
+}
+
+#[test]
 fn missing_semantic_page_and_anchor_targets_are_errors_with_portable_context() {
     let root = support::acceptance_workspace();
     root.write(

@@ -1,7 +1,7 @@
 # Diplodocus
 
-Diplodocus builds one site for related Python, R, and Julia packages. It
-combines statically extracted API references with authored guides, shared
+Diplodocus builds one site for related Python, R, Julia, and Rust packages. It
+combines extracted API references with authored guides, shared
 navigation, cross-references, and search. This guide is built by Diplodocus from
 the project's own `diplodocus.toml`.
 
@@ -13,7 +13,8 @@ page built with the project's configured kernel.
 
 ![A documentation workspace with Python and R packages](assets/workspace.svg)
 
-Python, R, and Julia APIs are parsed without importing or loading the packages.
+Language adapters use source analysis and native tools to resolve APIs and
+verify executable examples. Rust uses a separately pinned nightly compiler.
 Read the [extraction guide](extraction.md) for the supported surfaces, the
 [execution guide](execution.md) before enabling QMD cells, and the [diagnostics
 guide](diagnostics.md) when a build reports a problem. A [portable SQLite

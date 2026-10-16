@@ -23,7 +23,10 @@ pub(super) fn page(
         resolved: page.resolved,
         identifiers: page.resolved.map(|d| d.anchors.clone()).unwrap_or_default(),
         headings: true,
-        heading_offset: 0,
+        heading_offset: usize::from(
+            page.item
+                .is_some_and(|item| super::rust::data(item).is_some()),
+        ),
         cell: 0,
     };
     renderer
@@ -40,6 +43,14 @@ pub(super) fn page(
         if !class.constructors.is_empty() {
             renderer.identifiers.insert("constructor".into());
         }
+    }
+    if let Some(rust) = &page.rust_page {
+        renderer
+            .identifiers
+            .extend(rust.sections.iter().map(|section| section.anchor.clone()));
+        renderer
+            .identifiers
+            .extend(rust.members().map(|member| member.anchor.clone()));
     }
     let mut output = String::new();
     let authored_title = page.item.is_none()
@@ -255,6 +266,49 @@ pub(super) fn page(
             }
         }
     }
+    if let Some(rust) = &page.rust_page {
+        for section in &rust.sections {
+            anchor(&mut output, &section.anchor);
+            let title = if let Some(target) = section
+                .implementation
+                .and_then(|implementation| implementation.trait_target.as_ref())
+            {
+                format!(
+                    "[{}]({})",
+                    escape(&section.title),
+                    link_url(&site.target(
+                        route,
+                        &ReferenceTarget::Item {
+                            item: target.clone()
+                        }
+                    )?)
+                )
+            } else {
+                escape(&section.title)
+            };
+            writeln!(output, "## {title}\n").unwrap();
+            if let Some(implementation) = section.implementation {
+                output.push_str(&source_location(
+                    site,
+                    implementation.source_location.as_ref(),
+                ));
+                output.push_str(&fence(
+                    &super::signatures::expression_for_site(
+                        site,
+                        &implementation.signature,
+                        "rust",
+                    ),
+                    "rust",
+                ));
+            }
+            if let Some(documentation) = &section.documentation {
+                output.push_str(&rust_document(site, route, documentation, 2)?);
+            }
+            for member in &section.members {
+                output.push_str(&rust_member(site, route, member, 3)?);
+            }
+        }
+    }
     if let Some(concept) = page.concept {
         output.push_str(&concept_links(site, route, concept)?);
     }
@@ -290,6 +344,64 @@ pub(super) fn page(
         }
     }
     Ok(format!("{}\n", output.trim_end()))
+}
+
+fn rust_member(
+    site: &Site<'_>,
+    route: &str,
+    member: &super::rust::RustMember<'_>,
+    level: usize,
+) -> Result<String, SiteError> {
+    let mut output = String::new();
+    anchor(&mut output, &member.anchor);
+    writeln!(
+        output,
+        "{} {}\n",
+        "#".repeat(level),
+        code(&member.item.name)
+    )
+    .unwrap();
+    for signature in &member.item.signatures {
+        output.push_str(&fence(
+            &super::signatures::signature_for_site(
+                site,
+                &member.item.name,
+                &signature.signature,
+                "rust",
+            ),
+            "rust",
+        ));
+    }
+    output.push_str(&sources(site, member.item));
+    output.push_str(&rust_document(site, route, member, level)?);
+    for child in &member.children {
+        output.push_str(&rust_member(site, route, child, level + 1)?);
+    }
+    Ok(output)
+}
+
+fn rust_document(
+    site: &Site<'_>,
+    route: &str,
+    member: &super::rust::RustMember<'_>,
+    level: usize,
+) -> Result<String, SiteError> {
+    let mut output = String::new();
+    if let Some(document) = &member.item.documentation {
+        let page = &site.embedded_pages[&member.reference];
+        let mut renderer = Markdown {
+            site,
+            route,
+            page,
+            resolved: member.resolved,
+            identifiers: BTreeSet::new(),
+            headings: true,
+            heading_offset: level,
+            cell: 0,
+        };
+        output.push_str(&renderer.blocks(&document.document.blocks)?);
+    }
+    Ok(output)
 }
 
 fn concept_links(site: &Site<'_>, route: &str, concept: &Concept) -> Result<String, SiteError> {
@@ -444,7 +556,7 @@ impl Markdown<'_, '_> {
                     inlines,
                     ..
                 } => {
-                    if self.headings && *level > 1 {
+                    if self.headings && *level + self.heading_offset > 1 {
                         let identifier = if let Some(id) = &attributes.identifier {
                             id.value.clone()
                         } else {
@@ -644,8 +756,12 @@ impl Markdown<'_, '_> {
 }
 
 fn sources(site: &Site<'_>, item: &Item) -> String {
+    source_location(site, item.source_location.as_ref())
+}
+
+fn source_location(site: &Site<'_>, source: Option<&SourceLocation>) -> String {
     let mut output = String::new();
-    if let Some(source) = &item.source_location {
+    if let Some(source) = source {
         let target = ReferenceTarget::Repository {
             repository: source.repository.clone(),
             path: source.path.clone(),

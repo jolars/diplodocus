@@ -32,8 +32,13 @@ execution engine or kernel required by the selected adapter. Optional features
 used by documentation need their dependencies; unrelated optional features do
 not become requirements merely because they exist.
 
-Diplodocus does not install packages or kernels, resolve dependencies, build the
-documented package, or fetch repositories. An unavailable runtime, dependency,
+Diplodocus does not install packages or kernels or fetch repositories. Rust
+documentation is an exception to the prepared-build requirement: Cargo may
+resolve the existing locked dependency graph, compile local artifacts, and run
+build scripts with a separately pinned nightly documentation toolchain. Native
+commands use `--locked --offline`; callers prepare the lockfile, toolchain, and
+cached dependencies. Other adapters do not build the documented package.
+An unavailable runtime, dependency,
 or required build artifact is an extraction error. Diagnose a detected mismatch
 between the loaded package and the supplied checkout rather than silently
 documenting another version.
@@ -117,8 +122,11 @@ access, and other external state. A snapshot preserves the results obtained.
 language runtimes, package dependencies, or execution engines. It never loads
 packages or reruns examples.
 
-`check` remains a source-validation command. It does not load package code or
-execute examples, and it does not prove that extraction will succeed. It may
+`check` remains a source-validation command. Rust targets use rustdoc to resolve
+their compiler-selected API and documentation links; this may compile
+dependencies and execute build scripts under the Rust build exception. `check`
+does not execute documentation examples, and it does not prove that extraction
+will succeed. Other adapters do not load package code during `check`. It may
 retain bounded runtime discovery, such as the current R library probe, that does
 not load package code. Runtime-dependent semantics and example outcomes are
 verified during extraction.

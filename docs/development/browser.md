@@ -1,8 +1,10 @@
 # Browser development
 
-The browser workflow uses the small [three-language monorepo](../../examples/monorepo/README.md).
+The browser workflow uses the small [four-language monorepo](../../examples/monorepo/README.md).
 Its R extraction uses the R installation supplied by devenv for library
-discovery. Python and Julia extraction need no runtime. Rust tests cover
+discovery. Rust extraction uses the separate pinned nightly supplied by devenv
+and verifies native doctests. Python and Julia API doctests use their native
+runtimes. Rust tests cover
 the extraction and generation contracts; Playwright tests exercise the pages
 through Chromium.
 

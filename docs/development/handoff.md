@@ -1,6 +1,6 @@
 # Contributor handoff
 
-Start with the [small three-language example](../../examples/monorepo/README.md) to
+Start with the [small four-language example](../../examples/monorepo/README.md) to
 see a complete build. The [project guide](../guide/index.md) describes the
 user-facing configuration and commands. This page is a map for changing the
 implementation.
@@ -23,7 +23,11 @@ transition.
 
 1. `src/configuration.rs` and `src/paths.rs` load declarations and resolve
    source boundaries.
-2. `src/extractors/` reads Python, R, and Julia sources. During extraction,
+2. `src/extractors/` reads Python, R, and Julia sources and translates Rust
+   rustdoc JSON. `src/assembly/rust_native.rs` runs the separately pinned Rust
+   compiler, observes inputs, and verifies native doctests. Rust `check` invokes
+   the compiler without executing doctests. The [Rust extraction contract](../ir/rust-extraction.md)
+   describes this native boundary. During extraction,
    `src/assembly/julia_runtime.rs` loads the prepared Julia checkout when public
    types need runtime completion. `check` uses source analysis alone.
    `src/documents/` parses Markdown and QMD. `src/assembly/` combines

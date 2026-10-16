@@ -139,6 +139,35 @@ pub fn validate_configuration(configuration: &WorkspaceConfiguration) -> Vec<Dia
                 },
                 &mut diagnostics,
             );
+            if (target.rust.is_some() && target.extractor != "rust")
+                || (target.extractor == "rust" && package.ecosystem != "rust")
+            {
+                diagnostics.push(error(
+                    DiagnosticCode::InvalidConfiguration,
+                    "Rust target settings require extractor `rust` and ecosystem `rust`.".into(),
+                    DiagnosticEntity::Target {
+                        package: package.id.clone(),
+                        id: target.id.clone(),
+                    },
+                ));
+            }
+            if let Some(settings) = &target.rust
+                && settings.features.iter().any(|feature| {
+                    feature.is_empty()
+                        || feature.starts_with('-')
+                        || feature.contains(',')
+                        || feature.chars().any(|c| c.is_whitespace() || c.is_control())
+                })
+            {
+                diagnostics.push(error(
+                    DiagnosticCode::InvalidConfiguration,
+                    "Rust features must be nonempty individual Cargo feature names.".into(),
+                    DiagnosticEntity::Target {
+                        package: package.id.clone(),
+                        id: target.id.clone(),
+                    },
+                ));
+            }
         }
     }
     for (index, collection) in configuration.content.iter().enumerate() {

@@ -51,7 +51,7 @@ test("code chunks and API signatures stay highlighted without JavaScript", async
   try {
     await page.goto("/guides/comparing-predictions.html");
     const blocks = page.locator("main pre.syntax-code");
-    await expect(blocks).toHaveCount(3);
+    await expect(blocks).toHaveCount(4);
     for (const block of await blocks.all()) {
       const colors = await block.locator("span").evaluateAll(elements =>
         [...new Set(elements.map(element => getComputedStyle(element).color))],
@@ -63,7 +63,7 @@ test("code chunks and API signatures stay highlighted without JavaScript", async
     // Disabled JavaScript prevents animation-frame callbacks from running.
     await capture(page, info, "syntax-highlighting", false);
 
-    for (const language of ["Python", "R", "Julia"]) {
+    for (const language of ["Python", "R", "Julia", "Rust"]) {
       await page.goto("/guides/comparing-predictions.html");
       const heading = page.getByRole("heading", { name: language, exact: true });
       const href = await heading.locator("xpath=following-sibling::p[1]").getByRole("link").getAttribute("href");
@@ -84,6 +84,7 @@ for (const [path, title, name] of [
   ["/packages/python/", "Tiny Stats for Python", "python-package"],
   ["/packages/r/", "Tiny Stats for R", "r-package"],
   ["/packages/julia/", "Tiny Stats for Julia", "julia-package"],
+  ["/packages/rust/", "Tiny Stats for Rust", "rust-package"],
   ["/getting-started/quick-start.html", "Quick start", "quick-start"],
   ["/guides/choosing-a-metric.html", "Choosing a metric", "choosing-a-metric"],
   ["/packages/python/guides/evaluating-models.html", "Evaluating models in Python", "python-guide"],
@@ -184,7 +185,7 @@ test("footer identifies the docs and exposes project, license, and generator lin
   await capture(page, info, "footer");
 });
 
-test("search finds all three APIs and follows a result", async ({ page }) => {
+test("search finds all four APIs and follows a result", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("searchbox").fill("mean_squared_error");
   const results = page.locator("#search-results");
@@ -193,6 +194,7 @@ test("search finds all three APIs and follows a result", async ({ page }) => {
   await expect(python.locator("code")).toHaveText("tinystats.mean_squared_error");
   await expect(results.getByRole("link", { name: "mean_squared_error · Tiny Stats for R", exact: true })).toBeVisible();
   await expect(results.getByRole("link", { name: "TinyStats.mean_squared_error · Tiny Stats for Julia", exact: true })).toBeVisible();
+  await expect(results.getByRole("link", { name: "tinystats::mean_squared_error · Tiny Stats for Rust", exact: true })).toBeVisible();
   await python.click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("tinystats.mean_squared_error");
 });
@@ -253,6 +255,33 @@ test("Python classes retain overloaded methods on their class page", async ({ pa
   await expect(reference.getByRole("link", { name: "read", exact: true })).toHaveCount(0);
   await fitsViewport(page);
   await capture(page, info, "python-class");
+});
+
+test("Rust type pages group fields and methods with searchable anchors", async ({ page }, info) => {
+  await page.goto("/");
+  await page.getByRole("searchbox").fill("tinystats::Score");
+  await page.locator("#search-results").getByRole("link", {
+    name: "tinystats::Score · Tiny Stats for Rust", exact: true,
+  }).click();
+  const main = page.getByRole("main");
+  await expect(main.getByRole("heading", { level: 1 })).toHaveText("tinystats::Score");
+  await expect(main.locator("#field-value")).toContainText("Computed metric value.");
+  await expect(main.locator("#field-observations")).toContainText("Number of observations.");
+  await expect(main.getByRole("heading", { name: "mse", exact: true })).toHaveCount(1);
+  await expect(main).toContainText("pub fn mse(observed: &[f64], predicted: &[f64]) -> Self");
+  await expect(main).toContainText("impl<T> Any for T");
+  await expect(main).not.toContainText("$crate::");
+  const pageUrl = new URL(page.url());
+  await fitsViewport(page);
+  await capture(page, info, "rust-type");
+  await page.getByRole("searchbox").fill("tinystats::Score::mse");
+  await page.locator("#search-results").getByRole("link", {
+    name: "tinystats::Score::mse · Tiny Stats for Rust", exact: true,
+  }).click();
+  const methodUrl = new URL(page.url());
+  expect(methodUrl.pathname).toBe(pageUrl.pathname);
+  expect(methodUrl.hash).toMatch(/^#method-mse-/);
+  await expect(main.getByRole("heading", { level: 1 })).toHaveText("tinystats::Score");
 });
 
 test("R package overview exposes metadata and supporting documentation", async ({ page }, info) => {
@@ -374,7 +403,7 @@ test("global sections select a contextual sidebar", async ({ page }, info) => {
     await expect(global).not.toBeVisible();
   }
   await openNavigation(page, info);
-  await expect(global.getByRole("link")).toHaveText(["Guide", "Python", "R", "Julia"]);
+  await expect(global.getByRole("link")).toHaveText(["Guide", "Python", "R", "Julia", "Rust"]);
   await expect(global.locator('[aria-current="true"]')).toHaveText("Guide");
   await expect(navigation.getByRole("group", { name: "Guide", exact: true }).getByRole("link", { name: "Overview" })).toBeVisible();
   await expect(navigation.getByRole("group", { name: "Guides", exact: true }).getByRole("link", { name: "Comparing predictions" })).toBeVisible();
@@ -426,8 +455,14 @@ test("equivalent APIs link in both directions", async ({ page }, info) => {
   await expect(page.locator("#raises + dl > dt")).toHaveText("ValueError");
   await capture(page, info, "python-api");
   const sameApi = page.locator("section").filter({ has: page.getByRole("heading", { name: "Same API in", exact: true }) });
-  await expect(sameApi.getByRole("link")).toHaveCount(2);
-  await expect(sameApi.locator("code")).toHaveText(["TinyStats.mean_squared_error", "mean_squared_error"]);
+  await expect(sameApi.getByRole("link")).toHaveCount(3);
+  await expect(sameApi.locator("code")).toHaveText(["TinyStats.mean_squared_error", "mean_squared_error", "tinystats::mean_squared_error"]);
+  await sameApi.getByRole("link", { name: "Tiny Stats for Rust: tinystats::mean_squared_error", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("tinystats::mean_squared_error");
+  await expect(page.locator("main pre.syntax-code").first()).toContainText("pub fn mean_squared_error");
+  await fitsViewport(page);
+  await capture(page, info, "rust-api");
+  await sameApi.getByRole("link", { name: "Tiny Stats for Python: tinystats.mean_squared_error", exact: true }).click();
   await sameApi.getByRole("link", { name: "Tiny Stats for R: mean_squared_error", exact: true }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Mean squared error", exact: true })).toBeVisible();
   await fitsViewport(page);
@@ -449,7 +484,8 @@ test("search and result navigation work with the keyboard", async ({ page }) => 
   await page.keyboard.press("Tab");
   await expect(page.getByRole("link", { name: "Skip to content" })).toBeFocused();
   // Section links are also reachable before search on desktop.
-  for (let step = 0; step < 6; step++) {
+  const headerStops = await page.locator("header a:visible").count() + 1;
+  for (let step = 0; step < headerStops; step++) {
     await page.keyboard.press("Tab");
     if (await page.getByRole("searchbox").evaluate(element => element === document.activeElement)) break;
   }

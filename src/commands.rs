@@ -7,6 +7,7 @@ use thiserror::Error;
 
 use crate::assembly::{AssemblyError, assemble_workspace};
 use crate::diagnostics::{Diagnostic, DiagnosticSource, Severity};
+use crate::execution::{ExecutionCancellation, ExecutionDeadlines};
 use crate::validation::{ResolutionError, resolve_workspace};
 
 mod pipeline;
@@ -118,7 +119,15 @@ pub fn build(options: BuildOptions) -> Result<(), CommandError> {
 
 /// Check a documentation workspace without writing a site.
 pub fn check(options: CheckOptions) -> Result<CheckReport, CommandError> {
-    let sources = assemble_workspace(&options.config)?;
+    let sources = pipeline::runtime()?.block_on(async {
+        let mut cancellation: ExecutionCancellation<'_> = Box::pin(watching::termination());
+        crate::assembly::assemble_for_check(
+            &options.config,
+            ExecutionDeadlines::default(),
+            &mut cancellation,
+        )
+        .await
+    })?;
     let resolved = resolve_workspace(&sources)?;
     Ok(CheckReport {
         diagnostics: resolved.diagnostics().iter().cloned().collect(),

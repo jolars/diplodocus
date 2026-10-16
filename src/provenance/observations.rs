@@ -155,6 +155,8 @@ fn git_command(repository: &ResolvedRepositoryPaths, args: &[&str]) -> Command {
 /// Built-in extractors versioned with the Diplodocus semantic adapter.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BuiltinExtractor {
+    /// The compiler-backed Rust documentation producer.
+    Rust,
     /// The static Julia producer backed by Fatou.
     Julia,
     /// The static Python producer, implemented in Milestone 4.
@@ -167,6 +169,7 @@ impl BuiltinExtractor {
     /// Configured extractor identity.
     pub const fn as_str(self) -> &'static str {
         match self {
+            Self::Rust => "rust",
             Self::Julia => "julia",
             Self::Python => "python",
             Self::R => "r",
@@ -219,7 +222,11 @@ impl ExtractionObservation {
             tools,
             activity: ProvenanceActivity::Extraction {
                 target: self.target,
-                mode: ExtractionMode::Static,
+                mode: if self.extractor == BuiltinExtractor::Rust {
+                    ExtractionMode::Compiler
+                } else {
+                    ExtractionMode::Static
+                },
                 capabilities: self.capabilities,
                 parsers: self.parsers,
                 inputs: self.inputs,

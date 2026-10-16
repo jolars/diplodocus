@@ -1,8 +1,10 @@
 //! Assemble explicitly declared sources before reference validation and storage.
 //!
-//! Loading performs static extraction and authored preparation only. The separate
-//! consuming execution operation requires current command authority from its
-//! caller. Neither operation publishes a snapshot or site. The resulting IR still
+//! Loading prepares authored content and resolves API declarations. Rust targets
+//! use native compiler tooling, while other check adapters use source analysis.
+//! Extraction also completes native semantics and examples before publication.
+//! These operations require current command authority from their caller and do
+//! not publish a snapshot or site. The resulting IR still
 //! needs document-reference, relationship-version, and asset validation before
 //! publication; assembly is not a rendering trust token.
 
@@ -35,6 +37,7 @@ mod packages;
 mod rd_examples;
 mod references;
 mod rmarkdown;
+mod rust_native;
 
 /// A failed source assembly or execution, without a publishable workspace.
 #[derive(Debug, thiserror::Error)]
@@ -238,22 +241,111 @@ impl ExecutedWorkspace {
     }
 }
 
-/// Read and assemble declared static sources without executing authored code.
+/// Read and assemble declared sources without executing documentation examples.
+/// Rust targets use the prepared compiler and may compile dependencies and run
+/// build scripts. Other language adapters retain their source-only check path.
 ///
-/// All packages and pages are inspected before errors are returned. No kernel,
-/// cache, staging directory, snapshot, or output site is created. Semantic page
-/// identity depends on collection ID and relative source path, never a route.
+/// All packages and pages are inspected before errors are returned. Rust may
+/// write compilation caches; no examples, kernels, snapshots, or sites run.
+/// Semantic page identity depends on collection ID and relative source path,
+/// never a route.
 ///
 /// # Errors
 /// Reports malformed declarations, unsafe paths, conflicting fragments,
 /// unresolved concepts, source diagnostics, I/O, or changed input observations.
 pub fn assemble_workspace(path: impl AsRef<Path>) -> Result<WorkspaceSources, AssemblyError> {
-    assemble_with_julia(path.as_ref(), BTreeMap::new())
+    let path = path.as_ref();
+    let configuration = crate::configuration::load_configuration(path)?;
+    if !configuration.packages.iter().any(|package| {
+        package
+            .targets
+            .iter()
+            .any(|target| target.extractor == "rust")
+    }) {
+        return assemble_with_native(path, BTreeMap::new(), BTreeMap::new());
+    }
+    // Callers may already own a Tokio runtime; a separate thread keeps this
+    // synchronous API usable from both synchronous and asynchronous hosts.
+    let path = path.to_owned();
+    std::thread::Builder::new()
+        .name("rust-documentation-check".into())
+        .spawn(move || {
+            let runtime = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()?;
+            runtime.block_on(async {
+                let mut cancellation: ExecutionCancellation<'_> = Box::pin(std::future::pending());
+                let results = rust_results(
+                    &path,
+                    false,
+                    ExecutionDeadlines::default(),
+                    &mut cancellation,
+                )
+                .await?;
+                assemble_with_native(&path, BTreeMap::new(), results)
+            })
+        })?
+        .join()
+        .map_err(|_| {
+            AssemblyError::Io(std::io::Error::other(
+                "Rust documentation check thread failed",
+            ))
+        })?
 }
 
-fn assemble_with_julia(
+async fn rust_results(
+    path: &Path,
+    run_examples: bool,
+    deadlines: ExecutionDeadlines,
+    cancellation: &mut ExecutionCancellation<'_>,
+) -> Result<BTreeMap<(String, String), rust_native::RustNativeExtraction>, AssemblyError> {
+    let configuration_source = fs::read(path)?;
+    let configuration = crate::configuration::load_configuration(path)?;
+    reject_errors(validate_configuration_with_source(
+        &configuration,
+        "diplodocus.toml".try_into().unwrap(),
+    ))?;
+    let paths = resolve_workspace_paths(path, &configuration)?;
+    let cache = paths.configuration_directory.join(".diplodocus/cache");
+    let mut results = BTreeMap::new();
+    for (declaration, package) in configuration.packages.iter().zip(&paths.packages) {
+        let repository = &paths.repositories[package.repository_index];
+        for (target, selected) in declaration.targets.iter().zip(&package.targets) {
+            if target.extractor == "rust" {
+                let result = rust_native::extract_target(
+                    repository,
+                    package,
+                    selected,
+                    &target.rust.clone().unwrap_or_default(),
+                    &cache,
+                    run_examples,
+                    deadlines,
+                    cancellation,
+                )
+                .await?;
+                results.insert((package.id.clone(), target.id.clone()), result);
+            }
+        }
+    }
+    if fs::read(path)? != configuration_source {
+        return Err(AssemblyError::InputsChanged);
+    }
+    Ok(results)
+}
+
+pub(crate) async fn assemble_for_check(
+    path: &Path,
+    deadlines: ExecutionDeadlines,
+    cancellation: &mut ExecutionCancellation<'_>,
+) -> Result<WorkspaceSources, AssemblyError> {
+    let rust = rust_results(path, false, deadlines, cancellation).await?;
+    assemble_with_native(path, BTreeMap::new(), rust)
+}
+
+fn assemble_with_native(
     path: &Path,
     mut julia_results: BTreeMap<(String, String), crate::extractors::julia::JuliaExtraction>,
+    mut rust_results: BTreeMap<(String, String), rust_native::RustNativeExtraction>,
 ) -> Result<WorkspaceSources, AssemblyError> {
     let text = fs::read_to_string(path).map_err(|source| ConfigurationError::Read {
         path: path.to_owned(),
@@ -312,6 +404,7 @@ fn assemble_with_julia(
         &mut selections,
         &mut observed,
         &mut julia_results,
+        &mut rust_results,
     )?;
     let prepared_pages = authored::assemble(
         &configuration,

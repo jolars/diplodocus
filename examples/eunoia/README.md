@@ -1,5 +1,24 @@
 # Package documentation inside Eunoia
 
+## Rust acceptance run
+
+The Rust acceptance recipe documents the core `eunoia` crate with its default
+features, executes native doctests, checks representative public APIs, removes
+the disposable source copy, and generates both a standalone site and HTML and
+Markdown fragments from the SQLite snapshot:
+
+```console
+devenv shell -- python examples/eunoia/rust.py --source ../eunoia
+```
+
+The prepared environment needs Eunoia's locked Cargo dependencies in its cache.
+Devenv supplies the separate pinned nightly documentation toolchain. The recipe
+prints its temporary artifact directory and coverage counts. Use `--output` to
+select a fresh directory or `--diplodocus-bin` to select an existing executable.
+It does not modify Eunoia or integrate the generated pages into its website.
+
+## Python and R embedding experiment
+
 Eunoia now integrates the complete Python API through the supported
 `generate --format fragments` command, including mapped HTML and Markdown
 links. See Eunoia's `web/PYTHON-DOCS.md` for that build. This directory retains

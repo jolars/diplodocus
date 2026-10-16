@@ -13,6 +13,8 @@ use super::{ItemReference, SignatureExpression, SourceEvidence};
     deny_unknown_fields
 )]
 pub enum ItemLanguageData {
+    /// Compiler-resolved Rust declarations and implementation relationships.
+    Rust(RustItemData),
     /// Julia declaration semantics from maintained source.
     Julia(JuliaItemData),
     /// Python declaration semantics after source/stub reconciliation.
@@ -41,6 +43,8 @@ pub struct ItemAlias {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum ItemAliasKind {
+    /// A public Rust reexport resolved by the compiler.
+    RustReexport,
     /// A statically resolved Julia import or reexport.
     JuliaImport,
     /// A statically proven assignment of the same Julia binding.
@@ -53,6 +57,84 @@ pub enum ItemAliasKind {
     RAssignment,
     /// An Rd lookup name reconciled with a maintained declaration.
     RdAlias,
+}
+
+/// Rust facts independent of an item's signature and documentation.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RustItemData {
+    /// Declaration category reported by rustdoc.
+    pub declaration: RustDeclarationKind,
+    /// Preferred publicly reachable path, including the crate name.
+    pub public_path: String,
+    /// Enclosing type, trait, or variant for an embedded member.
+    pub owner: Option<ItemReference>,
+    /// Implementation identity for an implementation member.
+    pub implementation: Option<String>,
+    /// Implementations associated with this type or trait.
+    pub implementations: Vec<RustImplementation>,
+    /// Declaration attributes retained by rustdoc.
+    pub attributes: Vec<String>,
+}
+
+/// Rust declaration categories that refine the shared item classification.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum RustDeclarationKind {
+    /// Crate or module.
+    Module,
+    /// Struct declaration.
+    Struct,
+    /// Enum declaration.
+    Enum,
+    /// Union declaration.
+    Union,
+    /// Trait declaration.
+    Trait,
+    /// Enum variant.
+    Variant,
+    /// Free function.
+    Function,
+    /// Inherent or trait method.
+    Method,
+    /// Struct or variant field.
+    Field,
+    /// Named or associated constant.
+    Constant,
+    /// Static variable.
+    Static,
+    /// Named type alias.
+    TypeAlias,
+    /// Trait or implementation associated type.
+    AssociatedType,
+    /// Declarative or procedural macro.
+    Macro,
+    /// An implementation block with its own documentation.
+    Implementation,
+}
+
+/// One compiler-resolved implementation, embedded in its owning type's page.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RustImplementation {
+    /// Stable semantic context, independent of compiler IDs and source order.
+    pub identity: String,
+    /// Structured Rust implementation header.
+    pub signature: SignatureExpression,
+    /// Addressable documentation attached directly to the implementation block.
+    pub documentation_item: Option<ItemReference>,
+    /// Original implementation location when native attribution is available.
+    pub source_location: Option<super::SourceLocation>,
+    /// Implemented trait path, when this is a trait implementation.
+    pub trait_name: Option<String>,
+    /// Local trait identity when its definition belongs to this snapshot.
+    pub trait_target: Option<ItemReference>,
+    /// Implementation members in declaration order.
+    pub members: Vec<ItemReference>,
+    /// Whether the compiler synthesized this implementation.
+    pub is_synthetic: bool,
+    /// Whether the implementation applies through a blanket bound.
+    pub is_blanket: bool,
 }
 
 /// Python facts independent of an item's structured signature and prose.

@@ -16,8 +16,16 @@ pub fn resolve_item(
 ) -> Result<ItemReference, DiagnosticCode> {
     if let Some((package, name)) = target.split_once("::")
         && !package.contains(['(', '{', '['])
+        && workspace.packages.contains_key(package)
     {
-        return in_package(workspace, package, name);
+        match in_package(workspace, package, name) {
+            Err(DiagnosticCode::UnresolvedItemReference)
+                if workspace.packages[package].ecosystem == "rust" =>
+            {
+                return in_package(workspace, package, target);
+            }
+            result => return result,
+        }
     }
     if let Some(owner) = owner {
         match in_package(workspace, owner, target) {
@@ -66,7 +74,15 @@ pub(crate) fn in_package(
                 PythonDeclaration::Callable { role: PythonCallableRole::Overload { .. }, .. }))
             && !matches!(&item.language_data, Some(ItemLanguageData::Julia(data)) if matches!(&data.declaration,
                 JuliaDeclaration::Callable { role: JuliaCallableRole::Method { .. }, .. }))
-            && (item.qualified_name == name || item.aliases.iter().any(|a| a.qualified_name == name))
+            && (item.qualified_name == name || item.aliases.iter().any(|a| a.qualified_name == name)
+                || (workspace.packages[package].ecosystem == "julia" && !name.contains('.')
+                    && (item.qualified_name.rsplit('.').next() == Some(name)
+                        || item.aliases.iter().any(|alias| alias.qualified_name.rsplit('.').next() == Some(name))))
+                || matches!(&item.language_data, Some(ItemLanguageData::Rust(data))
+                    if data.public_path == name
+                        || data.public_path.split_once("::").is_some_and(|(_, rest)| rest == name)
+                        || item.qualified_name.split_once("::").is_some_and(|(_, rest)| rest == name)
+                        || item.aliases.iter().any(|alias| alias.qualified_name.split_once("::").is_some_and(|(_, rest)| rest == name))))
         });
         let (id, _) = candidates
             .next()

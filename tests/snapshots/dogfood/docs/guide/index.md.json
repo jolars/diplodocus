@@ -2,7 +2,7 @@
   "document": {
     "span": {
       "start": 0,
-      "end": 1092
+      "end": 1158
     },
     "frontmatter": null,
     "blocks": [
@@ -34,84 +34,84 @@
         "inlines": [
           {
             "type": "text",
-            "value": "Diplodocus builds one site for related Python, R, and Julia packages. It",
+            "value": "Diplodocus builds one site for related Python, R, Julia, and Rust packages. It",
             "span": {
               "start": 14,
-              "end": 86
+              "end": 92
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 86,
-              "end": 87
+              "start": 92,
+              "end": 93
             }
           },
           {
             "type": "text",
-            "value": "combines statically extracted API references with authored guides, shared",
+            "value": "combines extracted API references with authored guides, shared",
             "span": {
-              "start": 87,
-              "end": 160
+              "start": 93,
+              "end": 155
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 160,
-              "end": 161
+              "start": 155,
+              "end": 156
             }
           },
           {
             "type": "text",
             "value": "navigation, cross-references, and search. This guide is built by Diplodocus from",
             "span": {
-              "start": 161,
-              "end": 241
+              "start": 156,
+              "end": 236
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 241,
-              "end": 242
+              "start": 236,
+              "end": 237
             }
           },
           {
             "type": "text",
             "value": "the project's own ",
             "span": {
-              "start": 242,
-              "end": 260
+              "start": 237,
+              "end": 255
             }
           },
           {
             "type": "code",
             "value": "diplodocus.toml",
             "span": {
-              "start": 260,
-              "end": 277
+              "start": 255,
+              "end": 272
             }
           },
           {
             "type": "text",
             "value": ".",
             "span": {
-              "start": 277,
-              "end": 278
+              "start": 272,
+              "end": 273
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 278,
-              "end": 279
+              "start": 273,
+              "end": 274
             }
           }
         ],
         "span": {
           "start": 14,
-          "end": 279
+          "end": 274
         }
       },
       {
@@ -121,8 +121,8 @@
             "type": "text",
             "value": "Start with ",
             "span": {
-              "start": 280,
-              "end": 291
+              "start": 275,
+              "end": 286
             }
           },
           {
@@ -132,8 +132,8 @@
                 "type": "text",
                 "value": "installation",
                 "span": {
-                  "start": 292,
-                  "end": 304
+                  "start": 287,
+                  "end": 299
                 }
               }
             ],
@@ -145,16 +145,16 @@
               "key_values": []
             },
             "span": {
-              "start": 291,
-              "end": 322
+              "start": 286,
+              "end": 317
             }
           },
           {
             "type": "text",
             "value": " and the ",
             "span": {
-              "start": 322,
-              "end": 331
+              "start": 317,
+              "end": 326
             }
           },
           {
@@ -164,23 +164,23 @@
                 "type": "text",
                 "value": "quick",
                 "span": {
-                  "start": 332,
-                  "end": 337
+                  "start": 327,
+                  "end": 332
                 }
               },
               {
                 "type": "soft-break",
                 "span": {
-                  "start": 337,
-                  "end": 338
+                  "start": 332,
+                  "end": 333
                 }
               },
               {
                 "type": "text",
                 "value": "start",
                 "span": {
-                  "start": 338,
-                  "end": 343
+                  "start": 333,
+                  "end": 338
                 }
               }
             ],
@@ -192,16 +192,16 @@
               "key_values": []
             },
             "span": {
-              "start": 331,
-              "end": 360
+              "start": 326,
+              "end": 355
             }
           },
           {
             "type": "text",
             "value": ". Then configure your ",
             "span": {
-              "start": 360,
-              "end": 382
+              "start": 355,
+              "end": 377
             }
           },
           {
@@ -211,8 +211,8 @@
                 "type": "text",
                 "value": "workspace",
                 "span": {
-                  "start": 383,
-                  "end": 392
+                  "start": 378,
+                  "end": 387
                 }
               }
             ],
@@ -224,23 +224,23 @@
               "key_values": []
             },
             "span": {
-              "start": 382,
-              "end": 411
+              "start": 377,
+              "end": 406
             }
           },
           {
             "type": "text",
             "value": ", write",
             "span": {
-              "start": 411,
-              "end": 418
+              "start": 406,
+              "end": 413
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 418,
-              "end": 419
+              "start": 413,
+              "end": 414
             }
           },
           {
@@ -250,8 +250,8 @@
                 "type": "text",
                 "value": "authored pages",
                 "span": {
-                  "start": 420,
-                  "end": 434
+                  "start": 415,
+                  "end": 429
                 }
               }
             ],
@@ -263,16 +263,16 @@
               "key_values": []
             },
             "span": {
-              "start": 419,
-              "end": 449
+              "start": 414,
+              "end": 444
             }
           },
           {
             "type": "text",
             "value": ", and use the ",
             "span": {
-              "start": 449,
-              "end": 463
+              "start": 444,
+              "end": 458
             }
           },
           {
@@ -282,8 +282,8 @@
                 "type": "text",
                 "value": "command reference",
                 "span": {
-                  "start": 464,
-                  "end": 481
+                  "start": 459,
+                  "end": 476
                 }
               }
             ],
@@ -295,31 +295,31 @@
               "key_values": []
             },
             "span": {
-              "start": 463,
-              "end": 490
+              "start": 458,
+              "end": 485
             }
           },
           {
             "type": "text",
             "value": " as you",
             "span": {
-              "start": 490,
-              "end": 497
+              "start": 485,
+              "end": 492
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 497,
-              "end": 498
+              "start": 492,
+              "end": 493
             }
           },
           {
             "type": "text",
             "value": "build. The ",
             "span": {
-              "start": 498,
-              "end": 509
+              "start": 493,
+              "end": 504
             }
           },
           {
@@ -329,8 +329,8 @@
                 "type": "text",
                 "value": "executable example",
                 "span": {
-                  "start": 510,
-                  "end": 528
+                  "start": 505,
+                  "end": 523
                 }
               }
             ],
@@ -342,44 +342,44 @@
               "key_values": []
             },
             "span": {
-              "start": 509,
-              "end": 555
+              "start": 504,
+              "end": 550
             }
           },
           {
             "type": "text",
             "value": " shows a Python QMD",
             "span": {
-              "start": 555,
-              "end": 574
+              "start": 550,
+              "end": 569
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 574,
-              "end": 575
+              "start": 569,
+              "end": 570
             }
           },
           {
             "type": "text",
             "value": "page built with the project's configured kernel.",
             "span": {
-              "start": 575,
-              "end": 623
+              "start": 570,
+              "end": 618
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 623,
-              "end": 624
+              "start": 618,
+              "end": 619
             }
           }
         ],
         "span": {
-          "start": 280,
-          "end": 624
+          "start": 275,
+          "end": 619
         }
       },
       {
@@ -392,8 +392,8 @@
                 "type": "text",
                 "value": "A documentation workspace with Python and R packages",
                 "span": {
-                  "start": 627,
-                  "end": 679
+                  "start": 622,
+                  "end": 674
                 }
               }
             ],
@@ -405,21 +405,21 @@
               "key_values": []
             },
             "span": {
-              "start": 625,
-              "end": 702
+              "start": 620,
+              "end": 697
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 702,
-              "end": 703
+              "start": 697,
+              "end": 698
             }
           }
         ],
         "span": {
-          "start": 625,
-          "end": 703
+          "start": 620,
+          "end": 698
         }
       },
       {
@@ -427,25 +427,40 @@
         "inlines": [
           {
             "type": "text",
-            "value": "Python, R, and Julia APIs are parsed without importing or loading the packages.",
+            "value": "Language adapters use source analysis and native tools to resolve APIs and",
             "span": {
-              "start": 704,
-              "end": 783
+              "start": 699,
+              "end": 773
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 783,
-              "end": 784
+              "start": 773,
+              "end": 774
+            }
+          },
+          {
+            "type": "text",
+            "value": "verify executable examples. Rust uses a separately pinned nightly compiler.",
+            "span": {
+              "start": 774,
+              "end": 849
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 849,
+              "end": 850
             }
           },
           {
             "type": "text",
             "value": "Read the ",
             "span": {
-              "start": 784,
-              "end": 793
+              "start": 850,
+              "end": 859
             }
           },
           {
@@ -455,8 +470,8 @@
                 "type": "text",
                 "value": "extraction guide",
                 "span": {
-                  "start": 794,
-                  "end": 810
+                  "start": 860,
+                  "end": 876
                 }
               }
             ],
@@ -468,23 +483,23 @@
               "key_values": []
             },
             "span": {
-              "start": 793,
-              "end": 826
+              "start": 859,
+              "end": 892
             }
           },
           {
             "type": "text",
             "value": " for the supported surfaces, the",
             "span": {
-              "start": 826,
-              "end": 858
+              "start": 892,
+              "end": 924
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 858,
-              "end": 859
+              "start": 924,
+              "end": 925
             }
           },
           {
@@ -494,8 +509,8 @@
                 "type": "text",
                 "value": "execution guide",
                 "span": {
-                  "start": 860,
-                  "end": 875
+                  "start": 926,
+                  "end": 941
                 }
               }
             ],
@@ -507,16 +522,16 @@
               "key_values": []
             },
             "span": {
-              "start": 859,
-              "end": 890
+              "start": 925,
+              "end": 956
             }
           },
           {
             "type": "text",
             "value": " before enabling QMD cells, and the ",
             "span": {
-              "start": 890,
-              "end": 926
+              "start": 956,
+              "end": 992
             }
           },
           {
@@ -526,23 +541,23 @@
                 "type": "text",
                 "value": "diagnostics",
                 "span": {
-                  "start": 927,
-                  "end": 938
+                  "start": 993,
+                  "end": 1004
                 }
               },
               {
                 "type": "soft-break",
                 "span": {
-                  "start": 938,
-                  "end": 939
+                  "start": 1004,
+                  "end": 1005
                 }
               },
               {
                 "type": "text",
                 "value": "guide",
                 "span": {
-                  "start": 939,
-                  "end": 944
+                  "start": 1005,
+                  "end": 1010
                 }
               }
             ],
@@ -554,16 +569,16 @@
               "key_values": []
             },
             "span": {
-              "start": 926,
-              "end": 961
+              "start": 992,
+              "end": 1027
             }
           },
           {
             "type": "text",
             "value": " when a build reports a problem. A ",
             "span": {
-              "start": 961,
-              "end": 996
+              "start": 1027,
+              "end": 1062
             }
           },
           {
@@ -573,23 +588,23 @@
                 "type": "text",
                 "value": "portable SQLite",
                 "span": {
-                  "start": 997,
-                  "end": 1012
+                  "start": 1063,
+                  "end": 1078
                 }
               },
               {
                 "type": "soft-break",
                 "span": {
-                  "start": 1012,
-                  "end": 1013
+                  "start": 1078,
+                  "end": 1079
                 }
               },
               {
                 "type": "text",
                 "value": "snapshot",
                 "span": {
-                  "start": 1013,
-                  "end": 1021
+                  "start": 1079,
+                  "end": 1087
                 }
               }
             ],
@@ -601,29 +616,29 @@
               "key_values": []
             },
             "span": {
-              "start": 996,
-              "end": 1036
+              "start": 1062,
+              "end": 1102
             }
           },
           {
             "type": "text",
             "value": " lets you generate the site separately from extraction.",
             "span": {
-              "start": 1036,
-              "end": 1091
+              "start": 1102,
+              "end": 1157
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 1091,
-              "end": 1092
+              "start": 1157,
+              "end": 1158
             }
           }
         ],
         "span": {
-          "start": 704,
-          "end": 1092
+          "start": 699,
+          "end": 1158
         }
       }
     ]

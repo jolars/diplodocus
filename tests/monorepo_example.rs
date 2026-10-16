@@ -28,7 +28,7 @@ fn monorepo_example_builds_with_r_and_generates_without_sources_or_runtimes() {
         "diplodocus.toml",
         fs::read(example.join("diplodocus.toml")).unwrap(),
     );
-    for directory in ["docs", "python", "r", "julia"] {
+    for directory in ["docs", "python", "r", "julia", "rust"] {
         for relative in support::files_under(&example.join(directory)) {
             let relative = Path::new(directory).join(relative);
             root.write(&relative, fs::read(example.join(&relative)).unwrap());
@@ -36,13 +36,19 @@ fn monorepo_example_builds_with_r_and_generates_without_sources_or_runtimes() {
     }
 
     run(root.path(), &["check"]);
-    assert!(!root.path().join(".diplodocus").exists());
+    assert!(
+        !root
+            .path()
+            .join(".diplodocus/documentation.sqlite")
+            .exists()
+    );
+    assert!(root.path().join(".diplodocus/cache/rust").is_dir());
     run(root.path(), &["build"]);
-    assert!(!root.path().join(".diplodocus/cache").exists());
+    assert!(!root.path().join(".diplodocus/cache/execution").exists());
     let database = root.path().join(".diplodocus/documentation.sqlite");
     let snapshot = Snapshot::load(&database).unwrap();
     assert_eq!(snapshot.workspace().repositories.len(), 1);
-    assert_eq!(snapshot.workspace().packages.len(), 3);
+    assert_eq!(snapshot.workspace().packages.len(), 4);
     assert_eq!(snapshot.workspace().pages.len(), 15);
     assert_eq!(snapshot.workspace().concepts.len(), 6);
     assert_eq!(snapshot.assets().len(), 4);
@@ -119,6 +125,7 @@ fn monorepo_example_builds_with_r_and_generates_without_sources_or_runtimes() {
         ("python", "tinystats.mean_squared_error"),
         ("r", "mean_squared_error"),
         ("julia", "TinyStats.mean_squared_error"),
+        ("rust", "tinystats::mean_squared_error"),
     ]
     .into_iter()
     .map(|(ecosystem, name)| {
@@ -161,6 +168,7 @@ fn monorepo_example_builds_with_r_and_generates_without_sources_or_runtimes() {
             ("python", format!("tinystats.{metric}")),
             ("r", metric.into()),
             ("julia", format!("TinyStats.{metric}")),
+            ("rust", format!("tinystats::{metric}")),
         ] {
             let entry = entries
                 .iter()

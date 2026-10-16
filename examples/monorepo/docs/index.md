@@ -1,7 +1,7 @@
 # Tiny Stats
 
-Tiny Stats evaluates numeric predictions in Python, R, and Julia. The packages
-share six operations, so you can learn the ideas once and use any of the three languages.
+Tiny Stats evaluates numeric predictions in Python, R, Julia, and Rust. The packages
+share six operations, so you can learn the ideas once and use any of the four languages.
 
 ## Start with the guide
 
@@ -17,13 +17,14 @@ The packages are deliberately small, working examples for Diplodocus.
 
 ## Choose a language
 
-Choose **Python**, **R**, or **Julia** in the navigation bar (or the
+Choose **Python**, **R**, **Julia**, or **Rust** in the navigation bar (or the
 **Browse documentation** menu on mobile), then explore its API reference.
 You can also open a function directly:
 
 - **Python:** [`pystats::tinystats.mean_squared_error`]
 - **R:** [`rstats::mean_squared_error`]
 - **Julia:** [`juliastats::TinyStats.mean_squared_error`]
+- **Rust:** [`ruststats::tinystats::mean_squared_error`]
 
 Each function links to its counterparts under **Same API in**. The
 [Python workflow](../python/docs/evaluating-models.md) shows how to evaluate

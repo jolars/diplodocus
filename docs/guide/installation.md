@@ -28,9 +28,11 @@ cargo build --locked --bin diplodocus
 cargo run --locked -- --help
 ```
 
-The `devenv` shell also provides Python, R, Jupyter kernels, and browser tools
-used by the project examples and tests. A workspace that only contains Markdown
-or static Python and Julia API extraction does not need those language runtimes.
+The `devenv` shell also provides Python, R, Julia, Jupyter kernels, browser tools,
+and a separate pinned nightly Rust documentation toolchain used by the project
+examples and tests. A workspace that only contains Markdown does not need these
+language runtimes. Rust extraction requires the prepared documentation toolchain,
+Cargo.lock, and cached dependencies; see [Rust extraction](extraction.md).
 R API extraction requires R on `PATH` and installed dependencies for package-wide
 imports. Rd examples additionally require `pkgload`, `evaluate`, a loadable
 checkout with prebuilt extensions, and the dependencies used by those examples.

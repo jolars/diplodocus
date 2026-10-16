@@ -6,10 +6,17 @@ pub(super) fn signature_for_site(
     value: &Signature,
     ecosystem: &str,
 ) -> String {
-    if ecosystem != "python" {
+    if !matches!(ecosystem, "python" | "rust") {
         return signature(name, value, ecosystem);
     }
-    let names = public_names(site);
+    let names = if ecosystem == "python" {
+        public_names(site)
+    } else {
+        PublicNames {
+            aliases: std::collections::BTreeMap::new(),
+            private_modules: Vec::new(),
+        }
+    };
     let mut value = value.clone();
     match &mut value {
         Signature::Callable {
@@ -18,25 +25,27 @@ pub(super) fn signature_for_site(
         } => {
             for parameter in parameters {
                 if let Some(annotation) = &mut parameter.annotation {
-                    qualify(annotation, &names);
+                    qualify_for_site(annotation, &names, site, ecosystem);
                 }
                 if let Some(default) = &mut parameter.default {
-                    qualify(default, &names);
+                    qualify_for_site(default, &names, site, ecosystem);
                 }
             }
             if let Some(returns) = returns {
-                qualify(returns, &names);
+                qualify_for_site(returns, &names, site, ecosystem);
             }
         }
         Signature::Value { annotation, value } => {
             if let Some(annotation) = annotation {
-                qualify(annotation, &names);
+                qualify_for_site(annotation, &names, site, ecosystem);
             }
             if let Some(value) = value {
-                qualify(value, &names);
+                qualify_for_site(value, &names, site, ecosystem);
             }
         }
-        Signature::LanguageSpecific { syntax, .. } => qualify(syntax, &names),
+        Signature::LanguageSpecific { syntax, .. } => {
+            qualify_for_site(syntax, &names, site, ecosystem)
+        }
     }
     signature(name, &value, ecosystem)
 }
@@ -49,8 +58,68 @@ pub(super) fn expression_for_site(
     let mut value = value.clone();
     if ecosystem == "python" {
         qualify(&mut value, &public_names(site));
+    } else if ecosystem == "rust" {
+        qualify_rust(&mut value, site);
     }
     expression(&value, ecosystem)
+}
+
+fn qualify_for_site(
+    value: &mut SignatureExpression,
+    names: &PublicNames,
+    site: &crate::site::Site<'_>,
+    ecosystem: &str,
+) {
+    if ecosystem == "rust" {
+        qualify_rust(value, site);
+    } else {
+        qualify(value, names);
+    }
+}
+
+fn qualify_rust(value: &mut SignatureExpression, site: &crate::site::Site<'_>) {
+    match value {
+        SignatureExpression::Name {
+            name,
+            target: Some(target),
+        } => {
+            if let Some(data) = site
+                .workspace
+                .packages
+                .get(&target.package)
+                .and_then(|package| package.items.get(&target.item))
+                .and_then(super::rust::data)
+            {
+                *name = if name.contains("::") {
+                    data.public_path.clone()
+                } else {
+                    data.public_path
+                        .rsplit("::")
+                        .next()
+                        .unwrap_or(name)
+                        .to_owned()
+                };
+            }
+        }
+        SignatureExpression::Apply {
+            constructor,
+            arguments,
+        } => {
+            qualify_rust(constructor, site);
+            for argument in arguments {
+                qualify_rust(argument, site);
+            }
+        }
+        SignatureExpression::Sequence { items }
+        | SignatureExpression::LanguageSpecific {
+            children: items, ..
+        } => {
+            for item in items {
+                qualify_rust(item, site);
+            }
+        }
+        SignatureExpression::Literal { .. } | SignatureExpression::Name { target: None, .. } => {}
+    }
 }
 
 struct PublicNames {
@@ -234,10 +303,10 @@ pub(super) fn expression(value: &SignatureExpression, ecosystem: &str) -> String
             constructor,
             arguments,
         } => {
-            let (open, close) = if ecosystem == "python" {
-                ('[', ']')
-            } else {
-                ('(', ')')
+            let (open, close) = match ecosystem {
+                "python" => ('[', ']'),
+                "rust" => ('<', '>'),
+                _ => ('(', ')'),
             };
             format!(
                 "{}{open}{}{close}",
@@ -260,12 +329,59 @@ pub(super) fn expression(value: &SignatureExpression, ecosystem: &str) -> String
             name,
             ..
         } => source.clone().unwrap_or_else(|| {
-            let separator = if name == "union" { " | " } else { " " };
+            let separator = match name.as_str() {
+                "tokens" if ecosystem == "rust" => "",
+                "union" => " | ",
+                _ => " ",
+            };
             children
                 .iter()
                 .map(|a| expression(a, ecosystem))
                 .collect::<Vec<_>>()
                 .join(separator)
         }),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn rust_tokens_preserve_receivers_lifetimes_and_where_clauses() {
+        let syntax = SignatureExpression::LanguageSpecific {
+            language: "rust".into(),
+            name: "tokens".into(),
+            source: None,
+            children: vec![
+                SignatureExpression::Literal {
+                    text: "pub fn fit<'a, T>(&'a self, value: ".into(),
+                },
+                SignatureExpression::Apply {
+                    constructor: Box::new(SignatureExpression::Name {
+                        name: "Vec".into(),
+                        target: None,
+                    }),
+                    arguments: vec![SignatureExpression::Name {
+                        name: "T".into(),
+                        target: None,
+                    }],
+                },
+                SignatureExpression::Literal {
+                    text: ") -> &'a Self\nwhere T: Clone + 'a".into(),
+                },
+            ],
+        };
+        assert_eq!(
+            signature(
+                "fit",
+                &Signature::LanguageSpecific {
+                    language: "rust".into(),
+                    syntax
+                },
+                "rust"
+            ),
+            "pub fn fit<'a, T>(&'a self, value: Vec<T>) -> &'a Self\nwhere T: Clone + 'a"
+        );
     }
 }

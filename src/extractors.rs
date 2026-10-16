@@ -3,3 +3,4 @@
 pub mod julia;
 pub mod python;
 pub mod r;
+pub mod rust;

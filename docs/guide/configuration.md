@@ -14,11 +14,12 @@ a sibling checkout. A package names its repository and gives a path within it.
 Package metadata and extraction targets are relative to the package. Declare
 `targets = []` for a package with no API extraction.
 
-Python extraction reads source and package metadata without importing code. R
-extraction reads source, package metadata, and checked-in Rd files without
-starting R. Julia extraction reads `Project.toml`, an explicit `.jl` entry file,
-and its literal includes without starting Julia. The [extraction
-guide](extraction.md) describes their supported inputs and limits.
+Python extraction reads source and package metadata. R reads source, package
+metadata, and checked-in Rd files. Julia reads `Project.toml`, an explicit `.jl`
+entry file, and its literal includes, with native completion when needed. Rust
+reads Cargo metadata and compiler-produced rustdoc JSON for an explicit library
+entry file. Native runtimes verify executable API examples. The [extraction
+guide](extraction.md) describes the supported inputs and limits.
 
 ### Repository links
 
@@ -59,8 +60,9 @@ package ID puts them under `/packages/<slug>/`. GFM collections read `.md`
 files. QMD collections read `.qmd` files and can include executable cells.
 Checked-in assets can live beside the pages that use them.
 
-The monorepo example has one shared GFM guide and three statically extracted
-packages. The root configuration mounts this GFM guide at the site root and
+The monorepo example has one shared GFM guide and four extracted packages,
+including a compiler-backed Rust library. The root configuration mounts this GFM
+guide at the site root and
 keeps its QMD example under `/examples/`. See [authored pages](authoring.md) for
 supported syntax, links, and assets.
 

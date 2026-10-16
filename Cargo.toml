@@ -52,6 +52,7 @@ rusqlite = { version = "=0.40.2", default-features = false, features = ["bundled
 ruff_python_ast = "=0.0.17"
 ruff_python_parser = "=0.0.17"
 ruff_text_size = "=0.0.17"
+rustdoc-types = "=0.61.0"
 serde = { version = "1.0", features = ["derive"] }
 semver = "=1.0.28"
 serde_json = "1.0"

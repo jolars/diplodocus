@@ -5,6 +5,14 @@
   ...
 }:
 let
+  rustOverlay = config.lib.getInput {
+    name = "rust-overlay";
+    url = "github:oxalica/rust-overlay";
+    attribute = "DIPLODOCUS_RUST_TOOLCHAIN";
+    follows = [ "nixpkgs" ];
+  };
+  rustDocumentationToolchain =
+    (rustOverlay.lib.mkRustBin { } pkgs.buildPackages).nightly."2026-09-28".minimal;
   browserTools = builtins.fromJSON (builtins.readFile ./package.json);
   browserBinaries =
     assert lib.assertMsg
@@ -95,6 +103,7 @@ in
   };
 
   env = {
+    DIPLODOCUS_RUST_TOOLCHAIN = rustDocumentationToolchain;
     JUPYTER_PATH = jupyterKernels;
     PLAYWRIGHT_BROWSERS_PATH = browserBinaries;
     PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1";

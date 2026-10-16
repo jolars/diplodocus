@@ -1,0 +1,17 @@
+[workspace]
+members = ["."]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+
+[package]
+name = "rust_demo"
+version.workspace = true
+edition.workspace = true
+description = "A compiler-backed documentation fixture"
+license = "MIT"
+
+[features]
+default = []
+extra = []

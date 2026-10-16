@@ -1,15 +1,21 @@
-# Python, R, and Julia monorepo example
+# Python, R, Julia, and Rust monorepo example
 
-Tiny Stats is a working prediction-evaluation toolkit with Python, R, and Julia
-packages. All three expose six operations: mean squared error, mean absolute error,
+Tiny Stats is a working prediction-evaluation toolkit with Python, R, Julia, and Rust
+packages. All four expose six operations: mean squared error, mean absolute error,
 root mean squared error, mean error, R squared, and residuals.
 
 The site combines installation and quick-start pages, three shared guides, a
-Python-specific workflow, an executable R vignette, and all three package
+Python-specific workflow, an executable R vignette, and all four package
 references in one left sidebar.
 Python functions nest under their module; the current package and API ancestors
 open automatically. A separate **On this page** area follows the page's headings.
 Each operation links to its equivalent in the other languages.
+
+Rust uses Cargo and the separate nightly documentation toolchain supplied by
+devenv. Its `Score` type demonstrates grouped fields and methods. Native Rust
+doctests execute during extraction, while `check` compiles and resolves the API
+without executing them. Rust compilation and build scripts run offline against
+the supplied lockfile and cached dependencies.
 
 The navbar's home link displays `docs/assets/logo.svg` before the site title.
 The `[presentation.logo]` table selects this image from the `tinystats` repository.

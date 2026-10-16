@@ -743,5 +743,6 @@ fn alias_rank(kind: ItemAliasKind) -> u8 {
         ItemAliasKind::RAssignment => 3,
         ItemAliasKind::JuliaImport => 4,
         ItemAliasKind::JuliaAssignment => 5,
+        ItemAliasKind::RustReexport => 6,
     }
 }

@@ -15,7 +15,7 @@ supporting routes are `news.html`, `authors.html`, `license.html`, and
 ## Navigation
 
 The navigation bar links to the shared Guide and each visible package. Diplodocus
-uses language labels such as Python, R, and Julia when there is one visible
+uses language labels such as Python, R, Julia, and Rust when there is one visible
 package in that language; otherwise, it uses package names. The sidebar shows
 only the current section's pages, plus its API reference for package sections.
 On mobile, open **Browse documentation** to switch sections or browse their pages.
@@ -36,7 +36,7 @@ include `eval`, `echo`, `include`, `output`, `error`, `label`, `fig-alt`,
 `fig-cap`, and `fig-subcap`. Cell options may appear in a fence's info string or
 in `#|` lines; the latter take precedence.
 
-Add a language label such as `python`, `r`, or `julia` to a code fence to enable
+Add a language label such as `python`, `r`, `julia`, or `rust` to a code fence to enable
 syntax highlighting. Diplodocus also highlights visible QMD cell source and API
 signature blocks. Highlighting uses a built-in light theme and works without
 JavaScript. Unlabeled fences, unknown languages, and `text` fences remain plain.

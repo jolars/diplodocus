@@ -3,7 +3,7 @@
 [![CI](https://github.com/jolars/diplodocus/actions/workflows/ci.yml/badge.svg)](https://github.com/jolars/diplodocus/actions/workflows/ci.yml)
 [![crates.io](https://img.shields.io/crates/v/diplodocus.svg)](https://crates.io/crates/diplodocus)
 
-Diplodocus builds a shared documentation site for Python, R, and Julia packages.
+Diplodocus builds a shared documentation site for Python, R, Julia, and Rust packages.
 It brings package API references and Markdown and Quarto guides together with
 shared navigation, cross-references, and search.
 
@@ -30,7 +30,7 @@ options.
 
 Create a `diplodocus.toml` file to declare your packages and documentation
 pages. Use the [configuration guide](docs/guide/configuration.md) to set up your
-project, or adapt the [Python, R, and Julia
+project, or adapt the [Python, R, Julia, and Rust
 example](examples/monorepo/README.md).
 
 From the directory containing your configuration, validate your sources and

@@ -40,6 +40,29 @@ pub struct Provenance {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum ProvenanceActivity {
+    /// Native Rust doctests checked against the selected checkout and features.
+    RustDoctests {
+        /// Owning Rust extraction target.
+        target: TargetReference,
+        /// Versioned native execution and comparison contract.
+        policy: String,
+        /// Cargo package identity.
+        package_name: String,
+        /// Version read from Cargo metadata.
+        package_version: String,
+        /// Observed compiler version and commit.
+        compiler_version: String,
+        /// Resolved dependency versions without local paths.
+        dependencies: BTreeMap<String, String>,
+        /// Effective Cargo features in sorted order.
+        features: Vec<String>,
+        /// Host target triple used for compilation and execution.
+        host: String,
+        /// Maintained source and environment input fingerprints.
+        inputs: Vec<InputFingerprint>,
+        /// Native example outcomes in discovery order.
+        examples: Vec<RustDoctestOutcome>,
+    },
     /// Completed Python or Julia API doctests in the supplied checkout.
     ApiExamples {
         /// Owning workspace package.
@@ -233,6 +256,44 @@ pub struct RMarkdownInlineOutcome {
 pub enum ExtractionMode {
     /// Parse declared sources without importing or running their code.
     Static,
+    /// Resolve declarations with native compiler tooling, allowing local builds.
+    Compiler,
+}
+
+/// One Rust example discovered and checked by the native doctest runner.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RustDoctestOutcome {
+    /// Native test name, retained to reconcile discovery with execution.
+    pub name: String,
+    /// Original maintained file when native attribution is available.
+    pub source: Option<SourceLocation>,
+    /// One-based source line reported by rustdoc.
+    pub line: usize,
+    /// Original doctest code, including native setup syntax.
+    pub code: String,
+    /// Effective native doctest attributes.
+    pub attributes: BTreeMap<String, String>,
+    /// Checked native outcome.
+    pub outcome: RustDoctestStatus,
+    /// Output reported by the native runner; successful stdout may be absent.
+    pub output: String,
+    /// Native reason for an explicit omission.
+    pub reason: Option<String>,
+}
+
+/// Successful Rust doctest outcomes preserve compilation and execution semantics.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum RustDoctestStatus {
+    /// Compiled and executed successfully.
+    Executed,
+    /// Compiled successfully under `no_run`.
+    CompileOnly,
+    /// Matched an explicit compilation failure or panic expectation.
+    ExpectedError,
+    /// Omitted by an explicit native ignore attribute.
+    ExplicitSkip,
 }
 
 /// One parser component and its output-affecting settings.

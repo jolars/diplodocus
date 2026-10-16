@@ -66,6 +66,31 @@ impl PythonIdentityKind {
 pub struct SemanticIdentity(String);
 
 impl SemanticIdentity {
+    /// Build a Rust declaration key from its defining path and declaration kind.
+    pub fn rust(name: &str, kind: &str) -> Result<Self, IdentityError> {
+        nonempty("canonical-name", name)?;
+        nonempty("rust-kind", kind)?;
+        Ok(Self(format!("sid1:rust:{}:{}", atom(kind), atom(name))))
+    }
+
+    /// Build a Rust member key under its type, trait, and implementation context.
+    pub fn rust_member(
+        owner: &str,
+        context: &str,
+        name: &str,
+        kind: &str,
+    ) -> Result<Self, IdentityError> {
+        nonempty("owner", owner)?;
+        nonempty("member-name", name)?;
+        nonempty("rust-kind", kind)?;
+        Ok(Self(format!(
+            "sid1:rust:{}:{}:{}:{}",
+            atom(kind),
+            atom(owner),
+            atom(context),
+            atom(name)
+        )))
+    }
     /// Build a named Julia declaration key under the existing `sid1` contract.
     pub fn julia(name: &str, kind: JuliaIdentityKind) -> Result<Self, IdentityError> {
         nonempty("canonical-name", name)?;

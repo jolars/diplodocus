@@ -323,6 +323,28 @@ pub struct ExtractionTargetConfiguration {
     pub path: PathBuf,
     /// Target role, such as `public-api` or `internal-api`.
     pub role: String,
+    /// Cargo feature selection for Rust targets.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rust: Option<RustTargetConfiguration>,
+}
+
+/// Compiler feature selection for one explicit Rust library target.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, rename_all = "kebab-case", deny_unknown_fields)]
+pub struct RustTargetConfiguration {
+    /// Additional Cargo features to enable.
+    pub features: Vec<String>,
+    /// Whether Cargo enables the crate's default features.
+    pub default_features: bool,
+}
+
+impl Default for RustTargetConfiguration {
+    fn default() -> Self {
+        Self {
+            features: Vec::new(),
+            default_features: true,
+        }
+    }
 }
 
 /// An authored collection with independent ownership and source location.

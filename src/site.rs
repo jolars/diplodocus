@@ -66,6 +66,7 @@ pub(crate) struct PageModel<'a> {
     pub reference_index: bool,
     pub public_name: Option<String>,
     pub python_class: Option<crate::rendering::python::PythonClass<'a>>,
+    pub rust_page: Option<crate::rendering::rust::RustPage<'a>>,
 }
 impl PageModel<'_> {
     fn empty(title: String, owner: Option<String>, visible: bool) -> Self {
@@ -84,6 +85,7 @@ impl PageModel<'_> {
             reference_index: false,
             public_name: None,
             python_class: None,
+            rust_page: None,
         }
     }
 }
@@ -198,6 +200,7 @@ impl<'a> Site<'a> {
             site.routes.insert(identity, route);
         }
         for (id, package) in &workspace.packages {
+            let rust_owners = crate::rendering::rust::member_owners(package);
             let python_owners = if package.ecosystem == "python" {
                 crate::rendering::python::member_owners(package)
             } else {
@@ -310,6 +313,8 @@ impl<'a> Site<'a> {
                 } else if package.ecosystem == "r" {
                     crate::rendering::r_topics::page_title(item)
                         .unwrap_or_else(|| item.qualified_name.clone())
+                } else if let Some(data) = crate::rendering::rust::data(item) {
+                    data.public_path.clone()
                 } else {
                     item.qualified_name.clone()
                 };
@@ -323,12 +328,37 @@ impl<'a> Site<'a> {
                 model.item = Some(item);
                 model.public_name = Some(if package.ecosystem == "python" {
                     python_display_name(item, &private_modules).to_owned()
+                } else if let Some(data) = crate::rendering::rust::data(item) {
+                    data.public_path.clone()
                 } else {
                     item.qualified_name.clone()
                 });
                 if package.ecosystem == "python" {
                     model.python_class =
                         crate::rendering::python::class(id, package, item_id, &records);
+                }
+                if package.ecosystem == "rust" {
+                    if let Some(owner) = rust_owners.get(item_id) {
+                        let reference = ItemReference {
+                            package: id.clone(),
+                            item: item_id.clone(),
+                        };
+                        let anchor = crate::rendering::rust::member_anchor(package, item_id);
+                        site.routes.insert(
+                            identity,
+                            format!(
+                                "{base}/reference/{}.html",
+                                crate::provenance::fingerprint_bytes(owner.as_bytes()).value
+                            ),
+                        );
+                        site.overload_anchors
+                            .insert(reference.clone(), anchor.clone());
+                        model.anchor_prefix = Some(format!("{anchor}-documentation"));
+                        site.embedded_pages.insert(reference, model);
+                        continue;
+                    }
+                    model.anchor_prefix = Some("documentation".into());
+                    model.rust_page = crate::rendering::rust::page(id, package, item_id, &records);
                 }
                 if let Some(ItemLanguageData::Julia(data)) = &item.language_data
                     && let JuliaDeclaration::Callable {

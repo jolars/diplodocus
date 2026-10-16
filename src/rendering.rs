@@ -12,6 +12,7 @@ mod package_metadata;
 mod publish;
 pub(crate) mod python;
 pub(crate) mod r_topics;
+pub(crate) mod rust;
 mod signatures;
 mod sitemap;
 mod social;

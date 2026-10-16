@@ -11,7 +11,7 @@
     if (!query) return;
     const rank = entry => {
       const title = entry.title.toLowerCase();
-      if (title === query || title.endsWith(`.${query}`)) return 0;
+      if (title === query || title.endsWith(`.${query}`) || title.endsWith(`::${query}`)) return 0;
       if (title.includes(query)) return 1;
       return 2;
     };

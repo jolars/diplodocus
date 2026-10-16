@@ -10,6 +10,7 @@ pub(super) fn assemble(
     selections: &mut DeclaredSourceInputs,
     observed: &mut ObservedInputs,
     julia_results: &mut BTreeMap<(String, String), julia::JuliaExtraction>,
+    rust_results: &mut BTreeMap<(String, String), super::rust_native::RustNativeExtraction>,
 ) -> Result<(), AssemblyError> {
     for (index, declaration) in configuration.packages.iter().enumerate() {
         let resolved = &paths.packages[index];
@@ -39,6 +40,21 @@ pub(super) fn assemble(
                 },
             );
             let fragment = match target.extractor.as_str() {
+                "rust" => {
+                    let result = rust_results
+                        .remove(&(declaration.id.clone(), target.id.clone()))
+                        .ok_or(AssemblyError::InputsChanged)?;
+                    if let Some(doctests) = result.doctests {
+                        workspace.provenance.push(doctests);
+                    }
+                    Fragment {
+                        metadata: None,
+                        version: result.extraction.version,
+                        items: result.extraction.items,
+                        diagnostics: result.extraction.diagnostics,
+                        provenance: result.provenance,
+                    }
+                }
                 "julia" => {
                     let result = julia_results
                         .remove(&(declaration.id.clone(), target.id.clone()))
@@ -173,8 +189,11 @@ pub(super) fn assemble(
                     );
                 }
             }
-            if let ProvenanceActivity::Extraction { target, inputs, .. } =
-                &fragment.provenance.activity
+            if let ProvenanceActivity::Extraction {
+                target: reference,
+                inputs,
+                ..
+            } = &fragment.provenance.activity
             {
                 let mut selected_inputs = vec![];
                 for (repository_id, inputs) in inputs {
@@ -188,19 +207,23 @@ pub(super) fn assemble(
                             span: None,
                         };
                         observe(observed, &location, input.fingerprint.clone())?;
-                        selected_inputs.push(
-                            repository
-                                .path
-                                .join(path.as_str())
-                                .strip_prefix(&resolved.path)
-                                .map_err(|_| AssemblyError::InputsChanged)?
-                                .to_owned(),
-                        );
+                        let absolute = repository.path.join(path.as_str());
+                        if let Ok(relative) = absolute.strip_prefix(&resolved.path) {
+                            selected_inputs.push(relative.to_owned());
+                        } else if target.extractor == "rust" {
+                            selections
+                                .package_documentation
+                                .entry(repository.id.clone())
+                                .or_default()
+                                .push(PathBuf::from(path.as_str()));
+                        } else {
+                            return Err(AssemblyError::InputsChanged);
+                        }
                     }
                 }
                 selections
                     .extraction
-                    .insert(target.clone(), selected_inputs);
+                    .insert(reference.clone(), selected_inputs);
             }
             workspace.provenance.push(fragment.provenance);
         }

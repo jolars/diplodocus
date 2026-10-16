@@ -2,7 +2,7 @@
 name = "Tiny Stats"
 
 [presentation]
-description = "A shared guide and API reference for Tiny Stats in Python, R, and Julia."
+description = "A shared guide and API reference for Tiny Stats in Python, R, Julia, and Rust."
 
 [presentation.logo]
 repository = "tinystats"
@@ -62,6 +62,18 @@ targets = [
   { id = "api", extractor = "julia", path = "src/TinyStats.jl", role = "public-api" },
 ]
 
+[[package]]
+id = "ruststats"
+name = "Tiny Stats for Rust"
+slug = "rust"
+ecosystem = "rust"
+repository = "tinystats"
+path = "rust"
+metadata-path = "Cargo.toml"
+targets = [
+  { id = "api", extractor = "rust", path = "src/lib.rs", role = "public-api" },
+]
+
 [[content]]
 id = "guide"
 owner = "project"
@@ -91,6 +103,7 @@ members = [
   { package = "pystats", item = "tinystats.mean_squared_error" },
   { package = "rstats", item = "mean_squared_error" },
   { package = "juliastats", item = "TinyStats.mean_squared_error" },
+  { package = "ruststats", item = "tinystats::mean_squared_error" },
 ]
 
 [[concept]]
@@ -100,6 +113,7 @@ members = [
   { package = "pystats", item = "tinystats.mean_absolute_error" },
   { package = "rstats", item = "mean_absolute_error" },
   { package = "juliastats", item = "TinyStats.mean_absolute_error" },
+  { package = "ruststats", item = "tinystats::mean_absolute_error" },
 ]
 
 [[concept]]
@@ -109,6 +123,7 @@ members = [
   { package = "pystats", item = "tinystats.root_mean_squared_error" },
   { package = "rstats", item = "root_mean_squared_error" },
   { package = "juliastats", item = "TinyStats.root_mean_squared_error" },
+  { package = "ruststats", item = "tinystats::root_mean_squared_error" },
 ]
 
 [[concept]]
@@ -118,6 +133,7 @@ members = [
   { package = "pystats", item = "tinystats.mean_error" },
   { package = "rstats", item = "mean_error" },
   { package = "juliastats", item = "TinyStats.mean_error" },
+  { package = "ruststats", item = "tinystats::mean_error" },
 ]
 
 [[concept]]
@@ -127,6 +143,7 @@ members = [
   { package = "pystats", item = "tinystats.r_squared" },
   { package = "rstats", item = "r_squared" },
   { package = "juliastats", item = "TinyStats.r_squared" },
+  { package = "ruststats", item = "tinystats::r_squared" },
 ]
 
 [[concept]]
@@ -136,4 +153,5 @@ members = [
   { package = "pystats", item = "tinystats.residuals" },
   { package = "rstats", item = "residuals" },
   { package = "juliastats", item = "TinyStats.residuals" },
+  { package = "ruststats", item = "tinystats::residuals" },
 ]

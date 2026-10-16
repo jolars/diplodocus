@@ -42,7 +42,18 @@ mean_squared_error([1.0, 2.0], [1.0, 3.0])
 # 0.5
 ```
 
-All three functions require inputs with the same nonzero length. These snippets are
+## Rust
+
+Use [`ruststats::tinystats::mean_squared_error`]:
+
+```rust
+use tinystats::mean_squared_error;
+
+let error = mean_squared_error(&[1.0, 2.0], &[1.0, 3.0]);
+assert_eq!(error, 0.5);
+```
+
+All four functions require inputs with the same nonzero length. These snippets are
 display examples; building the documentation does not execute them.
 
 ## Choose the next step

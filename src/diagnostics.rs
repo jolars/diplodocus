@@ -25,6 +25,24 @@ pub enum DiagnosticCode {
     /// No built-in adapter implements an explicitly selected extractor.
     #[serde(rename = "unsupported-extractor")]
     UnsupportedExtractor,
+    /// Cargo metadata or target selection is invalid.
+    #[serde(rename = "rust-metadata")]
+    RustMetadata,
+    /// Rust source inputs cannot be read within the declared repository.
+    #[serde(rename = "rust-source-read")]
+    RustSourceRead,
+    /// The prepared Rust documentation toolchain is missing or incompatible.
+    #[serde(rename = "rust-toolchain")]
+    RustToolchain,
+    /// Native Rust documentation extraction failed.
+    #[serde(rename = "rust-extraction")]
+    RustExtraction,
+    /// A public Rust declaration exceeds the supported semantic model.
+    #[serde(rename = "rust-unsupported-surface")]
+    RustUnsupportedSurface,
+    /// Rust documentation cannot be represented or linked correctly.
+    #[serde(rename = "rust-documentation")]
+    RustDocumentation,
     /// Julia metadata is malformed or lacks package identity.
     #[serde(rename = "julia-metadata")]
     JuliaMetadata,
@@ -313,6 +331,12 @@ impl DiagnosticCode {
             Self::IncompatiblePackageRelationship => "incompatible-package-relationship",
             Self::IndeterminatePackageRelationship => "indeterminate-package-relationship",
             Self::UnsupportedExtractor => "unsupported-extractor",
+            Self::RustMetadata => "rust-metadata",
+            Self::RustSourceRead => "rust-source-read",
+            Self::RustToolchain => "rust-toolchain",
+            Self::RustExtraction => "rust-extraction",
+            Self::RustUnsupportedSurface => "rust-unsupported-surface",
+            Self::RustDocumentation => "rust-documentation",
             Self::JuliaMetadata => "julia-metadata",
             Self::JuliaSourceRead => "julia-source-read",
             Self::JuliaSyntax => "julia-syntax",

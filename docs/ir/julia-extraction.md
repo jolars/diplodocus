@@ -175,5 +175,5 @@ documentation provenance.
 The [static extractor contract](../spikes/static-extractor-contract.md) records
 parser pins and capabilities. The [Julia tests](../../tests/julia_extraction.rs),
 [acceptance fixture](../../tests/fixtures/acceptance/julia/), and
-[three-language example](../../examples/monorepo/README.md) exercise the adapter
+[four-language example](../../examples/monorepo/README.md) exercise the adapter
 and its build pipeline.

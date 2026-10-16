@@ -2,7 +2,7 @@
 name = "Diplodocus"
 
 [presentation]
-description = "Guides for building Python, R, and Julia documentation with Diplodocus."
+description = "Guides for building Python, R, Julia, and Rust documentation with Diplodocus."
 site-url = "https://diplodocus.cc/"
 canonical-url-style = "clean"
 

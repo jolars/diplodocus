@@ -125,5 +125,6 @@ pub(crate) async fn assemble_for_extraction(
             results.insert((package.id.clone(), target.id.clone()), result);
         }
     }
-    super::assemble_with_julia(path, results)
+    let rust = super::rust_results(path, true, deadlines, cancellation).await?;
+    super::assemble_with_native(path, results, rust)
 }

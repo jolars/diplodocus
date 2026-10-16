@@ -267,6 +267,26 @@ impl Observer {
             }
             for target in &package.targets {
                 let mut selected = Vec::new();
+                if target.extractor == "rust" {
+                    discover_rust(&root, &self.output, &mut observed);
+                    let repository = &roots[package.repository.as_str()];
+                    for ancestor in root
+                        .ancestors()
+                        .take_while(|path| path.starts_with(repository))
+                    {
+                        for name in [
+                            "Cargo.toml",
+                            "Cargo.lock",
+                            "rust-toolchain.toml",
+                            "rust-toolchain",
+                            ".cargo/config",
+                            ".cargo/config.toml",
+                        ] {
+                            observe(&ancestor.join(name), &mut observed);
+                        }
+                    }
+                    continue;
+                }
                 discover(
                     &root.join(&target.path),
                     &self.output,
@@ -433,6 +453,37 @@ fn observe(path: &Path, observed: &mut Observation) {
         Err(error) => format!("{:?}", error.kind()),
     };
     observed.insert(path.to_owned(), value);
+}
+
+fn discover_rust(root: &Path, output: &Path, observed: &mut Observation) {
+    if root.starts_with(output)
+        || crate::generated_storage::is_reserved(root)
+        || root.file_name().is_some_and(|name| {
+            matches!(
+                name.to_str(),
+                Some(".git" | "target" | "node_modules" | ".svelte-kit" | "dist" | "site")
+            )
+        })
+    {
+        return;
+    }
+    let Ok(metadata) = fs::symlink_metadata(root) else {
+        return;
+    };
+    if metadata.is_symlink() {
+        observe(root, observed);
+    } else if metadata.is_file() {
+        if !crate::generated_storage::is_generated_file(root) {
+            observe(root, observed);
+        }
+    } else if metadata.is_dir() {
+        let Ok(entries) = fs::read_dir(root) else {
+            return;
+        };
+        for entry in entries.flatten() {
+            discover_rust(&entry.path(), output, observed);
+        }
+    }
 }
 fn discover(
     root: &Path,
