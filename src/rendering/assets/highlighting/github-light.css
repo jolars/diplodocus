@@ -1,0 +1,206 @@
+/*
+ * GitHub Light Default
+ * Source: https://raw.githubusercontent.com/shikijs/textmate-grammars-themes/8f1828ebccc57930cf0adde9b35ae929584fe191/packages/tm-themes/themes/github-light-default.json
+ * MIT license; see LICENSE. Regenerate with node scripts/update-syntax-themes.mjs.
+ */
+
+.syntax-code {
+  color: #1f2328;
+  background-color: #ffffff;
+}
+.syntax-comment,
+.syntax-punctuation.syntax-definition.syntax-comment,
+.syntax-string.syntax-comment {
+  color: #6e7781;
+}
+.syntax-constant.syntax-other.syntax-placeholder,
+.syntax-constant.syntax-character {
+  color: #cf222e;
+}
+.syntax-constant,
+.syntax-entity.syntax-name.syntax-constant,
+.syntax-variable.syntax-other.syntax-constant,
+.syntax-variable.syntax-other.syntax-enummember,
+.syntax-variable.syntax-language,
+.syntax-entity {
+  color: #0550ae;
+}
+.syntax-entity.syntax-name,
+.syntax-meta.syntax-export.syntax-default,
+.syntax-meta.syntax-definition.syntax-variable {
+  color: #953800;
+}
+.syntax-variable.syntax-parameter.syntax-function,
+.syntax-meta.syntax-jsx.syntax-children,
+.syntax-meta.syntax-block,
+.syntax-meta.syntax-tag.syntax-attributes,
+.syntax-entity.syntax-name.syntax-constant,
+.syntax-meta.syntax-object.syntax-member,
+.syntax-meta.syntax-embedded.syntax-expression {
+  color: #1f2328;
+}
+.syntax-entity.syntax-name.syntax-function {
+  color: #8250df;
+}
+.syntax-entity.syntax-name.syntax-tag,
+.syntax-support.syntax-class.syntax-component {
+  color: #116329;
+}
+.syntax-keyword {
+  color: #cf222e;
+}
+.syntax-storage,
+.syntax-storage.syntax-type {
+  color: #cf222e;
+}
+.syntax-storage.syntax-modifier.syntax-package,
+.syntax-storage.syntax-modifier.syntax-import,
+.syntax-storage.syntax-type.syntax-java {
+  color: #1f2328;
+}
+.syntax-string,
+.syntax-string .syntax-punctuation.syntax-section.syntax-embedded .syntax-source {
+  color: #0a3069;
+}
+.syntax-support {
+  color: #0550ae;
+}
+.syntax-meta.syntax-property-name {
+  color: #0550ae;
+}
+.syntax-variable {
+  color: #953800;
+}
+.syntax-variable.syntax-other {
+  color: #1f2328;
+}
+.syntax-invalid.syntax-broken {
+  color: #82071e;
+  font-style: italic;
+}
+.syntax-invalid.syntax-deprecated {
+  color: #82071e;
+  font-style: italic;
+}
+.syntax-invalid.syntax-illegal {
+  color: #82071e;
+  font-style: italic;
+}
+.syntax-invalid.syntax-unimplemented {
+  color: #82071e;
+  font-style: italic;
+}
+.syntax-message.syntax-error {
+  color: #82071e;
+}
+.syntax-string .syntax-variable {
+  color: #0550ae;
+}
+.syntax-source.syntax-regexp,
+.syntax-string.syntax-regexp {
+  color: #0a3069;
+}
+.syntax-string.syntax-regexp.syntax-character-class,
+.syntax-string.syntax-regexp .syntax-constant.syntax-character.syntax-escape,
+.syntax-string.syntax-regexp .syntax-source.syntax-ruby.syntax-embedded,
+.syntax-string.syntax-regexp .syntax-string.syntax-regexp.syntax-arbitrary-repitition {
+  color: #0a3069;
+}
+.syntax-string.syntax-regexp .syntax-constant.syntax-character.syntax-escape {
+  color: #116329;
+  font-weight: bold;
+}
+.syntax-support.syntax-constant {
+  color: #0550ae;
+}
+.syntax-support.syntax-variable {
+  color: #0550ae;
+}
+.syntax-support.syntax-type.syntax-property-name.syntax-json {
+  color: #116329;
+}
+.syntax-meta.syntax-module-reference {
+  color: #0550ae;
+}
+.syntax-punctuation.syntax-definition.syntax-list.syntax-begin.syntax-markdown {
+  color: #953800;
+}
+.syntax-markup.syntax-heading,
+.syntax-markup.syntax-heading .syntax-entity.syntax-name {
+  color: #0550ae;
+  font-weight: bold;
+}
+.syntax-markup.syntax-quote {
+  color: #116329;
+}
+.syntax-markup.syntax-italic {
+  color: #1f2328;
+  font-style: italic;
+}
+.syntax-markup.syntax-bold {
+  color: #1f2328;
+  font-weight: bold;
+}
+.syntax-markup.syntax-underline {
+  text-decoration: underline;
+}
+.syntax-markup.syntax-strikethrough {
+  text-decoration: line-through;
+}
+.syntax-markup.syntax-inline.syntax-raw {
+  color: #0550ae;
+}
+.syntax-markup.syntax-deleted,
+.syntax-meta.syntax-diff.syntax-header.syntax-from-file,
+.syntax-punctuation.syntax-definition.syntax-deleted {
+  color: #82071e;
+  background-color: #ffebe9;
+}
+.syntax-punctuation.syntax-section.syntax-embedded {
+  color: #cf222e;
+}
+.syntax-markup.syntax-inserted,
+.syntax-meta.syntax-diff.syntax-header.syntax-to-file,
+.syntax-punctuation.syntax-definition.syntax-inserted {
+  color: #116329;
+  background-color: #dafbe1;
+}
+.syntax-markup.syntax-changed,
+.syntax-punctuation.syntax-definition.syntax-changed {
+  color: #953800;
+  background-color: #ffd8b5;
+}
+.syntax-markup.syntax-ignored,
+.syntax-markup.syntax-untracked {
+  color: #eaeef2;
+  background-color: #0550ae;
+}
+.syntax-meta.syntax-diff.syntax-range {
+  color: #8250df;
+  font-weight: bold;
+}
+.syntax-meta.syntax-diff.syntax-header {
+  color: #0550ae;
+}
+.syntax-meta.syntax-separator {
+  color: #0550ae;
+  font-weight: bold;
+}
+.syntax-meta.syntax-output {
+  color: #0550ae;
+}
+.syntax-brackethighlighter.syntax-tag,
+.syntax-brackethighlighter.syntax-curly,
+.syntax-brackethighlighter.syntax-round,
+.syntax-brackethighlighter.syntax-square,
+.syntax-brackethighlighter.syntax-angle,
+.syntax-brackethighlighter.syntax-quote {
+  color: #57606a;
+}
+.syntax-brackethighlighter.syntax-unmatched {
+  color: #82071e;
+}
+.syntax-constant.syntax-other.syntax-reference.syntax-link,
+.syntax-string.syntax-other.syntax-link {
+  color: #0a3069;
+}

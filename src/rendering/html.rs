@@ -733,12 +733,9 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
         );
     }
     let style = if standalone {
-        format!(
-            "{STYLE}\n{}",
-            super::highlighting::stylesheet().map_err(|_| SiteError::Evidence)?
-        )
+        format!("{STYLE}\n{}", super::highlighting::stylesheet())
     } else {
-        super::highlighting::fragment_stylesheet().map_err(|_| SiteError::Evidence)?
+        super::highlighting::fragment_stylesheet()
     };
     files.insert(
         if standalone {

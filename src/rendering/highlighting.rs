@@ -1,12 +1,10 @@
-use syntect::html::{ClassStyle, ClassedHTMLGenerator, css_for_theme_with_class_style};
+use syntect::html::{ClassStyle, ClassedHTMLGenerator};
 use syntect::parsing::SyntaxSet;
 use syntect::util::LinesWithEndings;
 
 const CLASS_STYLE: ClassStyle = ClassStyle::SpacedPrefixed { prefix: "syntax-" };
-const LIGHT_THEME: two_face::theme::EmbeddedThemeName =
-    two_face::theme::EmbeddedThemeName::ColdarkCold;
-const DARK_THEME: two_face::theme::EmbeddedThemeName =
-    two_face::theme::EmbeddedThemeName::ColdarkDark;
+const LIGHT_STYLE: &str = include_str!("assets/highlighting/github-light.css");
+const DARK_STYLE: &str = include_str!("assets/highlighting/github-dark.css");
 
 pub(super) struct Highlighter {
     syntaxes: SyntaxSet,
@@ -43,19 +41,16 @@ impl Highlighter {
     }
 }
 
-pub(super) fn stylesheet() -> Result<String, syntect::Error> {
-    let themes = two_face::theme::extra();
-    css_for_theme_with_class_style(&themes[LIGHT_THEME], CLASS_STYLE)
+pub(super) fn stylesheet() -> &'static str {
+    LIGHT_STYLE
 }
 
-pub(super) fn fragment_stylesheet() -> Result<String, syntect::Error> {
-    let themes = two_face::theme::extra();
+pub(super) fn fragment_stylesheet() -> String {
     let mut css = String::new();
-    for (selector, theme) in [
-        (".diplodocus-content", LIGHT_THEME),
-        (".dark .diplodocus-content", DARK_THEME),
+    for (selector, rules) in [
+        (".diplodocus-content", LIGHT_STYLE),
+        (".dark .diplodocus-content", DARK_STYLE),
     ] {
-        let rules = css_for_theme_with_class_style(&themes[theme], CLASS_STYLE)?;
         // Scope every selector, including comma-separated syntax alternatives,
         // because a host may retain this stylesheet across client navigation.
         for rule in rules.split_inclusive('}') {
@@ -73,7 +68,7 @@ pub(super) fn fragment_stylesheet() -> Result<String, syntect::Error> {
             }
         }
     }
-    Ok(css)
+    css
 }
 
 #[cfg(test)]
@@ -81,11 +76,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn bundled_themes_meet_normal_text_contrast_with_a_light_default() {
-        fn colors(css: &str, property: &str) -> Vec<syntect::highlighting::Color> {
+    fn github_themes_meet_normal_text_contrast_with_a_light_default() {
+        fn color(css: &str, property: &str) -> Option<syntect::highlighting::Color> {
             let prefix = format!("{property}: #");
             css.lines()
-                .filter_map(|line| line.trim().strip_prefix(&prefix))
+                .find_map(|line| line.trim().strip_prefix(&prefix))
                 .map(|value| {
                     let value = value.strip_suffix(';').unwrap();
                     assert_eq!(value.len(), 6, "Expected opaque CSS colors: {value}");
@@ -97,7 +92,6 @@ mod tests {
                         a: 255,
                     }
                 })
-                .collect()
         }
 
         fn luminance(color: syntect::highlighting::Color) -> f64 {
@@ -112,27 +106,23 @@ mod tests {
             0.2126 * channel(color.r) + 0.7152 * channel(color.g) + 0.0722 * channel(color.b)
         }
 
-        let themes = two_face::theme::extra();
-        for theme in [LIGHT_THEME, DARK_THEME] {
-            // Syntect emits opaque CSS colors even when theme metadata has alpha.
-            let css = if theme == LIGHT_THEME {
-                stylesheet().unwrap()
-            } else {
-                css_for_theme_with_class_style(&themes[theme], CLASS_STYLE).unwrap()
-            };
-            let backgrounds = colors(&css, "background-color");
-            assert_eq!(backgrounds.len(), 1, "{theme:?} uses scoped backgrounds");
-            let background = luminance(backgrounds[0]);
-            if theme == LIGHT_THEME {
+        for (name, css) in [("light", stylesheet()), ("dark", DARK_STYLE)] {
+            let background = color(css, "background-color").unwrap();
+            let foreground = color(css, "color").unwrap();
+            if name == "light" {
+                let background = luminance(background);
                 assert!(background > 0.5, "Code blocks should be light by default");
             }
-            let foregrounds = colors(&css, "color");
-            assert!(!foregrounds.is_empty());
-            for foreground in foregrounds {
-                let foreground = luminance(foreground);
+            for rule in css.split('}') {
+                let Some((selectors, body)) = rule.split_once('{') else {
+                    continue;
+                };
+                // Diff tokens pair their own foreground and background colors.
+                let foreground = luminance(color(body, "color").unwrap_or(foreground));
+                let background = luminance(color(body, "background-color").unwrap_or(background));
                 let contrast =
                     (foreground.max(background) + 0.05) / (foreground.min(background) + 0.05);
-                assert!(contrast >= 4.5, "{theme:?}: {contrast}:1");
+                assert!(contrast >= 4.5, "{name} {selectors}: {contrast}:1");
             }
         }
     }
