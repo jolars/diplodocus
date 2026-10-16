@@ -161,7 +161,11 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
             html.push_str("</head><body><a class=\"skip-link\" href=\"#main\">Skip to content</a>");
             html.push_str("<header>");
             super::navigation::sections(&mut html, site, route, "desktop-sections");
-            html.push_str("<form class=\"site-search\" role=\"search\"><label class=\"visually-hidden\" for=\"search\">Search documentation</label><div class=\"search-control\"><svg class=\"search-icon\" aria-hidden=\"true\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><circle cx=\"10.5\" cy=\"10.5\" r=\"6.5\"></circle><path d=\"m16 16 4 4\"></path></svg><input id=\"search\" type=\"search\" placeholder=\"Search\" autocomplete=\"off\" aria-controls=\"search-results\"></div><ul id=\"search-results\" aria-live=\"polite\"></ul></form></header><div class=\"layout\"><nav aria-label=\"Documentation\">");
+            html.push_str("<div class=\"header-actions\"><form class=\"site-search\" role=\"search\"><label class=\"visually-hidden\" for=\"search\">Search documentation</label><div class=\"search-control\"><svg class=\"search-icon\" aria-hidden=\"true\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><circle cx=\"10.5\" cy=\"10.5\" r=\"6.5\"></circle><path d=\"m16 16 4 4\"></path></svg><input id=\"search\" type=\"search\" placeholder=\"Search\" autocomplete=\"off\" aria-controls=\"search-results\"></div><ul id=\"search-results\" aria-live=\"polite\"></ul></form>");
+            super::navigation::repositories(&mut html, site);
+            html.push_str(
+                "</div></header><div class=\"layout\"><nav aria-label=\"Documentation\">",
+            );
             write!(
                 html,
                 "<a class=\"brand\" href=\"{}\">",
@@ -582,7 +586,7 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
             html.push_str("</main>");
             html.push_str(&renderer.page_navigation());
             html.push_str("</div></div>");
-            super::footer::render(&mut html, &site.presentation.footer);
+            super::footer::render(&mut html, site);
             html.push_str("</body></html>\n");
         } else {
             let identities: Vec<_> = site

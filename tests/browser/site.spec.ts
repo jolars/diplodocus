@@ -115,7 +115,7 @@ test("navbar and sidebars share outer margins", async ({ page }, info) => {
   for (const width of [1024, 1280, 1920]) {
     await page.setViewportSize({ width, height: 900 });
     const brand = (await page.locator(".layout > nav > .brand").boundingBox())!;
-    const search = (await page.locator("header form").boundingBox())!;
+    const search = (await page.locator(".header-actions").boundingBox())!;
     const sidebar = (await page.locator(".layout > nav .nav-group h2").first().boundingBox())!;
     expect(brand.x).toBeCloseTo(width - search.x - search.width, 0);
     expect(sidebar.x).toBeCloseTo(brand.x, 0);
@@ -216,11 +216,12 @@ test("footer identifies the docs and exposes project, license, and generator lin
     if (path === "/guides/comparing-predictions.html") {
       await expect(footer).not.toBeInViewport();
     }
+    await expect(footer.getByRole("link", { name: "GitHub", exact: true })).toHaveCount(0);
+    await expect(page.locator("header").getByRole("link", { name: "GitHub", exact: true })).toHaveAttribute("href", "https://github.com/jolars/diplodocus");
     await expect(footer).toContainText("Docs: dev");
     await expect(footer).toContainText("© 2026 Johan Larsson");
     await expect(footer).toContainText("MIT or Apache-2.0");
     for (const [label, url] of [
-      ["GitHub", "https://github.com/jolars/diplodocus"],
       ["Report an issue", "https://github.com/jolars/diplodocus/issues"],
       ["MIT", "https://github.com/jolars/diplodocus/blob/main/LICENSE-MIT"],
       ["Apache-2.0", "https://github.com/jolars/diplodocus/blob/main/LICENSE-APACHE"],

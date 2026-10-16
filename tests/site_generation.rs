@@ -448,6 +448,7 @@ built-with = true
 [[repository]]
 id = 'docs'
 path = '.'
+url = 'https://example.test/repo?a=1&b=2'
 [[content]]
 id = 'guide'
 owner = 'project'
@@ -481,9 +482,11 @@ format = 'gfm'
         assert!(html.find("</main>").unwrap() < html.find("<footer").unwrap());
         assert!(footer.contains("Docs: dev &lt;preview&gt;"));
         assert!(footer.contains("© 2026 A &amp; B"));
+        let header = html.split("</header>").next().unwrap();
         assert!(
-            footer.contains("href=\"https://example.test/repo?a=1&amp;b=2\">&lt;GitHub&gt;</a>")
+            header.contains("href=\"https://example.test/repo?a=1&amp;b=2\">&lt;GitHub&gt;<svg")
         );
+        assert!(!footer.contains("&lt;GitHub&gt;"));
         assert!(footer.contains("href=\"https://example.test/LICENSE-MIT\">MIT</a> or <a"));
         assert!(footer.contains("href=\"https://example.test/LICENSE-APACHE\">Apache-2.0</a>"));
         assert!(footer.contains("href=\"https://example.test/issues\">Report an issue</a>"));

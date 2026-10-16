@@ -1,16 +1,30 @@
 use std::fmt::Write;
 
-use crate::configuration::{FooterDefaults, FooterLink};
+use crate::configuration::FooterLink;
+use crate::site::Site;
 
 use super::html::escape;
 
-pub(super) fn render(html: &mut String, footer: &FooterDefaults) {
+pub(super) fn render(html: &mut String, site: &Site<'_>) {
+    let footer = &site.presentation.footer;
     let mut rows = Vec::new();
     let mut project = Vec::new();
     if let Some(version) = &footer.docs_version {
         project.push(format!("Docs: {}", escape(version)));
     }
-    project.extend(footer.links.iter().map(link));
+    project.extend(
+        footer
+            .links
+            .iter()
+            .filter(|link| {
+                !site.workspace.repositories.values().any(|repository| {
+                    repository.canonical_url.as_deref().is_some_and(|url| {
+                        url.trim_end_matches('/') == link.url.trim_end_matches('/')
+                    })
+                })
+            })
+            .map(link),
+    );
     if !project.is_empty() {
         rows.push(project.join(" · "));
     }
@@ -29,11 +43,11 @@ pub(super) fn render(html: &mut String, footer: &FooterDefaults) {
                 .join(" or "),
         );
     }
+    if footer.built_with {
+        notices.push("Built with <a href=\"https://diplodocus.cc/\">Diplodocus</a>".into());
+    }
     if !notices.is_empty() {
         rows.push(notices.join(" · "));
-    }
-    if footer.built_with {
-        rows.push("Built with <a href=\"https://diplodocus.cc/\">Diplodocus</a>".into());
     }
     if rows.is_empty() {
         return;

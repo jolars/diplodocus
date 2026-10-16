@@ -8,6 +8,28 @@ use crate::ir::{ItemReference, Package};
 use crate::site::{Site, relative_url};
 use crate::validation::DocumentIdentity;
 
+pub(super) fn repositories(html: &mut String, site: &Site<'_>) {
+    let mut seen = BTreeSet::new();
+    for (id, repository) in &site.workspace.repositories {
+        let Some(url) = repository.canonical_url.as_deref() else {
+            continue;
+        };
+        if !url::Url::parse(url).is_ok_and(|url| matches!(url.scheme(), "http" | "https"))
+            || !seen.insert(url.trim_end_matches('/'))
+        {
+            continue;
+        }
+        let label = site
+            .presentation
+            .footer
+            .links
+            .iter()
+            .find(|link| link.url.trim_end_matches('/') == url.trim_end_matches('/'))
+            .map_or(id.as_str(), |link| link.label.as_str());
+        write!(html, "<a class=\"repository-link\" href=\"{}\">{}<svg aria-hidden=\"true\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M7 7h10v10M7 17 17 7\"></path></svg></a>", escape(url), escape(label)).unwrap();
+    }
+}
+
 pub(super) fn sections(html: &mut String, site: &Site<'_>, route: &str, class: &str) {
     write!(
         html,
