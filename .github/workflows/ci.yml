@@ -86,12 +86,16 @@ jobs:
         run: devenv shell -- node --test scripts/markdown-worker.test.mjs
       - name: Test and capture the example site
         run: devenv shell -- site-capture
+      - name: Test watched extraction with VitePress
+        run: devenv shell -- npm run vitepress-test
       - name: Upload browser reports, screenshots, and failure traces
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: browser-artifacts
-          path: artifacts/browser/
+          path: |
+            artifacts/browser/
+            artifacts/vitepress/
           if-no-files-found: ignore
           retention-days: 14
 

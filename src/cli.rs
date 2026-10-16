@@ -49,6 +49,9 @@ pub(super) struct ExtractArgs {
     /// Snapshot destination (defaults to .diplodocus/documentation.sqlite beside the configuration).
     #[arg(long, value_name = "PATH")]
     pub(super) output: Option<PathBuf>,
+    /// Re-extract changed inputs and emit a JSON line after each published snapshot.
+    #[arg(long)]
+    pub(super) watch: bool,
 }
 
 #[derive(Debug, Args)]

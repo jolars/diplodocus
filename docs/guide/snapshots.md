@@ -83,6 +83,9 @@ pages.
 Fragment format versions are independent of the SQLite storage contract. The
 [Eunoia experiment](https://github.com/jolars/diplodocus/tree/main/examples/eunoia)
 also demonstrates direct SQL consumption inside an existing SvelteKit site.
+The [VitePress example](https://github.com/jolars/diplodocus/tree/main/examples/vitepress)
+uses `extract --watch` to update generated reference pages while VitePress watches
+its authored guides. It also demonstrates building from a completed snapshot.
 
 ## Markdown for agents
 

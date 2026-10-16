@@ -146,6 +146,9 @@ fn monorepo_example_builds_with_r_and_generates_without_sources_or_runtimes() {
             .make_relative(&base.join(other).unwrap())
             .unwrap();
         assert!(html.contains(&format!("href=\"{relative}\"")));
+        let markdown = fs::read_to_string(site.join(file.replace(".html", ".md"))).unwrap();
+        assert!(markdown.contains("## Same API in"));
+        assert!(markdown.contains(&format!("](<{relative}>)")));
     }
     for metric in [
         "mean_absolute_error",

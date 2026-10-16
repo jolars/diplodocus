@@ -18,6 +18,25 @@ snapshot can be generated without the original source files or language
 runtimes. See [portable snapshots](snapshots.md) for compatibility and refresh
 behavior.
 
+Use `extract --watch` to prepare snapshots continuously for another frontend.
+It extracts once, then watches declared sources, configuration, and referenced
+assets, including sibling package checkouts. Saves are debounced, and extractions
+run one at a time. Each successful publication writes and flushes one JSON line
+to stdout:
+
+```json
+{"format_version":1,"event":"snapshot","path":"/absolute/path/documentation.sqlite"}
+```
+
+Diagnostics go to stderr. An initial failure exits without emitting an event.
+Later failures retain the previous snapshot and keep watching for corrections.
+Consumers should use publication events rather than observing temporary database
+files. If a consumer needs several passes over a snapshot, copy it before
+processing so a subsequent publication cannot change its input between passes.
+Stopping the watcher waits for active example execution to clean up. The
+[VitePress example](https://github.com/jolars/diplodocus/tree/main/examples/vitepress)
+connects these events to an existing frontend's development server.
+
 `serve` listens on `127.0.0.1:8000` by default. Use `--host` and `--port` to
 change the address, and `--live-reload` to refresh open pages after a successful
 rebuild. A failed rebuild prints diagnostics and keeps serving the last

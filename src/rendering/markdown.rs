@@ -9,7 +9,7 @@ use crate::execution::{
 };
 use crate::ir::*;
 use crate::site::{PageModel, Site, SiteError};
-use crate::validation::{ReferenceKind, ReferenceTarget, ResolvedDocument};
+use crate::validation::{DocumentIdentity, ReferenceKind, ReferenceTarget, ResolvedDocument};
 
 pub(super) fn page(
     site: &Site<'_>,
@@ -255,6 +255,24 @@ pub(super) fn page(
             }
         }
     }
+    if let Some(concept) = page.concept {
+        output.push_str(&concept_links(site, route, concept)?);
+    }
+    if let Some(identity) = site.routes.iter().find_map(|(identity, path)| {
+        let overload = matches!(identity, DocumentIdentity::Item { item }
+            if site.overload_anchors.contains_key(item));
+        (path == route && !overload).then_some(identity)
+    }) && let DocumentIdentity::Item { item } = identity
+    {
+        for concept in site
+            .workspace
+            .concepts
+            .values()
+            .filter(|concept| concept.members.contains(item))
+        {
+            output.push_str(&concept_links(site, route, concept)?);
+        }
+    }
     if page.document.is_none() && page.item.is_none() && page.concept.is_none() {
         for (path, candidate) in &site.pages {
             if candidate.visible
@@ -272,6 +290,40 @@ pub(super) fn page(
         }
     }
     Ok(format!("{}\n", output.trim_end()))
+}
+
+fn concept_links(site: &Site<'_>, route: &str, concept: &Concept) -> Result<String, SiteError> {
+    let label = if concept.kind == ConceptKind::Equivalent {
+        "Same API in"
+    } else {
+        "Related API"
+    };
+    let mut output = format!("## {label}\n\n");
+    for item in &concept.members {
+        let target = site
+            .routes
+            .get(&DocumentIdentity::Item { item: item.clone() })
+            .ok_or(SiteError::Evidence)?;
+        if target == route {
+            continue;
+        }
+        let package = &site.workspace.packages[&item.package];
+        let name = if package.ecosystem == "python" {
+            &site.pages[target].title
+        } else {
+            &package.items[&item.item].qualified_name
+        };
+        writeln!(
+            output,
+            "- [{}: {}]({})",
+            escape(&package.name),
+            code(name),
+            link_url(&site.url(route, target))
+        )
+        .unwrap();
+    }
+    output.push('\n');
+    Ok(output)
 }
 
 struct Markdown<'a, 'b> {

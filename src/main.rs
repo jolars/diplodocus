@@ -40,10 +40,17 @@ fn dispatch(cli: Cli) -> Result<(), CommandError> {
                 eprintln!("{}", commands::format_diagnostic(diagnostic));
             }
         }),
-        Command::Extract(args) => commands::extract(ExtractOptions {
-            config: args.config,
-            output: args.output,
-        }),
+        Command::Extract(args) => {
+            let options = ExtractOptions {
+                config: args.config,
+                output: args.output,
+            };
+            if args.watch {
+                commands::watch_extract(options)
+            } else {
+                commands::extract(options)
+            }
+        }
         Command::Generate(args) => {
             let options = GenerateOptions {
                 input: args.input,

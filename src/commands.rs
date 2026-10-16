@@ -11,8 +11,10 @@ use crate::validation::{ResolutionError, resolve_workspace};
 
 mod pipeline;
 mod preview;
+mod watching;
 pub use pipeline::extract_with;
 pub use preview::serve_with;
+pub use watching::watch_extract_with;
 
 /// Options for checking a documentation workspace.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -109,7 +111,7 @@ pub fn build(options: BuildOptions) -> Result<(), CommandError> {
     pipeline::runtime()?.block_on(pipeline::build_attempt(
         &options,
         crate::execution::ExecutionDeadlines::default(),
-        Box::pin(preview::termination()),
+        Box::pin(watching::termination()),
     ))?;
     Ok(())
 }
@@ -161,7 +163,7 @@ pub fn serve(options: ServeOptions) -> Result<(), CommandError> {
     pipeline::runtime()?.block_on(serve_with(
         options,
         crate::execution::ExecutionDeadlines::default(),
-        Box::pin(preview::termination()),
+        Box::pin(watching::termination()),
     ))
 }
 
@@ -186,10 +188,32 @@ pub fn extract(options: ExtractOptions) -> Result<(), CommandError> {
     pipeline::runtime()?.block_on(extract_with(
         options,
         crate::execution::ExecutionDeadlines::default(),
-        Box::pin(preview::termination()),
+        Box::pin(watching::termination()),
     ))?;
     Ok(())
 }
+
+/// Watch declared inputs and emit a flushed JSON line for each completed snapshot.
+///
+/// Each line has `format_version: 1`, `event: "snapshot"`, and the absolute
+/// snapshot `path`. Diagnostics go to stderr. The initial extraction must
+/// succeed; later failures retain the previous snapshot and keep watching.
+pub fn watch_extract(options: ExtractOptions) -> Result<(), CommandError> {
+    use std::io::Write;
+
+    pipeline::runtime()?.block_on(watch_extract_with(
+        options,
+        crate::execution::ExecutionDeadlines::default(),
+        Box::pin(watching::termination()),
+        |path| {
+            let event = serde_json::json!({"format_version": 1, "event": "snapshot", "path": path});
+            let mut output = std::io::stdout().lock();
+            writeln!(output, "{event}")?;
+            output.flush()
+        },
+    ))
+}
+
 /// Generate and atomically publish a site using only a completed snapshot.
 pub fn generate(options: GenerateOptions) -> Result<(), CommandError> {
     pipeline::generate_attempt(&options.input, &options.output, true)?;

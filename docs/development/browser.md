@@ -90,6 +90,14 @@ The equivalent npm commands are `npm run site-dev`, `npm run site-test -- <args>
 `npm run site-capture`, and `npm run browser -- <args>`. They still need the
 browser environment supplied by devenv.
 
+## External frontend example
+
+The [VitePress example](../../examples/vitepress/README.md) combines watched
+package extraction with VitePress's own guide updates. Run `npm run vitepress-dev`
+for interactive development or `npm run vitepress-test` for isolated browser
+checks. Its temporary workspace includes both the VitePress site and the package
+sources; screenshots, traces, and logs go to `artifacts/vitepress/`.
+
 ## Concurrent runs and overrides
 
 Automated runs use separate source copies, output trees, artifacts, and ports.

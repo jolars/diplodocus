@@ -43,11 +43,16 @@ transition.
    `generate` can load this database without the original sources or kernels.
 5. `src/site.rs` builds routes and navigation from the snapshot;
    `src/rendering/` writes the HTML, assets, CSS, and search data. `serve` in
-   `src/commands/preview.rs` watches inputs and rebuilds the site.
+   `src/commands/preview.rs` rebuilds and serves the site. It shares input
+   observation and rebuild scheduling in `src/commands/watching.rs` with
+   `extract --watch`, which publishes snapshots without serving HTTP.
 
 The [snapshot schema](../design/snapshot-schema.md) is the contract between
 extraction and generation. The [browser workflow](browser.md) covers local
 preview and visual inspection.
+The [VitePress example](../../examples/vitepress/README.md) demonstrates watched
+extraction feeding an external frontend, with browser checks for both authored
+and package documentation edits.
 
 `build.rs` generates `docs/guide/cli.md` with clapdown whenever `src/cli.rs` or
 `docs/cli-intro.md` changes. Edit the command definitions or introductory prose,
