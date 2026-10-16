@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.4.0](https://github.com/jolars/diplodocus/compare/v0.3.0...v0.4.0) (2026-10-16)
+
+### Features
+
+- add watched extraction and VitePress example ([`ca4d8cf`](https://github.com/jolars/diplodocus/commit/ca4d8cf0c53ca86edb59cf9a96c1c147712aaa0e))
+- support Markdown content negotiation ([`20ca2b0`](https://github.com/jolars/diplodocus/commit/20ca2b06340ec87f722fb5e7159a889b85d47dea))
+- support Open Graph preview images ([`5b58724`](https://github.com/jolars/diplodocus/commit/5b58724d0ff8e133a3d8c33bdbe5f018bb5b08b1))
+- host installers on diplodocus.cc ([`5a5b1cb`](https://github.com/jolars/diplodocus/commit/5a5b1cbf633b79de8d413dd7b0a5d46212f3a96a))
+- switch to definition lists ([`2bd6311`](https://github.com/jolars/diplodocus/commit/2bd6311a18ae7e46a1bb6f86da8a396197f894ab))
+
+### Bug Fixes
+
+- align integration tests with current output ([`7b3fad7`](https://github.com/jolars/diplodocus/commit/7b3fad7f0a4c5c41df26edae3c5417ce90cac1ce))
+- combine Julia function and method documentation ([`919f785`](https://github.com/jolars/diplodocus/commit/919f7853596fcb23ebd65429d508ba32d9a8355b))
+- increase monospace font size ([`eb31b63`](https://github.com/jolars/diplodocus/commit/eb31b63fb4c6df9fcf2235906a128125e532da1e))
+- **ui:** reduce margin in code snippets ([`8132d1e`](https://github.com/jolars/diplodocus/commit/8132d1e993c5a9c49b5622ff7bf1130b7e77b588))
+- share description lists across API extractors ([`f2fcd58`](https://github.com/jolars/diplodocus/commit/f2fcd58a21c82a379a4381dae23890eb1d746849))
+
+### Performance Improvements
+
+- reduce test execution overhead ([`0a838f4`](https://github.com/jolars/diplodocus/commit/0a838f49a66dcb7161d3f2962aeeb56d1a227e83))
+
 ## [0.3.0](https://github.com/jolars/diplodocus/compare/v0.2.0...v0.3.0) (2026-10-15)
 
 ### Features
