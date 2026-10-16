@@ -159,9 +159,12 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
             )
             .unwrap();
             html.push_str("</head><body><a class=\"skip-link\" href=\"#main\">Skip to content</a>");
+            html.push_str("<header>");
+            super::navigation::sections(&mut html, site, route, "desktop-sections");
+            html.push_str("<form class=\"site-search\" role=\"search\"><label class=\"visually-hidden\" for=\"search\">Search documentation</label><div class=\"search-control\"><svg class=\"search-icon\" aria-hidden=\"true\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><circle cx=\"10.5\" cy=\"10.5\" r=\"6.5\"></circle><path d=\"m16 16 4 4\"></path></svg><input id=\"search\" type=\"search\" placeholder=\"Search\" autocomplete=\"off\" aria-controls=\"search-results\"></div><ul id=\"search-results\" aria-live=\"polite\"></ul></form></header><div class=\"layout\"><nav aria-label=\"Documentation\">");
             write!(
                 html,
-                "<header><a class=\"brand\" href=\"{}\">",
+                "<a class=\"brand\" href=\"{}\">",
                 escape(&site.url(route, "index.html")),
             )
             .unwrap();
@@ -174,8 +177,9 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                 .unwrap();
             }
             write!(html, "<span>{}</span></a>", escape(site.title())).unwrap();
-            super::navigation::sections(&mut html, site, route, "desktop-sections");
-            html.push_str("<form role=\"search\"><label for=\"search\">Search documentation</label><input id=\"search\" type=\"search\" autocomplete=\"off\"><ul id=\"search-results\" aria-live=\"polite\"></ul></form></header><div class=\"layout\"><nav aria-label=\"Documentation\"><details class=\"nav-disclosure\" open><summary>Browse documentation</summary>");
+            html.push_str(
+                "<details class=\"nav-disclosure\" open><summary>Browse documentation</summary>",
+            );
             super::navigation::sections(&mut html, site, route, "mobile-sections");
             super::navigation::contextual(&mut html, site, route);
             html.push_str("</details></nav><div class=\"page-content\">");

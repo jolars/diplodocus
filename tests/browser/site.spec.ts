@@ -24,7 +24,7 @@ const test = base.extend<{ browserErrors: string[] }>({
   }, { auto: true }],
 });
 
-async function capture(page: Page, info: TestInfo, name: string, waitForFrame = true) {
+async function capture(page: Page, info: TestInfo, name: string, waitForFrame = true, fullPage = true) {
   if (!process.env.DIPLODOCUS_BROWSER_CAPTURE) return;
   const directory = join(process.env.DIPLODOCUS_BROWSER_ARTIFACTS!, "screenshots", info.project.name);
   await mkdir(directory, { recursive: true });
@@ -35,7 +35,7 @@ async function capture(page: Page, info: TestInfo, name: string, waitForFrame = 
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
     }));
   }
-  await page.screenshot({ path, fullPage: true, animations: "disabled" });
+  await page.screenshot({ path, fullPage, animations: "disabled" });
   await info.attach(name, { path, contentType: "image/png" });
 }
 
@@ -114,7 +114,7 @@ test("navbar and sidebars share outer margins", async ({ page }, info) => {
   await page.goto("/guides/comparing-predictions.html");
   for (const width of [1024, 1280, 1920]) {
     await page.setViewportSize({ width, height: 900 });
-    const brand = (await page.locator("header .brand").boundingBox())!;
+    const brand = (await page.locator(".layout > nav > .brand").boundingBox())!;
     const search = (await page.locator("header form").boundingBox())!;
     const sidebar = (await page.locator(".layout > nav .nav-group h2").first().boundingBox())!;
     expect(brand.x).toBeCloseTo(width - search.x - search.width, 0);
@@ -130,10 +130,47 @@ test("navbar and sidebars share outer margins", async ({ page }, info) => {
   }
 });
 
+test("desktop sidebar stays pinned at the page bottom and scrolls independently", async ({ page }, info) => {
+  test.skip(info.project.name !== "desktop", "Mobile navigation stays in the page flow.");
+  await page.setViewportSize({ width: 1280, height: 400 });
+  await page.goto("/guides/comparing-predictions.html");
+  const sidebar = page.getByRole("navigation", { name: "Documentation", exact: true });
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  await expect(page.locator(".site-footer")).toBeInViewport();
+  const box = (await sidebar.boundingBox())!;
+  expect(box.y).toBeCloseTo(0, 0);
+  expect(box.height).toBeCloseTo(400, 0);
+  const pageScroll = await page.evaluate(() => window.scrollY);
+  await sidebar.hover();
+  await page.mouse.wheel(0, 300);
+  await expect.poll(() => sidebar.locator(".nav-disclosure").evaluate(element => element.scrollTop)).toBeGreaterThan(0);
+  expect(await page.evaluate(() => window.scrollY)).toBe(pageScroll);
+  await capture(page, info, "sidebar-at-page-bottom", true, false);
+});
+
+test("sidebar branding stays visible while reaching lower navigation links", async ({ page }, info) => {
+  test.skip(info.project.name !== "desktop", "Mobile navigation stays in the page flow.");
+  await page.setViewportSize({ width: 1280, height: 400 });
+  await page.goto("/");
+  const sidebar = page.getByRole("navigation", { name: "Documentation", exact: true });
+  const brand = sidebar.locator(":scope > .brand");
+  const before = (await brand.boundingBox())!;
+  const link = sidebar.getByRole("link", { name: "Inspecting residuals", exact: true });
+  await link.scrollIntoViewIfNeeded();
+  expect(await sidebar.locator(".nav-disclosure").evaluate(element => element.scrollTop)).toBeGreaterThan(0);
+  const after = (await brand.boundingBox())!;
+  expect(after.y).toBeCloseTo(before.y, 0);
+  await expect(brand).toBeInViewport({ ratio: 1 });
+  await link.click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Inspecting residuals");
+  await expect(brand).toBeInViewport({ ratio: 1 });
+  await capture(page, info, "sidebar-branding", true, false);
+});
+
 test("navbar logo loads on nested pages and links home", async ({ page }, info) => {
   for (const path of ["/", "/guides/comparing-predictions.html", "/packages/python/"]) {
     await page.goto(path);
-    const brand = page.locator("header .brand");
+    const brand = page.locator(".layout > nav > .brand");
     const logo = brand.locator(".brand-logo");
     await expect(brand).toHaveAccessibleName("Tiny Stats");
     await expect(logo).toBeVisible();
@@ -142,7 +179,7 @@ test("navbar logo loads on nested pages and links home", async ({ page }, info) 
     const image = await logo.boundingBox();
     const title = await brand.locator("span").boundingBox();
     expect(image!.x + image!.width).toBeLessThanOrEqual(title!.x);
-    expect(image!.height).toBeLessThanOrEqual(40);
+    expect(image!.height).toBeLessThanOrEqual(28);
     await fitsViewport(page);
     await brand.click();
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Tiny Stats");
@@ -197,8 +234,13 @@ test("footer identifies the docs and exposes project, license, and generator lin
     const layout = await page.locator(".layout").boundingBox();
     const box = await footer.boundingBox();
     expect(box!.y).toBeGreaterThanOrEqual(layout!.y + layout!.height - 1);
-    expect(box!.x).toBe(0);
-    expect(box!.width).toBe(page.viewportSize()!.width);
+    if (info.project.name === "desktop") {
+      const sidebar = (await page.locator(".layout > nav").boundingBox())!;
+      expect(box!.x).toBeCloseTo(sidebar.x + sidebar.width, 0);
+    } else {
+      expect(box!.x).toBe(0);
+    }
+    expect(box!.x + box!.width).toBe(page.viewportSize()!.width);
     expect(Math.abs(box!.y + box!.height - page.viewportSize()!.height)).toBeLessThan(1);
     await fitsViewport(page);
   }
