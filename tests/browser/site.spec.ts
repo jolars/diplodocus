@@ -109,6 +109,25 @@ for (const [path, title, name] of [
   });
 }
 
+test("navbar and sidebars share outer margins", async ({ page }, info) => {
+  test.skip(info.project.name !== "desktop", "The sidebars stack on mobile.");
+  await page.goto("/guides/comparing-predictions.html");
+  for (const width of [1024, 1280, 1920]) {
+    await page.setViewportSize({ width, height: 900 });
+    const brand = (await page.locator("header .brand").boundingBox())!;
+    const search = (await page.locator("header form").boundingBox())!;
+    const sidebar = (await page.locator(".layout > nav .nav-group h2").first().boundingBox())!;
+    expect(brand.x).toBeCloseTo(width - search.x - search.width, 0);
+    expect(sidebar.x).toBeCloseTo(brand.x, 0);
+    if (width >= 1100) {
+      const toc = (await page.locator(".page-toc").boundingBox())!;
+      expect(toc.x + toc.width).toBeCloseTo(search.x + search.width, 0);
+    }
+    await fitsViewport(page);
+    await capture(page, info, `navbar-alignment-${width}`);
+  }
+});
+
 test("navbar logo loads on nested pages and links home", async ({ page }, info) => {
   for (const path of ["/", "/guides/comparing-predictions.html", "/packages/python/"]) {
     await page.goto(path);
