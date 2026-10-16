@@ -12,7 +12,7 @@ const repository = resolve(example, "../..");
 const vitepress = fileURLToPath(new URL("bin/vitepress.js", import.meta.resolve("vitepress/package.json")));
 const marker = ".diplodocus-owned";
 const owner = "Diplodocus VitePress example\n";
-const packageMounts = { pystats: "python", rstats: "r", juliastats: "julia" };
+const packageMounts = { pystats: "python", rstats: "r", juliastats: "julia", ruststats: "rust" };
 const children = new Set();
 const completions = new WeakMap();
 const intentionalStops = new WeakSet();
@@ -80,7 +80,7 @@ async function files(root) {
 function pagePath(document) {
   const name = document.public_name ?? document.qualified_name;
   if (name && document.package) {
-    const component = encodeURIComponent(name);
+    const component = encodeURIComponent(name.replaceAll("::", "."));
     return `${packageMounts[document.package] ?? document.package}/${component}.md`;
   }
   return document.path.replace(/\.html$/, ".md");

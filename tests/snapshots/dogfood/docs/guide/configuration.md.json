@@ -2,7 +2,7 @@
   "document": {
     "span": {
       "start": 0,
-      "end": 9947
+      "end": 10002
     },
     "frontmatter": null,
     "blocks": [
@@ -3715,107 +3715,107 @@
           },
           {
             "type": "text",
-            "value": "routing. This setting changes sitemap URLs, canonical links, and Open Graph",
+            "value": "routing. This setting changes page links, search results, sitemap URLs,",
             "span": {
               "start": 9085,
-              "end": 9160
+              "end": 9156
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 9160,
-              "end": 9161
+              "start": 9156,
+              "end": 9157
             }
           },
           {
             "type": "text",
-            "value": "page URLs; output",
+            "value": "canonical links, and Open Graph page URLs. Output filenames retain their file",
             "span": {
-              "start": 9161,
-              "end": 9178
+              "start": 9157,
+              "end": 9234
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 9178,
-              "end": 9179
+              "start": 9234,
+              "end": 9235
             }
           },
           {
             "type": "text",
-            "value": "filenames, navigation links, and local preview routes retain their file paths.",
+            "value": "paths, and the local preview serves both clean URLs and generated file paths.",
             "span": {
-              "start": 9179,
-              "end": 9257
+              "start": 9235,
+              "end": 9312
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 9257,
-              "end": 9258
+              "start": 9312,
+              "end": 9313
             }
           },
           {
             "type": "text",
             "value": "Clean URLs require matching support from your host. Ambiguous routes, such as",
             "span": {
-              "start": 9258,
-              "end": 9335
+              "start": 9313,
+              "end": 9390
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 9335,
-              "end": 9336
+              "start": 9390,
+              "end": 9391
             }
           },
           {
             "type": "code",
             "value": "foo.html",
             "span": {
-              "start": 9336,
-              "end": 9346
+              "start": 9391,
+              "end": 9401
             }
           },
           {
             "type": "text",
             "value": " alongside ",
             "span": {
-              "start": 9346,
-              "end": 9357
+              "start": 9401,
+              "end": 9412
             }
           },
           {
             "type": "code",
             "value": "foo/index.html",
             "span": {
-              "start": 9357,
-              "end": 9373
+              "start": 9412,
+              "end": 9428
             }
           },
           {
             "type": "text",
             "value": ", fail generation before site publication.",
             "span": {
-              "start": 9373,
-              "end": 9415
+              "start": 9428,
+              "end": 9470
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 9415,
-              "end": 9416
+              "start": 9470,
+              "end": 9471
             }
           }
         ],
         "span": {
           "start": 8690,
-          "end": 9416
+          "end": 9471
         }
       },
       {
@@ -3825,176 +3825,176 @@
             "type": "text",
             "value": "The generated ",
             "span": {
-              "start": 9417,
-              "end": 9431
+              "start": 9472,
+              "end": 9486
             }
           },
           {
             "type": "code",
             "value": "robots.txt",
             "span": {
-              "start": 9431,
-              "end": 9443
+              "start": 9486,
+              "end": 9498
             }
           },
           {
             "type": "text",
             "value": " allows crawling and advertises the sitemap's full",
             "span": {
-              "start": 9443,
-              "end": 9493
+              "start": 9498,
+              "end": 9548
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 9493,
-              "end": 9494
+              "start": 9548,
+              "end": 9549
             }
           },
           {
             "type": "text",
             "value": "URL. Crawlers read this file from the host's root ",
             "span": {
-              "start": 9494,
-              "end": 9544
+              "start": 9549,
+              "end": 9599
             }
           },
           {
             "type": "code",
             "value": "/robots.txt",
             "span": {
-              "start": 9544,
-              "end": 9557
+              "start": 9599,
+              "end": 9612
             }
           },
           {
             "type": "text",
             "value": ". For a site",
             "span": {
-              "start": 9557,
-              "end": 9569
+              "start": 9612,
+              "end": 9624
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 9569,
-              "end": 9570
+              "start": 9624,
+              "end": 9625
             }
           },
           {
             "type": "text",
             "value": "deployed under ",
             "span": {
-              "start": 9570,
-              "end": 9585
+              "start": 9625,
+              "end": 9640
             }
           },
           {
             "type": "code",
             "value": "/docs/",
             "span": {
-              "start": 9585,
-              "end": 9593
+              "start": 9640,
+              "end": 9648
             }
           },
           {
             "type": "text",
             "value": ", add the generated ",
             "span": {
-              "start": 9593,
-              "end": 9613
+              "start": 9648,
+              "end": 9668
             }
           },
           {
             "type": "code",
             "value": "Sitemap",
             "span": {
-              "start": 9613,
-              "end": 9622
+              "start": 9668,
+              "end": 9677
             }
           },
           {
             "type": "text",
             "value": " directive to the host's",
             "span": {
-              "start": 9622,
-              "end": 9646
+              "start": 9677,
+              "end": 9701
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 9646,
-              "end": 9647
+              "start": 9701,
+              "end": 9702
             }
           },
           {
             "type": "text",
             "value": "root robots file. A file at ",
             "span": {
-              "start": 9647,
-              "end": 9675
+              "start": 9702,
+              "end": 9730
             }
           },
           {
             "type": "code",
             "value": "/docs/robots.txt",
             "span": {
-              "start": 9675,
-              "end": 9693
+              "start": 9730,
+              "end": 9748
             }
           },
           {
             "type": "text",
             "value": " does not provide crawler",
             "span": {
-              "start": 9693,
-              "end": 9718
+              "start": 9748,
+              "end": 9773
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 9718,
-              "end": 9719
+              "start": 9773,
+              "end": 9774
             }
           },
           {
             "type": "text",
             "value": "discovery. The first implementation writes one sitemap and rejects sites that",
             "span": {
-              "start": 9719,
-              "end": 9796
+              "start": 9774,
+              "end": 9851
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 9796,
-              "end": 9797
+              "start": 9851,
+              "end": 9852
             }
           },
           {
             "type": "text",
             "value": "exceed the sitemap protocol's URL count, file size, or URL length limits.",
             "span": {
-              "start": 9797,
-              "end": 9870
+              "start": 9852,
+              "end": 9925
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 9870,
-              "end": 9871
+              "start": 9925,
+              "end": 9926
             }
           }
         ],
         "span": {
-          "start": 9417,
-          "end": 9871
+          "start": 9472,
+          "end": 9926
         }
       },
       {
@@ -4004,8 +4004,8 @@
             "type": "text",
             "value": "Return to the ",
             "span": {
-              "start": 9872,
-              "end": 9886
+              "start": 9927,
+              "end": 9941
             }
           },
           {
@@ -4015,8 +4015,8 @@
                 "type": "text",
                 "value": "quick start",
                 "span": {
-                  "start": 9887,
-                  "end": 9898
+                  "start": 9942,
+                  "end": 9953
                 }
               }
             ],
@@ -4028,16 +4028,16 @@
               "key_values": []
             },
             "span": {
-              "start": 9886,
-              "end": 9915
+              "start": 9941,
+              "end": 9970
             }
           },
           {
             "type": "text",
             "value": " or see the ",
             "span": {
-              "start": 9915,
-              "end": 9927
+              "start": 9970,
+              "end": 9982
             }
           },
           {
@@ -4047,8 +4047,8 @@
                 "type": "text",
                 "value": "commands",
                 "span": {
-                  "start": 9928,
-                  "end": 9936
+                  "start": 9983,
+                  "end": 9991
                 }
               }
             ],
@@ -4060,29 +4060,29 @@
               "key_values": []
             },
             "span": {
-              "start": 9927,
-              "end": 9945
+              "start": 9982,
+              "end": 10000
             }
           },
           {
             "type": "text",
             "value": ".",
             "span": {
-              "start": 9945,
-              "end": 9946
+              "start": 10000,
+              "end": 10001
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 9946,
-              "end": 9947
+              "start": 10001,
+              "end": 10002
             }
           }
         ],
         "span": {
-          "start": 9872,
-          "end": 9947
+          "start": 9927,
+          "end": 10002
         }
       }
     ]

@@ -100,6 +100,10 @@ try {
   await expect(page).toHaveURL(/\/reference\/r\/mean_squared_error\.html$/);
   await expect(page.locator(".vp-doc")).toContainText("mean_squared_error");
   await page.goto(apiUrl);
+  await page.locator('.vp-doc a[href="/reference/rust/tinystats.mean_squared_error.html"]').click();
+  await expect(page).toHaveURL(/\/reference\/rust\/tinystats\.mean_squared_error\.html$/);
+  await expect(page.locator(".vp-doc")).toContainText("mean_squared_error");
+  await page.goto(apiUrl);
 
   const python = join(temporary, "examples/monorepo/python/src/tinystats/__init__.py");
   const original = await readFile(python, "utf8");

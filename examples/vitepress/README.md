@@ -1,7 +1,7 @@
 # Watched package documentation in VitePress
 
 This example uses the existing [Tiny Stats workspace](../monorepo/) to publish
-Python, R, and Julia documentation alongside guides written for VitePress.
+Python, R, Julia, and Rust documentation alongside guides written for VitePress.
 Diplodocus watches the package documentation and publishes portable SQLite
 snapshots. A small host adapter exports Markdown fragments and retained assets
 into VitePress's source tree. VitePress supplies the layout, navigation, outline,
@@ -25,9 +25,9 @@ built executable instead of running Cargo.
 
 Edit `examples/vitepress/docs/guide.md` to see VitePress update the guide. Edit
 `examples/monorepo/python/src/tinystats/__init__.py`, the R package's Rd files,
-or the Julia source to see extraction and the API reference update. Adding or
-removing a public API also updates its page and the reference navigation. Ctrl-C
-stops both processes and waits for execution cleanup.
+the Julia source, or the Rust source to see extraction and the API reference
+update. Adding or removing a public API also updates its page and the reference
+navigation. Ctrl-C stops both processes and waits for execution cleanup.
 
 Guide edits do not run package extraction. Package rebuilds prepare a complete
 generation before publication, then briefly restart VitePress so its routes,
@@ -65,7 +65,7 @@ The adapter turns retained heading anchors into VitePress custom heading IDs.
 Generated Markdown participates in native routing, search, and outlines. All
 snapshot documents remain available as link targets; visibility controls API
 navigation and search. The example uses package IDs from Tiny Stats to choose
-its Python, R, and Julia mounts. This is example host policy, not a framework
+its Python, R, Julia, and Rust mounts. This is example host policy, not a framework
 plugin API.
 
 Snapshots and staging directories live in `.diplodocus/`. The generated
