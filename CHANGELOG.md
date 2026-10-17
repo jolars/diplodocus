@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.0](https://github.com/jolars/diplodocus/compare/v0.4.0...v0.5.0) (2026-10-17)
+
+### Features
+
+- add Rust documentation extraction ([`38ebc2a`](https://github.com/jolars/diplodocus/commit/38ebc2a1dc4b39944f21d228c517f08de9e1b19e))
+
+### Bug Fixes
+
+- restore documentation and VitePress CI checks ([`78bb2cb`](https://github.com/jolars/diplodocus/commit/78bb2cbffaffbaec5748d0ae6a9b0e70e9c1e5a6))
+- improve site accessibility and preview reloads ([`7c4bca9`](https://github.com/jolars/diplodocus/commit/7c4bca9c8cec96de9c10e0833f9cc8e26e678476))
+- **ui:** fix sidebar spacing ([`cf41c05`](https://github.com/jolars/diplodocus/commit/cf41c05d423d704daf126d2c84e4fda146163785))
+
 ## [0.4.0](https://github.com/jolars/diplodocus/compare/v0.3.0...v0.4.0) (2026-10-16)
 
 ### Features
