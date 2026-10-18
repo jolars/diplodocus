@@ -28,8 +28,8 @@ base64 = "=0.23.1"
 clap = { version = "4.5", features = ["derive"] }
 fatou-parser = "=0.8.1"
 getrandom = "0.4"
-# Keep this on the same release line as markup5ever_rcdom.
-html5ever = "=0.40.1"
+# RcDom implements TreeSink only for this html5ever release line.
+html5ever = "=0.39.0"
 hayagriva = "=0.10.1"
 image = { version = "=0.25.10", default-features = false, features = ["jpeg", "png"] }
 jupyter-protocol = "=2.0.2"
