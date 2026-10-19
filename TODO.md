@@ -128,6 +128,14 @@ still needs the tasks below. Keep package loading and example execution out of
   provenance, closing the old Milestone 3 subtask. Run source and command
   tests with network access denied where the declared environment permits
   it.
+- [ ] Adopt VitePress's client-side navigation model for internal page links.
+  Keep the shared navbar, branding, and logo mounted while replacing page
+  content and updating navigation state, so links do not trigger full page
+  reloads or logo flicker. Preserve directly accessible static HTML and
+  navigation without JavaScript. Handle browser history, back and forward
+  navigation, page titles, anchors, scroll restoration, focus, and page
+  script initialization. Add browser tests for these behaviors and verify
+  that the logo and navigation remain visually stable between pages.
 - [ ] Complete browser review at desktop and mobile sizes, including keyboard
   navigation, focus, headings, labels, contrast, links, and search. Use
   `site-capture` and inspect its screenshots and failure traces.
