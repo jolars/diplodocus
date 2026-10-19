@@ -1,0 +1,29 @@
+# Python console output
+
+Code keeps its shaded background and syntax colors. Results appear separately.
+
+```{python}
+print('  <result>& "quoted"\n    second line')
+```
+
+```{python}
+print('-' * 160)
+```
+
+```{python}
+from IPython.display import display
+display({'answer': 42})
+```
+
+```{python}
+import sys
+print('Diagnostic message', file=sys.stderr)
+```
+
+```{python, error=true}
+raise ValueError('Example error')
+```
+
+```{python, echo=false}
+print('Output from hidden source')
+```

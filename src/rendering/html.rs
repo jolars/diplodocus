@@ -1374,6 +1374,7 @@ impl Renderer<'_, '_> {
                         DocumentContainerKind::Footnote => ("div", "footnote"),
                         DocumentContainerKind::BibliographyEntry => ("div", "bibliography-entry"),
                         DocumentContainerKind::GeneratedChunk => ("div", "code-cell"),
+                        DocumentContainerKind::GeneratedOutput => ("div", "code-output"),
                     };
                     write!(
                         html,
@@ -1399,10 +1400,22 @@ impl Renderer<'_, '_> {
                         .unwrap();
                     }
                     let navigation = self.document_navigation;
-                    if *kind == DocumentContainerKind::GeneratedChunk {
+                    if matches!(
+                        kind,
+                        DocumentContainerKind::GeneratedChunk
+                            | DocumentContainerKind::GeneratedOutput
+                    ) {
                         self.document_navigation = false;
                     }
-                    if *kind == DocumentContainerKind::Figure {
+                    if *kind == DocumentContainerKind::GeneratedOutput {
+                        for block in blocks {
+                            if let Block::CodeBlock { source, .. } = block {
+                                html.push_str(&render_preformatted_text(source));
+                            } else {
+                                html.push_str(&self.blocks(std::slice::from_ref(block))?);
+                            }
+                        }
+                    } else if *kind == DocumentContainerKind::Figure {
                         if let Some(first) = blocks.first() {
                             html.push_str(&self.blocks(std::slice::from_ref(first))?);
                         }
@@ -1632,7 +1645,7 @@ impl Renderer<'_, '_> {
             if let Some(representation) = page.representation(ordinal, output.slot, 0) {
                 match representation {
                     ValidatedRepresentationRef::Text(text) => {
-                        html.push_str(&render_preformatted_text(text))
+                        html.push_str(&render_console_output(text))
                     }
                     ValidatedRepresentationRef::Markdown(value) => {
                         // Executed output must not become part of the document's navigation.
@@ -1669,7 +1682,7 @@ impl Renderer<'_, '_> {
                 traceback,
             } = &output.output.kind
             {
-                html.push_str(&render_preformatted_text(&format!(
+                html.push_str(&render_console_output(&format!(
                     "{name}: {message}\n{}",
                     traceback.join("\n")
                 )));
@@ -1717,6 +1730,13 @@ impl Renderer<'_, '_> {
         Ok(html)
     }
 }
+fn render_console_output(text: &str) -> String {
+    format!(
+        "<div class=\"code-output\">{}</div>",
+        render_preformatted_text(text)
+    )
+}
+
 fn unsupported_rd_label(source_kind: &str) -> Option<String> {
     // Older snapshots may store the entire Rd file in each unsupported node.
     source_kind

@@ -239,6 +239,30 @@ stop('expected example error')
 }
 
 #[test]
+fn console_output_stays_separate_when_knitr_collapses_chunks() {
+    let root = workspace(&support::load_fixture("code-output.Rmd"));
+    success(run(&root, "build"));
+    let html = fs::read_to_string(
+        root.path()
+            .join("site/packages/demo/vignettes/article.html"),
+    )
+    .unwrap();
+    let outputs: Vec<_> = html.split("<div class=\"code-output\">").skip(1).collect();
+    assert!(outputs.len() > 3);
+    for output in &outputs {
+        let output = output.split_once("</div>").unwrap().0;
+        assert!(output.contains("<pre tabindex=\"0\"><code>"));
+        assert!(!output.contains("syntax-"));
+    }
+    assert!(html.contains("  &lt;result&gt;&amp; &quot;quoted&quot;\n    second line"));
+    assert!(html.contains("<pre class=\"syntax-code\""));
+    assert!(html.contains("Output from hidden source"));
+    let markdown =
+        fs::read_to_string(root.path().join("site/packages/demo/vignettes/article.md")).unwrap();
+    assert!(markdown.contains("```text\n  <result>& \"quoted\"\n    second line\n```"));
+}
+
+#[test]
 fn check_is_static_and_explicit_collections_override_discovery() {
     let root =
         workspace("---\ntitle: Custom\n---\n```{r}\nwriteLines('bad','execution-marker')\n```\n");

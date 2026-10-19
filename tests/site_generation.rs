@@ -424,6 +424,7 @@ async fn executed_source_is_highlighted_while_hidden_source_and_literal_outputs_
     assert!(!html.contains("hidden-echo-source"));
     assert!(!html.contains("hidden-include-source"));
     assert!(!html.contains("<script>& output</script>"));
+    assert_eq!(html.matches("<div class=\"code-output\">").count(), 3);
 }
 
 #[test]

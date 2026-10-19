@@ -307,10 +307,15 @@ fn decode(
             .collect::<Result<Vec<_>, _>>()?;
         let value = String::from_utf8(bytes).map_err(|_| invalid())?;
         match key {
-            "text" => blocks.push(Block::CodeBlock {
-                language: None,
-                source: value,
-                source_segments: vec![],
+            "text" => blocks.push(Block::Container {
+                kind: DocumentContainerKind::GeneratedOutput,
+                identifier: None,
+                blocks: vec![Block::CodeBlock {
+                    language: None,
+                    source: value,
+                    source_segments: vec![],
+                    span,
+                }],
                 span,
             }),
             "executed" => executed.push(value),

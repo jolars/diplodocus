@@ -1,0 +1,27 @@
+---
+title: R console output
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = NA, class.output = 'r')
+```
+
+Code keeps its shaded background and syntax colors. Results appear separately.
+
+```{r}
+cat('  <result>& "quoted"\n    second line\n')
+cat(strrep('-', 160), '\n', sep = '')
+```
+
+```{r}
+message('Diagnostic message')
+warning('Example warning')
+```
+
+```{r, error=TRUE}
+stop('Example error')
+```
+
+```{r, echo=FALSE}
+cat('Output from hidden source\n')
+```

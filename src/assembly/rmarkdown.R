@@ -13,6 +13,14 @@ local({
   knitr::opts_knit$set(root.dir = dirname(normalizePath(args[[2L]])), rmarkdown.pandoc.to = "markdown")
   knitr::opts_chunk$set(error = FALSE, cache = FALSE, dev = "png", fig.path = paste0(staging, "/knitr-figure-"))
   hooks <- knitr::knit_hooks$get()
+  console_output <- function(name) {
+    function(x, options) {
+      result <- hooks[[name]](x, options)
+      if (!nzchar(result) || (name == "output" && identical(options$results, "asis"))) return(result)
+      # Keep console output separate even when the article requests collapsed chunks.
+      paste0("\n\n::: {.diplodocus-rmd-output}\n", result, "\n:::\n\n")
+    }
+  }
   chunk <- 0L
   figure <- 0L
   knitr::opts_hooks$set(cache = function(options) {
@@ -30,6 +38,10 @@ local({
     options
   })
   knitr::knit_hooks$set(
+    output = console_output("output"),
+    warning = console_output("warning"),
+    message = console_output("message"),
+    error = console_output("error"),
     evaluate = function(...) {
       result <- evaluate::evaluate(...)
       if (any(vapply(result, inherits, logical(1L), "error"))) emit("outcome", "allowed-error")
@@ -49,7 +61,7 @@ local({
     chunk = function(x, options) {
       result <- hooks$chunk(x, options)
       if (!nzchar(result)) return("")
-      paste0("\n\n::: {.diplodocus-rmd-chunk}\n", result, "\n:::\n\n")
+      paste0("\n\n:::: {.diplodocus-rmd-chunk}\n", result, "\n::::\n\n")
     },
     plot = function(x, options) {
       result <- character()

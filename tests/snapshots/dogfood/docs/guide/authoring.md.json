@@ -2,7 +2,7 @@
   "document": {
     "span": {
       "start": 0,
-      "end": 6837
+      "end": 7165
     },
     "frontmatter": null,
     "blocks": [
@@ -2430,93 +2430,209 @@
         "inlines": [
           {
             "type": "text",
-            "value": "Title, author, and evaluated date metadata appear in the article header.",
+            "value": "Console output appears separately from source code, without a shaded background,",
             "span": {
               "start": 5809,
-              "end": 5881
+              "end": 5889
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 5881,
-              "end": 5882
+              "start": 5889,
+              "end": 5890
+            }
+          },
+          {
+            "type": "text",
+            "value": "syntax highlighting, or a copy button. This also applies to warnings, messages,",
+            "span": {
+              "start": 5890,
+              "end": 5969
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 5969,
+              "end": 5970
+            }
+          },
+          {
+            "type": "text",
+            "value": "and permitted errors, including when ",
+            "span": {
+              "start": 5970,
+              "end": 6007
+            }
+          },
+          {
+            "type": "code",
+            "value": "collapse = TRUE",
+            "span": {
+              "start": 6007,
+              "end": 6024
+            }
+          },
+          {
+            "type": "text",
+            "value": ". Source code keeps its",
+            "span": {
+              "start": 6024,
+              "end": 6047
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 6047,
+              "end": 6048
+            }
+          },
+          {
+            "type": "text",
+            "value": "usual highlighting and copy button. ",
+            "span": {
+              "start": 6048,
+              "end": 6084
+            }
+          },
+          {
+            "type": "code",
+            "value": "results = \"asis\"",
+            "span": {
+              "start": 6084,
+              "end": 6102
+            }
+          },
+          {
+            "type": "text",
+            "value": " retains its Markdown",
+            "span": {
+              "start": 6102,
+              "end": 6123
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 6123,
+              "end": 6124
+            }
+          },
+          {
+            "type": "text",
+            "value": "formatting.",
+            "span": {
+              "start": 6124,
+              "end": 6135
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 6135,
+              "end": 6136
+            }
+          }
+        ],
+        "span": {
+          "start": 5809,
+          "end": 6136
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Title, author, and evaluated date metadata appear in the article header.",
+            "span": {
+              "start": 6137,
+              "end": 6209
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 6209,
+              "end": 6210
             }
           },
           {
             "type": "code",
             "value": "bibliography",
             "span": {
-              "start": 5882,
-              "end": 5896
+              "start": 6210,
+              "end": 6224
             }
           },
           {
             "type": "text",
             "value": " names one local BibTeX file or a list of files; optional ",
             "span": {
-              "start": 5896,
-              "end": 5954
+              "start": 6224,
+              "end": 6282
             }
           },
           {
             "type": "code",
             "value": "csl",
             "span": {
-              "start": 5954,
-              "end": 5959
+              "start": 6282,
+              "end": 6287
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 5959,
-              "end": 5960
+              "start": 6287,
+              "end": 6288
             }
           },
           {
             "type": "text",
             "value": "names a local independent CSL style. Without a style, citations use Chicago",
             "span": {
-              "start": 5960,
-              "end": 6035
+              "start": 6288,
+              "end": 6363
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 6035,
-              "end": 6036
+              "start": 6363,
+              "end": 6364
             }
           },
           {
             "type": "text",
             "value": "author-date. Citations link to a formatted reference list beneath References.",
             "span": {
-              "start": 6036,
-              "end": 6113
+              "start": 6364,
+              "end": 6441
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 6113,
-              "end": 6114
+              "start": 6441,
+              "end": 6442
             }
           },
           {
             "type": "text",
             "value": "The CSL style and locale archive comes from Hayagriva and the upstream",
             "span": {
-              "start": 6114,
-              "end": 6184
+              "start": 6442,
+              "end": 6512
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 6184,
-              "end": 6185
+              "start": 6512,
+              "end": 6513
             }
           },
           {
@@ -2526,8 +2642,8 @@
                 "type": "text",
                 "value": "Citation Style Language project",
                 "span": {
-                  "start": 6186,
-                  "end": 6217
+                  "start": 6514,
+                  "end": 6545
                 }
               }
             ],
@@ -2539,44 +2655,44 @@
               "key_values": []
             },
             "span": {
-              "start": 6185,
-              "end": 6247
+              "start": 6513,
+              "end": 6575
             }
           },
           {
             "type": "text",
             "value": ", with its",
             "span": {
-              "start": 6247,
-              "end": 6257
+              "start": 6575,
+              "end": 6585
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 6257,
-              "end": 6258
+              "start": 6585,
+              "end": 6586
             }
           },
           {
             "type": "text",
             "value": "CC BY-SA 3.0 attribution retained in the archive.",
             "span": {
-              "start": 6258,
-              "end": 6307
+              "start": 6586,
+              "end": 6635
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 6307,
-              "end": 6308
+              "start": 6635,
+              "end": 6636
             }
           }
         ],
         "span": {
-          "start": 5809,
-          "end": 6308
+          "start": 6137,
+          "end": 6636
         }
       },
       {
@@ -2586,151 +2702,151 @@
             "type": "text",
             "value": "Diplodocus renders the evaluated document itself. The ",
             "span": {
-              "start": 6309,
-              "end": 6363
+              "start": 6637,
+              "end": 6691
             }
           },
           {
             "type": "code",
             "value": "output",
             "span": {
-              "start": 6363,
-              "end": 6371
+              "start": 6691,
+              "end": 6699
             }
           },
           {
             "type": "text",
             "value": " and ",
             "span": {
-              "start": 6371,
-              "end": 6376
+              "start": 6699,
+              "end": 6704
             }
           },
           {
             "type": "code",
             "value": "vignette",
             "span": {
-              "start": 6376,
-              "end": 6386
+              "start": 6704,
+              "end": 6714
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 6386,
-              "end": 6387
+              "start": 6714,
+              "end": 6715
             }
           },
           {
             "type": "text",
             "value": "metadata do not select an rmarkdown HTML template, and neither rmarkdown nor",
             "span": {
-              "start": 6387,
-              "end": 6463
+              "start": 6715,
+              "end": 6791
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 6463,
-              "end": 6464
+              "start": 6791,
+              "end": 6792
             }
           },
           {
             "type": "text",
             "value": "Pandoc is required. This release supports R chunks, PNG figures, and static",
             "span": {
-              "start": 6464,
-              "end": 6539
+              "start": 6792,
+              "end": 6867
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 6539,
-              "end": 6540
+              "start": 6867,
+              "end": 6868
             }
           },
           {
             "type": "text",
             "value": "Markdown content. Other chunk engines, child documents, persistent knitr caches,",
             "span": {
-              "start": 6540,
-              "end": 6620
+              "start": 6868,
+              "end": 6948
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 6620,
-              "end": 6621
+              "start": 6948,
+              "end": 6949
             }
           },
           {
             "type": "text",
             "value": "interactive widgets, and README.Rmd rendering are unsupported. Runtime failures",
             "span": {
-              "start": 6621,
-              "end": 6700
+              "start": 6949,
+              "end": 7028
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 6700,
-              "end": 6701
+              "start": 7028,
+              "end": 7029
             }
           },
           {
             "type": "text",
             "value": "leave the previous snapshot and site available. A completed snapshot can be",
             "span": {
-              "start": 6701,
-              "end": 6776
+              "start": 7029,
+              "end": 7104
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 6776,
-              "end": 6777
+              "start": 7104,
+              "end": 7105
             }
           },
           {
             "type": "text",
             "value": "rendered with ",
             "span": {
-              "start": 6777,
-              "end": 6791
+              "start": 7105,
+              "end": 7119
             }
           },
           {
             "type": "code",
             "value": "generate",
             "span": {
-              "start": 6791,
-              "end": 6801
+              "start": 7119,
+              "end": 7129
             }
           },
           {
             "type": "text",
             "value": " after removing the checkout and R.",
             "span": {
-              "start": 6801,
-              "end": 6836
+              "start": 7129,
+              "end": 7164
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 6836,
-              "end": 6837
+              "start": 7164,
+              "end": 7165
             }
           }
         ],
         "span": {
-          "start": 6309,
-          "end": 6837
+          "start": 6637,
+          "end": 7165
         }
       }
     ]

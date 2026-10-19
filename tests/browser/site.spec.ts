@@ -772,7 +772,51 @@ test("R references show descriptions, summaries, readable URLs, and source links
   await expect(main.locator(".source-links a")).toHaveCount(2);
   await expect(main.locator(".source-links").getByRole("link", { name: "r/man/mean_squared_error.Rd", exact: true })).toHaveAttribute("href", "https://github.com/jolars/diplodocus/blob/main/r/man/mean_squared_error.Rd");
   await expect(main.locator("pre.syntax-code").first().locator('span[class^="syntax-"]').first()).toBeVisible();
+  const output = main.locator(".code-output pre");
+  await expect(output).toHaveCount(1);
+  await expect(output).toContainText("[1] 0.5");
+  await expect(output).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await expect(output.locator("span")).toHaveCount(0);
+  await expect(main.locator(".code-output .code-block, .code-output button")).toHaveCount(0);
   await fitsViewport(page);
+  await capture(page, info, "r-example-output");
+});
+
+test("console output stays separate and plain with and without JavaScript", async ({ browser, baseURL }, info) => {
+  for (const javaScriptEnabled of [true, false]) {
+    const context = await browser.newContext({ javaScriptEnabled, baseURL, viewport: info.project.use.viewport });
+    const page = await context.newPage();
+    try {
+      for (const [path, language] of [
+        ["/console-output/index.html", "python"],
+        ["/packages/r/vignettes/code-output.html", "r"],
+      ]) {
+        await page.goto(path);
+        const output = page.locator("main .code-output");
+        expect(await output.count()).toBeGreaterThan(3);
+        await expect(output.locator("pre").first()).toHaveText('  <result>& "quoted"\n    second line\n', { useInnerText: false });
+        await expect(output.locator("span, .syntax-code, .code-block, button")).toHaveCount(0);
+        await expect(page.locator("main")).toContainText("Output from hidden source");
+        for (const pre of await output.locator("pre").all()) {
+          await expect(pre).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+        }
+        const source = page.locator("main pre.syntax-code").first();
+        await expect(source).toBeVisible();
+        expect(await source.locator("span").count()).toBeGreaterThan(0);
+        const wide = output.locator("pre").filter({ hasText: "-".repeat(160) });
+        expect(await wide.evaluate(element => element.scrollWidth > element.clientWidth)).toBe(true);
+        await expect(wide).toHaveAttribute("tabindex", "0");
+        if (javaScriptEnabled) {
+          await expect(page.locator("main .code-block").first()).toHaveCSS("background-color", "rgb(246, 246, 247)");
+          await expect(page.getByRole("button", { name: "Copy code", exact: true }).first()).toBeVisible();
+        }
+        await fitsViewport(page);
+        await capture(page, info, `code-output-${language}${javaScriptEnabled ? "" : "-no-js"}`, javaScriptEnabled);
+      }
+    } finally {
+      await context.close();
+    }
+  }
 });
 
 test("copy buttons preserve highlighted code and support keyboard and fallback copying", async ({ page, context }) => {

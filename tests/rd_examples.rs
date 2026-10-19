@@ -1,7 +1,7 @@
 mod support;
 
 use diplodocus::assembly::assemble_workspace;
-use diplodocus::ir::{Block, ProvenanceActivity};
+use diplodocus::ir::{Block, DocumentContainerKind, ProvenanceActivity};
 use diplodocus::snapshots::Snapshot;
 use std::fs;
 use std::process::{Command, Output};
@@ -54,6 +54,28 @@ fn success(output: Output) {
     );
 }
 
+fn console_output(block: &Block) -> Option<&str> {
+    let Block::Container {
+        kind: DocumentContainerKind::GeneratedOutput,
+        blocks,
+        ..
+    } = block
+    else {
+        return None;
+    };
+    let [
+        Block::CodeBlock {
+            language: None,
+            source,
+            ..
+        },
+    ] = blocks.as_slice()
+    else {
+        panic!("Console output must contain one literal text block");
+    };
+    Some(source)
+}
+
 #[test]
 fn default_execution_retains_results_figures_illustrative_regions_and_skips() {
     let root = workspace(
@@ -100,14 +122,7 @@ warning("example warning")
         .document
         .blocks
         .iter()
-        .filter_map(|block| match block {
-            Block::CodeBlock {
-                language: None,
-                source,
-                ..
-            } => Some(source.as_str()),
-            _ => None,
-        })
+        .filter_map(console_output)
         .collect::<String>();
     assert!(output.contains("[1] 43"), "{output}");
     assert!(output.contains("example message"));
@@ -249,7 +264,8 @@ fn shared_topics_execute_once_and_custom_example_headings_stay_display_content()
     assert_eq!(first, documents.next().unwrap());
     let index = first.document.blocks.iter().position(|block| matches!(block, Block::Heading { attributes, .. } if attributes.classes.iter().any(|class| class.value == "rd-examples"))).unwrap();
     assert!(
-        matches!(&first.document.blocks[index + 2], Block::CodeBlock { language: None, source, .. } if source.contains("[1] 42"))
+        console_output(&first.document.blocks[index + 2])
+            .is_some_and(|source| source.contains("[1] 42"))
     );
 }
 

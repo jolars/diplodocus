@@ -74,6 +74,22 @@ if (mode === "serve-test") {
     writeFileSync(join(workspace, "python/src/tinystats/_api.py"), overloadSource);
     writeFileSync(pythonEntry, `${pythonSource}\nfrom ._api import Reader, fetch_data\n`);
     cpSync(join(root, "tests/fixtures/r-vignettes"), join(workspace, "r/vignettes"), { recursive: true });
+    cpSync(join(root, "tests/fixtures/code-output.Rmd"), join(workspace, "r/vignettes/code-output.Rmd"));
+    mkdirSync(join(workspace, "console-output"));
+    cpSync(join(root, "tests/fixtures/code-output.qmd"), join(workspace, "console-output/index.qmd"));
+    appendFileSync(configuration, `
+[[content]]
+id = "console-output"
+owner = "project"
+repository = "tinystats"
+path = "console-output"
+mount = "console-output"
+format = "qmd"
+[content.execution]
+mode = "execute"
+engine = "jupyter"
+kernel = "python3"
+`);
     const internalTopics = join(root, "tests/fixtures/r-internal-topics");
     for (const directory of ["R", "man"]) {
       cpSync(join(internalTopics, directory), join(workspace, "r", directory), { recursive: true });

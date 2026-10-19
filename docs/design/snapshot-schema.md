@@ -11,20 +11,24 @@ IR into separate rows.
   | Manifest field     | Current value | Governs                                                                                                                                        |
   | ---                | ---           | ---                                                                                                                                            |
   | `storage_version`  | `2`           | SQLite tables, columns, keys, record kinds, splitting entities into rows, and storage-specific envelopes. Defined by `STORAGE_SCHEMA_VERSION`. |
-  | `ir_version`       | `6`           | Semantic IR field shapes and meaning, including nested documents, signatures, and language extensions. Defined by `WORKSPACE_SCHEMA_VERSION`.  |
+  | `ir_version`       | `7`           | Semantic IR field shapes and meaning, including nested documents, signatures, and language extensions. Defined by `WORKSPACE_SCHEMA_VERSION`.  |
   | `encoding_version` | `1`           | Canonical record encoding, fingerprint inputs, and text export. Defined by `RECORD_ENCODING_VERSION`.                                          |
 
 These versions are independent: a table-layout change requires a storage version
 change; an incompatible signature or language-extension change requires an IR
 version change even if the SQL tables stay the same. Changing canonical hashing
 or export rules requires an encoding version change. A change may affect more
-than one version. The current reader accepts only `(2, 6, 1)` and rejects any
+than one version. The current reader accepts only `(2, 7, 1)` and rejects any
 unsupported component; it does not migrate snapshots automatically.
 
 Storage version 2 adds the required `presentation` record. Version 1 snapshots
 must be extracted again. Presentation defaults are storage metadata outside the IR.
 
-IR version 6 adds compiler-resolved Rust declarations, public reexports, embedded
+IR version 7 adds generated console output containers, keeping R Markdown and
+Rd example results separate from their source code. Version 6 snapshots must be
+extracted again. Storage and canonical encoding versions are unchanged.
+
+IR version 6 added compiler-resolved Rust declarations, public reexports, embedded
 members and implementations, and target-level native doctest outcomes. Rust
 extraction records compiler mode rather than static mode. Version 5 snapshots
 must be extracted again. Storage and canonical encoding versions are unchanged.
@@ -45,7 +49,7 @@ IR version 2 added inline and display equations and installed R help-link
 evidence. Version 1 snapshots must be extracted again. The canonical record
 encoding remains at version 1.
 
-The workspace record also carries `schema_version: 6`, which must agree with
+The workspace record also carries `schema_version: 7`, which must agree with
 `manifest.ir_version`. Nested JSON inherits the containing snapshot's versions;
 there is no additional version wrapper on every syntax node or signature.
 Consumers must read the manifest before interpreting a detached record.
@@ -791,8 +795,9 @@ replace selected inputs or the input snapshot.
 retained in `raw_source`, and `generated_source` retains evaluated Markdown.
 Document spans index the evaluated Markdown; chunk evidence spans index the
 original input. Article containers describe figures, footnotes, bibliography
-entries, definitions, and inert generated chunk content. Citations retain their
-original spelling and keys alongside formatted, linked inline children.
+entries, definitions, inert generated chunk content, and literal console output.
+Citations retain their original spelling and keys alongside formatted, linked
+inline children.
 
 A completed article requires exactly one `r-markdown` provenance activity using
 policy `rmd-knitr-v1`. It identifies the owning package, actual R and knitr

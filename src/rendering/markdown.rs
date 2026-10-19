@@ -547,6 +547,19 @@ impl Markdown<'_, '_> {
                     output.push_str(&self.blocks(blocks)?);
                 }
                 Block::Container {
+                    kind: DocumentContainerKind::GeneratedOutput,
+                    blocks,
+                    ..
+                } => {
+                    for block in blocks {
+                        if let Block::CodeBlock { source, .. } = block {
+                            output.push_str(&fence(source, "text"));
+                        } else {
+                            output.push_str(&self.blocks(std::slice::from_ref(block))?);
+                        }
+                    }
+                }
+                Block::Container {
                     identifier, blocks, ..
                 } => {
                     if let Some(identifier) = identifier {

@@ -114,6 +114,12 @@ chunks still execute; `eval = FALSE` remains illustrative, and computed false
 conditions retain skip outcomes. Unexpected errors stop publication. Local
 support files participate in input validation and preview watching.
 
+Console output appears separately from source code, without a shaded background,
+syntax highlighting, or a copy button. This also applies to warnings, messages,
+and permitted errors, including when `collapse = TRUE`. Source code keeps its
+usual highlighting and copy button. `results = "asis"` retains its Markdown
+formatting.
+
 Title, author, and evaluated date metadata appear in the article header.
 `bibliography` names one local BibTeX file or a list of files; optional `csl`
 names a local independent CSL style. Without a style, citations use Chicago

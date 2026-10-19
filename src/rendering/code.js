@@ -1,5 +1,6 @@
 (() => {
   for (const code of document.querySelectorAll('main pre > code')) {
+    if (code.closest('.code-output')) continue;
     const pre = code.parentElement;
     const block = document.createElement('div');
     block.className = 'code-block';

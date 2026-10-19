@@ -317,17 +317,23 @@ impl AdapterContext {
                         span: span(div.syntax().text_range()),
                     });
                 }
-                if self.evaluated
-                    && div
-                        .attributes()
-                        .is_some_and(|a| a.classes().iter().any(|c| c == "diplodocus-rmd-chunk"))
-                {
-                    return Some(Block::Container {
-                        kind: crate::ir::DocumentContainerKind::GeneratedChunk,
-                        identifier: None,
-                        blocks: div.block_nodes().filter_map(|b| self.block(b)).collect(),
-                        span: span(div.syntax().text_range()),
-                    });
+                if self.evaluated {
+                    let classes = div.attributes().map(|a| a.classes()).unwrap_or_default();
+                    let kind = if classes.iter().any(|c| c == "diplodocus-rmd-output") {
+                        Some(crate::ir::DocumentContainerKind::GeneratedOutput)
+                    } else if classes.iter().any(|c| c == "diplodocus-rmd-chunk") {
+                        Some(crate::ir::DocumentContainerKind::GeneratedChunk)
+                    } else {
+                        None
+                    };
+                    if let Some(kind) = kind {
+                        return Some(Block::Container {
+                            kind,
+                            identifier: None,
+                            blocks: div.block_nodes().filter_map(|b| self.block(b)).collect(),
+                            span: span(div.syntax().text_range()),
+                        });
+                    }
                 }
                 let Some(callout) = div.quarto_callout() else {
                     return Some(self.unsupported(

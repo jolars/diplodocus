@@ -111,7 +111,10 @@ stages PNG figures. The shared checkout loader is `src/assembly/r_runtime.R`.
 
 The original Rmd remains in `raw_source`; `generated_source` contains evaluated
 Markdown and supplies the document's byte ranges. Generated chunk containers
-keep their headings out of navigation and anchor registration. Bibliographies
+keep their headings out of navigation and anchor registration. Generated console
+output containers preserve the distinction between source code and literal
+results. Console output renders without syntax highlighting or a shaded
+background, including when knitr requests collapsed chunks. Bibliographies
 and independent local CSL styles resolve in-process through Hayagriva. Native
 execution provenance records the original and generated fingerprints and actual
 R, knitr, package, and namespace versions. Snapshot validation requires completed

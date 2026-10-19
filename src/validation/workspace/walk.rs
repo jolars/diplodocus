@@ -117,7 +117,10 @@ fn collect_anchors(blocks: &[Block], anchors: &mut BTreeSet<String>) {
                 if let Some(id) = identifier {
                     anchors.insert(id.clone());
                 }
-                if *kind != DocumentContainerKind::GeneratedChunk {
+                if !matches!(
+                    kind,
+                    DocumentContainerKind::GeneratedChunk | DocumentContainerKind::GeneratedOutput
+                ) {
                     collect_anchors(blocks, anchors);
                 }
             }

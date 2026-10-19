@@ -307,6 +307,8 @@ pub enum DocumentContainerKind {
     BibliographyEntry,
     /// Inert content produced by one executable chunk.
     GeneratedChunk,
+    /// Literal console output kept separate from its generating source.
+    GeneratedOutput,
 }
 
 /// Inline formatting required by articles and citation styles.

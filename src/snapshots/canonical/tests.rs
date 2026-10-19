@@ -105,7 +105,7 @@ fn minimal_export_and_snapshot_digest_match_independent_fixture() {
     );
     assert_eq!(
         content_fingerprint(&snapshot, &records(&snapshot).unwrap()).unwrap(),
-        "c46834e4ed45d5821a58426e81b31eea226c6eae0f49ffa3efd42affa30f7e93"
+        "b12737d6662dff44ffa7fe8100f3e9fbe18c065808c2727c41782540904e640c"
     );
 }
 
