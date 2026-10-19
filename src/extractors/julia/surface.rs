@@ -715,6 +715,7 @@ fn rewrite_references(blocks: &mut [Block], rewrite: &mut impl FnMut(&str) -> St
             }
             Block::BlockQuote { blocks, .. }
             | Block::Container { blocks, .. }
+            | Block::Tabset { blocks, .. }
             | Block::Callout { blocks, .. } => rewrite_references(blocks, rewrite),
             Block::List { items, .. } => {
                 for item in items {

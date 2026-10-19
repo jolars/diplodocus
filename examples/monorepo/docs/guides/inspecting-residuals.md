@@ -5,7 +5,9 @@ the model predicted too little; negative residuals mean it predicted too much.
 
 ## Calculate the residuals
 
-In Python:
+::: {.panel-tabset group="language"}
+
+### Python
 
 ```python
 from tinystats import residuals
@@ -14,7 +16,7 @@ residuals([1.0, 2.0, 3.0, 4.0], [1.0, 2.0, 3.0, 6.0])
 # [0.0, 0.0, 0.0, -2.0]
 ```
 
-In R:
+### R
 
 ```r
 library(tinystats)
@@ -22,6 +24,8 @@ library(tinystats)
 residuals(c(1, 2, 3, 4), c(1, 2, 3, 6))
 # [1] 0 0 0 -2
 ```
+
+:::
 
 See [`pystats::tinystats.residuals`] and [`rstats::residuals`] for input
 requirements and return types.

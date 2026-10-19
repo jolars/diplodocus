@@ -2,7 +2,7 @@
   "document": {
     "span": {
       "start": 0,
-      "end": 5976
+      "end": 6837
     },
     "frontmatter": null,
     "blocks": [
@@ -1344,16 +1344,426 @@
         "inlines": [
           {
             "type": "text",
-            "value": "Links and assets",
+            "value": "Tabsets",
             "span": {
               "start": 3020,
-              "end": 3036
+              "end": 3027
             }
           }
         ],
         "span": {
           "start": 3017,
-          "end": 3037
+          "end": 3028
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Use a fenced div with the ",
+            "span": {
+              "start": 3029,
+              "end": 3055
+            }
+          },
+          {
+            "type": "code",
+            "value": ".panel-tabset",
+            "span": {
+              "start": 3055,
+              "end": 3070
+            }
+          },
+          {
+            "type": "text",
+            "value": " class to present alternatives in tabs.",
+            "span": {
+              "start": 3070,
+              "end": 3109
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 3109,
+              "end": 3110
+            }
+          },
+          {
+            "type": "text",
+            "value": "The highest-level headings directly inside the div become tab labels. Lower-level",
+            "span": {
+              "start": 3110,
+              "end": 3191
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 3191,
+              "end": 3192
+            }
+          },
+          {
+            "type": "text",
+            "value": "headings remain inside their panels. This syntax works in GFM, QMD, and R Markdown:",
+            "span": {
+              "start": 3192,
+              "end": 3275
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 3275,
+              "end": 3276
+            }
+          }
+        ],
+        "span": {
+          "start": 3029,
+          "end": 3276
+        }
+      },
+      {
+        "type": "code-block",
+        "language": "markdown",
+        "source": "::: {.panel-tabset group=\"language\"}\n\n### Python\n\n```python\nprint(\"Hello\")\n```\n\n### R {.active}\n\n```r\nprint(\"Hello\")\n```\n\n:::\n",
+        "source_segments": [
+          {
+            "text": "::: {.panel-tabset group=\"language\"}",
+            "span": {
+              "start": 3290,
+              "end": 3326
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 3326,
+              "end": 3327
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 3327,
+              "end": 3328
+            }
+          },
+          {
+            "text": "### Python",
+            "span": {
+              "start": 3328,
+              "end": 3338
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 3338,
+              "end": 3339
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 3339,
+              "end": 3340
+            }
+          },
+          {
+            "text": "```python",
+            "span": {
+              "start": 3340,
+              "end": 3349
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 3349,
+              "end": 3350
+            }
+          },
+          {
+            "text": "print(\"Hello\")",
+            "span": {
+              "start": 3350,
+              "end": 3364
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 3364,
+              "end": 3365
+            }
+          },
+          {
+            "text": "```",
+            "span": {
+              "start": 3365,
+              "end": 3368
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 3368,
+              "end": 3369
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 3369,
+              "end": 3370
+            }
+          },
+          {
+            "text": "### R {.active}",
+            "span": {
+              "start": 3370,
+              "end": 3385
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 3385,
+              "end": 3386
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 3386,
+              "end": 3387
+            }
+          },
+          {
+            "text": "```r",
+            "span": {
+              "start": 3387,
+              "end": 3391
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 3391,
+              "end": 3392
+            }
+          },
+          {
+            "text": "print(\"Hello\")",
+            "span": {
+              "start": 3392,
+              "end": 3406
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 3406,
+              "end": 3407
+            }
+          },
+          {
+            "text": "```",
+            "span": {
+              "start": 3407,
+              "end": 3410
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 3410,
+              "end": 3411
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 3411,
+              "end": 3412
+            }
+          },
+          {
+            "text": ":::",
+            "span": {
+              "start": 3412,
+              "end": 3415
+            }
+          },
+          {
+            "text": "\n",
+            "span": {
+              "start": 3415,
+              "end": 3416
+            }
+          }
+        ],
+        "span": {
+          "start": 3277,
+          "end": 3421
+        }
+      },
+      {
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "value": "The first tab opens by default; add ",
+            "span": {
+              "start": 3422,
+              "end": 3458
+            }
+          },
+          {
+            "type": "code",
+            "value": ".active",
+            "span": {
+              "start": 3458,
+              "end": 3467
+            }
+          },
+          {
+            "type": "text",
+            "value": " to another tab heading to select it",
+            "span": {
+              "start": 3467,
+              "end": 3503
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 3503,
+              "end": 3504
+            }
+          },
+          {
+            "type": "text",
+            "value": "instead. The optional ",
+            "span": {
+              "start": 3504,
+              "end": 3526
+            }
+          },
+          {
+            "type": "code",
+            "value": "group",
+            "span": {
+              "start": 3526,
+              "end": 3533
+            }
+          },
+          {
+            "type": "text",
+            "value": " attribute synchronizes tabs with matching labels",
+            "span": {
+              "start": 3533,
+              "end": 3582
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 3582,
+              "end": 3583
+            }
+          },
+          {
+            "type": "text",
+            "value": "in other tabsets in the same group on the page. Readers can switch tabs with the",
+            "span": {
+              "start": 3583,
+              "end": 3663
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 3663,
+              "end": 3664
+            }
+          },
+          {
+            "type": "text",
+            "value": "arrow keys, Home, or End. Links into a hidden panel reveal it automatically.",
+            "span": {
+              "start": 3664,
+              "end": 3740
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 3740,
+              "end": 3741
+            }
+          },
+          {
+            "type": "text",
+            "value": "Without JavaScript, all panels appear in document order under their headings.",
+            "span": {
+              "start": 3741,
+              "end": 3818
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 3818,
+              "end": 3819
+            }
+          },
+          {
+            "type": "text",
+            "value": "Markdown exports retain every panel as ordinary sections.",
+            "span": {
+              "start": 3819,
+              "end": 3876
+            }
+          },
+          {
+            "type": "soft-break",
+            "span": {
+              "start": 3876,
+              "end": 3877
+            }
+          }
+        ],
+        "span": {
+          "start": 3422,
+          "end": 3877
+        }
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "attributes": {
+          "identifier": null,
+          "classes": [],
+          "key_values": []
+        },
+        "inlines": [
+          {
+            "type": "text",
+            "value": "Links and assets",
+            "span": {
+              "start": 3881,
+              "end": 3897
+            }
+          }
+        ],
+        "span": {
+          "start": 3878,
+          "end": 3898
         }
       },
       {
@@ -1363,112 +1773,112 @@
             "type": "text",
             "value": "Use ordinary relative links between declared pages, including links across",
             "span": {
-              "start": 3038,
-              "end": 3112
+              "start": 3899,
+              "end": 3973
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3112,
-              "end": 3113
+              "start": 3973,
+              "end": 3974
             }
           },
           {
             "type": "text",
             "value": "collections. For example, ",
             "span": {
-              "start": 3113,
-              "end": 3139
+              "start": 3974,
+              "end": 4000
             }
           },
           {
             "type": "code",
             "value": "[Commands](cli.md)",
             "span": {
-              "start": 3139,
-              "end": 3159
+              "start": 4000,
+              "end": 4020
             }
           },
           {
             "type": "text",
             "value": " targets a page in this guide.",
             "span": {
-              "start": 3159,
-              "end": 3189
+              "start": 4020,
+              "end": 4050
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3189,
-              "end": 3190
+              "start": 4050,
+              "end": 4051
             }
           },
           {
             "type": "text",
             "value": "Local fragment links must name an existing heading anchor. Keep images and other",
             "span": {
-              "start": 3190,
-              "end": 3270
+              "start": 4051,
+              "end": 4131
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3270,
-              "end": 3271
+              "start": 4131,
+              "end": 4132
             }
           },
           {
             "type": "text",
             "value": "local assets inside a declared source boundary and link to them with relative",
             "span": {
-              "start": 3271,
-              "end": 3348
+              "start": 4132,
+              "end": 4209
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3348,
-              "end": 3349
+              "start": 4209,
+              "end": 4210
             }
           },
           {
             "type": "text",
             "value": "paths. Diplodocus validates local destinations and copies accepted assets into",
             "span": {
-              "start": 3349,
-              "end": 3427
+              "start": 4210,
+              "end": 4288
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3427,
-              "end": 3428
+              "start": 4288,
+              "end": 4289
             }
           },
           {
             "type": "text",
             "value": "the generated site. External HTTP links remain external.",
             "span": {
-              "start": 3428,
-              "end": 3484
+              "start": 4289,
+              "end": 4345
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3484,
-              "end": 3485
+              "start": 4345,
+              "end": 4346
             }
           }
         ],
         "span": {
-          "start": 3038,
-          "end": 3485
+          "start": 3899,
+          "end": 4346
         }
       },
       {
@@ -1478,23 +1888,23 @@
             "type": "text",
             "value": "Code fences in GFM and API documentation are always display-only. R Markdown chunks execute during extraction. QMD cells run",
             "span": {
-              "start": 3486,
-              "end": 3610
+              "start": 4347,
+              "end": 4471
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3610,
-              "end": 3611
+              "start": 4471,
+              "end": 4472
             }
           },
           {
             "type": "text",
             "value": "only when their collection explicitly authorizes execution; see ",
             "span": {
-              "start": 3611,
-              "end": 3675
+              "start": 4472,
+              "end": 4536
             }
           },
           {
@@ -1504,23 +1914,23 @@
                 "type": "text",
                 "value": "execution and",
                 "span": {
-                  "start": 3676,
-                  "end": 3689
+                  "start": 4537,
+                  "end": 4550
                 }
               },
               {
                 "type": "soft-break",
                 "span": {
-                  "start": 3689,
-                  "end": 3690
+                  "start": 4550,
+                  "end": 4551
                 }
               },
               {
                 "type": "text",
                 "value": "security",
                 "span": {
-                  "start": 3690,
-                  "end": 3698
+                  "start": 4551,
+                  "end": 4559
                 }
               }
             ],
@@ -1532,29 +1942,29 @@
               "key_values": []
             },
             "span": {
-              "start": 3675,
-              "end": 3713
+              "start": 4536,
+              "end": 4574
             }
           },
           {
             "type": "text",
             "value": " before enabling them.",
             "span": {
-              "start": 3713,
-              "end": 3735
+              "start": 4574,
+              "end": 4596
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3735,
-              "end": 3736
+              "start": 4596,
+              "end": 4597
             }
           }
         ],
         "span": {
-          "start": 3486,
-          "end": 3736
+          "start": 4347,
+          "end": 4597
         }
       },
       {
@@ -1570,14 +1980,14 @@
             "type": "text",
             "value": "R Markdown articles",
             "span": {
-              "start": 3740,
-              "end": 3759
+              "start": 4601,
+              "end": 4620
             }
           }
         ],
         "span": {
-          "start": 3737,
-          "end": 3760
+          "start": 4598,
+          "end": 4621
         }
       },
       {
@@ -1587,138 +1997,138 @@
             "type": "text",
             "value": "Diplodocus discovers ",
             "span": {
-              "start": 3761,
-              "end": 3782
+              "start": 4622,
+              "end": 4643
             }
           },
           {
             "type": "code",
             "value": ".Rmd",
             "span": {
-              "start": 3782,
-              "end": 3788
+              "start": 4643,
+              "end": 4649
             }
           },
           {
             "type": "text",
             "value": " and ",
             "span": {
-              "start": 3788,
-              "end": 3793
+              "start": 4649,
+              "end": 4654
             }
           },
           {
             "type": "code",
             "value": ".rmd",
             "span": {
-              "start": 3793,
-              "end": 3799
+              "start": 4654,
+              "end": 4660
             }
           },
           {
             "type": "text",
             "value": " files under an R package's ",
             "span": {
-              "start": 3799,
-              "end": 3827
+              "start": 4660,
+              "end": 4688
             }
           },
           {
             "type": "code",
             "value": "vignettes/",
             "span": {
-              "start": 3827,
-              "end": 3839
+              "start": 4688,
+              "end": 4700
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3839,
-              "end": 3840
+              "start": 4700,
+              "end": 4701
             }
           },
           {
             "type": "text",
             "value": "directory and mounts them beneath ",
             "span": {
-              "start": 3840,
-              "end": 3874
+              "start": 4701,
+              "end": 4735
             }
           },
           {
             "type": "code",
             "value": "vignettes",
             "span": {
-              "start": 3874,
-              "end": 3885
+              "start": 4735,
+              "end": 4746
             }
           },
           {
             "type": "text",
             "value": ". To choose a different mount,",
             "span": {
-              "start": 3885,
-              "end": 3915
+              "start": 4746,
+              "end": 4776
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3915,
-              "end": 3916
+              "start": 4776,
+              "end": 4777
             }
           },
           {
             "type": "text",
             "value": "declare a package-owned collection with ",
             "span": {
-              "start": 3916,
-              "end": 3956
+              "start": 4777,
+              "end": 4817
             }
           },
           {
             "type": "code",
             "value": "format = \"rmd\"",
             "span": {
-              "start": 3956,
-              "end": 3972
+              "start": 4817,
+              "end": 4833
             }
           },
           {
             "type": "text",
             "value": ". Explicit collections",
             "span": {
-              "start": 3972,
-              "end": 3994
+              "start": 4833,
+              "end": 4855
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 3994,
-              "end": 3995
+              "start": 4855,
+              "end": 4856
             }
           },
           {
             "type": "text",
             "value": "replace automatic discovery for the same source files.",
             "span": {
-              "start": 3995,
-              "end": 4049
+              "start": 4856,
+              "end": 4910
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 4049,
-              "end": 4050
+              "start": 4910,
+              "end": 4911
             }
           }
         ],
         "span": {
-          "start": 3761,
-          "end": 4050
+          "start": 4622,
+          "end": 4911
         }
       },
       {
@@ -1728,112 +2138,112 @@
             "type": "text",
             "value": "R Markdown uses native knitr execution with no kernel or execution opt-in.",
             "span": {
-              "start": 4051,
-              "end": 4125
+              "start": 4912,
+              "end": 4986
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 4125,
-              "end": 4126
+              "start": 4986,
+              "end": 4987
             }
           },
           {
             "type": "text",
             "value": "Prepare R, pkgload, evaluate, knitr, package dependencies, and prebuilt native",
             "span": {
-              "start": 4126,
-              "end": 4204
+              "start": 4987,
+              "end": 5065
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 4204,
-              "end": 4205
+              "start": 5065,
+              "end": 5066
             }
           },
           {
             "type": "text",
             "value": "extensions before building. Each article loads the supplied checkout in a fresh",
             "span": {
-              "start": 4205,
-              "end": 4284
+              "start": 5066,
+              "end": 5145
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 4284,
-              "end": 4285
+              "start": 5145,
+              "end": 5146
             }
           },
           {
             "type": "text",
             "value": "R process. Chunks and inline R share state within that article. Relative data",
             "span": {
-              "start": 4285,
-              "end": 4362
+              "start": 5146,
+              "end": 5223
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 4362,
-              "end": 4363
+              "start": 5223,
+              "end": 5224
             }
           },
           {
             "type": "text",
             "value": "paths resolve from the article's directory. ",
             "span": {
-              "start": 4363,
-              "end": 4407
+              "start": 5224,
+              "end": 5268
             }
           },
           {
             "type": "code",
             "value": "check",
             "span": {
-              "start": 4407,
-              "end": 4414
+              "start": 5268,
+              "end": 5275
             }
           },
           {
             "type": "text",
             "value": " validates sources and links",
             "span": {
-              "start": 4414,
-              "end": 4442
+              "start": 5275,
+              "end": 5303
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 4442,
-              "end": 4443
+              "start": 5303,
+              "end": 5304
             }
           },
           {
             "type": "text",
             "value": "without loading the package or evaluating R.",
             "span": {
-              "start": 4443,
-              "end": 4487
+              "start": 5304,
+              "end": 5348
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 4487,
-              "end": 4488
+              "start": 5348,
+              "end": 5349
             }
           }
         ],
         "span": {
-          "start": 4051,
-          "end": 4488
+          "start": 4912,
+          "end": 5349
         }
       },
       {
@@ -1843,176 +2253,176 @@
             "type": "text",
             "value": "Fence options and ",
             "span": {
-              "start": 4489,
-              "end": 4507
+              "start": 5350,
+              "end": 5368
             }
           },
           {
             "type": "code",
             "value": "#|",
             "span": {
-              "start": 4507,
-              "end": 4511
+              "start": 5368,
+              "end": 5372
             }
           },
           {
             "type": "text",
             "value": " options retain knitr semantics, including setup defaults,",
             "span": {
-              "start": 4511,
-              "end": 4569
+              "start": 5372,
+              "end": 5430
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 4569,
-              "end": 4570
+              "start": 5430,
+              "end": 5431
             }
           },
           {
             "type": "text",
             "value": "computed ",
             "span": {
-              "start": 4570,
-              "end": 4579
+              "start": 5431,
+              "end": 5440
             }
           },
           {
             "type": "code",
             "value": "eval",
             "span": {
-              "start": 4579,
-              "end": 4585
+              "start": 5440,
+              "end": 5446
             }
           },
           {
             "type": "text",
             "value": ", hidden chunks, ",
             "span": {
-              "start": 4585,
-              "end": 4602
+              "start": 5446,
+              "end": 5463
             }
           },
           {
             "type": "code",
             "value": "results = \"asis\"",
             "span": {
-              "start": 4602,
-              "end": 4620
+              "start": 5463,
+              "end": 5481
             }
           },
           {
             "type": "text",
             "value": ", ",
             "span": {
-              "start": 4620,
-              "end": 4622
+              "start": 5481,
+              "end": 5483
             }
           },
           {
             "type": "code",
             "value": "knitr::kable()",
             "span": {
-              "start": 4622,
-              "end": 4638
+              "start": 5483,
+              "end": 5499
             }
           },
           {
             "type": "text",
             "value": ", warnings,",
             "span": {
-              "start": 4638,
-              "end": 4649
+              "start": 5499,
+              "end": 5510
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 4649,
-              "end": 4650
+              "start": 5510,
+              "end": 5511
             }
           },
           {
             "type": "text",
             "value": "messages, explicit permitted errors, and multiple captioned figures. Hidden",
             "span": {
-              "start": 4650,
-              "end": 4725
+              "start": 5511,
+              "end": 5586
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 4725,
-              "end": 4726
+              "start": 5586,
+              "end": 5587
             }
           },
           {
             "type": "text",
             "value": "chunks still execute; ",
             "span": {
-              "start": 4726,
-              "end": 4748
+              "start": 5587,
+              "end": 5609
             }
           },
           {
             "type": "code",
             "value": "eval = FALSE",
             "span": {
-              "start": 4748,
-              "end": 4762
+              "start": 5609,
+              "end": 5623
             }
           },
           {
             "type": "text",
             "value": " remains illustrative, and computed false",
             "span": {
-              "start": 4762,
-              "end": 4803
+              "start": 5623,
+              "end": 5664
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 4803,
-              "end": 4804
+              "start": 5664,
+              "end": 5665
             }
           },
           {
             "type": "text",
             "value": "conditions retain skip outcomes. Unexpected errors stop publication. Local",
             "span": {
-              "start": 4804,
-              "end": 4878
+              "start": 5665,
+              "end": 5739
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 4878,
-              "end": 4879
+              "start": 5739,
+              "end": 5740
             }
           },
           {
             "type": "text",
             "value": "support files participate in input validation and preview watching.",
             "span": {
-              "start": 4879,
-              "end": 4946
+              "start": 5740,
+              "end": 5807
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 4946,
-              "end": 4947
+              "start": 5807,
+              "end": 5808
             }
           }
         ],
         "span": {
-          "start": 4489,
-          "end": 4947
+          "start": 5350,
+          "end": 5808
         }
       },
       {
@@ -2022,91 +2432,91 @@
             "type": "text",
             "value": "Title, author, and evaluated date metadata appear in the article header.",
             "span": {
-              "start": 4948,
-              "end": 5020
+              "start": 5809,
+              "end": 5881
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 5020,
-              "end": 5021
+              "start": 5881,
+              "end": 5882
             }
           },
           {
             "type": "code",
             "value": "bibliography",
             "span": {
-              "start": 5021,
-              "end": 5035
+              "start": 5882,
+              "end": 5896
             }
           },
           {
             "type": "text",
             "value": " names one local BibTeX file or a list of files; optional ",
             "span": {
-              "start": 5035,
-              "end": 5093
+              "start": 5896,
+              "end": 5954
             }
           },
           {
             "type": "code",
             "value": "csl",
             "span": {
-              "start": 5093,
-              "end": 5098
+              "start": 5954,
+              "end": 5959
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 5098,
-              "end": 5099
+              "start": 5959,
+              "end": 5960
             }
           },
           {
             "type": "text",
             "value": "names a local independent CSL style. Without a style, citations use Chicago",
             "span": {
-              "start": 5099,
-              "end": 5174
+              "start": 5960,
+              "end": 6035
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 5174,
-              "end": 5175
+              "start": 6035,
+              "end": 6036
             }
           },
           {
             "type": "text",
             "value": "author-date. Citations link to a formatted reference list beneath References.",
             "span": {
-              "start": 5175,
-              "end": 5252
+              "start": 6036,
+              "end": 6113
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 5252,
-              "end": 5253
+              "start": 6113,
+              "end": 6114
             }
           },
           {
             "type": "text",
             "value": "The CSL style and locale archive comes from Hayagriva and the upstream",
             "span": {
-              "start": 5253,
-              "end": 5323
+              "start": 6114,
+              "end": 6184
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 5323,
-              "end": 5324
+              "start": 6184,
+              "end": 6185
             }
           },
           {
@@ -2116,8 +2526,8 @@
                 "type": "text",
                 "value": "Citation Style Language project",
                 "span": {
-                  "start": 5325,
-                  "end": 5356
+                  "start": 6186,
+                  "end": 6217
                 }
               }
             ],
@@ -2129,44 +2539,44 @@
               "key_values": []
             },
             "span": {
-              "start": 5324,
-              "end": 5386
+              "start": 6185,
+              "end": 6247
             }
           },
           {
             "type": "text",
             "value": ", with its",
             "span": {
-              "start": 5386,
-              "end": 5396
+              "start": 6247,
+              "end": 6257
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 5396,
-              "end": 5397
+              "start": 6257,
+              "end": 6258
             }
           },
           {
             "type": "text",
             "value": "CC BY-SA 3.0 attribution retained in the archive.",
             "span": {
-              "start": 5397,
-              "end": 5446
+              "start": 6258,
+              "end": 6307
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 5446,
-              "end": 5447
+              "start": 6307,
+              "end": 6308
             }
           }
         ],
         "span": {
-          "start": 4948,
-          "end": 5447
+          "start": 5809,
+          "end": 6308
         }
       },
       {
@@ -2176,151 +2586,151 @@
             "type": "text",
             "value": "Diplodocus renders the evaluated document itself. The ",
             "span": {
-              "start": 5448,
-              "end": 5502
+              "start": 6309,
+              "end": 6363
             }
           },
           {
             "type": "code",
             "value": "output",
             "span": {
-              "start": 5502,
-              "end": 5510
+              "start": 6363,
+              "end": 6371
             }
           },
           {
             "type": "text",
             "value": " and ",
             "span": {
-              "start": 5510,
-              "end": 5515
+              "start": 6371,
+              "end": 6376
             }
           },
           {
             "type": "code",
             "value": "vignette",
             "span": {
-              "start": 5515,
-              "end": 5525
+              "start": 6376,
+              "end": 6386
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 5525,
-              "end": 5526
+              "start": 6386,
+              "end": 6387
             }
           },
           {
             "type": "text",
             "value": "metadata do not select an rmarkdown HTML template, and neither rmarkdown nor",
             "span": {
-              "start": 5526,
-              "end": 5602
+              "start": 6387,
+              "end": 6463
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 5602,
-              "end": 5603
+              "start": 6463,
+              "end": 6464
             }
           },
           {
             "type": "text",
             "value": "Pandoc is required. This release supports R chunks, PNG figures, and static",
             "span": {
-              "start": 5603,
-              "end": 5678
+              "start": 6464,
+              "end": 6539
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 5678,
-              "end": 5679
+              "start": 6539,
+              "end": 6540
             }
           },
           {
             "type": "text",
             "value": "Markdown content. Other chunk engines, child documents, persistent knitr caches,",
             "span": {
-              "start": 5679,
-              "end": 5759
+              "start": 6540,
+              "end": 6620
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 5759,
-              "end": 5760
+              "start": 6620,
+              "end": 6621
             }
           },
           {
             "type": "text",
             "value": "interactive widgets, and README.Rmd rendering are unsupported. Runtime failures",
             "span": {
-              "start": 5760,
-              "end": 5839
+              "start": 6621,
+              "end": 6700
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 5839,
-              "end": 5840
+              "start": 6700,
+              "end": 6701
             }
           },
           {
             "type": "text",
             "value": "leave the previous snapshot and site available. A completed snapshot can be",
             "span": {
-              "start": 5840,
-              "end": 5915
+              "start": 6701,
+              "end": 6776
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 5915,
-              "end": 5916
+              "start": 6776,
+              "end": 6777
             }
           },
           {
             "type": "text",
             "value": "rendered with ",
             "span": {
-              "start": 5916,
-              "end": 5930
+              "start": 6777,
+              "end": 6791
             }
           },
           {
             "type": "code",
             "value": "generate",
             "span": {
-              "start": 5930,
-              "end": 5940
+              "start": 6791,
+              "end": 6801
             }
           },
           {
             "type": "text",
             "value": " after removing the checkout and R.",
             "span": {
-              "start": 5940,
-              "end": 5975
+              "start": 6801,
+              "end": 6836
             }
           },
           {
             "type": "soft-break",
             "span": {
-              "start": 5975,
-              "end": 5976
+              "start": 6836,
+              "end": 6837
             }
           }
         ],
         "span": {
-          "start": 5448,
-          "end": 5976
+          "start": 6309,
+          "end": 6837
         }
       }
     ]

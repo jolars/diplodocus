@@ -810,6 +810,35 @@ fn page_navigation_preserves_authored_ids_and_disambiguates_repeated_headings() 
 }
 
 #[test]
+fn tabsets_preserve_snapshot_content_links_and_markdown_fallback() {
+    let root = support::TestWorkspace::new();
+    root.write("diplodocus.toml", "[project]\nname='Tabs'\n[[repository]]\nid='docs'\npath='.'\n[[content]]\nid='guide'\nowner='project'\nrepository='docs'\npath='docs'\nmount=''\nformat='gfm'\n");
+    root.write("docs/index.md", "# Guide\n\n[Read R](#r)\n\n::: {#languages .panel-tabset group=\"language\"}\n\n### Python\n\n```python\nprint(1)\n```\n\n### R {#r .active}\n\nR content.\n\n:::\n");
+    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+    let artifact = tempfile::tempdir().unwrap();
+    let path = artifact.path().join("snapshot.sqlite");
+    snapshot.publish(&path).unwrap();
+    drop(sources);
+    drop(root);
+    let snapshot = Snapshot::load(&path).unwrap();
+    let site = diplodocus::site::Site::new(&snapshot).unwrap();
+    let rendered = diplodocus::rendering::render_site(&site).unwrap();
+    let html = std::str::from_utf8(&rendered.files()["index.html"].bytes).unwrap();
+    assert!(
+        html.contains("class=\"panel-tabset\" id=\"languages\" data-tabset-group=\"language\"")
+    );
+    assert_eq!(html.matches("class=\"tabset-panel\"").count(), 2);
+    assert!(html.contains("id=\"r\" data-tab-active=\"true\""));
+    assert!(!html.contains("aria-label=\"On this page\""));
+    assert!(rendered.files().contains_key("assets/tabsets.js"));
+    let markdown = std::str::from_utf8(&rendered.files()["index.md"].bytes).unwrap();
+    assert!(markdown.contains("### Python"));
+    assert!(markdown.contains("### R"));
+    assert!(markdown.contains("R content."));
+}
+
+#[test]
 fn authored_titles_reuse_matching_headings_and_preserve_their_anchors() {
     for (source, heading_count, preserved) in [
         (

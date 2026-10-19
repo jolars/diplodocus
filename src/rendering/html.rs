@@ -143,7 +143,7 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                 write!(html, "<link rel=\"canonical\" href=\"{}\">", escape(url)).unwrap();
             }
             super::social::render(&mut html, site, route, &page.title)?;
-            write!(html, "<title>{} · {}</title><link rel=\"stylesheet\" href=\"{}\"><script defer src=\"{}\"></script><script defer src=\"{}\"></script><script defer src=\"{}\"></script>", escape(&page.title), escape(site.title()), escape(&site.url(route, "assets/site.css")), escape(&site.url(route, "assets/search.js")), escape(&site.url(route, "assets/nav.js")), escape(&site.url(route, "assets/code.js"))).unwrap();
+            write!(html, "<title>{} · {}</title><link rel=\"stylesheet\" href=\"{}\"><script defer src=\"{}\"></script><script defer src=\"{}\"></script><script defer src=\"{}\"></script><script defer src=\"{}\"></script>", escape(&page.title), escape(site.title()), escape(&site.url(route, "assets/site.css")), escape(&site.url(route, "assets/search.js")), escape(&site.url(route, "assets/nav.js")), escape(&site.url(route, "assets/code.js")), escape(&site.url(route, "assets/tabsets.js"))).unwrap();
             if page_math {
                 write!(
                     html,
@@ -767,6 +767,13 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
         );
     }
     files.insert(
+        "assets/tabsets.js".into(),
+        file(
+            include_str!("tabsets.js").as_bytes().to_vec(),
+            "text/javascript; charset=utf-8",
+        ),
+    );
+    files.insert(
         "assets/search.json".into(),
         file(
             serde_json::to_vec(&search).map_err(|_| SiteError::Evidence)?,
@@ -1283,10 +1290,75 @@ impl Renderer<'_, '_> {
         }
         Ok(html)
     }
+    fn tabset(&mut self, attributes: &Attributes, blocks: &[Block]) -> Result<String, SiteError> {
+        let level = blocks
+            .iter()
+            .filter_map(|block| match block {
+                Block::Heading { level, .. } => Some(*level),
+                _ => None,
+            })
+            .min();
+        let mut html = format!("<div class=\"panel-tabset\"{}", id(attributes));
+        if let Some(group) = attributes
+            .key_values
+            .iter()
+            .find(|pair| pair.key.value == "group")
+        {
+            write!(
+                html,
+                " data-tabset-group=\"{}\"",
+                escape(&group.value.value)
+            )
+            .unwrap();
+        }
+        html.push('>');
+        let mut start = 0;
+        let mut panel_open = false;
+        for (index, block) in blocks.iter().enumerate() {
+            let Block::Heading {
+                level: heading_level,
+                attributes,
+                inlines,
+                ..
+            } = block
+            else {
+                continue;
+            };
+            if Some(*heading_level) != level {
+                continue;
+            }
+            html.push_str(&self.blocks(&blocks[start..index])?);
+            if panel_open {
+                html.push_str("</section>");
+            }
+            let label = plain(inlines);
+            let identifier = self.heading_id(attributes, &label);
+            let active = attributes
+                .classes
+                .iter()
+                .any(|class| class.value == "active");
+            let heading_level = (*heading_level + self.heading_offset).clamp(1, 6);
+            write!(html, "<section class=\"tabset-panel\"><h{heading_level} class=\"tabset-heading\" id=\"{}\" data-tab-active=\"{active}\">{}</h{heading_level}>", escape(&identifier), self.inlines(inlines)?).unwrap();
+            panel_open = true;
+            start = index + 1;
+        }
+        html.push_str(&self.blocks(&blocks[start..])?);
+        if panel_open {
+            html.push_str("</section>");
+        }
+        html.push_str("</div>");
+        Ok(html)
+    }
+
     fn blocks(&mut self, blocks: &[Block]) -> Result<String, SiteError> {
         let mut html = String::new();
         for block in blocks {
             match block {
+                Block::Tabset {
+                    attributes, blocks, ..
+                } => {
+                    html.push_str(&self.tabset(attributes, blocks)?);
+                }
                 Block::Container {
                     kind,
                     identifier,

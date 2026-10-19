@@ -400,7 +400,10 @@ impl Live<'_> {
                         raw,
                         span,
                     },
-                    Block::Container { .. } | Block::CodeCell(_) | Block::DisplayMath { .. } => {
+                    Block::Container { .. }
+                    | Block::Tabset { .. }
+                    | Block::CodeCell(_)
+                    | Block::DisplayMath { .. } => {
                         return Err(LiveError::Policy(MarkdownRejectionReason::Structure));
                     }
                 })

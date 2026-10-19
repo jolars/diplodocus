@@ -373,6 +373,9 @@ source, and provenance together:
 `source_format` can instead be `{"kind":"extracted","name":"rd"}` or
 `{"kind":"generated"}`. The [document tree](../../src/ir.rs) uses `type`
 discriminators for blocks, inlines, and metadata, with kebab-case variant names.
+The `tabset` block retains `attributes`, ordered child `blocks`, and `span`.
+Its highest-level direct headings delimit the panels; heading classes retain
+the optional `active` selection, and the tabset attributes retain its `group`.
 Inline `math` and block `display-math` nodes retain `latex`, nullable `fallback`,
 and `span`. R package metadata retains a `help_links` map keyed by the topic or
 `package::topic` spelling. Each candidate has a published `package`, canonical

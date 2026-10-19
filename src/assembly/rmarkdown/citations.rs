@@ -391,6 +391,7 @@ fn visit(blocks: &mut [Block], f: &mut impl FnMut(&mut Inline)) {
                 inlines_visit(nodes, f)
             }
             Block::Container { blocks, .. }
+            | Block::Tabset { blocks, .. }
             | Block::BlockQuote { blocks, .. }
             | Block::Callout { blocks, .. } => visit(blocks, f),
             Block::List { items, .. } => {

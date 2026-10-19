@@ -49,6 +49,37 @@ R Markdown additionally supports math, footnotes, citations, simple tables, and
 definition lists. Run `diplodocus check` after editing
 a page to see parser and link diagnostics before any cell executes.
 
+## Tabsets
+
+Use a fenced div with the `.panel-tabset` class to present alternatives in tabs.
+The highest-level headings directly inside the div become tab labels. Lower-level
+headings remain inside their panels. This syntax works in GFM, QMD, and R Markdown:
+
+````markdown
+::: {.panel-tabset group="language"}
+
+### Python
+
+```python
+print("Hello")
+```
+
+### R {.active}
+
+```r
+print("Hello")
+```
+
+:::
+````
+
+The first tab opens by default; add `.active` to another tab heading to select it
+instead. The optional `group` attribute synchronizes tabs with matching labels
+in other tabsets in the same group on the page. Readers can switch tabs with the
+arrow keys, Home, or End. Links into a hidden panel reveal it automatically.
+Without JavaScript, all panels appear in document order under their headings.
+Markdown exports retain every panel as ordinary sections.
+
 ## Links and assets
 
 Use ordinary relative links between declared pages, including links across

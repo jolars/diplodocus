@@ -5,6 +5,48 @@ use diplodocus::ir::{Block, CalloutKind, CellOptionResolution, Inline, TableAlig
 mod support;
 
 #[test]
+fn tabsets_retain_attributes_content_and_source_spans_in_each_profile() {
+    let source = "::: {#languages .panel-tabset group=\"language\"}\n\n### Python\n\n```python\nprint(1)\n```\n\n### R {.active}\n\n[More](#details)\n\n#### Details\n\nAll panels are retained.\n\n:::\n";
+    for format in [
+        AuthoredFormat::Gfm,
+        AuthoredFormat::Qmd,
+        AuthoredFormat::Rmd,
+    ] {
+        let parsed = parse_authored_document(source, format);
+        assert!(
+            parsed.diagnostics.is_empty(),
+            "{format:?}: {:?}",
+            parsed.diagnostics
+        );
+        let Block::Tabset {
+            attributes,
+            blocks,
+            span,
+        } = &parsed.document.blocks[0]
+        else {
+            panic!("{format:?}: expected a tabset");
+        };
+        assert_eq!(attributes.identifier.as_ref().unwrap().value, "languages");
+        assert_eq!(attributes.key_values[0].key.value, "group");
+        assert_eq!(attributes.key_values[0].value.value, "language");
+        assert!(source[span.start..span.end].starts_with(":::"));
+        assert_eq!(
+            blocks
+                .iter()
+                .filter(|block| matches!(block, Block::Heading { .. }))
+                .count(),
+            3
+        );
+        assert!(blocks.iter().any(|block| matches!(block, Block::Heading { attributes, .. } if attributes.classes.iter().any(|class| class.value == "active"))));
+        let encoded = serde_json::to_string(&parsed.document).unwrap();
+        assert_eq!(
+            serde_json::from_str::<diplodocus::ir::Document>(&encoded).unwrap(),
+            parsed.document
+        );
+    }
+}
+
+#[test]
 fn acceptance_authored_output_matches_goldens() {
     let workspace = support::acceptance_workspace();
     for (path, profile) in support::authored_sources(&workspace, "workspace/diplodocus.toml") {

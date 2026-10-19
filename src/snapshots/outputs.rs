@@ -323,6 +323,7 @@ fn cells(blocks: &[Block], visit: &mut impl FnMut(&CodeCell)) {
             Block::CodeCell(cell) => visit(cell),
             Block::BlockQuote { blocks, .. }
             | Block::Container { blocks, .. }
+            | Block::Tabset { blocks, .. }
             | Block::Callout { blocks, .. } => cells(blocks, visit),
             Block::List { items, .. } => {
                 for item in items {
@@ -365,6 +366,7 @@ fn project(
             }
             Block::BlockQuote { blocks, .. }
             | Block::Container { blocks, .. }
+            | Block::Tabset { blocks, .. }
             | Block::Callout { blocks, .. } => project(blocks, records, ordinal)?,
             Block::List { items, .. } => {
                 for item in items {

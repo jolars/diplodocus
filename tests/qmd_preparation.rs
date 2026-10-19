@@ -41,6 +41,21 @@ fn text(source: &str, span: SourceSpan) -> &str {
 }
 
 #[test]
+fn tabsets_prepare_cells_in_every_panel_in_source_order() {
+    let source = "::: {.panel-tabset}\n\n### Python\n\n```{python}\n#| label: python-example\nprint(1)\n```\n\n### R\n\n```{r}\n#| label: r-example\nprint(2)\n```\n\n:::\n";
+    let result = prepare(source, true);
+    assert!(
+        result.parsed.diagnostics.is_empty(),
+        "{:?}",
+        result.parsed.diagnostics
+    );
+    let cells = result.preparation.unwrap().cells;
+    assert_eq!(cells.len(), 2);
+    assert_eq!(cells[0].cell.source, "print(1)\n");
+    assert_eq!(cells[1].cell.source, "print(2)\n");
+}
+
+#[test]
 fn defaults_and_all_precedence_tiers_retain_their_origins() {
     let source = "---\ntitle: Résumé 🦕\naudience: [Python, R]\nexecute: {eval: false, echo: false, output: false}\n---\n\n```{python #setup, echo=true, output=asis}\n#| echo: false\n#| eval: true\n#| fig-alt: 'A **literal** figure'\n#| fig-cap: Caption\n#| fig-subcap: [Second, First]\nprint('unchanged')\n```\n";
     let result = prepare(source, true);

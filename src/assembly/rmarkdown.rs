@@ -524,6 +524,7 @@ fn decorate_figures(blocks: &mut [Block], figures: &Figures, diagnostics: &mut V
                 }
             }
             Block::Container { blocks, .. }
+            | Block::Tabset { blocks, .. }
             | Block::BlockQuote { blocks, .. }
             | Block::Callout { blocks, .. } => decorate_figures(blocks, figures, diagnostics),
             Block::List { items, .. } => {

@@ -135,6 +135,15 @@ pub struct Document {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "kebab-case")]
 pub enum Block {
+    /// Heading-delimited panels presented as an interactive tabset in HTML.
+    Tabset {
+        /// Tabset identifier, classes, and optional synchronization group.
+        attributes: Attributes,
+        /// Tab headings and their content in source order.
+        blocks: Vec<Block>,
+        /// Range in the enclosing document.
+        span: SourceSpan,
+    },
     /// A semantic article container with an optional local anchor.
     Container {
         /// Presentation of the contained content.

@@ -91,6 +91,10 @@ fn parse_document(source: &str, format: AuthoredFormat, mode: ParseMode) -> Docu
     };
     let mut options = ParserOptions::for_flavor(flavor);
     options.preserve_unresolved_references = true;
+    if !fragment {
+        options.extensions.fenced_divs = true;
+        options.extensions.header_attributes = true;
+    }
     if mode == ParseMode::Evaluated {
         options.extensions.executable_code = false;
         options.extensions.rmarkdown_inline_code = false;
@@ -303,6 +307,16 @@ impl AdapterContext {
             }
             BlockNode::CodeBlock(code) => Some(self.code_block(code)),
             BlockNode::FencedDiv(div) => {
+                if div
+                    .attributes()
+                    .is_some_and(|a| a.classes().iter().any(|c| c == "panel-tabset"))
+                {
+                    return Some(Block::Tabset {
+                        attributes: div.attributes().map(attributes).unwrap_or_default(),
+                        blocks: div.block_nodes().filter_map(|b| self.block(b)).collect(),
+                        span: span(div.syntax().text_range()),
+                    });
+                }
                 if self.evaluated
                     && div
                         .attributes()

@@ -147,6 +147,9 @@ impl PreparationContext<'_> {
                 }
                 Block::Callout {
                     attributes, blocks, ..
+                }
+                | Block::Tabset {
+                    attributes, blocks, ..
                 } => {
                     self.attributes(attributes);
                     self.blocks(blocks, defaults);

@@ -970,6 +970,7 @@ impl Links<'_> {
             match block {
                 Block::BlockQuote { blocks, .. }
                 | Block::Container { blocks, .. }
+                | Block::Tabset { blocks, .. }
                 | Block::Callout { blocks, .. } => self.blocks(blocks)?,
                 Block::List { items, .. } => {
                     for item in items {

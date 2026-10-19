@@ -803,6 +803,72 @@ test("copy buttons preserve highlighted code and support keyboard and fallback c
 });
 
 
+test("tabsets support keyboard navigation, groups, nesting, and fragment links", async ({ page }) => {
+  await page.goto("/tabsets.html");
+  const sets = page.locator(".panel-tabset");
+  const first = sets.nth(0);
+  const nested = sets.nth(1);
+  const second = sets.nth(2);
+  const firstTabs = first.locator(":scope > .tabset-controls");
+  const python = firstTabs.getByRole("tab", { name: "Python", exact: true });
+  const r = firstTabs.getByRole("tab", { name: "R", exact: true });
+  await expect(r).toHaveAttribute("aria-selected", "true");
+  await expect(first.getByText("Python content.", { exact: true })).toBeHidden();
+  await python.click();
+  await expect(python).toHaveAttribute("aria-selected", "true");
+  await expect(second.getByRole("tab", { name: "Python", exact: true })).toHaveAttribute("aria-selected", "true");
+  await nested.getByRole("tab", { name: "Output", exact: true }).click();
+  await expect(nested.getByText("Nested output.", { exact: true })).toBeVisible();
+  await expect(python).toHaveAttribute("aria-selected", "true");
+  await python.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(r).toBeFocused();
+  await expect(second.getByRole("tab", { name: "R", exact: true })).toHaveAttribute("aria-selected", "true");
+  await page.keyboard.press("Home");
+  await expect(python).toBeFocused();
+  await page.keyboard.press("ArrowLeft");
+  await expect(r).toBeFocused();
+  await page.keyboard.press("Home");
+  await page.keyboard.press("End");
+  await expect(r).toBeFocused();
+  await python.click();
+  await page.evaluate(() => { location.hash = "r-details"; });
+  await expect(first.getByRole("heading", { name: "R details", exact: true })).toBeVisible();
+  await expect(r).toHaveAttribute("aria-selected", "true");
+  await page.goto("/tabsets.html#nested-output");
+  await expect(nested.getByText("Nested output.", { exact: true })).toBeVisible();
+  await expect(page.getByText("Content without tab headings remains visible.")).toBeVisible();
+  await fitsViewport(page);
+});
+
+test("Tiny Stats residuals guide presents Python and R as tabs", async ({ page }, info) => {
+  await page.goto("/guides/inspecting-residuals.html");
+  const tabset = page.locator(".panel-tabset");
+  await expect(tabset.getByRole("tab", { name: "Python", exact: true })).toHaveAttribute("aria-selected", "true");
+  await expect(tabset.locator(".tabset-panel").first().locator("code")).toContainText("from tinystats import residuals");
+  await tabset.getByRole("tab", { name: "R", exact: true }).click();
+  const panel = tabset.getByRole("tabpanel");
+  await expect(panel).toContainText("library(tinystats)");
+  await expect(panel.getByRole("button", { name: "Copy code" })).toBeVisible();
+  await expect(page.locator(".page-toc").getByRole("link", { name: "Python", exact: true })).toHaveCount(0);
+  await fitsViewport(page);
+  await capture(page, info, "residuals-tabset");
+});
+
+test("tabsets retain all panels without JavaScript", async ({ browser, baseURL }) => {
+  const context = await browser.newContext({ javaScriptEnabled: false, baseURL });
+  try {
+    const page = await context.newPage();
+    await page.goto("/tabsets.html");
+    for (const text of ["Python content.", "R content.", "Nested details.", "Nested output.", "Second Python content.", "Second R content."]) {
+      await expect(page.getByText(text, { exact: true })).toBeVisible();
+    }
+    await expect(page.getByRole("tab")).toHaveCount(0);
+  } finally {
+    await context.close();
+  }
+});
+
 test("Tiny Stats vignette evaluates predictions", async ({ page }, info) => {
   await page.goto("/packages/r/");
   await page.getByRole("main").getByRole("link", { name: "R vignette", exact: true }).click();

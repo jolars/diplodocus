@@ -538,6 +538,14 @@ impl Markdown<'_, '_> {
         let mut output = String::new();
         for node in nodes {
             match node {
+                Block::Tabset {
+                    attributes, blocks, ..
+                } => {
+                    if let Some(identifier) = &attributes.identifier {
+                        anchor(&mut output, &identifier.value);
+                    }
+                    output.push_str(&self.blocks(blocks)?);
+                }
                 Block::Container {
                     identifier, blocks, ..
                 } => {

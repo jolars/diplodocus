@@ -174,6 +174,7 @@ fn project(
             }
             Block::BlockQuote { blocks, .. }
             | Block::Container { blocks, .. }
+            | Block::Tabset { blocks, .. }
             | Block::Callout { blocks, .. } => project(blocks, cells, ordinal),
             Block::List { items, .. } => {
                 for item in items {

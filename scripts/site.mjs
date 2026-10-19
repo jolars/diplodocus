@@ -57,6 +57,7 @@ if (mode === "serve-test") {
       });
     }
     const configuration = join(workspace, "diplodocus.toml");
+    cpSync(join(root, "tests/fixtures/tabsets.md"), join(workspace, "docs/tabsets.md"));
     writeFileSync(configuration, readFileSync(configuration, "utf8")
       .replace('url = "https://github.com/jolars/diplodocus"\n', 'url = "https://github.com/jolars/diplodocus"\nrevision = "main"\n'));
     mkdirSync(join(workspace, "spec"));

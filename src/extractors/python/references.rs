@@ -118,6 +118,7 @@ impl PythonReferences {
                 }
                 Block::BlockQuote { blocks, .. }
                 | Block::Container { blocks, .. }
+                | Block::Tabset { blocks, .. }
                 | Block::Callout { blocks, .. } => self.blocks(blocks, owner, diagnostics),
                 Block::List { items, .. } => {
                     for item in items {
