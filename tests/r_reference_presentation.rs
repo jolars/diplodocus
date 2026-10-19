@@ -45,7 +45,7 @@ fn reference_titles_routes_introductions_and_summaries_survive_without_sources()
                 < page.find(">Usage</h2>").unwrap()
         );
         assert_eq!(
-            page.matches("<pre class=\"syntax-code\" tabindex=\"0\">")
+            page.matches("<pre data-signature class=\"syntax-code\" tabindex=\"0\">")
                 .count(),
             3
         );

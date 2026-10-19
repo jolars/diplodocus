@@ -18,7 +18,8 @@ impl Highlighter {
     }
 
     pub(super) fn render_signature(&self, source: &str, language: Option<&str>) -> String {
-        self.render(source, language)
+        let source = super::signatures::layout_source(source, language.unwrap_or_default());
+        self.render(&source, language)
             .replacen("<pre ", "<pre data-signature ", 1)
     }
 

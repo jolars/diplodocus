@@ -78,7 +78,7 @@ test("code chunks and API signatures stay highlighted without JavaScript", async
   }
 });
 
-test("API signatures have no copy buttons", async ({ page }, info) => {
+test("API signatures have stable line breaks and no copy buttons", async ({ page }, info) => {
   for (const language of ["Python", "R", "Julia", "Rust"]) {
     await page.goto("/guides/comparing-predictions.html");
     const heading = page.getByRole("heading", { name: language, exact: true });
@@ -87,6 +87,13 @@ test("API signatures have no copy buttons", async ({ page }, info) => {
     const signatures = page.locator("main pre[data-signature]");
     await expect(signatures.first()).toBeVisible();
     await expect(page.locator(".code-block pre[data-signature]")).toHaveCount(0);
+    const text = await signatures.allTextContents();
+    const viewport = page.viewportSize()!;
+    await page.setViewportSize({ ...viewport, width: viewport.width > 600 ? 600 : 320 });
+    expect(await signatures.allTextContents()).toEqual(text);
+    await expect(signatures.first()).toHaveCSS("white-space", "pre");
+    await fitsViewport(page);
+    await page.setViewportSize(viewport);
     await capture(page, info, `signature-${language.toLowerCase()}`);
   }
 });

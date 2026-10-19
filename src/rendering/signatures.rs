@@ -227,7 +227,7 @@ pub(super) fn signature(name: &str, signature: &Signature, ecosystem: &str) -> S
                 if let Some(returns) = returns {
                     value.push_str(&format!("::{}", expression(returns, ecosystem)));
                 }
-                return value;
+                return layout_source(&value, "julia");
             }
             let mut parts = Vec::new();
             let mut keyword_marker = false;
@@ -264,11 +264,10 @@ pub(super) fn signature(name: &str, signature: &Signature, ecosystem: &str) -> S
                     parts.push("/".into());
                 }
             }
-            let mut value = format!("{name}({})", parts.join(", "));
-            if let Some(returns) = returns {
-                value.push_str(&format!(" -> {}", expression(returns, ecosystem)));
-            }
-            value
+            let suffix = returns.as_ref().map_or_else(String::new, |returns| {
+                format!(" -> {}", expression(returns, ecosystem))
+            });
+            layout_call(name, &parts, &suffix)
         }
         Signature::Value { annotation, value } => {
             let mut result = name.to_owned();
@@ -282,19 +281,154 @@ pub(super) fn signature(name: &str, signature: &Signature, ecosystem: &str) -> S
             result
         }
         Signature::LanguageSpecific { syntax, .. } => {
-            let value = expression(syntax, ecosystem);
+            let value = if ecosystem == "rust" {
+                layout_rust(syntax)
+            } else {
+                layout_source(&expression(syntax, ecosystem), ecosystem)
+            };
             if ecosystem == "julia"
                 && let Some((module, binding)) = name.rsplit_once('.')
                 && value
                     .strip_prefix(binding)
                     .is_some_and(|suffix| suffix.starts_with(['(', '{']))
             {
-                return format!("{module}.{value}");
+                return layout_source(&format!("{module}.{value}"), ecosystem);
             }
             value
         }
     }
 }
+const SIGNATURE_WIDTH: usize = 80;
+
+fn needs_layout(source: &str) -> bool {
+    !source.contains('\n') && source.chars().count() > SIGNATURE_WIDTH
+}
+
+fn layout_call(name: &str, parameters: &[String], suffix: &str) -> String {
+    let source = format!("{name}({}){suffix}", parameters.join(", "));
+    if !needs_layout(&source) || parameters.is_empty() {
+        return source;
+    }
+    format!("{name}(\n    {}\n){suffix}", parameters.join(",\n    "))
+}
+
+// R and Julia retain source expressions for some signatures. Their existing
+// parsers identify argument boundaries without splitting strings or nested calls.
+pub(super) fn layout_source(source: &str, language: &str) -> String {
+    if !needs_layout(source) {
+        return source.to_owned();
+    }
+    let ranges: Vec<std::ops::Range<usize>> = match language {
+        "r" => {
+            use arity_parser::ast::{AstNode, Expr, HasArgList};
+            let parsed = arity_parser::parser::parse(source);
+            if !parsed.diagnostics.is_empty() {
+                return source.to_owned();
+            }
+            let Some(Expr::Call(call)) = parsed.cst.children_with_tokens().find_map(Expr::cast)
+            else {
+                return source.to_owned();
+            };
+            call.args()
+                .map(|arg| arg.syntax().text_range().into())
+                .collect()
+        }
+        "julia" => {
+            use fatou_parser::ast::{AstNode, CallExpr, HasArgList};
+            use fatou_parser::syntax::SyntaxKind as K;
+            let parsed = fatou_parser::parser::parse(source);
+            if !parsed.diagnostics.is_empty() {
+                return source.to_owned();
+            }
+            let Some(call) = parsed.cst.descendants().find_map(CallExpr::cast) else {
+                return source.to_owned();
+            };
+            let Some(list) = call.arg_list() else {
+                return source.to_owned();
+            };
+            list.syntax()
+                .children()
+                .flat_map(|node| {
+                    if node.kind() == K::PARAMETERS {
+                        node.children().collect::<Vec<_>>()
+                    } else {
+                        vec![node]
+                    }
+                })
+                .map(|node| node.text_range().into())
+                .collect()
+        }
+        _ => return source.to_owned(),
+    };
+    layout_ranges(source, &ranges)
+}
+
+fn layout_ranges(source: &str, ranges: &[std::ops::Range<usize>]) -> String {
+    let (Some(first), Some(last)) = (ranges.first(), ranges.last()) else {
+        return source.to_owned();
+    };
+    let mut result = source[..first.start].trim_end().to_owned();
+    let suffix = source[last.end..].trim_start();
+    let (trailing_comma, suffix) = suffix
+        .strip_prefix(',')
+        .map_or((false, suffix), |rest| (true, rest.trim_start()));
+    result.push('\n');
+    for (index, range) in ranges.iter().enumerate() {
+        result.push_str("    ");
+        result.push_str(source[range.clone()].trim());
+        if let Some(next) = ranges.get(index + 1) {
+            result.push_str(source[range.end..next.start].trim());
+        } else if trailing_comma {
+            result.push(',');
+        }
+        result.push('\n');
+    }
+    result.push_str(suffix);
+    result
+}
+
+fn layout_rust(syntax: &SignatureExpression) -> String {
+    let source = expression(syntax, "rust");
+    if !needs_layout(&source) {
+        return source;
+    }
+    let SignatureExpression::LanguageSpecific { children, .. } = syntax else {
+        return source;
+    };
+    let mut offset = 0;
+    let mut function = false;
+    for child in children {
+        if matches!(child, SignatureExpression::Literal { text } if text == "fn ") {
+            function = true;
+        }
+        if function
+            && let SignatureExpression::LanguageSpecific {
+                children: declaration,
+                ..
+            } = child
+            && let Some(SignatureExpression::LanguageSpecific {
+                children: parameters,
+                ..
+            }) = declaration.first()
+            && matches!(parameters.first(), Some(SignatureExpression::Literal { text }) if text == "(")
+            && matches!(parameters.last(), Some(SignatureExpression::Literal { text }) if text == ")")
+        {
+            let mut position = offset + 1;
+            let mut ranges = Vec::new();
+            for parameter in &parameters[1..parameters.len() - 1] {
+                let length = expression(parameter, "rust").len();
+                if !matches!(parameter, SignatureExpression::Literal { text } if text == ", ") {
+                    ranges.push(position..position + length);
+                }
+                position += length;
+            }
+            return layout_ranges(&source, &ranges);
+        }
+        offset += expression(child, "rust").len();
+    }
+    source
+}
+
 pub(super) fn expression(value: &SignatureExpression, ecosystem: &str) -> String {
     match value {
         SignatureExpression::Name { name, .. } => name.clone(),
@@ -346,6 +480,88 @@ pub(super) fn expression(value: &SignatureExpression, ecosystem: &str) -> String
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn callable_layout_breaks_parameters_without_splitting_defaults() {
+        let parameters = vec![
+            "observations: Sequence[float]".to_owned(),
+            "predictions: Sequence[float] = (1.0, 2.0, 3.0)".to_owned(),
+            "*".to_owned(),
+            "normalize: bool = True".to_owned(),
+        ];
+        assert_eq!(
+            layout_call("mean_squared_error", &parameters, " -> float"),
+            "mean_squared_error(\n    observations: Sequence[float],\n    predictions: Sequence[float] = (1.0, 2.0, 3.0),\n    *,\n    normalize: bool = True\n) -> float"
+        );
+        assert_eq!(layout_call("f", &["x".into()], ""), "f(x)");
+        let boundary = "x".repeat(77);
+        assert!(!layout_call("f", std::slice::from_ref(&boundary), "").contains('\n'));
+        assert!(layout_call("f", &[format!("{boundary}x")], "").contains('\n'));
+    }
+
+    #[test]
+    fn r_usage_layout_preserves_nested_defaults_and_strings() {
+        let source = "mean_squared_error(observations = c(1, 2, 3), predictions = list(values = c(1, 2)), label = \"a, b\")";
+        assert_eq!(
+            layout_source(source, "r"),
+            "mean_squared_error(\n    observations = c(1, 2, 3),\n    predictions = list(values = c(1, 2)),\n    label = \"a, b\"\n)"
+        );
+    }
+
+    #[test]
+    fn julia_layout_preserves_keywords_and_where_clauses() {
+        let source = "mean_squared_error(observations::Vector{T}, predictions::Vector{T}; normalize = true, label = \"a, b\") where T";
+        assert_eq!(
+            layout_source(source, "julia"),
+            "mean_squared_error(\n    observations::Vector{T},\n    predictions::Vector{T};\n    normalize = true,\n    label = \"a, b\"\n) where T"
+        );
+        let trailing_comma = source.replace(") where T", ",) where T");
+        assert!(layout_source(&trailing_comma, "julia").ends_with("label = \"a, b\",\n) where T"));
+        let keywords_only = "mean_squared_error(; observations = zeros(100), predictions = zeros(100), normalize = true)";
+        assert!(layout_source(keywords_only, "julia").starts_with("mean_squared_error(;\n"));
+    }
+
+    #[test]
+    fn existing_multiline_and_unparseable_signatures_are_preserved() {
+        let multiline = "f(\n    observations,\n    predictions\n)";
+        for language in ["r", "julia"] {
+            assert_eq!(layout_source(multiline, language), multiline);
+            let invalid = format!("f({}", "x".repeat(100));
+            assert_eq!(layout_source(&invalid, language), invalid);
+        }
+    }
+
+    #[test]
+    fn rust_layout_uses_structured_parameter_boundaries() {
+        let literal = |text: &str| SignatureExpression::Literal { text: text.into() };
+        let tokens = |children| SignatureExpression::LanguageSpecific {
+            language: "rust".into(),
+            name: "tokens".into(),
+            source: None,
+            children,
+        };
+        let syntax = tokens(vec![
+            literal("pub "),
+            literal("fn "),
+            literal("mean_squared_error"),
+            literal("<'a, T>"),
+            tokens(vec![
+                tokens(vec![
+                    literal("("),
+                    literal("observations: &'a [T]"),
+                    literal(", "),
+                    literal("predictions: &'a [(T, T)]"),
+                    literal(")"),
+                ]),
+                literal(" -> Result<T, Error>"),
+            ]),
+            literal(" where T: Clone"),
+        ]);
+        assert_eq!(
+            layout_rust(&syntax),
+            "pub fn mean_squared_error<'a, T>(\n    observations: &'a [T],\n    predictions: &'a [(T, T)]\n) -> Result<T, Error> where T: Clone"
+        );
+    }
 
     #[test]
     fn rust_tokens_preserve_receivers_lifetimes_and_where_clauses() {
