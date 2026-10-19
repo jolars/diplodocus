@@ -46,6 +46,13 @@ include("../src/extractors/julia/runtime.jl")
             @test isempty(types["PackageError"]["fields"])
             @test types["Container"]["parameters"] == ["T"]
             @test !occursin(package, read(output, String))
+            validation = joinpath(package, "validation.toml")
+            observe_checkout(package, entry, validation, "false")
+            validated = TOML.parsefile(validation)
+            @test isempty(validated["types"])
+            @test validated["package_name"] == "RuntimeExceptions"
+            @test validated["package_uuid"] == "12345678-1234-1234-1234-123456789abc"
+            @test validated["package_version"] == "1.2.3"
             mismatch = joinpath(package, "src", "Other.jl")
             write(mismatch, "module Other end")
             rejected = joinpath(package, "rejected.toml")

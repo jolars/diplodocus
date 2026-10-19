@@ -9,17 +9,19 @@ The `julia` adapter reads an explicit `.jl` entry file and `Project.toml` with
 Rust libraries. Fatou provides Julia syntax, documentation attachments, string
 decoding, source maps, and Julia Markdown. Diplodocus determines the maintained
 API, assigns identities, and resolves references. `check` uses this static
-adapter without starting Julia. During `extract`, `build`, and `serve`, unresolved
-public bindings trigger native type completion in the prepared checkout.
+adapter without starting Julia. During `extract`, `build`, and `serve`, every
+checkout is loaded and validated, even without doctests or unresolved public
+bindings. Unresolved public bindings additionally trigger native type completion.
 
 ## Runtime type completion
 
-Diplodocus starts Julia with startup and history files disabled and activates the
-configured package project. The caller must provide Julia and the package's
+Diplodocus starts Julia with startup and history files disabled and activates
+the configured package project. The caller must provide Julia and the package's
 dependencies. Diplodocus never installs or resolves dependencies. The helper
-loads the package by its Project.toml name and UUID and verifies that its entry
-file matches the supplied checkout. Loading another release, missing
-prerequisites, errors, cancellation, and timeouts prevent snapshot publication.
+loads the package by its Project.toml name and UUID and verifies the loaded
+module name, UUID, version, and entry file against the supplied checkout.
+Loading another release, missing prerequisites, errors, cancellation, and
+timeouts prevent snapshot publication.
 
 The helper observes exported types defined by the root module, their type
 parameters, supertypes, mutability, and fields. This completes macro-generated

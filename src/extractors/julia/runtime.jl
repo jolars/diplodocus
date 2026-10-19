@@ -2,17 +2,25 @@ using TOML
 
 # Loading by package identity lets Julia resolve dependencies in the caller's
 # prepared environment. Verify the checkout before reflecting on its bindings.
-function observe_checkout(package_path, entry_path, output_path)
+function observe_checkout(package_path, entry_path, output_path, reflect="true")
     project = TOML.parsefile(joinpath(package_path, "Project.toml"))
     identity = Base.PkgId(Base.UUID(project["uuid"]), project["name"])
     loaded = Base.require(identity)
+    Base.PkgId(loaded) == identity || error("Loaded package identity conflicts with Project.toml.")
+    nameof(loaded) == Symbol(project["name"]) ||
+        error("Loaded package name conflicts with Project.toml.")
+    version = Base.pkgversion(loaded)
+    if haskey(project, "version")
+        version == VersionNumber(project["version"]) ||
+            error("Loaded package version conflicts with Project.toml.")
+    end
     loaded_entry = pathof(loaded)
     isnothing(loaded_entry) && error("Loaded package has no source entry.")
     realpath(loaded_entry) == realpath(entry_path) ||
         error("Loaded package does not match the supplied checkout.")
 
     bindings = []
-    for name in sort!(names(loaded; all=false, imported=false); by=string)
+    for name in (reflect == "true" ? sort!(names(loaded; all=false, imported=false); by=string) : Symbol[])
         isdefined(loaded, name) || error("Public binding is undefined: $name")
         binding = getfield(loaded, name)
         (binding isa DataType || binding isa UnionAll) || continue
@@ -37,8 +45,8 @@ function observe_checkout(package_path, entry_path, output_path)
     result = Dict(
         "policy" => "julia-runtime-v1",
         "julia_version" => string(VERSION),
-        "package_name" => project["name"],
-        "package_uuid" => project["uuid"],
+        "package_name" => string(nameof(loaded)),
+        "package_uuid" => string(Base.PkgId(loaded).uuid),
         "package_version" => string(Base.pkgversion(loaded)),
         "dependencies" => dependencies,
         "types" => bindings,

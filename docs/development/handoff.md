@@ -7,14 +7,14 @@ implementation.
 
 The [prepared-environment decision](../decisions/0003-prepared-environment.md)
 changes the intended extraction contract to allow runtime assistance and require
-example execution. Julia extraction completes unresolved exported types through
-native reflection while `check` remains static. R extraction uses native helpers
-to complete authors and citations and now loads the checkout to execute Rd examples.
-Python extraction always loads and validates the checkout, even without doctests.
-Python and Julia API doctests execute through supervised native helpers.
-QMD default-execution changes remain pending. The pipeline and test map below
-describe the current implementation; [remaining work](../../TODO.md) tracks the
-transition.
+example execution. Julia extraction always loads and validates the checkout and
+completes unresolved exported types through native reflection while `check`
+remains static. R extraction uses native helpers to complete authors and
+citations and now loads the checkout to execute Rd examples. Python extraction
+always loads and validates the checkout, even without doctests. Python and Julia
+API doctests execute through supervised native helpers. QMD default-execution
+changes remain pending. The pipeline and test map below describe the current
+implementation; [remaining work](../../TODO.md) tracks the transition.
 
 ## How a build moves through the code
 
@@ -29,8 +29,9 @@ transition.
    compiler, observes inputs, and verifies native doctests. Rust `check` invokes
    the compiler without executing doctests. The [Rust extraction contract](../ir/rust-extraction.md)
    describes this native boundary. During extraction,
-   `src/assembly/julia_runtime.rs` loads the prepared Julia checkout when public
-   types need runtime completion. `check` uses source analysis alone.
+   `src/assembly/julia_runtime.rs` loads and validates every prepared Julia
+   checkout and completes public types when needed. `check` uses source analysis
+   alone.
    `src/documents/` parses Markdown and QMD. `src/assembly/` combines
    those inputs into the types in `src/ir/`.
 3. `src/validation/` resolves references and assets. On Linux,

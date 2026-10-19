@@ -219,7 +219,12 @@ fn unavailable_interpreters_and_dependencies_are_errors_instead_of_skips() {
             .output()
             .unwrap();
         assert!(!output.status.success());
-        assert!(String::from_utf8_lossy(&output.stderr).contains("require the interpreter"));
+        let expected = if language == "julia" {
+            "requires Julia"
+        } else {
+            "require the interpreter"
+        };
+        assert!(String::from_utf8_lossy(&output.stderr).contains(expected));
         assert!(
             !root
                 .path()

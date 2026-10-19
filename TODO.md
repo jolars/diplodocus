@@ -81,7 +81,7 @@ still needs the tasks below. Keep package loading and example execution out of
   command tests without doctests for a missing interpreter, missing dependencies,
   and an incorrect checkout; failures must preserve the previous snapshot and
   site.
-- [ ] Validate and load every Julia checkout during extraction, including
+- [x] Validate and load every Julia checkout during extraction, including
   packages without unresolved public bindings or doctests. Verify the package
   name, UUID, version, and entry file independently of reflection and example
   discovery. Add command tests without those triggers for a missing runtime,

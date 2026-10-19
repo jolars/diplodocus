@@ -139,3 +139,63 @@ fn missing_runtime_and_package_load_failure_preserve_the_previous_snapshot() {
         "previous snapshot"
     );
 }
+
+#[test]
+fn plain_checkouts_are_validated_before_publication() {
+    for broken in ["runtime", "dependency", "checkout", "load"] {
+        let root = workspace();
+        root.write("package/src/Demo.jl", "module Demo\nvalue = 42\nend\n");
+        let built = command(&root, "build", false);
+        assert!(
+            built.status.success(),
+            "{}",
+            String::from_utf8_lossy(&built.stderr)
+        );
+        let snapshot = root.path().join(".diplodocus/documentation.sqlite");
+        let previous = fs::read(&snapshot).unwrap();
+        let site = root.path().join("site/index.html");
+        let previous_site = fs::read(&site).unwrap();
+        let (source, expected) = match broken {
+            "dependency" => (
+                "module Demo\nusing UnavailableDocumentationDependency\nend\n",
+                "UnavailableDocumentationDependency",
+            ),
+            "load" => (
+                "module Demo\nerror(\"checkout load failed\")\nend\n",
+                "checkout load failed",
+            ),
+            _ => ("module Demo\nvalue = 42\nend\n", ""),
+        };
+        root.write("package/src/Demo.jl", source);
+        if broken == "checkout" {
+            root.write("package/src/Other.jl", source);
+            let config = fs::read_to_string(root.path().join("diplodocus.toml")).unwrap();
+            root.write(
+                "diplodocus.toml",
+                config.replace("src/Demo.jl", "src/Other.jl"),
+            );
+        }
+        let checked = command(&root, "check", true);
+        assert!(
+            checked.status.success(),
+            "{broken}: {}",
+            String::from_utf8_lossy(&checked.stderr)
+        );
+        for operation in ["extract", "build"] {
+            let failed = command(&root, operation, broken == "runtime");
+            assert!(!failed.status.success(), "{broken}: {operation}");
+            let expected = match broken {
+                "runtime" => "requires Julia",
+                "checkout" => "does not match the supplied checkout",
+                _ => expected,
+            };
+            assert!(
+                String::from_utf8_lossy(&failed.stderr).contains(expected),
+                "{}",
+                String::from_utf8_lossy(&failed.stderr)
+            );
+            assert_eq!(previous, fs::read(&snapshot).unwrap());
+            assert_eq!(previous_site, fs::read(&site).unwrap());
+        }
+    }
+}

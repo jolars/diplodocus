@@ -1,4 +1,4 @@
-//! Native Julia completion runs only in the extraction command pipeline.
+//! Native Julia checkout validation and completion run during extraction.
 
 use super::*;
 use crate::extractors::julia;
@@ -37,13 +37,10 @@ pub(crate) async fn assemble_for_extraction(
                     .cloned()
                     .collect(),
             )?;
-            if !result
+            let reflect = result
                 .diagnostics
                 .iter()
-                .any(|d| d.code == DiagnosticCode::JuliaUnresolvedDefinition)
-            {
-                continue;
-            }
+                .any(|d| d.code == DiagnosticCode::JuliaUnresolvedDefinition);
             let failure = |message: String| {
                 AssemblyError::Diagnostics(vec![
                     Diagnostic::new(
@@ -72,6 +69,7 @@ pub(crate) async fn assemble_for_extraction(
                 .arg(&package.path)
                 .arg(&selected.path)
                 .arg(&output)
+                .arg(if reflect { "true" } else { "false" })
                 .current_dir(&package.path)
                 .stdin(Stdio::null())
                 .stdout(Stdio::null())
