@@ -108,6 +108,8 @@ blockquote, .callout { border-left: 4px solid #688b84; padding: .2rem 1rem; marg
 .skip-link { position: absolute; left: -10000px; }
 .skip-link:focus { position: fixed; left: 1rem; top: 1rem; z-index: 20; background: white; padding: 1rem; }
 .page-toc { grid-column: 1; grid-row: 1; padding: 1rem 2.5rem 0; color: var(--muted); font-size: .8rem; }
+.page-toc-empty { display: none; }
+.back-to-top { font-weight: 650; }
 .toc-disclosure > summary { padding: .2rem .45rem; cursor: pointer; font-weight: 650; }
 .toc-disclosure ul { margin-top: .4rem; }
 .toc-level-3 { padding-left: .65rem; }
@@ -130,6 +132,7 @@ blockquote, .callout { border-left: 4px solid #688b84; padding: .2rem 1rem; marg
 }
 @media (max-width: 1099px) {
   .page-toc { position: relative; z-index: 9; }
+  .page-toc-empty { display: block; }
   .toc-disclosure { position: relative; }
   .toc-disclosure > ul { position: absolute; top: 100%; left: 0; width: min(22rem, 100%); max-height: min(60dvh, 24rem); overflow-y: auto; overscroll-behavior: contain; margin: .5rem 0 0; padding: .5rem; border: 1px solid var(--border); border-radius: .5rem; background: white; box-shadow: 0 8px 24px #202c381a; }
   /* Keep the popup hidden until the responsive disclosure state is ready. */

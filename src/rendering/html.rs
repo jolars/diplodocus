@@ -233,28 +233,10 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
         } else if package_overview {
             html.push_str("<div class=\"package-overview-body\">");
         }
-        if let Some(owner) = &page.owner {
-            let package = &site.workspace.packages[owner];
-            write!(
-                html,
-                "<p class=\"package\">{} · {}{}</p>",
-                escape(&package.name),
-                escape(&package.ecosystem),
-                package
-                    .version
-                    .as_ref()
-                    .map(|v| format!(" · {}", escape(v)))
-                    .unwrap_or_default()
-            )
-            .unwrap();
-        }
         let julia_method = page.item.filter(|item| {
             item.kind == ItemKind::Method
                 && matches!(&item.language_data, Some(ItemLanguageData::Julia(_)))
         });
-        if julia_method.is_some() {
-            html.push_str("<p class=\"package\">Method</p>");
-        }
         // Keep the authored heading's formatting and anchor when it supplies the title.
         let authored_title = page.item.is_none()
             && page.concept.is_none()
@@ -280,9 +262,29 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                 escape(&page.title)
             };
             write!(html, "<h1>{title}</h1>").unwrap();
-        } else if package_overview {
-            let document = page.document.expect("authored overview title");
+        } else {
+            let document = page.document.expect("authored title");
             html.push_str(&renderer.blocks(&document.document.blocks[..1])?);
+        }
+        if let Some(owner) = &page.owner {
+            let package = &site.workspace.packages[owner];
+            write!(
+                html,
+                "<p class=\"package\">{} · {}{}{}</p>",
+                escape(&package.name),
+                escape(&package.ecosystem),
+                package
+                    .version
+                    .as_ref()
+                    .map(|v| format!(" · {}", escape(v)))
+                    .unwrap_or_default(),
+                if julia_method.is_some() {
+                    " · Method"
+                } else {
+                    ""
+                }
+            )
+            .unwrap();
         }
         if let Some(item) = page.item
             && matches!(&item.language_data, Some(ItemLanguageData::R(_)))
@@ -460,9 +462,7 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
         if let Some(document) = page.document {
             let blocks = if let Some(start) = rd_body_start {
                 &document.document.blocks[start..]
-            } else if (package_overview && authored_title)
-                || page.item.and_then(super::r_topics::title).is_some()
-            {
+            } else if authored_title || page.item.and_then(super::r_topics::title).is_some() {
                 &document.document.blocks[1..]
             } else {
                 &document.document.blocks
@@ -1167,7 +1167,7 @@ impl Renderer<'_, '_> {
 
     fn page_navigation(&self) -> String {
         if self.headings.is_empty() {
-            return String::new();
+            return "<aside class=\"page-toc page-toc-empty\"><nav aria-label=\"Page\"><a class=\"back-to-top\" href=\"\">Back to top</a></nav></aside>".into();
         }
         let mut html = String::from(
             "<aside class=\"page-toc\"><nav aria-label=\"On this page\"><details class=\"toc-disclosure\" open><summary>On this page</summary><ul>",

@@ -936,11 +936,52 @@ test("page TOC stays close to content when the window narrows", async ({ page },
   await page.setViewportSize({ width: 1000, height: 1000 });
   await capture(page, info, "medium-page-toc");
 
+  const withToc = (await page.getByRole("heading", { level: 1 }).boundingBox())!;
   await page.goto("/getting-started/");
-  const header = await page.getByRole("banner").boundingBox();
   const title = await page.getByRole("heading", { level: 1 }).boundingBox();
-  expect(title!.y - (header!.y + header!.height), "A page without a TOC should not reserve an empty row").toBeLessThanOrEqual(40);
+  expect(title!.y).toBeCloseTo(withToc.y, 1);
+  await expect(page.getByRole("link", { name: "Back to top", exact: true })).toBeVisible();
   await capture(page, info, "medium-without-toc");
+});
+
+test("page titles stay aligned across guides, package overviews, and APIs", async ({ page }, info) => {
+  await page.goto("/");
+  const apis = await page.locator("main a").evaluateAll(elements => elements
+    .filter(element => /mean_squared_error/.test(element.textContent!))
+    .map(element => (element as HTMLAnchorElement).pathname));
+  expect(apis).toHaveLength(4);
+  const destinations = [
+    ["/getting-started/", "short-guide"],
+    ["/guides/comparing-predictions.html", "guide"],
+    ["/packages/python/", "python-package"],
+    ["/packages/r/", "r-package"],
+    ["/packages/julia/", "julia-package"],
+    ["/packages/rust/", "rust-package"],
+    ["/packages/python/guides/evaluating-models.html", "package-guide"],
+    ...apis.map((path, index) => [path, `api-${index}`]),
+    ["/", "home"],
+  ];
+  const widths = info.project.name === "desktop" ? [1280, 1000, 761] : [760, 390, 320];
+  for (const width of widths) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/");
+    await expect(page.locator(".nav-disclosure")).toHaveAttribute("data-ready");
+    const baseline = (await page.getByRole("heading", { level: 1 }).boundingBox())!;
+    for (const [path, name] of destinations) {
+      const destination = new URL(path, page.url()).href;
+      await followFixtureLink(page, destination);
+      await expect(page).toHaveURL(destination);
+      const heading = page.getByRole("heading", { level: 1 });
+      await expect(heading).toHaveCount(1);
+      await expect(heading).toBeVisible();
+      const title = (await heading.boundingBox())!;
+      expect(title.y, `Title position at ${width}px on ${path}`).toBeCloseTo(baseline.y, 1);
+      await fitsViewport(page);
+      if (width === 1000 || width === 390) {
+        await capture(page, info, `title-alignment-${name}`, true, false);
+      }
+    }
+  }
 });
 
 test("compact page TOC overlays content and dismisses after use", async ({ page }, info) => {
