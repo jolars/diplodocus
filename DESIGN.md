@@ -1,11 +1,6 @@
 # Diplodocus: Design
 
-This document records the product architecture and intended boundaries. The
-[status page](TODO.md) tracks remaining release work, the
-[collaborator handoff](docs/development/handoff.md) maps the current code, and
-the [acceptance matrix](tests/fixtures/acceptance/MATRIX.md) specifies expected
-product behavior. Future-tense statements here describe design intent, not an
-implementation status report.
+This document records the product architecture and intended boundaries.
 
 ## Purpose
 
@@ -49,11 +44,11 @@ assembly is a later concern.
 ### One documentation model
 
 Extractors and content adapters supply a shared structured model. The built-in
-renderer owns its generated HTML, navigation, search, URLs, and language-specific
-presentation. Existing sites can supply their own layout and URLs while reusing
-document bodies, signatures, assets, and semantic identities. The built-in
-frontend renders the shared model itself. It does not merge independently
-generated pages from rustdoc, pkgdown, Sphinx, or Documenter.jl.
+renderer owns its generated HTML, navigation, search, URLs, and
+language-specific presentation. Existing sites can supply their own layout and
+URLs while reusing document bodies, signatures, assets, and semantic identities.
+The built-in frontend renders the shared model itself. It does not merge
+independently generated pages from rustdoc, pkgdown, Sphinx, or Documenter.jl.
 
 Unsupported constructs must produce visible diagnostics rather than silent
 information loss.
@@ -130,8 +125,8 @@ without a separate workspace opt-in. Illustrative snippets use explicit source
 syntax; skips and expected errors are explicit and recorded. Unexpected errors,
 expected-output mismatches, and missing prerequisites prevent publication.
 
-Package code and examples run with the user's privileges and may change files
-or access the network. Invoking extraction authorizes this execution; Diplodocus
+Package code and examples run with the user's privileges and may change files or
+access the network. Invoking extraction authorizes this execution; Diplodocus
 does not sandbox it. Output sanitization protects rendered content, and atomic
 publication protects the previous snapshot and site, but neither undoes code
 side effects.
@@ -189,11 +184,11 @@ package with a Python extraction target, not separate Python and Rust packages.
 Internal bindings may be declared separately when their APIs are themselves
 intended documentation targets.
 
-Built-in extractors combine source analysis with runtime assistance where needed.
-Source parsers retain documentation structure, declared signatures, stubs, and
-source attribution. Native tools and runtime inspection may establish metadata,
-exports, methods, and dynamic semantics. Each adapter defines how it reconciles
-those observations and diagnoses conflicts or unsupported semantics.
+Built-in extractors combine source analysis with runtime assistance where
+needed. Source parsers retain documentation structure, declared signatures,
+stubs, and source attribution. Native tools and runtime inspection may establish
+metadata, exports, methods, and dynamic semantics. Each adapter defines how it
+reconciles those observations and diagnoses conflicts or unsupported semantics.
 
 Python reads package metadata, source, and stubs; R reads `DESCRIPTION`,
 `NAMESPACE`, maintained R source, and Rd documentation; Julia reads
@@ -206,11 +201,11 @@ Extractors return package fragments independently of storage and rendering.
 Provenance distinguishes source analysis, runtime observations, and executed
 examples and records the actual tools and environment involved. Cache identities
 must cover those inputs. The [static-extraction
-decision](docs/decisions/0001-static-extraction.md) and
-[static-extractor reference](docs/spikes/static-extractor-contract.md) document
-the existing implementation; the
-[prepared-environment decision](docs/decisions/0003-prepared-environment.md)
-supersedes their runtime restrictions.
+decision](docs/decisions/0001-static-extraction.md) and [static-extractor
+reference](docs/spikes/static-extractor-contract.md) document the existing
+implementation; the [prepared-environment
+decision](docs/decisions/0003-prepared-environment.md) supersedes their runtime
+restrictions.
 
 ### Authored content parsing
 
@@ -461,8 +456,8 @@ Each executable QMD page uses a selected execution environment, with cells run
 sequentially in source order. Recognized executable cells must run or report an
 explicit supported skip; a language mismatch cannot silently make them display
 code. Engine and kernel selectors identify the environment rather than grant
-execution permission. The existing Jupyter client supplies streams, errors,
-and display results without a Jupyter server. Executables, kernels, and language
+execution permission. The existing Jupyter client supplies streams, errors, and
+display results without a Jupyter server. Executables, kernels, and language
 packages remain caller-supplied toolchain requirements.
 
 Execution attaches structured outputs to `CodeCell` nodes. Only Markdown-valued
@@ -496,14 +491,14 @@ Python/R site.
 Repository roots may be sibling checkouts. Package paths are relative to their
 declared repository; metadata and targets are relative to the package; content
 and declared environment inputs are relative to their repository. Resolution
-rejects paths that cross these boundaries. Diplodocus does not discover
-packages or fetch repositories implicitly.
+rejects paths that cross these boundaries. Diplodocus does not discover packages
+or fetch repositories implicitly.
 
 A package ID is its stable reference and relationship identity. Its slug
-controls its site URL, independently of ecosystem and display name. Content
-has either a project owner or a package owner; ownership controls navigation
-and semantic-reference context, independently of where the source file lives.
-A collection selects the `gfm` or `qmd` profile. Executable examples run as part
+controls its site URL, independently of ecosystem and display name. Content has
+either a project owner or a package owner; ownership controls navigation and
+semantic-reference context, independently of where the source file lives. A
+collection selects the `gfm` or `qmd` profile. Executable examples run as part
 of extraction; engine and kernel settings select where they run. Explicit
 illustrative syntax, expected errors, and supported conditional skips preserve
 the distinction between display code and executable examples. Declared

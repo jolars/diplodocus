@@ -1,23 +1,16 @@
 # Project status and remaining work
 
-Reviewed October 12, 2026. This page tracks work that remains before the first
-release and the collaborator handoff. It replaces the old milestone-by-milestone
-implementation log; Git history preserves that log and its completed checklists.
-A checked implementation task is not, by itself, a release gate.
-
 ## What works today
 
-  | Area               | Current implementation                                                                                                                                                | Evidence to start with                                                                                             |
-  | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-  | Workspace input    | Explicit repository, package, content, concept, relationship, and execution configuration; Python, R, Julia, and compiler-backed Rust extraction; GFM and QMD parsing | `src/configuration.rs`, `src/extractors/`, `src/documents/`; `tests/acceptance_gate.rs`                            |
-  | Authored execution | Explicitly authorized Python and R Jupyter pages, structured and validated output, bounded cleanup, and a page cache                                                  | `src/execution/`; `tests/milestone_six.rs`, `tests/execution_cache.rs`                                             |
-  | Portable handoff   | Workspace assembly, reference resolution, and a self-contained SQLite snapshot with canonical text export                                                             | `src/assembly/`, `src/validation/`, `src/snapshots/`; `tests/snapshot_publication.rs`, `tests/monorepo_example.rs` |
-  | Site               | Snapshot-backed routes, HTML, navigation, search, local assets, and atomic publication                                                                                | `src/site.rs`, `src/rendering/`; `tests/site_generation.rs`, `tests/browser/site.spec.ts`                          |
-  | Commands           | `check`, `extract`, `generate`, `build`, and watched `serve`, including optional live reload                                                                          | `src/commands/`; `tests/commands.rs`, `tests/cli.rs`                                                               |
+  | Area               | Current implementation                                                                                                                                                | Evidence to start with                                                                    |
+  | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+  | Workspace input    | Explicit repository, package, content, concept, relationship, and execution configuration; Python, R, Julia, and compiler-backed Rust extraction; GFM and QMD parsing | `src/configuration.rs`, `src/extractors/`, `src/documents/`; `tests/acceptance_gate.rs`   |
+  | Authored execution | Explicitly authorized Python and R Jupyter pages, structured and validated output, bounded cleanup, and a page cache                                                  | `src/execution/`; `tests/milestone_six.rs`, `tests/execution_cache.rs`                    |
+  | Site               | Snapshot-backed routes, HTML, navigation, search, local assets, and atomic publication                                                                                | `src/site.rs`, `src/rendering/`; `tests/site_generation.rs`, `tests/browser/site.spec.ts` |
+  | Commands           | `check`, `extract`, `generate`, `build`, and watched `serve`, including optional live reload                                                                          | `src/commands/`; `tests/commands.rs`, `tests/cli.rs`                                      |
 
 These are implemented paths, not a claim that every acceptance and release check
-below has passed on a clean checkout. The [architecture](DESIGN.md),
-[collaborator code map](docs/development/handoff.md), [CLI
+below has passed on a clean checkout. The [architecture](DESIGN.md), [CLI
 guide](docs/guide/cli.md), and [acceptance
 matrix](tests/fixtures/acceptance/MATRIX.md) give their respective contracts.
 The [four-language example](examples/monorepo/README.md) is the smallest
@@ -54,19 +47,6 @@ still needs its complete scenario evidence before release.
 - **MVP-10:** Checked, previewed, and published self-documentation.
 - **MVP-11:** Reproducible new-user and separate-stage workflows.
 
-## Next handoff
-
-The [code map](docs/development/handoff.md) describes the generator boundary.
-The [monorepo integration test](tests/monorepo_example.rs) already copies a
-snapshot, removes its source workspace, and compares the independently generated
-site byte for byte with the original site.
-
-- [ ] Produce a reviewed monorepo snapshot fixture from the real `extract`
-  command, together with its canonical text export and example queries. Keep
-  generated files out of the source fixture; the test should create them in
-  a temporary directory. The [schema](docs/design/snapshot-schema.md)
-  defines its wire format.
-
 ## Before the first release
 
 ### Product and acceptance
@@ -78,36 +58,39 @@ still needs the tasks below. Keep package loading and example execution out of
 - [x] Validate and load every Python checkout during extraction, including
   packages without doctests. Reuse the checkout loader and verify the loaded
   package's source path and version independently of example discovery. Add
-  command tests without doctests for a missing interpreter, missing dependencies,
-  and an incorrect checkout; failures must preserve the previous snapshot and
-  site.
+  command tests without doctests for a missing interpreter, missing
+  dependencies, and an incorrect checkout; failures must preserve the
+  previous snapshot and site.
 - [x] Validate and load every Julia checkout during extraction, including
-  packages without unresolved public bindings or doctests. Verify the package
-  name, UUID, version, and entry file independently of reflection and example
-  discovery. Add command tests without those triggers for a missing runtime,
-  missing dependencies, an incorrect checkout, and package-load errors;
-  failures must preserve the previous snapshot and site.
+  packages without unresolved public bindings or doctests. Verify the
+  package name, UUID, version, and entry file independently of reflection
+  and example discovery. Add command tests without those triggers for a
+  missing runtime, missing dependencies, an incorrect checkout, and
+  package-load errors; failures must preserve the previous snapshot and
+  site.
 - [ ] Validate and load every R checkout during extraction, including packages
-  without Rd examples or R Markdown vignettes. Reuse `pkgload` with compilation
-  disabled, verify the namespace identity and version, and require prebuilt
-  extensions. Add command tests without examples or vignettes for missing
-  dependencies and extensions, an incorrect checkout, and failing load hooks;
-  failures must preserve the previous snapshot and site.
+  without Rd examples or R Markdown vignettes. Reuse `pkgload` with
+  compilation disabled, verify the namespace identity and version, and
+  require prebuilt extensions. Add command tests without examples or
+  vignettes for missing dependencies and extensions, an incorrect checkout,
+  and failing load hooks; failures must preserve the previous snapshot and
+  site.
 - [ ] Define and implement Python's supported source/runtime reconciliation
-  rules. State which API facts remain authoritative in source and stubs, retain
-  runtime observations as separate evidence, and diagnose contradictions in the
-  supported subset. Cover agreement and conflicts while keeping source
-  validation available without importing the package through `check`.
+  rules. State which API facts remain authoritative in source and stubs,
+  retain runtime observations as separate evidence, and diagnose
+  contradictions in the supported subset. Cover agreement and conflicts
+  while keeping source validation available without importing the package
+  through `check`.
 - [ ] Define and implement R's supported source/runtime reconciliation rules.
   State how namespace, source, and Rd facts relate to runtime observations,
   preserve their separate attribution, and diagnose contradictions in the
-  supported subset. Cover agreement and conflicts while keeping `check` free of
-  package loading.
+  supported subset. Cover agreement and conflicts while keeping `check` free
+  of package loading.
 - [ ] Extend Julia source/runtime reconciliation beyond the existing type-flavor
   check. Define supported comparisons for type parameters, supertypes, and
   fields, and diagnose incompatible overlapping observations. Test conflicts
-  and preserve source evidence separately from runtime evidence without inventing
-  source ranges for generated declarations.
+  and preserve source evidence separately from runtime evidence without
+  inventing source ranges for generated declarations.
 - [ ] Execute recognized API examples and authored cells during extraction
   without a workspace opt-in. Define language-specific setup, session state,
   expected-output comparison, expected errors, illustrative syntax, and

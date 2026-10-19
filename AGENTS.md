@@ -1,13 +1,9 @@
 # Working on Diplodocus
 
-Use `devenv shell` for the pinned Rust, Python, R, Node, and browser environment.
-Run `npm ci --ignore-scripts` after checkout or changes to `package-lock.json`.
-Devenv supplies Chromium; no `playwright install` step is needed.
-
-The [contributor handoff](docs/development/handoff.md) maps the build pipeline,
-source modules, and focused test targets. The small example is in
-`examples/monorepo/`; the broader extraction and execution corpus is in
-`tests/fixtures/acceptance/`.
+Use `devenv shell` for the pinned Rust, Python, R, Node, and browser
+environment. Run `npm ci --ignore-scripts` after checkout or changes to
+`package-lock.json`. Devenv supplies Chromium; no `playwright install` step is
+needed.
 
 ## Verification
 
