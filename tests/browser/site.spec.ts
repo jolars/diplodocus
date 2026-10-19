@@ -109,6 +109,27 @@ for (const [path, title, name] of [
   });
 }
 
+test("navbar links stay in place when switching sections", async ({ page }, info) => {
+  test.skip(info.project.name !== "desktop", "The top navbar is shown on desktop.");
+  await page.goto("/");
+  const links = page.locator("header .global-nav a");
+  const positions = await links.evaluateAll(elements => elements.map(element => {
+    const { x, width } = element.getBoundingClientRect();
+    return { x, width };
+  }));
+  for (let selected = 1; selected <= positions.length; selected++) {
+    const index = selected % positions.length;
+    await links.nth(index).click();
+    await expect(links.nth(index)).toHaveAttribute("aria-current", "true");
+    for (let link = 0; link < positions.length; link++) {
+      const bounds = (await links.nth(link).boundingBox())!;
+      expect(bounds.x).toBeCloseTo(positions[link].x, 1);
+      expect(bounds.width).toBeCloseTo(positions[link].width, 1);
+    }
+  }
+  await capture(page, info, "navbar-stable-sections");
+});
+
 test("navbar and sidebars share outer margins", async ({ page }, info) => {
   test.skip(info.project.name !== "desktop", "The sidebars stack on mobile.");
   await page.goto("/guides/comparing-predictions.html");
@@ -166,6 +187,28 @@ test("sidebar branding stays visible while reaching lower navigation links", asy
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Inspecting residuals");
   await expect(brand).toBeInViewport({ ratio: 1 });
   await capture(page, info, "sidebar-branding", true, false);
+});
+
+test("brand title stays in place while the logo loads", async ({ page }, info) => {
+  let releaseImages!: () => void;
+  const imagesReady = new Promise<void>(resolve => { releaseImages = resolve; });
+  await page.route("**/assets/*", async route => {
+    if (route.request().resourceType() === "image") await imagesReady;
+    await route.continue();
+  });
+  await page.goto("/packages/python/", { waitUntil: "domcontentloaded" });
+  const brand = page.locator(".layout > nav > .brand");
+  const logo = brand.locator(".brand-logo");
+  const title = brand.locator("span");
+  await expect(logo).toBeAttached();
+  expect(await logo.evaluate((element: HTMLImageElement) => element.naturalWidth)).toBe(0);
+  const before = (await title.boundingBox())!;
+  releaseImages();
+  await expect.poll(() => logo.evaluate((element: HTMLImageElement) => element.naturalWidth)).toBeGreaterThan(0);
+  const after = (await title.boundingBox())!;
+  expect(after.x).toBeCloseTo(before.x, 1);
+  expect(after.y).toBeCloseTo(before.y, 1);
+  await capture(page, info, "brand-logo-loaded");
 });
 
 test("navbar logo loads on nested pages and links home", async ({ page }, info) => {
