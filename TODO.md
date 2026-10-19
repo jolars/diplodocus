@@ -7,13 +7,13 @@ A checked implementation task is not, by itself, a release gate.
 
 ## What works today
 
-  | Area               | Current implementation                                                                                                                                 | Evidence to start with                                                                                             |
-  | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+  | Area               | Current implementation                                                                                                                                                | Evidence to start with                                                                                             |
+  | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
   | Workspace input    | Explicit repository, package, content, concept, relationship, and execution configuration; Python, R, Julia, and compiler-backed Rust extraction; GFM and QMD parsing | `src/configuration.rs`, `src/extractors/`, `src/documents/`; `tests/acceptance_gate.rs`                            |
-  | Authored execution | Explicitly authorized Python and R Jupyter pages, structured and validated output, bounded cleanup, and a page cache                                   | `src/execution/`; `tests/milestone_six.rs`, `tests/execution_cache.rs`                                             |
-  | Portable handoff   | Workspace assembly, reference resolution, and a self-contained SQLite snapshot with canonical text export                                              | `src/assembly/`, `src/validation/`, `src/snapshots/`; `tests/snapshot_publication.rs`, `tests/monorepo_example.rs` |
-  | Site               | Snapshot-backed routes, HTML, navigation, search, local assets, and atomic publication                                                                 | `src/site.rs`, `src/rendering/`; `tests/site_generation.rs`, `tests/browser/site.spec.ts`                          |
-  | Commands           | `check`, `extract`, `generate`, `build`, and watched `serve`, including optional live reload                                                           | `src/commands/`; `tests/commands.rs`, `tests/cli.rs`                                                               |
+  | Authored execution | Explicitly authorized Python and R Jupyter pages, structured and validated output, bounded cleanup, and a page cache                                                  | `src/execution/`; `tests/milestone_six.rs`, `tests/execution_cache.rs`                                             |
+  | Portable handoff   | Workspace assembly, reference resolution, and a self-contained SQLite snapshot with canonical text export                                                             | `src/assembly/`, `src/validation/`, `src/snapshots/`; `tests/snapshot_publication.rs`, `tests/monorepo_example.rs` |
+  | Site               | Snapshot-backed routes, HTML, navigation, search, local assets, and atomic publication                                                                                | `src/site.rs`, `src/rendering/`; `tests/site_generation.rs`, `tests/browser/site.spec.ts`                          |
+  | Commands           | `check`, `extract`, `generate`, `build`, and watched `serve`, including optional live reload                                                                          | `src/commands/`; `tests/commands.rs`, `tests/cli.rs`                                                               |
 
 These are implemented paths, not a claim that every acceptance and release check
 below has passed on a clean checkout. The [architecture](DESIGN.md),
@@ -115,36 +115,6 @@ site byte for byte with the original site.
 - [ ] Complete browser review at desktop and mobile sizes, including keyboard
   navigation, focus, headings, labels, contrast, links, and search. Use
   `site-capture` and inspect its screenshots and failure traces.
-
-### Project documentation
-
-- [x] Finish the dogfooded user guide: installation, supported GFM and QMD
-  syntax, Python and R extraction limits, diagnostics, snapshot
-  compatibility, and the security model for unsandboxed authored execution.
-  Keep user guidance separate from design decisions and dated test reports.
-- [x] Add and verify an in-tree project-site check covering local links,
-  fragments, assets, and search. Confirm that a content-only workspace works
-  without API extraction targets and that generated outputs are outside
-  watched inputs.
-- [x] Add the documentation publishing workflow. Build the project site on pull
-  requests and `main`; deploy the Diplodocus-generated tree from version
-  tags or an explicit manual dispatch to Cloudflare Workers at
-  `diplodocus.cc`.
-
-### Release
-
-- [ ] Run the full Rust, browser, snapshot, execution, and documentation gates
-  from a clean checkout in the declared `devenv` environment. Include
-  `cargo fmt --all -- --check`,
-  `cargo clippy --locked --all-targets --all-features -- -D warnings`,
-  `cargo test --locked --all-targets`,
-  `RUSTDOCFLAGS="-D warnings" cargo doc --locked --no-deps`, `site-capture`,
-  and `cargo publish --locked --dry-run`.
-- [ ] Verify that the Versionary release pull request, version tag, protected
-  crate publishing, and documentation deployment trigger only as intended.
-- [ ] Re-run the documented quick start from a clean checkout with declared
-  tools installed. Verify the prepared package example, the acceptance site,
-  and independent generation from an exported snapshot.
 
 ## Scope held for later
 
