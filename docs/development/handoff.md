@@ -10,6 +10,7 @@ changes the intended extraction contract to allow runtime assistance and require
 example execution. Julia extraction completes unresolved exported types through
 native reflection while `check` remains static. R extraction uses native helpers
 to complete authors and citations and now loads the checkout to execute Rd examples.
+Python extraction always loads and validates the checkout, even without doctests.
 Python and Julia API doctests execute through supervised native helpers.
 QMD default-execution changes remain pending. The pipeline and test map below
 describe the current implementation; [remaining work](../../TODO.md) tracks the

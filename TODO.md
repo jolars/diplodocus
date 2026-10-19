@@ -75,7 +75,7 @@ The [prepared-environment contract](docs/decisions/0003-prepared-environment.md)
 still needs the tasks below. Keep package loading and example execution out of
 `check`; Rust retains its documented compiler and build-script exception.
 
-- [ ] Validate and load every Python checkout during extraction, including
+- [x] Validate and load every Python checkout during extraction, including
   packages without doctests. Reuse the checkout loader and verify the loaded
   package's source path and version independently of example discovery. Add
   command tests without doctests for a missing interpreter, missing dependencies,

@@ -3,7 +3,10 @@
 This page describes the current source adapter. The [prepared-environment
 decision](../decisions/0003-prepared-environment.md) supersedes its runtime
 prohibition and inert-example contract. The source adapter stays static, while
-the extraction command pipeline executes Python doctests in the verified checkout.
+the extraction command pipeline always loads the Python checkout and verifies its
+source path and version, then executes any Python doctests. Packages without
+doctests still require an interpreter and prepared dependencies. `check` uses only
+the static adapter.
 
 `extractors::python::extract_target` consumes one resolved repository, package,
 and extraction target. It returns a schema-versioned `PythonExtraction`

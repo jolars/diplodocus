@@ -359,3 +359,49 @@ fn python_field_examples_use_module_globals_and_verify_package_identity() {
         String::from_utf8_lossy(&output.stderr).contains("does not match the supplied checkout")
     );
 }
+
+#[test]
+fn python_checkouts_without_doctests_are_loaded_before_publication() {
+    for broken in ["interpreter", "dependency", "checkout", "version", "empty"] {
+        let root = workspace("python", "    Plain documentation.");
+        let path = "repo/src/apiex/__init__.py";
+        root.write(path, "__version__ = '0.1.0'\nvalue = 42\n");
+        success(command(&root, "build"));
+        let snapshot = root.path().join(".diplodocus/documentation.sqlite");
+        let original = fs::read(&snapshot).unwrap();
+        let site = fs::read(root.path().join("site/index.html")).unwrap();
+        let (source, expected) = match broken {
+            "dependency" => (
+                "import unavailable_documentation_dependency\n",
+                "unavailable_documentation_dependency",
+            ),
+            "checkout" => (
+                "__file__ = '/unrelated/checkout/apiex.py'\n",
+                "does not match the supplied checkout",
+            ),
+            "empty" => ("", "requires an importable module"),
+            "version" => ("__version__ = '9.9.9'\n", "version conflicts"),
+            _ => ("value = 42\n", "require the interpreter"),
+        };
+        root.write(path, source);
+        if broken == "empty" {
+            fs::remove_file(root.path().join(path)).unwrap();
+        }
+        success(command(&root, "check"));
+        for operation in ["extract", "build"] {
+            let mut invocation = Command::new(env!("CARGO_BIN_EXE_diplodocus"));
+            invocation
+                .current_dir(root.path())
+                .args([operation, "--config", "diplodocus.toml"]);
+            if broken == "interpreter" {
+                invocation.env("PATH", "");
+            }
+            let output = invocation.output().unwrap();
+            assert!(!output.status.success(), "{broken}: {operation}");
+            let message = String::from_utf8_lossy(&output.stderr);
+            assert!(message.contains(expected), "{message}");
+            assert_eq!(original, fs::read(&snapshot).unwrap());
+            assert_eq!(site, fs::read(root.path().join("site/index.html")).unwrap());
+        }
+    }
+}

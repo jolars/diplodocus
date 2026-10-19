@@ -68,7 +68,7 @@ fn failure(package: &str, source: &SourceLocation, message: impl Into<String>) -
 }
 
 impl WorkspaceSources {
-    /// Verify recognized Python and Julia doctests before snapshot publication.
+    /// Load Python checkouts and verify Python and Julia doctests before publication.
     ///
     /// Each documentation unit gets a fresh native process and verified checkout.
     /// Missing prerequisites, mismatches, timeouts, and cancellation fail extraction.
@@ -84,31 +84,70 @@ impl WorkspaceSources {
             }
             let language = record.ecosystem.clone();
             let version = record.version.clone().unwrap_or_default();
-            let selected: Vec<_> = record
+            let mut selected: Vec<_> = record
                 .items
                 .iter()
                 .filter_map(|(id, item)| {
                     item.documentation
                         .as_ref()
                         .filter(|d| recognized(d))
-                        .map(|d| (id.clone(), item.qualified_name.clone(), d.clone()))
+                        .map(|d| {
+                            (
+                                Some(id.clone()),
+                                item.qualified_name.clone(),
+                                Some(d.clone()),
+                                d.source_location.clone(),
+                            )
+                        })
                 })
                 .collect();
             let repository = &self.paths.repositories[package.repository_index];
-            for (id, qualified_name, document) in selected {
+            if language == "python" {
+                // Module identities exist even when no API item has documentation.
+                let modules: BTreeMap<_, _> = record
+                    .items
+                    .values()
+                    .filter(|item| item.kind == ItemKind::Module)
+                    .filter_map(|item| {
+                        item.source_location.as_ref().map(|location| {
+                            (
+                                item.qualified_name.split('.').next().unwrap().to_owned(),
+                                location.clone(),
+                            )
+                        })
+                    })
+                    .collect();
+                if modules.is_empty() {
+                    return Err(failure(
+                        &package.id,
+                        &repository.source_location(&package.metadata_path, None)?,
+                        "Python checkout validation requires an importable module in the declared targets.",
+                    ));
+                }
+                for (name, location) in modules {
+                    selected.insert(0, (None, name, None, Some(location)));
+                }
+            }
+            for (id, qualified_name, document, location) in selected {
                 self.revalidate()?;
-                let location = document
-                    .source_location
-                    .as_ref()
-                    .ok_or(AssemblyError::InputsChanged)?;
-                if document
-                    .provenance
-                    .iter()
-                    .any(|p| matches!(p.activity, ProvenanceActivity::ApiExamples { .. }))
-                {
+                let operation = if id.is_none() {
+                    "checkout validation"
+                } else {
+                    "API example execution"
+                };
+                let location = location.as_ref().ok_or(AssemblyError::InputsChanged)?;
+                if document.as_ref().is_some_and(|document| {
+                    document
+                        .provenance
+                        .iter()
+                        .any(|p| matches!(p.activity, ProvenanceActivity::ApiExamples { .. }))
+                }) {
                     return Err(AssemblyError::InputsChanged);
                 }
-                let raw = document.raw_source.as_deref().unwrap();
+                let raw = document
+                    .as_ref()
+                    .and_then(|d| d.raw_source.as_deref())
+                    .unwrap_or_default();
                 let staging = tempfile::tempdir()?;
                 let request = staging.path().join("request.toml");
                 let output = staging.path().join("results");
@@ -183,7 +222,7 @@ impl WorkspaceSources {
                             Ok(status) => status?,
                             Err(_) => {
                                 rd_examples::terminate(&mut process, deadlines).await?;
-                                return Err(failure(&package.id, location, format!("{language} API example execution timed out.")));
+                                return Err(failure(&package.id, location, format!("{language} {operation} timed out.")));
                             }
                         }
                     }
@@ -200,10 +239,7 @@ impl WorkspaceSources {
                     return Err(failure(
                         &package.id,
                         location,
-                        format!(
-                            "{language} API example execution failed: {}",
-                            message.trim()
-                        ),
+                        format!("{language} {operation} failed: {}", message.trim()),
                     ));
                 }
                 let result = fs::read_to_string(&output)?;
@@ -215,7 +251,7 @@ impl WorkspaceSources {
                 .map_err(|()| {
                     failure(&package.id, location, "Invalid native API example results.")
                 })?;
-                if results.examples.is_empty()
+                if (id.is_some() && results.examples.is_empty())
                     || results.package_name != package_name
                     || results.package_version != version
                 {
@@ -231,6 +267,11 @@ impl WorkspaceSources {
                         .replace(repository.path.to_string_lossy().as_ref(), "<repository>")
                         .replace(staging.path().to_string_lossy().as_ref(), "<examples>");
                 }
+                self.revalidate()?;
+                let Some(id) = id else {
+                    staging.close()?;
+                    continue;
+                };
                 let activity = ProvenanceActivity::ApiExamples {
                     package: package.id.clone(),
                     policy: format!("{language}-doctest-v1"),
