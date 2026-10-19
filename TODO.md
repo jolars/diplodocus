@@ -25,8 +25,9 @@ complete site.
 
 The accepted [prepared-environment
 contract](docs/decisions/0003-prepared-environment.md) changes the intended
-extraction behavior. Runtime assistance and required API-example execution are
-not yet implemented; the table above describes the existing paths.
+extraction behavior. Julia runtime type completion and required Python, R, and
+Julia API-example execution are implemented. Package loading is not yet required
+for every extraction, and QMD execution still requires explicit configuration.
 
 ## MVP acceptance criteria
 
@@ -70,11 +71,43 @@ site byte for byte with the original site.
 
 ### Product and acceptance
 
-- [ ] Implement the [prepared-environment
-  contract](docs/decisions/0003-prepared-environment.md): validate runtime
-  and package prerequisites, load the supplied checkout, and distinguish
-  source facts from runtime observations when reconciling API semantics.
-  Keep source validation available through `check`.
+The [prepared-environment contract](docs/decisions/0003-prepared-environment.md)
+still needs the tasks below. Keep package loading and example execution out of
+`check`; Rust retains its documented compiler and build-script exception.
+
+- [ ] Validate and load every Python checkout during extraction, including
+  packages without doctests. Reuse the checkout loader and verify the loaded
+  package's source path and version independently of example discovery. Add
+  command tests without doctests for a missing interpreter, missing dependencies,
+  and an incorrect checkout; failures must preserve the previous snapshot and
+  site.
+- [ ] Validate and load every Julia checkout during extraction, including
+  packages without unresolved public bindings or doctests. Verify the package
+  name, UUID, version, and entry file independently of reflection and example
+  discovery. Add command tests without those triggers for a missing runtime,
+  missing dependencies, an incorrect checkout, and package-load errors;
+  failures must preserve the previous snapshot and site.
+- [ ] Validate and load every R checkout during extraction, including packages
+  without Rd examples or R Markdown vignettes. Reuse `pkgload` with compilation
+  disabled, verify the namespace identity and version, and require prebuilt
+  extensions. Add command tests without examples or vignettes for missing
+  dependencies and extensions, an incorrect checkout, and failing load hooks;
+  failures must preserve the previous snapshot and site.
+- [ ] Define and implement Python's supported source/runtime reconciliation
+  rules. State which API facts remain authoritative in source and stubs, retain
+  runtime observations as separate evidence, and diagnose contradictions in the
+  supported subset. Cover agreement and conflicts while keeping source
+  validation available without importing the package through `check`.
+- [ ] Define and implement R's supported source/runtime reconciliation rules.
+  State how namespace, source, and Rd facts relate to runtime observations,
+  preserve their separate attribution, and diagnose contradictions in the
+  supported subset. Cover agreement and conflicts while keeping `check` free of
+  package loading.
+- [ ] Extend Julia source/runtime reconciliation beyond the existing type-flavor
+  check. Define supported comparisons for type parameters, supertypes, and
+  fields, and diagnose incompatible overlapping observations. Test conflicts
+  and preserve source evidence separately from runtime evidence without inventing
+  source ranges for generated declarations.
 - [ ] Execute recognized API examples and authored cells during extraction
   without a workspace opt-in. Define language-specific setup, session state,
   expected-output comparison, expected errors, illustrative syntax, and
