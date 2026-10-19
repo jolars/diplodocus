@@ -49,6 +49,25 @@ titles, images, layout width, search, equivalent APIs, and keyboard navigation.
 JavaScript and console errors fail tests, except the browser's automatic request
 for an undeclared `/favicon.ico`.
 
+Standalone sites use client-side navigation for ordinary internal page links,
+including search results. The header, branding, logo, and navigation shell stay
+mounted while the page content and contextual links update. Each URL also serves
+complete static HTML for direct visits and navigation without JavaScript.
+Modified clicks, downloads, and external links retain their browser behavior.
+
+Navigation updates the page title and metadata, closes the mobile documentation
+menu, and focuses the new content. Fragment links reveal containing tabs before
+scrolling, and browser back and forward restore the saved scroll position. Copy
+controls, tabsets, and the page TOC initialize after each page replacement. The
+preview keeps its existing live-reload connection. Failed requests and pages
+with an incompatible navigation shell fall back to a full page visit.
+
+Browser tests retain references to the document, header, branding, and logo to
+verify that internal navigation preserves their identity. They also exercise
+history, anchors, repeated visits, and delayed responses. Review desktop and
+mobile screenshots for logo decoding, navigation geometry, and layout stability
+when changing this behavior.
+
 `site-capture` runs the same tests and saves full-page screenshots of the home,
 guide, package, and API pages. Inspect those images when reviewing presentation
 changes. These are review artifacts, not automatically accepted visual baselines.

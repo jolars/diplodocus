@@ -31,8 +31,54 @@ pub fn render_fragments(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
     render(site, false)
 }
 
+fn brand(html: &mut String, site: &Site<'_>, route: &str) -> Result<(), SiteError> {
+    write!(
+        html,
+        "<a class=\"brand\" href=\"{}\">",
+        escape(&site.url(route, "index.html")),
+    )
+    .unwrap();
+    if let Some(logo) = site.logo {
+        write!(
+            html,
+            "<img class=\"brand-logo\" src=\"{}\" alt=\"\">",
+            escape(&site.url(route, &site.asset_route(&logo.fingerprint.value)?))
+        )
+        .unwrap();
+    }
+    write!(html, "<span>{}</span></a>", escape(site.title())).unwrap();
+    Ok(())
+}
+
+fn navigation_shell_fingerprint(site: &Site<'_>) -> Result<String, SiteError> {
+    // Render from one route so page selection and relative URLs cannot split a shell.
+    let mut shell = String::new();
+    super::navigation::sections(&mut shell, site, "index.html", "desktop-sections");
+    super::navigation::sections(&mut shell, site, "index.html", "mobile-sections");
+    super::navigation::repositories(&mut shell, site);
+    brand(&mut shell, site, "index.html")?;
+    super::footer::render(&mut shell, site);
+    // A retained document must not combine runtimes or styles from different builds.
+    for source in [
+        STYLE,
+        super::highlighting::stylesheet(),
+        NAV_SCRIPT,
+        SEARCH,
+        include_str!("code.js"),
+        include_str!("tabsets.js"),
+        include_str!("markdown_worker.js"),
+    ] {
+        shell.push('\0');
+        shell.push_str(source);
+    }
+    Ok(crate::provenance::fingerprint_bytes(shell.as_bytes()).value)
+}
+
 fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> {
     let mut files = BTreeMap::new();
+    let shell_fingerprint = standalone
+        .then(|| navigation_shell_fingerprint(site))
+        .transpose()?;
     if standalone {
         files.insert(
             "__diplodocus/worker.js".into(),
@@ -158,7 +204,7 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                 escape(&site.url(route, &markdown_path))
             )
             .unwrap();
-            html.push_str("</head><body><a class=\"skip-link\" href=\"#main\">Skip to content</a>");
+            write!(html, "</head><body data-diplodocus-navigation=\"1\" data-diplodocus-shell=\"{}\"><a class=\"skip-link\" href=\"#main\">Skip to content</a>", shell_fingerprint.as_deref().expect("standalone shell fingerprint")).unwrap();
             html.push_str("<header>");
             super::navigation::sections(&mut html, site, route, "desktop-sections");
             html.push_str("<div class=\"header-actions\"><form class=\"site-search\" role=\"search\"><label class=\"visually-hidden\" for=\"search\">Search documentation</label><div class=\"search-control\"><svg class=\"search-icon\" aria-hidden=\"true\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><circle cx=\"10.5\" cy=\"10.5\" r=\"6.5\"></circle><path d=\"m16 16 4 4\"></path></svg><input id=\"search\" type=\"search\" placeholder=\"Search\" autocomplete=\"off\" aria-controls=\"search-results\"></div><ul id=\"search-results\" aria-live=\"polite\"></ul></form>");
@@ -166,27 +212,19 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
             html.push_str(
                 "</div></header><div class=\"layout\"><nav aria-label=\"Documentation\">",
             );
-            write!(
-                html,
-                "<a class=\"brand\" href=\"{}\">",
-                escape(&site.url(route, "index.html")),
-            )
-            .unwrap();
-            if let Some(logo) = site.logo {
-                write!(
-                    html,
-                    "<img class=\"brand-logo\" src=\"{}\" alt=\"\">",
-                    escape(&site.url(route, &site.asset_route(&logo.fingerprint.value)?))
-                )
-                .unwrap();
-            }
-            write!(html, "<span>{}</span></a>", escape(site.title())).unwrap();
+            brand(&mut html, site, route)?;
             html.push_str(
                 "<details class=\"nav-disclosure\" open><summary>Browse documentation</summary>",
             );
             super::navigation::sections(&mut html, site, route, "mobile-sections");
+            write!(
+                html,
+                "<div class=\"contextual-nav\" data-section=\"{}\">",
+                escape(page.owner.as_deref().unwrap_or(""))
+            )
+            .unwrap();
             super::navigation::contextual(&mut html, site, route);
-            html.push_str("</details></nav><div class=\"page-content\">");
+            html.push_str("</div></details></nav><div class=\"page-content\">");
             if package_overview {
                 html.push_str("<main id=\"main\" class=\"package-overview\"><div class=\"package-overview-body\">");
             } else {

@@ -1254,3 +1254,142 @@ fn standalone_pages_include_the_same_markdown_as_fragments() {
     assert!(count > 0);
     assert!(standalone.files().contains_key("__diplodocus/worker.js"));
 }
+
+fn navigation_shell(html: &str) -> &str {
+    html.split_once("data-diplodocus-shell=\"")
+        .unwrap()
+        .1
+        .split('"')
+        .next()
+        .unwrap()
+}
+
+#[test]
+fn standalone_navigation_preserves_static_links_and_shares_a_shell_across_sections() {
+    let root = support::TestWorkspace::from_fixture("python-overloads");
+    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+    let site = diplodocus::site::Site::new(&snapshot).unwrap();
+    let standalone = diplodocus::rendering::render_site(&site).unwrap();
+    let fragments = diplodocus::rendering::render_fragments(&site).unwrap();
+    let home = std::str::from_utf8(&standalone.files()["index.html"].bytes).unwrap();
+    let fingerprint = navigation_shell(home);
+    assert!(!fingerprint.is_empty());
+    assert!(home.contains("<div class=\"contextual-nav\" data-section=\"\">"));
+    assert!(home.contains("href=\"packages/python/index.html\""));
+
+    for (path, file) in standalone.files() {
+        if !path.ends_with(".html") {
+            continue;
+        }
+        let html = std::str::from_utf8(&file.bytes).unwrap();
+        assert!(html.contains("<body data-diplodocus-navigation=\"1\""));
+        assert_eq!(navigation_shell(html), fingerprint, "{path}");
+        let fragment = std::str::from_utf8(&fragments.files()[path].bytes).unwrap();
+        assert!(!fragment.contains("data-diplodocus-navigation"));
+        assert!(!fragment.contains("data-diplodocus-shell"));
+        assert!(!fragment.contains("class=\"contextual-nav\""));
+    }
+
+    let package =
+        std::str::from_utf8(&standalone.files()["packages/python/index.html"].bytes).unwrap();
+    assert!(package.contains("<div class=\"contextual-nav\" data-section=\"python\">"));
+    assert!(package.contains("<a class=\"brand\" href=\"../../index.html\">"));
+    assert!(package.contains("href=\"index.html\" aria-current=\"page\""));
+}
+
+#[test]
+fn navigation_shell_changes_with_retained_presentation_but_not_document_content() {
+    let root = support::TestWorkspace::new();
+    let configuration = "[project]\nname='Navigation'\n[[repository]]\nid='docs'\npath='.'\n[[content]]\nid='guide'\nowner='project'\nrepository='docs'\npath='docs'\nmount=''\nformat='gfm'\n";
+    root.write("diplodocus.toml", configuration);
+    root.write("docs/index.md", "# Home\n\nWelcome.\n");
+    root.write("docs/guide.md", "# Guide\n\nRead more.\n");
+    let render_fingerprint = || {
+        let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+        let snapshot =
+            Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+        let rendered =
+            diplodocus::rendering::render_site(&diplodocus::site::Site::new(&snapshot).unwrap())
+                .unwrap();
+        navigation_shell(std::str::from_utf8(&rendered.files()["index.html"].bytes).unwrap())
+            .to_owned()
+    };
+    let original = render_fingerprint();
+    root.write(
+        "docs/guide.md",
+        "# Updated guide\n\nDifferent page content.\n",
+    );
+    assert_eq!(render_fingerprint(), original);
+
+    for changed in [
+        configuration.replace("name='Navigation'", "name='Renamed site'"),
+        format!("{configuration}\n[presentation.footer]\ndocs-version='v2'\n"),
+        configuration.replace("path='.'", "path='.'\nurl='https://example.test/repo'"),
+        format!("{configuration}\n[presentation.logo]\nrepository='docs'\npath='logo.svg'\n"),
+    ] {
+        root.write(
+            "logo.svg",
+            "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 10 10\"><circle cx=\"5\" cy=\"5\" r=\"4\"/></svg>",
+        );
+        root.write("diplodocus.toml", changed);
+        assert_ne!(render_fingerprint(), original);
+    }
+}
+
+#[test]
+fn standalone_navigation_supports_mapped_document_and_runtime_urls() {
+    let root = support::TestWorkspace::from_fixture("python-overloads");
+    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+    let original =
+        diplodocus::rendering::render_site(&diplodocus::site::Site::new(&snapshot).unwrap())
+            .unwrap();
+    let urls = diplodocus::site::UrlMap {
+        format_version: 1,
+        documents: original
+            .files()
+            .keys()
+            .filter(|path| path.ends_with(".html"))
+            .enumerate()
+            .map(|(index, path)| (path.clone(), format!("/manual/v1/documents/{index}/")))
+            .collect(),
+        assets: original
+            .files()
+            .keys()
+            .filter(|path| path.starts_with("assets/"))
+            .map(|path| {
+                (
+                    path.clone(),
+                    format!(
+                        "/manual/v1/static/{}",
+                        path.strip_prefix("assets/").unwrap()
+                    ),
+                )
+            })
+            .collect(),
+    };
+    let site = diplodocus::site::Site::new(&snapshot)
+        .unwrap()
+        .with_url_map(urls.clone())
+        .unwrap();
+    let mapped = diplodocus::rendering::render_site(&site).unwrap();
+    let home = std::str::from_utf8(&mapped.files()["index.html"].bytes).unwrap();
+    assert!(home.contains("src=\"/manual/v1/static/nav.js\""));
+    assert!(home.contains("href=\"/manual/v1/static/site.css\""));
+    for (path, file) in mapped.files() {
+        if !path.ends_with(".html") {
+            continue;
+        }
+        let html = std::str::from_utf8(&file.bytes).unwrap();
+        assert_eq!(navigation_shell(html), navigation_shell(home));
+        assert!(html.contains(&format!(
+            "<a class=\"brand\" href=\"{}\">",
+            urls.documents["index.html"]
+        )));
+        assert!(html.contains(&format!(
+            "href=\"{}\"",
+            urls.documents["packages/python/index.html"]
+        )));
+    }
+}

@@ -130,6 +130,244 @@ test("navbar links stay in place when switching sections", async ({ page }, info
   await capture(page, info, "navbar-stable-sections");
 });
 
+test("client navigation keeps the shell and logo mounted while updating the page", async ({ page }, info) => {
+  await page.goto("/");
+  const brand = page.locator(".layout > nav > .brand");
+  const logo = brand.locator(".brand-logo");
+  await expect.poll(() => logo.evaluate((element: HTMLImageElement) => element.naturalWidth)).toBeGreaterThan(0);
+  const shell = await page.evaluateHandle(() => ({
+    document,
+    elements: ["header", ".desktop-sections", ".mobile-sections", ".layout > nav", ".brand", ".brand-logo", "#search"]
+      .map(selector => document.querySelector(selector)!),
+  }));
+  const before = await brand.boundingBox();
+  let loads = 0;
+  page.on("load", () => loads++);
+  let release!: () => void;
+  let requested!: () => void;
+  const ready = new Promise<void>(resolve => { release = resolve; });
+  const started = new Promise<void>(resolve => { requested = resolve; });
+  await page.route("**/guides/comparing-predictions.html", async route => {
+    const response = await route.fetch();
+    requested();
+    await ready;
+    await route.fulfill({ response });
+  });
+  try {
+    const link = page.getByRole("main").getByRole("link", { name: "Comparing predictions", exact: true });
+    await link.focus();
+    await page.keyboard.press("Enter");
+    await started;
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Tiny Stats");
+    expect(await shell.evaluate(value => value.document === document && value.elements.every(element => element.isConnected))).toBe(true);
+    const waiting = await brand.boundingBox();
+    expect(waiting!.x).toBeCloseTo(before!.x, 1);
+    expect(waiting!.width).toBeCloseTo(before!.width, 1);
+    expect(await logo.evaluate((element: HTMLImageElement) => element.naturalWidth)).toBeGreaterThan(0);
+    release();
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Comparing predictions");
+    await expect(page).toHaveTitle("Comparing predictions · Tiny Stats");
+    await expect(page.getByRole("main")).toBeFocused();
+    await openNavigation(page, info);
+    await expect(page.locator('.contextual-nav [aria-current="page"]')).toHaveText("Comparing predictions");
+    await sections(page, info).getByRole("link", { name: "Python", exact: true }).click();
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Tiny Stats for Python");
+    await expect(sections(page, info).locator('[aria-current="true"]')).toHaveText("Python");
+    if (info.project.name === "mobile") {
+      await expect(page.locator(".nav-disclosure")).not.toHaveAttribute("open");
+    }
+    await page.getByRole("searchbox").fill("mean_squared_error");
+    await page.locator("#search-results").getByRole("link", {
+      name: "mean_squared_error · Tiny Stats for R", exact: true,
+    }).click();
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Mean squared error");
+    await expect(page).toHaveTitle("Mean squared error · Tiny Stats");
+    expect(await shell.evaluate(value => value.document === document && value.elements.every(element => element.isConnected))).toBe(true);
+    expect(loads).toBe(0);
+    await page.getByRole("searchbox").fill("Choosing a metric");
+    await expect(page.locator("#search-results").getByRole("link", { name: "Choosing a metric", exact: true })).toBeVisible();
+    await page.getByRole("searchbox").fill("");
+    await expect(page.locator("#search-results > li")).toHaveCount(0);
+    await capture(page, info, "client-navigation-shell");
+  } finally {
+    release();
+    await page.unrouteAll({ behavior: "ignoreErrors" });
+    await shell.dispose();
+  }
+});
+
+async function followFixtureLink(page: Page, href: string) {
+  await page.evaluate(destination => {
+    document.getElementById("navigation-fixture")?.remove();
+    const link = document.createElement("a");
+    link.id = "navigation-fixture";
+    link.href = destination;
+    link.textContent = "Navigation fixture";
+    document.querySelector("main")!.prepend(link);
+  }, href);
+  // The fixture link must not change the scroll position being tested.
+  await page.getByRole("main").getByRole("link", { name: "Navigation fixture", exact: true }).dispatchEvent("click", { button: 0 });
+}
+
+test("client navigation restores history, scroll, and same-page and cross-page fragments", async ({ page }) => {
+  await page.goto("/guides/comparing-predictions.html");
+  await page.evaluate(() => window.scrollTo(0, 500));
+  const savedScroll = await page.evaluate(() => window.scrollY);
+  expect(savedScroll).toBeGreaterThan(0);
+  // Dispatching the link avoids Playwright scrolling it into view before the click.
+  await page.getByRole("main").getByRole("link", { name: "Choosing a metric", exact: true }).dispatchEvent("click", { button: 0 });
+  await expect(page).toHaveTitle("Choosing a metric · Tiny Stats");
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+  await page.goBack();
+  await expect(page).toHaveURL(/\/guides\/comparing-predictions\.html$/);
+  await expect(page).toHaveTitle("Comparing predictions · Tiny Stats");
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeCloseTo(savedScroll, 0);
+  await page.goForward();
+  await expect(page).toHaveURL(/\/guides\/choosing-a-metric\.html$/);
+  await expect(page).toHaveTitle("Choosing a metric · Tiny Stats");
+
+  await followFixtureLink(page, "/guides/comparing-predictions.html#rust");
+  await expect(page).toHaveURL(/comparing-predictions\.html#rust$/);
+  await expect(page.locator("#rust")).toBeInViewport();
+  await expect(page.locator("#rust")).toBeFocused();
+  await followFixtureLink(page, "#python");
+  await expect(page.locator("#python")).toBeInViewport();
+  await expect(page.locator("#python")).toBeFocused();
+  await page.goBack();
+  await expect(page).toHaveURL(/#rust$/);
+  await expect(page.locator("#rust")).toBeInViewport();
+  await page.goForward();
+  await expect(page).toHaveURL(/#python$/);
+  await expect(page.locator("#python")).toBeInViewport();
+  await page.keyboard.press("Control+Home");
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+  await followFixtureLink(page, "/tabsets.html#nested-output");
+  await expect(page.getByText("Nested output.", { exact: true })).toBeVisible();
+  await expect(page.getByText("Nested output.", { exact: true })).toBeInViewport();
+  await page.goBack();
+  await expect(page).toHaveURL(/comparing-predictions\.html#python$/);
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+});
+
+test("client navigation initializes code and tabsets on every visit without duplicate controls", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.goto("/");
+  for (let visit = 0; visit < 2; visit++) {
+    await followFixtureLink(page, "/tabsets.html");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Tabsets");
+    await expect(page.locator(".tabset-controls")).toHaveCount(3);
+    const first = page.locator(".panel-tabset").first();
+    await first.getByRole("tab", { name: "Python", exact: true }).click();
+    await expect(first.getByText("Python content.", { exact: true })).toBeVisible();
+    await first.getByRole("tab", { name: "Python", exact: true }).press("ArrowRight");
+    await expect(first.getByRole("tab", { name: "R", exact: true })).toBeFocused();
+    await followFixtureLink(page, "/guides/comparing-predictions.html");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Comparing predictions");
+    await expect(page.locator("main .code-block")).toHaveCount(4);
+    await expect(page.locator(".code-block .code-block")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Copy code", exact: true })).toHaveCount(4);
+    const block = page.locator("main .code-block").first();
+    await block.getByRole("button", { name: "Copy code", exact: true }).click();
+    await expect(block.getByRole("status")).toHaveText("Copied");
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(await block.locator("pre code").textContent());
+  }
+});
+
+test("client navigation cancels stale responses when another link or Back wins", async ({ page }) => {
+  await page.goto("/");
+  const pending: { release: () => void; finished: Promise<void> }[] = [];
+  await page.route("**/guides/comparing-predictions.html", async route => {
+    const response = await route.fetch();
+    let release!: () => void;
+    let finish!: () => void;
+    const ready = new Promise<void>(resolve => { release = resolve; });
+    const finished = new Promise<void>(resolve => { finish = resolve; });
+    pending.push({ release, finished });
+    await ready;
+    try { await route.fulfill({ response }); } catch {}
+    finish();
+  });
+  try {
+    await page.getByRole("main").getByRole("link", { name: "Comparing predictions", exact: true }).click();
+    await expect.poll(() => pending.length).toBe(1);
+    await page.getByRole("main").getByRole("link", { name: "Choosing a metric", exact: true }).click();
+    await expect(page).toHaveTitle("Choosing a metric · Tiny Stats");
+    pending[0].release();
+    await pending[0].finished;
+    await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+    await expect(page).toHaveTitle("Choosing a metric · Tiny Stats");
+
+    await followFixtureLink(page, "/guides/comparing-predictions.html");
+    await expect.poll(() => pending.length).toBe(2);
+    await page.goBack();
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveTitle("Tiny Stats · Tiny Stats");
+    pending[1].release();
+    await pending[1].finished;
+    await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Tiny Stats");
+    await expect(page).toHaveURL(/\/$/);
+  } finally {
+    for (const request of pending) request.release();
+    await page.unrouteAll({ behavior: "ignoreErrors" });
+  }
+});
+
+test("client navigation leaves modified, external, download, and new-window links native", async ({ page }) => {
+  await page.goto("/");
+  const prevented = await page.evaluate(() => {
+    const cases = [
+      { href: "/packages/python/", control: { ctrlKey: true } },
+      { href: "/packages/python/", control: { metaKey: true } },
+      { href: "/packages/python/", control: { shiftKey: true } },
+      { href: "/packages/python/", control: { altKey: true } },
+      { href: "/packages/python/", control: { button: 1 } },
+      { href: "/packages/python/", target: "_blank" },
+      { href: "/packages/python/", download: "package.html" },
+      { href: "https://example.com/" },
+      { href: "mailto:docs@example.com" },
+      { href: "/assets/site.css" },
+    ];
+    return cases.map(({ href, target, download, control }) => {
+      const link = document.createElement("a");
+      link.href = href;
+      if (target) link.target = target;
+      if (download) link.download = download;
+      document.querySelector("main")!.append(link);
+      let canceled = false;
+      const stopNativeAction = (event: MouseEvent) => {
+        canceled = event.defaultPrevented;
+        event.preventDefault();
+      };
+      window.addEventListener("click", stopNativeAction, { once: true });
+      link.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, button: 0, ...control }));
+      link.remove();
+      return canceled;
+    });
+  });
+  expect(prevented).toEqual(Array(10).fill(false));
+  await expect(page).toHaveTitle("Tiny Stats · Tiny Stats");
+});
+
+test("client navigation falls back to document navigation for incompatible and non-HTML responses", async ({ page }) => {
+  for (const [path, contentType, body] of [
+    ["/other.html", "text/html", "<!doctype html><html><head><title>Other application</title></head><body>Other application</body></html>"],
+    ["/plain.html", "text/plain", "Plain response"],
+  ]) {
+    await page.goto("/");
+    let documentRequests = 0;
+    await page.route(`**${path}`, async route => {
+      if (route.request().isNavigationRequest()) documentRequests++;
+      await route.fulfill({ status: 200, contentType, body });
+    });
+    await followFixtureLink(page, path);
+    await expect(page).toHaveURL(new RegExp(`${path}$`));
+    await expect(page.locator("body")).toContainText(path === "/other.html" ? "Other application" : "Plain response");
+    expect(documentRequests).toBe(1);
+    await page.unroute(`**${path}`);
+  }
+});
+
 test("navbar and sidebars share outer margins", async ({ page }, info) => {
   test.skip(info.project.name !== "desktop", "The sidebars stack on mobile.");
   await page.goto("/guides/comparing-predictions.html");
@@ -243,8 +481,8 @@ test("discovered community links preserve repository and site destinations", asy
     await expect(main.getByRole("link", { name: label, exact: true }))
       .toHaveAttribute("href", `https://github.com/jolars/diplodocus/blob/main/${path}`);
   }
-  await expect(main.getByRole("link", { name: "documentation", exact: true }))
-    .toHaveAttribute("href", "../../index.html");
+  expect(await main.getByRole("link", { name: "documentation", exact: true }).evaluate((link: HTMLAnchorElement) => link.pathname))
+    .toBe("/index.html");
   await fitsViewport(page);
   await capture(page, info, "r-community");
   await main.getByRole("link", { name: "documentation", exact: true }).click();
@@ -428,6 +666,7 @@ test("R package overview exposes metadata and supporting documentation", async (
     await page.goto("/packages/r/");
   }
   await metadata.getByRole("link", { name: "Authors and citation" }).click();
+  await expect(main.getByRole("heading", { level: 1 })).toHaveText("Authors and citation");
   await expect(main.locator("pre code")).toContainText("@Manual");
   const toc = page.getByRole("navigation", { name: "On this page" });
   if (info.project.name === "mobile") await toc.getByText("On this page", { exact: true }).click();
@@ -521,9 +760,9 @@ test("global sections select a contextual sidebar", async ({ page }, info) => {
   await expect(navigation.getByRole("group", { name: "API reference" })).toHaveCount(0);
 
   await global.getByRole("link", { name: "Python", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Tiny Stats for Python");
   await openNavigation(page, info);
   await expect(global.locator('[aria-current="true"]')).toHaveText("Python");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Tiny Stats for Python");
   await expect(navigation.getByRole("group", { name: "Getting started" })).toHaveCount(0);
   await expect(navigation.getByRole("link", { name: "Comparing predictions" })).toHaveCount(0);
   await expect(navigation.getByRole("link", { name: "Evaluating models in Python" })).toBeVisible();
@@ -531,6 +770,7 @@ test("global sections select a contextual sidebar", async ({ page }, info) => {
   await expect(api.getByRole("link", { name: "mean_squared_error", exact: true })).not.toBeVisible();
   await api.getByText("tinystats", { exact: true }).click();
   await api.getByRole("link", { name: "mean_squared_error", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("tinystats.mean_squared_error");
   await openNavigation(page, info);
   await expect(global.locator('[aria-current="true"]')).toHaveText("Python");
   await expect(navigation.locator('[aria-current="page"]')).toHaveText("mean_squared_error");
@@ -541,13 +781,14 @@ test("global sections select a contextual sidebar", async ({ page }, info) => {
   await capture(page, info, "navigation");
 
   await global.getByRole("link", { name: "R", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Tiny Stats for R");
   await openNavigation(page, info);
   await expect(global.locator('[aria-current="true"]')).toHaveText("R");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Tiny Stats for R");
   await expect(api.getByRole("link", { name: "mean_squared_error", exact: true })).toBeVisible();
   await expect(navigation.getByRole("link", { name: "Evaluating models in Python" })).toHaveCount(0);
   await expect(navigation.getByRole("group", { name: "Guides", exact: true })).toHaveCount(0);
   await global.getByRole("link", { name: "Guide", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Tiny Stats");
   await openNavigation(page, info);
   await expect(global.locator('[aria-current="true"]')).toHaveText("Guide");
   await expect(navigation.getByRole("link", { name: "Comparing predictions" })).toBeVisible();
@@ -633,6 +874,7 @@ test("shared guides, API trees, and page headings support a round trip", async (
   await expect(navigation.getByRole("group", { name: "Getting started" })).toBeVisible();
   const guideLinks = await navigation.getByRole("group", { name: "Guides", exact: true }).getByRole("link").allTextContents();
   await page.getByRole("main").getByRole("link", { name: "pystats::tinystats.mean_absolute_error", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("tinystats.mean_absolute_error");
   await openNavigation(page, info);
   await expect(sections(page, info).locator('[aria-current="true"]')).toHaveText("Python");
   await expect(navigation.getByRole("link", { name: "Choosing a metric" })).toHaveCount(0);
@@ -644,7 +886,9 @@ test("shared guides, API trees, and page headings support a round trip", async (
   await toc.getByRole("link", { name: "Parameters", exact: true }).click();
   await expect(page).toHaveURL(/#parameters$/);
   await expect(page.getByRole("main").getByRole("heading", { name: "Parameters", exact: true })).toBeInViewport();
+  await openNavigation(page, info);
   await sections(page, info).getByRole("link", { name: "Guide", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Tiny Stats");
   await openNavigation(page, info);
   await expect(navigation.getByRole("group", { name: "Guides", exact: true }).getByRole("link")).toHaveText(guideLinks);
   await navigation.getByRole("group", { name: "Guides", exact: true }).getByRole("link", { name: "Choosing a metric" }).click();
@@ -713,6 +957,14 @@ test.describe("navigation without JavaScript", () => {
     await expect(navigation.locator('[aria-current="page"]')).toBeVisible();
     await expect(sections(page, info).locator('[aria-current="true"]')).toHaveText("Python");
     await fitsViewport(page);
+
+    await page.goto("/guides/comparing-predictions.html#rust");
+    await expect(page.locator("#rust")).toBeInViewport();
+    await expect(page).toHaveTitle("Comparing predictions · Tiny Stats");
+    await page.goBack();
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("tinystats.mean_squared_error");
+    await page.goForward();
+    await expect(page.locator("#rust")).toBeInViewport();
   });
 });
 
