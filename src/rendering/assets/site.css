@@ -47,8 +47,10 @@ header { position: sticky; top: 0; z-index: 10; min-height: 74px; margin-left: c
 nav ul { margin: 0; padding: 0; list-style: none; }
 nav li { overflow-wrap: anywhere; }
 nav a { display: block; padding: .2rem .45rem; border-radius: .25rem; text-decoration: none; }
-nav a:hover { background: var(--selected); }
+nav a:not(.brand):hover { background: var(--selected); }
 nav [aria-current=page] { color: var(--ink); background: var(--selected); font-weight: 650; }
+/* Keep the links' negative margins inside the scrollable area. */
+.nav-disclosure { margin-inline: -.45rem; padding-inline: .45rem; }
 .nav-disclosure > summary { cursor: pointer; color: var(--link); font-weight: 650; }
 .nav-group + .nav-group { margin-top: 1.25rem; }
 .nav-group h2 { margin: 0 0 .4rem; padding: 0; color: var(--muted); font-size: .7rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
@@ -126,8 +128,11 @@ blockquote, .callout { border-left: 4px solid #688b84; padding: .2rem 1rem; marg
   .toc-disclosure > summary { list-style: none; cursor: default; }
   .toc-disclosure > summary::-webkit-details-marker { display: none; }
 }
-/* Reserve the collapsed layout while the deferred disclosure handlers load. */
 @media (max-width: 1099px) {
+  .page-toc { position: relative; z-index: 9; }
+  .toc-disclosure { position: relative; }
+  .toc-disclosure > ul { position: absolute; top: 100%; left: 0; width: min(22rem, 100%); max-height: min(60dvh, 24rem); overflow-y: auto; overscroll-behavior: contain; margin: .5rem 0 0; padding: .5rem; border: 1px solid var(--border); border-radius: .5rem; background: white; box-shadow: 0 8px 24px #202c381a; }
+  /* Keep the popup hidden until the responsive disclosure state is ready. */
   .js .toc-disclosure:not([data-ready]) > ul { display: none; }
 }
 @media (min-width: 761px) and (max-width: 900px) {

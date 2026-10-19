@@ -943,6 +943,48 @@ test("page TOC stays close to content when the window narrows", async ({ page },
   await capture(page, info, "medium-without-toc");
 });
 
+test("compact page TOC overlays content and dismisses after use", async ({ page }, info) => {
+  const widths = info.project.name === "desktop" ? [1099, 1000, 761] : [760, 390, 320];
+  for (const width of widths) {
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto("/guides/comparing-predictions.html");
+    const toc = page.locator(".toc-disclosure");
+    const summary = toc.locator(":scope > summary");
+    const list = toc.locator(":scope > ul");
+    const firstLink = list.getByRole("link").first();
+    await expect(toc).toHaveJSProperty("open", false);
+    const before = (await page.getByRole("main").boundingBox())!;
+    const scroll = await page.evaluate(() => scrollY);
+    await summary.click();
+    await expect(list).toBeVisible();
+    const after = (await page.getByRole("main").boundingBox())!;
+    expect(after.y).toBeCloseTo(before.y, 1);
+    expect(await page.evaluate(() => scrollY)).toBe(scroll);
+    const panel = (await list.boundingBox())!;
+    expect(panel.x).toBeGreaterThanOrEqual(0);
+    expect(panel.x + panel.width).toBeLessThanOrEqual(width);
+    await fitsViewport(page);
+    await capture(page, info, `page-toc-popup-${width}`, true, false);
+
+    await firstLink.focus();
+    await page.keyboard.press("Escape");
+    await expect(toc).toHaveJSProperty("open", false);
+    await expect(summary).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(list).toBeVisible();
+    await page.getByRole("searchbox").click();
+    await expect(toc).toHaveJSProperty("open", false);
+
+    await summary.click();
+    await firstLink.click();
+    await expect(page).toHaveURL(/#python$/);
+    await expect(toc).toHaveJSProperty("open", false);
+    const heading = page.getByRole("heading", { name: "Python", exact: true });
+    await expect(heading).toBeInViewport();
+    await expect(heading).toBeFocused();
+  }
+});
+
 test("Julia functions include methods on one page", async ({ page }, info) => {
   await page.goto("/guides/comparing-predictions.html");
   await page.getByRole("main").getByRole("link", { name: "juliastats::TinyStats.mean_squared_error", exact: true }).click();

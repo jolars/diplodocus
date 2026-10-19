@@ -15,6 +15,18 @@
   wide.addEventListener('change', initializeToc);
   document.addEventListener('diplodocus:page-change', initializeToc);
   initializeToc();
+  document.addEventListener('click', event => {
+    const toc = document.querySelector('.toc-disclosure');
+    if (wide.matches || !toc?.open) return;
+    if (!toc.contains(event.target) || event.target.closest('a[href]')) toc.open = false;
+  });
+  document.addEventListener('keydown', event => {
+    const toc = document.querySelector('.toc-disclosure');
+    if (event.key !== 'Escape' || wide.matches || !toc?.open) return;
+    event.preventDefault();
+    toc.open = false;
+    toc.querySelector('summary').focus({ preventScroll: true });
+  });
   // Branding and extra package tabs can change the sticky header's height.
   const header = document.querySelector('header');
   new ResizeObserver(() => {
