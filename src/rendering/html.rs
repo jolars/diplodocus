@@ -392,7 +392,7 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                         renderer.identifiers.insert(anchor.clone());
                         write!(html, "<div id=\"{}\">", escape(anchor)).unwrap();
                     }
-                    html.push_str(&highlighter.render(
+                    html.push_str(&highlighter.render_signature(
                         &super::signatures::signature_for_site(
                             site,
                             name,
@@ -429,7 +429,7 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                     html.push_str("<div id=\"constructor\">");
                 }
                 for signature in &class.constructors {
-                    html.push_str(&highlighter.render(
+                    html.push_str(&highlighter.render_signature(
                         &super::signatures::signature_for_site(site, name, signature, "python"),
                         Some("python"),
                     ));
@@ -962,7 +962,7 @@ impl Renderer<'_, '_> {
                     self.site,
                     implementation.source_location.iter(),
                 ));
-                html.push_str(&self.highlighter.render(
+                html.push_str(&self.highlighter.render_signature(
                     &super::signatures::expression_for_site(
                         self.site,
                         &implementation.signature,
@@ -996,7 +996,7 @@ impl Renderer<'_, '_> {
         );
         html.push_str(&super::r_topics::source_links(self.site, member.item));
         for signature in &member.item.signatures {
-            html.push_str(&self.highlighter.render(
+            html.push_str(&self.highlighter.render_signature(
                 &super::signatures::signature_for_site(
                     self.site,
                     &member.item.name,
@@ -1079,7 +1079,7 @@ impl Renderer<'_, '_> {
                 if let Some(anchor) = &anchor {
                     write!(html, "<div id=\"{}\">", escape(anchor)).unwrap();
                 }
-                html.push_str(&self.highlighter.render(
+                html.push_str(&self.highlighter.render_signature(
                     &super::signatures::signature_for_site(
                         self.site,
                         &member.item.name,
@@ -1390,7 +1390,17 @@ impl Renderer<'_, '_> {
 
     fn blocks(&mut self, blocks: &[Block]) -> Result<String, SiteError> {
         let mut html = String::new();
+        let mut rd_usage = false;
         for block in blocks {
+            if let Block::Heading {
+                level: 2, inlines, ..
+            } = block
+            {
+                rd_usage = plain(inlines) == "Usage"
+                    && self.page.document.is_some_and(|document| {
+                        matches!(&document.source_format, crate::ir::DocumentFormat::Extracted { name } if name == "rd")
+                    });
+            }
             match block {
                 Block::Tabset {
                     attributes, blocks, ..
@@ -1562,14 +1572,16 @@ impl Renderer<'_, '_> {
                     } else {
                         &hidden_source
                     };
-                    html.push_str(&self.highlighter.render(
-                        source,
-                        if julia_doctest {
-                            Some("julia")
-                        } else {
-                            language.as_deref()
-                        },
-                    ));
+                    let language = if julia_doctest {
+                        Some("julia")
+                    } else {
+                        language.as_deref()
+                    };
+                    html.push_str(&if rd_usage {
+                        self.highlighter.render_signature(source, language)
+                    } else {
+                        self.highlighter.render(source, language)
+                    });
                 }
                 Block::CodeCell(cell) => html.push_str(&self.code_cell(cell)?),
                 Block::Table {

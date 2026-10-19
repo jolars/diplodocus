@@ -11,7 +11,7 @@
     observer.disconnect();
     for (const code of document.querySelectorAll('main pre > code')) {
       const pre = code.parentElement;
-      if (code.closest('.code-output') || pre.parentElement.classList.contains('code-block')) continue;
+      if (pre.hasAttribute('data-signature') || code.closest('.code-output') || pre.parentElement.classList.contains('code-block')) continue;
       const block = document.createElement('div');
       block.className = 'code-block';
       const toolbar = document.createElement('div');

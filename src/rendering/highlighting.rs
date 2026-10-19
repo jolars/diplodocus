@@ -17,6 +17,11 @@ impl Highlighter {
         }
     }
 
+    pub(super) fn render_signature(&self, source: &str, language: Option<&str>) -> String {
+        self.render(source, language)
+            .replacen("<pre ", "<pre data-signature ", 1)
+    }
+
     pub(super) fn render(&self, source: &str, language: Option<&str>) -> String {
         let syntax = language
             .and_then(|language| self.syntaxes.find_syntax_by_token(language.trim()))
