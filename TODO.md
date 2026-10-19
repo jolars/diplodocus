@@ -140,6 +140,38 @@ still needs the tasks below. Keep package loading and example execution out of
   navigation, focus, headings, labels, contrast, links, and search. Use
   `site-capture` and inspect its screenshots and failure traces.
 
+## Distribution and installation
+
+Prioritize versioned prebuilt releases and a setup action, followed by PyPI.
+Add npm as a secondary route for projects with documentation frontends. Publish
+the same CLI version across channels; callers still prepare their language
+runtimes and package dependencies.
+
+- [ ] Verify prebuilt GitHub releases and the shell and PowerShell installers
+  across supported platforms. Document installation of an exact version as
+  well as the latest release, without requiring users to compile the CLI.
+- [ ] Add a `jolars/setup-diplodocus` GitHub Action that accepts a version,
+  downloads the appropriate release binary, and adds it to `PATH`. Keep
+  documentation builds as ordinary CLI steps in the caller's prepared
+  environment.
+- [ ] Release the changes needed by Datamonger and Shrinkage, including
+  upstreaming Shrinkage's generated-input inventory patch. Replace their CI
+  checkout and compilation steps with the setup action pinned to a release,
+  and update their local preview instructions to use installed binaries.
+- [ ] Publish the CLI on PyPI as prebuilt wheels using Maturin's binary
+  packaging support. Document adding Diplodocus to a documentation dependency
+  group and running it with `uv run --group docs` so projects can lock its
+  version alongside their dependencies. Explain when extraction and example
+  execution need the project environment rather than an isolated `uvx`
+  environment.
+- [ ] Publish an npm package for use as a documentation development dependency
+  and through `npx`. Support `npm ci --ignore-scripts`, as used by Datamonger
+  and Shrinkage, by packaging platform binaries without requiring a
+  postinstall download.
+- [ ] Keep crates.io publishing and the Nix flake supported. Update the
+  installation guide with channel recommendations, version pinning, and
+  examples for local previews and CI builds.
+
 ## Scope held for later
 
 Incremental extraction and rendering; older snapshot migrations; historical
