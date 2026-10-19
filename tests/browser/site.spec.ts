@@ -218,7 +218,10 @@ test("footer identifies the docs and exposes project, license, and generator lin
       await expect(footer).not.toBeInViewport();
     }
     await expect(footer.getByRole("link", { name: "GitHub", exact: true })).toHaveCount(0);
-    await expect(page.locator("header").getByRole("link", { name: "GitHub", exact: true })).toHaveAttribute("href", "https://github.com/jolars/diplodocus");
+    const repository = page.locator("header").getByRole("link", { name: "GitHub", exact: true });
+    await expect(repository).toHaveAttribute("href", "https://github.com/jolars/diplodocus");
+    await expect(repository).toHaveText("");
+    await expect(repository.locator("svg")).toBeVisible();
     await expect(footer).toContainText("Docs: dev");
     await expect(footer).toContainText("© 2026 Johan Larsson");
     await expect(footer).toContainText("MIT or Apache-2.0");

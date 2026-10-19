@@ -26,7 +26,11 @@ pub(super) fn repositories(html: &mut String, site: &Site<'_>) {
             .iter()
             .find(|link| link.url.trim_end_matches('/') == url.trim_end_matches('/'))
             .map_or(id.as_str(), |link| link.label.as_str());
-        write!(html, "<a class=\"repository-link\" href=\"{}\">{}<svg aria-hidden=\"true\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M7 7h10v10M7 17 17 7\"></path></svg></a>", escape(url), escape(label)).unwrap();
+        if url::Url::parse(url).is_ok_and(|url| url.host_str() == Some("github.com")) {
+            write!(html, "<a class=\"repository-link\" href=\"{}\" aria-label=\"{}\" title=\"{}\"><svg aria-hidden=\"true\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M12 .5C5.37.5 0 5.87 0 12.5c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.043-1.61-4.043-1.61-.546-1.387-1.333-1.756-1.333-1.756-1.09-.745.083-.73.083-.73 1.205.085 1.838 1.237 1.838 1.237 1.07 1.835 2.809 1.305 3.493.998.108-.776.418-1.305.762-1.605-2.665-.3-5.467-1.333-5.467-5.93 0-1.31.468-2.38 1.235-3.22-.124-.303-.535-1.523.117-3.176 0 0 1.008-.322 3.3 1.23a11.51 11.51 0 0 1 3.005-.404c1.02.005 2.045.138 3.005.404 2.29-1.552 3.297-1.23 3.297-1.23.654 1.653.243 2.873.12 3.176.77.84 1.233 1.91 1.233 3.22 0 4.61-2.807 5.625-5.48 5.922.43.372.823 1.102.823 2.222 0 1.606-.015 2.9-.015 3.293 0 .322.216.694.825.576C20.565 22.295 24 17.797 24 12.5c0-6.63-5.373-12-12-12z\"></path></svg></a>", escape(url), escape(label), escape(label)).unwrap();
+        } else {
+            write!(html, "<a class=\"repository-link\" href=\"{}\">{}<svg aria-hidden=\"true\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M7 7h10v10M7 17 17 7\"></path></svg></a>", escape(url), escape(label)).unwrap();
+        }
     }
 }
 
