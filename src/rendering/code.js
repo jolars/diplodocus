@@ -20,12 +20,15 @@
       status.setAttribute('role', 'status');
       const button = document.createElement('button');
       button.type = 'button';
-      button.textContent = 'Copy';
+      button.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="8" y="3" width="8" height="4" rx="1"/><path d="M8 5H6a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/></svg>';
       button.setAttribute('aria-label', 'Copy code');
       toolbar.append(status, button);
       pre.replaceWith(block);
       block.append(toolbar, pre);
+      let feedbackTimer;
       button.addEventListener('click', async () => {
+        clearTimeout(feedbackTimer);
+        status.textContent = '';
         let copied = false;
         try {
           await navigator.clipboard.writeText(code.textContent);
@@ -44,7 +47,8 @@
           button.focus({ preventScroll: true });
         }
         if (status.isConnected) {
-          status.textContent = copied ? 'Copied' : 'Unable to copy. Select the code to copy it.';
+          status.textContent = copied ? 'Copied!' : 'Unable to copy. Select the code to copy it.';
+          feedbackTimer = setTimeout(() => { status.textContent = ''; }, 2500);
         }
       });
     }

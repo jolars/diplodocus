@@ -281,7 +281,7 @@ test("client navigation initializes code and tabsets on every visit without dupl
     await expect(page.getByRole("button", { name: "Copy code", exact: true })).toHaveCount(4);
     const block = page.locator("main .code-block").first();
     await block.getByRole("button", { name: "Copy code", exact: true }).click();
-    await expect(block.getByRole("status")).toHaveText("Copied");
+    await expect(block.getByRole("status")).toHaveText("Copied!");
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(await block.locator("pre code").textContent());
   }
 });
@@ -1130,23 +1130,39 @@ test("console output stays separate and plain with and without JavaScript", asyn
   }
 });
 
-test("copy buttons preserve highlighted code and support keyboard and fallback copying", async ({ page, context }) => {
+test("copy buttons preserve highlighted code and support keyboard and fallback copying", async ({ page, context }, info) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.goto("/packages/r/reference/mean_squared_error.html");
   const block = page.getByRole("main").locator(".code-block").first();
   const source = await block.locator("pre code").textContent();
   const copy = block.getByRole("button", { name: "Copy code", exact: true });
+  const toolbar = block.locator(".code-toolbar");
+  await expect(copy.locator("svg")).toHaveCount(1);
+  if (await page.evaluate(() => matchMedia("(hover: hover)").matches)) {
+    await page.mouse.move(0, 0);
+    await expect(toolbar).toHaveCSS("opacity", "0");
+    await block.hover();
+    await expect(toolbar).toHaveCSS("opacity", "1");
+    await page.mouse.move(0, 0);
+    await expect(toolbar).toHaveCSS("opacity", "0");
+  }
   await copy.focus();
+  await expect(toolbar).toHaveCSS("opacity", "1");
   await page.keyboard.press("Enter");
-  await expect(block.getByRole("status")).toHaveText("Copied");
+  await expect(block.getByRole("status")).toHaveText("Copied!");
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(source);
+  const feedbackBounds = await block.getByRole("status").boundingBox();
+  const buttonBounds = await copy.boundingBox();
+  expect(feedbackBounds!.x + feedbackBounds!.width).toBeLessThan(buttonBounds!.x);
+  await capture(page, info, "copy-feedback");
+  await expect(block.getByRole("status")).toBeEmpty({ timeout: 5000 });
 
   await page.evaluate(async () => {
     await navigator.clipboard.writeText("Before fallback copying");
     navigator.clipboard.writeText = async () => { throw new Error("Clipboard permission denied"); };
   });
   await copy.click();
-  await expect(block.getByRole("status")).toHaveText("Copied");
+  await expect(block.getByRole("status")).toHaveText("Copied!");
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(source);
   await expect(copy).toBeFocused();
   await expect(page.locator(".copy-buffer")).toHaveCount(0);
