@@ -64,7 +64,7 @@ test("client navigation restores Back scroll after a delayed image loads", async
     await page.evaluate(() => window.scrollTo(0, 1500));
     await expect.poll(() => page.evaluate(() => history.state.diplodocus.scroll[1])).toBe(1500);
     await follow(page, "/");
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Tiny Stats");
+    await expect(page.locator("body")).toHaveAttribute("data-layout", "home");
 
     image.hold();
     await page.goBack({ waitUntil: "commit" });

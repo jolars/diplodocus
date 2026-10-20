@@ -3,6 +3,7 @@
 mod footer;
 mod fragments;
 mod highlighting;
+mod home;
 mod html;
 mod katex_assets;
 mod markdown;

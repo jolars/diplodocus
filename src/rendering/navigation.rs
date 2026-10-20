@@ -41,7 +41,14 @@ pub(super) fn sections(html: &mut String, site: &Site<'_>, route: &str, class: &
     )
     .unwrap();
     let owner = site.pages[route].owner.as_deref();
-    section_link(html, site, route, "index.html", "Guide", owner.is_none());
+    section_link(
+        html,
+        site,
+        route,
+        site.guide_route(),
+        "Guide",
+        owner.is_none() && site.home(route).is_none(),
+    );
     let mut packages: Vec<_> = site
         .workspace
         .packages
@@ -143,11 +150,16 @@ fn document_groups(
     label: &str,
     base: &str,
 ) {
-    let overview = format!("{base}index.html");
+    let overview = if owner.is_none() {
+        site.guide_route().to_owned()
+    } else {
+        format!("{base}index.html")
+    };
     let mut root = vec![(overview.clone(), "Overview".to_owned())];
     let mut groups: BTreeMap<&str, Vec<(String, String)>> = BTreeMap::new();
     for (destination, page) in &site.pages {
         if destination == &overview
+            || site.home(destination).is_some()
             || !page.visible
             || page.owner.as_deref() != owner
             || page.item.is_some()
@@ -158,6 +170,14 @@ fn document_groups(
         }
         let Some(path) = destination.strip_prefix(base) else {
             continue;
+        };
+        let path = if owner.is_none() && site.presentation.home.is_some() {
+            site.guide_route()
+                .rsplit_once('/')
+                .and_then(|(directory, _)| path.strip_prefix(&format!("{directory}/")))
+                .unwrap_or(path)
+        } else {
+            path
         };
         if let Some((directory, _)) = path.split_once('/') {
             groups

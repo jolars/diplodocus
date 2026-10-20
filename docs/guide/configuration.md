@@ -62,7 +62,7 @@ Checked-in assets can live beside the pages that use them.
 
 The monorepo example has one shared GFM guide and four extracted packages,
 including a compiler-backed Rust library. The root configuration mounts this GFM
-guide at the site root and
+guide at `/guide/` and
 keeps its QMD example under `/examples/`. See [authored pages](authoring.md) for
 supported syntax, links, and assets.
 
@@ -122,6 +122,41 @@ The title defaults to `project.name`. Diplodocus uses its built-in theme.
 Generated sites and portable snapshots keep the presentation metadata, so
 `generate` does not need the original configuration. Read about [portable
 snapshots](snapshots.md) before separating extraction and generation.
+
+### Landing page
+
+Add `[presentation.home]` to give the site root a full-width landing page. It
+shares the documentation navbar, including the logo, section links, search,
+and repository links. Navigation keeps that header mounted while the content
+and documentation sidebar change below it.
+
+```toml
+[presentation.home]
+tagline = "Four languages.\nOne home for docs."
+description = "Guides and API references for all your packages."
+guide = "guide/index.html"
+actions = [
+  { label = "Get started", path = "guide/quick-start.html" },
+  { label = "Read the guide", path = "guide/index.html" },
+]
+features = [
+  { title = "Shared documentation", description = "Link across your packages.", path = "guide/authoring.html" },
+]
+```
+
+Mount your guide collection at `guide` to keep it separate from the homepage.
+`guide` sets the navbar's Guide destination. Action and feature paths name
+visible generated HTML pages, including `.html`, even when the site uses clean
+URLs. Diplodocus checks these destinations and renders links using the site's
+URL settings. The first action receives the primary button style.
+
+The hero uses the site title and optional logo. All text is plain text, and
+newlines in `tagline` separate heading lines. Actions and features can be
+omitted. If an authored page already occupies the site root, its body appears
+below the landing content, with its initial title supplied by the hero.
+Without `[presentation.home]`, the root retains the documentation layout.
+
+### Branding
 
 To add a logo before the title in the leftmost navbar link, declare an image in
 one of your repositories:

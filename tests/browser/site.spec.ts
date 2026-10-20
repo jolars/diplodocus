@@ -2,6 +2,8 @@ import { expect, test as base, type Page, type TestInfo } from "@playwright/test
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 
+const homeHeading = "Small metrics. Clearer predictions.";
+
 const test = base.extend<{ browserErrors: string[] }>({
   baseURL: async ({}, use) => {
     const port = process.env.DIPLODOCUS_PREVIEW_PORT;
@@ -99,7 +101,8 @@ test("API signatures have stable line breaks and no copy buttons", async ({ page
 });
 
 for (const [path, title, name] of [
-  ["/", "Tiny Stats", "home"],
+  ["/", homeHeading, "home"],
+  ["/overview.html", "Tiny Stats", "overview"],
   ["/guides/comparing-predictions.html", "Comparing predictions", "guide"],
   ["/packages/python/", "Tiny Stats for Python", "python-package"],
   ["/packages/r/", "Tiny Stats for R", "r-package"],
@@ -112,7 +115,9 @@ for (const [path, title, name] of [
   test(`${name} has one title and fits the viewport`, async ({ page }, info) => {
     await page.goto(path);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(title);
-    await expect(page.getByRole("navigation", { name: "Documentation" })).toBeVisible();
+    const navigation = page.getByRole("navigation", { name: "Documentation" });
+    if (name === "home") await expect(navigation).not.toBeVisible();
+    else await expect(navigation).toBeVisible();
     await fitsViewport(page);
     if (name === "python-guide") {
       await openNavigation(page, info);
@@ -132,7 +137,7 @@ for (const [path, title, name] of [
 test("navbar links stay in place when switching sections", async ({ page }, info) => {
   test.skip(info.project.name !== "desktop", "The top navbar is shown on desktop.");
   await page.goto("/");
-  const links = page.locator("header .global-nav a");
+  const links = page.locator("header .global-nav:visible a");
   const positions = await links.evaluateAll(elements => elements.map(element => {
     const { x, width } = element.getBoundingClientRect();
     return { x, width };
@@ -150,9 +155,53 @@ test("navbar links stay in place when switching sections", async ({ page }, info
   await capture(page, info, "navbar-stable-sections");
 });
 
-test("client navigation keeps the shell and logo mounted while updating the page", async ({ page }, info) => {
+test("landing page shares the navbar with guides and all four language sections", async ({ page }, info) => {
   await page.goto("/");
-  const brand = page.locator(".layout > nav > .brand");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(homeHeading);
+  await expect(page.locator(".home-feature")).toHaveCount(4);
+  await expect(page.locator(".home-artwork img")).toBeVisible();
+  await expect(sections(page, info).getByRole("link")).toHaveText(["Guide", "Python", "R", "Julia", "Rust"]);
+  await expect(sections(page, info).locator("[aria-current]")).toHaveCount(0);
+  const shell = await page.evaluateHandle(() => ({
+    document,
+    elements: [...document.querySelectorAll("header, header a, .brand-logo, #search")],
+  }));
+  const geometry = () => page.locator("header > .brand, header .global-nav:visible a, #search, header .repository-link")
+    .evaluateAll(elements => elements.map(element => element.getBoundingClientRect().toJSON()));
+  const initial = await geometry();
+  const stableNavbar = async () => {
+    expect(await shell.evaluate(value => value.document === document && value.elements.every(element => element.isConnected))).toBe(true);
+    expect(await geometry()).toEqual(initial);
+    await fitsViewport(page);
+  };
+  await page.getByRole("link", { name: "Get started", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Quick start");
+  await stableNavbar();
+  await sections(page, info).getByRole("link", { name: "Guide", exact: true }).click();
+  await expect(page).toHaveURL(/\/overview\.html$/);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Tiny Stats");
+  await stableNavbar();
+  await capture(page, info, "landing-guide");
+  for (const language of ["Python", "R", "Julia", "Rust"]) {
+    await sections(page, info).getByRole("link", { name: language, exact: true }).click();
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(`Tiny Stats for ${language}`);
+    await expect(sections(page, info).locator('[aria-current="true"]')).toHaveText(language);
+    await stableNavbar();
+    await page.locator(".brand").click();
+    await expect(page.locator("body")).toHaveAttribute("data-layout", "home");
+    await expect(page.getByRole("navigation", { name: "Documentation" })).not.toBeVisible();
+    await expect(sections(page, info).locator("[aria-current]")).toHaveCount(0);
+    await stableNavbar();
+  }
+  await page.getByRole("link", { name: "Explore the guide", exact: true }).click();
+  await expect(page).toHaveURL(/\/overview\.html$/);
+  await stableNavbar();
+  await shell.dispose();
+});
+
+test("client navigation keeps the shell and logo mounted while updating the page", async ({ page }, info) => {
+  await page.goto("/overview.html");
+  const brand = page.locator("header > .brand");
   const logo = brand.locator(".brand-logo");
   await expect.poll(() => logo.evaluate((element: HTMLImageElement) => element.naturalWidth)).toBeGreaterThan(0);
   const shell = await page.evaluateHandle(() => ({
@@ -294,7 +343,7 @@ test("client navigation initializes code and tabsets on every visit without dupl
 });
 
 test("client navigation cancels stale responses when another link or Back wins", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/overview.html");
   const pending: { release: () => void; finished: Promise<void> }[] = [];
   await page.route("**/guides/comparing-predictions.html", async route => {
     const response = await route.fetch();
@@ -320,13 +369,13 @@ test("client navigation cancels stale responses when another link or Back wins",
     await followFixtureLink(page, "/guides/comparing-predictions.html");
     await expect.poll(() => pending.length).toBe(2);
     await page.goBack();
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/overview\.html$/);
     await expect(page).toHaveTitle("Tiny Stats · Tiny Stats");
     pending[1].release();
     await pending[1].finished;
     await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Tiny Stats");
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/overview\.html$/);
   } finally {
     for (const request of pending) request.release();
     await page.unrouteAll({ behavior: "ignoreErrors" });
@@ -393,16 +442,17 @@ test("navbar and sidebars share outer margins", async ({ page }, info) => {
   await page.goto("/guides/comparing-predictions.html");
   for (const width of [1024, 1280, 1920]) {
     await page.setViewportSize({ width, height: 900 });
-    const brand = (await page.locator(".layout > nav > .brand").boundingBox())!;
+    const brand = (await page.locator("header > .brand").boundingBox())!;
     const search = (await page.locator(".header-actions").boundingBox())!;
     const sidebar = (await page.locator(".layout > nav .nav-group h2").first().boundingBox())!;
-    expect(brand.x).toBeCloseTo(width - search.x - search.width, 0);
+    const contentWidth = await page.evaluate(() => document.body.clientWidth);
+    expect(brand.x).toBeCloseTo(contentWidth - search.x - search.width, 0);
     expect(sidebar.x).toBeCloseTo(brand.x, 0);
     if (width >= 1100) {
       const toc = (await page.locator(".page-toc").boundingBox())!;
       expect(toc.x + toc.width).toBeCloseTo(search.x + search.width, 0);
       const article = (await page.getByRole("main").boundingBox())!;
-      expect(article.x + article.width / 2).toBeCloseTo(width / 2, 0);
+      expect(article.x + article.width / 2).toBeCloseTo(contentWidth / 2, 0);
       expect(toc.x).toBeGreaterThanOrEqual(article.x + article.width - 1);
     }
     await fitsViewport(page);
@@ -418,8 +468,9 @@ test("desktop sidebar stays pinned at the page bottom and scrolls independently"
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
   await expect(page.locator(".site-footer")).toBeInViewport();
   const box = (await sidebar.boundingBox())!;
-  expect(box.y).toBeCloseTo(0, 0);
-  expect(box.height).toBeCloseTo(400, 0);
+  const header = (await page.locator("header").boundingBox())!;
+  expect(box.y).toBeCloseTo(header.height, 0);
+  expect(box.height).toBeCloseTo(400 - header.height, 0);
   const pageScroll = await page.evaluate(() => window.scrollY);
   await sidebar.hover();
   await page.mouse.wheel(0, 300);
@@ -428,12 +479,12 @@ test("desktop sidebar stays pinned at the page bottom and scrolls independently"
   await capture(page, info, "sidebar-at-page-bottom", true, false);
 });
 
-test("sidebar branding stays visible while reaching lower navigation links", async ({ page }, info) => {
+test("navbar branding stays visible while reaching lower navigation links", async ({ page }, info) => {
   test.skip(info.project.name !== "desktop", "Mobile navigation stays in the page flow.");
   await page.setViewportSize({ width: 1280, height: 400 });
-  await page.goto("/");
+  await page.goto("/overview.html");
   const sidebar = page.getByRole("navigation", { name: "Documentation", exact: true });
-  const brand = sidebar.locator(":scope > .brand");
+  const brand = page.locator("header > .brand");
   const before = (await brand.boundingBox())!;
   const link = sidebar.getByRole("link", { name: "Inspecting residuals", exact: true });
   await link.scrollIntoViewIfNeeded();
@@ -455,7 +506,7 @@ test("brand title stays in place while the logo loads", async ({ page }, info) =
     await route.continue();
   });
   await page.goto("/packages/python/", { waitUntil: "domcontentloaded" });
-  const brand = page.locator(".layout > nav > .brand");
+  const brand = page.locator("header > .brand");
   const logo = brand.locator(".brand-logo");
   const title = brand.locator("span");
   await expect(logo).toBeAttached();
@@ -472,7 +523,7 @@ test("brand title stays in place while the logo loads", async ({ page }, info) =
 test("navbar logo loads on nested pages and links home", async ({ page }, info) => {
   for (const path of ["/", "/guides/comparing-predictions.html", "/packages/python/"]) {
     await page.goto(path);
-    const brand = page.locator(".layout > nav > .brand");
+    const brand = page.locator("header > .brand");
     const logo = brand.locator(".brand-logo");
     await expect(brand).toHaveAccessibleName("Tiny Stats");
     await expect(logo).toBeVisible();
@@ -484,7 +535,7 @@ test("navbar logo loads on nested pages and links home", async ({ page }, info) 
     expect(image!.height).toBeLessThanOrEqual(28);
     await fitsViewport(page);
     await brand.click();
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Tiny Stats");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(homeHeading);
   }
   await capture(page, info, "navbar-logo");
 });
@@ -502,7 +553,7 @@ test("discovered community links preserve repository and site destinations", asy
       .toHaveAttribute("href", `https://github.com/jolars/diplodocus/blob/main/${path}`);
   }
   expect(await main.getByRole("link", { name: "documentation", exact: true }).evaluate((link: HTMLAnchorElement) => link.pathname))
-    .toBe("/index.html");
+    .toBe("/overview.html");
   await fitsViewport(page);
   await capture(page, info, "r-community");
   await main.getByRole("link", { name: "documentation", exact: true }).click();
@@ -540,13 +591,13 @@ test("footer identifies the docs and exposes project, license, and generator lin
     const layout = await page.locator(".layout").boundingBox();
     const box = await footer.boundingBox();
     expect(box!.y).toBeGreaterThanOrEqual(layout!.y + layout!.height - 1);
-    if (info.project.name === "desktop") {
+    if (info.project.name === "desktop" && path !== "/") {
       const sidebar = (await page.locator(".layout > nav").boundingBox())!;
       expect(box!.x).toBeCloseTo(sidebar.x + sidebar.width, 0);
     } else {
       expect(box!.x).toBe(0);
     }
-    expect(box!.x + box!.width).toBe(page.viewportSize()!.width);
+    expect(box!.x + box!.width).toBe(await page.evaluate(() => document.body.clientWidth));
     expect(Math.abs(box!.y + box!.height - page.viewportSize()!.height)).toBeLessThan(1);
     await fitsViewport(page);
   }
@@ -765,12 +816,12 @@ function sections(page: Page, info: TestInfo) {
 }
 
 test("global sections select a contextual sidebar", async ({ page }, info) => {
-  await page.goto("/");
+  await page.goto("/overview.html");
   const navigation = page.getByRole("navigation", { name: "Documentation" });
   const global = sections(page, info);
   if (info.project.name === "mobile") {
     await expect(navigation.getByText("Browse documentation", { exact: true })).toBeVisible();
-    await expect(global).not.toBeVisible();
+    await expect(global).toBeVisible();
   }
   await openNavigation(page, info);
   await expect(global.getByRole("link")).toHaveText(["Guide", "Python", "R", "Julia", "Rust"]);
@@ -945,7 +996,7 @@ test("page TOC stays close to content when the window narrows", async ({ page },
 });
 
 test("page titles stay aligned across guides, package overviews, and APIs", async ({ page }, info) => {
-  await page.goto("/");
+  await page.goto("/overview.html");
   const apis = await page.locator("main a").evaluateAll(elements => elements
     .filter(element => /mean_squared_error/.test(element.textContent!))
     .map(element => (element as HTMLAnchorElement).pathname));
@@ -959,12 +1010,12 @@ test("page titles stay aligned across guides, package overviews, and APIs", asyn
     ["/packages/rust/", "rust-package"],
     ["/packages/python/guides/evaluating-models.html", "package-guide"],
     ...apis.map((path, index) => [path, `api-${index}`]),
-    ["/", "home"],
+    ["/overview.html", "overview"],
   ];
   const widths = info.project.name === "desktop" ? [1280, 1000, 761] : [760, 390, 320];
   for (const width of widths) {
     await page.setViewportSize({ width, height: 900 });
-    await page.goto("/");
+    await page.goto("/overview.html");
     await expect(page.locator(".nav-disclosure")).toHaveAttribute("data-ready");
     const baseline = (await page.getByRole("heading", { level: 1 }).boundingBox())!;
     for (const [path, name] of destinations) {
@@ -1052,6 +1103,10 @@ test.describe("navigation without JavaScript", () => {
 
   test("section links and API trees remain usable", async ({ page }, info) => {
     await page.goto("/");
+    await page.getByRole("link", { name: "Get started", exact: true }).click();
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Quick start");
+    await page.locator(".brand").click();
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(homeHeading);
     await sections(page, info).getByRole("link", { name: "Python", exact: true }).click();
     const navigation = page.getByRole("navigation", { name: "Documentation" });
     await navigation.getByText("tinystats", { exact: true }).click();

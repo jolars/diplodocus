@@ -276,6 +276,8 @@
       document.title = next.title;
       for (const element of document.head.querySelectorAll(metadata)) element.remove();
       for (const element of next.head.querySelectorAll(metadata)) document.head.append(element);
+      if (next.body.dataset.layout) document.body.dataset.layout = next.body.dataset.layout;
+      else delete document.body.dataset.layout;
       updateSidebar(next);
       document.querySelector('.page-content').replaceWith(next.querySelector('.page-content'));
       document.querySelector('#search').value = '';

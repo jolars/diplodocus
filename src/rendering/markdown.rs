@@ -62,6 +62,35 @@ pub(super) fn page(
     if !authored_title {
         writeln!(output, "# {}\n", escape(&page.title)).unwrap();
     }
+    if let Some(home) = site.home(route) {
+        writeln!(
+            output,
+            "{}\n\n{}\n",
+            escape(&home.tagline),
+            escape(&home.description),
+        )
+        .unwrap();
+        for action in &home.actions {
+            writeln!(
+                output,
+                "- [{}]({})",
+                escape(&action.label),
+                link_url(&site.url(route, action.path.as_str())),
+            )
+            .unwrap();
+        }
+        output.push('\n');
+        for feature in &home.features {
+            writeln!(
+                output,
+                "## {}\n\n{}\n\n[Read more]({})\n",
+                escape(&feature.title),
+                escape(&feature.description),
+                link_url(&site.url(route, feature.path.as_str())),
+            )
+            .unwrap();
+        }
+    }
     if let Some(owner) = &page.owner {
         let package = &site.workspace.packages[owner];
         writeln!(
@@ -327,7 +356,11 @@ pub(super) fn page(
             output.push_str(&concept_links(site, route, concept)?);
         }
     }
-    if page.document.is_none() && page.item.is_none() && page.concept.is_none() {
+    if page.document.is_none()
+        && page.item.is_none()
+        && page.concept.is_none()
+        && site.home(route).is_none()
+    {
         for (path, candidate) in &site.pages {
             if candidate.visible
                 && path != route

@@ -94,6 +94,7 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
     let math_context = katex::KatexContext::default();
     let highlighter = super::highlighting::Highlighter::new();
     for (route, page) in &site.pages {
+        let home = site.home(route);
         let markdown_path = format!(
             "{}.md",
             route.strip_suffix(".html").ok_or(SiteError::Evidence)?
@@ -204,19 +205,18 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                 escape(&site.url(route, &markdown_path))
             )
             .unwrap();
-            write!(html, "</head><body data-diplodocus-navigation=\"1\" data-diplodocus-shell=\"{}\"><a class=\"skip-link\" href=\"#main\">Skip to content</a>", shell_fingerprint.as_deref().expect("standalone shell fingerprint")).unwrap();
+            write!(html, "</head><body data-diplodocus-navigation=\"1\" data-diplodocus-shell=\"{}\" data-layout=\"{}\"><a class=\"skip-link\" href=\"#main\">Skip to content</a>", shell_fingerprint.as_deref().expect("standalone shell fingerprint"), if home.is_some() { "home" } else { "docs" }).unwrap();
             html.push_str("<header>");
+            brand(&mut html, site, route)?;
             super::navigation::sections(&mut html, site, route, "desktop-sections");
             html.push_str("<div class=\"header-actions\"><form class=\"site-search\" role=\"search\"><label class=\"visually-hidden\" for=\"search\">Search documentation</label><div class=\"search-control\"><svg class=\"search-icon\" aria-hidden=\"true\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><circle cx=\"10.5\" cy=\"10.5\" r=\"6.5\"></circle><path d=\"m16 16 4 4\"></path></svg><input id=\"search\" type=\"search\" placeholder=\"Search\" autocomplete=\"off\" aria-controls=\"search-results\"></div><ul id=\"search-results\" aria-live=\"polite\"></ul></form>");
             super::navigation::repositories(&mut html, site);
-            html.push_str(
-                "</div></header><div class=\"layout\"><nav aria-label=\"Documentation\">",
-            );
-            brand(&mut html, site, route)?;
+            html.push_str("</div>");
+            super::navigation::sections(&mut html, site, route, "mobile-sections");
+            html.push_str("</header><div class=\"layout\"><nav aria-label=\"Documentation\">");
             html.push_str(
                 "<details class=\"nav-disclosure\" open><summary>Browse documentation</summary>",
             );
-            super::navigation::sections(&mut html, site, route, "mobile-sections");
             write!(
                 html,
                 "<div class=\"contextual-nav\" data-section=\"{}\">",
@@ -225,7 +225,9 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
             .unwrap();
             super::navigation::contextual(&mut html, site, route);
             html.push_str("</div></details></nav><div class=\"page-content\">");
-            if package_overview {
+            if home.is_some() {
+                html.push_str("<main id=\"main\" class=\"home-page\">");
+            } else if package_overview {
                 html.push_str("<main id=\"main\" class=\"package-overview\"><div class=\"package-overview-body\">");
             } else {
                 html.push_str("<main id=\"main\">");
@@ -244,10 +246,15 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                 matches!(
                     document.document.blocks.first(),
                     Some(Block::Heading { level: 1, inlines, .. })
-                        if plain(inlines) == page.title
+                        if home.is_some() || plain(inlines) == page.title
                 )
             });
-        if !authored_title {
+        if let Some(home) = home {
+            super::home::render(&mut html, site, route, home)?;
+            if page.document.is_some() {
+                html.push_str("<div class=\"home-content\">");
+            }
+        } else if !authored_title {
             let title = if let Some(inlines) = page.item.and_then(super::r_topics::title) {
                 renderer.inlines(inlines)?
             } else if page.item.is_some() {
@@ -583,6 +590,7 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
             && page.item.is_none()
             && page.concept.is_none()
             && !page.reference_index
+            && home.is_none()
         {
             html.push_str("<ul>");
             for (path, candidate) in &site.pages {
@@ -613,6 +621,9 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                 page.owner.as_deref().expect("package overview owner"),
             ));
         }
+        if home.is_some() && page.document.is_some() {
+            html.push_str("</div>");
+        }
         files.insert(
             markdown_path.clone(),
             file(
@@ -622,7 +633,9 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
         );
         if standalone {
             html.push_str("</main>");
-            html.push_str(&renderer.page_navigation());
+            if home.is_none() {
+                html.push_str(&renderer.page_navigation());
+            }
             html.push_str("</div></div>");
             super::footer::render(&mut html, site);
             html.push_str("</body></html>\n");
@@ -662,6 +675,12 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                 })
                 .unwrap_or("")
                 .to_owned();
+            if let Some(home) = home {
+                write!(search_text, "\n{}\n{}", home.tagline, home.description).unwrap();
+                for feature in &home.features {
+                    write!(search_text, "\n{}\n{}", feature.title, feature.description).unwrap();
+                }
+            }
             if let Some(item) = page.item {
                 for member in julia_members(item) {
                     if let Some(raw) = site.workspace.packages[&member.package].items[&member.item]

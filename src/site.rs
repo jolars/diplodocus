@@ -28,6 +28,9 @@ pub enum SiteError {
     /// Crawler metadata cannot be generated from the supplied presentation settings.
     #[error("site crawler metadata is invalid: {0}")]
     CrawlerMetadata(String),
+    /// Homepage links must identify existing, visible documentation pages.
+    #[error("site presentation settings are invalid: {0}")]
+    Presentation(String),
     /// The output directory could not be staged or replaced.
     #[error("site publication failed: {0}")]
     Io(#[from] std::io::Error),
@@ -414,6 +417,29 @@ impl<'a> Site<'a> {
                 PageModel::empty(site.title().to_owned(), None, true),
             )?;
         }
+        if let Some(home) = &site.presentation.home {
+            for path in std::iter::once(&home.guide)
+                .chain(home.actions.iter().map(|action| &action.path))
+                .chain(home.features.iter().map(|feature| &feature.path))
+            {
+                if path.as_str() == "index.html"
+                    || !site
+                        .pages
+                        .get(path.as_str())
+                        .is_some_and(|page| page.visible)
+                {
+                    return Err(SiteError::Presentation(format!(
+                        "homepage destination must name a visible documentation page: {}",
+                        path.as_str()
+                    )));
+                }
+            }
+            if site.pages[home.guide.as_str()].owner.is_some() {
+                return Err(SiteError::Presentation(
+                    "presentation.home.guide must name a project documentation page".into(),
+                ));
+            }
+        }
         site.assign_canonical_urls()?;
         Ok(site)
     }
@@ -495,6 +521,17 @@ impl<'a> Site<'a> {
             .title
             .as_deref()
             .unwrap_or(&self.workspace.name)
+    }
+    pub(crate) fn home(&self, route: &str) -> Option<&crate::configuration::HomeDefaults> {
+        (route == "index.html")
+            .then_some(self.presentation.home.as_ref())
+            .flatten()
+    }
+    pub(crate) fn guide_route(&self) -> &str {
+        self.presentation
+            .home
+            .as_ref()
+            .map_or("index.html", |home| home.guide.as_str())
     }
     fn insert(&mut self, route: String, page: PageModel<'a>) -> Result<(), SiteError> {
         if DiagnosticPath::try_from(route.clone()).is_err()

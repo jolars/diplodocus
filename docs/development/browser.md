@@ -49,6 +49,17 @@ titles, images, layout width, search, equivalent APIs, and keyboard navigation.
 JavaScript and console errors fail tests, except the browser's automatic request
 for an undeclared `/favicon.ico`.
 
+The Tiny Stats landing page and documentation pages share one header. Branding,
+section links, search, and repository links stay visible in the navbar on both
+layouts. The documentation sidebar appears below that header when entering the
+guide. Browser tests compare navbar coordinates and retained elements across
+the landing page, nested guides, API pages, and history traversal, including
+clean URLs under a hosting prefix.
+
+The homepage's **Get started** action opens the quick start, and **Guide** opens
+`overview.html`. The remaining navbar links open the four language sections.
+`site-capture` includes both the landing page and its guide overview.
+
 Standalone sites use client-side navigation for ordinary internal page links,
 including search results. The header, branding, logo, and navigation shell stay
 mounted while the page content and contextual links update. Each URL also serves

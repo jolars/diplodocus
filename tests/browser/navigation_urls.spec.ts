@@ -36,6 +36,12 @@ name = "URL navigation"
 site-url = "${publicRoot}"
 canonical-url-style = "${style}"
 description = "Nested documentation"
+[presentation.home]
+tagline = "Home"
+description = "A shared home for the documentation."
+guide = "guides/nested.html"
+actions = [{ label = "Get started", path = "guides/nested.html" }]
+features = [{ title = "Nested documentation", description = "Explore guides without moving the navbar.", path = "guides/nested.html" }]
 [presentation.logo]
 repository = "docs"
 path = "logo.png"
@@ -112,11 +118,34 @@ for (const style of ["file", "clean"]) {
     });
     try {
       await page.goto(`${origin}${homePath}`);
+      await expect(page.locator("body")).toHaveAttribute("data-layout", "home");
+      await expect(page.getByRole("navigation", { name: "Documentation", exact: true })).not.toBeVisible();
+      await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+      await expect(page.getByRole("main").getByRole("link", { name: "Read nested guide" })).toBeVisible();
       await expect(page.locator('link[href$="katex.min.css"]')).toHaveCount(0);
-      const identity = await page.evaluateHandle(() => ({ document, brand: document.querySelector(".brand"), logo: document.querySelector(".brand-logo") }));
+      const identity = await page.evaluateHandle(() => ({
+        document,
+        elements: [...document.querySelectorAll("header, header a, #search")],
+      }));
+      const navbar = page.locator("header > .brand, header .global-nav:visible a, #search, header .repository-link");
+      const positions = await navbar.evaluateAll(elements => elements.map(element => {
+        const { x, y, width, height } = element.getBoundingClientRect();
+        return { x, y, width, height };
+      }));
+      const stableNavbar = async () => {
+        expect(await identity.evaluate(value => value.document === document && value.elements.every(element => element.isConnected))).toBe(true);
+        const boxes = await navbar.evaluateAll(elements => elements.map(element => {
+          const { x, y, width, height } = element.getBoundingClientRect();
+          return { x, y, width, height };
+        }));
+        expect(boxes).toEqual(positions);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+      };
       const logoSource = await page.locator(".brand-logo").getAttribute("src");
-      await page.getByRole("main").getByRole("link", { name: "Read nested guide" }).click();
+      await page.locator("header .global-nav:visible").getByRole("link", { name: "Guide", exact: true }).click();
       await expect(page).toHaveURL(`${origin}${nestedPath}`);
+      await expect(page.locator("body")).toHaveAttribute("data-layout", "docs");
+      await stableNavbar();
       await expect(page).toHaveTitle("Nested guide · URL navigation");
       await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", `${publicRoot}guides/nested${suffix}`);
       await expect(page.locator('link[rel="alternate"][type="text/markdown"]')).toHaveAttribute("href", `${origin}${prefix}guides/nested.md`);
@@ -125,7 +154,7 @@ for (const style of ["file", "clean"]) {
       await expect(page.locator('meta[name="twitter:title"]')).toHaveAttribute("content", "Nested guide · URL navigation");
       await expect(page.locator(".brand")).toHaveAttribute("href", `${origin}${homePath}`);
       await expect(page.locator(".brand-logo")).toHaveAttribute("src", logoSource!);
-      await expect(page.locator(".contextual-nav").getByRole("link", { name: "Overview", exact: true, includeHidden: true })).toHaveAttribute("href", `${origin}${homePath}`);
+      await expect(page.locator(".contextual-nav").getByRole("link", { name: "Overview", exact: true, includeHidden: true })).toHaveAttribute("href", `${origin}${nestedPath}`);
       const chart = page.getByRole("img", { name: "Chart" });
       expect(await chart.getAttribute("src")).toMatch(new RegExp(`^${origin}${prefix}assets/[^/]+\\.svg$`));
       await expect.poll(() => chart.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
@@ -145,11 +174,63 @@ for (const style of ["file", "clean"]) {
       await page.locator(".brand").click();
       await expect(page).toHaveURL(`${origin}${homePath}`);
       await expect(page.getByRole("heading", { level: 1 })).toHaveText("Home");
-      expect(await identity.evaluate(value => value.document === document && value.brand === document.querySelector(".brand") && value.logo === document.querySelector(".brand-logo"))).toBe(true);
+      await expect(page.locator("body")).toHaveAttribute("data-layout", "home");
+      await stableNavbar();
+      await page.getByRole("link", { name: "Get started", exact: true }).click();
+      await expect(page).toHaveURL(`${origin}${nestedPath}`);
+      await stableNavbar();
+      await page.goBack();
+      await expect(page.locator("body")).toHaveAttribute("data-layout", "home");
+      await stableNavbar();
+      await page.goForward();
+      await expect(page.locator("body")).toHaveAttribute("data-layout", "docs");
+      await stableNavbar();
+      await page.reload();
+      await expect(page.locator("body")).toHaveAttribute("data-layout", "docs");
+      await page.locator(".brand").click();
+      await expect(page.locator("body")).toHaveAttribute("data-layout", "home");
+      await page.reload();
+      await expect(page.locator("body")).toHaveAttribute("data-layout", "home");
       expect(missing, "Generated assets resolve within the hosting prefix").toEqual([]);
       expect(errors, "Client navigation JavaScript errors").toEqual([]);
     } finally {
       releaseStyle();
+    }
+  });
+
+  test(`${style} landing and guide navigation work without JavaScript`, async ({ browser }, info) => {
+    const context = await browser.newContext({ javaScriptEnabled: false, viewport: info.project.use.viewport });
+    const page = await context.newPage();
+    const origin = `http://127.0.0.1:${process.env.DIPLODOCUS_PREVIEW_PORT}`;
+    const homePath = `${prefix}${style === "file" ? "index.html" : ""}`;
+    const nestedPath = `${prefix}guides/nested${style === "file" ? ".html" : ""}`;
+    try {
+      await page.route(`${origin}${prefix}**`, async route => {
+        let path = decodeURIComponent(new URL(route.request().url()).pathname.slice(prefix.length));
+        if (!path || path.endsWith("/")) path += "index.html";
+        else if (!extname(path)) path += ".html";
+        const types: Record<string, string> = {
+          ".html": "text/html", ".css": "text/css", ".png": "image/png", ".svg": "image/svg+xml",
+        };
+        await route.fulfill({
+          body: await readFile(join(output.get(style)!, path)),
+          contentType: types[extname(path)] ?? "application/octet-stream",
+        });
+      });
+      await page.goto(`${origin}${homePath}`);
+      await expect(page.locator("body")).toHaveAttribute("data-layout", "home");
+      await expect(page.locator("header .global-nav:visible")).toBeVisible();
+      const brand = await page.locator(".brand").boundingBox();
+      await page.getByRole("link", { name: "Get started", exact: true }).click();
+      await expect(page).toHaveURL(`${origin}${nestedPath}`);
+      await expect(page.locator("body")).toHaveAttribute("data-layout", "docs");
+      await expect(page.getByRole("heading", { level: 1 })).toHaveText("Nested guide");
+      expect(await page.locator(".brand").boundingBox()).toEqual(brand);
+      await page.locator(".brand").click();
+      await expect(page).toHaveURL(`${origin}${homePath}`);
+      await expect(page.locator("body")).toHaveAttribute("data-layout", "home");
+    } finally {
+      await context.close();
     }
   });
 }

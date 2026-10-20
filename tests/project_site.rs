@@ -65,8 +65,11 @@ fn real_project_site_builds_and_resolves_at_its_domain_root() {
     .unwrap();
 
     let home = fs::read_to_string(output.join("index.html")).unwrap();
-    assert!(home.contains("<h1>Diplodocus</h1>"));
-    assert!(home.contains("This guide is built by Diplodocus"));
+    assert!(home.contains("data-layout=\"home\""));
+    assert!(home.contains("<h1>Four languages.\nOne home for docs.</h1>"));
+    assert!(home.contains("href=\"guide/quick-start\""));
+    let guide = fs::read_to_string(output.join("guide/index.html")).unwrap();
+    assert!(guide.contains("This guide is built by Diplodocus"));
     let image_bytes = fs::read(workspace.path().join("assets/brand/og.png")).unwrap();
     let digest = diplodocus::provenance::fingerprint_bytes(&image_bytes).value;
     let image_route = format!("assets/{digest}.png");
@@ -76,7 +79,7 @@ fn real_project_site_builds_and_resolves_at_its_domain_root() {
     )));
     assert!(home.contains("<meta property=\"og:image:width\" content=\"1200\">"));
     assert!(home.contains("<meta property=\"og:image:height\" content=\"630\">"));
-    assert!(!output.join("guide/index.html").exists());
+    assert!(output.join("guide/index.html").exists());
     let example = fs::read_to_string(output.join("examples/stateful.html")).unwrap();
     assert!(example.contains("Total: 12"));
     assert!(example.contains("Example stderr"));
@@ -160,14 +163,22 @@ fn real_project_site_builds_and_resolves_at_its_domain_root() {
     }
     for (title, route) in [
         ("Diplodocus", "index.html"),
-        ("Installation", "installation.html"),
-        ("Commands", "cli.html"),
-        ("Portable snapshots", "snapshots.html"),
+        ("Installation", "guide/installation.html"),
+        ("Commands", "guide/cli.html"),
+        ("Portable snapshots", "guide/snapshots.html"),
         ("A deterministic Python page", "examples/stateful.html"),
     ] {
         let entry = search
             .iter()
-            .find(|entry| entry["title"] == title)
+            .find(|entry| {
+                entry["title"] == title
+                    && entry["path"]
+                        == if route == "index.html" {
+                            "./"
+                        } else {
+                            route.strip_suffix(".html").unwrap()
+                        }
+            })
             .unwrap_or_else(|| panic!("missing search entry for {title}"));
         let path = entry["path"].as_str().unwrap();
         assert_eq!(

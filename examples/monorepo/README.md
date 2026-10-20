@@ -4,9 +4,12 @@ Tiny Stats is a working prediction-evaluation toolkit with Python, R, Julia, and
 packages. All four expose six operations: mean squared error, mean absolute error,
 root mean squared error, mean error, R squared, and residuals.
 
-The site combines installation and quick-start pages, three shared guides, a
-Python-specific workflow, an executable R vignette, and all four package
-references in one left sidebar.
+The site opens with a landing page linking to the quick start, shared guides,
+and API references. The navbar keeps the logo, **Guide**, all four languages,
+search, and GitHub in place when moving into the documentation. The **Guide**
+link opens `overview.html`, with installation and quick-start pages and three
+shared guides in the sidebar. Each language has its own sidebar, including a
+Python-specific workflow and an executable R vignette.
 Python functions nest under their module; the current package and API ancestors
 open automatically. A separate **On this page** area follows the page's headings.
 Each operation links to its equivalent in the other languages.
@@ -19,6 +22,8 @@ the supplied lockfile and cached dependencies.
 
 The navbar's home link displays `docs/assets/logo.svg` before the site title.
 The `[presentation.logo]` table selects this image from the `tinystats` repository.
+The landing page reuses it in the hero. `[presentation.home]` configures the
+heading, introduction, actions, feature cards, and Guide destination.
 
 The R package has a landing page built from its README and DESCRIPTION. Package
 information links to release notes, authors and citation information, the
@@ -30,7 +35,7 @@ Its R chunks compute scores and a table, and draw a residual plot.
 monorepo/
   diplodocus.toml
   docs/
-    index.md
+    overview.md
     getting-started/
       index.md
       installation.md
@@ -40,7 +45,9 @@ monorepo/
       comparing-predictions.md
       choosing-a-metric.md
       inspecting-residuals.md
-    assets/errors.svg
+    assets/
+      errors.svg
+      logo.svg
   python/
     pyproject.toml
     src/tinystats/__init__.py
@@ -88,8 +95,8 @@ cargo run --locked -- build --config examples/monorepo/diplodocus.toml --output 
 cargo run --locked -- serve --config examples/monorepo/diplodocus.toml --output site/monorepo --port 0 --live-reload
 ```
 
-Start with the quick start, compare the metrics in the shared guides, and open
-a function under **Reference**. Then search for
+Choose **Get started** on the homepage, compare the metrics in the shared
+guides, and open a language's API reference. Then search for
 `mean_squared_error` or follow **Same API in** on a function page.
 
 The shared and Python collections explicitly set `mode = "never"`. Building
@@ -155,8 +162,10 @@ constant observations for R squared, and missing-value propagation.
 Copy this directory into your project and edit `diplodocus.toml`. All packages
 refer to the same repository declaration, whose path is `.`. Package paths are
 relative to that repository, and extraction targets are relative to each
-package. Shared pages mount at the site root; package references live under
-`packages/python/`, `packages/r/`, and `packages/julia/`. The Python-owned collection mounts its
+package. Shared pages mount at the site root, with `docs/overview.md` supplying
+the Guide overview and the generated landing page at `index.html`. Package
+references live under `packages/python/`, `packages/r/`, `packages/julia/`, and
+`packages/rust/`. The Python-owned collection mounts its
 guide at `packages/python/guides/`. The R overview lives at `packages/r/`, with
 `news.html`, `authors.html`, `license.html`, and `community.html` beneath it.
 The executable vignette lives at `packages/r/vignettes/evaluating-predictions.html`.

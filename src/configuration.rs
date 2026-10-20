@@ -71,6 +71,9 @@ pub struct PresentationDefaults {
     pub title: Option<String>,
     /// Site-wide HTML description; `None` omits the description metadata.
     pub description: Option<String>,
+    /// Optional full-width homepage, with the same navbar as documentation pages.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub home: Option<HomeDefaults>,
     /// Optional image shown before the site title in the navbar's home link.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub logo: Option<LogoDefaults>,
@@ -89,6 +92,46 @@ pub struct PresentationDefaults {
     /// Optional notices and links shown at the bottom of every page.
     #[serde(skip_serializing_if = "FooterDefaults::is_default")]
     pub footer: FooterDefaults,
+}
+
+/// Content for the built-in landing page at the site root.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+pub struct HomeDefaults {
+    /// Main heading, rendered as plain text; newlines separate lines.
+    pub tagline: String,
+    /// Introduction below the main heading, rendered as plain text.
+    pub description: String,
+    /// Generated HTML route opened by the navbar's Guide link.
+    pub guide: DiagnosticPath,
+    /// Call-to-action links in display order; the first receives emphasis.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub actions: Vec<HomeAction>,
+    /// Linked feature descriptions in display order.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub features: Vec<HomeFeature>,
+}
+
+/// A homepage action pointing to a generated documentation page.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+pub struct HomeAction {
+    /// Visible link text, without HTML or Markdown.
+    pub label: String,
+    /// Normalized site-relative HTML artifact path, including its extension.
+    pub path: DiagnosticPath,
+}
+
+/// A feature card pointing to its documentation.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+pub struct HomeFeature {
+    /// Short feature heading, without HTML or Markdown.
+    pub title: String,
+    /// Explanation, without HTML or Markdown.
+    pub description: String,
+    /// Normalized site-relative HTML artifact path, including its extension.
+    pub path: DiagnosticPath,
 }
 
 /// A checked-in branding image within an explicitly declared repository.

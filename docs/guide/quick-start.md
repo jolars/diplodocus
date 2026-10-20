@@ -33,7 +33,7 @@ configuration](configuration.md) and [authored-pages](authoring.md) guides.
 
 ## Build Diplodocus's own documentation
 
-The root `diplodocus.toml` builds this guide as the homepage and an executable
+The root `diplodocus.toml` builds a landing page, this guide at `/guide/`, and an executable
 Python example. The devenv shell supplies its `python3` kernel. From the
 repository root:
 

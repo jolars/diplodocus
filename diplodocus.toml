@@ -6,6 +6,21 @@ description = "Guides for building Python, R, Julia, and Rust documentation with
 site-url = "https://diplodocus.cc/"
 canonical-url-style = "clean"
 
+[presentation.home]
+tagline = "Four languages.\nOne home for docs."
+description = "Bring your Python, R, Julia, and Rust packages together. Build API references and guides with shared navigation, cross-references, and search."
+guide = "guide/index.html"
+actions = [
+  { label = "Get started", path = "guide/quick-start.html" },
+  { label = "Explore the guide", path = "guide/index.html" },
+]
+features = [
+  { title = "Four languages, one home", description = "Keep related packages together, with API references extracted from Python, R, Julia, and Rust.", path = "guide/extraction.html" },
+  { title = "Write alongside your code", description = "Combine Markdown guides with API documentation. Link across packages without stitching sites together.", path = "guide/authoring.html" },
+  { title = "Examples that run", description = "Execute QMD cells and verify API examples with native runtimes, then publish their results.", path = "guide/execution.html" },
+  { title = "Build once, publish anywhere", description = "Save a portable snapshot. Generate a static site or bring your own frontend, without the source checkout.", path = "guide/snapshots.html" },
+]
+
 [presentation.logo]
 repository = "diplodocus"
 path = "assets/brand/diplodocus-logo.png"
@@ -38,7 +53,7 @@ id = "guide"
 owner = "project"
 repository = "diplodocus"
 path = "docs/guide"
-mount = ""
+mount = "guide"
 format = "gfm"
 
 [[content]]

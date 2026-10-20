@@ -115,7 +115,15 @@ fn monorepo_example_builds_with_r_and_generates_without_sources_or_runtimes() {
         );
     }
     let index = fs::read_to_string(site.join("index.html")).unwrap();
+    assert!(index.contains("data-layout=\"home\""));
+    assert!(index.contains("<h1>Small metrics.\nClearer predictions.</h1>"));
+    assert!(index.contains("href=\"overview.html\">Guide</a>"));
+    assert!(index.contains("href=\"getting-started/quick-start.html\">Get started"));
     assert!(index.contains("Comparing predictions"));
+    let introduction = fs::read_to_string(site.join("overview.html")).unwrap();
+    assert!(introduction.contains("data-layout=\"docs\""));
+    assert!(introduction.contains("<h1>Tiny Stats</h1>"));
+    assert!(introduction.contains("href=\"index.html\""));
     let guide = fs::read_to_string(site.join("guides/comparing-predictions.html")).unwrap();
     assert!(guide.contains("<img "));
     let search: serde_json::Value =
