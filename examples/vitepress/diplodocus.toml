@@ -63,9 +63,7 @@ repository = "tinystats"
 path = "docs"
 mount = ""
 format = "gfm"
-
-[content.execution]
-mode = "never"
+execution = { mode = "never" }
 
 [[content]]
 id = "python-guide"
@@ -74,9 +72,7 @@ repository = "tinystats"
 path = "python/docs"
 mount = "guides"
 format = "gfm"
-
-[content.execution]
-mode = "never"
+execution = { mode = "never" }
 
 [[concept]]
 id = "mean-squared-error"
