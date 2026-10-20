@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.5.0](https://github.com/jolars/diplodocus/compare/v0.4.0...v0.5.0) (2026-10-20)
+
+### Features
+
+- **ui:** add landing pages with a shared navbar ([`d9a6337`](https://github.com/jolars/diplodocus/commit/d9a633757c0ae72c3c13f3a289d4d8aa5e13d46d))
+- **web:** add persistent client-side navigation ([`4f6efd8`](https://github.com/jolars/diplodocus/commit/4f6efd87895e0f586e90589cd7d3c6c0d8cb0734))
+- **web:** separate code output from source ([`ea95010`](https://github.com/jolars/diplodocus/commit/ea95010e913908ac40bbf12be13c08aa61fccfc3))
+- **web:** add tabsets ([`97243ee`](https://github.com/jolars/diplodocus/commit/97243ee9d68741635e2dea7f79c13748246c003f))
+- add Rust documentation extraction ([`38ebc2a`](https://github.com/jolars/diplodocus/commit/38ebc2a1dc4b39944f21d228c517f08de9e1b19e))
+
+### Bug Fixes
+
+- format long signatures across parameter lines ([`954cc4c`](https://github.com/jolars/diplodocus/commit/954cc4cd18bbf522278f057e5640e8e81ffe8dce))
+- remove copy buttons from API signatures ([`1dfb576`](https://github.com/jolars/diplodocus/commit/1dfb576734a0b870fc370936334fa471f0bcc018))
+- stop flickering title ([`71d87ca`](https://github.com/jolars/diplodocus/commit/71d87ca43162e2c9edb65246c56ecd9ab239433c))
+- validate every Julia checkout during extraction ([`737d195`](https://github.com/jolars/diplodocus/commit/737d195c897a0f0dab2649f4663c88621dc85a03))
+- validate Python checkouts without doctests ([`2f434bc`](https://github.com/jolars/diplodocus/commit/2f434bcbea189a5e436ae1929102d686cc2c5ee6))
+- restore documentation and VitePress CI checks ([`78bb2cb`](https://github.com/jolars/diplodocus/commit/78bb2cbffaffbaec5748d0ae6a9b0e70e9c1e5a6))
+- improve site accessibility and preview reloads ([`7c4bca9`](https://github.com/jolars/diplodocus/commit/7c4bca9c8cec96de9c10e0833f9cc8e26e678476))
+- **ui:** fix sidebar spacing ([`cf41c05`](https://github.com/jolars/diplodocus/commit/cf41c05d423d704daf126d2c84e4fda146163785))
+
 ## [0.4.0](https://github.com/jolars/diplodocus/compare/v0.3.0...v0.4.0) (2026-10-16)
 
 ### Features
