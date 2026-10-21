@@ -114,26 +114,6 @@ pub fn copy_overlay_file(workspace: &TestWorkspace, overlay: &Path, relative: &P
     );
 }
 
-pub fn own_documentation_workspace() -> TestWorkspace {
-    let workspace = TestWorkspace::new();
-    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
-    for relative in [
-        "diplodocus.toml",
-        "devenv.lock",
-        "assets/brand/diplodocus-logo.png",
-        "assets/brand/og.png",
-    ] {
-        workspace.write(relative, fs::read(root.join(relative)).unwrap());
-    }
-    for directory in ["docs/guide", "docs/examples"] {
-        for relative in files_under(&root.join(directory)) {
-            let relative = Path::new(directory).join(relative);
-            workspace.write(&relative, fs::read(root.join(&relative)).unwrap());
-        }
-    }
-    workspace
-}
-
 pub fn fixture_configuration(workspace: &TestWorkspace, config: &str) -> toml::Value {
     toml::from_str(&workspace.read(config)).expect("fixture configuration should parse")
 }

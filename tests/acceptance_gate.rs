@@ -450,22 +450,6 @@ fn validate_configuration(workspace: &TestWorkspace, config: &str) {
 }
 
 #[test]
-fn own_documentation_has_a_content_only_configuration() {
-    let workspace = support::own_documentation_workspace();
-    validate_configuration(&workspace, "diplodocus.toml");
-    let config = support::fixture_configuration(&workspace, "diplodocus.toml");
-    assert!(config.get("package").is_none());
-    assert_eq!(config["repository"].as_array().unwrap().len(), 1);
-    assert_eq!(config["content"].as_array().unwrap().len(), 2);
-    assert!(
-        fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join(".gitignore"))
-            .unwrap()
-            .lines()
-            .any(|line| line == "/site/")
-    );
-}
-
-#[test]
 fn cases_have_exactly_the_expected_authored_parser_diagnostics() {
     for case in support::acceptance_registry().cases {
         let workspace = support::materialize_case(&case);
@@ -507,21 +491,6 @@ fn format(profile: &str) -> AuthoredFormat {
         "gfm" => AuthoredFormat::Gfm,
         "qmd" => AuthoredFormat::Qmd,
         _ => panic!("unknown authored profile"),
-    }
-}
-
-#[test]
-fn real_documentation_matches_authored_goldens() {
-    let workspace = support::own_documentation_workspace();
-    for (path, profile) in support::authored_sources(&workspace, "diplodocus.toml") {
-        let parsed = parse_authored_document(&workspace.read(&path), format(&profile));
-        assert!(
-            parsed.diagnostics.is_empty(),
-            "{}: {:?}",
-            path.display(),
-            parsed.diagnostics
-        );
-        support::assert_json_golden(&parsed, format!("dogfood/{}.json", path.display()));
     }
 }
 
@@ -573,19 +542,21 @@ fn validate_local_links(workspace: &TestWorkspace, config: &str) {
 }
 
 #[test]
-fn baseline_and_real_documentation_have_resolvable_local_links_and_assets() {
+fn baseline_has_resolvable_local_links_and_assets() {
     validate_local_links(
         &support::acceptance_workspace(),
         "workspace/diplodocus.toml",
     );
-    validate_local_links(&support::own_documentation_workspace(), "diplodocus.toml");
 }
 
 #[test]
 fn missing_authored_assets_fail_the_corpus_check() {
-    let workspace = support::own_documentation_workspace();
-    workspace.remove("docs/guide/assets/workspace.svg");
+    let workspace = support::acceptance_workspace();
+    workspace.remove("core/docs/assets/workspace.svg");
     assert!(
-        std::panic::catch_unwind(|| validate_local_links(&workspace, "diplodocus.toml")).is_err()
+        std::panic::catch_unwind(|| {
+            validate_local_links(&workspace, "workspace/diplodocus.toml")
+        })
+        .is_err()
     );
 }

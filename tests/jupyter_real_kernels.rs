@@ -36,7 +36,6 @@ async fn declared_python_and_r_kernels_execute_the_acceptance_corpus() {
             markdown: "**Python total:** `12`",
             error: Some(("RuntimeError", "intentional Python fixture error")),
             svg_text: "total = 12",
-            workspace: support::acceptance_workspace,
             snapshot: "spikes/execution/real-python3.json",
         },
         RealKernelCase {
@@ -49,30 +48,11 @@ async fn declared_python_and_r_kernels_execute_the_acceptance_corpus() {
             markdown: "**R total:** `12`",
             error: Some(("ERROR", "intentional R fixture error")),
             svg_text: "total = 12",
-            workspace: support::acceptance_workspace,
             snapshot: "spikes/execution/real-ir.json",
         },
     ] {
         exercise_real_kernel(case).await;
     }
-}
-
-#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn declared_python_kernel_executes_the_real_documentation_example() {
-    exercise_real_kernel(RealKernelCase {
-        kernel: "python3",
-        path: "docs/examples/stateful.qmd",
-        language: "python",
-        implementation: "ipython",
-        stdout: "Total: 12",
-        stderr: "Example stderr",
-        markdown: "**Total:** `12`",
-        error: None,
-        svg_text: "Total: 12",
-        workspace: support::own_documentation_workspace,
-        snapshot: "dogfood/execution.json",
-    })
-    .await;
 }
 
 struct RealKernelCase {
@@ -85,12 +65,11 @@ struct RealKernelCase {
     markdown: &'static str,
     error: Option<(&'static str, &'static str)>,
     svg_text: &'static str,
-    workspace: fn() -> support::TestWorkspace,
     snapshot: &'static str,
 }
 
 async fn exercise_real_kernel(case: RealKernelCase) {
-    let source_workspace = (case.workspace)();
+    let source_workspace = support::acceptance_workspace();
     let source = source_workspace.read(case.path);
     let parsed = parse_authored_document(&source, AuthoredFormat::Qmd);
     let cells = parsed

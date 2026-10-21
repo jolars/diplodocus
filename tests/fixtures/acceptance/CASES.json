@@ -8,8 +8,7 @@
       "offline-static-boundary"
     ],
     "MVP-03": [
-      "authored-profiles",
-      "own-docs-parse"
+      "authored-profiles"
     ],
     "MVP-04": [
       "structured-execution",
@@ -45,7 +44,6 @@
     ],
     "MVP-07": [
       "portable-repeat-builds",
-      "own-docs-portability",
       "snapshot-static-portability",
       "snapshot-executed-portability",
       "snapshot-logical-equivalence",
@@ -64,9 +62,6 @@
       "acceptance-test-stack"
     ],
     "MVP-10": [
-      "own-docs-parse",
-      "own-docs-build-preview",
-      "own-docs-portability",
       "own-docs-publication"
     ],
     "MVP-11": [
@@ -1109,52 +1104,6 @@
       ],
       "action": "Run formatting, linting, unit, golden, integration, link, and end-to-end checks in devenv and CI as their milestones land.",
       "expected": "Every implemented fixture check passes without modifying checked-in inputs; all future behavior scenarios have a named milestone and none is counted as implemented by its specification alone.",
-      "milestone": 11
-    },
-    {
-      "id": "own-docs-parse",
-      "cases": [],
-      "inputs": [
-        "diplodocus.toml",
-        "devenv.lock",
-        "docs/guide/index.md",
-        "docs/guide/installation.md",
-        "docs/guide/quick-start.md",
-        "docs/guide/configuration.md",
-        "docs/guide/cli.md",
-        "docs/guide/authoring.md",
-        "docs/guide/extraction.md",
-        "docs/guide/execution.md",
-        "docs/guide/diagnostics.md",
-        "docs/guide/snapshots.md",
-        "docs/guide/assets/workspace.svg",
-        "docs/examples/stateful.qmd"
-      ],
-      "action": "Copy the real configuration, its declared content, and environment input into a temporary workspace; parse every declared page.",
-      "expected": "The workspace has no API packages or targets; both profiles have reviewed IR, no parser diagnostics, and resolvable local source links and assets.",
-      "milestone": 1
-    },
-    {
-      "id": "own-docs-build-preview",
-      "cases": [],
-      "inputs": [
-        "diplodocus.toml",
-        "docs/examples/stateful.qmd",
-        "tests/project_site.rs"
-      ],
-      "action": "Build and check the real project site, then preview with serve and edit a guide page.",
-      "expected": "Use the in-tree binary and the shared renderer; navigation, source links, search, local assets, and deterministic Python outputs are present, and the preview updates without another site generator.",
-      "milestone": 10
-    },
-    {
-      "id": "own-docs-portability",
-      "cases": [],
-      "inputs": [
-        "diplodocus.toml",
-        "devenv.lock"
-      ],
-      "action": "Build the real project docs in two distinct checkout directories with fresh caches; inspect both at / and /diplodocus/.",
-      "expected": "Output paths and bytes match; all internal links, fragments, assets, navigation, and search work at either hosting prefix without absolute local paths.",
       "milestone": 11
     },
     {

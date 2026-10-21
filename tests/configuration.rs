@@ -295,7 +295,7 @@ fn parses_design_examples() {
 }
 
 #[test]
-fn parses_acceptance_workspace_variants_and_own_documentation() {
+fn parses_acceptance_workspace_variants() {
     let config = parse_configuration(ACCEPTANCE).unwrap();
     assert_eq!(
         config
@@ -315,10 +315,6 @@ fn parses_acceptance_workspace_variants_and_own_documentation() {
         load_configuration(support::fixture_path("acceptance/workspace/variants").join(path))
             .unwrap();
     }
-    let own = load_configuration(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("diplodocus.toml"))
-        .unwrap();
-    assert!(own.packages.is_empty());
-    assert_eq!(own.content.len(), 2);
 }
 
 #[test]

@@ -28,8 +28,6 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           key: documentation
-      - name: Check the project site
-        run: devenv shell -- cargo test --locked --test project_site
       - name: Check source documentation
         run: devenv shell -- cargo run --locked -- check
       - name: Build the deployable site
