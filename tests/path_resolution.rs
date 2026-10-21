@@ -140,7 +140,14 @@ fn resolves_the_authored_only_project_configuration() {
     let config = load_configuration(&path).unwrap();
     let resolved = resolve_workspace_paths(path, &config).unwrap();
     assert!(resolved.packages.is_empty());
-    assert_eq!(resolved.content.len(), 2);
+    assert_eq!(
+        resolved
+            .content
+            .iter()
+            .map(|content| content.id.as_str())
+            .collect::<Vec<_>>(),
+        ["guide", "reference", "examples"]
+    );
 }
 
 #[test]
