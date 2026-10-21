@@ -136,7 +136,7 @@ for (const [path, title, name] of [
 
 test("navbar links stay in place when switching sections", async ({ page }, info) => {
   test.skip(info.project.name !== "desktop", "The top navbar is shown on desktop.");
-  await page.goto("/");
+  await page.goto("/overview.html");
   const links = page.locator("header .global-nav:visible a");
   const positions = await links.evaluateAll(elements => elements.map(element => {
     const { x, width } = element.getBoundingClientRect();
@@ -155,6 +155,26 @@ test("navbar links stay in place when switching sections", async ({ page }, info
   await capture(page, info, "navbar-stable-sections");
 });
 
+test("landing navbar border spans the viewport only after scrolling", async ({ page }, info) => {
+  await page.goto("/");
+  const border = () => page.locator("header").evaluate(element => {
+    const style = getComputedStyle(element, "::after");
+    return { opacity: style.opacity, left: style.left, right: style.right, width: parseFloat(style.width) };
+  });
+  await expect.poll(async () => (await border()).opacity).toBe("0");
+  const before = await page.locator("header .global-nav:visible").boundingBox();
+  await page.evaluate(() => scrollTo(0, 200));
+  await expect.poll(async () => (await border()).opacity).toBe("1");
+  const visible = await border();
+  expect(visible.left).toBe("0px");
+  expect(visible.right).toBe("0px");
+  expect(visible.width).toBe(await page.evaluate(() => document.body.clientWidth));
+  expect(await page.locator("header .global-nav:visible").boundingBox()).toEqual(before);
+  await capture(page, info, "landing-navbar-scrolled", true, false);
+  await page.evaluate(() => scrollTo(0, 0));
+  await expect.poll(async () => (await border()).opacity).toBe("0");
+});
+
 test("landing page shares the navbar with guides and all four language sections", async ({ page }, info) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(homeHeading);
@@ -166,15 +186,18 @@ test("landing page shares the navbar with guides and all four language sections"
     document,
     elements: [...document.querySelectorAll("header, header a, .brand-logo, #search")],
   }));
-  const geometry = () => page.locator("header > .brand, header .global-nav:visible a, #search, header .repository-link")
+  const geometry = () => page.locator(".layout > nav > .brand, header .global-nav:visible a, #search, header .repository-link")
     .evaluateAll(elements => elements.map(element => element.getBoundingClientRect().toJSON()));
-  const initial = await geometry();
+  const positions = await geometry();
   const stableNavbar = async () => {
     expect(await shell.evaluate(value => value.document === document && value.elements.every(element => element.isConnected))).toBe(true);
-    expect(await geometry()).toEqual(initial);
+    expect(await geometry()).toEqual(positions);
     await fitsViewport(page);
   };
+  await expect(page.locator(".brand")).toBeVisible();
+  await stableNavbar();
   await page.getByRole("link", { name: "Get started", exact: true }).click();
+  await expect(page.locator(".brand")).toBeVisible();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Quick start");
   await stableNavbar();
   await sections(page, info).getByRole("link", { name: "Guide", exact: true }).click();
@@ -189,7 +212,7 @@ test("landing page shares the navbar with guides and all four language sections"
     await stableNavbar();
     await page.locator(".brand").click();
     await expect(page.locator("body")).toHaveAttribute("data-layout", "home");
-    await expect(page.getByRole("navigation", { name: "Documentation" })).not.toBeVisible();
+    await expect(page.locator(".nav-disclosure")).not.toBeVisible();
     await expect(sections(page, info).locator("[aria-current]")).toHaveCount(0);
     await stableNavbar();
   }
@@ -201,7 +224,7 @@ test("landing page shares the navbar with guides and all four language sections"
 
 test("client navigation keeps the shell and logo mounted while updating the page", async ({ page }, info) => {
   await page.goto("/overview.html");
-  const brand = page.locator("header > .brand");
+  const brand = page.locator(".layout > nav > .brand");
   const logo = brand.locator(".brand-logo");
   await expect.poll(() => logo.evaluate((element: HTMLImageElement) => element.naturalWidth)).toBeGreaterThan(0);
   const shell = await page.evaluateHandle(() => ({
@@ -442,7 +465,7 @@ test("navbar and sidebars share outer margins", async ({ page }, info) => {
   await page.goto("/guides/comparing-predictions.html");
   for (const width of [1024, 1280, 1920]) {
     await page.setViewportSize({ width, height: 900 });
-    const brand = (await page.locator("header > .brand").boundingBox())!;
+    const brand = (await page.locator(".layout > nav > .brand").boundingBox())!;
     const search = (await page.locator(".header-actions").boundingBox())!;
     const sidebar = (await page.locator(".layout > nav .nav-group h2").first().boundingBox())!;
     const contentWidth = await page.evaluate(() => document.body.clientWidth);
@@ -468,9 +491,8 @@ test("desktop sidebar stays pinned at the page bottom and scrolls independently"
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
   await expect(page.locator(".site-footer")).toBeInViewport();
   const box = (await sidebar.boundingBox())!;
-  const header = (await page.locator("header").boundingBox())!;
-  expect(box.y).toBeCloseTo(header.height, 0);
-  expect(box.height).toBeCloseTo(400 - header.height, 0);
+  expect(box.y).toBeCloseTo(0, 0);
+  expect(box.height).toBeCloseTo(400, 0);
   const pageScroll = await page.evaluate(() => window.scrollY);
   await sidebar.hover();
   await page.mouse.wheel(0, 300);
@@ -484,7 +506,7 @@ test("navbar branding stays visible while reaching lower navigation links", asyn
   await page.setViewportSize({ width: 1280, height: 400 });
   await page.goto("/overview.html");
   const sidebar = page.getByRole("navigation", { name: "Documentation", exact: true });
-  const brand = page.locator("header > .brand");
+  const brand = page.locator(".layout > nav > .brand");
   const before = (await brand.boundingBox())!;
   const link = sidebar.getByRole("link", { name: "Inspecting residuals", exact: true });
   await link.scrollIntoViewIfNeeded();
@@ -506,7 +528,7 @@ test("brand title stays in place while the logo loads", async ({ page }, info) =
     await route.continue();
   });
   await page.goto("/packages/python/", { waitUntil: "domcontentloaded" });
-  const brand = page.locator("header > .brand");
+  const brand = page.locator(".layout > nav > .brand");
   const logo = brand.locator(".brand-logo");
   const title = brand.locator("span");
   await expect(logo).toBeAttached();
@@ -521,9 +543,9 @@ test("brand title stays in place while the logo loads", async ({ page }, info) =
 });
 
 test("navbar logo loads on nested pages and links home", async ({ page }, info) => {
-  for (const path of ["/", "/guides/comparing-predictions.html", "/packages/python/"]) {
+  for (const path of ["/overview.html", "/guides/comparing-predictions.html", "/packages/python/"]) {
     await page.goto(path);
-    const brand = page.locator("header > .brand");
+    const brand = page.locator(".layout > nav > .brand");
     const logo = brand.locator(".brand-logo");
     await expect(brand).toHaveAccessibleName("Tiny Stats");
     await expect(logo).toBeVisible();

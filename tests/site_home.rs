@@ -74,7 +74,8 @@ fn homepage_survives_snapshot_round_trip_and_respects_url_style() {
         assert!(guide.contains("data-layout=\"docs\""));
         assert!(guide.contains("Welcome to the guide."));
         let header = guide.split("</header>").next().unwrap();
-        assert!(header.contains("class=\"brand\""));
+        assert!(!header.contains("class=\"brand\""));
+        assert!(guide.contains("aria-label=\"Documentation\"><a class=\"brand\""));
         assert!(header.contains("class=\"site-search\""));
         assert!(!guide.contains("home-hero"));
         let markdown = std::str::from_utf8(&rendered.files()["index.md"].bytes).unwrap();

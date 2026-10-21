@@ -207,13 +207,13 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
             .unwrap();
             write!(html, "</head><body data-diplodocus-navigation=\"1\" data-diplodocus-shell=\"{}\" data-layout=\"{}\"><a class=\"skip-link\" href=\"#main\">Skip to content</a>", shell_fingerprint.as_deref().expect("standalone shell fingerprint"), if home.is_some() { "home" } else { "docs" }).unwrap();
             html.push_str("<header>");
-            brand(&mut html, site, route)?;
             super::navigation::sections(&mut html, site, route, "desktop-sections");
             html.push_str("<div class=\"header-actions\"><form class=\"site-search\" role=\"search\"><label class=\"visually-hidden\" for=\"search\">Search documentation</label><div class=\"search-control\"><svg class=\"search-icon\" aria-hidden=\"true\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><circle cx=\"10.5\" cy=\"10.5\" r=\"6.5\"></circle><path d=\"m16 16 4 4\"></path></svg><input id=\"search\" type=\"search\" placeholder=\"Search\" autocomplete=\"off\" aria-controls=\"search-results\"></div><ul id=\"search-results\" aria-live=\"polite\"></ul></form>");
             super::navigation::repositories(&mut html, site);
             html.push_str("</div>");
             super::navigation::sections(&mut html, site, route, "mobile-sections");
             html.push_str("</header><div class=\"layout\"><nav aria-label=\"Documentation\">");
+            brand(&mut html, site, route)?;
             html.push_str(
                 "<details class=\"nav-disclosure\" open><summary>Browse documentation</summary>",
             );

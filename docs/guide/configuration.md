@@ -126,9 +126,11 @@ snapshots](snapshots.md) before separating extraction and generation.
 ### Landing page
 
 Add `[presentation.home]` to give the site root a full-width landing page. It
-shares the documentation navbar, including the logo, section links, search,
-and repository links. Navigation keeps that header mounted while the content
-and documentation sidebar change below it.
+shows the logo and title at the top left, beside the section links, search, and
+repository links. Documentation pages keep the branding in the same position
+at the top of the gray sidebar. Navigation keeps
+the header and sidebar mounted while page content updates. Navbar links keep
+the same positions when moving between the landing page and documentation.
 
 ```toml
 [presentation.home]

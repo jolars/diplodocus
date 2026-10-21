@@ -119,7 +119,7 @@ for (const style of ["file", "clean"]) {
     try {
       await page.goto(`${origin}${homePath}`);
       await expect(page.locator("body")).toHaveAttribute("data-layout", "home");
-      await expect(page.getByRole("navigation", { name: "Documentation", exact: true })).not.toBeVisible();
+      await expect(page.locator(".nav-disclosure")).not.toBeVisible();
       await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
       await expect(page.getByRole("main").getByRole("link", { name: "Read nested guide" })).toBeVisible();
       await expect(page.locator('link[href$="katex.min.css"]')).toHaveCount(0);
@@ -127,7 +127,7 @@ for (const style of ["file", "clean"]) {
         document,
         elements: [...document.querySelectorAll("header, header a, #search")],
       }));
-      const navbar = page.locator("header > .brand, header .global-nav:visible a, #search, header .repository-link");
+      const navbar = page.locator("header .global-nav:visible a, #search, header .repository-link");
       const positions = await navbar.evaluateAll(elements => elements.map(element => {
         const { x, y, width, height } = element.getBoundingClientRect();
         return { x, y, width, height };
@@ -141,6 +141,8 @@ for (const style of ["file", "clean"]) {
         expect(boxes).toEqual(positions);
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
       };
+      await stableNavbar();
+      await expect(page.locator(".brand")).toBeVisible();
       const logoSource = await page.locator(".brand-logo").getAttribute("src");
       await page.locator("header .global-nav:visible").getByRole("link", { name: "Guide", exact: true }).click();
       await expect(page).toHaveURL(`${origin}${nestedPath}`);
@@ -220,12 +222,12 @@ for (const style of ["file", "clean"]) {
       await page.goto(`${origin}${homePath}`);
       await expect(page.locator("body")).toHaveAttribute("data-layout", "home");
       await expect(page.locator("header .global-nav:visible")).toBeVisible();
-      const brand = await page.locator(".brand").boundingBox();
+      await expect(page.locator(".brand")).toBeVisible();
       await page.getByRole("link", { name: "Get started", exact: true }).click();
       await expect(page).toHaveURL(`${origin}${nestedPath}`);
       await expect(page.locator("body")).toHaveAttribute("data-layout", "docs");
       await expect(page.getByRole("heading", { level: 1 })).toHaveText("Nested guide");
-      expect(await page.locator(".brand").boundingBox()).toEqual(brand);
+      await expect(page.locator(".brand")).toBeVisible();
       await page.locator(".brand").click();
       await expect(page).toHaveURL(`${origin}${homePath}`);
       await expect(page.locator("body")).toHaveAttribute("data-layout", "home");

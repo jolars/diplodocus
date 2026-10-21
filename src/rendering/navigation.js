@@ -27,8 +27,12 @@
     toc.open = false;
     toc.querySelector('summary').focus({ preventScroll: true });
   });
-  // Branding and extra package tabs can change the sticky header's height.
+  // Responsive navigation can change the sticky header's height.
   const header = document.querySelector('header');
+  const updateHeaderBorder = () => header.toggleAttribute('data-scrolled', scrollY > 0);
+  addEventListener('scroll', updateHeaderBorder, { passive: true });
+  document.addEventListener('diplodocus:page-change', updateHeaderBorder);
+  updateHeaderBorder();
   new ResizeObserver(() => {
     document.documentElement.style.setProperty('--header-height', `${header.getBoundingClientRect().height}px`);
   }).observe(header);
