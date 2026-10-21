@@ -129,8 +129,10 @@ blockquote, .callout { border-left: 4px solid #688b84; padding: .2rem 1rem; marg
 .page-toc { grid-column: 1; grid-row: 1; padding: 1rem 2.5rem 0; color: var(--muted); font-size: .8rem; }
 .page-toc-empty { display: none; }
 .back-to-top { font-weight: 650; }
-.toc-disclosure > summary { padding: .2rem .45rem; cursor: pointer; font-weight: 650; }
+.toc-disclosure > summary { display: flex; align-items: center; gap: .5rem; padding: .2rem .45rem; cursor: pointer; font-weight: 650; list-style: none; }
+.toc-disclosure > summary::-webkit-details-marker { display: none; }
 .toc-disclosure ul { margin-top: .4rem; }
+.toc-back-to-top { margin-bottom: .5rem; padding-bottom: .5rem; border-bottom: 1px solid var(--border); }
 .toc-level-3 { padding-left: .65rem; }
 .toc-level-4, .toc-level-5, .toc-level-6 { padding-left: 1.3rem; }
 @media (min-width: 761px) {
@@ -148,13 +150,14 @@ blockquote, .callout { border-left: 4px solid #688b84; padding: .2rem 1rem; marg
   .page-content { grid-template-columns: minmax(0, 1fr) var(--sidebar-width); }
   main { grid-row: 1; justify-self: center; padding-inline: 3.5rem; }
   .page-toc { position: sticky; top: var(--header-height); grid-column: 2; grid-row: 1; max-height: calc(100dvh - var(--header-height)); padding: 2rem 0; overflow-y: auto; }
-  .toc-disclosure > summary { list-style: none; cursor: default; }
-  .toc-disclosure > summary::-webkit-details-marker { display: none; }
+  .toc-disclosure > summary { cursor: default; }
 }
 @media (max-width: 1099px) {
   .page-toc { position: relative; z-index: 9; }
   .page-toc-empty { display: block; }
   .toc-disclosure { position: relative; }
+  .toc-disclosure > summary::after { content: ""; flex: none; width: .4rem; height: .4rem; border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: rotate(-45deg); }
+  .toc-disclosure[open] > summary::after { transform: rotate(45deg); }
   .toc-disclosure > ul { position: absolute; top: 100%; left: 0; width: min(22rem, 100%); max-height: min(60dvh, 24rem); overflow-y: auto; overscroll-behavior: contain; margin: .5rem 0 0; padding: .5rem; border: 1px solid var(--border); border-radius: .5rem; background: white; box-shadow: 0 8px 24px #202c381a; }
   /* Keep the popup hidden until the responsive disclosure state is ready. */
   .js .toc-disclosure:not([data-ready]) > ul { display: none; }

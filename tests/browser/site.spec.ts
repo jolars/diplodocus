@@ -1211,12 +1211,13 @@ test("compact page TOC overlays content and dismisses after use", async ({ page 
     const toc = page.locator(".toc-disclosure");
     const summary = toc.locator(":scope > summary");
     const list = toc.locator(":scope > ul");
-    const firstLink = list.getByRole("link").first();
+    const firstLink = list.getByRole("link", { name: "Python", exact: true });
     await expect(toc).toHaveJSProperty("open", false);
     const before = (await page.getByRole("main").boundingBox())!;
     const scroll = await page.evaluate(() => scrollY);
     await summary.click();
     await expect(list).toBeVisible();
+    await expect(list.getByRole("link").first()).toHaveText("Back to top");
     const after = (await page.getByRole("main").boundingBox())!;
     expect(after.y).toBeCloseTo(before.y, 1);
     expect(await page.evaluate(() => scrollY)).toBe(scroll);
@@ -1242,6 +1243,11 @@ test("compact page TOC overlays content and dismisses after use", async ({ page 
     const heading = page.getByRole("heading", { name: "Python", exact: true });
     await expect(heading).toBeInViewport();
     await expect(heading).toBeFocused();
+    await summary.click();
+    await list.getByRole("link", { name: "Back to top", exact: true }).click();
+    await expect.poll(() => page.evaluate(() => scrollY)).toBe(0);
+    await expect(page).toHaveURL(/comparing-predictions\.html$/);
+    await expect(toc).toHaveJSProperty("open", false);
   }
 });
 

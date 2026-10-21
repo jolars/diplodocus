@@ -1191,7 +1191,7 @@ impl Renderer<'_, '_> {
             return "<aside class=\"page-toc page-toc-empty\"><nav aria-label=\"Page\"><a class=\"back-to-top\" href=\"\">Back to top</a></nav></aside>".into();
         }
         let mut html = String::from(
-            "<aside class=\"page-toc\"><nav aria-label=\"On this page\"><details class=\"toc-disclosure\" open><summary>On this page</summary><ul>",
+            "<aside class=\"page-toc\"><nav aria-label=\"On this page\"><details class=\"toc-disclosure\" open><summary>On this page</summary><ul><li class=\"toc-back-to-top\"><a class=\"back-to-top\" href=\"\">Back to top</a></li>",
         );
         for (level, identifier, title) in &self.headings {
             write!(
