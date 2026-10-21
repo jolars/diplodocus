@@ -156,6 +156,7 @@ test("navbar links stay in place when switching sections", async ({ page }, info
 });
 
 test("landing navbar border spans the viewport only after scrolling", async ({ page }, info) => {
+  test.skip(info.project.name !== "desktop", "The upper navbar scrolls away on phones.");
   await page.goto("/");
   const border = () => page.locator("header").evaluate(element => {
     const style = getComputedStyle(element, "::after");
@@ -631,6 +632,31 @@ test("footer identifies the docs and exposes project, license, and generator lin
   }
   await page.evaluate(() => window.scrollTo(0, 0));
   await capture(page, info, "footer");
+});
+
+test("phone documentation controls stay pinned as the upper navbar scrolls away", async ({ page }, info) => {
+  test.skip(info.project.name !== "mobile", "The documentation controls are pinned on phones.");
+  await page.goto("/guides/comparing-predictions.html");
+  const sidebar = page.locator(".layout > nav");
+  const toc = page.locator(".page-toc");
+  await expect(page.locator("body")).not.toHaveAttribute("data-controls-stuck");
+  await page.evaluate(() => scrollTo(0, 250));
+  await expect(page.locator("header > .brand")).not.toBeInViewport();
+  await expect.poll(async () => (await sidebar.boundingBox())!.y).toBe(0);
+  expect((await toc.boundingBox())!.y).toBe(0);
+  await expect(page.locator("body")).toHaveAttribute("data-controls-stuck");
+  await expect(sidebar).not.toHaveCSS("box-shadow", "none");
+  await expect(toc).not.toHaveCSS("box-shadow", "none");
+  await capture(page, info, "phone-documentation-controls-scrolled", true, false);
+  await toc.locator("summary").tap();
+  await toc.getByRole("link", { name: "Python", exact: true }).tap();
+  await expect(page.getByRole("heading", { name: "Python", exact: true })).toBeInViewport();
+  await sidebar.locator(".nav-disclosure > summary").tap();
+  await expect(page.getByRole("dialog", { name: "Documentation menu" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.evaluate(() => scrollTo(0, 0));
+  await expect(page.locator("body")).not.toHaveAttribute("data-controls-stuck");
+  await expect(page.locator("header > .brand")).toBeInViewport();
 });
 
 test("phone documentation menu overlays the page beside the page TOC", async ({ page }, info) => {

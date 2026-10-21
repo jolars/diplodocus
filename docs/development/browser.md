@@ -59,7 +59,8 @@ retained elements when moving between layouts, including clean URLs under a host
 prefix.
 
 On phones, the staggered-lines **Menu** control and the right-aligned
-**On this page** control share a row below the navbar. **Menu** opens a white
+**On this page** control share a row below the navbar. As the upper navbar
+scrolls away, this row stays at the top with a divider beneath it. **Menu** opens a white
 drawer from the left over a dimmed page without moving the content. The drawer
 keeps keyboard focus inside it and closes through its close button, Escape,
 a tap on the backdrop, or navigation.

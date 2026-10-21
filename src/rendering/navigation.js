@@ -76,12 +76,17 @@
   });
   // Responsive navigation can change the sticky header's height.
   const header = document.querySelector('header');
-  const updateHeaderBorder = () => header.toggleAttribute('data-scrolled', scrollY > 0);
+  const updateHeaderBorder = () => {
+    header.toggleAttribute('data-scrolled', scrollY > 0);
+    document.body.toggleAttribute('data-controls-stuck', narrow.matches && header.getBoundingClientRect().bottom <= 0);
+  };
   addEventListener('scroll', updateHeaderBorder, { passive: true });
   document.addEventListener('diplodocus:page-change', updateHeaderBorder);
+  narrow.addEventListener('change', updateHeaderBorder);
   updateHeaderBorder();
   new ResizeObserver(() => {
     document.documentElement.style.setProperty('--header-height', `${header.getBoundingClientRect().height}px`);
+    updateHeaderBorder();
   }).observe(header);
 
   if (!['http:', 'https:'].includes(location.protocol) || !window.fetch || !window.AbortController) return;
