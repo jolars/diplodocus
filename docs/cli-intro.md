@@ -15,7 +15,7 @@ diplodocus generate --input documentation.sqlite --output site
 The snapshot includes structured documentation, provenance, and local assets.
 Generation validates its records and output before publication. A copied
 snapshot can be generated without the original source files or language
-runtimes. See [portable snapshots](snapshots.md) for compatibility and refresh
+runtimes. See [portable snapshots](../guide/snapshots.md) for compatibility and refresh
 behavior.
 
 Use `extract --watch` to prepare snapshots continuously for another frontend.
@@ -42,7 +42,7 @@ change the address, and `--live-reload` to refresh open pages after a successful
 rebuild. A failed rebuild prints diagnostics and keeps serving the last
 successful site. Warnings permit a successful exit; errors cause a nonzero exit
 status. Output destinations cannot replace declared inputs. The [diagnostics
-guide](diagnostics.md) explains reported codes and failed builds.
+guide](../guide/diagnostics.md) explains reported codes and failed builds.
 
-Start with the [small example](quick-start.md) or see its [workspace
-configuration](configuration.md).
+Start with the [small example](../guide/quick-start.md) or see its [workspace
+configuration](../guide/configuration.md).

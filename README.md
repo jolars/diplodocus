@@ -57,7 +57,7 @@ example.
 - [Diplodocus documentation](https://diplodocus.cc/)
 - [Configuration](docs/guide/configuration.md)
 - [Writing documentation](docs/guide/authoring.md)
-- [Command reference](docs/guide/cli.md)
+- [Command reference](docs/reference/cli.md)
 
 ## License
 

@@ -727,7 +727,7 @@ proposed manifest and invalidation behavior.
 publishes a portable snapshot, and `generate` renders a site from that snapshot
 without the source checkout or a language runtime. `build` combines the two
 stages. `serve` builds, serves, and watches, retaining the last successful site
-after a failed rebuild. The [command guide](docs/guide/cli.md) specifies
+after a failed rebuild. The [command reference](docs/reference/cli.md) specifies
 options, defaults, and failure behavior.
 
 --------------------------------------------------------------------------------

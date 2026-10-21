@@ -47,8 +47,18 @@ pub(super) fn sections(html: &mut String, site: &Site<'_>, route: &str, class: &
         route,
         site.guide_route(),
         "Guide",
-        owner.is_none() && site.home(route).is_none(),
+        owner.is_none() && site.project_section(route).is_none() && site.home(route).is_none(),
     );
+    for section in &site.presentation.sections {
+        section_link(
+            html,
+            site,
+            route,
+            section.path.as_str(),
+            &section.label,
+            site.project_section(route) == Some(section),
+        );
+    }
     let mut packages: Vec<_> = site
         .workspace
         .packages
@@ -125,6 +135,8 @@ fn package_label<'a>(site: &Site<'_>, package: &'a Package) -> &'a str {
 pub(super) fn contextual(html: &mut String, site: &Site<'_>, route: &str) {
     if let Some(owner) = site.pages[route].owner.as_deref() {
         package_pages(html, site, route, owner);
+    } else if let Some(section) = site.project_section(route) {
+        document_groups(html, site, route, None, &section.label, section.prefix());
     } else {
         document_groups(html, site, route, None, "Guide", "");
         let concepts = site
@@ -151,7 +163,10 @@ fn document_groups(
     base: &str,
 ) {
     let overview = if owner.is_none() {
-        site.guide_route().to_owned()
+        site.project_section(route).map_or_else(
+            || site.guide_route().to_owned(),
+            |section| section.path.as_str().to_owned(),
+        )
     } else {
         format!("{base}index.html")
     };
@@ -165,13 +180,14 @@ fn document_groups(
             || page.item.is_some()
             || page.document.is_none()
             || page.concept.is_some()
+            || (owner.is_none() && site.project_section(destination) != site.project_section(route))
         {
             continue;
         }
         let Some(path) = destination.strip_prefix(base) else {
             continue;
         };
-        let path = if owner.is_none() && site.presentation.home.is_some() {
+        let path = if owner.is_none() && base.is_empty() && site.presentation.home.is_some() {
             site.guide_route()
                 .rsplit_once('/')
                 .and_then(|(directory, _)| path.strip_prefix(&format!("{directory}/")))

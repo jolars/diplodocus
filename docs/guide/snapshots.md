@@ -4,7 +4,7 @@
 documentation, presentation settings, provenance, diagnostics, and validated
 local assets. `generate` reads a completed snapshot and writes the site without
 the original source checkout, language runtimes, or Jupyter kernels. `build`
-combines these two stages. See the [command reference](cli.md) for paths and
+combines these two stages. See the [command reference](../reference/cli.md) for paths and
 options.
 
 The snapshot manifest has separate storage, documentation IR, and record

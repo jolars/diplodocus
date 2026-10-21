@@ -14,7 +14,8 @@ supporting routes are `news.html`, `authors.html`, `license.html`, and
 
 ## Navigation
 
-The navigation bar links to the shared Guide and each visible package. Diplodocus
+The navigation bar links to the shared Guide, configured project sections, and
+each visible package. Diplodocus
 uses language labels such as Python, R, Julia, and Rust when there is one visible
 package in that language; otherwise, it uses package names. The sidebar shows
 only the current section's pages, plus its API reference for package sections.
@@ -84,7 +85,8 @@ Markdown exports retain every panel as ordinary sections.
 ## Links and assets
 
 Use ordinary relative links between declared pages, including links across
-collections. For example, `[Commands](cli.md)` targets a page in this guide.
+collections. For example, `[Commands](../reference/cli.md)` targets the CLI
+reference in another collection.
 Local fragment links must name an existing heading anchor. Keep images and other
 local assets inside a declared source boundary and link to them with relative
 paths. Diplodocus validates local destinations and copies accepted assets into

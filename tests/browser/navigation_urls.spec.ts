@@ -15,11 +15,14 @@ test.beforeAll(async () => {
   workspace = await mkdtemp(join(tmpdir(), "diplodocus-navigation-urls-"));
   await mkdir(join(workspace, "docs/guides"), { recursive: true });
   await mkdir(join(workspace, "docs/images"));
+  await mkdir(join(workspace, "docs/reference"));
   // Static Rd extraction supplies supported math without executing documentation.
   await mkdir(join(workspace, "r/R"), { recursive: true });
   await mkdir(join(workspace, "r/man"));
   await Promise.all([
     writeFile(join(workspace, "docs/index.qmd"), "# Home\n\n[Read nested guide](guides/nested.qmd)\n"),
+    writeFile(join(workspace, "docs/reference/index.qmd"), "# Reference\n\n[Commands](cli.qmd)\n"),
+    writeFile(join(workspace, "docs/reference/cli.qmd"), "# Commands\n\nCLI options.\n"),
     writeFile(join(workspace, "docs/guides/nested.qmd"), "# Nested guide\n\nSee [`rmath::equation`].\n\n[Home](../index.qmd)\n\n![Chart](../images/chart.svg)\n"),
     writeFile(join(workspace, "docs/images/chart.svg"), '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 20"><path fill="green" d="M0 20 20 0 40 20Z"/></svg>'),
     writeFile(join(workspace, "r/DESCRIPTION"), "Package: navigationmath\nVersion: 1.0.0\nTitle: Navigation Math\nDescription: Static math fixture.\nLicense: MIT\nAuthor: Fixture Authors\nMaintainer: Fixture Authors <fixtures@example.test>\n"),
@@ -36,6 +39,9 @@ name = "URL navigation"
 site-url = "${publicRoot}"
 canonical-url-style = "${style}"
 description = "Nested documentation"
+[[presentation.sections]]
+label = "Reference"
+path = "reference/index.html"
 [presentation.home]
 tagline = "Home"
 description = "A shared home for the documentation."
@@ -82,6 +88,10 @@ test.afterAll(async () => {
 
 for (const style of ["file", "clean"]) {
   test(`${style} URLs preserve nested assets and metadata under a hosting prefix`, async ({ page }, info) => {
+    const openSection = async (name: string) => {
+      if (info.project.name === "mobile") await page.locator(".mobile-menu > summary").click();
+      await page.locator("header .global-nav:visible").getByRole("link", { name, exact: true }).click();
+    };
     const port = process.env.DIPLODOCUS_PREVIEW_PORT;
     if (!port) throw new Error("The preview server did not report its port.");
     const origin = `http://127.0.0.1:${port}`;
@@ -144,8 +154,7 @@ for (const style of ["file", "clean"]) {
       await stableNavbar();
       await expect(page.locator(".brand")).toBeVisible();
       const logoSource = await page.locator(".brand-logo").getAttribute("src");
-      if (info.project.name === "mobile") await page.locator(".mobile-menu > summary").click();
-      await page.locator("header .global-nav:visible").getByRole("link", { name: "Guide", exact: true }).click();
+      await openSection("Guide");
       await expect(page).toHaveURL(`${origin}${nestedPath}`);
       await expect(page.locator("body")).toHaveAttribute("data-layout", "docs");
       await stableNavbar();
@@ -158,6 +167,17 @@ for (const style of ["file", "clean"]) {
       await expect(page.locator(".brand")).toHaveAttribute("href", `${origin}${homePath}`);
       await expect(page.locator(".brand-logo")).toHaveAttribute("src", logoSource!);
       await expect(page.locator(".contextual-nav").getByRole("link", { name: "Overview", exact: true, includeHidden: true })).toHaveAttribute("href", `${origin}${nestedPath}`);
+      await openSection("Reference");
+      await expect(page.getByRole("heading", { level: 1 })).toHaveText("Reference");
+      await expect(page.locator('.desktop-sections [aria-current="true"]')).toHaveText("Reference");
+      await expect(page.locator(".contextual-nav a")).toHaveText(["Overview", "Commands"]);
+      await page.getByRole("main").getByRole("link", { name: "Commands", exact: true }).click();
+      await expect(page.getByRole("heading", { level: 1 })).toHaveText("Commands");
+      await expect(page.locator('.desktop-sections [aria-current="true"]')).toHaveText("Reference");
+      await stableNavbar();
+      await openSection("Guide");
+      await expect(page.getByRole("heading", { level: 1 })).toHaveText("Nested guide");
+      await expect(page.locator(".contextual-nav")).not.toContainText("Commands");
       const chart = page.getByRole("img", { name: "Chart" });
       expect(await chart.getAttribute("src")).toMatch(new RegExp(`^${origin}${prefix}assets/[^/]+\\.svg$`));
       await expect.poll(() => chart.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);

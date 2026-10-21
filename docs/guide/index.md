@@ -7,7 +7,7 @@ the project's own `diplodocus.toml`.
 
 Start with [installation](installation.md) and the [quick
 start](quick-start.md). Then configure your [workspace](configuration.md), write
-[authored pages](authoring.md), and use the [command reference](cli.md) as you
+[authored pages](authoring.md), and use the [command reference](../reference/cli.md) as you
 build. The [executable example](../examples/stateful.qmd) shows a Python QMD
 page built with the project's configured kernel.
 

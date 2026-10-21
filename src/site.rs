@@ -28,7 +28,7 @@ pub enum SiteError {
     /// Crawler metadata cannot be generated from the supplied presentation settings.
     #[error("site crawler metadata is invalid: {0}")]
     CrawlerMetadata(String),
-    /// Homepage links must identify existing, visible documentation pages.
+    /// Homepage and navigation links must identify existing, visible documentation pages.
     #[error("site presentation settings are invalid: {0}")]
     Presentation(String),
     /// The output directory could not be staged or replaced.
@@ -441,6 +441,27 @@ impl<'a> Site<'a> {
             }
         }
         site.assign_canonical_urls()?;
+        let mut section_prefixes: Vec<&str> = Vec::new();
+        for section in &site.presentation.sections {
+            let prefix = section.prefix();
+            if section.label.trim().is_empty()
+                || !section.path.as_str().ends_with("/index.html")
+                || prefix.is_empty()
+                || site.guide_route().starts_with(prefix)
+                || !site.pages.get(section.path.as_str()).is_some_and(|page| {
+                    page.visible && page.owner.is_none() && page.document.is_some()
+                })
+                || section_prefixes
+                    .iter()
+                    .any(|other| prefix.starts_with(other) || other.starts_with(prefix))
+            {
+                return Err(SiteError::Presentation(format!(
+                    "navigation sections need a label and a visible project index page in a distinct directory: {}",
+                    section.path.as_str()
+                )));
+            }
+            section_prefixes.push(prefix);
+        }
         Ok(site)
     }
 
@@ -532,6 +553,14 @@ impl<'a> Site<'a> {
             .home
             .as_ref()
             .map_or("index.html", |home| home.guide.as_str())
+    }
+    pub(crate) fn project_section(
+        &self,
+        route: &str,
+    ) -> Option<&crate::configuration::NavigationSection> {
+        self.presentation.sections.iter().find(|section| {
+            self.pages[route].owner.is_none() && route.starts_with(section.prefix())
+        })
     }
     fn insert(&mut self, route: String, page: PageModel<'a>) -> Result<(), SiteError> {
         if DiagnosticPath::try_from(route.clone()).is_err()

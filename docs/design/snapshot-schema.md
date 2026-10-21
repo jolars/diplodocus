@@ -270,6 +270,12 @@ and escapes them for HTML. The initial generator uses its built-in theme.
 Local theme paths, output directories, checkout roots, and execution authority
 are not presentation defaults. Unknown fields and malformed values are rejected.
 
+An optional `sections` array retains additional project navbar tabs in declaration
+order. Each entry contains a plain-text `label` and a generated `path` ending in
+`/index.html`. Generation validates the destination and assigns project pages in
+that directory to the section's sidebar. Section directories cannot overlap or
+contain the Guide landing page. An empty array is omitted from storage.
+
 The singleton may also contain `site-url` and `canonical-url-style`. A non-null
 `site-url` must be an absolute HTTP or HTTPS URL without credentials, query
 parameters, fragments, or whitespace. The generator treats its path as a

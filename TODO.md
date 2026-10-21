@@ -11,7 +11,7 @@
 
 These are implemented paths, not a claim that every acceptance and release check
 below has passed on a clean checkout. The [architecture](DESIGN.md), [CLI
-guide](docs/guide/cli.md), and [acceptance
+reference](docs/reference/cli.md), and [acceptance
 matrix](tests/fixtures/acceptance/MATRIX.md) give their respective contracts.
 The [four-language example](examples/monorepo/README.md) is the smallest
 complete site.

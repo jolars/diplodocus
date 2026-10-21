@@ -222,7 +222,10 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
             write!(
                 html,
                 "<div class=\"contextual-nav\" data-section=\"{}\">",
-                escape(page.owner.as_deref().unwrap_or(""))
+                escape(site.project_section(route).map_or_else(
+                    || page.owner.as_deref().unwrap_or(""),
+                    |section| section.path.as_str(),
+                ))
             )
             .unwrap();
             super::navigation::contextual(&mut html, site, route);

@@ -26,7 +26,7 @@ cargo run --locked -- serve --config examples/monorepo/diplodocus.toml --output 
 ```
 
 `check` validates sources without writing a site. `build` writes the site, and
-`serve` builds and watches it. See the [command reference](cli.md) for the
+`serve` builds and watches it. See the [command reference](../reference/cli.md) for the
 snapshot commands and defaults. Diplodocus does not install dependencies or
 kernels for a workspace. To adapt the example, read the [workspace
 configuration](configuration.md) and [authored-pages](authoring.md) guides.

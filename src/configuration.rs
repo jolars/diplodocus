@@ -74,6 +74,9 @@ pub struct PresentationDefaults {
     /// Optional full-width homepage, with the same navbar as documentation pages.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub home: Option<HomeDefaults>,
+    /// Additional project sections shown after Guide in the navbar.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub sections: Vec<NavigationSection>,
     /// Optional image shown before the site title in the navbar's home link.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub logo: Option<LogoDefaults>,
@@ -92,6 +95,22 @@ pub struct PresentationDefaults {
     /// Optional notices and links shown at the bottom of every page.
     #[serde(skip_serializing_if = "FooterDefaults::is_default")]
     pub footer: FooterDefaults,
+}
+
+/// A project navigation section containing pages beneath its landing page's directory.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+pub struct NavigationSection {
+    /// Visible navbar and sidebar heading, without Markdown or HTML.
+    pub label: String,
+    /// Generated route of a visible project page, such as `reference/index.html`.
+    pub path: DiagnosticPath,
+}
+
+impl NavigationSection {
+    pub(crate) fn prefix(&self) -> &str {
+        self.path.as_str().strip_suffix("index.html").unwrap_or("")
+    }
 }
 
 /// Content for the built-in landing page at the site root.

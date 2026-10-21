@@ -49,9 +49,9 @@ fn generate_cli_markdown() -> std::io::Result<()> {
     let root = std::path::PathBuf::from(
         std::env::var_os("CARGO_MANIFEST_DIR").expect("Cargo manifest directory"),
     );
-    let guide = root.join("docs/guide");
+    let reference = root.join("docs/reference");
     // Published crates can omit the documentation sources.
-    if !guide.is_dir() {
+    if !reference.is_dir() {
         return Ok(());
     }
 
@@ -78,7 +78,7 @@ fn generate_cli_markdown() -> std::io::Result<()> {
         }
     }
 
-    let path = guide.join("cli.md");
+    let path = reference.join("cli.md");
     // Avoid triggering documentation watchers when the reference is unchanged.
     if std::fs::read_to_string(&path).ok().as_deref() != Some(&generated) {
         std::fs::write(path, generated)?;

@@ -66,6 +66,19 @@ guide at `/guide/` and
 keeps its QMD example under `/examples/`. See [authored pages](authoring.md) for
 supported syntax, links, and assets.
 
+To give a project collection its own navbar tab and sidebar, declare a section:
+
+```toml
+[[presentation.sections]]
+label = "Reference"
+path = "reference/index.html"
+```
+
+The path names a generated, visible project `index.html` page. All project pages
+under that directory belong to the section and leave the Guide sidebar.
+Section directories must be distinct and cannot contain the Guide landing page.
+Tabs appear after Guide in declaration order, before package tabs.
+
 ## Execution
 
 Execution defaults to `never`. To allow it, set the collection to QMD and
@@ -248,4 +261,4 @@ root robots file. A file at `/docs/robots.txt` does not provide crawler
 discovery. The first implementation writes one sitemap and rejects sites that
 exceed the sitemap protocol's URL count, file size, or URL length limits.
 
-Return to the [quick start](quick-start.md) or see the [commands](cli.md).
+Return to the [quick start](quick-start.md) or see the [commands](../reference/cli.md).

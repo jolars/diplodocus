@@ -6,6 +6,10 @@ description = "Guides for building Python, R, Julia, and Rust documentation with
 site-url = "https://diplodocus.cc/"
 canonical-url-style = "clean"
 
+[[presentation.sections]]
+label = "Reference"
+path = "reference/index.html"
+
 [presentation.home]
 tagline = "One home for all your package docs."
 description = "Bring your Python, R, Julia, and Rust packages together. Build API references and guides with shared navigation, cross-references, and search."
@@ -54,6 +58,14 @@ owner = "project"
 repository = "diplodocus"
 path = "docs/guide"
 mount = "guide"
+format = "gfm"
+
+[[content]]
+id = "reference"
+owner = "project"
+repository = "diplodocus"
+path = "docs/reference"
+mount = "reference"
 format = "gfm"
 
 [[content]]
