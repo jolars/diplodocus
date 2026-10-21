@@ -3,6 +3,18 @@
   const sidebar = document.querySelector('.layout > nav');
   const narrow = matchMedia('(max-width:760px)');
   const wide = matchMedia('(min-width:1100px)');
+  const menu = document.querySelector('.mobile-menu');
+  const closeMenu = () => { menu.open = false; };
+  document.addEventListener('click', event => {
+    if (!menu.contains(event.target) || event.target.closest('a[href]')) closeMenu();
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key !== 'Escape' || !menu.open) return;
+    closeMenu();
+    menu.querySelector('summary').focus({ preventScroll: true });
+  });
+  narrow.addEventListener('change', closeMenu);
+  document.addEventListener('diplodocus:page-change', closeMenu);
   const initializeToc = () => {
     const toc = document.querySelector('.toc-disclosure');
     if (!toc) return;
@@ -11,7 +23,42 @@
   };
   disclosure.open = !narrow.matches;
   disclosure.dataset.ready = '';
-  narrow.addEventListener('change', event => { disclosure.open = !event.matches; });
+  const drawer = document.createElement('dialog');
+  drawer.className = 'documentation-drawer';
+  drawer.setAttribute('aria-label', 'Documentation menu');
+  drawer.innerHTML = '<div class="drawer-heading"><strong>Menu</strong><button type="button" aria-label="Close menu" autofocus>×</button></div>';
+  sidebar.append(drawer);
+  const drawerToggle = disclosure.querySelector(':scope > summary');
+  drawerToggle.setAttribute('aria-haspopup', 'dialog');
+  const closeDrawer = () => {
+    if (drawer.open) drawer.close();
+    if (narrow.matches) disclosure.open = false;
+  };
+  const placeNavigation = () => {
+    closeDrawer();
+    const contextual = document.querySelector('.contextual-nav');
+    (narrow.matches ? drawer : disclosure).append(contextual);
+    disclosure.open = !narrow.matches;
+  };
+  placeNavigation();
+  drawerToggle.addEventListener('click', event => {
+    if (!narrow.matches) return;
+    event.preventDefault();
+    closeMenu();
+    disclosure.open = true;
+    drawer.showModal();
+  });
+  drawer.querySelector('button').addEventListener('click', closeDrawer);
+  drawer.addEventListener('close', () => {
+    if (narrow.matches && !drawer.open) disclosure.open = false;
+  });
+  drawer.addEventListener('click', event => {
+    const bounds = drawer.getBoundingClientRect();
+    if (event.target.closest('a[href]') || (event.target === drawer
+        && (event.clientX < bounds.left || event.clientX > bounds.right
+          || event.clientY < bounds.top || event.clientY > bounds.bottom))) closeDrawer();
+  });
+  narrow.addEventListener('change', placeNavigation);
   wide.addEventListener('change', initializeToc);
   document.addEventListener('diplodocus:page-change', initializeToc);
   initializeToc();
@@ -88,7 +135,7 @@
   const viewportEntry = () => ({
     ...mountedEntry,
     scroll: [scrollX, scrollY],
-    sidebar: [disclosure.scrollTop, sidebar.scrollTop],
+    sidebar: [(narrow.matches ? drawer : disclosure).scrollTop, sidebar.scrollTop],
   });
   const recordPosition = () => {
     // During traversal the address bar already belongs to an unmounted page.
@@ -105,6 +152,7 @@
   };
   window.addEventListener('scroll', recordScroll, { passive: true });
   disclosure.addEventListener('scroll', recordScroll, { passive: true });
+  drawer.addEventListener('scroll', recordScroll, { passive: true });
   sidebar.addEventListener('scroll', recordScroll, { passive: true });
   window.addEventListener('pagehide', recordPosition);
   window.addEventListener('pageshow', () => { history.scrollRestoration = 'manual'; });
@@ -113,7 +161,7 @@
     const contextual = document.querySelector('.contextual-nav');
     sidebarStates.set(contextual.dataset.section, {
       open: new Map(Array.from(contextual.querySelectorAll('.item-disclosure'), details => [details.querySelector('a').href, details.open])),
-      scroll: [disclosure.scrollTop, sidebar.scrollTop],
+      scroll: [(narrow.matches ? drawer : disclosure).scrollTop, sidebar.scrollTop],
     });
   };
   const updateSidebar = next => {
@@ -126,7 +174,7 @@
       }
     }
     contextual.replaceWith(replacement);
-    disclosure.scrollTop = saved?.scroll[0] || 0;
+    (narrow.matches ? drawer : disclosure).scrollTop = saved?.scroll[0] || 0;
     sidebar.scrollTop = saved?.scroll[1] || 0;
     for (const selector of ['.desktop-sections', '.mobile-sections']) {
       const selected = next.querySelector(`${selector} [aria-current]`)?.href;
@@ -174,13 +222,13 @@
     const request = sequence;
     let active = true;
     const target = url.hash ? fragmentTarget(url) : undefined;
-    if (narrow.matches) disclosure.open = false;
+    if (narrow.matches) closeDrawer();
     if (moveFocus && (changedPage || target)) focus(target || document.querySelector('#main'));
     const correct = () => {
       if (!active || request !== sequence) return;
       if (saved) {
         window.scrollTo({ left: saved.scroll[0], top: saved.scroll[1], behavior: 'instant' });
-        disclosure.scrollTop = saved.sidebar?.[0] || 0;
+        (narrow.matches ? drawer : disclosure).scrollTop = saved.sidebar?.[0] || 0;
         sidebar.scrollTop = saved.sidebar?.[1] || 0;
       } else if (target) {
         target.scrollIntoView({ block: 'start', behavior: 'instant' });

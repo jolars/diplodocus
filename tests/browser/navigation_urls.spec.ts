@@ -81,7 +81,7 @@ test.afterAll(async () => {
 });
 
 for (const style of ["file", "clean"]) {
-  test(`${style} URLs preserve nested assets and metadata under a hosting prefix`, async ({ page }) => {
+  test(`${style} URLs preserve nested assets and metadata under a hosting prefix`, async ({ page }, info) => {
     const port = process.env.DIPLODOCUS_PREVIEW_PORT;
     if (!port) throw new Error("The preview server did not report its port.");
     const origin = `http://127.0.0.1:${port}`;
@@ -127,7 +127,7 @@ for (const style of ["file", "clean"]) {
         document,
         elements: [...document.querySelectorAll("header, header a, #search")],
       }));
-      const navbar = page.locator("header .global-nav:visible a, #search, header .repository-link");
+      const navbar = page.locator("header .desktop-sections:visible a, #search, .header-actions > .repository-link:visible");
       const positions = await navbar.evaluateAll(elements => elements.map(element => {
         const { x, y, width, height } = element.getBoundingClientRect();
         return { x, y, width, height };
@@ -144,6 +144,7 @@ for (const style of ["file", "clean"]) {
       await stableNavbar();
       await expect(page.locator(".brand")).toBeVisible();
       const logoSource = await page.locator(".brand-logo").getAttribute("src");
+      if (info.project.name === "mobile") await page.locator(".mobile-menu > summary").click();
       await page.locator("header .global-nav:visible").getByRole("link", { name: "Guide", exact: true }).click();
       await expect(page).toHaveURL(`${origin}${nestedPath}`);
       await expect(page.locator("body")).toHaveAttribute("data-layout", "docs");
@@ -221,6 +222,7 @@ for (const style of ["file", "clean"]) {
       });
       await page.goto(`${origin}${homePath}`);
       await expect(page.locator("body")).toHaveAttribute("data-layout", "home");
+      if (info.project.name === "mobile") await page.locator(".mobile-menu > summary").click();
       await expect(page.locator("header .global-nav:visible")).toBeVisible();
       await expect(page.locator(".brand")).toBeVisible();
       await page.getByRole("link", { name: "Get started", exact: true }).click();

@@ -18,7 +18,8 @@ The navigation bar links to the shared Guide and each visible package. Diplodocu
 uses language labels such as Python, R, Julia, and Rust when there is one visible
 package in that language; otherwise, it uses package names. The sidebar shows
 only the current section's pages, plus its API reference for package sections.
-On mobile, open **Browse documentation** to switch sections or browse their pages.
+On mobile, open **Menu** to browse documentation pages in a drawer. Use the
+hamburger menu in the top navbar to switch sections.
 
 Pages are grouped by their first URL directory within the section, including
 the collection's mount. A group's `index.md` or `index.qmd` supplies its label

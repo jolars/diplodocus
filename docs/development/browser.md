@@ -49,12 +49,20 @@ titles, images, layout width, search, equivalent APIs, and keyboard navigation.
 JavaScript and console errors fail tests, except the browser's automatic request
 for an undeclared `/favicon.ico`.
 
-The Tiny Stats landing page shows its logo and title beside the header, which
-contains section links, search, and repository links. Documentation pages place the logo and title at the top of the gray
-sidebar, with the header beside it. Branding stays pinned while the sidebar
-links scroll. Browser tests check identical header positions and
+The header contains the Tiny Stats logo and title, section links, search, and
+repository links. On desktop, the logo and title sit above the gray sidebar.
+On phones, they sit at the left of the navbar, and search expands from a
+magnifying glass when tapped. Branding stays pinned while the sidebar links
+scroll. A hamburger menu in the upper-right corner holds the section and
+repository links on phones. Browser tests check identical header positions and
 retained elements when moving between layouts, including clean URLs under a hosting
 prefix.
+
+On phones, the staggered-lines **Menu** control and the right-aligned
+**On this page** control share a row below the navbar. **Menu** opens a white
+drawer from the left over a dimmed page without moving the content. The drawer
+keeps keyboard focus inside it and closes through its close button, Escape,
+a tap on the backdrop, or navigation.
 
 The homepage's **Get started** action opens the quick start, and **Guide** opens
 `overview.html`. The remaining navbar links open the four language sections.
