@@ -7,7 +7,7 @@ site-url = "https://diplodocus.cc/"
 canonical-url-style = "clean"
 
 [presentation.home]
-tagline = "Four languages.\nOne home for docs."
+tagline = "One home for all your package docs."
 description = "Bring your Python, R, Julia, and Rust packages together. Build API references and guides with shared navigation, cross-references, and search."
 guide = "guide/index.html"
 actions = [
