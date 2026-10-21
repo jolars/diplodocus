@@ -23,7 +23,7 @@ features = [
 
 [presentation.logo]
 repository = "diplodocus"
-path = "assets/brand/diplodocus-logo.png"
+path = "assets/brand/diplodocus-logo-large.png"
 
 [presentation.open-graph]
 repository = "diplodocus"
