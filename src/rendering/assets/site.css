@@ -102,8 +102,14 @@ code { font-family: var(--font-code); font-size: 1em; }
 img { max-width: 100%; height: auto; }
 figure { margin: 1.5rem 0; }
 .caption, figcaption { color: var(--muted); font-size: .9rem; }
-table { overflow-wrap: normal; border-collapse: collapse; display: block; overflow: auto; font-size: .9rem; }
-th, td { border: 1px solid #bbc9c5; padding: .4rem .65rem; }
+table { overflow-wrap: normal; border-collapse: separate; border-spacing: 0; display: block; overflow-x: auto; margin: 1.25rem 0; font-size: .9rem; line-height: 1.5; }
+th, td { padding: .5rem .875rem; text-align: left; vertical-align: top; }
+th { background: var(--sidebar-background); font-weight: 600; }
+th:first-child { border-start-start-radius: .5rem; border-end-start-radius: .5rem; }
+th:last-child { border-start-end-radius: .5rem; border-end-end-radius: .5rem; }
+tr + tr > td { border-top: 1px solid var(--border); }
+th > :first-child, td > :first-child { margin-top: 0; }
+th > :last-child, td > :last-child { margin-bottom: 0; }
 blockquote, .callout { border-left: 4px solid #688b84; padding: .2rem 1rem; margin: 1rem 0; }
 .unsupported { border-left: 4px solid #a04605; padding-left: 1rem; }
 .skip-link { position: absolute; left: -10000px; }
