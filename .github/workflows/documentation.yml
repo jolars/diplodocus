@@ -38,11 +38,13 @@ jobs:
         run: devenv shell -- node --test scripts/installer.test.mjs
       - name: Install deployment dependencies
         if: >-
+          (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
           startsWith(github.ref, 'refs/tags/v') ||
           (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
         run: devenv shell -- npm ci --ignore-scripts
       - name: Deploy to Cloudflare Workers
         if: >-
+          (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
           startsWith(github.ref, 'refs/tags/v') ||
           (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
         run: devenv shell -- npx --no-install wrangler deploy
