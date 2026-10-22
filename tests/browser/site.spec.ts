@@ -1620,6 +1620,7 @@ test("delayed navigation initialization preserves the initial layout", async ({ 
 });
 
 test("overflowing code can be scrolled with the keyboard", async ({ page }) => {
+  await page.setViewportSize({ width: 480, height: 800 });
   await page.goto("/guides/comparing-predictions.html");
   const blocks = page.locator("main pre");
   const index = await blocks.evaluateAll(elements => elements.findIndex(el => el.scrollWidth > el.clientWidth));
