@@ -1674,3 +1674,39 @@ test("overflowing code can be scrolled with the keyboard", async ({ page }) => {
   await page.keyboard.press("ArrowRight");
   await expect.poll(() => block.evaluate(el => el.scrollLeft)).toBeGreaterThan(0);
 });
+
+test("responsive images download smaller candidates at standard and high pixel density", async ({ browser, baseURL }, info) => {
+  for (const deviceScaleFactor of [1, 2]) {
+    const context = await browser.newContext({
+      baseURL,
+      viewport: info.project.use.viewport,
+      deviceScaleFactor,
+      javaScriptEnabled: false,
+    });
+    try {
+      const page = await context.newPage();
+      await page.goto("/console-output/index.html");
+      const image = page.getByRole("img", { name: "Responsive raster test image", exact: true });
+      await expect(image).toBeVisible();
+      await expect(image).toHaveJSProperty("complete", true);
+      await expect(image).toHaveAttribute("width", "1600");
+      await expect(image).toHaveAttribute("height", "800");
+      await expect(image).toHaveAttribute("srcset", /480w.*960w.*1440w.*1600w/);
+      const source = await image.evaluate((element: HTMLImageElement) => ({
+        current: element.currentSrc,
+        original: element.src,
+        renderedWidth: element.getBoundingClientRect().width,
+      }));
+      expect(source.current).not.toBe(source.original);
+      const selected = await context.request.get(source.current);
+      const original = await context.request.get(source.original);
+      expect(selected.ok()).toBe(true);
+      expect((await selected.body()).length).toBeLessThan((await original.body()).length);
+      expect(source.renderedWidth).toBeGreaterThan(300);
+      await fitsViewport(page);
+      await capture(page, info, `responsive-image-${deviceScaleFactor}x`, false);
+    } finally {
+      await context.close();
+    }
+  }
+});

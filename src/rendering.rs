@@ -5,6 +5,7 @@ mod fragments;
 mod highlighting;
 mod home;
 mod html;
+mod images;
 mod katex_assets;
 mod markdown;
 mod math;

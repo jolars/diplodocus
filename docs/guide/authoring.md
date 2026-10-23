@@ -92,7 +92,22 @@ local assets inside a declared source boundary and link to them with relative
 paths. Diplodocus validates local destinations and copies accepted assets into
 the generated site. Rendered PNG and JPEG images include their intrinsic width
 and height so browsers can reserve space before loading them. Diplodocus
-preserves the original image bytes. External HTTP links remain external.
+preserves the original image bytes for downloads and fallback rendering.
+
+During generation, Diplodocus also creates smaller PNG and JPEG variants for
+large images and adds `srcset` and `sizes` to the HTML. Browsers can download a
+variant that suits the display width and pixel density. Content variants have
+widths of 480, 960, 1440, and 1920 pixels; navbar logos use 32, 64, and 96 pixels.
+Diplodocus never enlarges images and only offers variants smaller in bytes than
+the original. PNG variants retain transparency, and JPEG variants use quality
+90. Variants retain embedded ICC color profiles. SVGs, animated PNGs, and images
+with an EXIF rotation or reflection remain unchanged.
+
+Variants are generated from snapshot bytes, so generation does not need the
+source checkout or another execution run. Original assets and Open Graph links
+keep their existing URLs. Fragment output includes the variants and uses
+`100vw` as a conservative size for the embedding site's unknown layout.
+External HTTP links remain external.
 
 Code fences in GFM and API documentation are always display-only. R Markdown chunks execute during extraction. QMD cells run
 only when their collection explicitly authorizes execution; see [execution and

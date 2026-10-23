@@ -27,3 +27,23 @@ raise ValueError('Example error')
 ```{python, echo=false}
 print('Output from hidden source')
 ```
+
+```{python, echo=false, fig-alt="Responsive raster test image"}
+import random
+import struct
+import zlib
+from IPython.display import Image
+
+width, height = 1600, 800
+pixels = random.Random(42).randbytes(width * height * 3)
+rows = b''.join(b'\x00' + pixels[y * width * 3:(y + 1) * width * 3] for y in range(height))
+
+def png_chunk(kind, data):
+    return struct.pack('!I', len(data)) + kind + data + struct.pack('!I', zlib.crc32(kind + data))
+
+png = b'\x89PNG\r\n\x1a\n'
+png += png_chunk(b'IHDR', struct.pack('!2I5B', width, height, 8, 2, 0, 0, 0))
+png += png_chunk(b'IDAT', zlib.compress(rows))
+png += png_chunk(b'IEND', b'')
+Image(data=png)
+```

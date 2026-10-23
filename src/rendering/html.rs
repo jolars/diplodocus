@@ -31,7 +31,12 @@ pub fn render_fragments(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
     render(site, false)
 }
 
-fn brand(html: &mut String, site: &Site<'_>, route: &str) -> Result<(), SiteError> {
+fn brand(
+    html: &mut String,
+    site: &Site<'_>,
+    route: &str,
+    images: &super::images::Images,
+) -> Result<(), SiteError> {
     write!(
         html,
         "<a class=\"brand\" href=\"{}\">",
@@ -41,9 +46,10 @@ fn brand(html: &mut String, site: &Site<'_>, route: &str) -> Result<(), SiteErro
     if let Some(logo) = site.logo {
         write!(
             html,
-            "<img class=\"brand-logo\" src=\"{}\" alt=\"\"{}>",
+            "<img class=\"brand-logo\" src=\"{}\" alt=\"\"{}{}>",
             escape(&site.url(route, &site.asset_route(&logo.fingerprint.value)?)),
-            image_dimensions(site, &logo.fingerprint.value)?
+            image_dimensions(site, &logo.fingerprint.value)?,
+            images.attributes(site, route, &logo.fingerprint.value, true, true)?
         )
         .unwrap();
     }
@@ -64,13 +70,16 @@ fn image_dimensions(site: &Site<'_>, digest: &str) -> Result<String, SiteError> 
     Ok(format!(" width=\"{width}\" height=\"{height}\""))
 }
 
-fn navigation_shell_fingerprint(site: &Site<'_>) -> Result<String, SiteError> {
+fn navigation_shell_fingerprint(
+    site: &Site<'_>,
+    images: &super::images::Images,
+) -> Result<String, SiteError> {
     // Render from one route so page selection and relative URLs cannot split a shell.
     let mut shell = String::new();
     super::navigation::sections(&mut shell, site, "index.html", "desktop-sections");
     super::navigation::sections(&mut shell, site, "index.html", "mobile-sections");
     super::navigation::repositories(&mut shell, site);
-    brand(&mut shell, site, "index.html")?;
+    brand(&mut shell, site, "index.html", images)?;
     super::footer::render(&mut shell, site);
     // A retained document must not combine runtimes or styles from different builds.
     for source in [
@@ -90,8 +99,9 @@ fn navigation_shell_fingerprint(site: &Site<'_>) -> Result<String, SiteError> {
 
 fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> {
     let mut files = BTreeMap::new();
+    let images = super::images::Images::default();
     let shell_fingerprint = standalone
-        .then(|| navigation_shell_fingerprint(site))
+        .then(|| navigation_shell_fingerprint(site, &images))
         .transpose()?;
     if standalone {
         files.insert(
@@ -143,6 +153,8 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
             });
         uses_math |= page_math;
         let mut renderer = Renderer {
+            images: &images,
+            standalone,
             site,
             page,
             resolved: page.resolved,
@@ -221,7 +233,7 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
             .unwrap();
             write!(html, "</head><body data-diplodocus-navigation=\"1\" data-diplodocus-shell=\"{}\" data-layout=\"{}\"><a class=\"skip-link\" href=\"#main\">Skip to content</a>", shell_fingerprint.as_deref().expect("standalone shell fingerprint"), if home.is_some() { "home" } else { "docs" }).unwrap();
             html.push_str("<header>");
-            brand(&mut html, site, route)?;
+            brand(&mut html, site, route, &images)?;
             super::navigation::sections(&mut html, site, route, "desktop-sections");
             html.push_str("<div class=\"header-actions\"><form class=\"site-search\" role=\"search\"><label class=\"visually-hidden\" for=\"search\">Search documentation</label><div class=\"search-control\"><svg class=\"search-icon\" aria-hidden=\"true\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><circle cx=\"10.5\" cy=\"10.5\" r=\"6.5\"></circle><path d=\"m16 16 4 4\"></path></svg><input id=\"search\" type=\"search\" placeholder=\"Search\" autocomplete=\"off\" aria-controls=\"search-results\"></div><ul id=\"search-results\" aria-live=\"polite\"></ul></form>");
             super::navigation::repositories(&mut html, site);
@@ -539,6 +551,8 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                     if let Some(document) = &method.documentation {
                         // Method references keep their own resolution context on the family page.
                         let mut method_renderer = Renderer {
+                            images: &images,
+                            standalone,
                             site,
                             page: method_page,
                             resolved: method_page.resolved,
@@ -802,6 +816,7 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
             files.insert((*path).into(), file(bytes.to_vec(), media_type));
         }
     }
+    files.extend(images.into_files());
     for (digest, asset) in site.assets {
         files.insert(
             site.asset_route(digest)?,
@@ -949,6 +964,8 @@ fn concept_links(site: &Site<'_>, route: &str, concept: &Concept) -> Result<Stri
     Ok(html)
 }
 struct Renderer<'a, 'b> {
+    images: &'a super::images::Images,
+    standalone: bool,
     highlighter: &'a super::highlighting::Highlighter,
     math_context: &'a katex::KatexContext,
     site: &'a Site<'b>,
@@ -1062,6 +1079,8 @@ impl Renderer<'_, '_> {
             let page = &self.site.embedded_pages[&member.reference];
             let mut renderer = Renderer {
                 site: self.site,
+                images: self.images,
+                standalone: self.standalone,
                 page,
                 resolved: member.resolved,
                 route: self.route,
@@ -1134,6 +1153,8 @@ impl Renderer<'_, '_> {
                 // A method's short references resolve in its defining context.
                 let mut renderer = Renderer {
                     site: self.site,
+                    images: self.images,
+                    standalone: self.standalone,
                     page: self.page,
                     resolved: member.resolved,
                     route: self.route,
@@ -1252,7 +1273,7 @@ impl Renderer<'_, '_> {
         }
         self.site.target(self.route, &reference.target)
     }
-    fn image_dimensions(&self, spelling: &str) -> Result<String, SiteError> {
+    fn image_attributes(&self, spelling: &str) -> Result<String, SiteError> {
         let reference = self
             .resolved
             .and_then(|document| {
@@ -1262,9 +1283,17 @@ impl Renderer<'_, '_> {
             })
             .ok_or(SiteError::Evidence)?;
         match &reference.target {
-            crate::validation::ReferenceTarget::Asset { asset, .. } => {
-                image_dimensions(self.site, &asset.fingerprint.value)
-            }
+            crate::validation::ReferenceTarget::Asset { asset, .. } => Ok(format!(
+                "{}{}",
+                image_dimensions(self.site, &asset.fingerprint.value)?,
+                self.images.attributes(
+                    self.site,
+                    self.route,
+                    &asset.fingerprint.value,
+                    false,
+                    self.standalone
+                )?
+            )),
             _ => Ok(String::new()),
         }
     }
@@ -1346,7 +1375,7 @@ impl Renderer<'_, '_> {
                     "<img src=\"{}\" alt=\"{}\"{}{}{}>",
                     escape(&self.reference(ReferenceKind::Image, target)?),
                     escape(&plain(alt)),
-                    self.image_dimensions(target)?,
+                    self.image_attributes(target)?,
                     id(attributes),
                     title
                         .as_ref()
@@ -1766,13 +1795,20 @@ impl Renderer<'_, '_> {
                         let options = options.ok_or(SiteError::Evidence)?;
                         write!(
                             html,
-                            "<figure><img src=\"{}\" alt=\"{}\"{}>",
+                            "<figure><img src=\"{}\" alt=\"{}\"{}{}>",
                             escape(&self.site.url(
                                 self.route,
                                 &self.site.asset_route(&asset.reference.fingerprint.value)?
                             )),
                             escape(options.fig_alt.value.as_deref().unwrap_or("")),
-                            image_dimensions(self.site, &asset.reference.fingerprint.value)?
+                            image_dimensions(self.site, &asset.reference.fingerprint.value)?,
+                            self.images.attributes(
+                                self.site,
+                                self.route,
+                                &asset.reference.fingerprint.value,
+                                false,
+                                self.standalone
+                            )?
                         )
                         .unwrap();
                         if let Some(caption) = options.fig_subcap.value.get(figure) {
@@ -1833,6 +1869,17 @@ impl Renderer<'_, '_> {
                         html.push_str(&image_dimensions(
                             self.site,
                             &asset.reference.fingerprint.value,
+                        )?);
+                    }
+                    if name == "img"
+                        && let Some(HtmlAttribute::Asset(asset)) = attributes.get("src")
+                    {
+                        html.push_str(&self.images.attributes(
+                            self.site,
+                            self.route,
+                            &asset.reference.fingerprint.value,
+                            false,
+                            self.standalone,
                         )?);
                     }
                     html.push('>');
