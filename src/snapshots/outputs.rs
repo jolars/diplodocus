@@ -172,6 +172,7 @@ impl Snapshot {
                 path: ".".into(),
                 mount: declaration.mount.clone(),
                 format: declaration.format,
+                navigation: declaration.navigation,
                 execution: crate::configuration::ExecutionConfiguration {
                     mode: declaration.execution.mode,
                     engine: declaration.execution.engine,

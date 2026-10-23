@@ -45,6 +45,7 @@ pub(super) fn collections(
                 .to_owned(),
             mount: "vignettes".into(),
             format: AuthoredFormat::Rmd,
+            navigation: Default::default(),
             execution: ExecutionConfiguration {
                 mode: ExecutionMode::Execute,
                 engine: Some(Engine::Knitr),

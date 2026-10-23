@@ -204,6 +204,7 @@ pub(crate) fn validate_prepared(
         path: ".".into(),
         mount: String::new(),
         format: AuthoredFormat::Qmd,
+        navigation: Default::default(),
         execution: ExecutionConfiguration {
             mode: ExecutionMode::Execute,
             engine: Some(ExecutionEngine::Jupyter),

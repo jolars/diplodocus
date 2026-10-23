@@ -34,6 +34,7 @@ pub(super) fn assemble(
                 path: relative(&resolved.path, &repository.path)?,
                 mount: collection.mount.clone(),
                 format: collection.format,
+                navigation: collection.navigation,
                 execution: crate::ir::ExecutionConfiguration {
                     mode: collection.execution.mode,
                     engine: collection.execution.engine,

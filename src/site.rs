@@ -66,6 +66,7 @@ pub(crate) struct PageModel<'a> {
     pub item: Option<&'a Item>,
     pub concept: Option<&'a Concept>,
     pub visible: bool,
+    pub navigation: bool,
     pub reference_index: bool,
     pub public_name: Option<String>,
     pub python_class: Option<crate::rendering::python::PythonClass<'a>>,
@@ -85,6 +86,7 @@ impl PageModel<'_> {
             item: None,
             concept: None,
             visible,
+            navigation: true,
             reference_index: false,
             public_name: None,
             python_class: None,
@@ -142,6 +144,11 @@ impl<'a> Site<'a> {
                     .ok_or(SiteError::Evidence)?
                     .as_str();
                 let (stem, _) = path.rsplit_once('.').ok_or(SiteError::Evidence)?;
+                model.navigation = match collection.navigation {
+                    crate::configuration::ContentNavigation::All => true,
+                    crate::configuration::ContentNavigation::Index => stem == "index",
+                    crate::configuration::ContentNavigation::None => false,
+                };
                 let base = owner
                     .as_ref()
                     .map(|p| format!("packages/{}/", workspace.packages[p].slug))
@@ -162,6 +169,7 @@ impl<'a> Site<'a> {
                     path: ".".into(),
                     mount: collection.mount.clone(),
                     format: collection.format,
+                    navigation: collection.navigation,
                     execution: crate::configuration::ExecutionConfiguration {
                         mode: collection.execution.mode,
                         engine: collection.execution.engine,

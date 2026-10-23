@@ -12,6 +12,44 @@ mod support;
 const COMPLETE: &str = include_str!("fixtures/configuration/complete.yaml");
 const ACCEPTANCE: &str = include_str!("fixtures/acceptance/workspace/diplodocus.yaml");
 
+#[test]
+fn content_navigation_defaults_to_all_and_round_trips_explicit_policies() {
+    use diplodocus::configuration::ContentNavigation;
+
+    let config = parse_configuration(COMPLETE).unwrap();
+    assert_eq!(config.content[0].navigation, ContentNavigation::All);
+    assert!(
+        serde_json::to_value(&config).unwrap()["content"][0]
+            .get("navigation")
+            .is_none()
+    );
+    for (value, policy) in [
+        ("all", ContentNavigation::All),
+        ("index", ContentNavigation::Index),
+        ("none", ContentNavigation::None),
+    ] {
+        let source = COMPLETE.replace(
+            "    format: \"qmd\"",
+            &format!("    format: \"qmd\"\n    navigation: {value}"),
+        );
+        let config = parse_configuration(&source).unwrap();
+        assert_eq!(config.content[0].navigation, policy);
+        let serialized = serde_saphyr::to_string(&config).unwrap();
+        assert_eq!(parse_configuration(&serialized).unwrap(), config);
+    }
+}
+
+#[test]
+fn content_navigation_rejects_unknown_policies_and_non_string_values() {
+    for value in ["hidden", "false", "42", "null", "[]", "{}"] {
+        let source = COMPLETE.replace(
+            "    format: \"qmd\"",
+            &format!("    format: \"qmd\"\n    navigation: {value}"),
+        );
+        assert!(parse_configuration(&source).is_err(), "{value}");
+    }
+}
+
 const HOMEPAGE: &str = r#"project:
   name: Docs
 presentation:

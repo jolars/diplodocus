@@ -170,12 +170,16 @@ fn document_groups(
     } else {
         format!("{base}index.html")
     };
-    let mut root = vec![(overview.clone(), "Overview".to_owned())];
+    let mut root = Vec::new();
+    if site.pages.get(&overview).is_none_or(|page| page.navigation) {
+        root.push((overview.clone(), "Overview".to_owned()));
+    }
     let mut groups: BTreeMap<&str, Vec<(String, String)>> = BTreeMap::new();
     for (destination, page) in &site.pages {
         if destination == &overview
             || site.home(destination).is_some()
             || !page.visible
+            || !page.navigation
             || page.owner.as_deref() != owner
             || page.item.is_some()
             || page.document.is_none()

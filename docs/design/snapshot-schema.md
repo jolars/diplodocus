@@ -28,6 +28,11 @@ IR version 7 adds generated console output containers, keeping R Markdown and
 Rd example results separate from their source code. Version 6 snapshots must be
 extracted again. Storage and canonical encoding versions are unchanged.
 
+Collection records may also declare `navigation` as `all`, `index`, or `none`.
+The field defaults to `all` when absent and is omitted when it has that value,
+preserving existing snapshot records and their fingerprints. It controls sidebar
+inclusion independently of page rendering, search, and sitemaps.
+
 IR version 6 added compiler-resolved Rust declarations, public reexports, embedded
 members and implementations, and target-level native doctest outcomes. Rust
 extraction records compiler mode rather than static mode. Version 5 snapshots
@@ -135,7 +140,7 @@ The `records` kinds are:
   | `package`    | Empty      | Package ID                    | `slug`, `name`, `ecosystem`, `version`, optional `metadata`, `repository`, `path`, `metadata_path`, `kind`, `visibility`                             |
   | `target`     | Package ID | Target ID                     | `extractor`, `path`, `role`                                                                                                                          |
   | `item`       | Package ID | Semantic item ID              | `kind`, `name`, `qualified_name`, optional `language_data` and `aliases`, `signatures`, `documentation`, `source_location`, `children`, `provenance` |
-  | `collection` | Empty      | Collection ID                 | `owner`, `repository`, `path`, `mount`, `format`, `execution`                                                                                        |
+  | `collection` | Empty      | Collection ID                 | `owner`, `repository`, `path`, `mount`, `format`, optional `navigation`, `execution`                                                                 |
   | `page`       | Empty      | Semantic page ID              | `owner`, `kind`, `title`, `document`                                                                                                                 |
   | `concept`    | Empty      | Concept ID                    | `kind`, `members`, `documentation`                                                                                                                   |
   | `document`   | Empty      | Serialized `DocumentIdentity` | `document`, `collection_path`, `anchors`, `references`                                                                                               |

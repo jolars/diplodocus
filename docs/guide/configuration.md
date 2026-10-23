@@ -72,6 +72,27 @@ guide at `/guide/` and
 keeps its QMD example under `/examples/`. See [authored pages](authoring.md) for
 supported syntax, links, and assets.
 
+Collections include every page in the sidebar by default. For a generated catalog
+whose index already links to its entries, show only the collection's root index:
+
+```yaml
+content:
+  - id: datasets
+    owner: project
+    repository: docs
+    path: generated/datasets
+    mount: datasets
+    format: gfm
+    navigation: index
+```
+
+`navigation` accepts `all` (the default), `index` (only `index.md`, `index.qmd`,
+or `index.Rmd` at the collection root), and `none` (no sidebar links). The setting
+applies to project and package collections. It does not change page routes,
+rendered content, links, search entries, or sitemap inclusion. If the collection
+has no root index, `index` adds no sidebar links. The setting is stored in the
+snapshot, so `generate` retains it without the source checkout.
+
 To give a project collection its own navbar tab and sidebar, declare a section:
 
 ```yaml

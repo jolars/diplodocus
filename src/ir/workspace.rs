@@ -12,7 +12,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 pub use crate::configuration::{
-    ConceptKind, ExecutionEngine, ExecutionMode, PackageKind, PackageVisibility, RelationshipKind,
+    ConceptKind, ContentNavigation, ExecutionEngine, ExecutionMode, PackageKind, PackageVisibility,
+    RelationshipKind,
 };
 use crate::diagnostics::{Diagnostic, DiagnosticPath};
 use crate::documents::AuthoredFormat;
@@ -150,6 +151,9 @@ pub struct ContentCollection {
     pub mount: String,
     /// Explicit authored profile.
     pub format: AuthoredFormat,
+    /// Sidebar inclusion, independent of page rendering and search visibility.
+    #[serde(default, skip_serializing_if = "ContentNavigation::is_default")]
+    pub navigation: ContentNavigation,
     /// Portable declared execution settings.
     pub execution: ExecutionConfiguration,
 }

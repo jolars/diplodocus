@@ -445,6 +445,25 @@ impl Default for RustTargetConfiguration {
     }
 }
 
+/// Which authored collection pages appear in sidebar navigation.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ContentNavigation {
+    /// Include every page in the collection.
+    #[default]
+    All,
+    /// Include only the collection's root index page.
+    Index,
+    /// Omit the collection from sidebar navigation.
+    None,
+}
+
+impl ContentNavigation {
+    pub(crate) fn is_default(&self) -> bool {
+        *self == Self::All
+    }
+}
+
 /// An authored collection with independent ownership and source location.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "kebab-case")]
@@ -461,6 +480,9 @@ pub struct ContentConfiguration {
     pub mount: String,
     /// Explicit authored input profile.
     pub format: AuthoredFormat,
+    /// Sidebar inclusion; does not affect rendering, search, or sitemaps.
+    #[serde(default, skip_serializing_if = "ContentNavigation::is_default")]
+    pub navigation: ContentNavigation,
     /// Execution defaults to native knitr for Rmd and `never` for GFM and QMD.
     #[serde(default)]
     pub execution: ExecutionConfiguration,
@@ -489,6 +511,8 @@ impl<'de> Deserialize<'de> for ContentConfiguration {
             mount: String,
             format: AuthoredFormat,
             #[serde(default)]
+            navigation: ContentNavigation,
+            #[serde(default)]
             execution: Option<ExecutionDeclaration>,
         }
 
@@ -500,6 +524,7 @@ impl<'de> Deserialize<'de> for ContentConfiguration {
             path: declaration.path,
             mount: declaration.mount,
             format: declaration.format,
+            navigation: declaration.navigation,
             execution: {
                 let execution = declaration.execution.unwrap_or_default();
                 let rmd = declaration.format == AuthoredFormat::Rmd;
