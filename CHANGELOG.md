@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.7.0](https://github.com/jolars/diplodocus/compare/v0.6.0...v0.7.0) (2026-10-23)
+
+### Features
+
+- generate responsive image variants ([`fdda840`](https://github.com/jolars/diplodocus/commit/fdda84086422b3df1173f5a50ecdae264d4bde2a))
+- add intrinsic image dimensions ([`10acd4c`](https://github.com/jolars/diplodocus/commit/10acd4c2bc3d9ec2db16015dfc9878a33cdb91b9))
+- allow declaring navigation for collections ([`e80a574`](https://github.com/jolars/diplodocus/commit/e80a5740fa667e4cedf98e1969bfb9480c37ea88))
+- **web:** add icons for features ([`a001aae`](https://github.com/jolars/diplodocus/commit/a001aae86941037e53277721312605de51b7578e))
+
+### Bug Fixes
+
+- **ci:** include home in resolved content assertion ([`7d5eb67`](https://github.com/jolars/diplodocus/commit/7d5eb67e345c9f42cbcf0cb16acbf0e9a53670a3))
+- **ci:** allow icons in home action assertion ([`119d521`](https://github.com/jolars/diplodocus/commit/119d521a07928631e74d0c8f122234c1e03f8634))
+- **web:** fix transparent part of top navbar ([`025aaaa`](https://github.com/jolars/diplodocus/commit/025aaaa5a88785f898067f73c08bb62b1bf3c73a))
+- **ui:** fix misalignment in "back to top" ([`d669397`](https://github.com/jolars/diplodocus/commit/d66939794cb7de3dbdb4e4c6e70c586f98ee113b))
+
+### Performance Improvements
+
+- **tests:** reduce repeated runtime execution ([`3e26693`](https://github.com/jolars/diplodocus/commit/3e26693eebcc6074581f6214cd5e3655685e62e9))
+
 ## [0.6.0](https://github.com/jolars/diplodocus/compare/v0.5.0...v0.6.0) (2026-10-23)
 
 ### Breaking changes
