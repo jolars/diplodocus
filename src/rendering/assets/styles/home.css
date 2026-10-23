@@ -187,6 +187,17 @@ body[data-layout=home] {
   margin-top: 3rem;
 }
 
+@media (min-width: 761px) {
+  /* The fixed branding sits outside the header's box in the sidebar column. */
+  [data-layout=home] header::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 0 calc(0px - var(--outer-gutter) - var(--sidebar-width));
+    z-index: -1;
+    background: inherit;
+  }
+}
+
 @media (max-width: 760px) {
   [data-layout=home] header::after {
     display: none;

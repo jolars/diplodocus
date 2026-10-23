@@ -155,22 +155,28 @@ test("navbar links stay in place when switching sections", async ({ page }, info
   await capture(page, info, "navbar-stable-sections");
 });
 
-test("landing navbar border spans the viewport only after scrolling", async ({ page }, info) => {
+test("landing navbar stays opaque and its border spans the viewport after scrolling", async ({ page }, info) => {
   test.skip(info.project.name !== "desktop", "The upper navbar scrolls away on phones.");
+  await page.setViewportSize({ width: 1280, height: 600 });
   await page.goto("/");
   const border = () => page.locator("header").evaluate(element => {
     const style = getComputedStyle(element, "::after");
     return { opacity: style.opacity, left: style.left, right: style.right, width: parseFloat(style.width) };
   });
   await expect.poll(async () => (await border()).opacity).toBe("0");
-  const before = await page.locator("header > .brand").boundingBox();
+  const brand = page.locator("header > .brand");
+  const before = await brand.boundingBox();
+  const branding = await brand.screenshot({ animations: "disabled" });
   await page.evaluate(() => scrollTo(0, 200));
+  await expect.poll(() => page.evaluate(() => scrollY)).toBe(200);
   await expect.poll(async () => (await border()).opacity).toBe("1");
   const visible = await border();
   expect(visible.left).toBe("0px");
   expect(visible.right).toBe("0px");
   expect(visible.width).toBe(await page.evaluate(() => document.body.clientWidth));
-  expect(await page.locator("header > .brand").boundingBox()).toEqual(before);
+  expect(await brand.boundingBox()).toEqual(before);
+  expect((await brand.screenshot({ animations: "disabled" })).equals(branding),
+    "Page content stays hidden behind the navbar branding").toBe(true);
   await capture(page, info, "landing-navbar-scrolled", true, false);
   await page.evaluate(() => scrollTo(0, 0));
   await expect.poll(async () => (await border()).opacity).toBe("0");
