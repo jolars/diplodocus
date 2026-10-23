@@ -15,6 +15,6 @@ tasks:
         --config "${DIPLODOCUS_EXAMPLE_CONFIG:-examples/monorepo/diplodocus.yaml}"
         --output "${DIPLODOCUS_SITE_OUTPUT:-site/monorepo}"
         --host 127.0.0.1
-        --port "${DIPLODOCUS_SITE_PORT:-8000}"
+        --port "${DIPLODOCUS_SITE_PORT:-8001}"
         --live-reload
         {{.CLI_ARGS}}
