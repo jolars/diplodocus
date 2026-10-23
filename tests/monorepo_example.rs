@@ -121,7 +121,14 @@ fn monorepo_example_builds_with_r_and_generates_without_sources_or_runtimes() {
     assert!(index.contains("class=\"home-content\""));
     assert!(index.contains("Compare observations and predictions"));
     assert!(index.contains("href=\"overview.html\">Guide</a>"));
-    assert!(index.contains("href=\"getting-started/quick-start.html\">Get started"));
+    let get_started = index
+        .split_once("<a class=\"home-action\" href=\"getting-started/quick-start.html\">")
+        .expect("home action links to the quick start")
+        .1
+        .split_once("</a>")
+        .expect("home action has a closing tag")
+        .0;
+    assert!(get_started.contains("Get started"));
     assert!(index.contains("Comparing predictions"));
     let introduction = fs::read_to_string(site.join("overview.html")).unwrap();
     assert!(introduction.contains("data-layout=\"docs\""));
