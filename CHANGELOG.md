@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.6.0](https://github.com/jolars/diplodocus/compare/v0.5.0...v0.6.0) (2026-10-23)
+
+### Breaking changes
+
+- **config:** replace TOML configuration with YAML ([`00f9bbd`](https://github.com/jolars/diplodocus/commit/00f9bbd89987e2715e8c617585292252723f1bde))
+
+### Features
+
+- **config:** replace TOML configuration with YAML ([`00f9bbd`](https://github.com/jolars/diplodocus/commit/00f9bbd89987e2715e8c617585292252723f1bde))
+- **docs:** add a separate Reference section ([`e7838f1`](https://github.com/jolars/diplodocus/commit/e7838f1d5b8ab9597c2547e6b25f93905742f5af))
+- **web:** redesign menu for mobile phones ([`7cd7277`](https://github.com/jolars/diplodocus/commit/7cd727712b0b0b545df4bfc358e172b812bf0414))
+- **web:** improve navigation for mobile phones ([`55aba71`](https://github.com/jolars/diplodocus/commit/55aba71d966ea9ebc105966de2f50cb4e1852328))
+- **ui:** redesign navbar and landing page ([`4b1f5b0`](https://github.com/jolars/diplodocus/commit/4b1f5b0b96677f5d1efed923d96a276ff9672b71))
+
+### Bug Fixes
+
+- **ci:** update docs test and patch Vite ([`dd9f5db`](https://github.com/jolars/diplodocus/commit/dd9f5db7154e61f3d37da3b5ebcf12b47afa6220))
+
 ## [0.5.0](https://github.com/jolars/diplodocus/compare/v0.4.0...v0.5.0) (2026-10-20)
 
 ### Features
