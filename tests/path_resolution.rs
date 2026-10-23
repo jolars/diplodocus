@@ -147,7 +147,7 @@ fn resolves_the_authored_only_project_configuration() {
             .iter()
             .map(|content| content.id.as_str())
             .collect::<Vec<_>>(),
-        ["guide", "reference", "examples"]
+        ["home", "guide", "reference", "examples"]
     );
 }
 
