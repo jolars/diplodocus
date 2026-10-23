@@ -55,6 +55,12 @@ repositories:
     path: "."
     url: "https://github.com/jolars/diplodocus"
 content:
+  - id: "home"
+    owner: "project"
+    repository: "diplodocus"
+    path: "docs/home"
+    mount: ""
+    format: "gfm"
   - id: "guide"
     owner: "project"
     repository: "diplodocus"

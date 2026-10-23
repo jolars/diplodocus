@@ -49,7 +49,7 @@ fn monorepo_example_builds_with_r_and_generates_without_sources_or_runtimes() {
     let snapshot = Snapshot::load(&database).unwrap();
     assert_eq!(snapshot.workspace().repositories.len(), 1);
     assert_eq!(snapshot.workspace().packages.len(), 4);
-    assert_eq!(snapshot.workspace().pages.len(), 15);
+    assert_eq!(snapshot.workspace().pages.len(), 16);
     assert_eq!(snapshot.workspace().concepts.len(), 6);
     assert_eq!(snapshot.assets().len(), 4);
     assert_eq!(
@@ -116,7 +116,10 @@ fn monorepo_example_builds_with_r_and_generates_without_sources_or_runtimes() {
     }
     let index = fs::read_to_string(site.join("index.html")).unwrap();
     assert!(index.contains("data-layout=\"home\""));
-    assert!(index.contains("<h1>Small metrics.\nClearer predictions.</h1>"));
+    assert!(index.contains(">Small metrics.\nClearer predictions.</h1>"));
+    assert_eq!(index.matches("<h1").count(), 1);
+    assert!(index.contains("class=\"home-content\""));
+    assert!(index.contains("Compare observations and predictions"));
     assert!(index.contains("href=\"overview.html\">Guide</a>"));
     assert!(index.contains("href=\"getting-started/quick-start.html\">Get started"));
     assert!(index.contains("Comparing predictions"));

@@ -24,6 +24,7 @@ The navbar's home link displays `docs/assets/logo.svg` before the site title.
 The `[presentation.logo]` table selects this image from the `tinystats` repository.
 The landing page reuses it in the hero. `[presentation.home]` configures the
 heading, introduction, actions, feature cards, and Guide destination.
+Edit `docs/index.md` to add Markdown content below the feature cards.
 
 The R package has a landing page built from its README and DESCRIPTION. Package
 information links to release notes, authors and citation information, the
@@ -35,6 +36,7 @@ Its R chunks compute scores and a table, and draw a residual plot.
 monorepo/
   diplodocus.yaml
   docs/
+    index.md
     overview.md
     getting-started/
       index.md
@@ -163,9 +165,9 @@ Copy this directory into your project and edit `diplodocus.yaml`. All packages
 refer to the same repository declaration, whose path is `.`. Package paths are
 relative to that repository, and extraction targets are relative to each
 package. Shared pages mount at the site root, with `docs/overview.md` supplying
-the Guide overview and the generated landing page at `index.html`. Package
-references live under `packages/python/`, `packages/r/`, `packages/julia/`, and
-`packages/rust/`. The Python-owned collection mounts its
+the Guide overview and `docs/index.md` adding content to the landing page at
+`index.html`. Package references live under `packages/python/`, `packages/r/`,
+`packages/julia/`, and `packages/rust/`. The Python-owned collection mounts its
 guide at `packages/python/guides/`. The R overview lives at `packages/r/`, with
 `news.html`, `authors.html`, `license.html`, and `community.html` beneath it.
 The executable vignette lives at `packages/r/vignettes/evaluating-predictions.html`.

@@ -116,8 +116,13 @@ for (const [path, title, name] of [
     await page.goto(path);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(title);
     const navigation = page.getByRole("navigation", { name: "Documentation" });
-    if (name === "home") await expect(navigation.locator(".nav-disclosure")).not.toBeVisible();
-    else await expect(navigation).toBeVisible();
+    if (name === "home") {
+      await expect(navigation.locator(".nav-disclosure")).not.toBeVisible();
+      const features = (await page.locator(".home-features").boundingBox())!;
+      const content = (await page.locator(".home-content").boundingBox())!;
+      expect(content.x).toBeCloseTo(features.x, 1);
+      expect(content.width).toBeCloseTo(features.width, 1);
+    } else await expect(navigation).toBeVisible();
     await fitsViewport(page);
     if (name === "python-guide") {
       await openNavigation(page, info);
