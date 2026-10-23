@@ -1,8 +1,8 @@
 # Authored pages
 
-Declare each source directory as a `[[content]]` collection in [workspace
-configuration](configuration.md). Set `format = "gfm"` for `.md` files or
-`format = "qmd"` for `.qmd` files, or `format = "rmd"` for R Markdown articles. A collection's `mount` determines its URL
+Declare each source directory as a collection in `content` in [workspace
+configuration](configuration.md). Set `format: "gfm"` for `.md` files or
+`format: "qmd"` for `.qmd` files, or `format: "rmd"` for R Markdown articles. A collection's `mount` determines its URL
 prefix; an empty mount places its `index.md` at the site root. The `owner`
 determines whether pages appear in project or package navigation.
 
@@ -100,7 +100,7 @@ security](execution.md) before enabling them.
 
 Diplodocus discovers `.Rmd` and `.rmd` files under an R package's `vignettes/`
 directory and mounts them beneath `vignettes`. To choose a different mount,
-declare a package-owned collection with `format = "rmd"`. Explicit collections
+declare a package-owned collection with `format: "rmd"`. Explicit collections
 replace automatic discovery for the same source files.
 
 R Markdown uses native knitr execution with no kernel or execution opt-in.

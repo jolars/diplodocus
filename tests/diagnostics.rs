@@ -27,8 +27,8 @@ fn repository_source(repository: &str, value: &str) -> DiagnosticSource {
 #[test]
 fn context_serialization_preserves_existing_spans() {
     let source = "---\nexecute: true\njupyter: python3\n---\n";
-    let collection = toml::from_str(
-        "id = 'guide'\nowner = 'project'\nrepository = 'docs'\npath = 'guide'\nmount = 'guide'\nformat = 'qmd'\n",
+    let collection = serde_saphyr::from_str(
+        "id: \"guide\"\nowner: \"project\"\nrepository: \"docs\"\npath: \"guide\"\nmount: \"guide\"\nformat: \"qmd\"\n",
     )
     .unwrap();
     let parsed = parse_collection_document(source, &collection).unwrap();
@@ -171,7 +171,7 @@ fn ordering_has_explicit_tiebreakers_and_places_missing_locations_last() {
     assert!(later_repository < unknown_source);
     let mut configuration = positioned.clone();
     configuration.source = Some(DiagnosticSource::Configuration {
-        path: path("diplodocus.toml"),
+        path: path("diplodocus.yaml"),
     });
     assert!(configuration < positioned);
 
@@ -211,7 +211,7 @@ fn entity_serialization_and_order_preserve_identity_scopes() {
     let entities = [
         json!({"kind": "concept", "id": "fit"}),
         json!({"kind": "configuration"}),
-        json!({"kind": "configuration-field", "path": "package[0].slug"}),
+        json!({"kind": "configuration-field", "path": "packages[0].slug"}),
         json!({"kind": "content", "id": "guide"}),
         json!({"kind": "document", "collection": "guide", "path": "index.qmd"}),
         json!({"kind": "item", "package": "pyfoo", "id": "fit"}),
@@ -237,15 +237,15 @@ fn configuration_errors_keep_portable_context_and_available_spans() {
     let first = support::TestWorkspace::new();
     let second = support::TestWorkspace::new();
     for workspace in [&first, &second] {
-        workspace.write("diplodocus.toml", "[project]\nname = 42\n");
+        workspace.write("diplodocus.yaml", "project:\n  name: 42\n");
     }
     let diagnostics = [&first, &second].map(|workspace| {
-        let error = load_configuration(workspace.path().join("diplodocus.toml")).unwrap_err();
+        let error = load_configuration(workspace.path().join("diplodocus.yaml")).unwrap_err();
         let ConfigurationError::Parse { source, .. } = &error else {
             panic!("parse error");
         };
-        let diagnostic = error.to_diagnostic(path("diplodocus.toml"));
-        let span = source.span().unwrap();
+        let diagnostic = error.to_diagnostic(path("diplodocus.yaml"));
+        let span = support::configuration_error_span(source).unwrap();
         assert_eq!(
             diagnostic.span,
             Some(SourceSpan {
@@ -262,7 +262,7 @@ fn configuration_errors_keep_portable_context_and_available_spans() {
         assert_eq!(
             diagnostic.source,
             Some(DiagnosticSource::Configuration {
-                path: path("diplodocus.toml")
+                path: path("diplodocus.yaml")
             })
         );
         assert!(
@@ -276,8 +276,8 @@ fn configuration_errors_keep_portable_context_and_available_spans() {
         serde_json::to_vec(&diagnostics[0]).unwrap(),
         serde_json::to_vec(&diagnostics[1]).unwrap()
     );
-    let error = load_configuration(first.path().join("missing.toml")).unwrap_err();
-    let diagnostic = error.to_diagnostic(path("missing.toml"));
+    let error = load_configuration(first.path().join("missing.yaml")).unwrap_err();
+    let diagnostic = error.to_diagnostic(path("missing.yaml"));
     assert_eq!(diagnostic.code, DiagnosticCode::ConfigurationReadFailed);
     assert!(diagnostic.span.is_none());
     assert!(
@@ -293,18 +293,18 @@ fn path_resolution_diagnostics_do_not_serialize_runtime_paths() {
     for _ in 0..2 {
         let workspace = support::TestWorkspace::new();
         let configuration = parse_configuration(
-            "[project]\nname = 'Docs'\n[[repository]]\nid = 'docs'\npath = 'missing'\n",
+            "project:\n  name: \"Docs\"\nrepositories:\n  - id: \"docs\"\n    path: \"missing\"\n",
         )
         .unwrap();
         let error =
-            resolve_workspace_paths(workspace.path().join("diplodocus.toml"), &configuration)
+            resolve_workspace_paths(workspace.path().join("diplodocus.yaml"), &configuration)
                 .unwrap_err();
-        let diagnostic = error.to_diagnostic(path("diplodocus.toml"));
+        let diagnostic = error.to_diagnostic(path("diplodocus.yaml"));
         assert_eq!(diagnostic.code, DiagnosticCode::SourcePathIo);
         assert_eq!(
             diagnostic.related_entity,
             Some(DiagnosticEntity::ConfigurationField {
-                path: "repository[0] (`docs`).path".to_owned()
+                path: "repositories[0] (`docs`).path".to_owned()
             })
         );
         assert!(diagnostic.span.is_none());
@@ -413,10 +413,10 @@ fn configuration_error_conversion_omits_even_custom_io_paths() {
             .unwrap()
             .contains("/private")
     );
-    let invalid: toml::de::Error = serde::de::Error::custom("invalid configuration");
+    let invalid: serde_saphyr::Error = serde::de::Error::custom("invalid configuration");
     let diagnostic = ConfigurationError::Parse {
         path: "/private/checkout/config.toml".into(),
-        source: invalid,
+        source: Box::new(invalid),
     }
     .to_diagnostic(path("config.toml"));
     assert!(diagnostic.span.is_none());
@@ -468,7 +468,7 @@ fn path_failures_have_distinct_codes_and_portable_messages() {
     ] {
         let diagnostic = PathResolutionError {
             configuration_path: "/private/checkout/config.toml".into(),
-            field: "package[0].path".to_owned(),
+            field: "packages[0].path".to_owned(),
             kind,
         }
         .to_diagnostic(path("config.toml"));
@@ -480,4 +480,25 @@ fn path_failures_have_distinct_codes_and_portable_messages() {
                 .contains("/private")
         );
     }
+}
+
+#[test]
+fn yaml_diagnostics_use_utf8_byte_spans_after_unicode_and_crlf() {
+    let text = "# Résumé 🦕\r\nproject:\r\n  name: 42\r\n";
+    let source = parse_configuration(text).unwrap_err();
+    let error = ConfigurationError::Parse {
+        path: "local/config.yaml".into(),
+        source,
+    };
+    let diagnostic = error.to_diagnostic(path("config.yaml"));
+    let start = text.find("42").unwrap();
+    assert_eq!(
+        diagnostic.span,
+        Some(SourceSpan {
+            start,
+            end: start + 2
+        })
+    );
+    assert_eq!(diagnostic.code, DiagnosticCode::InvalidConfiguration);
+    assert!(!diagnostic.message.contains("local/config.yaml"));
 }

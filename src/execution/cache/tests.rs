@@ -34,7 +34,7 @@ fn fixture() -> (
     );
     rehash(&mut value);
     let manifest = canonical(value);
-    let config = toml::from_str("id='guide'\nowner='project'\nrepository='python'\npath='docs'\nmount='guide'\nformat='qmd'\n[execution]\nmode='execute'\nengine='jupyter'\nkernel='python3'\n").unwrap();
+    let config = serde_saphyr::from_str("id: \"guide\"\nowner: \"project\"\nrepository: \"python\"\npath: \"docs\"\nmount: \"guide\"\nformat: \"qmd\"\nexecution:\n  mode: \"execute\"\n  engine: \"jupyter\"\n  kernel: \"python3\"\n").unwrap();
     let preparation = crate::documents::prepare_collection_document(
         std::str::from_utf8(&source).unwrap(),
         &config,

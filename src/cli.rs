@@ -27,7 +27,7 @@ pub(super) enum Command {
 #[derive(Debug, Args)]
 pub(super) struct BuildArgs {
     /// Path to the workspace configuration file.
-    #[arg(long, value_name = "PATH", default_value = "./diplodocus.toml")]
+    #[arg(long, value_name = "PATH", default_value = "./diplodocus.yaml")]
     pub(super) config: PathBuf,
     /// Directory in which to write the generated site.
     #[arg(long, value_name = "PATH", default_value = "./site")]
@@ -37,14 +37,14 @@ pub(super) struct BuildArgs {
 #[derive(Debug, Args)]
 pub(super) struct CheckArgs {
     /// Path to the workspace configuration file.
-    #[arg(long, value_name = "PATH", default_value = "./diplodocus.toml")]
+    #[arg(long, value_name = "PATH", default_value = "./diplodocus.yaml")]
     pub(super) config: PathBuf,
 }
 
 #[derive(Debug, Args)]
 pub(super) struct ExtractArgs {
     /// Path to the workspace configuration file.
-    #[arg(long, value_name = "PATH", default_value = "./diplodocus.toml")]
+    #[arg(long, value_name = "PATH", default_value = "./diplodocus.yaml")]
     pub(super) config: PathBuf,
     /// Snapshot destination (defaults to .diplodocus/documentation.sqlite beside the configuration).
     #[arg(long, value_name = "PATH")]
@@ -79,7 +79,7 @@ pub(super) enum GenerateFormat {
 #[derive(Debug, Args)]
 pub(super) struct ServeArgs {
     /// Path to the workspace configuration file.
-    #[arg(long, value_name = "PATH", default_value = "./diplodocus.toml")]
+    #[arg(long, value_name = "PATH", default_value = "./diplodocus.yaml")]
     pub(super) config: PathBuf,
     /// Directory in which to write the generated site.
     #[arg(long, value_name = "PATH", default_value = "./site")]
@@ -105,7 +105,7 @@ mod tests {
         let Command::Build(args) = cli.command else {
             panic!("expected the build command");
         };
-        assert_eq!(args.config, PathBuf::from("./diplodocus.toml"));
+        assert_eq!(args.config, PathBuf::from("./diplodocus.yaml"));
         assert_eq!(args.output, PathBuf::from("./site"));
     }
 
@@ -115,7 +115,18 @@ mod tests {
         let Command::Check(args) = cli.command else {
             panic!("expected the check command");
         };
-        assert_eq!(args.config, PathBuf::from("./diplodocus.toml"));
+        assert_eq!(args.config, PathBuf::from("./diplodocus.yaml"));
+    }
+
+    #[test]
+    fn extract_defaults_match_the_command_contract() {
+        let cli = Cli::try_parse_from(["diplodocus", "extract"]).unwrap();
+        let Command::Extract(args) = cli.command else {
+            panic!("expected the extract command");
+        };
+        assert_eq!(args.config, PathBuf::from("./diplodocus.yaml"));
+        assert!(args.output.is_none());
+        assert!(!args.watch);
     }
 
     #[test]
@@ -124,7 +135,7 @@ mod tests {
         let Command::Serve(args) = cli.command else {
             panic!("expected the serve command");
         };
-        assert_eq!(args.config, PathBuf::from("./diplodocus.toml"));
+        assert_eq!(args.config, PathBuf::from("./diplodocus.yaml"));
         assert_eq!(args.output, PathBuf::from("./site"));
         assert_eq!(args.host, IpAddr::from([127, 0, 0, 1]));
         assert_eq!(args.port, 8000);

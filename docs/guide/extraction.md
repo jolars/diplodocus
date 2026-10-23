@@ -19,25 +19,27 @@ methods, and implementations under stable anchors.
 
 Declare one explicit library entry file:
 
-```toml
-[[package]]
-id = "eunoia"
-name = "Eunoia"
-slug = "rust"
-ecosystem = "rust"
-repository = "eunoia"
-path = "crates/eunoia"
-metadata-path = "Cargo.toml"
-targets = [
-  { id = "api", extractor = "rust", path = "src/lib.rs", role = "public-api" },
-]
+```yaml
+packages:
+  - id: "eunoia"
+    name: "Eunoia"
+    slug: "rust"
+    ecosystem: "rust"
+    repository: "eunoia"
+    path: "crates/eunoia"
+    metadata-path: "Cargo.toml"
+    targets:
+      - id: "api"
+        extractor: "rust"
+        path: "src/lib.rs"
+        role: "public-api"
 ```
 
 Cargo supplies workspace-inherited metadata. Targets must match the library
 entry declared by Cargo. Rust extraction currently uses the host target; binary
 targets and cross-compilation are unsupported. Cargo's default features remain
-enabled unless the target supplies `rust = { default-features = false }`.
-Use `rust = { features = ["parallel"] }` to select additional features. Features
+enabled unless the target supplies `rust: { default-features: false }`.
+Use `rust: { features: ["parallel"] }` to select additional features. Features
 apply equally to API extraction and doctests; all features are never enabled
 implicitly.
 
@@ -243,9 +245,9 @@ in the source repository.
 ## Julia
 
 Julia extraction reads `Project.toml`, an explicit `.jl` entry file, and its
-unconditional literal includes. Declare `ecosystem = "julia"`,
-`metadata-path = "Project.toml"`, and a target with `extractor = "julia"` and
-`path = "src/MyPackage.jl"`. Source directories are not valid Julia targets.
+unconditional literal includes. Declare `ecosystem: "julia"`,
+`metadata-path: "Project.toml"`, and a target with `extractor: "julia"` and
+`path: "src/MyPackage.jl"`. Source directories are not valid Julia targets.
 
 Exported, `public`, and documented declarations form the maintained surface.
 Functions have a family page that includes method prose and separate pages for

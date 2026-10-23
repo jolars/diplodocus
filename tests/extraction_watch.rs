@@ -18,7 +18,7 @@ async fn publication(receiver: &mut mpsc::UnboundedReceiver<String>) -> String {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn watches_sibling_packages_preserves_failures_and_removes_deleted_items() {
     let root = support::TestWorkspace::new();
-    root.write("docs/diplodocus.toml", "[project]\nname='Watch'\n[[repository]]\nid='package'\npath='../package'\n[[package]]\nid='example'\nname='Example'\nslug='example'\necosystem='python'\nrepository='package'\npath='.'\nmetadata-path='pyproject.toml'\ntargets=[{id='api', extractor='python', path='src/example', role='public-api'}]\n");
+    root.write("docs/diplodocus.yaml", "project:\n  name: \"Watch\"\nrepositories:\n  - id: \"package\"\n    path: \"../package\"\npackages:\n  - id: \"example\"\n    name: \"Example\"\n    slug: \"example\"\n    ecosystem: \"python\"\n    repository: \"package\"\n    path: \".\"\n    metadata-path: \"pyproject.toml\"\n    targets:\n      - id: \"api\"\n        extractor: \"python\"\n        path: \"src/example\"\n        role: \"public-api\"\n");
     root.write(
         "package/pyproject.toml",
         "[project]\nname='example'\nversion='1.0.0'\n",
@@ -31,7 +31,7 @@ async fn watches_sibling_packages_preserves_failures_and_removes_deleted_items()
     let expected_output = output.clone();
     let task = tokio::spawn(watch_extract_with(
         ExtractOptions {
-            config: root.path().join("docs/diplodocus.toml"),
+            config: root.path().join("docs/diplodocus.yaml"),
             output: Some(output.clone()),
         },
         ExecutionDeadlines::default(),
@@ -74,7 +74,7 @@ async fn watches_sibling_packages_preserves_failures_and_removes_deleted_items()
     assert!(!complete.contains("Newly added API."));
 
     let bytes = std::fs::read(&output).unwrap();
-    root.write("docs/diplodocus.toml", "[invalid TOML");
+    root.write("docs/diplodocus.yaml", "project: [");
     assert!(
         tokio::time::timeout(Duration::from_millis(900), publications.recv())
             .await
@@ -82,7 +82,7 @@ async fn watches_sibling_packages_preserves_failures_and_removes_deleted_items()
     );
     assert_eq!(std::fs::read(&output).unwrap(), bytes);
 
-    root.write("docs/diplodocus.toml", "[project]\nname='Recovered'\n[[repository]]\nid='package'\npath='../package'\n[[package]]\nid='example'\nname='Example'\nslug='example'\necosystem='python'\nrepository='package'\npath='.'\nmetadata-path='pyproject.toml'\ntargets=[{id='api', extractor='python', path='src/example', role='public-api'}]\n");
+    root.write("docs/diplodocus.yaml", "project:\n  name: \"Recovered\"\nrepositories:\n  - id: \"package\"\n    path: \"../package\"\npackages:\n  - id: \"example\"\n    name: \"Example\"\n    slug: \"example\"\n    ecosystem: \"python\"\n    repository: \"package\"\n    path: \".\"\n    metadata-path: \"pyproject.toml\"\n    targets:\n      - id: \"api\"\n        extractor: \"python\"\n        path: \"src/example\"\n        role: \"public-api\"\n");
     assert!(publication(&mut publications).await.contains("Recovered"));
     root.write("docs/guide.md", "# Host-only guide\n");
     root.write("docs/.diplodocus/ignored.py", "generated artifact");
@@ -105,7 +105,7 @@ async fn initial_failure_returns_without_publishing() {
     let root = support::TestWorkspace::new();
     let result = watch_extract_with(
         ExtractOptions {
-            config: root.path().join("missing.toml"),
+            config: root.path().join("missing.yaml"),
             output: Some(PathBuf::from("unused.sqlite")),
         },
         ExecutionDeadlines::default(),

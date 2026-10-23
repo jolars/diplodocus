@@ -5,7 +5,7 @@ use diplodocus::snapshots::Snapshot;
 
 fn static_workspace() -> support::TestWorkspace {
     let root = support::TestWorkspace::new();
-    root.write("diplodocus.toml", "[project]\nname='Commands'\n[[repository]]\nid='docs'\npath='.'\n[[content]]\nid='guide'\nowner='project'\nrepository='docs'\npath='docs'\nmount=''\nformat='qmd'\n");
+    root.write("diplodocus.yaml", "project:\n  name: \"Commands\"\nrepositories:\n  - id: \"docs\"\n    path: \".\"\ncontent:\n  - id: \"guide\"\n    owner: \"project\"\n    repository: \"docs\"\n    path: \"docs\"\n    mount: \"\"\n    format: \"qmd\"\n");
     root.write(
         "docs/index.qmd",
         "# Welcome\n\n```{python}\n#| echo: false\nraise RuntimeError('must never execute')\n```\n",
@@ -16,7 +16,7 @@ fn static_workspace() -> support::TestWorkspace {
 #[test]
 fn build_matches_separate_stages_and_portable_generation() {
     let root = static_workspace();
-    let config = root.path().join("diplodocus.toml");
+    let config = root.path().join("diplodocus.yaml");
     let output = tempfile::tempdir().unwrap();
     let built = output.path().join("built");
     commands::build(BuildOptions {
@@ -56,7 +56,7 @@ fn build_matches_separate_stages_and_portable_generation() {
 #[test]
 fn failure_preserves_published_snapshot_and_site_and_guards_inputs() {
     let root = static_workspace();
-    let config = root.path().join("diplodocus.toml");
+    let config = root.path().join("diplodocus.yaml");
     let output = root.path().join("site");
     let build = || {
         commands::build(BuildOptions {
@@ -102,13 +102,13 @@ fn failure_preserves_published_snapshot_and_site_and_guards_inputs() {
         .is_err()
     );
     assert_eq!(std::fs::read(&database).unwrap(), snapshot);
-    let valid_config = root.read("diplodocus.toml");
-    root.write("diplodocus.toml", format!("{valid_config}\n[[content]]\nid='duplicate-route'\nowner='project'\nrepository='docs'\npath='docs'\nmount=''\nformat='qmd'\n"));
+    let valid_config = root.read("diplodocus.yaml");
+    root.write("diplodocus.yaml", support::merge_configurations(&valid_config, "content:\n  - id: \"duplicate-route\"\n    owner: \"project\"\n    repository: \"docs\"\n    path: \"docs\"\n    mount: \"\"\n    format: \"qmd\"\n"));
     assert!(build().is_err());
     assert_ne!(std::fs::read(&database).unwrap(), snapshot);
     assert!(Snapshot::load(&database).is_ok());
     assert_eq!(std::fs::read(output.join("index.html")).unwrap(), html);
-    root.write("diplodocus.toml", valid_config);
+    root.write("diplodocus.yaml", valid_config);
     let occupied = root.path().join("occupied");
     root.write("occupied/sentinel", "keep");
     assert!(
@@ -129,7 +129,7 @@ fn failure_preserves_published_snapshot_and_site_and_guards_inputs() {
 #[test]
 fn output_cannot_replace_or_enter_the_execution_cache() {
     let root = static_workspace();
-    let config = root.path().join("diplodocus.toml");
+    let config = root.path().join("diplodocus.yaml");
     for relative in [
         ".diplodocus/cache/execution",
         ".diplodocus/cache/execution/site",
@@ -158,7 +158,7 @@ fn disabled_execution_does_not_inspect_the_cache() {
     let root = static_workspace();
     root.write(".diplodocus/cache", "unusable cache sentinel");
     commands::build(BuildOptions {
-        config: root.path().join("diplodocus.toml"),
+        config: root.path().join("diplodocus.yaml"),
         output: root.path().join("site"),
     })
     .unwrap();

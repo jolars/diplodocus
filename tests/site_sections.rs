@@ -9,11 +9,9 @@ use diplodocus::validation::resolve_workspace;
 fn workspace(style: &str, sections: &str) -> support::TestWorkspace {
     let root = support::TestWorkspace::new();
     root.write(
-        "diplodocus.toml",
+        "diplodocus.yaml",
         format!(
-            "[project]\nname='Sections'\n[presentation]\ncanonical-url-style='{style}'\n{sections}\n\
-             [[repository]]\nid='docs'\npath='.'\n\
-             [[content]]\nid='docs'\nowner='project'\nrepository='docs'\npath='docs'\nmount=''\nformat='gfm'\n"
+            "project:\n  name: \"Sections\"\npresentation:\n  canonical-url-style: \"{style}\"\n{sections}\nrepositories:\n  - id: \"docs\"\n    path: \".\"\ncontent:\n  - id: \"docs\"\n    owner: \"project\"\n    repository: \"docs\"\n    path: \"docs\"\n    mount: \"\"\n    format: \"gfm\"\n"
         ),
     );
     root.write(
@@ -38,9 +36,9 @@ fn project_sections_keep_their_navbar_and_sidebar_after_snapshot_round_trip() {
     for style in ["file", "clean"] {
         let root = workspace(
             style,
-            "[[presentation.sections]]\nlabel='Reference & tools'\npath='reference/index.html'",
+            "  sections:\n    - label: \"Reference & tools\"\n      path: \"reference/index.html\"",
         );
-        let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+        let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
         let snapshot =
             Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
         let path = root.path().join("snapshot.sqlite");
@@ -82,14 +80,14 @@ fn project_sections_keep_their_navbar_and_sidebar_after_snapshot_round_trip() {
 #[test]
 fn project_sections_reject_missing_overlapping_and_non_index_destinations() {
     for sections in [
-        "[[presentation.sections]]\nlabel='Reference'\npath='missing/index.html'",
-        "[[presentation.sections]]\nlabel='Reference'\npath='reference/cli.html'",
-        "[[presentation.sections]]\nlabel='Guide'\npath='index.html'",
-        "[[presentation.sections]]\nlabel=' '\npath='reference/index.html'",
-        "[[presentation.sections]]\nlabel='Reference'\npath='reference/index.html'\n[[presentation.sections]]\nlabel='Nested'\npath='reference/nested/index.html'",
+        "  sections:\n    - label: \"Reference\"\n      path: \"missing/index.html\"",
+        "  sections:\n    - label: \"Reference\"\n      path: \"reference/cli.html\"",
+        "  sections:\n    - label: \"Guide\"\n      path: \"index.html\"",
+        "  sections:\n    - label: \" \"\n      path: \"reference/index.html\"",
+        "  sections:\n    - label: \"Reference\"\n      path: \"reference/index.html\"\n    - label: \"Nested\"\n      path: \"reference/nested/index.html\"",
     ] {
         let root = workspace("file", sections);
-        let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+        let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
         let snapshot =
             Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
         assert!(

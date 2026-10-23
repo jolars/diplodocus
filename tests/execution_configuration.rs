@@ -10,24 +10,31 @@ mod support;
 
 fn configuration(format: &str, execution: &str) -> String {
     format!(
-        "[project]\nname = 'Execution tests'\n\n\
-         [[repository]]\nid = 'source'\npath = '../unavailable-checkout'\n\n\
-         [[content]]\nid = 'examples'\nowner = 'project'\nrepository = 'source'\n\
-         path = 'docs'\nmount = 'examples'\nformat = '{format}'\n{execution}"
+        "project:\n  name: \"Execution tests\"\nrepositories:\n  - id: \"source\"\n    path: \"../unavailable-checkout\"\ncontent:\n  - id: \"examples\"\n    owner: \"project\"\n    repository: \"source\"\n    path: \"docs\"\n    mount: \"examples\"\n    format: \"{format}\"\n{execution}"
     )
 }
 
 fn execution(settings: &str) -> String {
-    format!("[content.execution]\n{settings}")
+    if settings.is_empty() {
+        "    execution: {}\n".to_owned()
+    } else {
+        format!(
+            "    execution:\n{}",
+            settings
+                .lines()
+                .map(|line| format!("      {line}\n"))
+                .collect::<String>()
+        )
+    }
 }
 
 fn assert_rejected(source: &str, message: &str) {
     let error = parse_configuration(source).unwrap_err();
-    assert!(error.message().contains(message), "{error}");
-    assert!(error.message().contains("examples"), "{error}");
-    let span = error.span().expect("configuration source range");
+    assert!(error.to_string().contains(message), "{error}");
+    assert!(error.to_string().contains("examples"), "{error}");
+    let span = support::configuration_error_span(&error).expect("configuration source range");
     assert!(
-        span.start < span.end && span.end <= source.len(),
+        span.start <= span.end && span.end <= source.len(),
         "{span:?}"
     );
 }
@@ -37,11 +44,11 @@ fn every_collection_requires_a_supported_explicit_format() {
     for format in ["gfm", "qmd"] {
         parse_configuration(&configuration(format, "")).unwrap();
     }
-    let missing = configuration("qmd", "").replace("format = 'qmd'\n", "");
+    let missing = configuration("qmd", "").replace("format: \"qmd\"\n", "");
     assert!(
         parse_configuration(&missing)
             .unwrap_err()
-            .message()
+            .to_string()
             .contains("missing field `format`")
     );
     for format in ["", "markdown", "quarto", "GFM", "QMD"] {
@@ -57,9 +64,9 @@ fn omitted_empty_and_explicit_never_settings_have_the_same_serialized_defaults()
     for format in ["gfm", "qmd"] {
         let sources = [
             "",
-            "[content.execution]\n",
-            "[content.execution]\nmode = 'never'\n",
-            "[content.execution]\nmode = 'never'\ndeclared-environment-inputs = []\n",
+            "    execution: {}\n",
+            "    execution:\n      mode: never\n",
+            "    execution:\n      mode: never\n      declared-environment-inputs: []\n",
         ];
         let expected = parse_configuration(&configuration(format, "")).unwrap();
         for settings in sources {
@@ -70,11 +77,11 @@ fn omitted_empty_and_explicit_never_settings_have_the_same_serialized_defaults()
             assert!(content.execution.engine.is_none());
             assert!(content.execution.kernel.is_none());
             assert!(content.execution.declared_environment_inputs.is_empty());
-            let serialized = toml::to_string(&config).unwrap();
-            let value: toml::Value = toml::from_str(&serialized).unwrap();
+            let serialized = serde_saphyr::to_string(&config).unwrap();
+            let value: serde_json::Value = serde_saphyr::from_str(&serialized).unwrap();
             assert_eq!(
                 value["content"][0]["execution"],
-                toml::Value::Table(toml::from_str("mode = 'never'").unwrap())
+                serde_json::Value::Object(serde_saphyr::from_str("mode: \"never\"").unwrap())
             );
             assert_eq!(parse_configuration(&serialized).unwrap(), expected);
         }
@@ -84,25 +91,25 @@ fn omitted_empty_and_explicit_never_settings_have_the_same_serialized_defaults()
 #[test]
 fn execute_requires_both_an_explicit_jupyter_engine_and_kernel() {
     for (settings, message) in [
-        ("mode = 'execute'\n", "requires `engine = \"jupyter\"`"),
+        ("mode: \"execute\"\n", "requires `engine: jupyter`"),
         (
-            "mode = 'execute'\nkernel = 'python3'\n",
-            "requires `engine = \"jupyter\"`",
+            "mode: \"execute\"\nkernel: \"python3\"\n",
+            "requires `engine: jupyter`",
         ),
         (
-            "mode = 'execute'\nengine = 'jupyter'\n",
+            "mode: \"execute\"\nengine: \"jupyter\"\n",
             "requires an explicit kernel",
         ),
     ] {
         assert_rejected(&configuration("qmd", &execution(settings)), message);
     }
     for (key, value) in [("mode", "auto"), ("engine", "knitr"), ("engine", "Jupyter")] {
-        let settings = "mode = 'execute'\nengine = 'jupyter'\nkernel = 'python3'\n".replace(
+        let settings = "mode: \"execute\"\nengine: \"jupyter\"\nkernel: \"python3\"\n".replace(
             &format!(
-                "{key} = '{}'",
+                "{key}: \"{}\"",
                 if key == "mode" { "execute" } else { "jupyter" }
             ),
-            &format!("{key} = '{value}'"),
+            &format!("{key}: \"{value}\""),
         );
         assert!(parse_configuration(&configuration("qmd", &execution(&settings))).is_err());
     }
@@ -110,19 +117,19 @@ fn execute_requires_both_an_explicit_jupyter_engine_and_kernel() {
 
 #[test]
 fn never_rejects_execution_settings_even_when_mode_is_omitted() {
-    for mode in ["", "mode = 'never'\n"] {
+    for mode in ["", "mode: \"never\"\n"] {
         for (setting, field) in [
-            ("engine = 'jupyter'\n", "engine"),
-            ("kernel = 'python3'\n", "kernel"),
+            ("engine: \"jupyter\"\n", "engine"),
+            ("kernel: \"python3\"\n", "kernel"),
             (
-                "declared-environment-inputs = ['uv.lock']\n",
+                "declared-environment-inputs: [\"uv.lock\"]\n",
                 "declared-environment-inputs",
             ),
         ] {
             for format in ["gfm", "qmd"] {
                 assert_rejected(
                     &configuration(format, &execution(&format!("{mode}{setting}"))),
-                    &format!("`{field}` requires `mode = \"execute\"`"),
+                    &format!("`{field}` requires `mode: execute`"),
                 );
             }
         }
@@ -134,9 +141,9 @@ fn gfm_cannot_select_execute_even_with_a_complete_jupyter_configuration() {
     assert_rejected(
         &configuration(
             "gfm",
-            &execution("mode = 'execute'\nengine = 'jupyter'\nkernel = 'python3'\n"),
+            &execution("mode: \"execute\"\nengine: \"jupyter\"\nkernel: \"python3\"\n"),
         ),
-        "requires `format = \"qmd\"`",
+        "requires `format: qmd`",
     );
 }
 
@@ -154,13 +161,13 @@ fn kernel_selectors_follow_the_contract_without_requiring_an_installed_kernel() 
         let source = configuration(
             "qmd",
             &execution(&format!(
-                "mode = 'execute'\nengine = 'jupyter'\nkernel = '{kernel}'\n"
+                "mode: \"execute\"\nengine: \"jupyter\"\nkernel: \"{kernel}\"\n"
             )),
         );
         let config = parse_configuration(&source).unwrap();
         assert_eq!(config.content[0].execution.kernel.as_deref(), Some(kernel));
         assert_eq!(
-            parse_configuration(&toml::to_string(&config).unwrap()).unwrap(),
+            parse_configuration(&serde_saphyr::to_string(&config).unwrap()).unwrap(),
             config
         );
     }
@@ -179,11 +186,11 @@ fn kernel_selectors_follow_the_contract_without_requiring_an_installed_kernel() 
         "python$3",
         "python:3",
     ] {
-        let kernel = toml::Value::String(kernel.to_owned());
+        let kernel = serde_json::Value::String(kernel.to_owned());
         let source = configuration(
             "qmd",
             &execution(&format!(
-                "mode = 'execute'\nengine = 'jupyter'\nkernel = {kernel}\n"
+                "mode: \"execute\"\nengine: \"jupyter\"\nkernel: {kernel}\n"
             )),
         );
         assert_rejected(&source, "invalid kernel selector");
@@ -194,18 +201,18 @@ fn kernel_selectors_follow_the_contract_without_requiring_an_installed_kernel() 
 fn environment_inputs_are_optional_explicit_file_declarations() {
     for inputs in [
         "",
-        "declared-environment-inputs = []\n",
-        "declared-environment-inputs = ['uv.lock', './environments//docs.toml', 'locks/../renv.lock', 'environment manifests/研究.lock']\n",
+        "declared-environment-inputs: []\n",
+        "declared-environment-inputs: [\"uv.lock\", \"./environments//docs.toml\", \"locks/../renv.lock\", \"environment manifests/研究.lock\"]\n",
     ] {
         let source = configuration(
             "qmd",
             &execution(&format!(
-                "mode = 'execute'\nengine = 'jupyter'\nkernel = 'python3'\n{inputs}"
+                "mode: \"execute\"\nengine: \"jupyter\"\nkernel: \"python3\"\n{inputs}"
             )),
         );
         let config = parse_configuration(&source).unwrap();
         assert_eq!(
-            parse_configuration(&toml::to_string(&config).unwrap()).unwrap(),
+            parse_configuration(&serde_saphyr::to_string(&config).unwrap()).unwrap(),
             config
         );
         if !config.content[0]
@@ -242,11 +249,11 @@ fn environment_inputs_reject_invalid_paths_and_duplicate_normalized_declarations
         "locks/.",
         "bad\0.lock",
     ] {
-        let path = toml::Value::String(path.to_owned());
+        let path = serde_json::Value::String(path.to_owned());
         let source = configuration(
             "qmd",
             &execution(&format!(
-                "mode = 'execute'\nengine = 'jupyter'\nkernel = 'python3'\ndeclared-environment-inputs = [{path}]\n"
+                "mode: \"execute\"\nengine: \"jupyter\"\nkernel: \"python3\"\ndeclared-environment-inputs: [{path}]\n"
             )),
         );
         assert_rejected(&source, "invalid `declared-environment-inputs[0]`");
@@ -260,7 +267,7 @@ fn environment_inputs_reject_invalid_paths_and_duplicate_normalized_declarations
         let source = configuration(
             "qmd",
             &execution(&format!(
-                "mode = 'execute'\nengine = 'jupyter'\nkernel = 'python3'\ndeclared-environment-inputs = {inputs}\n"
+                "mode: \"execute\"\nengine: \"jupyter\"\nkernel: \"python3\"\ndeclared-environment-inputs: {inputs}\n"
             )),
         );
         assert_rejected(
@@ -273,47 +280,54 @@ fn environment_inputs_reject_invalid_paths_and_duplicate_normalized_declarations
 #[test]
 fn every_content_collection_is_validated_in_source_order() {
     let source = configuration("qmd", "");
-    let second = configuration("qmd", &execution("mode = 'execute'\n"));
+    let second = configuration("qmd", &execution("mode: \"execute\"\n"));
     let second = second
-        .split_once("[[content]]")
+        .split_once("content:\n")
         .unwrap()
         .1
-        .replace("id = 'examples'", "id = 'second'");
-    let error = parse_configuration(&format!("{source}\n[[content]]{second}")).unwrap_err();
-    assert!(error.message().contains("second"), "{error}");
-    assert!(error.message().contains("requires `engine"), "{error}");
+        .replace("id: \"examples\"", "id: \"second\"");
+    let error = parse_configuration(&format!("{source}\n{second}")).unwrap_err();
+    assert!(error.to_string().contains("second"), "{error}");
+    assert!(error.to_string().contains("requires `engine"), "{error}");
 }
 
 #[test]
 fn direct_deserialization_and_loading_enforce_the_same_collection_rules() {
-    let source = configuration("qmd", &execution("mode = 'execute'\nengine = 'jupyter'\n"));
+    let source = configuration(
+        "qmd",
+        &execution("mode: \"execute\"\nengine: \"jupyter\"\n"),
+    );
     let content_source = source
-        .split_once("[[content]]")
+        .split_once("content:\n")
         .unwrap()
         .1
-        .replace("[content.execution]", "[execution]");
-    assert!(toml::from_str::<ContentConfiguration>(&content_source).is_err());
+        .trim_start_matches("  - ")
+        .lines()
+        .map(|line| line.strip_prefix("    ").unwrap_or(line))
+        .collect::<Vec<_>>()
+        .join("\n");
+    assert!(serde_saphyr::from_str::<ContentConfiguration>(&content_source).is_err());
 
     let workspace = support::TestWorkspace::new();
-    workspace.write("workspace.toml", source);
-    let path = workspace.path().join("workspace.toml");
+    workspace.write("workspace.yaml", source);
+    let path = workspace.path().join("workspace.yaml");
     match load_configuration(&path).unwrap_err() {
         ConfigurationError::Parse {
             path: error_path,
             source,
         } => {
             assert_eq!(error_path, path);
-            assert!(source.message().contains("requires an explicit kernel"));
-            assert!(source.span().is_some());
+            assert!(source.to_string().contains("requires an explicit kernel"));
+            assert!(source.location().is_some());
         }
         error => panic!("expected configuration error, got {error}"),
     }
-    workspace.write("workspace.toml", configuration("qmd", &execution("mode = 'execute'\nengine = 'jupyter'\nkernel = 'uninstalled-kernel'\ndeclared-environment-inputs = ['missing.lock']\n")));
+    workspace.write("workspace.yaml", configuration("qmd", &execution("mode: \"execute\"\nengine: \"jupyter\"\nkernel: \"uninstalled-kernel\"\ndeclared-environment-inputs: [\"missing.lock\"]\n")));
     let parsed = load_configuration(&path).unwrap();
     assert_eq!(parsed.content[0].format, AuthoredFormat::Qmd);
     assert_eq!(
         support::files_under(workspace.path()),
-        [PathBuf::from("workspace.toml")]
+        [PathBuf::from("workspace.yaml")]
     );
 }
 
@@ -321,7 +335,7 @@ fn direct_deserialization_and_loading_enforce_the_same_collection_rules() {
 fn programmatically_modified_collections_can_be_revalidated() {
     let mut config = parse_configuration(&configuration(
         "qmd",
-        &execution("mode = 'execute'\nengine = 'jupyter'\nkernel = 'python3'\n"),
+        &execution("mode: \"execute\"\nengine: \"jupyter\"\nkernel: \"python3\"\n"),
     ))
     .unwrap();
     let collection = &mut config.content[0];
@@ -346,7 +360,7 @@ fn programmatic_environment_inputs_must_be_utf8() {
 
     let mut config = parse_configuration(&configuration(
         "qmd",
-        &execution("mode = 'execute'\nengine = 'jupyter'\nkernel = 'python3'\n"),
+        &execution("mode: \"execute\"\nengine: \"jupyter\"\nkernel: \"python3\"\n"),
     ))
     .unwrap();
     config.content[0].execution.declared_environment_inputs =

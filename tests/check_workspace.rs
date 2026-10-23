@@ -7,23 +7,20 @@ use snapbox::cmd::{Command, cargo_bin};
 fn check_runs_the_static_pipeline_with_missing_kernels_and_leaves_files_unchanged() {
     let root = support::acceptance_workspace();
     let config = root
-        .read("workspace/diplodocus.toml")
-        .replace(
-            "kernel = \"python3\"",
-            "kernel = \"must-not-be-discovered\"",
-        )
-        .replace("kernel = \"ir\"", "kernel = \"also-missing\"");
-    root.write("workspace/diplodocus.toml", config);
+        .read("workspace/diplodocus.yaml")
+        .replace("kernel: \"python3\"", "kernel: \"must-not-be-discovered\"")
+        .replace("kernel: \"ir\"", "kernel: \"also-missing\"");
+    root.write("workspace/diplodocus.yaml", config);
     root.write("python/execution/must-not-run.qmd", "```{python}\nfrom pathlib import Path\nPath('execution-marker').write_text('executed')\n```\n");
     let before = tree(root.path());
     check(CheckOptions {
-        config: root.path().join("workspace/diplodocus.toml"),
+        config: root.path().join("workspace/diplodocus.yaml"),
     })
     .unwrap();
     assert_eq!(tree(root.path()), before);
     Command::new(cargo_bin("diplodocus"))
         .current_dir(root.path())
-        .args(["check", "--config", "workspace/diplodocus.toml"])
+        .args(["check", "--config", "workspace/diplodocus.yaml"])
         .assert()
         .success()
         .stdout_eq("");
@@ -39,7 +36,7 @@ fn check_reports_reference_failures_repeatedly_without_publishing() {
     for _ in 0..2 {
         let result = std::process::Command::new(cargo_bin("diplodocus"))
             .current_dir(root.path())
-            .args(["check", "--config", "workspace/diplodocus.toml"])
+            .args(["check", "--config", "workspace/diplodocus.yaml"])
             .output()
             .unwrap();
         assert_eq!(result.status.code(), Some(1));

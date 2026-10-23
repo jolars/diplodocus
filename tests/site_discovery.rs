@@ -13,7 +13,7 @@ use markup5ever_rcdom::{Handle, NodeData, RcDom};
 
 fn workspace(settings: &str) -> support::TestWorkspace {
     let root = support::TestWorkspace::new();
-    root.write("diplodocus.toml", format!("[project]\nname='Discovery'\n{settings}\n[[repository]]\nid='docs'\npath='.'\n[[content]]\nid='guide'\nowner='project'\nrepository='docs'\npath='docs'\nmount=''\nformat='gfm'\n"));
+    root.write("diplodocus.yaml", format!("project:\n  name: \"Discovery\"\n{settings}\nrepositories:\n  - id: \"docs\"\n    path: \".\"\ncontent:\n  - id: \"guide\"\n    owner: \"project\"\n    repository: \"docs\"\n    path: \"docs\"\n    mount: \"\"\n    format: \"gfm\"\n"));
     for path in ["index.md", "guide/index.md", "guide/start.md", "café &%.md"] {
         root.write(format!("docs/{path}"), "# Documentation\n");
     }
@@ -21,7 +21,7 @@ fn workspace(settings: &str) -> support::TestWorkspace {
 }
 
 fn snapshot(root: &support::TestWorkspace) -> Snapshot {
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap()
 }
 
@@ -91,7 +91,7 @@ fn sitemap_and_canonical_links_share_encoded_urls_in_both_styles() {
             "http://example.test/docs/a&b/",
         ] {
             let root = workspace(&format!(
-                "[presentation]\nsite-url='{base}'\ncanonical-url-style='{style}'"
+                "presentation:\n  site-url: \"{base}\"\n  canonical-url-style: \"{style}\""
             ));
             let snapshot = snapshot(&root);
             let rendered = render(&snapshot);
@@ -139,27 +139,27 @@ fn sitemap_and_canonical_links_share_encoded_urls_in_both_styles() {
 #[test]
 fn sitemap_matches_search_visibility_for_packages_and_concepts() {
     let root = support::acceptance_workspace();
-    let mut config = support::fixture_configuration(&root, "workspace/diplodocus.toml");
-    config.as_table_mut().unwrap().insert(
+    let mut config = support::fixture_configuration(&root, "workspace/diplodocus.yaml");
+    config.as_object_mut().unwrap().insert(
         "presentation".into(),
-        toml::Value::Table(toml::Table::from_iter([(
+        serde_json::Value::Object(serde_json::Map::from_iter([(
             "site-url".into(),
             "https://example.test/docs/".into(),
         )])),
     );
-    config["package"][0]
-        .as_table_mut()
+    config["packages"][0]
+        .as_object_mut()
         .unwrap()
         .insert("visibility".into(), "internal".into());
-    config["package"][1]
-        .as_table_mut()
+    config["packages"][1]
+        .as_object_mut()
         .unwrap()
         .insert("visibility".into(), "hidden".into());
     root.write(
-        "workspace/diplodocus.toml",
-        toml::to_string(&config).unwrap(),
+        "workspace/diplodocus.yaml",
+        serde_saphyr::to_string(&config).unwrap(),
     );
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let rendered = render(&snapshot);
     let urls = locations(&rendered);
@@ -185,7 +185,7 @@ fn sitemap_matches_search_visibility_for_packages_and_concepts() {
 #[test]
 fn discovery_survives_portable_generation_and_is_removed_when_disabled() {
     let root = workspace(
-        "[presentation]\nsite-url='https://example.test/docs'\ncanonical-url-style='clean'",
+        "presentation:\n  site-url: \"https://example.test/docs\"\n  canonical-url-style: \"clean\"",
     );
     let snapshot = snapshot(&root);
     let directory = tempfile::tempdir().unwrap();
@@ -231,7 +231,7 @@ fn ambiguous_clean_urls_fail_before_replacing_a_site() {
         "robots.txt.md",
     ] {
         let root = workspace(
-            "[presentation]\nsite-url='https://example.test/'\ncanonical-url-style='clean'",
+            "presentation:\n  site-url: \"https://example.test/\"\n  canonical-url-style: \"clean\"",
         );
         let output = root.path().join("site");
         render(&snapshot(&root)).publish(&output).unwrap();
@@ -239,7 +239,7 @@ fn ambiguous_clean_urls_fail_before_replacing_a_site() {
         root.write(format!("docs/{conflicting}"), "# Collision\n");
         assert!(
             commands::build(BuildOptions {
-                config: root.path().join("diplodocus.toml"),
+                config: root.path().join("diplodocus.yaml"),
                 output: output.clone()
             })
             .is_err(),
@@ -275,12 +275,12 @@ fn page_links_and_search_resolve_directly_to_public_urls() {
 
     for style in ["file", "clean"] {
         let root = workspace(&format!(
-            "[presentation]\nsite-url='https://example.test/docs/'\ncanonical-url-style='{style}'"
+            "presentation:\n  site-url: \"https://example.test/docs/\"\n  canonical-url-style: \"{style}\""
         ));
         root.write(
-            "diplodocus.toml",
-            root.read("diplodocus.toml")
-                .replace("format='gfm'", "format='qmd'"),
+            "diplodocus.yaml",
+            root.read("diplodocus.yaml")
+                .replace("format: \"gfm\"", "format: \"qmd\""),
         );
         root.write("docs/guide/index.md", "# Guide\n\n[Home](../index.md) and [start](start.md#details).\n\n![Diagram](../diagram.svg)\n");
         root.write(

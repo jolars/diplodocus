@@ -16,7 +16,7 @@ const SOURCE: &str = "```{python}\ndefine\n```\n\n```{python}\nuse\n```\n";
 fn request(root: &Path, source: &str) -> (ExecutionContext<'static>, PageExecutionRequest) {
     let context = context(root);
     write(&context.page_path, source);
-    let config = toml::from_str("id='guide'\nowner='project'\nrepository='docs'\npath='guide'\nmount='guide'\nformat='qmd'\n[execution]\nmode='execute'\nengine='jupyter'\nkernel='fixture'\n").unwrap();
+    let config = serde_saphyr::from_str("id: \"guide\"\nowner: \"project\"\nrepository: \"docs\"\npath: \"guide\"\nmount: \"guide\"\nformat: \"qmd\"\nexecution:\n  mode: \"execute\"\n  engine: \"jupyter\"\n  kernel: \"fixture\"\n").unwrap();
     let preparation = prepare_collection_document(source, &config)
         .unwrap()
         .preparation

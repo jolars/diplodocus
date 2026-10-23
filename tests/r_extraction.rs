@@ -9,7 +9,7 @@ use diplodocus::ir::{
 use diplodocus::paths::resolve_workspace_paths;
 
 fn extract(workspace: &support::TestWorkspace) -> RExtraction {
-    let path = workspace.path().join("workspace/diplodocus.toml");
+    let path = workspace.path().join("workspace/diplodocus.yaml");
     let config = load_configuration(&path).unwrap();
     let paths = resolve_workspace_paths(&path, &config).unwrap();
     let package = paths.packages.iter().find(|p| p.id == "rfoo").unwrap();
@@ -1309,7 +1309,7 @@ g(y)}
 #[test]
 fn invalid_explicit_input_boundaries_are_diagnosed() {
     let workspace = support::acceptance_workspace();
-    let path = workspace.path().join("workspace/diplodocus.toml");
+    let path = workspace.path().join("workspace/diplodocus.yaml");
     let config = load_configuration(&path).unwrap();
     let paths = resolve_workspace_paths(&path, &config).unwrap();
     let mut package = paths

@@ -30,15 +30,13 @@ fn images() -> Vec<(&'static str, &'static str, Vec<u8>)> {
 fn workspace(execute: bool) -> support::TestWorkspace {
     let root = support::TestWorkspace::new();
     root.write(
-        "diplodocus.toml",
+        "diplodocus.yaml",
         format!(
-            "[project]\nname='Assets'\n[[repository]]\nid='docs'\npath='.'\n\
-             [[content]]\nid='guide'\nowner='project'\nrepository='docs'\n\
-             path='guide'\nmount='guide'\nformat='qmd'\n[content.execution]\n{}",
+            "project:\n  name: \"Assets\"\nrepositories:\n  - id: \"docs\"\n    path: \".\"\ncontent:\n  - id: \"guide\"\n    owner: \"project\"\n    repository: \"docs\"\n    path: \"guide\"\n    mount: \"guide\"\n    format: \"qmd\"\n    execution:\n      {}",
             if execute {
-                "mode='execute'\nengine='jupyter'\nkernel='python3'\n"
+                "mode: \"execute\"\n      engine: \"jupyter\"\n      kernel: \"python3\"\n"
             } else {
-                "mode='never'\n"
+                "mode: \"never\"\n"
             }
         ),
     );
@@ -117,7 +115,7 @@ fn checked_in_images_and_downloads_survive_without_a_checkout() {
         [Report](report.pdf#page=2) [Empty](empty.bin)\n";
     root.write("guide/index.qmd", source);
     root.write("guide/another.qmd", source);
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let resolved = resolve_workspace(&sources).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolved).unwrap();
     let source_path = root.path().to_owned();
@@ -197,7 +195,7 @@ async fn generated_figures_survive_without_sources_staging_or_execution_cache() 
     let stage = tempfile::tempdir().unwrap();
     let mut snapshot = None;
     for origin in [ExecutionOrigin::Executed, ExecutionOrigin::Cache] {
-        let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+        let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
         let executed = sources
             .execute(WorkspaceExecution {
                 staging_parent: stage.path(),

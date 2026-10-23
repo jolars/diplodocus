@@ -25,7 +25,7 @@ fn example(heading: &str, language: &str) -> &'static str {
 
 fn with_snapshot(check: impl FnOnce(&Snapshot, &Connection)) {
     let root = support::acceptance_workspace();
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
     let resolved = resolve_workspace(&sources).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolved).unwrap();
     let target = tempfile::tempdir().unwrap();

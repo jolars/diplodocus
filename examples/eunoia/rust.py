@@ -44,27 +44,29 @@ def main():
         ".git", "target", "node_modules", ".devenv", ".direnv", ".diplodocus",
         ".svelte-kit", ".docs-sources", "site", "dist", "__pycache__",
     ))
-    configuration = output / "diplodocus.toml"
+    configuration = output / "diplodocus.yaml"
     revision = subprocess.run(["git", "-C", str(source), "rev-parse", "HEAD"], capture_output=True, text=True)
     revision = revision.stdout.strip() if revision.returncode == 0 else "main"
-    configuration.write_text('''[project]
-name = "Eunoia Rust API"
-
-[[repository]]
-id = "eunoia"
-path = "sources/eunoia"
-url = "https://github.com/jolars/eunoia"
-revision = "REVISION"
-
-[[package]]
-id = "eunoia"
-name = "Eunoia"
-slug = "rust"
-ecosystem = "rust"
-repository = "eunoia"
-path = "crates/eunoia"
-metadata-path = "Cargo.toml"
-targets = [{ id = "api", extractor = "rust", path = "src/lib.rs", role = "public-api" }]
+    configuration.write_text('''project:
+  name: "Eunoia Rust API"
+repositories:
+  - id: "eunoia"
+    path: "sources/eunoia"
+    url: "https://github.com/jolars/eunoia"
+    revision: "REVISION"
+packages:
+  - id: "eunoia"
+    name: "Eunoia"
+    slug: "rust"
+    ecosystem: "rust"
+    repository: "eunoia"
+    path: "crates/eunoia"
+    metadata-path: "Cargo.toml"
+    targets:
+      - id: "api"
+        extractor: "rust"
+        path: "src/lib.rs"
+        role: "public-api"
 '''.replace("REVISION", revision))
     snapshot = output / "documentation.sqlite"
     run(binary, "check", "--config", configuration)

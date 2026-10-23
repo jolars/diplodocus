@@ -150,7 +150,7 @@ The source copy is removed when its server stops. To choose locations explicitly
 
 | Variable | Applies to | Default |
 |:---------|:-----------|:--------|
-| `DIPLODOCUS_EXAMPLE_CONFIG` | Interactive preview | `examples/monorepo/diplodocus.toml` |
+| `DIPLODOCUS_EXAMPLE_CONFIG` | Interactive preview | `examples/monorepo/diplodocus.yaml` |
 | `DIPLODOCUS_SITE_PORT` | Interactive preview | `8000` |
 | `DIPLODOCUS_SITE_OUTPUT` | Interactive preview | `site/monorepo` |
 | `DIPLODOCUS_BROWSER_PORT` | Automated preview | `0`, assigned by the OS |

@@ -111,7 +111,7 @@ fn sample() -> serde_json::Value {
             "from": {"kind": "workspace", "package": "pyfoo"},
             "to": {"kind": "external", "ecosystem": "rust", "name": "foo-core"},
             "kind": "binds", "version_constraint": "^1.9",
-            "provenance": [{"activity": {"kind": "declaration"}, "source": {"kind": "configuration", "path": "diplodocus.toml"}, "span": {"start": 10, "end": 30}, "tools": {}}]
+            "provenance": [{"activity": {"kind": "declaration"}, "source": {"kind": "configuration", "path": "diplodocus.yaml"}, "span": {"start": 10, "end": 30}, "tools": {}}]
         }],
         "diagnostics": [{"code": "unsupported-authored-syntax", "severity": "warning", "message": "Unsupported source construct.", "related_entity": {"kind": "item", "package": "pyfoo", "id": "foo.fit"}, "source": {"kind": "repository", "repository": "core", "path": "src/foo.py"}, "span": {"start": 10, "end": 20}}],
         "provenance": [{"activity": {"kind": "declaration"}, "source": null, "span": null, "tools": {"diplodocus": "0.1.0", "panache": "0.29.0"}}]

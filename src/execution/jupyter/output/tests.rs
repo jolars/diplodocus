@@ -30,8 +30,8 @@ fn page() -> ExecutionPage {
 }
 
 fn cell(ordinal: usize) -> PreparedCell {
-    let collection = toml::from_str(
-        "id = 'guide'\nowner = 'project'\nrepository = 'docs'\npath = 'guide'\nmount = 'guide'\nformat = 'qmd'\n[execution]\nmode = 'execute'\nengine = 'jupyter'\nkernel = 'python3'\n",
+    let collection = serde_saphyr::from_str(
+        "id: \"guide\"\nowner: \"project\"\nrepository: \"docs\"\npath: \"guide\"\nmount: \"guide\"\nformat: \"qmd\"\nexecution:\n  mode: \"execute\"\n  engine: \"jupyter\"\n  kernel: \"python3\"\n",
     ).unwrap();
     let mut cell = prepare_collection_document("```{python}\nx = 1\n```\n", &collection)
         .unwrap()

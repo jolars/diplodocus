@@ -55,7 +55,7 @@ fn python_reexports_use_public_labels_and_retain_implementation_evidence() {
         from .native import native_value\n\
         __all__ = ['DataReader', 'load_data', 'z_data', 'native_value']\n",
     );
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let original_items = sources.workspace().packages["python"].items.clone();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let artifact = tempfile::tempdir().unwrap();
@@ -156,7 +156,7 @@ fn python_reexport_labels_are_stable_and_prefer_public_modules() {
         "from ._api import fetch_data as a_data, fetch_data as z_data\n__all__ = ['a_data', 'z_data']\n",
     ] {
         root.write("python/demo/__init__.py", exports);
-        let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+        let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
         let snapshot =
             Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
         let rendered =
@@ -195,7 +195,7 @@ fn python_overloads_share_one_page_navigation_entry_and_search_result() {
     use diplodocus::validation::resolve_item;
 
     let root = support::TestWorkspace::from_fixture("python-overloads");
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let artifact = tempfile::tempdir().unwrap();
     let path = artifact.path().join("snapshot.sqlite");
@@ -311,11 +311,8 @@ fn python_overloads_share_one_page_navigation_entry_and_search_result() {
 fn highlighting_survives_snapshot_generation_without_sources() {
     let root = support::TestWorkspace::new();
     root.write(
-        "diplodocus.toml",
-        "[project]\nname='Highlighting'\n\
-         [[repository]]\nid='docs'\npath='.'\n\
-         [[content]]\nid='guide'\nowner='project'\nrepository='docs'\n\
-         path='guide'\nmount='guide'\nformat='qmd'\n",
+        "diplodocus.yaml",
+        "project:\n  name: \"Highlighting\"\nrepositories:\n  - id: \"docs\"\n    path: \".\"\ncontent:\n  - id: \"guide\"\n    owner: \"project\"\n    repository: \"docs\"\n    path: \"guide\"\n    mount: \"guide\"\n    format: \"qmd\"\n",
     );
     root.write(
         "guide/index.qmd",
@@ -327,7 +324,7 @@ fn highlighting_survives_snapshot_generation_without_sources() {
          ```unknown\nliteral <markup>\n```\n\n\
          ```text\nplain text\n```\n",
     );
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let artifact = tempfile::tempdir().unwrap();
     let path = artifact.path().join("snapshot.sqlite");
@@ -365,12 +362,8 @@ async fn executed_source_is_highlighted_while_hidden_source_and_literal_outputs_
 
     let root = support::TestWorkspace::new();
     root.write(
-        "diplodocus.toml",
-        "[project]\nname='Execution highlighting'\n\
-         [[repository]]\nid='docs'\npath='.'\n\
-         [[content]]\nid='guide'\nowner='project'\nrepository='docs'\n\
-         path='guide'\nmount='guide'\nformat='qmd'\n\
-         [content.execution]\nmode='execute'\nengine='jupyter'\nkernel='python3'\n",
+        "diplodocus.yaml",
+        "project:\n  name: \"Execution highlighting\"\nrepositories:\n  - id: \"docs\"\n    path: \".\"\ncontent:\n  - id: \"guide\"\n    owner: \"project\"\n    repository: \"docs\"\n    path: \"guide\"\n    mount: \"guide\"\n    format: \"qmd\"\n    execution:\n      mode: \"execute\"\n      engine: \"jupyter\"\n      kernel: \"python3\"\n",
     );
     root.write(
         "guide/index.qmd",
@@ -382,7 +375,7 @@ async fn executed_source_is_highlighted_while_hidden_source_and_literal_outputs_
          ```{python, error=true}\nraise ValueError('literal-error')\n```\n\n\
          ```{python}\nfrom IPython.display import Markdown\nMarkdown('```python\\nx = 7\\n```')\n```\n",
     );
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let stage = tempfile::tempdir().unwrap();
     let executed = sources
         .execute(WorkspaceExecution {
@@ -431,32 +424,35 @@ async fn executed_source_is_highlighted_while_hidden_source_and_literal_outputs_
 fn footer_survives_snapshot_generation_without_sources_and_escapes_its_content() {
     let root = support::TestWorkspace::new();
     root.write(
-        "diplodocus.toml",
-        r#"[project]
-name = 'Footer'
-[presentation.footer]
-docs-version = 'dev <preview>'
-copyright = '© 2026 A & B'
-licenses = [
-  {label='MIT', url='https://example.test/LICENSE-MIT'},
-  {label='Apache-2.0', url='https://example.test/LICENSE-APACHE'},
-]
-links = [
-  {label='<GitHub>', url='https://example.test/repo?a=1&b=2'},
-  {label='Report an issue', url='https://example.test/issues'},
-]
-built-with = true
-[[repository]]
-id = 'docs'
-path = '.'
-url = 'https://example.test/repo?a=1&b=2'
-[[content]]
-id = 'guide'
-owner = 'project'
-repository = 'docs'
-path = 'docs'
-mount = ''
-format = 'gfm'
+        "diplodocus.yaml",
+        r#"project:
+  name: "Footer"
+presentation:
+  footer:
+    docs-version: "dev <preview>"
+    copyright: "© 2026 A & B"
+    licenses:
+      - label: "MIT"
+        url: "https://example.test/LICENSE-MIT"
+      - label: "Apache-2.0"
+        url: "https://example.test/LICENSE-APACHE"
+    links:
+      - label: "<GitHub>"
+        url: "https://example.test/repo?a=1&b=2"
+      - label: "Report an issue"
+        url: "https://example.test/issues"
+    built-with: true
+repositories:
+  - id: "docs"
+    path: "."
+    url: "https://example.test/repo?a=1&b=2"
+content:
+  - id: "guide"
+    owner: "project"
+    repository: "docs"
+    path: "docs"
+    mount: ""
+    format: "gfm"
 "#,
     );
     root.write("docs/index.md", "# Home\n\nWelcome.\n");
@@ -464,7 +460,7 @@ format = 'gfm'
         "docs/guide/nested.md",
         "# Nested\n\n## Examples\n\nAn example.\n",
     );
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let artifact = tempfile::tempdir().unwrap();
     let path = artifact.path().join("snapshot.sqlite");
@@ -502,23 +498,23 @@ format = 'gfm'
 fn footer_omits_unconfigured_content_and_credit_is_optional() {
     for (settings, expected) in [
         ("", None),
-        ("[presentation.footer]\n", None),
-        ("[presentation.footer]\nbuilt-with=false\n", None),
+        ("presentation:\n  footer: {}\n", None),
+        ("presentation:\n  footer:\n    built-with: false\n", None),
         (
-            "[presentation.footer]\ndocs-version='main'\n",
+            "presentation:\n  footer:\n    docs-version: \"main\"\n",
             Some("<p>Docs: main</p>"),
         ),
         (
-            "[presentation.footer]\nbuilt-with=true\n",
+            "presentation:\n  footer:\n    built-with: true\n",
             Some("<p>Built with <a href=\"https://diplodocus.cc/\">Diplodocus</a></p>"),
         ),
     ] {
         let root = support::TestWorkspace::new();
         root.write(
-            "diplodocus.toml",
-            format!("[project]\nname='Footer'\n{settings}"),
+            "diplodocus.yaml",
+            format!("project:\n  name: \"Footer\"\n{settings}"),
         );
-        let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+        let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
         let snapshot =
             Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
         let rendered =
@@ -541,7 +537,7 @@ fn footer_omits_unconfigured_content_and_credit_is_optional() {
 fn eulerr_datasets_survive_snapshots_and_render_bare_usage_format_and_source() {
     let root = support::acceptance_workspace();
     support::add_r_datasets(&root);
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let artifact = tempfile::tempdir().unwrap();
     let path = artifact.path().join("snapshot.sqlite");
@@ -609,7 +605,7 @@ fn shared_r_topics_and_method_navigation_survive_generation_without_sources() {
     use diplodocus::validation::resolve_item;
 
     let root = support::shared_r_workspace();
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let artifact = tempfile::tempdir().unwrap();
     let path = artifact.path().join("snapshot.sqlite");
@@ -713,7 +709,7 @@ fn internal_r_topics_survive_snapshots_without_public_navigation_or_search() {
             root.read("r/NAMESPACE")
         ),
     );
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let artifact = tempfile::tempdir().unwrap();
     let path = artifact.path().join("snapshot.sqlite");
@@ -762,7 +758,7 @@ fn unsupported_rd_renders_compact_markers_and_authored_source_stays_visible() {
         "python/docs/fallbacks.qmd",
         "# Authored fallbacks\n\n<aside>Authored block</aside>\n\nText $x^2$.\n",
     );
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let artifact = tempfile::tempdir().unwrap();
     let path = artifact.path().join("snapshot.sqlite");
@@ -794,9 +790,9 @@ fn unsupported_rd_renders_compact_markers_and_authored_source_stays_visible() {
 #[test]
 fn page_navigation_preserves_authored_ids_and_disambiguates_repeated_headings() {
     let root = support::TestWorkspace::new();
-    root.write("diplodocus.toml", "[project]\nname='Navigation'\n[[repository]]\nid='docs'\npath='.'\n[[content]]\nid='guide'\nowner='project'\nrepository='docs'\npath='docs'\nmount=''\nformat='qmd'\n");
+    root.write("diplodocus.yaml", "project:\n  name: \"Navigation\"\nrepositories:\n  - id: \"docs\"\n    path: \".\"\ncontent:\n  - id: \"guide\"\n    owner: \"project\"\n    repository: \"docs\"\n    path: \"docs\"\n    mount: \"\"\n    format: \"qmd\"\n");
     root.write("docs/index.qmd", "# Guide\n\n## **Examples**\n\nFirst.\n\n## Examples {#examples}\n\nSecond.\n\n### Examples\n\nThird.\n");
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let rendered =
         diplodocus::rendering::render_site(&diplodocus::site::Site::new(&snapshot).unwrap())
@@ -813,9 +809,9 @@ fn page_navigation_preserves_authored_ids_and_disambiguates_repeated_headings() 
 #[test]
 fn tabsets_preserve_snapshot_content_links_and_markdown_fallback() {
     let root = support::TestWorkspace::new();
-    root.write("diplodocus.toml", "[project]\nname='Tabs'\n[[repository]]\nid='docs'\npath='.'\n[[content]]\nid='guide'\nowner='project'\nrepository='docs'\npath='docs'\nmount=''\nformat='gfm'\n");
+    root.write("diplodocus.yaml", "project:\n  name: \"Tabs\"\nrepositories:\n  - id: \"docs\"\n    path: \".\"\ncontent:\n  - id: \"guide\"\n    owner: \"project\"\n    repository: \"docs\"\n    path: \"docs\"\n    mount: \"\"\n    format: \"gfm\"\n");
     root.write("docs/index.md", "# Guide\n\n[Read R](#r)\n\n::: {#languages .panel-tabset group=\"language\"}\n\n### Python\n\n```python\nprint(1)\n```\n\n### R {#r .active}\n\nR content.\n\n:::\n");
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let artifact = tempfile::tempdir().unwrap();
     let path = artifact.path().join("snapshot.sqlite");
@@ -861,9 +857,9 @@ fn authored_titles_reuse_matching_headings_and_preserve_their_anchors() {
         ("## Guide {#guide}\n", 1, "<h2 id=\"guide\">Guide</h2>"),
     ] {
         let root = support::TestWorkspace::new();
-        root.write("diplodocus.toml", "[project]\nname='Titles'\n[[repository]]\nid='docs'\npath='.'\n[[content]]\nid='guide'\nowner='project'\nrepository='docs'\npath='docs'\nmount=''\nformat='qmd'\n");
+        root.write("diplodocus.yaml", "project:\n  name: \"Titles\"\nrepositories:\n  - id: \"docs\"\n    path: \".\"\ncontent:\n  - id: \"guide\"\n    owner: \"project\"\n    repository: \"docs\"\n    path: \"docs\"\n    mount: \"\"\n    format: \"qmd\"\n");
         root.write("docs/index.qmd", source);
-        let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+        let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
         let snapshot =
             Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
         let rendered =
@@ -879,7 +875,7 @@ fn authored_titles_reuse_matching_headings_and_preserve_their_anchors() {
 #[test]
 fn static_site_uses_only_snapshot_bytes_and_preserves_output_on_failure() {
     let root = support::acceptance_workspace();
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
     let resolved = resolve_workspace(&sources).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolved).unwrap();
     drop(root);
@@ -924,7 +920,7 @@ fn all_rendered_local_links_and_images_resolve_beneath_a_hosting_prefix() {
         }
     }
     let root = support::acceptance_workspace();
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let rendered =
         diplodocus::rendering::render_site(&diplodocus::site::Site::new(&snapshot).unwrap())
@@ -983,14 +979,14 @@ fn global_sections(html: &str) -> &str {
 #[test]
 fn section_labels_distinguish_packages_and_ignore_hidden_packages() {
     let root = support::acceptance_workspace();
-    let path = "workspace/variants/visibility.toml";
-    let mut configuration: toml::Value = toml::from_str(&root.read(path)).unwrap();
-    let packages = configuration["package"].as_array_mut().unwrap();
-    packages[0]["name"] = toml::Value::String("Foo <public> & API".into());
+    let path = "workspace/variants/visibility.yaml";
+    let mut configuration: serde_json::Value = serde_saphyr::from_str(&root.read(path)).unwrap();
+    let packages = configuration["packages"].as_array_mut().unwrap();
+    packages[0]["name"] = serde_json::Value::String("Foo <public> & API".into());
     for package in packages {
-        package["targets"] = toml::Value::Array(Vec::new());
+        package["targets"] = serde_json::Value::Array(Vec::new());
     }
-    let configuration = toml::to_string(&configuration).unwrap();
+    let configuration = serde_saphyr::to_string(&configuration).unwrap();
     root.write(path, &configuration);
     let sources = assemble_workspace(root.path().join(path)).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
@@ -1012,7 +1008,7 @@ fn section_labels_distinguish_packages_and_ignore_hidden_packages() {
 
     root.write(
         path,
-        configuration.replace("visibility = \"internal\"", "visibility = \"hidden\""),
+        configuration.replace("visibility: internal", "visibility: hidden"),
     );
     let sources = assemble_workspace(root.path().join(path)).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
@@ -1029,36 +1025,34 @@ fn section_labels_distinguish_packages_and_ignore_hidden_packages() {
 fn package_sidebar_groups_authored_pages_and_omits_empty_api_sections() {
     let root = support::TestWorkspace::new();
     root.write(
-        "diplodocus.toml",
-        r#"
-[project]
-name = "Navigation"
-[[repository]]
-id = "docs"
-path = "."
-[[package]]
-id = "rstats"
-name = "Stats for R"
-slug = "r"
-ecosystem = "r"
-repository = "docs"
-path = "."
-metadata-path = "DESCRIPTION"
-targets = []
-[[content]]
-id = "shared"
-owner = "project"
-repository = "docs"
-path = "docs"
-mount = ""
-format = "gfm"
-[[content]]
-id = "vignettes"
-owner = "rstats"
-repository = "docs"
-path = "r-docs"
-mount = "vignettes"
-format = "gfm"
+        "diplodocus.yaml",
+        r#"project:
+  name: "Navigation"
+repositories:
+  - id: "docs"
+    path: "."
+packages:
+  - id: "rstats"
+    name: "Stats for R"
+    slug: "r"
+    ecosystem: "r"
+    repository: "docs"
+    path: "."
+    metadata-path: "DESCRIPTION"
+    targets: []
+content:
+  - id: "shared"
+    owner: "project"
+    repository: "docs"
+    path: "docs"
+    mount: ""
+    format: "gfm"
+  - id: "vignettes"
+    owner: "rstats"
+    repository: "docs"
+    path: "r-docs"
+    mount: "vignettes"
+    format: "gfm"
 "#,
     );
     root.write(
@@ -1069,7 +1063,7 @@ format = "gfm"
     root.write("docs/concepts/index.md", "# Shared concepts\n");
     root.write("r-docs/index.md", "# R workflows\n");
     root.write("r-docs/evaluating.md", "# Evaluating a model\n");
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let rendered =
         diplodocus::rendering::render_site(&diplodocus::site::Site::new(&snapshot).unwrap())
@@ -1092,7 +1086,7 @@ format = "gfm"
     assert!(!home.contains("aria-label=\"R workflows\""));
 
     root.remove("r-docs/index.md");
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let rendered =
         diplodocus::rendering::render_site(&diplodocus::site::Site::new(&snapshot).unwrap())
@@ -1108,22 +1102,25 @@ fn julia_methods_share_function_pages_and_preserve_reference_context() {
 
     let root = support::TestWorkspace::new();
     root.write(
-        "diplodocus.toml",
-        r#"
-[project]
-name = "Julia methods"
-[[repository]]
-id = "repo"
-path = "."
-[[package]]
-id = "demo"
-name = "Demo"
-slug = "julia"
-ecosystem = "julia"
-repository = "repo"
-path = "."
-metadata-path = "Project.toml"
-targets = [{ id = "api", extractor = "julia", path = "src/Demo.jl", role = "public-api" }]
+        "diplodocus.yaml",
+        r#"project:
+  name: "Julia methods"
+repositories:
+  - id: "repo"
+    path: "."
+packages:
+  - id: "demo"
+    name: "Demo"
+    slug: "julia"
+    ecosystem: "julia"
+    repository: "repo"
+    path: "."
+    metadata-path: "Project.toml"
+    targets:
+      - id: "api"
+        extractor: "julia"
+        path: "src/Demo.jl"
+        role: "public-api"
 "#,
     );
     root.write(
@@ -1166,7 +1163,7 @@ Point(x::String) = Point(parse(Int, x))
 end
 "#,
     );
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("snapshot.sqlite");
@@ -1227,7 +1224,7 @@ end
 #[test]
 fn standalone_pages_include_the_same_markdown_as_fragments() {
     let root = support::TestWorkspace::from_fixture("python-overloads");
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let site = diplodocus::site::Site::new(&snapshot).unwrap();
     let standalone = diplodocus::rendering::render_site(&site).unwrap();
@@ -1267,7 +1264,7 @@ fn navigation_shell(html: &str) -> &str {
 #[test]
 fn standalone_navigation_preserves_static_links_and_shares_a_shell_across_sections() {
     let root = support::TestWorkspace::from_fixture("python-overloads");
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let site = diplodocus::site::Site::new(&snapshot).unwrap();
     let standalone = diplodocus::rendering::render_site(&site).unwrap();
@@ -1301,12 +1298,12 @@ fn standalone_navigation_preserves_static_links_and_shares_a_shell_across_sectio
 #[test]
 fn navigation_shell_changes_with_retained_presentation_but_not_document_content() {
     let root = support::TestWorkspace::new();
-    let configuration = "[project]\nname='Navigation'\n[[repository]]\nid='docs'\npath='.'\n[[content]]\nid='guide'\nowner='project'\nrepository='docs'\npath='docs'\nmount=''\nformat='gfm'\n";
-    root.write("diplodocus.toml", configuration);
+    let configuration = "project:\n  name: \"Navigation\"\nrepositories:\n  - id: \"docs\"\n    path: \".\"\ncontent:\n  - id: \"guide\"\n    owner: \"project\"\n    repository: \"docs\"\n    path: \"docs\"\n    mount: \"\"\n    format: \"gfm\"\n";
+    root.write("diplodocus.yaml", configuration);
     root.write("docs/index.md", "# Home\n\nWelcome.\n");
     root.write("docs/guide.md", "# Guide\n\nRead more.\n");
     let render_fingerprint = || {
-        let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+        let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
         let snapshot =
             Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
         let rendered =
@@ -1323,16 +1320,21 @@ fn navigation_shell_changes_with_retained_presentation_but_not_document_content(
     assert_eq!(render_fingerprint(), original);
 
     for changed in [
-        configuration.replace("name='Navigation'", "name='Renamed site'"),
-        format!("{configuration}\n[presentation.footer]\ndocs-version='v2'\n"),
-        configuration.replace("path='.'", "path='.'\nurl='https://example.test/repo'"),
-        format!("{configuration}\n[presentation.logo]\nrepository='docs'\npath='logo.svg'\n"),
+        configuration.replace("name: \"Navigation\"", "name: \"Renamed site\""),
+        format!("{configuration}\npresentation:\n  footer:\n    docs-version: v2\n"),
+        configuration.replace(
+            "path: \".\"",
+            "path: \".\"\n    url: \"https://example.test/repo\"",
+        ),
+        format!(
+            "{configuration}\npresentation:\n  logo:\n    repository: docs\n    path: logo.svg\n"
+        ),
     ] {
         root.write(
             "logo.svg",
             "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 10 10\"><circle cx=\"5\" cy=\"5\" r=\"4\"/></svg>",
         );
-        root.write("diplodocus.toml", changed);
+        root.write("diplodocus.yaml", changed);
         assert_ne!(render_fingerprint(), original);
     }
 }
@@ -1340,7 +1342,7 @@ fn navigation_shell_changes_with_retained_presentation_but_not_document_content(
 #[test]
 fn standalone_navigation_supports_mapped_document_and_runtime_urls() {
     let root = support::TestWorkspace::from_fixture("python-overloads");
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let original =
         diplodocus::rendering::render_site(&diplodocus::site::Site::new(&snapshot).unwrap())

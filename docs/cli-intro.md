@@ -1,4 +1,4 @@
-`check`, `extract`, `build`, and `serve` use `./diplodocus.toml` unless given
+`check`, `extract`, `build`, and `serve` use `./diplodocus.yaml` unless given
 `--config PATH`. Extraction writes `.diplodocus/documentation.sqlite` beside
 that configuration; `extract --output PATH` changes the snapshot destination.
 `generate` requires `--input PATH`. `generate`, `build`, and `serve` write to

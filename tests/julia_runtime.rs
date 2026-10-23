@@ -9,22 +9,25 @@ use diplodocus::snapshots::Snapshot;
 fn workspace() -> support::TestWorkspace {
     let root = support::TestWorkspace::new();
     root.write(
-        "diplodocus.toml",
-        r#"
-[project]
-name = "Generated Julia exceptions"
-[[repository]]
-id = "repo"
-path = "."
-[[package]]
-id = "demo"
-name = "Demo"
-slug = "demo"
-ecosystem = "julia"
-repository = "repo"
-path = "package"
-metadata-path = "Project.toml"
-targets = [{ id = "api", extractor = "julia", path = "src/Demo.jl", role = "public-api" }]
+        "diplodocus.yaml",
+        r#"project:
+  name: "Generated Julia exceptions"
+repositories:
+  - id: "repo"
+    path: "."
+packages:
+  - id: "demo"
+    name: "Demo"
+    slug: "demo"
+    ecosystem: "julia"
+    repository: "repo"
+    path: "package"
+    metadata-path: "Project.toml"
+    targets:
+      - id: "api"
+        extractor: "julia"
+        path: "src/Demo.jl"
+        role: "public-api"
 "#,
     );
     root.write(
@@ -45,7 +48,7 @@ targets = [{ id = "api", extractor = "julia", path = "src/Demo.jl", role = "publ
 fn command(root: &support::TestWorkspace, name: &str, no_runtime: bool) -> std::process::Output {
     let mut cmd = Command::new(env!("CARGO_BIN_EXE_diplodocus"));
     cmd.current_dir(root.path())
-        .args([name, "--config", "diplodocus.toml"]);
+        .args([name, "--config", "diplodocus.yaml"]);
     if no_runtime {
         cmd.env("PATH", "");
     }
@@ -169,9 +172,9 @@ fn plain_checkouts_are_validated_before_publication() {
         root.write("package/src/Demo.jl", source);
         if broken == "checkout" {
             root.write("package/src/Other.jl", source);
-            let config = fs::read_to_string(root.path().join("diplodocus.toml")).unwrap();
+            let config = fs::read_to_string(root.path().join("diplodocus.yaml")).unwrap();
             root.write(
-                "diplodocus.toml",
+                "diplodocus.yaml",
                 config.replace("src/Demo.jl", "src/Other.jl"),
             );
         }

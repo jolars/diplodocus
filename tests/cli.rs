@@ -50,11 +50,11 @@ fn version_matches_package_metadata() {
 fn commands_accept_their_explicit_options_and_reach_the_library() {
     let workspace = support::TestWorkspace::new();
     for arguments in [
-        vec!["build", "--config", "workspace.toml", "--output", "public"],
+        vec!["build", "--config", "workspace.yaml", "--output", "public"],
         vec![
             "serve",
             "--config",
-            "workspace.toml",
+            "workspace.yaml",
             "--output",
             "public",
             "--host",
@@ -65,7 +65,7 @@ fn commands_accept_their_explicit_options_and_reach_the_library() {
         vec![
             "extract",
             "--config",
-            "workspace.toml",
+            "workspace.yaml",
             "--output",
             "documentation.sqlite",
         ],
@@ -80,7 +80,7 @@ fn commands_accept_their_explicit_options_and_reach_the_library() {
         assert!(
             String::from_utf8(output.stderr)
                 .unwrap()
-                .contains("workspace.toml")
+                .contains("workspace.yaml")
         );
         assert!(!workspace.path().join("public").exists());
         assert!(!workspace.path().join("documentation.sqlite").exists());

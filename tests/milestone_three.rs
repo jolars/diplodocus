@@ -14,7 +14,7 @@ use diplodocus::paths::resolve_workspace_paths;
 use diplodocus::provenance::{DeclaredSourceInputs, builtin_tools, collect_static_provenance};
 
 fn snapshot(workspace: &support::TestWorkspace, reverse_inputs: bool) -> serde_json::Value {
-    let configuration_path = workspace.path().join("workspace/diplodocus.toml");
+    let configuration_path = workspace.path().join("workspace/diplodocus.yaml");
     let configuration = load_configuration(&configuration_path).unwrap();
     assert!(validate_configuration(&configuration).is_empty());
     let resolved = resolve_workspace_paths(&configuration_path, &configuration).unwrap();
@@ -126,7 +126,7 @@ fn snapshot(workspace: &support::TestWorkspace, reverse_inputs: bool) -> serde_j
     );
     assert_eq!(
         documents.len(),
-        support::authored_sources(workspace, "workspace/diplodocus.toml").len()
+        support::authored_sources(workspace, "workspace/diplodocus.yaml").len()
     );
     diagnostics.sort();
     serde_json::json!({

@@ -1,7 +1,7 @@
 //! Typed parsing and loading of workspace configuration.
 //!
 //! These types retain declarations before semantic validation. Parsing checks
-//! TOML syntax, field types, required fields, supported enum values, and coherent
+//! YAML syntax, field types, required fields, supported enum values, and coherent
 //! collection execution settings. It does not resolve filesystem paths or
 //! references, validate document execution authority, or discover inputs.
 //! Use [`crate::configuration_validation::validate_configuration`] for workspace
@@ -22,7 +22,7 @@ use crate::diagnostics::{
 use crate::documents::AuthoredFormat;
 use crate::ir::SourceSpan;
 
-/// The declarations in a root `diplodocus.toml` file, in source order.
+/// The declarations in a root `diplodocus.yaml` file, in source order.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct WorkspaceConfiguration {
@@ -32,23 +32,19 @@ pub struct WorkspaceConfiguration {
     #[serde(default, skip_serializing_if = "PresentationDefaults::is_default")]
     pub presentation: PresentationDefaults,
     /// Explicit local source repositories; omission declares none.
-    #[serde(default, rename = "repository", skip_serializing_if = "Vec::is_empty")]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub repositories: Vec<RepositoryConfiguration>,
     /// Explicit packages and internal components to document; omission declares none.
-    #[serde(default, rename = "package", skip_serializing_if = "Vec::is_empty")]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub packages: Vec<PackageConfiguration>,
     /// Authored content collections.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub content: Vec<ContentConfiguration>,
     /// Explicit conceptual API groups.
-    #[serde(default, rename = "concept", skip_serializing_if = "Vec::is_empty")]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub concepts: Vec<ConceptConfiguration>,
     /// Implementation and release relationships between packages.
-    #[serde(
-        default,
-        rename = "relationship",
-        skip_serializing_if = "Vec::is_empty"
-    )]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub relationships: Vec<RelationshipConfiguration>,
 }
 
@@ -202,6 +198,7 @@ pub struct FooterDefaults {
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub links: Vec<FooterLink>,
     /// Whether to show a linked "Built with Diplodocus" credit.
+    #[serde(deserialize_with = "deserialize_boolean")]
     pub built_with: bool,
 }
 
@@ -209,6 +206,25 @@ impl FooterDefaults {
     fn is_default(&self) -> bool {
         self == &Self::default()
     }
+}
+
+fn deserialize_boolean<'de, D: Deserializer<'de>>(deserializer: D) -> Result<bool, D::Error> {
+    struct BooleanVisitor;
+
+    impl<'de> serde::de::Visitor<'de> for BooleanVisitor {
+        type Value = bool;
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            formatter.write_str("a boolean")
+        }
+
+        fn visit_bool<E: serde::de::Error>(self, value: bool) -> Result<bool, E> {
+            Ok(value)
+        }
+    }
+
+    // Preserve YAML scalar types instead of coercing quoted boolean text.
+    deserializer.deserialize_any(BooleanVisitor)
 }
 
 /// A labeled external footer link.
@@ -397,6 +413,7 @@ pub struct RustTargetConfiguration {
     /// Additional Cargo features to enable.
     pub features: Vec<String>,
     /// Whether Cargo enables the crate's default features.
+    #[serde(deserialize_with = "deserialize_boolean")]
     pub default_features: bool,
 }
 
@@ -610,22 +627,22 @@ fn environment_input_components(path: &Path) -> Result<Vec<&str>, &'static str> 
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
 pub enum ExecutionConfigurationError {
     /// R Markdown always uses native knitr execution.
-    #[error("R Markdown requires `mode = \"execute\"`, `engine = \"knitr\"`, and no kernel")]
+    #[error("R Markdown requires `mode: execute`, `engine: knitr`, and no kernel")]
     RmdExecution,
     /// A display-only collection has execution-specific settings.
-    #[error("`{field}` requires `mode = \"execute\"`")]
+    #[error("`{field}` requires `mode: execute`")]
     InactiveSetting {
         /// The contradictory execution field.
         field: &'static str,
     },
     /// A GFM collection requested execution.
-    #[error("`mode = \"execute\"` requires `format = \"qmd\"`")]
+    #[error("`mode: execute` requires `format: qmd`")]
     GfmExecution,
     /// Execution has no explicitly selected Jupyter engine.
-    #[error("`mode = \"execute\"` requires `engine = \"jupyter\"`")]
+    #[error("`mode: execute` requires `engine: jupyter`")]
     MissingEngine,
     /// Execution has no explicitly selected kernel.
-    #[error("`mode = \"execute\"` requires an explicit kernel")]
+    #[error("`mode: execute` requires an explicit kernel")]
     MissingKernel,
     /// The kernel selector is empty, a path, or outside the supported ASCII syntax.
     #[error(
@@ -791,14 +808,14 @@ pub enum ConfigurationError {
     Parse {
         /// Configuration path supplied by the caller.
         path: PathBuf,
-        /// Underlying TOML error, including its source range when available.
-        source: toml::de::Error,
+        /// Underlying YAML error, including its source range when available.
+        source: Box<serde_saphyr::Error>,
     },
 }
 
 impl ConfigurationError {
     /// Convert a load failure to a portable diagnostic using a caller-supplied
-    /// configuration-relative path, retaining the TOML byte range when available.
+    /// configuration-relative path, retaining the YAML byte range when available.
     ///
     /// Runtime paths remain in this error for local troubleshooting. Filesystem
     /// causes contribute only their error kind because custom I/O messages can
@@ -814,11 +831,16 @@ impl ConfigurationError {
                 let mut diagnostic = Diagnostic::new(
                     DiagnosticCode::InvalidConfiguration,
                     Severity::Error,
-                    source.message(),
+                    source.without_snippet().to_string(),
                 );
-                diagnostic.span = source.span().map(|range| SourceSpan {
-                    start: range.start,
-                    end: range.end,
+                diagnostic.span = source.location().and_then(|location| {
+                    let span = location.span();
+                    let start = usize::try_from(span.byte_offset()?).ok()?;
+                    let length = usize::try_from(span.byte_len()?).ok()?;
+                    Some(SourceSpan {
+                        start,
+                        end: start.checked_add(length)?,
+                    })
                 });
                 diagnostic
             }
@@ -829,31 +851,41 @@ impl ConfigurationError {
     }
 }
 
-/// Parse declarations from TOML without reading any paths or executing code.
+/// Parse declarations from a single YAML document without reading paths or executing code.
 ///
 /// Omitted repository, package, and content collections are empty. Each declared
-/// package requires a `targets` list; `targets = []` declares no API extraction.
+/// package requires a `targets` list; `targets: []` declares no API extraction.
 /// Package kind, package visibility, and execution mode use their documented
 /// defaults. Field names use kebab-case. Unknown fields are rejected in every
-/// table. Paths and unresolved references retain their declared spelling.
+/// mapping. Paths and unresolved references retain their declared spelling.
 ///
 /// ```
 /// use diplodocus::configuration::parse_configuration;
 ///
-/// let config = parse_configuration("[project]\nname = 'Foo'\n")?;
+/// let config = parse_configuration("project:\n  name: \"Foo\"\n")?;
 /// assert_eq!(config.project.name, "Foo");
 /// assert!(config.packages.is_empty());
-/// # Ok::<(), toml::de::Error>(())
+/// # Ok::<(), Box<serde_saphyr::Error>>(())
 /// ```
 ///
 /// # Errors
 ///
-/// Returns a TOML error for malformed syntax, missing required fields, unknown
-/// fields, incorrect field types, unsupported enum values, or incoherent collection
-/// execution settings. Filesystem, identity, relationship, and document-authority
-/// validation remain separate steps.
-pub fn parse_configuration(source: &str) -> Result<WorkspaceConfiguration, toml::de::Error> {
-    toml::from_str(source)
+/// Returns a YAML error for malformed syntax, duplicate keys, multiple documents,
+/// missing required fields, unknown fields, incorrect field types, unsupported enum
+/// values, or incoherent collection execution settings. Filesystem, identity,
+/// relationship, and document-authority validation remain separate steps.
+pub fn parse_configuration(
+    source: &str,
+) -> Result<WorkspaceConfiguration, Box<serde_saphyr::Error>> {
+    // Keep field types explicit rather than coercing numbers and booleans to strings.
+    serde_saphyr::from_str_with_options(
+        source,
+        serde_saphyr::options! {
+            no_schema: true,
+            strict_booleans: true,
+        },
+    )
+    .map_err(Box::new)
 }
 
 /// Read and parse one explicitly supplied workspace configuration file.

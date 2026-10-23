@@ -12,10 +12,10 @@ use diplodocus::{
 fn detached_snapshot_supplies_content_without_a_site_shell() {
     let root = support::TestWorkspace::from_fixture("python-overloads");
     root.write(
-        "diplodocus.toml",
+        "diplodocus.yaml",
         format!(
-            "{}\n[[content]]\nid='guide'\nowner='project'\nrepository='demo'\npath='docs'\nmount='guide'\nformat='gfm'\n",
-            root.read("diplodocus.toml")
+            "{}\ncontent:\n  - id: \"guide\"\n    owner: \"project\"\n    repository: \"demo\"\n    path: \"docs\"\n    mount: \"guide\"\n    format: \"gfm\"\n",
+            root.read("diplodocus.yaml")
         ),
     );
     root.write(
@@ -24,7 +24,7 @@ fn detached_snapshot_supplies_content_without_a_site_shell() {
     );
     let figure = br#"<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><circle cx="10" cy="10" r="5"/></svg>"#;
     root.write("docs/figure.svg", figure);
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let artifact = tempfile::tempdir().unwrap();
     let database = artifact.path().join("documentation.sqlite");
@@ -139,7 +139,7 @@ fn detached_snapshot_supplies_content_without_a_site_shell() {
 #[test]
 fn cli_fragment_generation_preserves_output_after_invalid_mapping() {
     let root = support::TestWorkspace::from_fixture("python-overloads");
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let temporary = tempfile::tempdir().unwrap();
     let database = temporary.path().join("docs.sqlite");

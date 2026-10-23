@@ -85,7 +85,7 @@ fn gone(process: &(u32, PathBuf)) -> bool {
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn watched_timeout_keeps_serving_the_complete_site_and_recovers() {
     let root = support::TestWorkspace::new();
-    root.write("diplodocus.toml", "[project]\nname='Preview'\n[[repository]]\nid='docs'\npath='.'\n[[content]]\nid='guide'\nowner='project'\nrepository='docs'\npath='guide'\nmount=''\nformat='qmd'\n[content.execution]\nmode='execute'\nengine='jupyter'\nkernel='python3'\ndeclared-environment-inputs=['environment.txt']\n");
+    root.write("diplodocus.yaml", "project:\n  name: \"Preview\"\nrepositories:\n  - id: \"docs\"\n    path: \".\"\ncontent:\n  - id: \"guide\"\n    owner: \"project\"\n    repository: \"docs\"\n    path: \"guide\"\n    mount: \"\"\n    format: \"qmd\"\n    execution:\n      mode: \"execute\"\n      engine: \"jupyter\"\n      kernel: \"python3\"\n      declared-environment-inputs:\n        - \"environment.txt\"\n");
     root.write("environment.txt", "first environment");
     root.write("guide/index.qmd", code("first generation", false));
     let port = std::net::TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0))
@@ -95,7 +95,7 @@ async fn watched_timeout_keeps_serving_the_complete_site_and_recovers() {
         .port();
     let (stop, stopped) = tokio::sync::oneshot::channel();
     let options = ServeOptions {
-        config: root.path().join("diplodocus.toml"),
+        config: root.path().join("diplodocus.yaml"),
         output: root.path().join("site"),
         host: std::net::Ipv4Addr::LOCALHOST.into(),
         port,
@@ -185,13 +185,13 @@ async fn watched_timeout_keeps_serving_the_complete_site_and_recovers() {
     tokio::time::sleep(Duration::from_millis(800)).await;
     assert_eq!(process(root.path()).unwrap(), recovered_process);
     assert!(
-        request(port, "/%2e%2e/diplodocus.toml")
+        request(port, "/%2e%2e/diplodocus.yaml")
             .await
             .unwrap()
             .starts_with("HTTP/1.1 404")
     );
     assert!(
-        request(port, "/diplodocus.toml")
+        request(port, "/diplodocus.yaml")
             .await
             .unwrap()
             .starts_with("HTTP/1.1 404")
@@ -216,8 +216,8 @@ async fn watched_timeout_keeps_serving_the_complete_site_and_recovers() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn preview_tracks_missing_assets_and_configuration_changes() {
     let root = support::TestWorkspace::new();
-    let config = "[project]\nname='Static preview'\n[presentation]\nsite-url='https://example.test/docs'\ncanonical-url-style='clean'\n[[repository]]\nid='docs'\npath='.'\n[[content]]\nid='guide'\nowner='project'\nrepository='docs'\npath='guide'\nmount=''\nformat='gfm'\n";
-    root.write("diplodocus.toml", config);
+    let config = "project:\n  name: \"Static preview\"\npresentation:\n  site-url: \"https://example.test/docs\"\n  canonical-url-style: \"clean\"\nrepositories:\n  - id: \"docs\"\n    path: \".\"\ncontent:\n  - id: \"guide\"\n    owner: \"project\"\n    repository: \"docs\"\n    path: \"guide\"\n    mount: \"\"\n    format: \"gfm\"\n";
+    root.write("diplodocus.yaml", config);
     root.write("guide/index.md", "# Original\n");
     let port = std::net::TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0))
         .unwrap()
@@ -226,7 +226,7 @@ async fn preview_tracks_missing_assets_and_configuration_changes() {
         .port();
     let (stop, stopped) = tokio::sync::oneshot::channel();
     let options = ServeOptions {
-        config: root.path().join("diplodocus.toml"),
+        config: root.path().join("diplodocus.yaml"),
         output: root.path().join("site"),
         host: std::net::Ipv4Addr::LOCALHOST.into(),
         port,
@@ -308,8 +308,8 @@ async fn preview_tracks_missing_assets_and_configuration_changes() {
     .await;
     root.write("other/index.md", "# Configured collection\n");
     root.write(
-        "diplodocus.toml",
-        config.replace("path='guide'", "path='other'"),
+        "diplodocus.yaml",
+        config.replace("path: \"guide\"", "path: \"other\""),
     );
     until(async || {
         request(port, "/")

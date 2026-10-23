@@ -150,7 +150,7 @@ mod snapshots {
         )
         .unwrap();
         std::fs::write(root.join("kernel.json"), serde_json::to_vec(&json!({"argv":["python","-m","ipykernel_launcher","-f","{connection_file}"],"language":"python","display_name":"Presentation"})).unwrap()).unwrap();
-        let collection: ContentConfiguration = toml::from_str("id='guide'\nowner='project'\nrepository='python'\npath='docs'\nmount='guide'\nformat='qmd'\n[execution]\nmode='execute'\nengine='jupyter'\nkernel='python3'\n").unwrap();
+        let collection: ContentConfiguration = serde_saphyr::from_str("id: \"guide\"\nowner: \"project\"\nrepository: \"python\"\npath: \"docs\"\nmount: \"guide\"\nformat: \"qmd\"\nexecution:\n  mode: \"execute\"\n  engine: \"jupyter\"\n  kernel: \"python3\"\n").unwrap();
         let preparation =
             prepare_collection_document(std::str::from_utf8(&source).unwrap(), &collection)
                 .unwrap()
@@ -970,7 +970,7 @@ async fn key_projection_retains_nested_skipped_cells_and_all_effective_options()
     use diplodocus::execution::identity::snapshot_inputs;
     let mut setup = snapshots::setup().await;
     let source = "---\nexecute: {echo: false, output: asis, include: false, error: true}\n---\n\n```{python}\n#| label: figure\n#| fig-alt: Alt\n#| fig-cap: Caption\n#| fig-subcap: [Second, First]\nprint('run')\n```\n\n> ```{r}\n> stop('skip language')\n> ```\n\n```{python}\n#| eval: false\nraise Exception('skip eval')\n```\n";
-    let collection:ContentConfiguration=toml::from_str("id='guide'\nowner='project'\nrepository='python'\npath='docs'\nmount='guide'\nformat='qmd'\n[execution]\nmode='execute'\nengine='jupyter'\nkernel='python3'\n").unwrap();
+    let collection:ContentConfiguration=serde_saphyr::from_str("id: \"guide\"\nowner: \"project\"\nrepository: \"python\"\npath: \"docs\"\nmount: \"guide\"\nformat: \"qmd\"\nexecution:\n  mode: \"execute\"\n  engine: \"jupyter\"\n  kernel: \"python3\"\n").unwrap();
     let parsed = prepare_collection_document(source, &collection).unwrap();
     let prepared = parsed.preparation.expect("valid mixed cells");
     setup.source = source.as_bytes().to_vec();

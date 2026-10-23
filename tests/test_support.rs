@@ -19,16 +19,16 @@ fn acceptance_workspaces_are_isolated_from_checked_in_fixtures() {
     assert_ne!(temporary, checked_in);
 
     let checked_in_configuration =
-        fs::read(checked_in.join("workspace/diplodocus.toml")).expect("fixture should be readable");
-    workspace.write("workspace/diplodocus.toml", "temporary mutation\n");
+        fs::read(checked_in.join("workspace/diplodocus.yaml")).expect("fixture should be readable");
+    workspace.write("workspace/diplodocus.yaml", "temporary mutation\n");
 
     assert_eq!(
-        fs::read(checked_in.join("workspace/diplodocus.toml"))
+        fs::read(checked_in.join("workspace/diplodocus.yaml"))
             .expect("checked-in fixture should remain readable"),
         checked_in_configuration
     );
     assert_eq!(
-        workspace.read("workspace/diplodocus.toml"),
+        workspace.read("workspace/diplodocus.yaml"),
         "temporary mutation\n"
     );
 }
@@ -72,14 +72,32 @@ fn acceptance_fixture_has_gfm_and_qmd_authored_content() {
             .is_file()
     );
 
-    let configuration = workspace.read("workspace/diplodocus.toml");
-    assert!(configuration.contains(
-        "id = \"guide\"\nowner = \"project\"\nrepository = \"core\"\npath = \"docs\"\nmount = \"guide\"\nformat = \"gfm\""
-    ));
-    assert!(configuration.contains(
-        "id = \"python-guide\"\nowner = \"pyfoo\"\nrepository = \"python\"\npath = \"docs\"\nmount = \"guide\"\nformat = \"qmd\""
-    ));
-    assert_eq!(configuration.matches("mode = \"never\"").count(), 2);
+    let configuration = support::fixture_configuration(&workspace, "workspace/diplodocus.yaml");
+    for (id, owner, repository, path, format) in [
+        ("guide", "project", "core", "docs", "gfm"),
+        ("python-guide", "pyfoo", "python", "docs", "qmd"),
+    ] {
+        let collection = configuration["content"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|collection| collection["id"] == id)
+            .unwrap();
+        assert_eq!(collection["owner"], owner);
+        assert_eq!(collection["repository"], repository);
+        assert_eq!(collection["path"], path);
+        assert_eq!(collection["mount"], "guide");
+        assert_eq!(collection["format"], format);
+    }
+    assert_eq!(
+        configuration["content"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|collection| collection["execution"]["mode"] == "never")
+            .count(),
+        2
+    );
 
     let project_index = workspace.read("core/docs/index.md");
     assert!(project_index.contains("[`pyfoo::foo.fit`]"));
@@ -131,15 +149,30 @@ fn acceptance_fixture_has_executable_python_and_r_qmd_pages() {
         ),
     ];
 
-    let configuration = workspace.read("workspace/diplodocus.toml");
+    let configuration = workspace.read("workspace/diplodocus.yaml");
     for (source, language, kernel, environment_input, constructs) in cases {
         assert!(
             workspace.path().join(source).is_file(),
             "executable fixture should exist: {source}"
         );
-        assert!(configuration.contains(&format!(
-            "repository = \"{language}\"\npath = \"execution\"\nmount = \"execution\"\nformat = \"qmd\"\n\n[content.execution]\nmode = \"execute\"\nengine = \"jupyter\"\nkernel = \"{kernel}\"\ndeclared-environment-inputs = [\"{environment_input}\"]"
-        )));
+        let configuration: serde_json::Value = serde_saphyr::from_str(&configuration).unwrap();
+        let collection = configuration["content"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|collection| {
+                collection["repository"] == language && collection["path"] == "execution"
+            })
+            .unwrap();
+        assert_eq!(collection["mount"], "execution");
+        assert_eq!(collection["format"], "qmd");
+        assert_eq!(
+            collection["execution"],
+            serde_json::json!({
+                "mode": "execute", "engine": "jupyter", "kernel": kernel,
+                "declared-environment-inputs": [environment_input]
+            })
+        );
 
         let page = workspace.read(source);
         assert_eq!(page.matches("```{").count(), 5);
@@ -176,18 +209,16 @@ fn acceptance_fixture_has_execution_authority_variants() {
         );
     }
 
-    let configuration = workspace.read("workspace/diplodocus.toml");
-    let collection_start = configuration
-        .find("id = \"python-default-never\"")
-        .expect("default-never QMD collection should be configured");
-    let collection_tail = &configuration[collection_start..];
-    let collection_end = collection_tail
-        .find("\n[[content]]")
-        .unwrap_or(collection_tail.len());
-    let defaulted_collection = &collection_tail[..collection_end];
-    assert!(defaulted_collection.contains("format = \"qmd\""));
+    let configuration = support::fixture_configuration(&workspace, "workspace/diplodocus.yaml");
+    let defaulted_collection = configuration["content"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|collection| collection["id"] == "python-default-never")
+        .unwrap();
+    assert_eq!(defaulted_collection["format"], "qmd");
     assert!(
-        !defaulted_collection.contains("[content.execution]"),
+        defaulted_collection.get("execution").is_none(),
         "the focused QMD collection must exercise the default execution mode"
     );
 
@@ -266,14 +297,20 @@ fn acceptance_fixture_has_output_safety_variants() {
 #[test]
 fn acceptance_configuration_declares_cross_language_callable_concepts() {
     let workspace = acceptance_workspace();
-    let configuration = workspace.read("workspace/diplodocus.toml");
+    let configuration = workspace.read("workspace/diplodocus.yaml");
 
-    for concept in [
-        "id = \"fit\"\nkind = \"equivalent\"\nmembers = [\n  { package = \"pyfoo\", item = \"foo.fit\" },\n  { package = \"rfoo\", item = \"fit\" },\n]",
-        "id = \"foo-model.fit\"\nkind = \"analogous\"\nmembers = [\n  { package = \"pyfoo\", item = \"foo.FooModel.fit\" },\n  { package = \"rfoo\", item = \"fit.foo_model\" },\n]",
-    ] {
-        assert!(configuration.contains(concept));
-    }
+    let configuration: serde_json::Value = serde_saphyr::from_str(&configuration).unwrap();
+    assert_eq!(
+        configuration["concepts"],
+        serde_json::json!([
+            {"id": "fit", "kind": "equivalent", "members": [
+                {"package": "pyfoo", "item": "foo.fit"}, {"package": "rfoo", "item": "fit"}
+            ]},
+            {"id": "foo-model.fit", "kind": "analogous", "members": [
+                {"package": "pyfoo", "item": "foo.FooModel.fit"}, {"package": "rfoo", "item": "fit.foo_model"}
+            ]}
+        ])
+    );
 
     let python_stubs = workspace.read("python/python/foo/model.pyi");
     assert!(python_stubs.contains("def fit("));
@@ -288,73 +325,73 @@ fn acceptance_configuration_declares_cross_language_callable_concepts() {
 #[test]
 fn acceptance_fixture_has_visibility_and_relationship_variants() {
     let workspace = acceptance_workspace();
-    let visibility = workspace.read("workspace/variants/visibility.toml");
-    assert_eq!(visibility.matches("[[package]]").count(), 3);
-    assert_eq!(visibility.matches("visibility = \"public\"").count(), 1);
-    assert_eq!(visibility.matches("visibility = \"internal\"").count(), 1);
-    assert_eq!(visibility.matches("visibility = \"hidden\"").count(), 1);
-    assert!(visibility.contains("kind = \"package\""));
-    assert_eq!(visibility.matches("kind = \"component\"").count(), 2);
-    assert!(!visibility.contains("[[relationship]]"));
+    let visibility = workspace.read("workspace/variants/visibility.yaml");
+    assert_eq!(visibility.matches("    visibility:").count(), 3);
+    assert_eq!(visibility.matches("visibility: \"public\"").count(), 1);
+    assert_eq!(visibility.matches("visibility: \"internal\"").count(), 1);
+    assert_eq!(visibility.matches("visibility: \"hidden\"").count(), 1);
+    assert!(visibility.contains("kind: \"package\""));
+    assert_eq!(visibility.matches("kind: \"component\"").count(), 2);
+    assert!(!visibility.contains("relationships:"));
 
     let cases = [
         (
-            "relationship-compatible.toml",
-            "to = \"rfoo\"",
-            "version-constraint = \"^1.8\"",
+            "relationship-compatible.yaml",
+            "to: \"rfoo\"",
+            "version-constraint: \"^1.8\"",
         ),
         (
-            "relationship-incompatible.toml",
-            "to = \"rfoo\"",
-            "version-constraint = \"^2.0\"",
+            "relationship-incompatible.yaml",
+            "to: \"rfoo\"",
+            "version-constraint: \"^2.0\"",
         ),
         (
-            "relationship-external.toml",
-            "to = \"cargo:foo-core\"",
-            "version-constraint = \"^1.9\"",
+            "relationship-external.yaml",
+            "to: \"cargo:foo-core\"",
+            "version-constraint: \"^1.9\"",
         ),
     ];
 
     for (variant, endpoint, constraint) in cases {
         let configuration = workspace.read(format!("workspace/variants/{variant}"));
-        assert_eq!(configuration.matches("[[relationship]]").count(), 1);
+        assert_eq!(configuration.matches("relationships:").count(), 1);
         assert!(configuration.contains(endpoint));
         assert!(configuration.contains(constraint));
-        assert!(configuration.contains("provenance = \"explicit\""));
+        assert!(configuration.contains("provenance: \"explicit\""));
     }
 
-    let incompatible = workspace.read("workspace/variants/relationship-incompatible.toml");
+    let incompatible = workspace.read("workspace/variants/relationship-incompatible.yaml");
     assert!(incompatible.contains("Expected diagnostic: incompatible-package-relationship"));
 
-    let external = workspace.read("workspace/variants/relationship-external.toml");
-    assert!(!external.contains("id = \"cargo:foo-core\""));
+    let external = workspace.read("workspace/variants/relationship-external.yaml");
+    assert!(!external.contains("id: \"cargo:foo-core\""));
 }
 
 #[test]
 fn acceptance_configuration_covers_the_design_model() {
     let acceptance = acceptance_workspace();
-    let configuration_path = acceptance.path().join("workspace/diplodocus.toml");
+    let configuration_path = acceptance.path().join("workspace/diplodocus.yaml");
     let configuration = fs::read_to_string(&configuration_path)
         .expect("acceptance configuration should be readable");
 
     for table in [
-        "[project]",
-        "[[repository]]",
-        "[[package]]",
-        "[[content]]",
-        "[[relationship]]",
-        "[[concept]]",
+        "project:",
+        "repositories:",
+        "packages:",
+        "content:",
+        "relationships:",
+        "concepts:",
     ] {
         assert!(configuration.contains(table), "missing {table} entry");
     }
-    assert!(configuration.contains("targets = ["));
+    assert!(configuration.contains("targets:"));
 
     let workspace = configuration_path
         .parent()
         .expect("acceptance configuration should have a parent");
     let workspace = fs::canonicalize(workspace).expect("workspace should be canonicalizable");
     for repository in ["../core", "../python", "../r"] {
-        assert!(configuration.contains(&format!("path = \"{repository}\"")));
+        assert!(configuration.contains(&format!("path: \"{repository}\"")));
         let root = fs::canonicalize(workspace.join(Path::new(repository)))
             .expect("repository root should be canonicalizable");
         assert_eq!(root.parent(), workspace.parent());

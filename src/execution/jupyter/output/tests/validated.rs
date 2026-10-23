@@ -8,7 +8,7 @@ use crate::execution::{
 const SOURCE: &str = "```{python}\n1\n```\n\n```{python}\n#| include: false\n2\n```\n";
 
 fn prepared() -> PreparedExecution {
-    let config = toml::from_str("id='guide'\nowner='project'\nrepository='docs'\npath='guide'\nmount='guide'\nformat='qmd'\n[execution]\nmode='execute'\nengine='jupyter'\nkernel='python3'\n").unwrap();
+    let config = serde_saphyr::from_str("id: \"guide\"\nowner: \"project\"\nrepository: \"docs\"\npath: \"guide\"\nmount: \"guide\"\nformat: \"qmd\"\nexecution:\n  mode: \"execute\"\n  engine: \"jupyter\"\n  kernel: \"python3\"\n").unwrap();
     let preparation = prepare_collection_document(SOURCE, &config)
         .unwrap()
         .preparation

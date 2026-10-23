@@ -1,18 +1,24 @@
 # Workspace configuration
 
-A `diplodocus.toml` file declares the repositories, packages, and authored
-content that belong in one site. Diplodocus does not discover nearby packages or
-documents. Start from the working `examples/monorepo/diplodocus.toml`
-configuration and adapt its paths and names. The root `diplodocus.toml` shows an
+A `diplodocus.yaml` file uses YAML to declare the repositories, packages, and
+authored content that belong in one site. Diplodocus does not discover nearby packages or
+documents. Start from the working `examples/monorepo/diplodocus.yaml`
+configuration and adapt its paths and names. The root `diplodocus.yaml` shows an
 authored documentation site without API packages. See the [quick
 start](quick-start.md) for commands to build either site.
+
+The top-level lists are `repositories`, `packages`, `content`, `concepts`, and
+`relationships`. Field names use kebab-case. Diplodocus rejects unknown fields,
+duplicate keys, and configurations containing more than one YAML document.
+Use `--config PATH` to select another filename, including one ending in `.yml`.
+TOML configurations and singular top-level collection keys are no longer supported.
 
 ## Repositories and packages
 
 Each repository path is relative to the configuration directory; it may point to
 a sibling checkout. A package names its repository and gives a path within it.
 Package metadata and extraction targets are relative to the package. Declare
-`targets = []` for a package with no API extraction.
+`targets: []` for a package with no API extraction.
 
 Python extraction reads source and package metadata. R reads source, package
 metadata, and checked-in Rd files. Julia reads `Project.toml`, an explicit `.jl`
@@ -40,12 +46,12 @@ the template's fragment is replaced with the authored fragment or removed
 for a whole-file link. The resulting URL must use HTTP or HTTPS without
 credentials. For example:
 
-```toml
-[[repository]]
-id = "core"
-path = ".."
-revision = "v1.2.0"
-source-link-template = "https://forge.example/team/core/{kind}/{revision}/{path}"
+```yaml
+repositories:
+  - id: "core"
+    path: ".."
+    revision: "v1.2.0"
+    source-link-template: "https://forge.example/team/core/{kind}/{revision}/{path}"
 ```
 
 Repository links retain their canonical target and repository identity in the
@@ -54,7 +60,7 @@ checkout or fetching the destination.
 
 ## Authored content
 
-Each `[[content]]` collection names a repository, source directory, mount,
+Each collection in `content` names a repository, source directory, mount,
 format, and owner. The `project` owner puts pages in project navigation; a
 package ID puts them under `/packages/<slug>/`. GFM collections read `.md`
 files. QMD collections read `.qmd` files and can include executable cells.
@@ -68,10 +74,11 @@ supported syntax, links, and assets.
 
 To give a project collection its own navbar tab and sidebar, declare a section:
 
-```toml
-[[presentation.sections]]
-label = "Reference"
-path = "reference/index.html"
+```yaml
+presentation:
+  sections:
+    - label: "Reference"
+      path: "reference/index.html"
 ```
 
 The path names a generated, visible project `index.html` page. All project pages
@@ -84,20 +91,20 @@ Tabs appear after Guide in declaration order, before package tabs.
 Execution defaults to `never`. To allow it, set the collection to QMD and
 declare a Jupyter engine and kernel explicitly:
 
-```toml
-[[content]]
-id = "examples"
-owner = "project"
-repository = "diplodocus"
-path = "docs/examples"
-mount = "examples"
-format = "qmd"
-
-[content.execution]
-mode = "execute"
-engine = "jupyter"
-kernel = "python3"
-declared-environment-inputs = ["devenv.lock"]
+```yaml
+content:
+  - id: "examples"
+    owner: "project"
+    repository: "diplodocus"
+    path: "docs/examples"
+    mount: "examples"
+    format: "qmd"
+    execution:
+      mode: "execute"
+      engine: "jupyter"
+      kernel: "python3"
+      declared-environment-inputs:
+        - "devenv.lock"
 ```
 
 Declared environment inputs are individual files relative to the repository.
@@ -108,27 +115,27 @@ enable it when the collection forbids it. `check` never runs cells. `extract`,
 
 ## Presentation
 
-An optional table controls the site name, logo, link preview image, HTML
-description, public URL, and footer:
+An optional `presentation` mapping controls the site name, logo, link preview
+image, HTML description, public URL, and footer:
 
-```toml
-[presentation]
-title = "Foo documentation"
-description = "Guides and API documentation for Foo."
-site-url = "https://example.com/docs/"
-canonical-url-style = "file"
-
-[presentation.footer]
-docs-version = "v1.0.0"
-copyright = "© 2026 Foo contributors"
-licenses = [
-  { label = "MIT", url = "https://github.com/example/foo/blob/main/LICENSE" },
-]
-links = [
-  { label = "GitHub", url = "https://github.com/example/foo" },
-  { label = "Report an issue", url = "https://github.com/example/foo/issues" },
-]
-built-with = true
+```yaml
+presentation:
+  title: "Foo documentation"
+  description: "Guides and API documentation for Foo."
+  site-url: "https://example.com/docs/"
+  canonical-url-style: "file"
+  footer:
+    docs-version: "v1.0.0"
+    copyright: "© 2026 Foo contributors"
+    licenses:
+      - label: "MIT"
+        url: "https://github.com/example/foo/blob/main/LICENSE"
+    links:
+      - label: "GitHub"
+        url: "https://github.com/example/foo"
+      - label: "Report an issue"
+        url: "https://github.com/example/foo/issues"
+    built-with: true
 ```
 
 The title defaults to `project.name`. Diplodocus uses its built-in theme.
@@ -138,25 +145,28 @@ snapshots](snapshots.md) before separating extraction and generation.
 
 ### Landing page
 
-Add `[presentation.home]` to give the site root a full-width landing page. It
+Add `presentation.home` to give the site root a full-width landing page. It
 shows the logo and title at the top left, beside the section links, search, and
 repository links. Documentation pages keep the branding in the same position
 at the top of the gray sidebar. Navigation keeps
 the header and sidebar mounted while page content updates. Navbar links keep
 the same positions when moving between the landing page and documentation.
 
-```toml
-[presentation.home]
-tagline = "Four languages.\nOne home for docs."
-description = "Guides and API references for all your packages."
-guide = "guide/index.html"
-actions = [
-  { label = "Get started", path = "guide/quick-start.html" },
-  { label = "Read the guide", path = "guide/index.html" },
-]
-features = [
-  { title = "Shared documentation", description = "Link across your packages.", path = "guide/authoring.html" },
-]
+```yaml
+presentation:
+  home:
+    tagline: "Four languages.\nOne home for docs."
+    description: "Guides and API references for all your packages."
+    guide: "guide/index.html"
+    actions:
+      - label: "Get started"
+        path: "guide/quick-start.html"
+      - label: "Read the guide"
+        path: "guide/index.html"
+    features:
+      - title: "Shared documentation"
+        description: "Link across your packages."
+        path: "guide/authoring.html"
 ```
 
 Mount your guide collection at `guide` to keep it separate from the homepage.
@@ -169,20 +179,21 @@ The hero uses the site title and optional logo. All text is plain text, and
 newlines in `tagline` separate heading lines. Actions and features can be
 omitted. If an authored page already occupies the site root, its body appears
 below the landing content, with its initial title supplied by the hero.
-Without `[presentation.home]`, the root retains the documentation layout.
+Without `presentation.home`, the root retains the documentation layout.
 
 ### Branding
 
 To add a logo before the title in the leftmost navbar link, declare an image in
 one of your repositories:
 
-```toml
-[presentation.logo]
-repository = "docs"
-path = "assets/logo.svg"
+```yaml
+presentation:
+  logo:
+    repository: "docs"
+    path: "assets/logo.svg"
 ```
 
-`repository` must match a declared `[[repository]]` ID. `path` is relative to
+`repository` must match a declared `repositories` ID. `path` is relative to
 that repository's root and must name an SVG, PNG, or JPEG file. The image can
 live outside a content collection. Use forward slashes without leading slashes
 or `.` or `..` components. Symlinks must stay inside the repository.
@@ -190,17 +201,18 @@ or `.` or `..` components. Symlinks must stay inside the repository.
 Diplodocus validates and embeds the image in the snapshot, so generation needs
 no source checkout. The logo keeps its proportions within the navbar and shares
 the title's link to the homepage. The title supplies the accessible link name.
-Omitting `[presentation.logo]` leaves the navbar with the title alone. `serve`
+Omitting `presentation.logo` leaves the navbar with the title alone. `serve`
 watches the logo file and rebuilds when it changes.
 
 To use a shared image when people post links to your documentation, set
 `site-url` and declare an Open Graph image:
 
-```toml
-[presentation.open-graph]
-repository = "docs"
-path = "assets/og.png"
-alt = "Foo documentation, with the project mascot beside an open book."
+```yaml
+presentation:
+  open-graph:
+    repository: "docs"
+    path: "assets/og.png"
+    alt: "Foo documentation, with the project mascot beside an open book."
 ```
 
 The image must be a PNG or JPEG inside the declared repository. `alt` describes
@@ -213,11 +225,11 @@ Twitter card. The preview uses that page's title and canonical URL, the site
 name and description, and the shared image with its dimensions and alt text.
 Image URLs are absolute and include any hosting prefix from `site-url`.
 Diplodocus validates and stores the image in the snapshot, so `generate` needs
-no source checkout. `serve` watches the image for changes. Omitting the table
+no source checkout. `serve` watches the image for changes. Omitting the mapping
 omits social preview metadata.
 
 The footer appears at the bottom of every page. All its fields are optional,
-and omitting the table produces no footer. `docs-version` is a free-form label
+and omitting the mapping produces no footer. `docs-version` is a free-form label
 such as `v1.0.0`, `dev`, or `main`; it identifies the documentation release or
 branch independently of individual package versions. Diplodocus does not infer
 the label or copyright notice from package metadata or the build date.

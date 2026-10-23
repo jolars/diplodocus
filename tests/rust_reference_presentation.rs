@@ -28,7 +28,7 @@ fn portable_rust_pages_group_members_and_map_their_links() {
     let output = tempfile::tempdir().unwrap();
     let snapshot_path = output.path().join("snapshot.sqlite");
     extract(ExtractOptions {
-        config: root.path().join("diplodocus.toml"),
+        config: root.path().join("diplodocus.yaml"),
         output: Some(snapshot_path.clone()),
     })
     .unwrap();

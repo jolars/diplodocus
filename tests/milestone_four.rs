@@ -6,7 +6,7 @@ use diplodocus::ir::{ItemLanguageData, ProvenanceActivity, PythonCallableRole, P
 use diplodocus::paths::resolve_workspace_paths;
 
 fn extract(workspace: &support::TestWorkspace) -> PythonExtraction {
-    let path = workspace.path().join("workspace/diplodocus.toml");
+    let path = workspace.path().join("workspace/diplodocus.yaml");
     let configuration = load_configuration(&path).unwrap();
     let paths = resolve_workspace_paths(&path, &configuration).unwrap();
     let package = paths.packages.iter().find(|p| p.id == "pyfoo").unwrap();

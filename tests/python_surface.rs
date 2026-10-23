@@ -987,14 +987,14 @@ fn annotated_type_aliases_preserve_union_targets_and_signature_links_in_snapshot
             "pyproject.toml",
             "[project]\nname='foo'\nversion='1.0'\nrequires-python='>=3.11'\n",
         );
-        root.write("diplodocus.toml", "[project]\nname='Aliases'\n[[repository]]\nid='python'\npath='.'\n[[package]]\nid='pyfoo'\nname='Foo'\nslug='python'\necosystem='python'\nrepository='python'\npath='.'\nmetadata-path='pyproject.toml'\ntargets=[{id='api',extractor='python',path='python/foo',role='public-api'}]\n");
+        root.write("diplodocus.yaml", "project:\n  name: \"Aliases\"\nrepositories:\n  - id: \"python\"\n    path: \".\"\npackages:\n  - id: \"pyfoo\"\n    name: \"Foo\"\n    slug: \"python\"\n    ecosystem: \"python\"\n    repository: \"python\"\n    path: \".\"\n    metadata-path: \"pyproject.toml\"\n    targets:\n      - id: \"api\"\n        extractor: \"python\"\n        path: \"python/foo\"\n        role: \"public-api\"\n");
         root.write(
             "python/foo/__init__.py",
             "from ._models import DatasetData, SparseDataset, SparseDatasetSplit, fetch\n__all__ = ['DatasetData', 'SparseDataset', 'SparseDatasetSplit', 'fetch']\n",
         );
         root.write("python/foo/_models.py", format!("{import}\nimport pandas as pd\nclass SparseDataset: ...\nclass SparseDatasetSplit: ...\nDatasetData: {marker} = pd.DataFrame | SparseDataset | SparseDatasetSplit\n\"\"\"Decoded dataset values.\"\"\"\ndef fetch(data: DatasetData) -> DatasetData: ...\n"));
         let sources =
-            diplodocus::assembly::assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+            diplodocus::assembly::assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
         let resolved = diplodocus::validation::resolve_workspace(&sources).unwrap();
         let snapshot = diplodocus::snapshots::Snapshot::from_sources(&sources, &resolved).unwrap();
         let path = root.path().join("snapshot.sqlite");

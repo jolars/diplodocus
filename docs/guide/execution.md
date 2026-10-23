@@ -1,8 +1,8 @@
 # QMD execution and security
 
 QMD execution is disabled by default. To run cells, declare a QMD collection with
-`mode = "execute"`, `engine = "jupyter"`, and a kernel name in
-[`diplodocus.toml`](configuration.md). The kernel must already be installed.
+`mode: "execute"`, `engine: "jupyter"`, and a kernel name in
+[`diplodocus.yaml`](configuration.md). The kernel must already be installed.
 Document metadata may turn execution off for a page, but cannot grant it to a
 collection where it is disabled. `check` never starts a kernel; `extract`,
 `build`, and `serve` may run authorized cells.
@@ -45,7 +45,7 @@ cache.
 R package vignettes execute by default through knitr during extraction. They use
 one native R process per article, with shared chunk and inline state and the
 article's directory as the working directory. Rmd collections default to
-`mode = "execute"` and `engine = "knitr"`; a kernel selector or disabled
+`mode: "execute"` and `engine: "knitr"`; a kernel selector or disabled
 collection is an error. Source options such as `eval = FALSE` still retain their
 native meaning. Declared environment inputs can supplement the automatically
 observed article and support files.

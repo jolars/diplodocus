@@ -303,7 +303,7 @@ async fn rust_results(
     let configuration = crate::configuration::load_configuration(path)?;
     reject_errors(validate_configuration_with_source(
         &configuration,
-        "diplodocus.toml".try_into().unwrap(),
+        "diplodocus.yaml".try_into().unwrap(),
     ))?;
     let paths = resolve_workspace_paths(path, &configuration)?;
     let cache = paths.configuration_directory.join(".diplodocus/cache");
@@ -359,7 +359,7 @@ fn assemble_with_native(
     let config_name = DiagnosticPath::try_from(
         path.file_name()
             .and_then(|s| s.to_str())
-            .unwrap_or("diplodocus.toml"),
+            .unwrap_or("diplodocus.yaml"),
     )
     .map_err(|_| AssemblyError::InputsChanged)?;
     reject_errors(validate_configuration_with_source(

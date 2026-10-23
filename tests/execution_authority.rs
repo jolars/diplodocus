@@ -10,12 +10,12 @@ mod support;
 
 fn collection(execute: bool) -> ContentConfiguration {
     let execution = if execute {
-        "[execution]\nmode = 'execute'\nengine = 'jupyter'\nkernel = 'uninstalled-kernel'\ndeclared-environment-inputs = ['missing.lock']\n"
+        "execution:\n  mode: \"execute\"\n  engine: \"jupyter\"\n  kernel: \"uninstalled-kernel\"\n  declared-environment-inputs:\n    - \"missing.lock\"\n"
     } else {
         ""
     };
-    toml::from_str(&format!(
-        "id = 'examples'\nowner = 'project'\nrepository = 'docs'\npath = 'missing'\nmount = 'examples'\nformat = 'qmd'\n{execution}"
+    serde_saphyr::from_str(&format!(
+        "id: \"examples\"\nowner: \"project\"\nrepository: \"docs\"\npath: \"missing\"\nmount: \"examples\"\nformat: \"qmd\"\n{execution}"
     ))
     .unwrap()
 }
@@ -39,7 +39,7 @@ fn assert_error(diagnostic: &Diagnostic, code: DiagnosticCode) {
 #[test]
 fn acceptance_metadata_cannot_authorize_execution() {
     let config = parse_configuration(&support::load_fixture(
-        "acceptance/workspace/diplodocus.toml",
+        "acceptance/workspace/diplodocus.yaml",
     ))
     .unwrap();
     let collection = config
@@ -144,7 +144,7 @@ fn document_selectors_are_rejected_even_when_matching_the_collection() {
         "execute:\n  kernel: uninstalled-kernel\n",
         "execute: {kernel: uninstalled-kernel}\n",
         "'jupyter': uninstalled-kernel\n",
-        "execute: {'engine': jupyter}\n",
+        "execute: {\"engine\": jupyter}\n",
         "jupyter: [invalid, selector]\n",
         "kernel:\n",
     ] {

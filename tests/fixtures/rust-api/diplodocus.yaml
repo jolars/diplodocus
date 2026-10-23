@@ -1,0 +1,27 @@
+project:
+  name: "Rust API fixture"
+repositories:
+  - id: "fixture"
+    path: "."
+    url: "https://github.com/example/rust-demo"
+    revision: "fixture-revision"
+packages:
+  - id: "rustdemo"
+    name: "Rust Demo"
+    slug: "rust"
+    ecosystem: "rust"
+    repository: "fixture"
+    path: "."
+    metadata-path: "Cargo.toml"
+    targets:
+      - id: "api"
+        extractor: "rust"
+        path: "src/lib.rs"
+        role: "public-api"
+content:
+  - id: "guide"
+    owner: "rustdemo"
+    repository: "fixture"
+    path: "guide"
+    mount: "guide"
+    format: "gfm"

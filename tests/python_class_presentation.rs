@@ -74,7 +74,7 @@ class Diamond(Left, Right):
 "#,
     );
     root.write("python/demo/__init__.py", "from ._api import Base, Child, Diamond, Left, Override, Right, target\n__all__ = ['Base', 'Child', 'Diamond', 'Left', 'Override', 'Right', 'target']\n");
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let site = Site::new(&snapshot).unwrap();
     let rendered = render_site(&site).unwrap();
@@ -190,7 +190,7 @@ class NativeError(ValueError):
 "#,
     );
     root.write("python/demo/__init__.py", "from ._api import Plain, Derived, First, Second, NativeError\n__all__ = ['Plain', 'Derived', 'First', 'Second', 'NativeError']\n");
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let rendered = render_site(&Site::new(&snapshot).unwrap()).unwrap();
     let plain = resolve_item(snapshot.workspace(), Some("python"), "demo.Plain").unwrap();
@@ -233,7 +233,7 @@ def usage() -> None:
         "python/demo/__init__.py",
         "from ._api import Nested, usage\n__all__ = ['Nested', 'usage']\n",
     );
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let rendered = render_site(&Site::new(&snapshot).unwrap()).unwrap();
     let outer = resolve_item(snapshot.workspace(), Some("python"), "demo.Nested").unwrap();

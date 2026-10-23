@@ -1,0 +1,42 @@
+# Expected diagnostic: incompatible-package-relationship for `pyfoo` and `rfoo`.
+
+project:
+  name: "Incompatible relationship variant"
+repositories:
+  - id: "python"
+    path: "../../python"
+    url: "https://github.com/example/foo-python"
+  - id: "r"
+    path: "../../r"
+    url: "https://github.com/example/foo-r"
+packages:
+  - id: "pyfoo"
+    name: "Foo for Python"
+    slug: "python"
+    ecosystem: "python"
+    repository: "python"
+    path: "."
+    metadata-path: "pyproject.toml"
+    targets:
+      - id: "api"
+        extractor: "python"
+        path: "python/foo"
+        role: "public-api"
+  - id: "rfoo"
+    name: "Foo for R"
+    slug: "r"
+    ecosystem: "r"
+    repository: "r"
+    path: "."
+    metadata-path: "DESCRIPTION"
+    targets:
+      - id: "api"
+        extractor: "r"
+        path: "."
+        role: "public-api"
+relationships:
+  - from: "pyfoo"
+    to: "rfoo"
+    kind: "depends-on"
+    version-constraint: "^2.0"
+    provenance: "explicit"

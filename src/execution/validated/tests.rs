@@ -13,7 +13,7 @@ fn inputs() -> (PageExecutionRequest, AuthoredOutputContext) {
     inputs_from(SOURCE)
 }
 fn inputs_from(source: &str) -> (PageExecutionRequest, AuthoredOutputContext) {
-    let config: ContentConfiguration = toml::from_str("id='guide'\nowner='project'\nrepository='repo'\npath='.'\nmount=''\nformat='qmd'\n[execution]\nmode='execute'\nengine='jupyter'\nkernel='python3'\n").unwrap();
+    let config: ContentConfiguration = serde_saphyr::from_str("id: \"guide\"\nowner: \"project\"\nrepository: \"repo\"\npath: \".\"\nmount: \"\"\nformat: \"qmd\"\nexecution:\n  mode: \"execute\"\n  engine: \"jupyter\"\n  kernel: \"python3\"\n").unwrap();
     let prepared = prepare_collection_document(source, &config)
         .unwrap()
         .preparation

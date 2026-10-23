@@ -16,37 +16,39 @@ use diplodocus::provenance::{
 };
 use support::TestWorkspace;
 
-const CONFIG: &str = r#"
-[project]
-name = "Evidence"
-
-[[repository]]
-id = "repo"
-path = "repo"
-url = "https://example.org/source"
-
-[[package]]
-id = "pkg"
-name = "Package"
-slug = "pkg"
-ecosystem = "python"
-repository = "repo"
-path = "pkg"
-metadata-path = "pyproject.toml"
-targets = [{ id = "api", extractor = "python", path = "src", role = "public-api" }]
-
-[[content]]
-id = "guide"
-owner = "project"
-repository = "repo"
-path = "docs"
-mount = "guide"
-format = "qmd"
-[content.execution]
-mode = "execute"
-engine = "jupyter"
-kernel = "python3"
-declared-environment-inputs = ["uv.lock", "requirements.txt"]
+const CONFIG: &str = r#"project:
+  name: "Evidence"
+repositories:
+  - id: "repo"
+    path: "repo"
+    url: "https://example.org/source"
+packages:
+  - id: "pkg"
+    name: "Package"
+    slug: "pkg"
+    ecosystem: "python"
+    repository: "repo"
+    path: "pkg"
+    metadata-path: "pyproject.toml"
+    targets:
+      - id: "api"
+        extractor: "python"
+        path: "src"
+        role: "public-api"
+content:
+  - id: "guide"
+    owner: "project"
+    repository: "repo"
+    path: "docs"
+    mount: "guide"
+    format: "qmd"
+    execution:
+      mode: "execute"
+      engine: "jupyter"
+      kernel: "python3"
+      declared-environment-inputs:
+        - "uv.lock"
+        - "requirements.txt"
 "#;
 
 fn workspace(reverse: bool) -> (TestWorkspace, WorkspaceConfiguration, PathBuf) {
@@ -65,7 +67,7 @@ fn workspace(reverse: bool) -> (TestWorkspace, WorkspaceConfiguration, PathBuf) 
     for (path, bytes) in files {
         workspace.write(path, bytes);
     }
-    let config_path = workspace.path().join("diplodocus.toml");
+    let config_path = workspace.path().join("diplodocus.yaml");
     (workspace, parse_configuration(CONFIG).unwrap(), config_path)
 }
 
@@ -209,7 +211,7 @@ fn source_conversion_rechecks_containment_and_retains_proven_ranges() {
             error.kind,
             PathResolutionErrorKind::OutsideBoundary { .. }
         ));
-        let diagnostic = error.to_diagnostic(DiagnosticPath::try_from("diplodocus.toml").unwrap());
+        let diagnostic = error.to_diagnostic(DiagnosticPath::try_from("diplodocus.yaml").unwrap());
         assert_eq!(diagnostic.code, DiagnosticCode::SourcePathOutsideBoundary);
         assert!(
             !serde_json::to_string(&diagnostic)

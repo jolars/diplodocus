@@ -102,10 +102,7 @@ assert native_mean([1.0, 3.0]) == 2.0
 
 pub fn shared_r_workspace() -> TestWorkspace {
     let workspace = TestWorkspace::new();
-    workspace.write("workspace/diplodocus.toml", "[project]\nname='Shared R help'\n\
-        [[repository]]\nid='r'\npath='../r'\n\
-        [[package]]\nid='rfoo'\nname='Shared help'\nslug='r'\necosystem='r'\nrepository='r'\npath='.'\nmetadata-path='DESCRIPTION'\n\
-        targets=[{id='api', extractor='r', path='.', role='public-api'}]\n");
+    workspace.write("workspace/diplodocus.yaml", "project:\n  name: \"Shared R help\"\nrepositories:\n  - id: \"r\"\n    path: \"../r\"\npackages:\n  - id: \"rfoo\"\n    name: \"Shared help\"\n    slug: \"r\"\n    ecosystem: \"r\"\n    repository: \"r\"\n    path: \".\"\n    metadata-path: \"DESCRIPTION\"\n    targets:\n      - id: \"api\"\n        extractor: \"r\"\n        path: \".\"\n        role: \"public-api\"\n");
     workspace.write(
         "r/DESCRIPTION",
         "Package: sharedhelp\nVersion: 1.0.0\nTitle: Shared Help Fixtures\n\
@@ -280,4 +277,33 @@ fn tree_entries(root: &Path) -> Vec<TreeEntry> {
     visit(root, root, &mut entries);
     entries.sort();
     entries
+}
+
+pub fn configuration_error_span(error: &serde_saphyr::Error) -> Option<diplodocus::ir::SourceSpan> {
+    let span = error.location()?.span();
+    let start = usize::try_from(span.byte_offset()?).ok()?;
+    let length = usize::try_from(span.byte_len()?).ok()?;
+    Some(diplodocus::ir::SourceSpan {
+        start,
+        end: start + length,
+    })
+}
+
+pub fn merge_configurations(source: &str, additions: &str) -> String {
+    let mut configuration: serde_json::Value = serde_saphyr::from_str(source).unwrap();
+    let additions: serde_json::Map<String, serde_json::Value> =
+        serde_saphyr::from_str(additions).unwrap();
+    for (key, value) in additions {
+        if let (Some(existing), Some(entries)) = (
+            configuration
+                .get_mut(&key)
+                .and_then(serde_json::Value::as_array_mut),
+            value.as_array(),
+        ) {
+            existing.extend(entries.iter().cloned());
+        } else {
+            configuration.as_object_mut().unwrap().insert(key, value);
+        }
+    }
+    serde_saphyr::to_string(&configuration).unwrap()
 }

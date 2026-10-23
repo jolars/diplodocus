@@ -13,7 +13,7 @@ fn workspace(language: &str, documentation: &str) -> support::TestWorkspace {
     } else {
         ("Project.toml", "src/ApiExamples.jl", "ApiExamples")
     };
-    root.write("diplodocus.toml", format!("[project]\nname='API examples'\n[[repository]]\nid='repo'\npath='repo'\n[[package]]\nid='api'\nname='API examples'\nslug='api'\necosystem='{language}'\nrepository='repo'\npath='.'\nmetadata-path='{metadata}'\ntargets=[{{id='api',extractor='{language}',path='{entry}',role='public-api'}}]\n"));
+    root.write("diplodocus.yaml", format!("project:\n  name: \"API examples\"\nrepositories:\n  - id: \"repo\"\n    path: \"repo\"\npackages:\n  - id: \"api\"\n    name: \"API examples\"\n    slug: \"api\"\n    ecosystem: \"{language}\"\n    repository: \"repo\"\n    path: \".\"\n    metadata-path: \"{metadata}\"\n    targets:\n      - id: \"api\"\n        extractor: \"{language}\"\n        path: \"{entry}\"\n        role: \"public-api\"\n"));
     if language == "python" {
         root.write(
             "repo/pyproject.toml",
@@ -30,7 +30,7 @@ fn workspace(language: &str, documentation: &str) -> support::TestWorkspace {
 fn command(root: &support::TestWorkspace, operation: &str) -> Output {
     Command::new(env!("CARGO_BIN_EXE_diplodocus"))
         .current_dir(root.path())
-        .args([operation, "--config", "diplodocus.toml"])
+        .args([operation, "--config", "diplodocus.yaml"])
         .output()
         .unwrap()
 }
@@ -77,7 +77,7 @@ fn native_doctests_verify_state_expected_errors_and_portable_outcomes() {
     for (language, documentation) in [("python", PYTHON), ("julia", JULIA)] {
         let root = workspace(language, documentation);
         success(command(&root, "check"));
-        let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+        let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
         assert!(
             sources.workspace().packages["api"]
                 .items
@@ -215,7 +215,7 @@ fn unavailable_interpreters_and_dependencies_are_errors_instead_of_skips() {
         let output = Command::new(env!("CARGO_BIN_EXE_diplodocus"))
             .current_dir(root.path())
             .env("PATH", "")
-            .args(["extract", "--config", "diplodocus.toml"])
+            .args(["extract", "--config", "diplodocus.yaml"])
             .output()
             .unwrap();
         assert!(!output.status.success());
@@ -302,7 +302,7 @@ fn native_timeouts_and_cancellation_stop_before_publication() {
         let root = workspace("python", "    >>> while True:\n    ...     pass\n");
         let output = root.path().join("snapshot.sqlite");
         let options = ExtractOptions {
-            config: root.path().join("diplodocus.toml"),
+            config: root.path().join("diplodocus.yaml"),
             output: Some(output.clone()),
         };
         let deadlines = ExecutionDeadlines {
@@ -397,7 +397,7 @@ fn python_checkouts_without_doctests_are_loaded_before_publication() {
             let mut invocation = Command::new(env!("CARGO_BIN_EXE_diplodocus"));
             invocation
                 .current_dir(root.path())
-                .args([operation, "--config", "diplodocus.toml"]);
+                .args([operation, "--config", "diplodocus.yaml"]);
             if broken == "interpreter" {
                 invocation.env("PATH", "");
             }

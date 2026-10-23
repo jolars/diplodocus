@@ -10,14 +10,14 @@ const LOGO: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" width="80" height
 fn workspace(logo: bool) -> support::TestWorkspace {
     let root = support::TestWorkspace::new();
     let settings = if logo {
-        "[presentation.logo]\nrepository='docs'\npath='branding/logo.svg'\n"
+        "presentation:\n  logo:\n    repository: \"docs\"\n    path: \"branding/logo.svg\"\n"
     } else {
         ""
     };
     root.write(
-        "diplodocus.toml",
+        "diplodocus.yaml",
         format!(
-            "[project]\nname='Logo & docs'\n{settings}[[repository]]\nid='docs'\npath='.'\n[[content]]\nid='guide'\nowner='project'\nrepository='docs'\npath='docs'\nmount=''\nformat='gfm'\n"
+            "project:\n  name: Logo & docs\n{settings}repositories:\n  - id: docs\n    path: .\ncontent:\n  - id: guide\n    owner: project\n    repository: docs\n    path: docs\n    mount: ''\n    format: gfm\n"
         ),
     );
     root.write("docs/index.md", "# Home\n");
@@ -29,7 +29,7 @@ fn workspace(logo: bool) -> support::TestWorkspace {
 fn logo_survives_snapshot_generation_without_sources_on_every_page() {
     let root = workspace(true);
     root.write("branding/logo.svg", LOGO);
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let resolved = resolve_workspace(&sources).unwrap();
     assert!(
         resolved
@@ -67,8 +67,8 @@ fn raster_logos_are_preserved_and_use_their_image_extension() {
     ] {
         let root = workspace(true);
         root.write(
-            "diplodocus.toml",
-            root.read("diplodocus.toml")
+            "diplodocus.yaml",
+            root.read("diplodocus.yaml")
                 .replace("branding/logo.svg", &format!("branding/logo.{extension}")),
         );
         let mut bytes = std::io::Cursor::new(Vec::new());
@@ -76,7 +76,7 @@ fn raster_logos_are_preserved_and_use_their_image_extension() {
             .write_to(&mut bytes, format)
             .unwrap();
         root.write(format!("branding/logo.{extension}"), bytes.get_ref());
-        let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+        let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
         let snapshot =
             Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
         let rendered =
@@ -94,13 +94,13 @@ fn raster_logos_are_preserved_and_use_their_image_extension() {
 fn logo_and_document_images_share_one_asset() {
     let root = workspace(true);
     root.write(
-        "diplodocus.toml",
-        root.read("diplodocus.toml")
+        "diplodocus.yaml",
+        root.read("diplodocus.yaml")
             .replace("branding/logo.svg", "docs/assets/logo.svg"),
     );
     root.write("docs/assets/logo.svg", LOGO);
     root.write("docs/index.md", "# Home\n\n![Logo](assets/logo.svg)\n");
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     assert_eq!(snapshot.assets().len(), 1);
 }
@@ -108,7 +108,7 @@ fn logo_and_document_images_share_one_asset() {
 #[test]
 fn unconfigured_logo_keeps_the_title_only() {
     let root = workspace(false);
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     assert!(snapshot.logo().is_none());
     let rendered =
@@ -133,7 +133,7 @@ fn logo_rejects_missing_nonimage_and_unsafe_svg_files() {
         if let Some(bytes) = bytes {
             root.write("branding/logo.svg", bytes);
         }
-        let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+        let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
         assert!(resolve_workspace(&sources).is_err());
     }
 }
@@ -142,7 +142,7 @@ fn logo_rejects_missing_nonimage_and_unsafe_svg_files() {
 fn logo_changes_are_rechecked_before_snapshot_publication() {
     let root = workspace(true);
     root.write("branding/logo.svg", LOGO);
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let resolved = resolve_workspace(&sources).unwrap();
     root.write("branding/logo.svg", LOGO.replace("80", "100"));
     assert!(Snapshot::from_sources(&sources, &resolved).is_err());
@@ -157,6 +157,6 @@ fn logo_cannot_follow_a_symlink_outside_its_repository() {
     std::fs::write(&target, LOGO).unwrap();
     std::fs::create_dir(root.path().join("branding")).unwrap();
     std::os::unix::fs::symlink(target, root.path().join("branding/logo.svg")).unwrap();
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     assert!(resolve_workspace(&sources).is_err());
 }

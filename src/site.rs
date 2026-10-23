@@ -716,7 +716,7 @@ mod tests {
         let fixture = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("tests/fixtures/python-overloads");
         for path in [
-            "diplodocus.toml",
+            "diplodocus.yaml",
             "python/pyproject.toml",
             "python/demo/__init__.py",
             "python/demo/_api.py",
@@ -727,7 +727,7 @@ mod tests {
             std::fs::copy(fixture.join(path), destination).unwrap();
         }
         let sources =
-            crate::assembly::assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+            crate::assembly::assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
         let resolved = crate::validation::resolve_workspace(&sources).unwrap();
         let snapshot = Snapshot::from_sources(&sources, &resolved).unwrap();
         let site = Site::new(&snapshot).unwrap();

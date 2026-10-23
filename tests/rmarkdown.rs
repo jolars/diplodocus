@@ -7,7 +7,7 @@ use std::process::{Command, Output};
 
 fn workspace(article: &str) -> support::TestWorkspace {
     let root = support::TestWorkspace::new();
-    root.write("diplodocus.toml", "[project]\nname='Articles'\n[[repository]]\nid='r'\npath='r'\n[[package]]\nid='demo'\nname='Demo'\nslug='demo'\necosystem='r'\nrepository='r'\npath='.'\nmetadata-path='DESCRIPTION'\ntargets=[{id='api',extractor='r',path='.',role='public-api'}]\n");
+    root.write("diplodocus.yaml", "project:\n  name: \"Articles\"\nrepositories:\n  - id: \"r\"\n    path: \"r\"\npackages:\n  - id: \"demo\"\n    name: \"Demo\"\n    slug: \"demo\"\n    ecosystem: \"r\"\n    repository: \"r\"\n    path: \".\"\n    metadata-path: \"DESCRIPTION\"\n    targets:\n      - id: \"api\"\n        extractor: \"r\"\n        path: \".\"\n        role: \"public-api\"\n");
     root.write("r/DESCRIPTION", "Package: demo\nVersion: 0.1.0\nTitle: Demo\nDescription: An article fixture.\nLicense: MIT\nAuthor: Example Author\nMaintainer: Example Author <author@example.com>\nEncoding: UTF-8\n");
     root.write("r/NAMESPACE", "export(answer)\n");
     root.write("r/R/api.R", "answer <- function() 42L\n");
@@ -22,7 +22,7 @@ fn workspace(article: &str) -> support::TestWorkspace {
 fn run(root: &support::TestWorkspace, command: &str) -> Output {
     Command::new(env!("CARGO_BIN_EXE_diplodocus"))
         .current_dir(root.path())
-        .args([command, "--config", "diplodocus.toml"])
+        .args([command, "--config", "diplodocus.yaml"])
         .output()
         .unwrap()
 }
@@ -266,11 +266,11 @@ fn console_output_stays_separate_when_knitr_collapses_chunks() {
 fn check_is_static_and_explicit_collections_override_discovery() {
     let root =
         workspace("---\ntitle: Custom\n---\n```{r}\nwriteLines('bad','execution-marker')\n```\n");
-    let config = fs::read_to_string(root.path().join("diplodocus.toml")).unwrap();
-    root.write("diplodocus.toml",format!("{config}\n[[content]]\nid='articles'\nowner='demo'\nrepository='r'\npath='vignettes'\nmount='articles'\nformat='rmd'\n"));
+    let config = fs::read_to_string(root.path().join("diplodocus.yaml")).unwrap();
+    root.write("diplodocus.yaml",format!("{config}\ncontent:\n  - id: \"articles\"\n    owner: \"demo\"\n    repository: \"r\"\n    path: \"vignettes\"\n    mount: \"articles\"\n    format: \"rmd\"\n"));
     success(run(&root, "check"));
     assert!(!root.path().join("r/vignettes/execution-marker").exists());
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     assert_eq!(
         sources
             .workspace()
@@ -371,7 +371,7 @@ fn local_csl_and_bibliography_errors_are_checked_without_r_execution() {
 async fn native_articles_are_bounded_and_cancellation_stops_the_helper() {
     use diplodocus::execution::{ExecutionCancellation, ExecutionDeadlines};
     let root = workspace("```{r}\nSys.sleep(60)\n```\n");
-    let mut sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let mut sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let mut cancellation: ExecutionCancellation<'_> = Box::pin(std::future::pending());
     let error = sources
         .execute_rmarkdown(
@@ -384,7 +384,7 @@ async fn native_articles_are_bounded_and_cancellation_stops_the_helper() {
         .await
         .unwrap_err();
     assert!(error.to_string().contains("diagnostics"));
-    let mut sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let mut sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let mut cancellation: ExecutionCancellation<'_> = Box::pin(async {});
     assert!(matches!(
         sources

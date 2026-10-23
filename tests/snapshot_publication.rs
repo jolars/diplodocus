@@ -9,7 +9,7 @@ use diplodocus::validation::resolve_workspace;
 use rusqlite::{Connection, OpenFlags};
 
 fn snapshot(root: &support::TestWorkspace) -> Snapshot {
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
     let resolved = resolve_workspace(&sources).unwrap();
     Snapshot::from_sources(&sources, &resolved).unwrap()
 }

@@ -492,7 +492,7 @@ fn deserialize_path<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result
 pub enum DiagnosticSource {
     /// A file relative to the workspace configuration directory.
     Configuration {
-        /// Configuration-relative path, usually `diplodocus.toml`.
+        /// Configuration-relative path, usually `diplodocus.yaml`.
         path: DiagnosticPath,
     },
     /// A file within an explicitly declared repository.
@@ -521,7 +521,7 @@ pub enum DiagnosticEntity {
     Configuration,
     /// An indexed configuration field, before a semantic entity is available.
     ConfigurationField {
-        /// Schema field path, such as `package[0].slug`.
+        /// Schema field path, such as `packages[0].slug`.
         path: String,
     },
     /// An authored content collection.

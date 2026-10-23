@@ -6,7 +6,7 @@ background. This is the selected v5 design, generated with the built-in image
 tool without a reference image using the [saved prompt](diplodocus-logo.prompt.txt).
 
 `og.png` is the 1200 by 630 pixel image used when sharing links to the
-documentation. `[presentation.open-graph]` in `diplodocus.toml` selects it.
+documentation. `[presentation.open-graph]` in `diplodocus.yaml` selects it.
 
 `favicon.png` is a 64-pixel version of the logo. `favicon.ico` contains 16, 32,
 and 48 pixel versions, and `apple-touch-icon.png` is 180 pixels with a near-white

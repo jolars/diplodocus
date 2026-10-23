@@ -379,7 +379,7 @@ pub fn resolve_workspace_paths(
 
     let mut repositories = Vec::with_capacity(configuration.repositories.len());
     for (index, repository) in configuration.repositories.iter().enumerate() {
-        let field = format!("repository[{index}] (`{}`).path", repository.id);
+        let field = format!("repositories[{index}] (`{}`).path", repository.id);
         let path = resolver.resolve_path(
             &field,
             &repository.path,
@@ -395,7 +395,7 @@ pub fn resolve_workspace_paths(
 
     let mut packages = Vec::with_capacity(configuration.packages.len());
     for (index, package) in configuration.packages.iter().enumerate() {
-        let field = format!("package[{index}] (`{}`)", package.id);
+        let field = format!("packages[{index}] (`{}`)", package.id);
         let repository_index = resolver.repository_index(
             &format!("{field}.repository"),
             &package.repository,

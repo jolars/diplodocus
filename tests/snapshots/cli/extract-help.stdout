@@ -3,7 +3,7 @@ Extract a portable SQLite documentation snapshot
 Usage: diplodocus extract [OPTIONS]
 
 Options:
-      --config <PATH>  Path to the workspace configuration file [default: ./diplodocus.toml]
+      --config <PATH>  Path to the workspace configuration file [default: ./diplodocus.yaml]
       --output <PATH>  Snapshot destination (defaults to .diplodocus/documentation.sqlite beside the configuration)
       --watch          Re-extract changed inputs and emit a JSON line after each published snapshot
   -h, --help           Print help

@@ -242,7 +242,7 @@ async function develop(root, executable, port) {
     };
     completion(current).then(() => failed(new Error("VitePress exited unexpectedly.")), failed);
   }
-  const extractor = child(executable, ["extract", "--watch", "--config", join(root, "diplodocus.toml")], "pipe");
+  const extractor = child(executable, ["extract", "--watch", "--config", join(root, "diplodocus.yaml")], "pipe");
   const exited = completion(extractor);
   // Attach immediately so an initial extraction failure cannot reject unhandled.
   exited.catch(() => {});
@@ -297,7 +297,7 @@ async function main() {
     await develop(root, executable, port);
   } else {
     const snapshot = options.snapshot ? resolve(options.snapshot) : join(root, ".diplodocus/documentation.sqlite");
-    if (!options.snapshot) await run(executable, ["extract", "--config", join(root, "diplodocus.toml"), "--output", snapshot]);
+    if (!options.snapshot) await run(executable, ["extract", "--config", join(root, "diplodocus.yaml"), "--output", snapshot]);
     const generation = await prepare(root, executable, snapshot);
     try {
       await publish(generation);

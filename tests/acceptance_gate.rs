@@ -10,7 +10,7 @@ use support::{AcceptanceRegistry, TestWorkspace};
 #[test]
 fn baseline_authored_pages_have_no_parser_diagnostics() {
     let workspace = support::acceptance_workspace();
-    let declared = ["workspace/diplodocus.toml", "julia/diplodocus.toml"]
+    let declared = ["workspace/diplodocus.yaml", "julia/diplodocus.yaml"]
         .into_iter()
         .flat_map(|config| support::authored_sources(&workspace, config))
         .map(|(path, _)| path)
@@ -365,7 +365,7 @@ fn validate_configuration(workspace: &TestWorkspace, config: &str) {
     let root = workspace.path().canonicalize().unwrap();
     let config_dir = workspace.path().join(config).parent().unwrap().to_owned();
     let mut repositories = BTreeMap::new();
-    for repository in value["repository"].as_array().unwrap() {
+    for repository in value["repositories"].as_array().unwrap() {
         let path = config_dir
             .join(repository["path"].as_str().unwrap())
             .canonicalize()
@@ -379,7 +379,7 @@ fn validate_configuration(workspace: &TestWorkspace, config: &str) {
         assert!(repository["url"].as_str().unwrap().starts_with("https://"));
     }
     let mut owners = BTreeSet::from(["project"]);
-    if let Some(packages) = value.get("package").and_then(toml::Value::as_array) {
+    if let Some(packages) = value.get("packages").and_then(serde_json::Value::as_array) {
         for package in packages {
             assert!(owners.insert(package["id"].as_str().unwrap()));
             let repository = &repositories[package["repository"].as_str().unwrap()];
@@ -403,7 +403,7 @@ fn validate_configuration(workspace: &TestWorkspace, config: &str) {
             }
         }
     }
-    if let Some(collections) = value.get("content").and_then(toml::Value::as_array) {
+    if let Some(collections) = value.get("content").and_then(serde_json::Value::as_array) {
         let mut ids = BTreeSet::new();
         for collection in collections {
             assert!(ids.insert(collection["id"].as_str().unwrap()));
@@ -545,7 +545,7 @@ fn validate_local_links(workspace: &TestWorkspace, config: &str) {
 fn baseline_has_resolvable_local_links_and_assets() {
     validate_local_links(
         &support::acceptance_workspace(),
-        "workspace/diplodocus.toml",
+        "workspace/diplodocus.yaml",
     );
 }
 
@@ -555,7 +555,7 @@ fn missing_authored_assets_fail_the_corpus_check() {
     workspace.remove("core/docs/assets/workspace.svg");
     assert!(
         std::panic::catch_unwind(|| {
-            validate_local_links(&workspace, "workspace/diplodocus.toml")
+            validate_local_links(&workspace, "workspace/diplodocus.yaml")
         })
         .is_err()
     );

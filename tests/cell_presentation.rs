@@ -17,12 +17,12 @@ use diplodocus::rendering::{present_cell, present_prepared_cell};
 
 fn prepared(options: &str, mode: ExecutionMode) -> (ExecutionPage, PreparedCell) {
     let execution = if mode == ExecutionMode::Execute {
-        "[execution]\nmode = 'execute'\nengine = 'jupyter'\nkernel = 'unavailable'"
+        "execution:\n  mode: \"execute\"\n  engine: \"jupyter\"\n  kernel: \"unavailable\""
     } else {
         ""
     };
-    let collection: ContentConfiguration = toml::from_str(&format!(
-        "id = 'guide'\nowner = 'project'\nrepository = 'docs'\npath = 'guide'\nmount = 'guide'\nformat = 'qmd'\n{execution}"
+    let collection: ContentConfiguration = serde_saphyr::from_str(&format!(
+        "id: \"guide\"\nowner: \"project\"\nrepository: \"docs\"\npath: \"guide\"\nmount: \"guide\"\nformat: \"qmd\"\n{execution}"
     )).unwrap();
     let source = format!(
         "---\nexecute: {{echo: false}}\n---\n\n> ```{{python, echo=true}}\n{options}> print('<source>')\n> ```\n"

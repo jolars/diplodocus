@@ -1,6 +1,6 @@
 {
   "configuration": {
-    "concept": [
+    "concepts": [
       {
         "id": "fit",
         "kind": "equivalent",
@@ -97,7 +97,7 @@
         "repository": "r"
       }
     ],
-    "package": [
+    "packages": [
       {
         "ecosystem": "python",
         "id": "pyfoo",
@@ -140,7 +140,7 @@
     "project": {
       "name": "Foo"
     },
-    "relationship": [
+    "relationships": [
       {
         "from": "pyfoo",
         "kind": "binds",
@@ -149,7 +149,7 @@
         "version-constraint": "^1.9"
       }
     ],
-    "repository": [
+    "repositories": [
       {
         "id": "core",
         "path": "../core",

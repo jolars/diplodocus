@@ -3,5 +3,5 @@ Check documentation without writing a site
 Usage: diplodocus check [OPTIONS]
 
 Options:
-      --config <PATH>  Path to the workspace configuration file [default: ./diplodocus.toml]
+      --config <PATH>  Path to the workspace configuration file [default: ./diplodocus.yaml]
   -h, --help           Print help

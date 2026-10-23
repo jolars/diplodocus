@@ -10,16 +10,16 @@ use serde_json::{Value, json};
 
 fn fixture(presentation: &str) -> support::TestWorkspace {
     let root = support::acceptance_workspace();
-    let config = root.read("workspace/diplodocus.toml");
+    let config = root.read("workspace/diplodocus.yaml");
     let config = config
-        .replace("slug = \"python\"", "slug = \"python-api\"")
-        .replace("mount = \"guide\"", "mount = \"manual\"")
+        .replace("slug: \"python\"", "slug: \"python-api\"")
+        .replace("mount: \"guide\"", "mount: \"manual\"")
         .replace(
-            "url = \"https://github.com/example/foo-python\"",
-            "url = \"https://forge.example/foo-python\"\nrevision = \"release-2.1\"\nsource-link-template = \"https://forge.example/foo-python/blob/{revision}/{path}#L{line}\"",
+            "url: \"https://github.com/example/foo-python\"",
+            "url: \"https://forge.example/foo-python\"\n    revision: \"release-2.1\"\n    source-link-template: \"https://forge.example/foo-python/blob/{revision}/{path}#L{line}\"",
         );
     root.write(
-        "workspace/diplodocus.toml",
+        "workspace/diplodocus.yaml",
         format!("{config}\n{presentation}"),
     );
     root.write(
@@ -30,7 +30,7 @@ fn fixture(presentation: &str) -> support::TestWorkspace {
 }
 
 fn snapshot(root: &support::TestWorkspace) -> Snapshot {
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
     let resolved = resolve_workspace(&sources).unwrap();
     Snapshot::from_sources(&sources, &resolved).unwrap()
 }
@@ -68,8 +68,7 @@ fn presentation_defaults_are_explicit_even_when_omitted_in_configuration() {
 
 #[test]
 fn metadata_survives_relocation_and_loading_without_source_checkouts() {
-    let settings =
-        "[presentation]\ntitle = 'Foo & friends'\ndescription = 'A \"portable\" <guide>'\n";
+    let settings = "presentation:\n  title: \"Foo & friends\"\n  description: \"A \\\"portable\\\" <guide>\"\n";
     let root = fixture(settings);
     let snapshot = snapshot(&root);
     let expected = snapshot.workspace().clone();
@@ -183,9 +182,9 @@ fn observed_repository_revision_and_dirty_state_survive_storage() {
     git(&["commit", "--quiet", "-m", "Fixture"]);
     let revision = git(&["rev-parse", "HEAD"]);
     let config = root
-        .read("workspace/diplodocus.toml")
-        .replace("revision = \"release-2.1\"\n", "");
-    root.write("workspace/diplodocus.toml", config);
+        .read("workspace/diplodocus.yaml")
+        .replace("    revision: \"release-2.1\"\n", "");
+    root.write("workspace/diplodocus.yaml", config);
     let target = tempfile::tempdir().unwrap();
     for dirty in [false, true] {
         if dirty {

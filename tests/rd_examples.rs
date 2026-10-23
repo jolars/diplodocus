@@ -9,22 +9,25 @@ use std::process::{Command, Output};
 fn workspace(examples: &str) -> support::TestWorkspace {
     let root = support::TestWorkspace::new();
     root.write(
-        "diplodocus.toml",
-        r#"
-[project]
-name = "Rd examples"
-[[repository]]
-id = "r"
-path = "r"
-[[package]]
-id = "rdex"
-name = "Rd example package"
-slug = "rdex"
-ecosystem = "r"
-repository = "r"
-path = "."
-metadata-path = "DESCRIPTION"
-targets = [{ id = "api", extractor = "r", path = ".", role = "public-api" }]
+        "diplodocus.yaml",
+        r#"project:
+  name: "Rd examples"
+repositories:
+  - id: "r"
+    path: "r"
+packages:
+  - id: "rdex"
+    name: "Rd example package"
+    slug: "rdex"
+    ecosystem: "r"
+    repository: "r"
+    path: "."
+    metadata-path: "DESCRIPTION"
+    targets:
+      - id: "api"
+        extractor: "r"
+        path: "."
+        role: "public-api"
 "#,
     );
     root.write("r/DESCRIPTION", "Package: rdex\nVersion: 0.1.0\nTitle: Rd examples\nDescription: A working example package.\nLicense: MIT\nAuthor: Example Author\nMaintainer: Example Author <author@example.com>\nEncoding: UTF-8\n");
@@ -41,7 +44,7 @@ targets = [{ id = "api", extractor = "r", path = ".", role = "public-api" }]
 fn extract(root: &support::TestWorkspace) -> Output {
     Command::new(env!("CARGO_BIN_EXE_diplodocus"))
         .current_dir(root.path())
-        .args(["extract", "--config", "diplodocus.toml"])
+        .args(["extract", "--config", "diplodocus.yaml"])
         .output()
         .unwrap()
 }
@@ -95,7 +98,7 @@ message("example message")
 warning("example warning")
 "#,
     );
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     assert!(
         sources.workspace().packages["rdex"]
             .items
@@ -274,7 +277,7 @@ async fn native_execution_is_bounded_and_cancellation_reaps_the_helper() {
     use diplodocus::assembly::AssemblyError;
     use diplodocus::execution::{ExecutionCancellation, ExecutionDeadlines};
     let root = workspace("Sys.sleep(60)");
-    let mut sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let mut sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let mut cancellation: ExecutionCancellation<'_> = Box::pin(std::future::pending());
     let error = sources
         .execute_rd_examples(
@@ -289,7 +292,7 @@ async fn native_execution_is_bounded_and_cancellation_reaps_the_helper() {
     assert!(
         matches!(error, AssemblyError::Diagnostics(ref diagnostics) if diagnostics[0].message.contains("timed out"))
     );
-    let mut sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let mut sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let mut cancellation: ExecutionCancellation<'_> =
         Box::pin(async { tokio::time::sleep(std::time::Duration::from_millis(100)).await });
     let error = sources
@@ -367,10 +370,10 @@ fn configured_metadata_must_identify_the_loaded_checkout() {
         description.replace("Package: rdex", "Package: stats"),
     );
     root.write(
-        "diplodocus.toml",
-        root.read("diplodocus.toml").replace(
-            "metadata-path = \"DESCRIPTION\"",
-            "metadata-path = \"EXTRA_DESCRIPTION\"",
+        "diplodocus.yaml",
+        root.read("diplodocus.yaml").replace(
+            "metadata-path: \"DESCRIPTION\"",
+            "metadata-path: \"EXTRA_DESCRIPTION\"",
         ),
     );
     root.write("r/R/api.R", "answer <- function() 42L\nother <- function() 24L\n.onLoad <- function(libname, pkgname) writeLines('loaded', 'marker')\n");

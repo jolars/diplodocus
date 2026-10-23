@@ -222,9 +222,9 @@ fn relocation_source_edits_and_url_changes_do_not_enter_identity_inputs() {
         })
     };
     b.write(
-        "workspace/diplodocus.toml",
-        b.read("workspace/diplodocus.toml")
-            .replace("slug = \"python\"", "slug = \"new-python-route\""),
+        "workspace/diplodocus.yaml",
+        b.read("workspace/diplodocus.yaml")
+            .replace("slug: \"python\"", "slug: \"new-python-route\""),
     );
     assert_eq!(identities(&a), identities(&b));
     let bytes = serde_json::to_string(&identities(&b)).unwrap();

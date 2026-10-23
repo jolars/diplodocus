@@ -43,7 +43,7 @@ def run() -> Result[int]:
 def private_helper(): ...
 "#,
     );
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let items = &sources.workspace().packages["python"].items;
     let result = items
         .values()
@@ -124,7 +124,7 @@ fn inherited_documentation_references_follow_python_mro() {
         "from ._api import Base, First, Second, Child\n__all__ = ['Base', 'First', 'Second', 'Child']\n",
     );
     root.write("python/demo/_api.py", "class Base:\n    def draw(self): ...\nclass First(Base): ...\nclass Second(Base):\n    def draw(self): ...\nclass Child(First, Second):\n    \"\"\"See :meth:`draw`.\"\"\"\n");
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let resolution = resolve_workspace(&sources).unwrap();
     let items = &sources.workspace().packages["python"].items;
     let target = items

@@ -108,8 +108,8 @@ fn python_and_r_builds_restore_portable_results_and_identical_sites() {
         ),
     ] {
         let root = support::TestWorkspace::new();
-        root.write("diplodocus.toml", format!("[project]\nname='Cache'\n[[repository]]\nid='docs'\npath='.'\n[[content]]\nid='guide'\nowner='project'\nrepository='docs'\npath='guide'\nmount=''\nformat='qmd'\n[content.execution]\nmode='execute'\nengine='jupyter'\nkernel='{kernel}'\ndeclared-environment-inputs=['environment.txt']\n"));
-        root.write("diplodocus.toml", format!("{}\n[[content]]\nid='disabled'\nowner='project'\nrepository='docs'\npath='disabled'\nmount='disabled'\nformat='qmd'\n[content.execution]\nmode='never'\n", root.read("diplodocus.toml")));
+        root.write("diplodocus.yaml", format!("project:\n  name: \"Cache\"\nrepositories:\n  - id: \"docs\"\n    path: \".\"\ncontent:\n  - id: \"guide\"\n    owner: \"project\"\n    repository: \"docs\"\n    path: \"guide\"\n    mount: \"\"\n    format: \"qmd\"\n    execution:\n      mode: \"execute\"\n      engine: \"jupyter\"\n      kernel: \"{kernel}\"\n      declared-environment-inputs:\n        - \"environment.txt\"\n"));
+        root.write("diplodocus.yaml", support::merge_configurations(&root.read("diplodocus.yaml"), "content:\n  - id: \"disabled\"\n    owner: \"project\"\n    repository: \"docs\"\n    path: \"disabled\"\n    mount: \"disabled\"\n    format: \"qmd\"\n    execution:\n      mode: \"never\"\n"));
         root.write(
             "disabled/index.qmd",
             "# Disabled\n\n```{python}\nraise RuntimeError('must not execute')\n```\n",
@@ -127,7 +127,7 @@ fn python_and_r_builds_restore_portable_results_and_identical_sites() {
         let output = tempfile::tempdir().unwrap();
         let build = |destination| {
             commands::build(BuildOptions {
-                config: root.path().join("diplodocus.toml"),
+                config: root.path().join("diplodocus.yaml"),
                 output: destination,
             })
             .unwrap()
@@ -148,7 +148,7 @@ fn python_and_r_builds_restore_portable_results_and_identical_sites() {
         assert_portable_results_equal(&first, &second);
         let relocated = support::TestWorkspace::new();
         for path in support::files_under(root.path()) {
-            if path == std::path::Path::new("diplodocus.toml")
+            if path == std::path::Path::new("diplodocus.yaml")
                 || path.starts_with("guide") && path.extension().is_some_and(|e| e == "qmd")
                 || path.starts_with("disabled")
                 || path == std::path::Path::new("environment.txt")
@@ -161,7 +161,7 @@ fn python_and_r_builds_restore_portable_results_and_identical_sites() {
             &relocated.path().join(".diplodocus/cache"),
         );
         commands::build(BuildOptions {
-            config: relocated.path().join("diplodocus.toml"),
+            config: relocated.path().join("diplodocus.yaml"),
             output: output.path().join("relocated"),
         })
         .unwrap();

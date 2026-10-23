@@ -51,15 +51,15 @@ if (mode === "serve-test") {
   const workspace = mkdtempSync(join(tmpdir(), "diplodocus-browser-"));
   try {
     // Separate sources also isolate snapshots and caches between concurrent runs.
-    for (const path of ["diplodocus.toml", "docs", "python", "r", "julia", "rust"]) {
+    for (const path of ["diplodocus.yaml", "docs", "python", "r", "julia", "rust"]) {
       cpSync(join(root, "examples/monorepo", path), join(workspace, path), {
         recursive: true,
       });
     }
-    const configuration = join(workspace, "diplodocus.toml");
+    const configuration = join(workspace, "diplodocus.yaml");
     cpSync(join(root, "tests/fixtures/tabsets.md"), join(workspace, "docs/tabsets.md"));
     writeFileSync(configuration, readFileSync(configuration, "utf8")
-      .replace('url = "https://github.com/jolars/diplodocus"\n', 'url = "https://github.com/jolars/diplodocus"\nrevision = "main"\n'));
+      .replace(/^    url: "https:\/\/github\.com\/jolars\/diplodocus"\n/m, '$&    revision: "main"\n'));
     mkdirSync(join(workspace, "spec"));
     writeFileSync(join(workspace, "spec/README.md"), "# Contract\n\nA repository specification.\n");
     writeFileSync(join(workspace, "TRUST.md"), "# Trust\n\nA repository trust policy.\n");
@@ -77,19 +77,19 @@ if (mode === "serve-test") {
     cpSync(join(root, "tests/fixtures/code-output.Rmd"), join(workspace, "r/vignettes/code-output.Rmd"));
     mkdirSync(join(workspace, "console-output"));
     cpSync(join(root, "tests/fixtures/code-output.qmd"), join(workspace, "console-output/index.qmd"));
-    appendFileSync(configuration, `
-[[content]]
-id = "console-output"
-owner = "project"
-repository = "tinystats"
-path = "console-output"
-mount = "console-output"
-format = "qmd"
-[content.execution]
-mode = "execute"
-engine = "jupyter"
-kernel = "python3"
-`);
+    const consoleCollection = `  - id: console-output
+    owner: project
+    repository: tinystats
+    path: console-output
+    mount: console-output
+    format: qmd
+    execution:
+      mode: execute
+      engine: jupyter
+      kernel: python3
+`;
+    const configurationSource = readFileSync(configuration, "utf8");
+    writeFileSync(configuration, configurationSource.replace(/^concepts:/m, `${consoleCollection}concepts:`));
     const internalTopics = join(root, "tests/fixtures/r-internal-topics");
     for (const directory of ["R", "man"]) {
       cpSync(join(internalTopics, directory), join(workspace, "r", directory), { recursive: true });
@@ -107,7 +107,7 @@ kernel = "python3"
     }
     appendFileSync(join(workspace, "r/NAMESPACE"), `\n${readFileSync(join(sharedTopics, "NAMESPACE"), "utf8")}`);
     process.exitCode = await run(process.env.DIPLODOCUS_BROWSER_BINARY, [
-      "serve", "--config", join(workspace, "diplodocus.toml"),
+      "serve", "--config", join(workspace, "diplodocus.yaml"),
       "--output", join(workspace, "site"),
       "--host", "127.0.0.1", "--port", process.env.DIPLODOCUS_BROWSER_PORT ?? "0",
       "--live-reload",

@@ -61,45 +61,50 @@ def prepare(output, python, r):
         ).strip()
         for name, root in [("python", python), ("r", r)]
     }
-    (output / "diplodocus.toml").write_text(f'''[project]
-name = "Eunoia"
-
-[[repository]]
-id = "python"
-path = "sources/python"
-url = "https://github.com/jolars/eunoia-py"
-revision = "{revisions["python"]}"
-
-[[repository]]
-id = "r"
-path = "sources/r"
-url = "https://github.com/jolars/eulerr"
-revision = "{revisions["r"]}"
-
-[[package]]
-id = "python"
-name = "Eunoia for Python"
-slug = "python"
-ecosystem = "python"
-repository = "python"
-path = "."
-metadata-path = "pyproject.toml"
-targets = [{{ id = "api", extractor = "python", path = "python/eunoia", role = "public-api" }}]
-
-[[package]]
-id = "r"
-name = "eulerr"
-slug = "r"
-ecosystem = "r"
-repository = "r"
-path = "."
-metadata-path = "DESCRIPTION"
-targets = [{{ id = "api", extractor = "r", path = ".", role = "public-api" }}]
-
-[[concept]]
-id = "euler"
-kind = "analogous"
-members = [{{ package = "python", item = "eunoia.euler" }}, {{ package = "r", item = "euler" }}]
+    (output / "diplodocus.yaml").write_text(f'''project:
+  name: "Eunoia"
+repositories:
+  - id: "python"
+    path: "sources/python"
+    url: "https://github.com/jolars/eunoia-py"
+    revision: "{revisions["python"]}"
+  - id: "r"
+    path: "sources/r"
+    url: "https://github.com/jolars/eulerr"
+    revision: "{revisions["r"]}"
+packages:
+  - id: "python"
+    name: "Eunoia for Python"
+    slug: "python"
+    ecosystem: "python"
+    repository: "python"
+    path: "."
+    metadata-path: "pyproject.toml"
+    targets:
+      - id: "api"
+        extractor: "python"
+        path: "python/eunoia"
+        role: "public-api"
+  - id: "r"
+    name: "eulerr"
+    slug: "r"
+    ecosystem: "r"
+    repository: "r"
+    path: "."
+    metadata-path: "DESCRIPTION"
+    targets:
+      - id: "api"
+        extractor: "r"
+        path: "."
+        role: "public-api"
+concepts:
+  - id: "euler"
+    kind: "analogous"
+    members:
+      - package: "python"
+        item: "eunoia.euler"
+      - package: "r"
+        item: "euler"
 ''')
 
 
@@ -361,7 +366,7 @@ def main():
             PROJECT / "target/debug/diplodocus",
             "extract",
             "--config",
-            output / "diplodocus.toml",
+            output / "diplodocus.yaml",
             "--output",
             snapshot,
         )

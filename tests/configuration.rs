@@ -9,16 +9,16 @@ use diplodocus::documents::AuthoredFormat;
 
 mod support;
 
-const COMPLETE: &str = include_str!("fixtures/configuration/complete.toml");
-const ACCEPTANCE: &str = include_str!("fixtures/acceptance/workspace/diplodocus.toml");
+const COMPLETE: &str = include_str!("fixtures/configuration/complete.yaml");
+const ACCEPTANCE: &str = include_str!("fixtures/acceptance/workspace/diplodocus.yaml");
 
 fn kebab_case_configuration() -> String {
     let mut source = COMPLETE.to_owned();
     source.push_str(
-        "\n[presentation]\nsite-url = 'https://example.test/docs/'\ncanonical-url-style = 'clean'\n",
+        "presentation:\n  title: null\n  description: null\n  site-url: \"https://example.test/docs/\"\n  canonical-url-style: \"clean\"\n",
     );
     source.push_str(
-        "\n[presentation.footer]\ndocs-version = 'dev'\ncopyright = '© 2026 Contributors'\nlicenses = [{ label = 'MIT', url = 'https://example.test/LICENSE' }]\nlinks = [{ label = 'GitHub', url = 'https://example.test/repo' }]\nbuilt-with = true\n",
+        "  footer:\n    docs-version: \"dev\"\n    copyright: \"© 2026 Contributors\"\n    licenses:\n      - label: \"MIT\"\n        url: \"https://example.test/LICENSE\"\n    links:\n      - label: \"GitHub\"\n        url: \"https://example.test/repo\"\n    built-with: true\n",
     );
     source
 }
@@ -27,10 +27,10 @@ fn kebab_case_configuration() -> String {
 fn configuration_keys_parse_and_serialize_in_kebab_case() {
     let source = kebab_case_configuration();
     let config = parse_configuration(&source).unwrap();
-    let serialized = toml::to_string(&config).unwrap();
+    let serialized = serde_saphyr::to_string(&config).unwrap();
     assert_eq!(
-        toml::from_str::<toml::Value>(&serialized).unwrap(),
-        toml::from_str::<toml::Value>(&source).unwrap()
+        serde_saphyr::from_str::<serde_json::Value>(&serialized).unwrap(),
+        serde_saphyr::from_str::<serde_json::Value>(&source).unwrap()
     );
     assert_eq!(parse_configuration(&serialized).unwrap(), config);
 }
@@ -52,7 +52,7 @@ fn configuration_rejects_snake_case_keys() {
         let error = parse_configuration(&source.replace(field, &old_field)).unwrap_err();
         assert!(
             error
-                .message()
+                .to_string()
                 .contains(&format!("unknown field `{old_field}`")),
             "{error}"
         );
@@ -75,24 +75,24 @@ fn presentation_site_urls_require_absolute_http_urls_without_request_metadata() 
         "https://example.test/\n",
     ] {
         let source = format!(
-            "[project]\nname='Docs'\n[presentation]\nsite-url={}\n",
-            toml::Value::String(url.into())
+            "project:\n  name: \"Docs\"\npresentation:\n  site-url: {}\n",
+            serde_json::Value::String(url.into())
         );
         assert!(parse_configuration(&source).is_err(), "{url:?}");
     }
     for style in ["file", "clean"] {
         let source = format!(
-            "[project]\nname='Docs'\n[presentation]\nsite-url='https://example.test/docs'\ncanonical-url-style='{style}'\n"
+            "project:\n  name: \"Docs\"\npresentation:\n  site-url: \"https://example.test/docs\"\n  canonical-url-style: \"{style}\"\n"
         );
         let configuration = parse_configuration(&source).unwrap();
         assert_eq!(
-            parse_configuration(&toml::to_string(&configuration).unwrap()).unwrap(),
+            parse_configuration(&serde_saphyr::to_string(&configuration).unwrap()).unwrap(),
             configuration
         );
     }
     assert!(
         parse_configuration(
-            "[project]\nname='Docs'\n[presentation]\ncanonical-url-style='unknown'\n"
+            "project:\n  name: \"Docs\"\npresentation:\n  canonical-url-style: \"unknown\"\n"
         )
         .is_err()
     );
@@ -101,50 +101,50 @@ fn presentation_site_urls_require_absolute_http_urls_without_request_metadata() 
 #[test]
 fn presentation_settings_accept_only_portable_display_metadata() {
     for settings in [
-        "title = 42",
-        "description = false",
-        "theme_path = '/tmp/theme'",
-        "execute = true",
+        "title: 42",
+        "description: false",
+        "theme_path: \"/tmp/theme\"",
+        "execute: true",
     ] {
         assert!(
             parse_configuration(&format!(
-                "[project]\nname='Docs'\n[presentation]\n{settings}\n"
+                "project:\n  name: \"Docs\"\npresentation:\n  {settings}\n\n"
             ))
             .is_err()
         );
     }
     let config = parse_configuration(
-        "[project]\nname='Docs'\n[presentation]\ntitle='Documentation'\ndescription='A guide'\n",
+        "project:\n  name: \"Docs\"\npresentation:\n  title: \"Documentation\"\n  description: \"A guide\"\n",
     )
     .unwrap();
     assert_eq!(
-        parse_configuration(&toml::to_string(&config).unwrap()).unwrap(),
+        parse_configuration(&serde_saphyr::to_string(&config).unwrap()).unwrap(),
         config
     );
 }
 
 #[test]
 fn logo_declarations_require_a_repository_and_portable_image_path() {
-    let source =
-        "[project]\nname='Docs'\n[presentation.logo]\nrepository='docs'\npath='assets/logo.svg'\n";
+    let source = "project:\n  name: \"Docs\"\npresentation:\n  logo:\n    repository: \"docs\"\n    path: \"assets/logo.svg\"\n";
     let config = parse_configuration(source).unwrap();
     assert_eq!(
-        parse_configuration(&toml::to_string(&config).unwrap()).unwrap(),
+        parse_configuration(&serde_saphyr::to_string(&config).unwrap()).unwrap(),
         config
     );
     for settings in [
-        "repository='docs'",
-        "path='logo.svg'",
-        "repository='docs'\npath=42",
-        "repository='docs'\npath='/logo.svg'",
-        "repository='docs'\npath='../logo.svg'",
-        "repository='docs'\npath='./logo.svg'",
-        "repository='docs'\npath='https://example.test/logo.svg'",
-        "repository='docs'\npath='logo.svg'\nunknown=true",
+        "repository: \"docs\"",
+        "path: \"logo.svg\"",
+        "repository: \"docs\"\npath: 42",
+        "repository: \"docs\"\npath: \"/logo.svg\"",
+        "repository: \"docs\"\npath: \"../logo.svg\"",
+        "repository: \"docs\"\npath: \"./logo.svg\"",
+        "repository: \"docs\"\npath: \"https://example.test/logo.svg\"",
+        "repository: \"docs\"\npath: \"logo.svg\"\nunknown: true",
     ] {
         assert!(
             parse_configuration(&format!(
-                "[project]\nname='Docs'\n[presentation.logo]\n{settings}\n"
+                "project:\n  name: \"Docs\"\npresentation:\n  logo:\n    {}\n",
+                settings.replace('\n', "\n    ")
             ))
             .is_err(),
             "{settings}"
@@ -170,23 +170,24 @@ fn footer_links_reject_unsafe_or_ambiguous_urls() {
             "https://example.test/\n",
         ] {
             let source = format!(
-                "[project]\nname='Docs'\n[presentation.footer]\n{field}=[{{label='License',url={}}}]\n",
-                toml::Value::String(url.into())
+                "project:\n  name: Docs\npresentation:\n  footer:\n    {field}: [{{label: License, url: {}}}]\n",
+                serde_json::Value::String(url.into())
             );
             assert!(parse_configuration(&source).is_err(), "{field}: {url:?}");
         }
     }
     for settings in [
-        "docs-version = 1",
-        "copyright = false",
-        "built-with = 'yes'",
-        "links = [{ url = 'https://example.test/' }]",
-        "licenses = [{ label = 'MIT' }]",
-        "unknown = true",
+        "docs-version: 1",
+        "copyright: false",
+        "built-with: \"yes\"",
+        "links: [{ url: \"https://example.test/\" }]",
+        "licenses: [{ label: \"MIT\" }]",
+        "unknown: true",
     ] {
         assert!(
             parse_configuration(&format!(
-                "[project]\nname='Docs'\n[presentation.footer]\n{settings}\n"
+                "project:\n  name: \"Docs\"\npresentation:\n  footer:\n    {}\n",
+                settings.replace('\n', "\n    ")
             ))
             .is_err(),
             "{settings}"
@@ -266,10 +267,10 @@ fn parses_every_configuration_section_and_retains_declared_values() {
 #[test]
 fn serialization_preserves_the_configuration_shape() {
     let config = parse_configuration(COMPLETE).unwrap();
-    let serialized = toml::to_string(&config).unwrap();
+    let serialized = serde_saphyr::to_string(&config).unwrap();
     assert_eq!(
-        toml::from_str::<toml::Value>(&serialized).unwrap(),
-        toml::from_str::<toml::Value>(COMPLETE).unwrap()
+        serde_saphyr::from_str::<serde_json::Value>(&serialized).unwrap(),
+        serde_saphyr::from_str::<serde_json::Value>(COMPLETE).unwrap()
     );
     assert_eq!(parse_configuration(&serialized).unwrap(), config);
 }
@@ -278,10 +279,10 @@ fn serialization_preserves_the_configuration_shape() {
 fn parses_design_examples() {
     let design = include_str!("../DESIGN.md");
     let mut examples = 0;
-    for block in design.split("```toml\n").skip(1) {
+    for block in design.split("```yaml\n").skip(1) {
         let source = block.split_once("```").unwrap().0;
-        let source = if source.starts_with("[[concept]]") {
-            format!("[project]\nname = 'Concept example'\n{source}")
+        let source = if source.starts_with("concepts:") {
+            format!("project:\n  name: \"Concept example\"\n{source}")
         } else {
             source.to_owned()
         };
@@ -290,7 +291,7 @@ fn parses_design_examples() {
     }
     assert!(
         examples > 0,
-        "DESIGN.md should contain a TOML configuration example"
+        "DESIGN.md should contain a YAML configuration example"
     );
 }
 
@@ -319,7 +320,7 @@ fn parses_acceptance_workspace_variants() {
 
 #[test]
 fn applies_only_documented_defaults_without_discovering_inputs() {
-    let config = parse_configuration("[project]\nname = 'Empty workspace'\n").unwrap();
+    let config = parse_configuration("project:\n  name: \"Empty workspace\"\n").unwrap();
     assert!(config.repositories.is_empty());
     assert!(config.packages.is_empty());
     assert!(config.content.is_empty());
@@ -338,12 +339,12 @@ fn applies_only_documented_defaults_without_discovering_inputs() {
         assert!(content.execution.declared_environment_inputs.is_empty());
     }
 
-    assert!(parse_configuration(&COMPLETE.replace("mode = \"execute\"\n", "")).is_err());
+    assert!(parse_configuration(&COMPLETE.replace("      mode: \"execute\"\n", "")).is_err());
     let config = parse_configuration(
         &COMPLETE
-            .replace("version-constraint = \"^1.9\"\n", "")
-            .replace("provenance = \"explicit\"\n", "")
-            .replace("url = \"https://forge.example/foo-python\"\n", ""),
+            .replace("    version-constraint: \"^1.9\"\n", "")
+            .replace("    provenance: \"explicit\"\n", "")
+            .replace("    url: \"https://forge.example/foo-python\"\n", ""),
     )
     .unwrap();
     assert_eq!(config.repositories[0].url, None);
@@ -366,8 +367,8 @@ fn package_defaults_are_independent_of_explicit_kind_and_visibility() {
     ];
     for (kind, expected_kind) in kinds {
         for (visibility, expected_visibility) in visibilities {
-            let mut value: toml::Value = toml::from_str(COMPLETE).unwrap();
-            let package = table_mut(&mut value, &["package"]);
+            let mut value: serde_json::Value = serde_saphyr::from_str(COMPLETE).unwrap();
+            let package = table_mut(&mut value, &["packages"]);
             package.remove("kind");
             package.remove("visibility");
             if let Some(kind) = kind {
@@ -377,10 +378,10 @@ fn package_defaults_are_independent_of_explicit_kind_and_visibility() {
                 package.insert("visibility".into(), visibility.into());
             }
 
-            let config = parse_configuration(&toml::to_string(&value).unwrap()).unwrap();
+            let config = parse_configuration(&serde_saphyr::to_string(&value).unwrap()).unwrap();
             assert_eq!(config.packages[0].kind, expected_kind);
             assert_eq!(config.packages[0].visibility, expected_visibility);
-            let serialized = toml::to_string(&config).unwrap();
+            let serialized = serde_saphyr::to_string(&config).unwrap();
             assert_eq!(parse_configuration(&serialized).unwrap(), config);
         }
     }
@@ -388,15 +389,15 @@ fn package_defaults_are_independent_of_explicit_kind_and_visibility() {
 
 #[test]
 fn omitted_and_explicitly_empty_workspace_inputs_are_equivalent() {
-    let minimal = "[project]\nname = 'Empty workspace'\n";
-    let empty = format!("repository = []\npackage = []\n{minimal}");
+    let minimal = "project:\n  name: \"Empty workspace\"\n";
+    let empty = format!("repositories: []\npackages: []\n{minimal}");
     let expected = parse_configuration(minimal).unwrap();
     let config = parse_configuration(&empty).unwrap();
     assert_eq!(config, expected);
     assert!(config.repositories.is_empty());
     assert!(config.packages.is_empty());
     assert_eq!(
-        parse_configuration(&toml::to_string(&config).unwrap()).unwrap(),
+        parse_configuration(&serde_saphyr::to_string(&config).unwrap()).unwrap(),
         config
     );
 }
@@ -404,24 +405,27 @@ fn omitted_and_explicitly_empty_workspace_inputs_are_equivalent() {
 #[test]
 fn loading_populated_sources_never_discovers_workspace_inputs() {
     let workspace = support::acceptance_workspace();
-    let path = workspace.path().join("workspace/diplodocus.toml");
+    let path = workspace.path().join("workspace/diplodocus.yaml");
 
-    workspace.write("workspace/diplodocus.toml", "[project]\nname = 'Minimal'\n");
+    workspace.write(
+        "workspace/diplodocus.yaml",
+        "project:\n  name: \"Minimal\"\n",
+    );
     let minimal = load_configuration(&path).unwrap();
     assert!(minimal.repositories.is_empty());
     assert!(minimal.packages.is_empty());
 
-    let mut value: toml::Value = toml::from_str(ACCEPTANCE).unwrap();
-    let mut packages = value.as_table_mut().unwrap().remove("package").unwrap();
-    value.as_table_mut().unwrap().remove("concept");
-    value.as_table_mut().unwrap().remove("relationship");
+    let mut value: serde_json::Value = serde_saphyr::from_str(ACCEPTANCE).unwrap();
+    let mut packages = value.as_object_mut().unwrap().remove("packages").unwrap();
+    value.as_object_mut().unwrap().remove("concepts");
+    value.as_object_mut().unwrap().remove("relationships");
     value["content"]
         .as_array_mut()
         .unwrap()
         .retain(|collection| collection["owner"].as_str() == Some("project"));
     workspace.write(
-        "workspace/diplodocus.toml",
-        toml::to_string(&value).unwrap(),
+        "workspace/diplodocus.yaml",
+        serde_saphyr::to_string(&value).unwrap(),
     );
     let docs_only = load_configuration(&path).unwrap();
     assert_eq!(docs_only.repositories.len(), 3);
@@ -429,15 +433,15 @@ fn loading_populated_sources_never_discovers_workspace_inputs() {
     assert_eq!(docs_only.content.len(), 1);
 
     for package in packages.as_array_mut().unwrap() {
-        package["targets"] = toml::Value::Array(Vec::new());
+        package["targets"] = serde_json::Value::Array(Vec::new());
     }
     value
-        .as_table_mut()
+        .as_object_mut()
         .unwrap()
-        .insert("package".into(), packages);
+        .insert("packages".into(), packages);
     workspace.write(
-        "workspace/diplodocus.toml",
-        toml::to_string(&value).unwrap(),
+        "workspace/diplodocus.yaml",
+        serde_saphyr::to_string(&value).unwrap(),
     );
     let config = load_configuration(&path).unwrap();
     assert_eq!(config.repositories.len(), 3);
@@ -445,9 +449,9 @@ fn loading_populated_sources_never_discovers_workspace_inputs() {
     for package in &config.packages {
         assert!(package.targets.is_empty());
     }
-    let serialized = toml::to_string(&config).unwrap();
-    let serialized_value: toml::Value = toml::from_str(&serialized).unwrap();
-    for package in serialized_value["package"].as_array().unwrap() {
+    let serialized = serde_saphyr::to_string(&config).unwrap();
+    let serialized_value: serde_json::Value = serde_saphyr::from_str(&serialized).unwrap();
+    for package in serialized_value["packages"].as_array().unwrap() {
         assert!(package["targets"].as_array().unwrap().is_empty());
     }
     assert_eq!(parse_configuration(&serialized).unwrap(), config);
@@ -456,12 +460,12 @@ fn loading_populated_sources_never_discovers_workspace_inputs() {
 #[test]
 fn loading_requires_explicit_targets_even_when_package_sources_are_present() {
     let workspace = support::acceptance_workspace();
-    let path = workspace.path().join("workspace/diplodocus.toml");
-    let mut value: toml::Value = toml::from_str(ACCEPTANCE).unwrap();
-    table_mut(&mut value, &["package"]).remove("targets");
+    let path = workspace.path().join("workspace/diplodocus.yaml");
+    let mut value: serde_json::Value = serde_saphyr::from_str(ACCEPTANCE).unwrap();
+    table_mut(&mut value, &["packages"]).remove("targets");
     workspace.write(
-        "workspace/diplodocus.toml",
-        toml::to_string(&value).unwrap(),
+        "workspace/diplodocus.yaml",
+        serde_saphyr::to_string(&value).unwrap(),
     );
 
     let ConfigurationError::Parse {
@@ -472,15 +476,15 @@ fn loading_requires_explicit_targets_even_when_package_sources_are_present() {
         panic!("expected a parse error");
     };
     assert_eq!(source_path, path);
-    assert!(source.message().contains("missing field `targets`"));
-    assert!(source.span().is_some());
+    assert!(source.to_string().contains("missing field `targets`"));
+    assert!(source.location().is_some());
 }
 
 // Paths describe positions in the input schema, independent of the Rust model.
 fn table_mut<'a>(
-    value: &'a mut toml::Value,
+    value: &'a mut serde_json::Value,
     path: &[&str],
-) -> &'a mut toml::map::Map<String, toml::Value> {
+) -> &'a mut serde_json::Map<String, serde_json::Value> {
     let mut current = value;
     for key in path {
         current = current.get_mut(*key).unwrap();
@@ -488,15 +492,15 @@ fn table_mut<'a>(
             current = &mut current.as_array_mut().unwrap()[0];
         }
     }
-    current.as_table_mut().unwrap()
+    current.as_object_mut().unwrap()
 }
 
 const TABLES: &[(&[&str], &[&str])] = &[
     (&[], &["project"]),
     (&["project"], &["name"]),
-    (&["repository"], &["id", "path"]),
+    (&["repositories"], &["id", "path"]),
     (
-        &["package"],
+        &["packages"],
         &[
             "id",
             "name",
@@ -509,7 +513,7 @@ const TABLES: &[(&[&str], &[&str])] = &[
         ],
     ),
     (
-        &["package", "targets"],
+        &["packages", "targets"],
         &["id", "extractor", "path", "role"],
     ),
     (
@@ -517,21 +521,21 @@ const TABLES: &[(&[&str], &[&str])] = &[
         &["id", "owner", "repository", "path", "mount", "format"],
     ),
     (&["content", "execution"], &[]),
-    (&["concept"], &["id", "kind", "members"]),
-    (&["concept", "members"], &["package", "item"]),
-    (&["relationship"], &["from", "to", "kind"]),
+    (&["concepts"], &["id", "kind", "members"]),
+    (&["concepts", "members"], &["package", "item"]),
+    (&["relationships"], &["from", "to", "kind"]),
 ];
 
 #[test]
 fn rejects_missing_required_fields_in_each_section() {
     for (path, fields) in TABLES {
         for field in *fields {
-            let mut value: toml::Value = toml::from_str(COMPLETE).unwrap();
+            let mut value: serde_json::Value = serde_saphyr::from_str(COMPLETE).unwrap();
             table_mut(&mut value, path).remove(*field).unwrap();
-            let error = parse_configuration(&toml::to_string(&value).unwrap()).unwrap_err();
+            let error = parse_configuration(&serde_saphyr::to_string(&value).unwrap()).unwrap_err();
             assert!(
                 error
-                    .message()
+                    .to_string()
                     .contains(&format!("missing field `{field}`")),
                 "{path:?}.{field}: {error}"
             );
@@ -542,21 +546,21 @@ fn rejects_missing_required_fields_in_each_section() {
 #[test]
 fn rejects_unknown_fields_in_each_section() {
     for (path, _) in TABLES {
-        let mut value: toml::Value = toml::from_str(COMPLETE).unwrap();
+        let mut value: serde_json::Value = serde_saphyr::from_str(COMPLETE).unwrap();
         table_mut(&mut value, path).insert("typo".into(), "ignored?".into());
-        let error = parse_configuration(&toml::to_string(&value).unwrap()).unwrap_err();
+        let error = parse_configuration(&serde_saphyr::to_string(&value).unwrap()).unwrap_err();
         assert!(
-            error.message().contains("unknown field `typo`"),
+            error.to_string().contains("unknown field `typo`"),
             "{path:?}: {error}"
         );
-        assert!(error.span().is_some());
+        assert!(error.location().is_some());
     }
 }
 
 #[test]
 fn rejects_wrong_field_types_in_each_section() {
     for (path, _) in TABLES {
-        let value: toml::Value = toml::from_str(COMPLETE).unwrap();
+        let value: serde_json::Value = serde_saphyr::from_str(COMPLETE).unwrap();
         let fields = table_mut(&mut value.clone(), path)
             .keys()
             .cloned()
@@ -565,7 +569,7 @@ fn rejects_wrong_field_types_in_each_section() {
             let mut value = value.clone();
             table_mut(&mut value, path).insert(field.clone(), 42.into());
             assert!(
-                parse_configuration(&toml::to_string(&value).unwrap()).is_err(),
+                parse_configuration(&serde_saphyr::to_string(&value).unwrap()).is_err(),
                 "{path:?}.{field}"
             );
         }
@@ -575,9 +579,9 @@ fn rejects_wrong_field_types_in_each_section() {
 #[test]
 fn accepts_documented_enum_spellings_and_rejects_other_values() {
     let cases: &[(&[&str], &str, &[&str])] = &[
-        (&["package"], "kind", &["package", "component"]),
+        (&["packages"], "kind", &["package", "component"]),
         (
-            &["package"],
+            &["packages"],
             "visibility",
             &["public", "internal", "hidden"],
         ),
@@ -585,39 +589,39 @@ fn accepts_documented_enum_spellings_and_rejects_other_values() {
         (&["content", "execution"], "mode", &["never", "execute"]),
         (&["content", "execution"], "engine", &["jupyter"]),
         (
-            &["concept"],
+            &["concepts"],
             "kind",
             &["equivalent", "analogous", "related"],
         ),
         (
-            &["relationship"],
+            &["relationships"],
             "kind",
             &["depends-on", "binds", "wraps", "generated-from"],
         ),
     ];
     for (path, field, spellings) in cases {
         for spelling in *spellings {
-            let mut value: toml::Value = toml::from_str(COMPLETE).unwrap();
+            let mut value: serde_json::Value = serde_saphyr::from_str(COMPLETE).unwrap();
             if (*field == "format" && *spelling == "gfm")
                 || (*field == "mode" && *spelling == "never")
             {
                 table_mut(&mut value, &["content", "execution"]).clear();
             }
             table_mut(&mut value, path).insert((*field).into(), (*spelling).into());
-            let config = parse_configuration(&toml::to_string(&value).unwrap()).unwrap();
-            let mut serialized: toml::Value =
-                toml::from_str(&toml::to_string(&config).unwrap()).unwrap();
+            let config = parse_configuration(&serde_saphyr::to_string(&value).unwrap()).unwrap();
+            let mut serialized: serde_json::Value =
+                serde_saphyr::from_str(&serde_saphyr::to_string(&config).unwrap()).unwrap();
             assert_eq!(
                 table_mut(&mut serialized, path)[*field].as_str(),
                 Some(*spelling)
             );
         }
         for spelling in ["unsupported".to_owned(), spellings[0].to_uppercase()] {
-            let mut value: toml::Value = toml::from_str(COMPLETE).unwrap();
+            let mut value: serde_json::Value = serde_saphyr::from_str(COMPLETE).unwrap();
             table_mut(&mut value, path).insert((*field).into(), spelling.into());
-            let error = parse_configuration(&toml::to_string(&value).unwrap()).unwrap_err();
+            let error = parse_configuration(&serde_saphyr::to_string(&value).unwrap()).unwrap_err();
             assert!(
-                error.message().contains("unknown variant"),
+                error.to_string().contains("unknown variant"),
                 "{path:?}.{field}: {error}"
             );
         }
@@ -625,26 +629,26 @@ fn accepts_documented_enum_spellings_and_rejects_other_values() {
 }
 
 #[test]
-fn reports_malformed_toml_with_source_ranges() {
-    for source in ["[project", "[project]\nname = 'Foo'\nname = 'Bar'\n"] {
+fn reports_malformed_yaml_with_source_ranges() {
+    for source in ["project: [", "project:\n  name: Foo\n  name: Bar\n"] {
         let error = parse_configuration(source).unwrap_err();
-        let span = error.span().unwrap();
+        let span = support::configuration_error_span(&error).unwrap();
         assert!(span.start <= span.end && span.end <= source.len());
-        assert!(!error.message().is_empty());
+        assert!(!error.to_string().is_empty());
     }
 }
 
 #[test]
 fn loader_reads_only_the_config_file_and_preserves_error_causes() {
     let workspace = support::TestWorkspace::new();
-    workspace.write("nested/workspace.toml", COMPLETE);
-    let path = workspace.path().join("nested/workspace.toml");
+    workspace.write("nested/workspace.yaml", COMPLETE);
+    let path = workspace.path().join("nested/workspace.yaml");
     assert_eq!(
         load_configuration(&path).unwrap(),
         parse_configuration(COMPLETE).unwrap()
     );
 
-    workspace.write("nested/workspace.toml", "[project]\nname = 42\n");
+    workspace.write("nested/workspace.yaml", "project:\n  name: 42\n");
     let error = load_configuration(&path).unwrap_err();
     assert!(error.to_string().contains(&path.display().to_string()));
     assert!(error.source().is_some());
@@ -654,12 +658,12 @@ fn loader_reads_only_the_config_file_and_preserves_error_causes() {
             source,
         } => {
             assert_eq!(source_path, path);
-            assert!(source.span().is_some());
+            assert!(source.location().is_some());
         }
         error => panic!("expected a parse error, got {error}"),
     }
 
-    workspace.remove("nested/workspace.toml");
+    workspace.remove("nested/workspace.yaml");
     let error = load_configuration(&path).unwrap_err();
     assert!(error.to_string().contains(&path.display().to_string()));
     assert!(error.source().is_some());
@@ -672,5 +676,97 @@ fn loader_reads_only_the_config_file_and_preserves_error_causes() {
             assert_eq!(source.kind(), std::io::ErrorKind::NotFound);
         }
         error => panic!("expected a read error, got {error}"),
+    }
+}
+
+#[test]
+fn yaml_rejects_legacy_collection_keys_and_toml_syntax() {
+    for key in ["repository", "package", "concept", "relationship"] {
+        let error =
+            parse_configuration(&format!("project:\n  name: Docs\n{key}: []\n")).unwrap_err();
+        assert!(
+            error
+                .to_string()
+                .contains(&format!("unknown field `{key}`")),
+            "{error}"
+        );
+    }
+    assert!(parse_configuration("[project]\nname = 'Docs'\n").is_err());
+}
+
+#[test]
+fn yaml_rejects_duplicate_keys_and_multiple_documents() {
+    for source in [
+        "project:\n  name: First\n  name: Second\n",
+        "project: {name: First}\nproject: {name: Second}\n",
+        "project: {name: First}\n---\nproject: {name: Second}\n",
+        "project: {name: First}\n---\n",
+    ] {
+        assert!(parse_configuration(source).is_err(), "{source}");
+    }
+}
+
+#[test]
+fn yaml_preserves_multiline_text_and_declared_list_order() {
+    let config = parse_configuration(
+        "project:\n  name: Docs\npresentation:\n  description: |-\n    First line.\n    Second line.\nrepositories:\n  - {id: second, path: ../second}\n  - {id: first, path: ../first}\n",
+    ).unwrap();
+    assert_eq!(
+        config.presentation.description.as_deref(),
+        Some("First line.\nSecond line.")
+    );
+    assert_eq!(
+        config
+            .repositories
+            .iter()
+            .map(|repository| repository.id.as_str())
+            .collect::<Vec<_>>(),
+        ["second", "first"]
+    );
+}
+
+#[test]
+fn loading_yaml_uses_the_explicit_filename_without_extension_inference() {
+    let workspace = support::TestWorkspace::new();
+    for name in ["diplodocus.yaml", "custom.yml", "workspace.config"] {
+        workspace.write(name, "project:\n  name: Docs\n");
+        assert_eq!(
+            load_configuration(workspace.path().join(name))
+                .unwrap()
+                .project
+                .name,
+            "Docs"
+        );
+    }
+}
+
+#[test]
+fn yaml_boolean_fields_preserve_scalar_types() {
+    for value in [
+        serde_json::json!(true),
+        serde_json::json!(false),
+        serde_json::json!("true"),
+        serde_json::json!("false"),
+    ] {
+        let mut configuration: serde_json::Value = serde_saphyr::from_str(COMPLETE).unwrap();
+        configuration["presentation"] = serde_json::json!({"footer": {"built-with": value}});
+        let source = serde_saphyr::to_string(&configuration).unwrap();
+        assert_eq!(
+            parse_configuration(&source).is_ok(),
+            value.is_boolean(),
+            "{source}"
+        );
+        configuration
+            .as_object_mut()
+            .unwrap()
+            .remove("presentation");
+        configuration["packages"][0]["targets"][0]["rust"] =
+            serde_json::json!({"default-features": value});
+        let source = serde_saphyr::to_string(&configuration).unwrap();
+        assert_eq!(
+            parse_configuration(&source).is_ok(),
+            value.is_boolean(),
+            "{source}"
+        );
     }
 }

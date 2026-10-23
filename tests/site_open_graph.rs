@@ -11,8 +11,8 @@ use diplodocus::validation::resolve_workspace;
 
 fn workspace(base: &str, style: &str) -> support::TestWorkspace {
     let root = support::TestWorkspace::new();
-    root.write("diplodocus.toml", format!(
-        "[project]\nname='Preview & docs'\n[presentation]\nsite-url='{base}'\ncanonical-url-style='{style}'\ndescription='Guides & examples'\n[presentation.open-graph]\nrepository='docs'\npath='branding/og.png'\nalt='A dinosaur & an open book'\n[[repository]]\nid='docs'\npath='.'\n[[content]]\nid='guide'\nowner='project'\nrepository='docs'\npath='docs'\nmount=''\nformat='gfm'\n"
+    root.write("diplodocus.yaml", format!(
+        "project:\n  name: \"Preview & docs\"\npresentation:\n  site-url: \"{base}\"\n  canonical-url-style: \"{style}\"\n  description: \"Guides & examples\"\n  open-graph:\n    repository: \"docs\"\n    path: \"branding/og.png\"\n    alt: \"A dinosaur & an open book\"\nrepositories:\n  - id: \"docs\"\n    path: \".\"\ncontent:\n  - id: \"guide\"\n    owner: \"project\"\n    repository: \"docs\"\n    path: \"docs\"\n    mount: \"\"\n    format: \"gfm\"\n"
     ));
     root.write("docs/index.md", "# Preview & docs\n");
     root.write("docs/guide/nested.md", "# Nested & guide\n");
@@ -29,7 +29,7 @@ fn image(format: image::ImageFormat) -> Vec<u8> {
 }
 
 fn snapshot(root: &support::TestWorkspace) -> Snapshot {
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap()
 }
 
@@ -113,8 +113,8 @@ fn preview_images_and_absolute_metadata_survive_without_source_files() {
 fn jpeg_previews_use_their_real_media_type_and_dimensions() {
     let root = workspace("https://example.test/", "clean");
     root.write(
-        "diplodocus.toml",
-        root.read("diplodocus.toml").replace("og.png", "og.jpg"),
+        "diplodocus.yaml",
+        root.read("diplodocus.yaml").replace("og.png", "og.jpg"),
     );
     root.write("branding/og.jpg", image(image::ImageFormat::Jpeg));
     let rendered = render_site(&Site::new(&snapshot(&root)).unwrap()).unwrap();
@@ -128,16 +128,16 @@ fn jpeg_previews_use_their_real_media_type_and_dimensions() {
 fn preview_logo_and_document_can_share_one_asset() {
     let root = workspace("https://example.test/", "clean");
     root.write(
-        "diplodocus.toml",
-        root.read("diplodocus.toml")
+        "diplodocus.yaml",
+        root.read("diplodocus.yaml")
             .replace("branding/og.png", "docs/og.png"),
     );
     root.write("docs/og.png", image(image::ImageFormat::Png));
     root.write(
-        "diplodocus.toml",
-        format!(
-            "{}\n[presentation.logo]\nrepository='docs'\npath='branding/og.png'\n",
-            root.read("diplodocus.toml")
+        "diplodocus.yaml",
+        root.read("diplodocus.yaml").replace(
+            "presentation:\n",
+            "presentation:\n  logo:\n    repository: docs\n    path: branding/og.png\n",
         ),
     );
     root.write("docs/index.md", "# Preview & docs\n\n![Preview](og.png)\n");
@@ -150,8 +150,8 @@ fn preview_logo_and_document_can_share_one_asset() {
 fn unconfigured_sites_keep_their_original_metadata() {
     let root = support::TestWorkspace::new();
     root.write(
-        "diplodocus.toml",
-        "[project]\nname='Docs'\n[presentation]\nsite-url='https://example.test/'\n",
+        "diplodocus.yaml",
+        "project:\n  name: \"Docs\"\npresentation:\n  site-url: \"https://example.test/\"\n",
     );
     let snapshot = snapshot(&root);
     assert!(snapshot.open_graph().is_none());
@@ -165,17 +165,17 @@ fn unconfigured_sites_keep_their_original_metadata() {
 #[test]
 fn preview_configuration_requires_a_site_url_repository_and_description() {
     let root = workspace("https://example.test/", "clean");
-    let source = root.read("diplodocus.toml");
+    let source = root.read("diplodocus.yaml");
     for source in [
-        source.replace("site-url='https://example.test/'", ""),
-        source.replace("repository='docs'", "repository='missing'"),
-        source.replace("alt='A dinosaur & an open book'", "alt='  '"),
+        source.replace("site-url: \"https://example.test/\"", ""),
+        source.replace("repository: \"docs\"", "repository: \"missing\""),
+        source.replace("alt: \"A dinosaur & an open book\"", "alt: \"  \""),
     ] {
         let configuration = parse_configuration(&source).unwrap();
         assert!(!validate_configuration(&configuration).is_empty());
     }
     for source in [
-        source.replace("alt='A dinosaur & an open book'", ""),
+        source.replace("alt: \"A dinosaur & an open book\"", ""),
         source.replace("branding/og.png", "../og.png"),
         source.replace("branding/og.png", "/og.png"),
         source.replace("open-graph", "open_graph"),
@@ -184,7 +184,7 @@ fn preview_configuration_requires_a_site_url_repository_and_description() {
     }
     let configuration = parse_configuration(&source).unwrap();
     assert_eq!(
-        parse_configuration(&toml::to_string(&configuration).unwrap()).unwrap(),
+        parse_configuration(&serde_saphyr::to_string(&configuration).unwrap()).unwrap(),
         configuration
     );
 }
@@ -201,13 +201,13 @@ fn previews_reject_missing_invalid_and_vector_images() {
         ),
     ] {
         let source = root
-            .read("diplodocus.toml")
+            .read("diplodocus.yaml")
             .replace("branding/og.png", &format!("branding/{name}"));
-        root.write("case.toml", source);
+        root.write("case.yaml", source);
         if let Some(bytes) = bytes {
             root.write(format!("branding/{name}"), bytes);
         }
-        let sources = assemble_workspace(root.path().join("case.toml")).unwrap();
+        let sources = assemble_workspace(root.path().join("case.yaml")).unwrap();
         assert!(resolve_workspace(&sources).is_err(), "{name}");
     }
 }
@@ -215,7 +215,7 @@ fn previews_reject_missing_invalid_and_vector_images() {
 #[test]
 fn changed_preview_bytes_are_rechecked_before_publication() {
     let root = workspace("https://example.test/", "clean");
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let resolved = resolve_workspace(&sources).unwrap();
     assert!(
         resolved
@@ -242,6 +242,6 @@ fn previews_cannot_follow_symlinks_outside_the_repository() {
         root.path().join("branding/og.png"),
     )
     .unwrap();
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     assert!(resolve_workspace(&sources).is_err());
 }

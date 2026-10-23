@@ -109,7 +109,7 @@ impl Isolation {
     fn new(mode: &str, populated: bool) -> Self {
         let root = support::TestWorkspace::new();
         let private = support::TestWorkspace::new();
-        root.write("diplodocus.toml", format!("[project]\nname='Isolation'\n[[repository]]\nid='docs'\npath='.'\n[[content]]\nid='guide'\nowner='project'\nrepository='docs'\npath='guide'\nmount=''\nformat='qmd'\n{mode}"));
+        root.write("diplodocus.yaml", format!("project:\n  name: \"Isolation\"\nrepositories:\n  - id: \"docs\"\n    path: \".\"\ncontent:\n  - id: \"guide\"\n    owner: \"project\"\n    repository: \"docs\"\n    path: \"guide\"\n    mount: \"\"\n    format: \"qmd\"\n{mode}"));
         root.write("guide/index.qmd", source("Initial"));
         if populated {
             root.write(
@@ -171,8 +171,9 @@ fn source(title: &str) -> String {
     )
 }
 
-const ENABLED: &str = "[content.execution]\nmode='execute'\nengine='jupyter'\nkernel='sentinel'\n";
-const NEVER: &str = "[content.execution]\nmode='never'\n";
+const ENABLED: &str =
+    "    execution:\n      mode: execute\n      engine: jupyter\n      kernel: sentinel\n";
+const NEVER: &str = "    execution:\n      mode: never\n";
 
 fn finish(mut child: std::process::Child) -> Output {
     let until = Instant::now() + Duration::from_secs(20);
@@ -206,7 +207,7 @@ fn library_check_child() {
         return;
     };
     let result = commands::check(CheckOptions {
-        config: "diplodocus.toml".into(),
+        config: "diplodocus.yaml".into(),
     });
     assert_eq!(result.is_ok(), expected == "success", "{result:?}");
 }
@@ -216,7 +217,7 @@ fn library_execute_child() {
     if std::env::var_os("DIPLODOCUS_ISOLATED_EXECUTE").is_none() {
         return;
     }
-    let sources = diplodocus::assembly::assemble_workspace("diplodocus.toml").unwrap();
+    let sources = diplodocus::assembly::assemble_workspace("diplodocus.yaml").unwrap();
     let staging = PathBuf::from(std::env::var_os("TMPDIR").unwrap());
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
@@ -251,27 +252,27 @@ fn every_check_exit_path_avoids_discovery_execution_and_writes() {
                 "asset",
             ] {
                 let mut fixture = Isolation::new(mode, populated);
-                let config = fixture.root.read("diplodocus.toml");
+                let config = fixture.root.read("diplodocus.yaml");
                 match case {
-                    "missing-config" => fixture.root.remove("diplodocus.toml"),
-                    "invalid-config" => fixture.root.write("diplodocus.toml", "["),
+                    "missing-config" => fixture.root.remove("diplodocus.yaml"),
+                    "invalid-config" => fixture.root.write("diplodocus.yaml", "["),
                     "invalid-declaration" => fixture.root.write(
-                        "diplodocus.toml",
-                        config.replace("owner='project'", "owner='missing'"),
+                        "diplodocus.yaml",
+                        config.replace("owner: \"project\"", "owner: \"missing\""),
                     ),
                     "invalid-execution" => fixture.root.write(
-                        "diplodocus.toml",
+                        "diplodocus.yaml",
                         format!(
-                            "{}[content.execution]\nmode='never'\nkernel='sentinel'\n",
-                            config.split("[content.execution]").next().unwrap()
+                            "{}    execution:\n      mode: never\n      kernel: sentinel\n",
+                            config.split("    execution:").next().unwrap()
                         ),
                     ),
                     "document-authority" => fixture
                         .root
                         .write("guide/index.qmd", "---\njupyter: sentinel\n---\n"),
                     "missing-content" => fixture.root.write(
-                        "diplodocus.toml",
-                        config.replace("path='guide'", "path='absent'"),
+                        "diplodocus.yaml",
+                        config.replace("path: \"guide\"", "path: \"absent\""),
                     ),
                     "invalid-qmd" => fixture
                         .root
@@ -296,7 +297,7 @@ fn every_check_exit_path_avoids_discovery_execution_and_writes() {
                     let mut command = fixture.command(cargo_bin("diplodocus"));
                     command.arg("check");
                     if explicit {
-                        command.args(["--config", "diplodocus.toml"]);
+                        command.args(["--config", "diplodocus.yaml"]);
                     }
                     let output = run(&mut command);
                     assert_eq!(

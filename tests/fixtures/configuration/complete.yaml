@@ -1,0 +1,55 @@
+project:
+  name: "Foo"
+repositories:
+  - id: "python"
+    path: "../foo-python"
+    url: "https://forge.example/foo-python"
+    source-link-template: "https://forge.example/foo-python/blob/{revision}/{path}#L{line}"
+    revision: "release-1.9"
+packages:
+  - id: "pyfoo"
+    name: "Foo for Python"
+    slug: "python"
+    ecosystem: "python"
+    repository: "python"
+    path: "."
+    metadata-path: "pyproject.toml"
+    kind: "component"
+    visibility: "internal"
+    targets:
+      - id: "api"
+        extractor: "python"
+        path: "python/foo"
+        role: "public-api"
+      - id: "native"
+        extractor: "python"
+        path: "python/foo/_native.pyi"
+        role: "internal-api"
+content:
+  - id: "tutorials"
+    owner: "pyfoo"
+    repository: "python"
+    path: "docs/tutorials"
+    mount: "tutorials"
+    format: "qmd"
+    execution:
+      mode: "execute"
+      engine: "jupyter"
+      kernel: "python3"
+      declared-environment-inputs:
+        - "uv.lock"
+        - "environments/docs.toml"
+concepts:
+  - id: "foo-model.fit"
+    kind: "analogous"
+    members:
+      - package: "pyfoo"
+        item: "foo.FooModel.fit"
+      - package: "pyfoo"
+        item: "pyfoo::foo.fit"
+relationships:
+  - from: "pyfoo"
+    to: "cargo:foo-core"
+    kind: "binds"
+    version-constraint: "^1.9"
+    provenance: "explicit"

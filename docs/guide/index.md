@@ -3,7 +3,7 @@
 Diplodocus builds one site for related Python, R, Julia, and Rust packages. It
 combines extracted API references with authored guides, shared
 navigation, cross-references, and search. This guide is built by Diplodocus from
-the project's own `diplodocus.toml`.
+the project's own `diplodocus.yaml`.
 
 Start with [installation](installation.md) and the [quick
 start](quick-start.md). Then configure your [workspace](configuration.md), write

@@ -9,50 +9,51 @@ use diplodocus::paths::{PathResolutionErrorKind, PathType, resolve_workspace_pat
 
 use support::TestWorkspace;
 
-const CONFIG: &str = r#"
-[project]
-name = "Paths"
-
-[[repository]]
-id = "source"
-path = "../repo"
-
-[[package]]
-id = "pkg"
-name = "Package"
-slug = "pkg"
-ecosystem = "python"
-repository = "source"
-path = "packages/pkg"
-metadata-path = "pyproject.toml"
-targets = [
-  { id = "directory", extractor = "python", path = "src", role = "public-api" },
-  { id = "file", extractor = "python", path = "src/module.py", role = "public-api" },
-]
-
-[[content]]
-id = "guide"
-owner = "project"
-repository = "source"
-path = "docs"
-mount = "guide"
-format = "qmd"
-
-[content.execution]
-mode = "execute"
-engine = "jupyter"
-kernel = "python3"
-declared-environment-inputs = ["uv.lock"]
+const CONFIG: &str = r#"project:
+  name: "Paths"
+repositories:
+  - id: "source"
+    path: "../repo"
+packages:
+  - id: "pkg"
+    name: "Package"
+    slug: "pkg"
+    ecosystem: "python"
+    repository: "source"
+    path: "packages/pkg"
+    metadata-path: "pyproject.toml"
+    targets:
+      - id: "directory"
+        extractor: "python"
+        path: "src"
+        role: "public-api"
+      - id: "file"
+        extractor: "python"
+        path: "src/module.py"
+        role: "public-api"
+content:
+  - id: "guide"
+    owner: "project"
+    repository: "source"
+    path: "docs"
+    mount: "guide"
+    format: "qmd"
+    execution:
+      mode: "execute"
+      engine: "jupyter"
+      kernel: "python3"
+      declared-environment-inputs:
+        - "uv.lock"
 "#;
 
 fn workspace() -> (TestWorkspace, WorkspaceConfiguration, PathBuf) {
     let workspace = TestWorkspace::new();
-    workspace.write("config/diplodocus.toml", CONFIG);
+    workspace.write("config/diplodocus.yaml", CONFIG);
     workspace.write("repo/packages/pkg/pyproject.toml", "[project]");
     workspace.write("repo/packages/pkg/src/module.py", "");
     workspace.write("repo/docs/index.qmd", "# Guide");
     workspace.write("repo/uv.lock", "");
-    let config_path = workspace.path().join("config/diplodocus.toml");
+    let config_path = workspace.path().join("config/diplodocus.yaml");
     let config = load_configuration(&config_path).unwrap();
     (workspace, config, config_path)
 }
@@ -64,7 +65,7 @@ fn canonical(workspace: &TestWorkspace, path: &str) -> PathBuf {
 #[test]
 fn resolves_each_base_without_changing_portable_declarations() {
     let (workspace, config, config_path) = workspace();
-    let before = toml::to_string(&config).unwrap();
+    let before = serde_saphyr::to_string(&config).unwrap();
     let resolved = resolve_workspace_paths(&config_path, &config).unwrap();
     assert_eq!(
         resolved.configuration_directory,
@@ -99,7 +100,7 @@ fn resolves_each_base_without_changing_portable_declarations() {
         resolved.content[0].declared_environment_inputs,
         [canonical(&workspace, "repo/uv.lock")]
     );
-    assert_eq!(toml::to_string(&config).unwrap(), before);
+    assert_eq!(serde_saphyr::to_string(&config).unwrap(), before);
     assert_eq!(parse_configuration(&before).unwrap(), config);
     assert!(!before.contains(workspace.path().to_str().unwrap()));
 }
@@ -107,7 +108,7 @@ fn resolves_each_base_without_changing_portable_declarations() {
 #[test]
 fn resolves_acceptance_sibling_checkouts_in_declaration_order() {
     let workspace = support::acceptance_workspace();
-    let path = workspace.path().join("workspace/diplodocus.toml");
+    let path = workspace.path().join("workspace/diplodocus.yaml");
     let config = load_configuration(&path).unwrap();
     let resolved = resolve_workspace_paths(path, &config).unwrap();
     assert_eq!(
@@ -136,7 +137,7 @@ fn resolves_acceptance_sibling_checkouts_in_declaration_order() {
 
 #[test]
 fn resolves_the_authored_only_project_configuration() {
-    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("diplodocus.toml");
+    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("diplodocus.yaml");
     let config = load_configuration(&path).unwrap();
     let resolved = resolve_workspace_paths(path, &config).unwrap();
     assert!(resolved.packages.is_empty());
@@ -166,7 +167,7 @@ fn empty_inputs_and_targets_remain_empty_without_discovery() {
             .packages
             .is_empty()
     );
-    let minimal = parse_configuration("[project]\nname = 'Minimal'\n").unwrap();
+    let minimal = parse_configuration("project:\n  name: \"Minimal\"\n").unwrap();
     let resolved = resolve_workspace_paths(path, &minimal).unwrap();
     assert!(resolved.repositories.is_empty());
     assert!(resolved.packages.is_empty());
@@ -178,7 +179,7 @@ fn only_the_configuration_parent_must_exist() {
     let (_workspace, config, path) = workspace();
     fs::remove_file(&path).unwrap();
     resolve_workspace_paths(&path, &config).unwrap();
-    let error = resolve_workspace_paths(path.join("missing.toml"), &config).unwrap_err();
+    let error = resolve_workspace_paths(path.join("missing.yaml"), &config).unwrap_err();
     assert_eq!(error.field, "configuration_directory");
     assert!(matches!(
         error.kind,
@@ -188,7 +189,7 @@ fn only_the_configuration_parent_must_exist() {
 
 #[test]
 fn bare_relative_configuration_path_uses_current_directory() {
-    let config = parse_configuration("[project]\nname = 'Minimal'\n").unwrap();
+    let config = parse_configuration("project:\n  name: \"Minimal\"\n").unwrap();
     let resolved = resolve_workspace_paths("not-created.toml", &config).unwrap();
     assert_eq!(
         resolved.configuration_directory,
@@ -228,10 +229,10 @@ impl Field {
 
     fn field(self) -> &'static str {
         match self {
-            Self::Repository => "repository[0] (`source`).path",
-            Self::Package => "package[0] (`pkg`).path",
-            Self::Metadata => "package[0] (`pkg`).metadata-path",
-            Self::Target => "package[0] (`pkg`).targets[0] (`directory`).path",
+            Self::Repository => "repositories[0] (`source`).path",
+            Self::Package => "packages[0] (`pkg`).path",
+            Self::Metadata => "packages[0] (`pkg`).metadata-path",
+            Self::Target => "packages[0] (`pkg`).targets[0] (`directory`).path",
             Self::Content => "content[0] (`guide`).path",
             Self::Environment => "content[0] (`guide`).execution.declared-environment-inputs[0]",
         }
@@ -285,7 +286,7 @@ fn missing_paths_report_the_configuration_field_and_underlying_error() {
 fn roots_are_directories_and_metadata_and_environment_are_regular_files() {
     let (_workspace, original, path) = workspace();
     for (field, invalid, expected) in [
-        (Field::Repository, "diplodocus.toml", PathType::Directory),
+        (Field::Repository, "diplodocus.yaml", PathType::Directory),
         (Field::Package, "uv.lock", PathType::Directory),
         (Field::Content, "uv.lock", PathType::Directory),
         (Field::Metadata, "src", PathType::File),
@@ -459,7 +460,7 @@ fn repository_references_must_select_exactly_one_root() {
                 if content {
                     "content[0] (`guide`).repository"
                 } else {
-                    "package[0] (`pkg`).repository"
+                    "packages[0] (`pkg`).repository"
                 }
             );
             assert!(
@@ -614,7 +615,7 @@ mod symlinks {
         fs::create_dir_all(workspace.path().join("nested/config/child")).unwrap();
         symlink("nested/config/child", workspace.path().join("config-link")).unwrap();
         symlink("repo", workspace.path().join("repo-link")).unwrap();
-        let path = workspace.path().join("config-link/../diplodocus.toml");
+        let path = workspace.path().join("config-link/../diplodocus.yaml");
         config.repositories[0].path = "../../repo-link/packages/..".into();
         let resolved = resolve_workspace_paths(path, &config).unwrap();
         assert_eq!(

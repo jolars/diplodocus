@@ -87,7 +87,7 @@ impl Kernel {
 
 fn configuration(kernel: &str) -> String {
     format!(
-        "[project]\nname='Execution acceptance'\n[[repository]]\nid='docs'\npath='.'\n[[content]]\nid='guide'\nowner='project'\nrepository='docs'\npath='guide'\nmount=''\nformat='qmd'\n[content.execution]\nmode='execute'\nengine='jupyter'\nkernel='{kernel}'\n"
+        "project:\n  name: \"Execution acceptance\"\nrepositories:\n  - id: \"docs\"\n    path: \".\"\ncontent:\n  - id: \"guide\"\n    owner: \"project\"\n    repository: \"docs\"\n    path: \"guide\"\n    mount: \"\"\n    format: \"qmd\"\n    execution:\n      mode: \"execute\"\n      engine: \"jupyter\"\n      kernel: \"{kernel}\"\n"
     )
 }
 
@@ -130,7 +130,7 @@ fn mark_executed(value: &mut Value) {
 
 fn build(root: &Path, output: &str) {
     let result = std::process::Command::new(env!("CARGO_BIN_EXE_diplodocus"))
-        .args(["build", "--config", "diplodocus.toml", "--output", output])
+        .args(["build", "--config", "diplodocus.yaml", "--output", output])
         .current_dir(root)
         .output()
         .unwrap();
@@ -145,7 +145,7 @@ fn build(root: &Path, output: &str) {
 fn python_and_r_cli_builds_match_reviewed_outputs_and_restore_complete_results() {
     for kernel in [Kernel::Python, Kernel::R] {
         let root = support::TestWorkspace::new();
-        root.write("diplodocus.toml", configuration(kernel.name()));
+        root.write("diplodocus.yaml", configuration(kernel.name()));
         root.write(
             "guide/index.qmd",
             support::load_fixture(format!("execution-kernels/{}.qmd", kernel.language())),
@@ -238,7 +238,7 @@ fn request(
     kernel: Kernel,
     source: &str,
 ) -> (ExecutionContext<'static>, PageExecutionRequest) {
-    let config = toml::from_str(&format!("id='guide'\nowner='project'\nrepository='docs'\npath='guide'\nmount=''\nformat='qmd'\n[execution]\nmode='execute'\nengine='jupyter'\nkernel='{}'\n", kernel.name())).unwrap();
+    let config = serde_saphyr::from_str(&format!("id: \"guide\"\nowner: \"project\"\nrepository: \"docs\"\npath: \"guide\"\nmount: \"\"\nformat: \"qmd\"\nexecution:\n  mode: \"execute\"\n  engine: \"jupyter\"\n  kernel: \"{}\"\n", kernel.name())).unwrap();
     let prepared = prepare_collection_document(source, &config)
         .unwrap()
         .preparation
@@ -388,11 +388,11 @@ fn missing_kernel_fails_cli_builds_without_publication() {
         let root = support::TestWorkspace::new();
         root.write("guide/index.qmd", kernel.page(kernel.fail()));
         root.write(
-            "diplodocus.toml",
+            "diplodocus.yaml",
             configuration("diplodocus-absent-acceptance-kernel"),
         );
         let result = std::process::Command::new(env!("CARGO_BIN_EXE_diplodocus"))
-            .args(["build", "--config", "diplodocus.toml", "--output", "site"])
+            .args(["build", "--config", "diplodocus.yaml", "--output", "site"])
             .current_dir(root.path())
             .output()
             .unwrap();

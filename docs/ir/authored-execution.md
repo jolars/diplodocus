@@ -42,7 +42,7 @@ including nested cells. Each `PreparedCell` retains the original `CodeCell` and
 typed effective options with their winning origins. The preparation API below
 produces these records; their public constructors do not establish authorization.
 
-Checks, collections with `mode = "never"`, vetoed pages, and pages with no
+Checks, collections with `mode: "never"`, vetoed pages, and pages with no
 potentially executable cells must bypass the engine entirely. The engine
 discovers only the explicit kernel selector and matches cells against its
 verified language. If every candidate has a different language, it returns

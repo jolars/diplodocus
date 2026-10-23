@@ -461,7 +461,7 @@
           },
           "source": {
             "kind": "configuration",
-            "path": "diplodocus.toml"
+            "path": "diplodocus.yaml"
           },
           "span": {
             "start": 10,

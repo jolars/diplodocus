@@ -9,28 +9,33 @@ use diplodocus::validation::resolve_workspace;
 fn workspace(style: &str) -> support::TestWorkspace {
     let root = support::TestWorkspace::new();
     root.write(
-        "diplodocus.toml",
+        "diplodocus.yaml",
         format!(
-            r#"[project]
-name = "Home & docs"
-[presentation]
-canonical-url-style = "{style}"
-[presentation.home]
-tagline = "One <home>"
-description = "Read & explore."
-guide = "guide/index.html"
-actions = [{{ label = "Start <here>", path = "guide/quick-start.html" }}]
-features = [{{ title = "One & all", description = "Shared <references>.", path = "guide/index.html" }}]
-[[repository]]
-id = "docs"
-path = "."
-[[content]]
-id = "guide"
-owner = "project"
-repository = "docs"
-path = "docs"
-mount = "guide"
-format = "gfm"
+            r#"project:
+  name: "Home & docs"
+presentation:
+  canonical-url-style: "{style}"
+  home:
+    tagline: "One <home>"
+    description: "Read & explore."
+    guide: "guide/index.html"
+    actions:
+      - label: "Start <here>"
+        path: "guide/quick-start.html"
+    features:
+      - title: "One & all"
+        description: "Shared <references>."
+        path: "guide/index.html"
+repositories:
+  - id: "docs"
+    path: "."
+content:
+  - id: "guide"
+    owner: "project"
+    repository: "docs"
+    path: "docs"
+    mount: "guide"
+    format: "gfm"
 "#
         ),
     );
@@ -43,7 +48,7 @@ format = "gfm"
 fn homepage_survives_snapshot_round_trip_and_respects_url_style() {
     for style in ["file", "clean"] {
         let root = workspace(style);
-        let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+        let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
         let snapshot =
             Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
         let path = root.path().join("snapshot.sqlite");
@@ -92,9 +97,9 @@ fn homepage_rejects_missing_and_self_destinations() {
         ("guide/index.html", "index.html"),
     ] {
         let root = workspace("file");
-        let config = root.read("diplodocus.toml").replace(original, replacement);
-        root.write("diplodocus.toml", config);
-        let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+        let config = root.read("diplodocus.yaml").replace(original, replacement);
+        root.write("diplodocus.yaml", config);
+        let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
         let snapshot =
             Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
         assert!(matches!(
@@ -108,17 +113,14 @@ fn homepage_rejects_missing_and_self_destinations() {
 fn homepage_preserves_authored_body_and_title_anchor_without_a_second_heading() {
     let root = workspace("file");
     root.write(
-        "diplodocus.toml",
-        format!(
-            "{}\n[[content]]\nid='home'\nowner='project'\nrepository='docs'\npath='home'\nmount=''\nformat='qmd'\n",
-            root.read("diplodocus.toml")
-        ),
+        "diplodocus.yaml",
+        support::merge_configurations(&root.read("diplodocus.yaml"), "content:\n  - id: \"home\"\n    owner: \"project\"\n    repository: \"docs\"\n    path: \"home\"\n    mount: \"\"\n    format: \"qmd\"\n"),
     );
     root.write(
         "home/index.qmd",
         "---\ntitle: Overview\n---\n\n# Welcome {#welcome}\n\nAn authored introduction.\n",
     );
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let rendered = render_site(&Site::new(&snapshot).unwrap()).unwrap();
     let html = std::str::from_utf8(&rendered.files()["index.html"].bytes).unwrap();

@@ -25,8 +25,8 @@ fn monorepo_example_builds_with_r_and_generates_without_sources_or_runtimes() {
     let root = support::TestWorkspace::new();
     let example = Path::new(env!("CARGO_MANIFEST_DIR")).join("examples/monorepo");
     root.write(
-        "diplodocus.toml",
-        fs::read(example.join("diplodocus.toml")).unwrap(),
+        "diplodocus.yaml",
+        fs::read(example.join("diplodocus.yaml")).unwrap(),
     );
     for directory in ["docs", "python", "r", "julia", "rust"] {
         for relative in support::files_under(&example.join(directory)) {

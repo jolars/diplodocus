@@ -14,7 +14,7 @@ use diplodocus::validation::resolve_item;
 fn command(root: &support::TestWorkspace, operation: &str) -> Output {
     Command::new(env!("CARGO_BIN_EXE_diplodocus"))
         .args([operation, "--config"])
-        .arg(root.path().join("diplodocus.toml"))
+        .arg(root.path().join("diplodocus.yaml"))
         .output()
         .unwrap()
 }
@@ -35,7 +35,7 @@ fn rust_settings_default_to_cargo_defaults_and_reject_misplaced_settings() {
     );
     assert!(RustTargetConfiguration::default().default_features);
     let root = support::TestWorkspace::from_fixture("rust-api");
-    let text = root.read("diplodocus.toml");
+    let text = root.read("diplodocus.yaml");
     let mut configuration = parse_configuration(&text).unwrap();
     assert!(validate_configuration(&configuration).is_empty());
     configuration.packages[0].targets[0].rust = Some(RustTargetConfiguration::default());
@@ -164,18 +164,22 @@ fn explicit_features_select_optional_api_and_ids_survive_source_shifts() {
             .collect()
     );
 
-    let mut configuration: toml::Value = toml::from_str(&root.read("diplodocus.toml")).unwrap();
-    configuration["package"][0]["targets"][0]
-        .as_table_mut()
+    let mut configuration: serde_json::Value =
+        serde_saphyr::from_str(&root.read("diplodocus.yaml")).unwrap();
+    configuration["packages"][0]["targets"][0]
+        .as_object_mut()
         .unwrap()
         .insert(
             "rust".into(),
-            toml::Value::Table(toml::map::Map::from_iter([(
+            serde_json::Value::Object(serde_json::Map::from_iter([(
                 "features".into(),
-                toml::Value::Array(vec!["extra".into()]),
+                serde_json::Value::Array(vec!["extra".into()]),
             )])),
         );
-    root.write("diplodocus.toml", toml::to_string(&configuration).unwrap());
+    root.write(
+        "diplodocus.yaml",
+        serde_saphyr::to_string(&configuration).unwrap(),
+    );
     successful(command(&root, "extract"));
     let extra = Snapshot::load(&database).unwrap();
     assert!(resolve_item(extra.workspace(), Some("rustdemo"), "rust_demo::extra").is_ok());
@@ -206,7 +210,7 @@ fn missing_toolchain_is_an_actionable_failure() {
     let root = support::TestWorkspace::from_fixture("rust-api");
     let failed = Command::new(env!("CARGO_BIN_EXE_diplodocus"))
         .args(["extract", "--config"])
-        .arg(root.path().join("diplodocus.toml"))
+        .arg(root.path().join("diplodocus.yaml"))
         .env(
             "DIPLODOCUS_RUST_TOOLCHAIN",
             root.path().join("missing-toolchain"),
@@ -232,7 +236,7 @@ fn snapshot_publication_cannot_replace_rust_compilation_storage() {
         .join(".diplodocus/cache/rust/documentation.sqlite");
     let failed = Command::new(env!("CARGO_BIN_EXE_diplodocus"))
         .args(["extract", "--config"])
-        .arg(root.path().join("diplodocus.toml"))
+        .arg(root.path().join("diplodocus.yaml"))
         .arg("--output")
         .arg(&output)
         .output()

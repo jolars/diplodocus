@@ -72,7 +72,7 @@
   "cases": [
     {
       "id": "baseline",
-      "config": "workspace/diplodocus.toml",
+      "config": "workspace/diplodocus.yaml",
       "overlay": null,
       "changes": [],
       "check": [
@@ -122,7 +122,7 @@
     },
     {
       "id": "visibility",
-      "config": "workspace/variants/visibility.toml",
+      "config": "workspace/variants/visibility.yaml",
       "overlay": null,
       "changes": [],
       "check": [],
@@ -130,7 +130,7 @@
     },
     {
       "id": "relationship-compatible",
-      "config": "workspace/variants/relationship-compatible.toml",
+      "config": "workspace/variants/relationship-compatible.yaml",
       "overlay": null,
       "changes": [],
       "check": [
@@ -180,7 +180,7 @@
     },
     {
       "id": "relationship-external",
-      "config": "workspace/variants/relationship-external.toml",
+      "config": "workspace/variants/relationship-external.yaml",
       "overlay": null,
       "changes": [],
       "check": [],
@@ -188,7 +188,7 @@
     },
     {
       "id": "python-dynamic-export",
-      "config": "workspace/diplodocus.toml",
+      "config": "workspace/diplodocus.yaml",
       "overlay": "python-dynamic-export",
       "changes": [
         "python/python/foo/experimental.py"
@@ -250,7 +250,7 @@
     },
     {
       "id": "unsupported-rd",
-      "config": "workspace/diplodocus.toml",
+      "config": "workspace/diplodocus.yaml",
       "overlay": "unsupported-rd",
       "changes": [
         "r/man/experimental_summary.Rd"
@@ -312,7 +312,7 @@
     },
     {
       "id": "gfm-raw-html",
-      "config": "workspace/diplodocus.toml",
+      "config": "workspace/diplodocus.yaml",
       "overlay": "gfm-raw-html",
       "changes": [
         "core/docs/index.md"
@@ -374,7 +374,7 @@
     },
     {
       "id": "qmd-unsupported-directive",
-      "config": "workspace/diplodocus.toml",
+      "config": "workspace/diplodocus.yaml",
       "overlay": "qmd-unsupported-directive",
       "changes": [
         "python/docs/guide.qmd"
@@ -436,7 +436,7 @@
     },
     {
       "id": "document-execution-not-authorized",
-      "config": "workspace/diplodocus.toml",
+      "config": "workspace/diplodocus.yaml",
       "overlay": "document-execution-not-authorized",
       "changes": [
         "python/safety/metadata-cannot-authorize.qmd"
@@ -498,7 +498,7 @@
     },
     {
       "id": "unsafe-kernel-html",
-      "config": "workspace/diplodocus.toml",
+      "config": "workspace/diplodocus.yaml",
       "overlay": "unsafe-kernel-html",
       "changes": [
         "python/execution/unsafe-html.qmd"
@@ -555,7 +555,7 @@
     },
     {
       "id": "generated-asset-outside-boundary",
-      "config": "workspace/diplodocus.toml",
+      "config": "workspace/diplodocus.yaml",
       "overlay": "generated-asset-outside-boundary",
       "changes": [
         "python/execution/asset-boundary-escape.qmd"
@@ -612,7 +612,7 @@
     },
     {
       "id": "relationship-incompatible",
-      "config": "workspace/variants/relationship-incompatible.toml",
+      "config": "workspace/variants/relationship-incompatible.yaml",
       "overlay": null,
       "changes": [],
       "check": [
@@ -639,7 +639,7 @@
         {
           "code": "incompatible-package-relationship",
           "severity": "error",
-          "source": "workspace/variants/relationship-incompatible.toml"
+          "source": "workspace/variants/relationship-incompatible.yaml"
         }
       ],
       "build": [
@@ -666,7 +666,7 @@
         {
           "code": "incompatible-package-relationship",
           "severity": "error",
-          "source": "workspace/variants/relationship-incompatible.toml"
+          "source": "workspace/variants/relationship-incompatible.yaml"
         }
       ]
     }
@@ -681,7 +681,7 @@
         "relationship-external"
       ],
       "inputs": [
-        "tests/fixtures/acceptance/workspace/diplodocus.toml"
+        "tests/fixtures/acceptance/workspace/diplodocus.yaml"
       ],
       "action": "Load each configured workspace, normalize execution defaults, and extract metadata.",
       "expected": "Resolve repository roots, owners, targets, environments, versions, visibility, external relationships, and both concepts as specified by the behavior tables.",
@@ -768,10 +768,10 @@
         "baseline"
       ],
       "inputs": [
-        "tests/fixtures/acceptance/workspace/diplodocus.toml"
+        "tests/fixtures/acceptance/workspace/diplodocus.yaml"
       ],
       "action": "Run check, extract, generate, build, and serve with defaults where allowed, then from another directory with explicit --config, --input, --output, --host, and --port where supported.",
-      "expected": "Source commands default to ./diplodocus.toml; extract defaults to .diplodocus/documentation.sqlite beside that file, generate requires --input, site output defaults to ./site, and serve binds 127.0.0.1:8000. Explicit options take precedence; generate requires no source configuration.",
+      "expected": "Source commands default to ./diplodocus.yaml; extract defaults to .diplodocus/documentation.sqlite beside that file, generate requires --input, site output defaults to ./site, and serve binds 127.0.0.1:8000. Explicit options take precedence; generate requires no source configuration.",
       "milestone": 9
     },
     {
@@ -791,7 +791,7 @@
         "relationship-incompatible"
       ],
       "inputs": [
-        "tests/fixtures/acceptance/workspace/diplodocus.toml"
+        "tests/fixtures/acceptance/workspace/diplodocus.yaml"
       ],
       "action": "Run check for every case with kernels unavailable and no site or cache directory, then repeat with a preexisting cache.",
       "expected": "Diagnostics match each check array; warnings exit zero and errors nonzero; no kernel discovery, kernel launch, network request, cache access/mutation, execution assets, snapshot publication, or site writes occur.",
@@ -814,7 +814,7 @@
         "relationship-incompatible"
       ],
       "inputs": [
-        "tests/fixtures/acceptance/workspace/diplodocus.toml"
+        "tests/fixtures/acceptance/workspace/diplodocus.yaml"
       ],
       "action": "Build each case in a fresh temporary workspace, then repeat error cases with an existing successful output tree.",
       "expected": "Diagnostics match each build array; warnings succeed and remain visible, errors exit nonzero without a partial site or escaped asset, and a previous successful output is byte-identical after failure.",
@@ -826,7 +826,7 @@
         "baseline"
       ],
       "inputs": [
-        "tests/fixtures/acceptance/workspace/diplodocus.toml",
+        "tests/fixtures/acceptance/workspace/diplodocus.yaml",
         "tests/extract_command.rs"
       ],
       "action": "Set every collection to mode = never in a temporary baseline; run extract from the configuration directory and another working directory, using default, relative, and absolute output paths with R available and kernels unused.",
@@ -839,7 +839,7 @@
         "baseline"
       ],
       "inputs": [
-        "tests/fixtures/acceptance/workspace/diplodocus.toml",
+        "tests/fixtures/acceptance/workspace/diplodocus.yaml",
         "tests/extract_command.rs",
         "tests/snapshot_metadata.rs",
         "tests/snapshot_assets.rs",
@@ -855,7 +855,7 @@
         "baseline"
       ],
       "inputs": [
-        "tests/fixtures/acceptance/workspace/diplodocus.toml",
+        "tests/fixtures/acceptance/workspace/diplodocus.yaml",
         "tests/fixtures/acceptance/python/execution/stateful.qmd",
         "tests/fixtures/acceptance/r/execution/stateful.qmd",
         "tests/extract_command.rs",
@@ -871,7 +871,7 @@
         "baseline"
       ],
       "inputs": [
-        "tests/fixtures/acceptance/workspace/diplodocus.toml",
+        "tests/fixtures/acceptance/workspace/diplodocus.yaml",
         "tests/snapshot_canonical.rs",
         "src/snapshots/canonical/tests.rs",
         "tests/snapshots/snapshot-encoding/minimal.json"
@@ -970,7 +970,7 @@
         "baseline"
       ],
       "inputs": [
-        "tests/fixtures/acceptance/workspace/diplodocus.toml",
+        "tests/fixtures/acceptance/workspace/diplodocus.yaml",
         "tests/commands.rs",
         "tests/extract_command.rs",
         "tests/site_generation.rs"
@@ -1010,7 +1010,7 @@
         "baseline"
       ],
       "inputs": [
-        "tests/fixtures/acceptance/workspace/diplodocus.toml"
+        "tests/fixtures/acceptance/workspace/diplodocus.yaml"
       ],
       "action": "Start serve with an available loopback port and fetch the project landing page, one authored page, both API ecosystems, and an asset.",
       "expected": "The initial build completes before serving; each expected route returns the generated bytes and shutdown releases the port and any kernel processes.",
@@ -1047,7 +1047,7 @@
         "baseline"
       ],
       "inputs": [
-        "tests/fixtures/acceptance/workspace/diplodocus.toml"
+        "tests/fixtures/acceptance/workspace/diplodocus.yaml"
       ],
       "action": "Start serve; change files in its output, execution cache, and an unrelated scratch directory while counting build events.",
       "expected": "These changes do not schedule a rebuild; declared-input changes still do.",
@@ -1073,7 +1073,7 @@
         "baseline"
       ],
       "inputs": [
-        "tests/fixtures/acceptance/workspace/diplodocus.toml"
+        "tests/fixtures/acceptance/workspace/diplodocus.yaml"
       ],
       "action": "Copy the workspace to two different absolute directories; build each with fresh caches, then rebuild from cache.",
       "expected": "Compare every site path and byte and canonical snapshot records and asset contents, not SQLite file bytes; no checkout paths, temporary paths, timestamps, ports, or process IDs leak. Fresh and cached outputs have equal portable content under the cache contract.",
@@ -1110,7 +1110,7 @@
       "id": "own-docs-publication",
       "cases": [],
       "inputs": [
-        "diplodocus.toml",
+        "diplodocus.yaml",
         ".github/workflows/documentation.yml",
         "wrangler.toml"
       ],
@@ -1126,8 +1126,8 @@
       "inputs": [
         "README.md",
         "docs/guide/quick-start.md",
-        "diplodocus.toml",
-        "tests/fixtures/acceptance/workspace/diplodocus.toml"
+        "diplodocus.yaml",
+        "tests/fixtures/acceptance/workspace/diplodocus.yaml"
       ],
       "action": "From a clean checkout with declared tools installed, follow the checked-in instructions to check, build, and preview the acceptance site and the real project site, then extract a snapshot and generate the same site separately.",
       "expected": "Both workflows reproduce the sites using the declared configuration and kernels for extraction and only the snapshot for generation; the guide explains explicit unsandboxed execution and requires no dependency installation or network access by Diplodocus.",

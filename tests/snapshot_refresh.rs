@@ -11,67 +11,79 @@ use diplodocus::snapshots::{Snapshot, SnapshotError};
 use diplodocus::validation::{resolve_item, resolve_workspace};
 use rusqlite::{Connection, OpenFlags};
 
-const CONFIG: &str = r#"
-[project]
-name = "Refresh"
-[[repository]]
-id = "main"
-path = "repo"
-[[package]]
-id = "api"
-name = "API"
-slug = "api"
-ecosystem = "python"
-repository = "main"
-path = "."
-metadata-path = "pyproject.toml"
-targets = [{ id = "api", extractor = "python", path = "foo", role = "public-api" }]
-[[content]]
-id = "guide"
-owner = "api"
-repository = "main"
-path = "docs"
-mount = "guide"
-format = "qmd"
-[content.execution]
-mode = "never"
-[[concept]]
-id = "retained"
-kind = "related"
-members = [{ package = "api", item = "foo.keep" }]
+const CONFIG: &str = r#"project:
+  name: "Refresh"
+repositories:
+  - id: "main"
+    path: "repo"
+packages:
+  - id: "api"
+    name: "API"
+    slug: "api"
+    ecosystem: "python"
+    repository: "main"
+    path: "."
+    metadata-path: "pyproject.toml"
+    targets:
+      - id: "api"
+        extractor: "python"
+        path: "foo"
+        role: "public-api"
+content:
+  - id: "guide"
+    owner: "api"
+    repository: "main"
+    path: "docs"
+    mount: "guide"
+    format: "qmd"
+    execution:
+      mode: "never"
+concepts:
+  - id: "retained"
+    kind: "related"
+    members:
+      - package: "api"
+        item: "foo.keep"
 "#;
 
-const OBSOLETE_CONFIG: &str = r#"
-[[repository]]
-id = "old"
-path = "old"
-[[package]]
-id = "old"
-name = "Old API"
-slug = "old"
-ecosystem = "python"
-repository = "old"
-path = "."
-metadata-path = "pyproject.toml"
-targets = [{ id = "api", extractor = "python", path = "bar", role = "public-api" }]
-[[content]]
-id = "old-guide"
-owner = "old"
-repository = "old"
-path = "docs"
-mount = "guide"
-format = "qmd"
-[content.execution]
-mode = "never"
-[[concept]]
-id = "obsolete"
-kind = "equivalent"
-members = [{ package = "api", item = "foo.remove" }, { package = "old", item = "bar.remove" }]
-[[relationship]]
-from = "api"
-to = "old"
-kind = "binds"
-provenance = "explicit"
+const OBSOLETE_CONFIG: &str = r#"repositories:
+  - id: "old"
+    path: "old"
+packages:
+  - id: "old"
+    name: "Old API"
+    slug: "old"
+    ecosystem: "python"
+    repository: "old"
+    path: "."
+    metadata-path: "pyproject.toml"
+    targets:
+      - id: "api"
+        extractor: "python"
+        path: "bar"
+        role: "public-api"
+content:
+  - id: "old-guide"
+    owner: "old"
+    repository: "old"
+    path: "docs"
+    mount: "guide"
+    format: "qmd"
+    execution:
+      mode: "never"
+concepts:
+  - id: "obsolete"
+    kind: "equivalent"
+    members:
+      - package: "api"
+        item: "foo.remove"
+      - package: "old"
+        item: "bar.remove"
+relationships:
+  - from: "api"
+    to: "old"
+    kind: "binds"
+    provenance: "explicit"
 "#;
 
 const SOURCE: &str = "def keep(x):\n    \"\"\"Keep this function.\"\"\"\n    return x\n\ndef remove():\n    \"\"\"Remove this function.\"\"\"\n    pass\n";
@@ -82,7 +94,10 @@ const REMOVED_PAGE: &str =
 
 fn workspace() -> support::TestWorkspace {
     let root = support::TestWorkspace::new();
-    root.write("diplodocus.toml", format!("{CONFIG}{OBSOLETE_CONFIG}"));
+    root.write(
+        "diplodocus.yaml",
+        support::merge_configurations(CONFIG, OBSOLETE_CONFIG),
+    );
     root.write(
         "repo/pyproject.toml",
         "[project]\nname='foo'\nversion='1.0.0'\n",
@@ -111,7 +126,7 @@ fn workspace() -> support::TestWorkspace {
 
 fn extract(root: &support::TestWorkspace, path: &Path) -> Result<(), CommandError> {
     commands::extract(ExtractOptions {
-        config: root.path().join("diplodocus.toml"),
+        config: root.path().join("diplodocus.yaml"),
         output: Some(path.to_owned()),
     })
 }
@@ -149,7 +164,7 @@ fn refresh(root: &support::TestWorkspace, path: &Path) -> Snapshot {
     assert_only_snapshot(path);
     let loaded = Snapshot::load(path).unwrap();
     // A fresh assembly supplies the oracle independently of the previous database.
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let resolved = resolve_workspace(&sources).unwrap();
     let expected = Snapshot::from_sources(&sources, &resolved).unwrap();
     assert_eq!(
@@ -217,10 +232,10 @@ fn repeated_refreshes_retain_ids_and_replace_deleted_entities_and_unused_assets(
     }
 
     root.write(
-        "diplodocus.toml",
+        "diplodocus.yaml",
         CONFIG
-            .replace("slug = \"api\"", "slug = \"new-api\"")
-            .replace("mount = \"guide\"", "mount = \"manual\""),
+            .replace("slug: \"api\"", "slug: \"new-api\"")
+            .replace("mount: \"guide\"", "mount: \"manual\""),
     );
     root.write(
         "repo/foo/__init__.py",
@@ -293,7 +308,10 @@ fn repeated_refreshes_retain_ids_and_replace_deleted_entities_and_unused_assets(
         "# Revised guide\n\n[`api::foo.keep`]\n",
     );
     assert_assets(&refresh(&root, &path), &[]);
-    root.write("diplodocus.toml", format!("{CONFIG}{OBSOLETE_CONFIG}"));
+    root.write(
+        "diplodocus.yaml",
+        support::merge_configurations(CONFIG, OBSOLETE_CONFIG),
+    );
     root.write("repo/foo/__init__.py", SOURCE);
     root.write("repo/docs/index.qmd", INDEX);
     root.write("repo/docs/removed.qmd", REMOVED_PAGE);
@@ -410,10 +428,10 @@ fn replacement_failure_removes_staging_and_allows_retry() {
 fn refresh_replaces_generated_figures_and_removes_obsolete_execution_records() {
     let root = workspace();
     root.write(
-        "diplodocus.toml",
+        "diplodocus.yaml",
         CONFIG.replace(
-            "mode = \"never\"",
-            "mode = \"execute\"\nengine = \"jupyter\"\nkernel = \"python3\"",
+            "mode: \"never\"",
+            "mode: \"execute\"\n      engine: \"jupyter\"\n      kernel: \"python3\"",
         ),
     );
     root.remove("repo/docs/removed.qmd");
@@ -458,7 +476,7 @@ fn refresh_replaces_generated_figures_and_removes_obsolete_execution_records() {
     assert!(loaded.executed_page(&page).is_some());
     assert_assets(&loaded, &[]);
 
-    root.write("diplodocus.toml", CONFIG);
+    root.write("diplodocus.yaml", CONFIG);
     let disabled = refresh(&root, &path);
     assert!(disabled.workspace().pages.contains_key(&page));
     assert!(disabled.executed_page(&page).is_none());

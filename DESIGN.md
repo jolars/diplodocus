@@ -75,7 +75,7 @@ configuration or supplied as sibling checkouts:
 
 ```text
 docs-workspace/
-└── diplodocus.toml
+└── diplodocus.yaml
 
 checkouts/
 ├── foo-core/
@@ -485,7 +485,7 @@ resolution, and search index.
 A workspace configuration explicitly names local repository roots, packages,
 extraction targets, authored collections, concepts, and package relationships.
 The [configuration guide](docs/guide/configuration.md) explains the supported
-fields; the [small example](examples/monorepo/diplodocus.toml) shows a complete
+fields; the [small example](examples/monorepo/diplodocus.yaml) shows a complete
 Python/R site.
 
 Repository roots may be sibling checkouts. Package paths are relative to their
@@ -627,14 +627,15 @@ rfoo   fit.foo_model
 
 These relationships are initially declared explicitly as conceptual API groups:
 
-```toml
-[[concept]]
-id = "foo-model.fit"
-kind = "analogous"
-members = [
-  { package = "pyfoo", item = "foo.FooModel.fit" },
-  { package = "rfoo", item = "fit.foo_model" },
-]
+```yaml
+concepts:
+  - id: "foo-model.fit"
+    kind: "analogous"
+    members:
+      - package: "pyfoo"
+        item: "foo.FooModel.fit"
+      - package: "rfoo"
+        item: "fit.foo_model"
 ```
 
 A concept may be `equivalent`, `analogous`, or `related`. The kind controls how

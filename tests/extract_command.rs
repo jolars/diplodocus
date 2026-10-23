@@ -9,7 +9,7 @@ use diplodocus::commands::format_diagnostic;
 use diplodocus::snapshots::Snapshot;
 use diplodocus::validation::resolve_workspace;
 
-const CONFIG: &str = "workspace/diplodocus.toml";
+const CONFIG: &str = "workspace/diplodocus.yaml";
 const DEFAULT_OUTPUT: &str = "workspace/.diplodocus/documentation.sqlite";
 
 fn extract(root: &Path, output: Option<&Path>, without_runtimes: bool) -> Output {
@@ -46,15 +46,15 @@ fn static_workspace() -> support::TestWorkspace {
     let root = support::prepared_acceptance_workspace();
     let mut config = support::fixture_configuration(&root, CONFIG);
     for collection in config["content"].as_array_mut().unwrap() {
-        collection.as_table_mut().unwrap().insert(
+        collection.as_object_mut().unwrap().insert(
             "execution".into(),
-            toml::Value::Table(toml::Table::from_iter([(
+            serde_json::Value::Object(serde_json::Map::from_iter([(
                 "mode".into(),
-                toml::Value::String("never".into()),
+                serde_json::Value::String("never".into()),
             )])),
         );
     }
-    root.write(CONFIG, toml::to_string(&config).unwrap());
+    root.write(CONFIG, serde_saphyr::to_string(&config).unwrap());
     root
 }
 
@@ -352,10 +352,9 @@ fn explicit_database_downloads_remain_inputs_and_cannot_be_overwritten() {
 #[test]
 fn cli_rejects_every_kind_of_declared_input_before_execution() {
     let root = support::acceptance_workspace();
-    let config = root.read(CONFIG).replace(
-        "declared-environment-inputs = [\"pyproject.toml\"]",
-        "declared-environment-inputs = [\"environment.lock\"]",
-    );
+    let config = root
+        .read(CONFIG)
+        .replace("- \"pyproject.toml\"", "- \"environment.lock\"");
     root.write(CONFIG, config);
     root.write("python/environment.lock", "environment sentinel");
     root.write("python/execution/must-not-run.qmd", "```{python}\nfrom pathlib import Path\nPath('execution-marker').write_text('executed')\n```\n");
@@ -446,7 +445,7 @@ fn cli_validation_and_publication_failures_preserve_the_previous_snapshot() {
     assert_eq!(fs::read(&path).unwrap(), before);
     root.write("core/docs/index.md", page);
     let config = root.read(CONFIG);
-    root.write(CONFIG, "not valid TOML");
+    root.write(CONFIG, "project: [");
     failure(&extract(root.path(), None, false), "could not parse");
     assert_eq!(fs::read(&path).unwrap(), before);
     root.write(CONFIG, config);
@@ -517,7 +516,7 @@ fn cli_executes_python_and_r_and_publishes_portable_outputs_and_assets() {
 #[cfg(target_os = "linux")]
 fn executable_workspace() -> support::TestWorkspace {
     let root = support::TestWorkspace::new();
-    root.write(CONFIG, "[project]\nname='Extraction'\n[[repository]]\nid='docs'\npath='../repo'\n[[content]]\nid='guide'\nowner='project'\nrepository='docs'\npath='docs'\nmount=''\nformat='qmd'\n[content.execution]\nmode='execute'\nengine='jupyter'\nkernel='python3'\n");
+    root.write(CONFIG, "project:\n  name: \"Extraction\"\nrepositories:\n  - id: \"docs\"\n    path: \"../repo\"\ncontent:\n  - id: \"guide\"\n    owner: \"project\"\n    repository: \"docs\"\n    path: \"docs\"\n    mount: \"\"\n    format: \"qmd\"\n    execution:\n      mode: \"execute\"\n      engine: \"jupyter\"\n      kernel: \"python3\"\n");
     root.write(
         "repo/docs/index.qmd",
         "# Before execution {#before-execution}\n",

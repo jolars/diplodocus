@@ -12,12 +12,12 @@ mod support;
 
 fn collection(execute: bool) -> ContentConfiguration {
     let execution = if execute {
-        "[execution]\nmode = 'execute'\nengine = 'jupyter'\nkernel = 'uninstalled-kernel'\ndeclared-environment-inputs = ['missing.lock']\n"
+        "execution:\n  mode: \"execute\"\n  engine: \"jupyter\"\n  kernel: \"uninstalled-kernel\"\n  declared-environment-inputs:\n    - \"missing.lock\"\n"
     } else {
         ""
     };
-    toml::from_str(&format!(
-        "id = 'examples'\nowner = 'project'\nrepository = 'docs'\npath = 'missing'\nmount = 'examples'\nformat = 'qmd'\n{execution}"
+    serde_saphyr::from_str(&format!(
+        "id: \"examples\"\nowner: \"project\"\nrepository: \"docs\"\npath: \"missing\"\nmount: \"examples\"\nformat: \"qmd\"\n{execution}"
     ))
     .unwrap()
 }
@@ -233,12 +233,12 @@ fn metadata_policy_rejects_unknown_keys_and_bad_types() {
         );
     }
     for metadata in [
-        "title: ''",
+        "title: \"\"",
         "title: []",
         "title:",
         "audience: {}",
         "audience: [okay, []]",
-        "execute: {eval: 'true'}",
+        "execute: {eval: \"true\"}",
         "execute: {output: other}",
     ] {
         let result = prepare(&format!("---\n{metadata}\n---\n"), true);
@@ -254,7 +254,7 @@ fn metadata_policy_rejects_unknown_keys_and_bad_types() {
         "audience: Python",
         "audience: []",
         "execute: true",
-        "execute: {output: 'asis'}",
+        "execute: {output: \"asis\"}",
     ] {
         let result = prepare(&format!("---\n{metadata}\n---\n"), true);
         assert!(

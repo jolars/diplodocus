@@ -13,7 +13,7 @@ use serde_json::{Value, json};
 
 fn snapshot() -> Snapshot {
     let root = support::acceptance_workspace();
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
     let resolved = resolve_workspace(&sources).unwrap();
     Snapshot::from_sources(&sources, &resolved).unwrap()
 }
@@ -110,12 +110,12 @@ fn changed(
 #[test]
 fn repository_hyperlinks_retain_their_policy_without_a_checkout() {
     let root = support::TestWorkspace::new();
-    root.write("diplodocus.toml", "[project]\nname='Repository links'\n[[repository]]\nid='repo'\npath='.'\nurl='https://github.com/example/models'\nrevision='v2'\n[[package]]\nid='rmodels'\nname='Models'\nslug='r'\necosystem='r'\nrepository='repo'\npath='r'\nmetadata-path='DESCRIPTION'\ntargets=[{id='api',extractor='r',path='.',role='public-api'}]\n");
+    root.write("diplodocus.yaml", "project:\n  name: \"Repository links\"\nrepositories:\n  - id: \"repo\"\n    path: \".\"\n    url: \"https://github.com/example/models\"\n    revision: \"v2\"\npackages:\n  - id: \"rmodels\"\n    name: \"Models\"\n    slug: \"r\"\n    ecosystem: \"r\"\n    repository: \"repo\"\n    path: \"r\"\n    metadata-path: \"DESCRIPTION\"\n    targets:\n      - id: \"api\"\n        extractor: \"r\"\n        path: \".\"\n        role: \"public-api\"\n");
     root.write("r/NAMESPACE", "");
     root.write("r/DESCRIPTION", "Package: models\nVersion: 1.0.0\nTitle: Models\nDescription: Compare models.\nLicense: MIT\n");
     root.write("CONTRIBUTING.md", "[Trust](TRUST.md#details)\n");
     root.write("TRUST.md", "# Details\n");
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     drop((sources, root));
     for case in [
@@ -248,14 +248,14 @@ fn rejects_missing_or_malformed_presentation_even_with_valid_fingerprints() {
 fn rejects_incomplete_or_forged_logo_evidence_with_valid_fingerprints() {
     let root = support::TestWorkspace::new();
     root.write(
-        "diplodocus.toml",
-        "[project]\nname='Logo'\n[presentation.logo]\nrepository='docs'\npath='logo.svg'\n[[repository]]\nid='docs'\npath='.'\n",
+        "diplodocus.yaml",
+        "project:\n  name: \"Logo\"\npresentation:\n  logo:\n    repository: \"docs\"\n    path: \"logo.svg\"\nrepositories:\n  - id: \"docs\"\n    path: \".\"\n",
     );
     root.write(
         "logo.svg",
         "<svg xmlns='http://www.w3.org/2000/svg'><circle r='3'/></svg>",
     );
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     for case in [
         "declaration",
@@ -292,13 +292,13 @@ fn rejects_incomplete_or_forged_logo_evidence_with_valid_fingerprints() {
 #[test]
 fn rejects_forged_open_graph_evidence_with_valid_fingerprints() {
     let root = support::TestWorkspace::new();
-    root.write("diplodocus.toml", "[project]\nname='Preview'\n[presentation]\nsite-url='https://example.test/'\n[presentation.open-graph]\nrepository='docs'\npath='og.png'\nalt='A dinosaur'\n[[repository]]\nid='docs'\npath='.'\n");
+    root.write("diplodocus.yaml", "project:\n  name: \"Preview\"\npresentation:\n  site-url: \"https://example.test/\"\n  open-graph:\n    repository: \"docs\"\n    path: \"og.png\"\n    alt: \"A dinosaur\"\nrepositories:\n  - id: \"docs\"\n    path: \".\"\n");
     let mut bytes = std::io::Cursor::new(Vec::new());
     image::RgbImage::from_pixel(4, 2, image::Rgb([10, 20, 40]))
         .write_to(&mut bytes, image::ImageFormat::Png)
         .unwrap();
     root.write("og.png", bytes.into_inner());
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     for case in [
         "declaration",
@@ -809,7 +809,7 @@ fn rejects_invalid_image_contents_even_with_recomputed_asset_digests() {
 fn round_trips_page_links_with_empty_fragments() {
     let root = support::acceptance_workspace();
     root.write("core/docs/link.md", "[Home](index.md#)\n");
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
     let resolved = resolve_workspace(&sources).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolved).unwrap();
     let target = tempfile::tempdir().unwrap();
@@ -857,7 +857,7 @@ fn legacy_rd_fallback_payloads_never_render_as_document_copies() {
 \description{Before \Sexpr{1} and \out{x} after.}
 \examples{\Sexpr{stop('must not execute')}}";
     root.write("r/man/experimental_summary.Rd", rd);
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let legacy = changed(&snapshot, |export| {
         assert_eq!(restore_legacy_payloads(export, rd), 3);
@@ -888,7 +888,7 @@ fn legacy_rd_fallback_payloads_never_render_as_document_copies() {
 fn rejects_changed_rd_help_destinations_and_invalid_candidate_evidence() {
     let root = support::acceptance_workspace();
     support::add_r_rd_content(&root);
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     for case in [
         "destination",
@@ -943,7 +943,7 @@ fn rejects_changed_rd_help_destinations_and_invalid_candidate_evidence() {
 async fn rejects_rd_example_evidence_that_disagrees_with_its_source_or_package() {
     use diplodocus::execution::{ExecutionCancellation, ExecutionDeadlines};
     let root = support::acceptance_workspace();
-    let mut sources = assemble_workspace(root.path().join("workspace/diplodocus.toml")).unwrap();
+    let mut sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
     let mut cancellation: ExecutionCancellation<'_> = Box::pin(std::future::pending());
     sources
         .execute_rd_examples(ExecutionDeadlines::default(), &mut cancellation)

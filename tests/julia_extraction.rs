@@ -9,22 +9,25 @@ use diplodocus::paths::resolve_workspace_paths;
 fn small(source: &str) -> support::TestWorkspace {
     let workspace = support::TestWorkspace::new();
     workspace.write(
-        "diplodocus.toml",
-        r#"
-[project]
-name = "Julia tests"
-[[repository]]
-id = "repo"
-path = "."
-[[package]]
-id = "demo"
-name = "Demo"
-slug = "julia"
-ecosystem = "julia"
-repository = "repo"
-path = "."
-metadata-path = "Project.toml"
-targets = [{ id = "api", extractor = "julia", path = "src/Demo.jl", role = "public-api" }]
+        "diplodocus.yaml",
+        r#"project:
+  name: "Julia tests"
+repositories:
+  - id: "repo"
+    path: "."
+packages:
+  - id: "demo"
+    name: "Demo"
+    slug: "julia"
+    ecosystem: "julia"
+    repository: "repo"
+    path: "."
+    metadata-path: "Project.toml"
+    targets:
+      - id: "api"
+        extractor: "julia"
+        path: "src/Demo.jl"
+        role: "public-api"
 "#,
     );
     workspace.write("Project.toml", "name = \"Demo\"\nuuid = \"12345678-1234-1234-1234-123456789abc\"\nversion = \"1.2.3\"\n[compat]\njulia = \"1.10, 1.11\"\n");
@@ -33,7 +36,7 @@ targets = [{ id = "api", extractor = "julia", path = "src/Demo.jl", role = "publ
 }
 
 fn extract(workspace: &support::TestWorkspace) -> JuliaExtraction {
-    let path = workspace.path().join("diplodocus.toml");
+    let path = workspace.path().join("diplodocus.yaml");
     let configuration = load_configuration(&path).unwrap();
     let paths = resolve_workspace_paths(&path, &configuration).unwrap();
     let package = &paths.packages[0];
@@ -194,7 +197,7 @@ fn malformed_metadata_and_source_do_not_claim_a_valid_surface() {
             .iter()
             .any(|d| d.code.as_str() == "julia-syntax" && d.severity == Severity::Error)
     );
-    workspace.write("Project.toml", "name = 42\n");
+    workspace.write("Project.toml", "name: 42\n");
     assert!(extract(&workspace).metadata.is_none());
 }
 
@@ -352,7 +355,7 @@ fn family_and_method_references_round_trip_through_snapshots() {
     use diplodocus::snapshots::Snapshot;
     use diplodocus::validation::{resolve_item, resolve_workspace};
     let workspace = small("module Demo\nexport f\n\"See [`f`](@ref).\"\nf(x::Int)=x\nend\n");
-    let sources = assemble_workspace(workspace.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(workspace.path().join("diplodocus.yaml")).unwrap();
     let family = resolve_item(sources.workspace(), Some("demo"), "Demo.f").unwrap();
     let method = resolve_item(sources.workspace(), Some("demo"), "Demo.f(::Int)").unwrap();
     assert_ne!(family, method);
@@ -570,7 +573,7 @@ fn acceptance_fixture_checks_without_julia_and_retains_structured_markdown() {
     );
     assert!(!workspace.path().join("julia-was-executed").exists());
     let sources =
-        diplodocus::assembly::assemble_workspace(workspace.path().join("diplodocus.toml")).unwrap();
+        diplodocus::assembly::assemble_workspace(workspace.path().join("diplodocus.yaml")).unwrap();
     let resolved = diplodocus::validation::resolve_workspace(&sources).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolved).unwrap();
     let path = workspace.path().join("static.sqlite");
@@ -622,7 +625,7 @@ fn acceptance_fixture_checks_without_julia_and_retains_structured_markdown() {
         second.write(&path, std::fs::read(fixture.join(&path)).unwrap());
     }
     let sources =
-        diplodocus::assembly::assemble_workspace(second.path().join("diplodocus.toml")).unwrap();
+        diplodocus::assembly::assemble_workspace(second.path().join("diplodocus.yaml")).unwrap();
     let resolved = diplodocus::validation::resolve_workspace(&sources).unwrap();
     let relocated = Snapshot::from_sources(&sources, &resolved).unwrap();
     assert_eq!(
@@ -639,7 +642,7 @@ fn refresh_removes_stale_methods_and_includes_and_preserves_snapshot_on_error() 
     workspace.write("src/methods.jl", "f(x::Int)=x\nf(x::String)=x\n");
     let database = workspace.path().join("documentation.sqlite");
     let options = || ExtractOptions {
-        config: workspace.path().join("diplodocus.toml"),
+        config: workspace.path().join("diplodocus.yaml"),
         output: Some(database.clone()),
     };
     commands::extract(options()).unwrap();
@@ -686,7 +689,7 @@ fn unresolved_doc_references_point_to_original_literal_bytes() {
     let source = "module Demo\r\nexport f\r\n\"\"\"\r\n    α documentation.\r\n    [missing](@ref unavailable)\r\n    \"\"\"\r\nf(x)=x\r\nend\r\n";
     let workspace = small(source);
     let sources =
-        diplodocus::assembly::assemble_workspace(workspace.path().join("diplodocus.toml")).unwrap();
+        diplodocus::assembly::assemble_workspace(workspace.path().join("diplodocus.yaml")).unwrap();
     let diplodocus::validation::ResolutionError::Diagnostics(diagnostics) =
         diplodocus::validation::resolve_workspace(&sources).unwrap_err()
     else {
@@ -717,7 +720,7 @@ fn project_metadata_preserves_julia_compatibility_and_optional_version() {
     let span = metadata.fields["name"].source.span.unwrap();
     assert_eq!(&text[span.start..span.end], "\"Demo\"");
     let sources =
-        diplodocus::assembly::assemble_workspace(workspace.path().join("diplodocus.toml")).unwrap();
+        diplodocus::assembly::assemble_workspace(workspace.path().join("diplodocus.yaml")).unwrap();
     assert!(sources.workspace().packages["demo"].version.is_none());
 }
 
@@ -753,7 +756,7 @@ fn anonymous_vararg_selectors_match_named_vararg_methods() {
         "module Demo\nexport f\n\"See [varargs](@ref f(::Int...)).\"\nfunction f end\nf(values::Int...) = values\nend\n",
     );
     let sources =
-        diplodocus::assembly::assemble_workspace(workspace.path().join("diplodocus.toml")).unwrap();
+        diplodocus::assembly::assemble_workspace(workspace.path().join("diplodocus.yaml")).unwrap();
     diplodocus::validation::resolve_workspace(&sources).unwrap();
 }
 

@@ -10,8 +10,8 @@ use super::super::output::{ErrorContext, OutputReducer};
 use super::super::page::{execute_page, execute_page_with_environment};
 
 fn request(authored: &str) -> PageExecutionRequest {
-    let collection = toml::from_str(
-        "id = 'guide'\nowner = 'project'\nrepository = 'docs'\npath = 'guide'\nmount = 'guide'\nformat = 'qmd'\n[execution]\nmode = 'execute'\nengine = 'jupyter'\nkernel = 'fixture'\n",
+    let collection = serde_saphyr::from_str(
+        "id: \"guide\"\nowner: \"project\"\nrepository: \"docs\"\npath: \"guide\"\nmount: \"guide\"\nformat: \"qmd\"\nexecution:\n  mode: \"execute\"\n  engine: \"jupyter\"\n  kernel: \"fixture\"\n",
     ).unwrap();
     let prepared = prepare_collection_document(authored, &collection).unwrap();
     assert!(

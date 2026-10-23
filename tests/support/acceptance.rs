@@ -114,8 +114,8 @@ pub fn copy_overlay_file(workspace: &TestWorkspace, overlay: &Path, relative: &P
     );
 }
 
-pub fn fixture_configuration(workspace: &TestWorkspace, config: &str) -> toml::Value {
-    toml::from_str(&workspace.read(config)).expect("fixture configuration should parse")
+pub fn fixture_configuration(workspace: &TestWorkspace, config: &str) -> serde_json::Value {
+    serde_saphyr::from_str(&workspace.read(config)).expect("fixture configuration should parse")
 }
 
 pub fn authored_sources(workspace: &TestWorkspace, config: &str) -> Vec<(PathBuf, String)> {
@@ -126,9 +126,12 @@ pub fn authored_sources(workspace: &TestWorkspace, config: &str) -> Vec<(PathBuf
         .parent()
         .unwrap()
         .to_path_buf();
-    let repositories = configuration["repository"].as_array().unwrap();
+    let repositories = configuration["repositories"].as_array().unwrap();
     let mut sources = Vec::new();
-    if let Some(collections) = configuration.get("content").and_then(toml::Value::as_array) {
+    if let Some(collections) = configuration
+        .get("content")
+        .and_then(serde_json::Value::as_array)
+    {
         for collection in collections {
             let repository = repositories
                 .iter()

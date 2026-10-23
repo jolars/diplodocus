@@ -13,7 +13,7 @@ pub(crate) async fn assemble_for_extraction(
     let configuration = crate::configuration::load_configuration(path)?;
     reject_errors(validate_configuration_with_source(
         &configuration,
-        "diplodocus.toml".try_into().unwrap(),
+        "diplodocus.yaml".try_into().unwrap(),
     ))?;
     let paths = resolve_workspace_paths(path, &configuration)?;
     let mut results = BTreeMap::new();

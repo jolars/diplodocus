@@ -50,7 +50,7 @@ types; the ZMQ client supplies transport and launch-command facilities.
 Diplodocus owns discovery policy, the process, request matching, output
 collection, deadlines, interruption, and cleanup.
 
-Only explicitly configured `mode = "execute"` QMD collections with an engine and
+Only explicitly configured `mode: "execute"` QMD collections with an engine and
 kernel can discover or start a kernel for `extract`, `build`, or `serve`. Omission means
 `never`. Document metadata may restrict existing authority but cannot grant it.
 `check` and `never` paths avoid discovery, runtime probes, execution cache

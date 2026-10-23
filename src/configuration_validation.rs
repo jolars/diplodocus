@@ -46,7 +46,7 @@ pub fn validate_configuration(configuration: &WorkspaceConfiguration) -> Vec<Dia
     for (index, repository) in configuration.repositories.iter().enumerate() {
         repositories.declare(
             &repository.id,
-            format!("repository[{index}].id"),
+            format!("repositories[{index}].id"),
             DiagnosticEntity::Repository {
                 id: repository.id.clone(),
             },
@@ -110,20 +110,20 @@ pub fn validate_configuration(configuration: &WorkspaceConfiguration) -> Vec<Dia
         };
         packages.declare(
             &package.id,
-            format!("package[{index}].id"),
+            format!("packages[{index}].id"),
             entity.clone(),
             &mut diagnostics,
         );
         slugs.declare(
             &package.slug,
-            format!("package[{index}].slug"),
+            format!("packages[{index}].slug"),
             entity.clone(),
             &mut diagnostics,
         );
         check_repository(
             &repositories,
             &package.repository,
-            &format!("package[{index}].repository"),
+            &format!("packages[{index}].repository"),
             entity,
             &mut diagnostics,
         );
@@ -132,7 +132,7 @@ pub fn validate_configuration(configuration: &WorkspaceConfiguration) -> Vec<Dia
         for (target_index, target) in package.targets.iter().enumerate() {
             targets.declare(
                 &target.id,
-                format!("package[{index}].targets[{target_index}].id"),
+                format!("packages[{index}].targets[{target_index}].id"),
                 DiagnosticEntity::Target {
                     package: package.id.clone(),
                     id: target.id.clone(),
@@ -201,7 +201,7 @@ pub fn validate_configuration(configuration: &WorkspaceConfiguration) -> Vec<Dia
         };
         concepts.declare(
             &concept.id,
-            format!("concept[{index}].id"),
+            format!("concepts[{index}].id"),
             entity.clone(),
             &mut diagnostics,
         );
@@ -209,7 +209,7 @@ pub fn validate_configuration(configuration: &WorkspaceConfiguration) -> Vec<Dia
             if !packages.contains(&member.package) {
                 diagnostics.push(error(
                     DiagnosticCode::UnknownConceptPackage,
-                    format!("concept[{index}].members[{member_index}].package: unknown workspace package `{}`", member.package),
+                    format!("concepts[{index}].members[{member_index}].package: unknown workspace package `{}`", member.package),
                     entity.clone(),
                 ));
             }
@@ -227,14 +227,14 @@ pub fn validate_configuration(configuration: &WorkspaceConfiguration) -> Vec<Dia
                 (
                     DiagnosticCode::InvalidExternalPackageCoordinate,
                     format!(
-                        "relationship[{index}].{field}: invalid external package coordinate `{endpoint}`; expected nonempty `ecosystem:package` components without whitespace or control characters"
+                        "relationships[{index}].{field}: invalid external package coordinate `{endpoint}`; expected nonempty `ecosystem:package` components without whitespace or control characters"
                     ),
                 )
             } else {
                 (
                     DiagnosticCode::UnknownRelationshipEndpoint,
                     format!(
-                        "relationship[{index}].{field}: unknown workspace package `{endpoint}`; external packages require an explicit `ecosystem:package` coordinate"
+                        "relationships[{index}].{field}: unknown workspace package `{endpoint}`; external packages require an explicit `ecosystem:package` coordinate"
                     ),
                 )
             };

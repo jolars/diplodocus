@@ -254,7 +254,7 @@ fields; the loader's canonical re-encoding check requires the writer's shape.
 
 ### Presentation defaults
 
-The `presentation` singleton retains the optional `[presentation]` configuration
+The `presentation` singleton retains the optional `presentation` configuration
 independently of semantic workspace identities:
 
 ```json

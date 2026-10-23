@@ -50,7 +50,7 @@ let exited;
 try {
   if (!process.env.DIPLODOCUS_BIN) await run("cargo", ["build", "--locked", "--bin", "diplodocus"]);
   const env = { ...process.env, DIPLODOCUS_BIN: process.env.DIPLODOCUS_BIN ?? join(repository, "target/debug/diplodocus") };
-  for (const path of ["diplodocus.toml", "docs/index.md", "docs/guide.md", "docs/.vitepress/config.mjs"]) {
+  for (const path of ["diplodocus.yaml", "docs/index.md", "docs/guide.md", "docs/.vitepress/config.mjs"]) {
     await mkdir(join(root, path, ".."), { recursive: true });
     await cp(join(repository, "examples/vitepress", path), join(root, path));
   }
@@ -135,9 +135,9 @@ try {
   await expect(page.locator(".vp-doc")).toContainText("Julia documentation also updates automatically.");
 
   const complete = await digest(snapshot);
-  const configPath = join(root, "diplodocus.toml");
+  const configPath = join(root, "diplodocus.yaml");
   const config = await readFile(configPath, "utf8");
-  await writeFile(configPath, "[invalid TOML");
+  await writeFile(configPath, "project: [");
   await until(() => log.includes("error:"), "failed extraction diagnostic");
   assert.equal(await digest(snapshot), complete);
   assert.equal(generations(), 5);

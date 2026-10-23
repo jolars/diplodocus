@@ -33,7 +33,7 @@ Its R chunks compute scores and a table, and draw a residual plot.
 
 ```text
 monorepo/
-  diplodocus.toml
+  diplodocus.yaml
   docs/
     overview.md
     getting-started/
@@ -90,16 +90,16 @@ after a successful rebuild. Stop the server with Ctrl-C. To choose a port, run
 The equivalent commands without go-task are:
 
 ```console
-cargo run --locked -- check --config examples/monorepo/diplodocus.toml
-cargo run --locked -- build --config examples/monorepo/diplodocus.toml --output site/monorepo
-cargo run --locked -- serve --config examples/monorepo/diplodocus.toml --output site/monorepo --port 0 --live-reload
+cargo run --locked -- check --config examples/monorepo/diplodocus.yaml
+cargo run --locked -- build --config examples/monorepo/diplodocus.yaml --output site/monorepo
+cargo run --locked -- serve --config examples/monorepo/diplodocus.yaml --output site/monorepo --port 0 --live-reload
 ```
 
 Choose **Get started** on the homepage, compare the metrics in the shared
 guides, and open a language's API reference. Then search for
 `mean_squared_error` or follow **Same API in** on a function page.
 
-The shared and Python collections explicitly set `mode = "never"`. Building
+The shared and Python collections explicitly set `mode: "never"`. Building
 requires R on `PATH`, with `pkgload`, `knitr`, and `evaluate` available; devenv
 provides these packages. Extraction loads the R checkout to execute Rd examples
 and vignette chunks, and collects author and citation information. This example
@@ -125,7 +125,7 @@ their syntax without evaluating them. Generation from a snapshot needs no R.
 Extraction and generation can run separately:
 
 ```console
-cargo run --locked -- extract --config examples/monorepo/diplodocus.toml
+cargo run --locked -- extract --config examples/monorepo/diplodocus.yaml
 cargo run --locked -- generate --input examples/monorepo/.diplodocus/documentation.sqlite --output site/monorepo
 ```
 
@@ -159,7 +159,7 @@ constant observations for R squared, and missing-value propagation.
 
 ## Adapt the example
 
-Copy this directory into your project and edit `diplodocus.toml`. All packages
+Copy this directory into your project and edit `diplodocus.yaml`. All packages
 refer to the same repository declaration, whose path is `.`. Package paths are
 relative to that repository, and extraction targets are relative to each
 package. Shared pages mount at the site root, with `docs/overview.md` supplying
@@ -173,5 +173,5 @@ Links between collections and automatically discovered package pages use ordinar
 relative source paths and are rewritten to the generated page routes.
 
 Update the package metadata, source paths, semantic references, and concept
-members together when renaming the packages or functions. Keep `mode = "never"`
+members together when renaming the packages or functions. Keep `mode: "never"`
 for display-only guides; R Markdown vignettes execute during extraction.

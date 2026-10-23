@@ -9,11 +9,11 @@ use diplodocus::validation::resolve_workspace;
 fn render_with_repository(settings: &str) -> RenderedSite {
     let root = support::shared_r_workspace();
     root.write(
-        "workspace/diplodocus.toml",
-        root.read("workspace/diplodocus.toml")
-            .replace("path='../r'", &format!("path='../r'\n{settings}")),
+        "workspace/diplodocus.yaml",
+        root.read("workspace/diplodocus.yaml")
+            .replace("path: \"../r\"", &format!("path: \"../r\"\n    {settings}")),
     );
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let artifact = tempfile::tempdir().unwrap();
     let path = artifact.path().join("snapshot.sqlite");
@@ -31,8 +31,9 @@ fn html<'a>(rendered: &'a RenderedSite, path: &str) -> &'a str {
 
 #[test]
 fn reference_titles_routes_introductions_and_summaries_survive_without_sources() {
-    let rendered =
-        render_with_repository("url='https://github.com/example/shared'\nrevision='release/v1'");
+    let rendered = render_with_repository(
+        "url: \"https://github.com/example/shared\"\n    revision: \"release/v1\"",
+    );
     for name in ["fit", "fit.default", "fit.model"] {
         let page = html(&rendered, &format!("packages/r/reference/{name}.html"));
         assert!(page.contains("<title>Fit a Model · Shared R help</title>"));
@@ -76,7 +77,7 @@ fn reference_titles_routes_introductions_and_summaries_survive_without_sources()
 #[test]
 fn source_links_honor_templates_and_require_an_appropriate_origin_and_revision() {
     let rendered = render_with_repository(
-        "revision='v1'\nsource-link-template='https://forge.example/project/{kind}/{revision}/{path}#L{line}'",
+        "revision: \"v1\"\n    source-link-template: \"https://forge.example/project/{kind}/{revision}/{path}#L{line}\"",
     );
     let page = html(&rendered, "packages/r/reference/fit.html");
     assert!(page.contains("https://forge.example/project/blob/v1/R/shared.R"));
@@ -84,9 +85,9 @@ fn source_links_honor_templates_and_require_an_appropriate_origin_and_revision()
     assert!(!page.contains("#L1"));
     for settings in [
         "",
-        "url='https://github.com/example/shared'",
-        "url='https://forge.example/shared'\nrevision='v1'",
-        "revision='v1'\nsource-link-template='javascript:{revision}/{path}'",
+        "url: \"https://github.com/example/shared\"",
+        "url: \"https://forge.example/shared\"\n    revision: \"v1\"",
+        "revision: \"v1\"\n    source-link-template: \"javascript:{revision}/{path}\"",
     ] {
         let rendered = render_with_repository(settings);
         assert!(
@@ -121,7 +122,7 @@ fn formatted_titles_and_route_collisions_remain_distinct() {
         "\\name{a/b}\\alias{a/b}\\title{Extra}\\usage{`a/b`()}\\description{Additional function.}",
     );
     root.write("r/man/index.Rd", "\\name{index}\\alias{index}\\title{Extra}\\usage{index()}\\description{Additional function.}");
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let rendered = render_site(&Site::new(&snapshot).unwrap()).unwrap();
     assert!(
@@ -146,7 +147,7 @@ fn formatted_titles_and_route_collisions_remain_distinct() {
 fn introduction_precedes_the_maintained_signature_when_rd_omits_usage() {
     let root = support::shared_r_workspace();
     root.write("r/man/fit.Rd", root.read("r/man/fit.Rd").replace("\\usage{\nfit(x, ...)\n\\method{fit}{default}(x, y, ...)\n\\method{fit}{model}(x, weights = NULL, ...)\n}\n", ""));
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let rendered = render_site(&Site::new(&snapshot).unwrap()).unwrap();
     let page = html(&rendered, "packages/r/reference/fit.html");
@@ -160,12 +161,12 @@ fn introduction_precedes_the_maintained_signature_when_rd_omits_usage() {
 #[test]
 fn authored_reference_overviews_keep_their_content() {
     let root = support::shared_r_workspace();
-    root.write("workspace/diplodocus.toml", root.read("workspace/diplodocus.toml") + "\n[[content]]\nid='reference'\nowner='rfoo'\nrepository='r'\npath='docs'\nmount='reference'\nformat='gfm'\n[content.execution]\nmode='never'\n");
+    root.write("workspace/diplodocus.yaml", root.read("workspace/diplodocus.yaml") + "content:\n  - id: \"reference\"\n    owner: \"rfoo\"\n    repository: \"r\"\n    path: \"docs\"\n    mount: \"reference\"\n    format: \"gfm\"\n    execution:\n      mode: \"never\"\n");
     root.write(
         "r/docs/index.md",
         "# Custom reference\n\nStart with [`rfoo::fit`].\n",
     );
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let rendered = render_site(&Site::new(&snapshot).unwrap()).unwrap();
     let page = html(&rendered, "packages/r/reference/index.html");

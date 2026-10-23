@@ -9,7 +9,7 @@ use rusqlite::{Connection, params};
 use serde_json::Value;
 
 fn snapshot(root: &support::TestWorkspace) -> Snapshot {
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
     let resolved = resolve_workspace(&sources).unwrap();
     Snapshot::from_sources(&sources, &resolved).unwrap()
 }

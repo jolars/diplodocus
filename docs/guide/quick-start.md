@@ -20,9 +20,9 @@ watched rebuild; successful rebuilds refresh the browser. Stop the server with
 Ctrl-C. The equivalent direct commands are:
 
 ```console
-cargo run --locked -- check --config examples/monorepo/diplodocus.toml
-cargo run --locked -- build --config examples/monorepo/diplodocus.toml --output site/monorepo
-cargo run --locked -- serve --config examples/monorepo/diplodocus.toml --output site/monorepo --port 0 --live-reload
+cargo run --locked -- check --config examples/monorepo/diplodocus.yaml
+cargo run --locked -- build --config examples/monorepo/diplodocus.yaml --output site/monorepo
+cargo run --locked -- serve --config examples/monorepo/diplodocus.yaml --output site/monorepo --port 0 --live-reload
 ```
 
 `check` validates sources without writing a site. `build` writes the site, and
@@ -33,7 +33,7 @@ configuration](configuration.md) and [authored-pages](authoring.md) guides.
 
 ## Build Diplodocus's own documentation
 
-The root `diplodocus.toml` builds a landing page, this guide at `/guide/`, and an executable
+The root `diplodocus.yaml` builds a landing page, this guide at `/guide/`, and an executable
 Python example. The devenv shell supplies its `python3` kernel. From the
 repository root:
 
@@ -50,14 +50,14 @@ The generated homepage is `site/index.html`, and the preview listens at
 ## Exercise the full acceptance workspace
 
 The acceptance workspace at
-`tests/fixtures/acceptance/workspace/diplodocus.toml` uses sibling core, Python,
+`tests/fixtures/acceptance/workspace/diplodocus.yaml` uses sibling core, Python,
 and R repositories, plus executable Python and R pages. The devenv shell
 supplies both kernels. This workspace is for broader validation after the small
 example and project site:
 
 ```console
-cargo run --locked -- check --config tests/fixtures/acceptance/workspace/diplodocus.toml
-cargo run --locked -- build --config tests/fixtures/acceptance/workspace/diplodocus.toml --output site/acceptance
+cargo run --locked -- check --config tests/fixtures/acceptance/workspace/diplodocus.yaml
+cargo run --locked -- build --config tests/fixtures/acceptance/workspace/diplodocus.yaml --output site/acceptance
 ```
 
 Authorized cells run with your user permissions. Review a workspace's sources

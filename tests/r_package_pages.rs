@@ -15,7 +15,7 @@ use diplodocus::validation::{ReferenceTarget, resolve_workspace};
 
 fn fixture() -> support::TestWorkspace {
     let root = support::TestWorkspace::new();
-    root.write("diplodocus.toml", "[project]\nname='Models'\n[[repository]]\nid='repo'\npath='.'\n[[package]]\nid='rmodels'\nname='Models for R'\nslug='r'\necosystem='r'\nrepository='repo'\npath='r'\nmetadata-path='DESCRIPTION'\ntargets=[{id='api', extractor='r', path='.', role='public-api'}]\n");
+    root.write("diplodocus.yaml", "project:\n  name: \"Models\"\nrepositories:\n  - id: \"repo\"\n    path: \".\"\npackages:\n  - id: \"rmodels\"\n    name: \"Models for R\"\n    slug: \"r\"\n    ecosystem: \"r\"\n    repository: \"repo\"\n    path: \"r\"\n    metadata-path: \"DESCRIPTION\"\n    targets:\n      - id: \"api\"\n        extractor: \"r\"\n        path: \".\"\n        role: \"public-api\"\n");
     root.write("r/DESCRIPTION", "Package: models\nVersion: 1.2.0\nTitle: Tools for Comparing Models\nDescription: Compare model predictions reliably.\nAuthors@R: person('Avery', 'Researcher', role=c('aut', 'cre'), email='avery@example.com')\nDate: 2026-01-01\nLicense: MIT\nURL: https://example.org (Project website), https://example.org/community (Community forum)\nBugReports: https://example.org/issues\n");
     root.write("r/NAMESPACE", "");
     root
@@ -23,21 +23,23 @@ fn fixture() -> support::TestWorkspace {
 
 fn add_authored_collection(root: &support::TestWorkspace, path: &str, mount: &str) {
     root.write(
-        "diplodocus.toml",
+        "diplodocus.yaml",
         format!(
-            "{}\n[[content]]\nid='r-docs'\nowner='rmodels'\nrepository='repo'\n\
-             path='{path}'\nmount='{mount}'\nformat='gfm'\n[content.execution]\nmode='never'\n",
-            root.read("diplodocus.toml")
+            "{}\ncontent:\n  - id: \"r-docs\"\n    owner: \"rmodels\"\n    repository: \"repo\"\n    path: \"{path}\"\n    mount: \"{mount}\"\n    format: \"gfm\"\n    execution:\n      mode: \"never\"\n",
+            root.read("diplodocus.yaml")
         ),
     );
 }
 
 fn repository_settings(root: &support::TestWorkspace, settings: &str) {
     root.write(
-        "diplodocus.toml",
-        root.read("diplodocus.toml").replace(
-            "path='.'\n[[package]]",
-            &format!("path='.'\n{settings}\n[[package]]"),
+        "diplodocus.yaml",
+        root.read("diplodocus.yaml").replace(
+            "path: \".\"\npackages:",
+            &format!(
+                "path: \".\"\n    {}\npackages:",
+                settings.replace('\n', "\n    ")
+            ),
         ),
     );
 }
@@ -47,7 +49,7 @@ fn discovered_package_links_fall_back_to_existing_repository_targets() {
     let root = fixture();
     repository_settings(
         &root,
-        "url='https://github.com/example/models.git/'\nrevision='release/v2'",
+        "url: \"https://github.com/example/models.git/\"\nrevision: \"release/v2\"",
     );
     root.write("CONTRIBUTING.md", "# Contributing\n\n[Specification](spec/README.md#contract)\n[Trust](TRUST.md)\n[Operations](OPERATIONS.md)\n[Schema](spec/schema.json)\n[Directory](spec/)\n[Encoded](spec/a%20%23%25%C3%A9.md#part%20one)\n[Policy](r/CODE_OF_CONDUCT.md#policy)\n");
     root.write(
@@ -69,7 +71,7 @@ fn discovered_package_links_fall_back_to_existing_repository_targets() {
         "r/diagram.svg",
         "<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12'/>",
     );
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let resolved = resolve_workspace(&sources).unwrap();
     assert!(resolved.diagnostics().is_empty());
     assert_eq!(resolved.assets().len(), 2);
@@ -114,7 +116,7 @@ fn repository_templates_support_other_forges_and_preserve_authored_fragments() {
     let root = fixture();
     repository_settings(
         &root,
-        "revision='v2'\nsource-link-template='https://forge.example/models/{kind}/{revision}/{path}#L{line}'",
+        "revision: \"v2\"\nsource-link-template: \"https://forge.example/models/{kind}/{revision}/{path}#L{line}\"",
     );
     root.write(
         "CONTRIBUTING.md",
@@ -138,7 +140,7 @@ fn file_templates_do_not_require_a_directory_placeholder() {
     let root = fixture();
     repository_settings(
         &root,
-        "revision='release/v2'\nsource-link-template='https://forge.example/models/blob/{revision}/{path}#L{line}'",
+        "revision: \"release/v2\"\nsource-link-template: \"https://forge.example/models/blob/{revision}/{path}#L{line}\"",
     );
     root.write("CONTRIBUTING.md", "[Trust](TRUST.md)\n");
     root.write("TRUST.md", "# Trust\n");
@@ -149,14 +151,14 @@ fn file_templates_do_not_require_a_directory_placeholder() {
     );
     root.write("CONTRIBUTING.md", "[Directory](spec/)\n");
     root.write("spec/schema.json", "{}\n");
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     assert!(resolve_workspace(&sources).is_err());
 }
 
 #[test]
 fn repository_fallback_uses_the_observed_git_revision() {
     let root = fixture();
-    repository_settings(&root, "url='https://github.com/example/models'");
+    repository_settings(&root, "url: \"https://github.com/example/models\"");
     root.write("CONTRIBUTING.md", "[Trust](TRUST.md)\n");
     root.write("TRUST.md", "# Trust\n");
     let git = |args: &[&str]| {
@@ -200,21 +202,21 @@ fn repository_fallback_uses_the_observed_git_revision() {
 fn repository_fallback_requires_a_supported_origin_and_known_revision() {
     for settings in [
         "",
-        "url='https://github.com/example/models'",
-        "revision='v2'",
-        "url='https://forge.example/models'\nrevision='v2'",
-        "url='https://github.com/example/models/tree/main'\nrevision='v2'",
-        "url='https://user:password@github.com/example/models'\nrevision='v2'",
-        "revision='v2'\nsource-link-template='javascript:{revision}/{path}'",
-        "revision='v2'\nsource-link-template='https://user:password@forge.example/{revision}/{path}'",
-        "revision='v2'\nsource-link-template='https://forge.example/{unknown}/{revision}/{path}'",
-        "revision='v2'\nsource-link-template='https://forge.example/main/{path}'",
+        "url: \"https://github.com/example/models\"",
+        "revision: \"v2\"",
+        "url: \"https://forge.example/models\"\nrevision: \"v2\"",
+        "url: \"https://github.com/example/models/tree/main\"\nrevision: \"v2\"",
+        "url: \"https://user:password@github.com/example/models\"\nrevision: \"v2\"",
+        "revision: \"v2\"\nsource-link-template: \"javascript:{revision}/{path}\"",
+        "revision: \"v2\"\nsource-link-template: \"https://user:password@forge.example/{revision}/{path}\"",
+        "revision: \"v2\"\nsource-link-template: \"https://forge.example/{unknown}/{revision}/{path}\"",
+        "revision: \"v2\"\nsource-link-template: \"https://forge.example/main/{path}\"",
     ] {
         let root = fixture();
         repository_settings(&root, settings);
         root.write("CONTRIBUTING.md", "[Trust](TRUST.md)\n");
         root.write("TRUST.md", "# Trust\n");
-        let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+        let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
         assert!(resolve_workspace(&sources).is_err(), "{settings}");
     }
 }
@@ -231,13 +233,13 @@ fn missing_targets_invalid_page_anchors_and_images_do_not_use_repository_fallbac
         let root = fixture();
         repository_settings(
             &root,
-            "url='https://github.com/example/models'\nrevision='v2'",
+            "url: \"https://github.com/example/models\"\nrevision: \"v2\"",
         );
         root.write("CONTRIBUTING.md", format!("# Contributing\n\n{link}\n"));
         root.write("r/README.md", "# Models\n");
         root.write("TRUST.md", "# Trust\n");
         root.write("diagram.svg", "<svg xmlns='http://www.w3.org/2000/svg'/>");
-        let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+        let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
         let error = resolve_workspace(&sources).unwrap_err();
         assert!(
             error
@@ -256,7 +258,7 @@ fn authored_package_overrides_keep_strict_local_reference_rules() {
     let root = fixture();
     repository_settings(
         &root,
-        "url='https://github.com/example/models'\nrevision='v2'",
+        "url: \"https://github.com/example/models\"\nrevision: \"v2\"",
     );
     root.write("CONTRIBUTING.md", "# Original\n");
     root.write("TRUST.md", "# Trust\n");
@@ -265,7 +267,7 @@ fn authored_package_overrides_keep_strict_local_reference_rules() {
         "# Authored community\n\n[Trust](../../TRUST.md)\n",
     );
     add_authored_collection(&root, "r/docs", "");
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     assert!(resolve_workspace(&sources).is_err());
 }
 
@@ -274,11 +276,11 @@ fn repository_targets_are_rechecked_before_snapshot_publication() {
     let root = fixture();
     repository_settings(
         &root,
-        "url='https://github.com/example/models'\nrevision='v2'",
+        "url: \"https://github.com/example/models\"\nrevision: \"v2\"",
     );
     root.write("CONTRIBUTING.md", "[Trust](TRUST.md)\n");
     root.write("TRUST.md", "# Trust\n");
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let resolved = resolve_workspace(&sources).unwrap();
     assert!(
         resolved
@@ -296,7 +298,7 @@ fn repository_fallback_rejects_symlink_escapes_and_retargeted_aliases() {
     let root = fixture();
     repository_settings(
         &root,
-        "url='https://github.com/example/models'\nrevision='v2'",
+        "url: \"https://github.com/example/models\"\nrevision: \"v2\"",
     );
     let outside = tempfile::tempdir().unwrap();
     fs::write(outside.path().join("TRUST.md"), "# Outside\n").unwrap();
@@ -305,12 +307,12 @@ fn repository_fallback_rejects_symlink_escapes_and_retargeted_aliases() {
     root.write("TRUST.md", "# Trust\n");
     for target in ["outside/TRUST.md", "outside/back/TRUST.md"] {
         root.write("CONTRIBUTING.md", format!("[Trust]({target})\n"));
-        let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+        let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
         assert!(resolve_workspace(&sources).is_err(), "{target}");
     }
     root.write("CONTRIBUTING.md", "[Trust](alias.md)\n");
     std::os::unix::fs::symlink("TRUST.md", root.path().join("alias.md")).unwrap();
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let resolved = resolve_workspace(&sources).unwrap();
     assert!(resolved.records().iter().flat_map(|d| &d.references).any(
         |r| matches!(&r.target, ReferenceTarget::Repository { path, .. } if path.as_str() == "TRUST.md")
@@ -321,7 +323,7 @@ fn repository_fallback_rejects_symlink_escapes_and_retargeted_aliases() {
 }
 
 fn rendered(root: &support::TestWorkspace) -> RenderedSite {
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     render_site(&Site::new(&snapshot).unwrap()).unwrap()
 }
@@ -351,7 +353,7 @@ fn html_text(html: &str) -> String {
 
 fn completed(root: &support::TestWorkspace) -> Snapshot {
     extract(ExtractOptions {
-        config: root.path().join("diplodocus.toml"),
+        config: root.path().join("diplodocus.yaml"),
         output: Some(root.path().join("snapshot.sqlite")),
     })
     .unwrap();
@@ -389,7 +391,7 @@ fn readme_links_assets_headings_and_news_are_portable() {
     root.write("r/NEWS.md", "# Changes\n\nNew prediction metric.\n");
     root.write("r/NEWS", "Old plain release notes.");
     root.write("r/diagram.svg", "<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12'><circle cx='6' cy='6' r='4'/></svg>");
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let portable = tempfile::tempdir().unwrap();
     let database = portable.path().join("snapshot.sqlite");
@@ -429,7 +431,7 @@ fn authored_pages_override_routes_and_discovered_sources_are_not_duplicated() {
     let root = fixture();
     root.write("r/README.md", "# My README\n");
     add_authored_collection(&root, "r", "guide");
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     assert_eq!(
         sources
             .workspace()
@@ -468,7 +470,7 @@ fn community_override_skips_unused_guide_syntax_and_preserves_source_links() {
     add_authored_collection(&root, "r/docs", "");
 
     let report = check(CheckOptions {
-        config: root.path().join("diplodocus.toml"),
+        config: root.path().join("diplodocus.yaml"),
     })
     .unwrap();
     assert!(report.diagnostics.is_empty(), "{:?}", report.diagnostics);
@@ -486,7 +488,7 @@ fn community_override_skips_unused_guide_syntax_and_preserves_source_links() {
         "# Community\n\n<div>Authored unsupported content.</div>\n",
     );
     let report = check(CheckOptions {
-        config: root.path().join("diplodocus.toml"),
+        config: root.path().join("diplodocus.yaml"),
     })
     .unwrap();
     assert_eq!(report.diagnostics.len(), 1);
@@ -518,7 +520,7 @@ fn overrides_skip_invalid_overview_news_and_license_documents() {
         );
         add_authored_collection(&root, "r/docs", "");
         let report = check(CheckOptions {
-            config: root.path().join("diplodocus.toml"),
+            config: root.path().join("diplodocus.yaml"),
         })
         .unwrap();
         assert!(
@@ -532,7 +534,7 @@ fn overrides_skip_invalid_overview_news_and_license_documents() {
         assert!(page.contains(&format!("href=\"{route}.html\"")));
         assert!(!page.contains("Unused content"));
 
-        let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+        let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
         root.write(format!("r/{source}"), [0xff]);
         assert!(matches!(
             sources.revalidate(),
@@ -540,7 +542,7 @@ fn overrides_skip_invalid_overview_news_and_license_documents() {
         ));
         assert!(
             check(CheckOptions {
-                config: root.path().join("diplodocus.toml"),
+                config: root.path().join("diplodocus.yaml"),
             })
             .unwrap()
             .diagnostics
@@ -549,7 +551,7 @@ fn overrides_skip_invalid_overview_news_and_license_documents() {
         root.remove(format!("r/docs/{route}.md"));
         root.write(format!("r/{source}"), "---\ntitle: [broken\n---\n");
         let error = check(CheckOptions {
-            config: root.path().join("diplodocus.toml"),
+            config: root.path().join("diplodocus.yaml"),
         })
         .unwrap_err();
         assert!(
@@ -568,7 +570,7 @@ fn explicitly_included_original_documents_still_report_unsupported_syntax() {
     root.write("r/index.md", "# Maintained homepage\n");
     add_authored_collection(&root, "r", "");
     let report = check(CheckOptions {
-        config: root.path().join("diplodocus.toml"),
+        config: root.path().join("diplodocus.yaml"),
     })
     .unwrap();
     assert_eq!(report.diagnostics.len(), 1);
@@ -591,7 +593,7 @@ fn authored_news_skips_unused_rd_parsing_and_native_conversion() {
     );
     add_authored_collection(&root, "r/docs", "");
     check(CheckOptions {
-        config: root.path().join("diplodocus.toml"),
+        config: root.path().join("diplodocus.yaml"),
     })
     .unwrap();
     let snapshot = completed(&root);
@@ -603,7 +605,7 @@ fn authored_news_skips_unused_rd_parsing_and_native_conversion() {
     root.remove("r/docs/news.md");
     assert!(
         check(CheckOptions {
-            config: root.path().join("diplodocus.toml"),
+            config: root.path().join("diplodocus.yaml"),
         })
         .is_err()
     );
@@ -638,22 +640,24 @@ fn community_fallbacks_rebase_links_and_license_sources_resolve_to_detail_pages(
 #[test]
 fn revalidation_detects_new_files_and_edits_and_hidden_packages_stay_out_of_search() {
     let root = fixture();
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     root.write("r/README.md", "# New overview\n");
     assert!(matches!(
         sources.revalidate(),
         Err(AssemblyError::InputsChanged)
     ));
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     root.write("r/README.md", "# Edited overview\n");
     assert!(matches!(
         sources.revalidate(),
         Err(AssemblyError::InputsChanged)
     ));
     root.write(
-        "diplodocus.toml",
-        root.read("diplodocus.toml")
-            .replace("ecosystem='r'", "ecosystem='r'\nvisibility='hidden'"),
+        "diplodocus.yaml",
+        root.read("diplodocus.yaml").replace(
+            "ecosystem: \"r\"",
+            "ecosystem: \"r\"\n    visibility: \"hidden\"",
+        ),
     );
     let site = rendered(&root);
     assert!(site.files().contains_key("packages/r/index.html"));
@@ -670,13 +674,13 @@ fn checks_never_evaluate_authors_or_citations_and_extraction_failures_preserve_s
         "writeLines('executed', 'marker')\nstop('citation failed')\n",
     );
     check(CheckOptions {
-        config: root.path().join("diplodocus.toml"),
+        config: root.path().join("diplodocus.yaml"),
     })
     .unwrap();
     assert!(!root.path().join("r/marker").exists());
     assert!(
         extract(ExtractOptions {
-            config: root.path().join("diplodocus.toml"),
+            config: root.path().join("diplodocus.yaml"),
             output: Some(root.path().join("snapshot.sqlite"))
         })
         .is_err()
@@ -699,7 +703,7 @@ fn checks_never_evaluate_authors_or_citations_and_extraction_failures_preserve_s
         ),
     );
     check(CheckOptions {
-        config: root.path().join("diplodocus.toml"),
+        config: root.path().join("diplodocus.yaml"),
     })
     .unwrap();
     assert!(!root.path().join("r/author-marker").exists());
@@ -772,7 +776,7 @@ async fn native_metadata_timeout_and_cancellation_leave_no_snapshot() {
     let root = fixture();
     root.write("r/inst/CITATION", "Sys.sleep(30)\n");
     let options = || ExtractOptions {
-        config: root.path().join("diplodocus.toml"),
+        config: root.path().join("diplodocus.yaml"),
         output: Some(root.path().join("snapshot.sqlite")),
     };
     let result = extract_with(
@@ -815,14 +819,14 @@ fn package_documentation_rejects_symlinks_outside_the_package() {
         root.path().join("r/README.md"),
     )
     .unwrap();
-    assert!(assemble_workspace(root.path().join("diplodocus.toml")).is_err());
+    assert!(assemble_workspace(root.path().join("diplodocus.yaml")).is_err());
     fs::remove_file(root.path().join("r/README.md")).unwrap();
     root.write(
         "r/DESCRIPTION",
         root.read("r/DESCRIPTION")
             .replace("License: MIT", "License: file ../outside.md"),
     );
-    assert!(assemble_workspace(root.path().join("diplodocus.toml")).is_err());
+    assert!(assemble_workspace(root.path().join("diplodocus.yaml")).is_err());
 }
 
 #[test]

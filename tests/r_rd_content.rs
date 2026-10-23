@@ -16,7 +16,7 @@ fn fixture() -> support::TestWorkspace {
 }
 
 fn extract(workspace: &support::TestWorkspace) -> RExtraction {
-    let path = workspace.path().join("workspace/diplodocus.toml");
+    let path = workspace.path().join("workspace/diplodocus.yaml");
     let config = load_configuration(&path).unwrap();
     let paths = resolve_workspace_paths(&path, &config).unwrap();
     let package = paths
@@ -191,7 +191,7 @@ fn rd_help_labels_local_aliases_and_external_urls_survive_snapshot_loading() {
         &workspace,
         r"\description{\link{rd_content} \link[=rd_content]{\emph{friendly label}} \code{\link[foo:rd_content]{rd_content()}} \link[base]{as.numeric} \link[grid:gpar]{graphical parameters} \link{data.frame} \doi{10.1000/a?b#c}}",
     );
-    let sources = assemble_workspace(workspace.path().join("workspace/diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(workspace.path().join("workspace/diplodocus.yaml")).unwrap();
     let resolved = resolve_workspace(&sources).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolved).unwrap();
     let item = snapshot.workspace().packages["rfoo"]
@@ -242,7 +242,7 @@ fn local_help_wins_over_installed_topics_and_missing_links_fail() {
     let workspace = fixture();
     workspace.write("r/man/local.Rd", "\\name{local}\\alias{data.frame}\\docType{data}\\title{Local data}\\usage{data.frame}\\description{Local topic.}");
     replace_topic(&workspace, r"\description{\link{data.frame}}");
-    let sources = assemble_workspace(workspace.path().join("workspace/diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(workspace.path().join("workspace/diplodocus.yaml")).unwrap();
     let resolved = resolve_workspace(&sources).unwrap();
     assert!(
         resolved
@@ -256,7 +256,7 @@ fn local_help_wins_over_installed_topics_and_missing_links_fail() {
         &workspace,
         r"\description{\link[=no_such_help_topic]{missing}}",
     );
-    let sources = assemble_workspace(workspace.path().join("workspace/diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(workspace.path().join("workspace/diplodocus.yaml")).unwrap();
     assert!(resolve_workspace(&sources).is_err());
 }
 
@@ -290,7 +290,7 @@ fn malformed_rd_shapes_are_diagnosed_without_discarding_source() {
 #[test]
 fn math_and_help_evidence_render_without_the_source_workspace() {
     let workspace = fixture();
-    let sources = assemble_workspace(workspace.path().join("workspace/diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(workspace.path().join("workspace/diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let Some(PackageMetadata::R(metadata)) = &snapshot.workspace().packages["rfoo"].metadata else {
         panic!()
@@ -361,7 +361,7 @@ fn invalid_and_untrusted_equations_have_readable_escaped_output() {
 \details{\deqn{\href{javascript:alert(1)}{unsafe}}{unsafe fallback}
 \deqn{\htmlClass{injected}{x}}{class fallback}}",
     );
-    let sources = assemble_workspace(workspace.path().join("workspace/diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(workspace.path().join("workspace/diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let rendered =
         diplodocus::rendering::render_site(&diplodocus::site::Site::new(&snapshot).unwrap())
@@ -390,7 +390,25 @@ fn add_peer(workspace: &support::TestWorkspace, name: &str) {
     workspace.write(format!("{name}/LICENSE"), workspace.read("r/LICENSE"));
     workspace.write(format!("{name}/R/other.R"), "other <- function(x) x\n");
     workspace.write(format!("{name}/man/other.Rd"), "\\name{other}\\alias{other}\\alias{peer_alias}\\title{Peer}\\usage{other(x)}\\description{Peer documentation.}");
-    workspace.write("workspace/diplodocus.toml", format!("{}\n[[repository]]\nid = \"{name}\"\npath = \"../{name}\"\n\n[[package]]\nid = \"{name}-workspace\"\nname = \"{name}\"\nslug = \"{name}\"\necosystem = \"r\"\nrepository = \"{name}\"\npath = \".\"\nmetadata-path = \"DESCRIPTION\"\ntargets = [{{ id = \"api\", extractor = \"r\", path = \".\", role = \"public-api\" }}]\n", workspace.read("workspace/diplodocus.toml")));
+    let mut configuration = support::fixture_configuration(workspace, "workspace/diplodocus.yaml");
+    configuration["repositories"]
+        .as_array_mut()
+        .unwrap()
+        .push(serde_json::json!({
+            "id": name, "path": format!("../{name}")
+        }));
+    configuration["packages"]
+        .as_array_mut()
+        .unwrap()
+        .push(serde_json::json!({
+            "id": format!("{name}-workspace"), "name": name, "slug": name, "ecosystem": "r",
+            "repository": name, "path": ".", "metadata-path": "DESCRIPTION",
+            "targets": [{"id": "api", "extractor": "r", "path": ".", "role": "public-api"}]
+        }));
+    workspace.write(
+        "workspace/diplodocus.yaml",
+        serde_saphyr::to_string(&configuration).unwrap(),
+    );
 }
 
 #[test]
@@ -401,7 +419,7 @@ fn published_package_qualifiers_and_unique_workspace_aliases_resolve_locally() {
         &workspace,
         r"\description{\link[peer:peer_alias]{Peer label} and \link{peer_alias}.}",
     );
-    let sources = assemble_workspace(workspace.path().join("workspace/diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(workspace.path().join("workspace/diplodocus.yaml")).unwrap();
     let resolved = resolve_workspace(&sources).unwrap();
     let references: Vec<_> = resolved
         .records()
@@ -420,7 +438,7 @@ fn published_package_qualifiers_and_unique_workspace_aliases_resolve_locally() {
         &workspace,
         r"\description{\link[peer:no_such_alias]{Missing peer topic}.}",
     );
-    let sources = assemble_workspace(workspace.path().join("workspace/diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(workspace.path().join("workspace/diplodocus.yaml")).unwrap();
     assert!(resolve_workspace(&sources).is_err());
 }
 
@@ -430,7 +448,7 @@ fn ambiguous_workspace_help_aliases_require_a_package_qualifier() {
     add_peer(&workspace, "peer");
     add_peer(&workspace, "another");
     replace_topic(&workspace, r"\description{\link{peer_alias}}");
-    let sources = assemble_workspace(workspace.path().join("workspace/diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(workspace.path().join("workspace/diplodocus.yaml")).unwrap();
     let error = resolve_workspace(&sources).unwrap_err();
     assert!(error.diagnostics().iter().any(|diagnostic| diagnostic.code
         == diplodocus::diagnostics::DiagnosticCode::AmbiguousItemReference));
@@ -438,7 +456,7 @@ fn ambiguous_workspace_help_aliases_require_a_package_qualifier() {
         &workspace,
         r"\description{\link[another:peer_alias]{Another package}}",
     );
-    let sources = assemble_workspace(workspace.path().join("workspace/diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(workspace.path().join("workspace/diplodocus.yaml")).unwrap();
     assert!(resolve_workspace(&sources).is_ok());
 }
 
@@ -492,7 +510,7 @@ fn constants_and_deprecated_aliases_survive_snapshot_and_link_resolution() {
     workspace.write("r/man/PAD.Rd", r"\name{PAD}\alias{PAD}\title{Padding}\usage{PAD}\description{Padding in points.}\keyword{internal}");
     workspace.write("r/man/deprecated.Rd", r"\name{foo_deprecated}\alias{foo_deprecated}\alias{old_api}\title{Deprecated APIs}\description{Use the new API.}\keyword{internal}");
     replace_topic(&workspace, r"\description{\link{PAD} and \link{old_api}.}");
-    let sources = assemble_workspace(workspace.path().join("workspace/diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(workspace.path().join("workspace/diplodocus.yaml")).unwrap();
     let resolved = resolve_workspace(&sources).unwrap();
     for spelling in ["@ref PAD", "@ref old_api"] {
         assert!(resolved.records().iter().flat_map(|record| &record.references).any(|reference| reference.spelling == spelling && matches!(&reference.target, ReferenceTarget::Item { item } if item.package == "rfoo")));

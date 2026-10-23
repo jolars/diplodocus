@@ -10,7 +10,7 @@ use diplodocus::ir::{Block, PackageReference};
 
 fn simple_workspace() -> support::TestWorkspace {
     let root = support::TestWorkspace::new();
-    root.write("diplodocus.toml", "[project]\nname='Assembly'\n[[repository]]\nid='docs'\npath='.'\n[[content]]\nid='guide'\nowner='project'\nrepository='docs'\npath='guide'\nmount='guide'\nformat='qmd'\n[content.execution]\nmode='execute'\nengine='jupyter'\nkernel='python3'\n");
+    root.write("diplodocus.yaml", "project:\n  name: \"Assembly\"\nrepositories:\n  - id: \"docs\"\n    path: \".\"\ncontent:\n  - id: \"guide\"\n    owner: \"project\"\n    repository: \"docs\"\n    path: \"guide\"\n    mount: \"guide\"\n    format: \"qmd\"\n    execution:\n      mode: \"execute\"\n      engine: \"jupyter\"\n      kernel: \"python3\"\n");
     root.write("guide/first.qmd", "# First\n\n```{python}\nfrom IPython.display import SVG, display\ndisplay(SVG(\"<svg xmlns='http://www.w3.org/2000/svg'><circle r='3'/></svg>\"))\n```\n");
     root
 }
@@ -19,8 +19,8 @@ fn simple_workspace() -> support::TestWorkspace {
 fn assembly_combines_declared_packages_pages_concepts_and_evidence_portably() {
     let first = support::acceptance_workspace();
     let second = support::acceptance_workspace();
-    let a = assemble_workspace(first.path().join("workspace/diplodocus.toml")).unwrap();
-    let b = assemble_workspace(second.path().join("workspace/diplodocus.toml")).unwrap();
+    let a = assemble_workspace(first.path().join("workspace/diplodocus.yaml")).unwrap();
+    let b = assemble_workspace(second.path().join("workspace/diplodocus.yaml")).unwrap();
     assert_eq!(a.workspace(), b.workspace());
     let workspace = a.workspace();
     assert_eq!(workspace.packages.len(), 2);
@@ -58,13 +58,19 @@ fn assembly_combines_declared_packages_pages_concepts_and_evidence_portably() {
 #[test]
 fn overlapping_targets_fail_instead_of_selecting_one_fragment() {
     let root = support::acceptance_workspace();
-    let config = root.read("workspace/diplodocus.toml").replace(
-        "{ id = \"api\", extractor = \"python\", path = \"python/foo\", role = \"public-api\" },",
-        "{ id = \"api\", extractor = \"python\", path = \"python/foo\", role = \"public-api\" },\n  { id = \"overlap\", extractor = \"python\", path = \"python/foo\", role = \"public-api\" },",
+    let mut configuration = support::fixture_configuration(&root, "workspace/diplodocus.yaml");
+    let mut overlap = configuration["packages"][0]["targets"][0].clone();
+    overlap["id"] = "overlap".into();
+    configuration["packages"][0]["targets"]
+        .as_array_mut()
+        .unwrap()
+        .push(overlap);
+    root.write(
+        "workspace/diplodocus.yaml",
+        serde_saphyr::to_string(&configuration).unwrap(),
     );
-    root.write("workspace/diplodocus.toml", config);
     let AssemblyError::Diagnostics(diagnostics) =
-        assemble_workspace(root.path().join("workspace/diplodocus.toml")).unwrap_err()
+        assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap_err()
     else {
         panic!("expected assembly diagnostics")
     };
@@ -78,7 +84,7 @@ fn overlapping_targets_fail_instead_of_selecting_one_fragment() {
 #[tokio::test]
 async fn execution_projects_typed_outputs_and_staging_is_owned_by_the_workspace() {
     let root = simple_workspace();
-    let source = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let source = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let stage = tempfile::tempdir().unwrap();
     let result = source.execute(settings(stage.path())).await.unwrap();
     assert_eq!(result.executed_pages().len(), 1);
@@ -104,7 +110,7 @@ async fn execution_projects_typed_outputs_and_staging_is_owned_by_the_workspace(
 #[tokio::test]
 async fn acceptance_workspace_executes_only_the_four_authorized_python_and_r_pages() {
     let root = support::acceptance_workspace();
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
     let stage = tempfile::tempdir().unwrap();
     let result = sources.execute(settings(stage.path())).await.unwrap();
     assert_eq!(result.executed_pages().len(), 4);
@@ -148,7 +154,7 @@ async fn a_later_execution_failure_discards_earlier_successful_assets() {
         "guide/second.qmd",
         "```{python}\nraise RuntimeError('later failure')\n```\n",
     );
-    let source = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let source = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let stage = tempfile::tempdir().unwrap();
     let failure = source.execute(settings(stage.path())).await.unwrap_err();
     assert!(matches!(failure, AssemblyError::Execution(_)));
@@ -159,7 +165,7 @@ async fn a_later_execution_failure_discards_earlier_successful_assets() {
 async fn a_later_page_cannot_change_an_already_executed_input() {
     let root = simple_workspace();
     root.write("guide/second.qmd", "```{python}\nfrom pathlib import Path\nPath('first.qmd').write_text('changed by the second page')\n```\n");
-    let source = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let source = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let stage = tempfile::tempdir().unwrap();
     let failure = source.execute(settings(stage.path())).await.unwrap_err();
     assert!(
@@ -181,11 +187,11 @@ fn settings(parent: &Path) -> WorkspaceExecution<'_> {
 #[test]
 fn configuration_symlink_keeps_the_callers_configuration_directory() {
     let root = simple_workspace();
-    root.write("config/settings.toml", root.read("diplodocus.toml"));
-    root.remove("diplodocus.toml");
-    std::os::unix::fs::symlink("config/settings.toml", root.path().join("diplodocus.toml"))
+    root.write("config/settings.yaml", root.read("diplodocus.yaml"));
+    root.remove("diplodocus.yaml");
+    std::os::unix::fs::symlink("config/settings.yaml", root.path().join("diplodocus.yaml"))
         .unwrap();
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     assert_eq!(sources.paths().configuration_directory, root.path());
     assert_eq!(sources.workspace().pages.len(), 1);
     sources.revalidate().unwrap();
@@ -195,16 +201,16 @@ fn configuration_symlink_keeps_the_callers_configuration_directory() {
 async fn disabled_vetoed_and_candidate_free_pages_never_discover_or_stage() {
     for case in 0..3 {
         let root = simple_workspace();
-        let config = root.read("diplodocus.toml");
+        let config = root.read("diplodocus.yaml");
         root.write(
-            "diplodocus.toml",
+            "diplodocus.yaml",
             if case == 0 {
                 config.replace(
-                    "mode='execute'\nengine='jupyter'\nkernel='python3'",
-                    "mode='never'",
+                    "mode: \"execute\"\n      engine: \"jupyter\"\n      kernel: \"python3\"",
+                    "mode: \"never\"",
                 )
             } else {
-                config.replace("kernel='python3'", "kernel='not-installed'")
+                config.replace("kernel: \"python3\"", "kernel: \"not-installed\"")
             },
         );
         let text = if case == 1 {
@@ -215,7 +221,7 @@ async fn disabled_vetoed_and_candidate_free_pages_never_discover_or_stage() {
             "```{python}\nraise Exception('inert')\n```\n"
         };
         root.write("guide/first.qmd", text);
-        let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+        let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
         let missing = root.path().join("must-not-be-created");
         let result = sources.execute(settings(&missing)).await.unwrap();
         assert!(result.executed_pages().is_empty());
@@ -228,12 +234,12 @@ async fn disabled_vetoed_and_candidate_free_pages_never_discover_or_stage() {
 fn invalid_static_inputs_and_unknown_concept_members_stop_assembly() {
     let root = support::acceptance_workspace();
     root.write(
-        "workspace/diplodocus.toml",
-        root.read("workspace/diplodocus.toml")
-            .replace("item = \"foo.fit\"", "item = \"foo.missing\""),
+        "workspace/diplodocus.yaml",
+        root.read("workspace/diplodocus.yaml")
+            .replace("item: \"foo.fit\"", "item: \"foo.missing\""),
     );
     let AssemblyError::Diagnostics(diagnostics) =
-        assemble_workspace(root.path().join("workspace/diplodocus.toml")).unwrap_err()
+        assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap_err()
     else {
         panic!("diagnostics")
     };
@@ -245,7 +251,7 @@ fn invalid_static_inputs_and_unknown_concept_members_stop_assembly() {
     let root = simple_workspace();
     root.write("guide/invalid.qmd", "---\njupyter: python3\n---\n");
     assert!(matches!(
-        assemble_workspace(root.path().join("diplodocus.toml")),
+        assemble_workspace(root.path().join("diplodocus.yaml")),
         Err(AssemblyError::Diagnostics(_))
     ));
     assert!(!root.path().join(".diplodocus").exists());
@@ -255,7 +261,7 @@ fn invalid_static_inputs_and_unknown_concept_members_stop_assembly() {
 async fn cancellation_before_a_no_execution_attempt_prevents_success() {
     let root = simple_workspace();
     root.write("guide/first.qmd", "No executable cells.\n");
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let missing = root.path().join("must-not-be-created");
     let mut options = settings(&missing);
     options.cancellation = Box::pin(std::future::ready(()));
@@ -272,7 +278,7 @@ async fn cancellation_and_drop_discard_prior_pages_and_reap_the_active_kernel() 
     for drop_future in [false, true] {
         let root = simple_workspace();
         root.write("guide/second.qmd", "```{python}\nimport os, time\nfrom pathlib import Path\nPath('../active-pid').write_text(str(os.getpid()))\nwhile True: time.sleep(1)\n```\n");
-        let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+        let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
         let stage = tempfile::tempdir().unwrap();
         let staging_path = stage.path().to_owned();
         let (cancel, cancelled) = tokio::sync::oneshot::channel();

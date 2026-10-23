@@ -28,7 +28,7 @@ options.
 
 ## Getting started
 
-Create a `diplodocus.toml` file to declare your packages and documentation
+Create a `diplodocus.yaml` file to declare your packages and documentation
 pages. Use the [configuration guide](docs/guide/configuration.md) to set up your
 project, or adapt the [Python, R, Julia, and Rust
 example](examples/monorepo/README.md).

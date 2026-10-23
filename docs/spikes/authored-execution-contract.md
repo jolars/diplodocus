@@ -28,10 +28,10 @@ dependency versions are recorded separately.
 
 ## Authority and page selection
 
-Only `extract`, `build`, and `serve`, with collection `format = "qmd"` and an explicit
-`[content.execution]` containing `mode = "execute"`, `engine = "jupyter"`, and a
+Only `extract`, `build`, and `serve`, with collection `format: "qmd"` and an explicit
+an `execution` mapping containing `mode: "execute"`, `engine: "jupyter"`, and a
 nonempty kernel name, may discover or launch a kernel. Omitted execution
-configuration means `mode = "never"`. `execute` on a GFM collection is an error.
+configuration means `mode: "never"`. `execute` on a GFM collection is an error.
 Engine and kernel settings with `never` are rejected as contradictory
 configuration. API examples and every GFM fence remain display-only.
 

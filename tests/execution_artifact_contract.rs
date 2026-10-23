@@ -137,7 +137,7 @@ fn canonical_artifact_matches_the_existing_independent_key_oracle() {
 #[test]
 fn artifact_cells_match_current_preparation_and_exact_source_bytes() {
     let source = fs::read_to_string(root().join("source.qmd")).unwrap();
-    let config: ContentConfiguration = toml::from_str("id='guide'\nowner='project'\nrepository='python'\npath='docs'\nmount='guide'\nformat='qmd'\n[execution]\nmode='execute'\nengine='jupyter'\nkernel='python3'\n").unwrap();
+    let config: ContentConfiguration = serde_saphyr::from_str("id: \"guide\"\nowner: \"project\"\nrepository: \"python\"\npath: \"docs\"\nmount: \"guide\"\nformat: \"qmd\"\nexecution:\n  mode: \"execute\"\n  engine: \"jupyter\"\n  kernel: \"python3\"\n").unwrap();
     let parsed = prepare_collection_document(&source, &config).unwrap();
     assert!(
         parsed.parsed.diagnostics.is_empty(),

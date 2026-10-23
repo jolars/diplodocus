@@ -41,18 +41,20 @@ extraction will succeed.
 
 ## Configuration and inputs
 
-```toml
-[[package]]
-id = "tinystats"
-name = "Tiny Stats for Julia"
-slug = "julia"
-ecosystem = "julia"
-repository = "repo"
-path = "julia"
-metadata-path = "Project.toml"
-targets = [
-  { id = "api", extractor = "julia", path = "src/TinyStats.jl", role = "public-api" },
-]
+```yaml
+packages:
+  - id: "tinystats"
+    name: "Tiny Stats for Julia"
+    slug: "julia"
+    ecosystem: "julia"
+    repository: "repo"
+    path: "julia"
+    metadata-path: "Project.toml"
+    targets:
+      - id: "api"
+        extractor: "julia"
+        path: "src/TinyStats.jl"
+        role: "public-api"
 ```
 
 The target must be an explicit entry file, rather than a source directory.

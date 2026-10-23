@@ -6,7 +6,7 @@ use diplodocus::validation::resolve_workspace;
 
 fn snapshot() -> Snapshot {
     let root = support::acceptance_workspace();
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
     let resolved = resolve_workspace(&sources).unwrap();
     Snapshot::from_sources(&sources, &resolved).unwrap()
 }
@@ -14,7 +14,7 @@ fn snapshot() -> Snapshot {
 #[test]
 fn portable_snapshot_round_trip_needs_no_sources_or_sidecars() {
     let root = support::acceptance_workspace();
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
     let resolved = resolve_workspace(&sources).unwrap();
     let mut workspace = sources.workspace().clone();
     workspace.diagnostics = resolved.diagnostics().clone();
@@ -144,7 +144,7 @@ fn rejects_malformed_json_before_record_fingerprint_validation() {
 #[test]
 fn refresh_replaces_records_and_failed_publication_preserves_destination() {
     let root = support::acceptance_workspace();
-    let config = root.path().join("workspace/diplodocus.toml");
+    let config = root.path().join("workspace/diplodocus.yaml");
     let target = tempfile::tempdir().unwrap();
     let path = target.path().join("snapshot.sqlite");
     let refresh = || {
@@ -196,12 +196,12 @@ async fn executed_snapshot_restores_all_safe_alternatives_without_staging() {
     use diplodocus::execution::{ExecutionDeadlines, ValidatedRepresentationRef};
     use diplodocus::validation::resolve_executed_workspace;
     let root = support::TestWorkspace::new();
-    root.write("diplodocus.toml", "[project]\nname='Snapshots'\n[[repository]]\nid='docs'\npath='.'\n[[content]]\nid='guide'\nowner='project'\nrepository='docs'\npath='guide'\nmount='guide'\nformat='qmd'\n[content.execution]\nmode='execute'\nengine='jupyter'\nkernel='python3'\n");
+    root.write("diplodocus.yaml", "project:\n  name: \"Snapshots\"\nrepositories:\n  - id: \"docs\"\n    path: \".\"\ncontent:\n  - id: \"guide\"\n    owner: \"project\"\n    repository: \"docs\"\n    path: \"guide\"\n    mount: \"guide\"\n    format: \"qmd\"\n    execution:\n      mode: \"execute\"\n      engine: \"jupyter\"\n      kernel: \"python3\"\n");
     root.write(
-        "diplodocus.toml",
+        "diplodocus.yaml",
         format!(
-            "{}\n[presentation]\ntitle='Executed results'\ndescription='Portable execution'\n[presentation.logo]\nrepository='docs'\npath='guide/picture.svg'\n",
-            root.read("diplodocus.toml")
+            "{}\npresentation:\n  title: Executed results\n  description: Portable execution\n  logo:\n    repository: docs\n    path: guide/picture.svg\n",
+            root.read("diplodocus.yaml")
         ),
     );
     root.write(
@@ -209,7 +209,7 @@ async fn executed_snapshot_restores_all_safe_alternatives_without_staging() {
         "<svg xmlns='http://www.w3.org/2000/svg'><circle r='3'/></svg>",
     );
     root.write("guide/index.qmd", "# Results {#results}\n\n```{python}\n#| include: false\nfrom IPython.display import display\ndisplay({'text/markdown': '![Nested](picture.svg)', 'text/html': '<p>Safe <strong>HTML</strong><img src=\"picture.svg\"></p>'}, raw=True)\n```\n\n```{python}\nprint('<script>literal</script>')\n```\n\n```{python}\ndisplay({'text/html': '<p><strong>Visible HTML</strong><img src=\"picture.svg\"></p>'}, raw=True)\n```\n\n```{python}\ndisplay({'text/markdown': '*visible Markdown*\\n\\n![Visible](picture.svg)'}, raw=True)\n```\n");
-    let sources = assemble_workspace(root.path().join("diplodocus.toml")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let stage = tempfile::tempdir().unwrap();
     let executed = sources
         .execute(WorkspaceExecution {

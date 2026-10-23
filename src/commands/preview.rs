@@ -287,8 +287,8 @@ mod tests {
     #[tokio::test]
     async fn http_negotiates_markdown_and_preserves_head_and_assets() {
         let root = tempfile::tempdir().unwrap();
-        let config = root.path().join("diplodocus.toml");
-        fs::write(&config, "[project]\nname='Negotiation'\n[[repository]]\nid='repo'\npath='.'\n[[content]]\nid='guide'\nowner='project'\nrepository='repo'\npath='docs'\nmount='guide'\nformat='gfm'\n").unwrap();
+        let config = root.path().join("diplodocus.yaml");
+        fs::write(&config, "project:\n  name: \"Negotiation\"\nrepositories:\n  - id: \"repo\"\n    path: \".\"\ncontent:\n  - id: \"guide\"\n    owner: \"project\"\n    repository: \"repo\"\n    path: \"docs\"\n    mount: \"guide\"\n    format: \"gfm\"\n").unwrap();
         fs::create_dir(root.path().join("docs")).unwrap();
         fs::write(
             root.path().join("docs/index.md"),

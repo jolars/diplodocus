@@ -100,7 +100,7 @@ a positive quality at least as high as an explicitly requested HTML type.
 Static hosting needs a server or edge handler to negotiate HTTP responses.
 Builds include a Cloudflare Worker entry point, so Workers deployments can use
 negotiation without writing application code. For a build in `site/`, configure
-Wrangler as follows, alongside your account and domain settings:
+`wrangler.toml` as follows, alongside your account and domain settings:
 
 ```toml
 main = "./site/__diplodocus/worker.js"

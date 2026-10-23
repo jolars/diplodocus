@@ -541,8 +541,8 @@ mod tests {
     #[test]
     fn generated_storage_does_not_trigger_rebuilds_but_source_edits_do() {
         let root = tempfile::tempdir().unwrap();
-        let config = root.path().join("diplodocus.toml");
-        fs::write(&config, "[project]\nname='Observe'\n[[repository]]\nid='repo'\npath='.'\n[[content]]\nid='guide'\nowner='project'\nrepository='repo'\npath='.'\nmount='guide'\nformat='gfm'\n").unwrap();
+        let config = root.path().join("diplodocus.yaml");
+        fs::write(&config, "project:\n  name: \"Observe\"\nrepositories:\n  - id: \"repo\"\n    path: \".\"\ncontent:\n  - id: \"guide\"\n    owner: \"project\"\n    repository: \"repo\"\n    path: \".\"\n    mount: \"guide\"\n    format: \"gfm\"\n").unwrap();
         let page = root.path().join("index.md");
         fs::write(&page, "# Guide\n").unwrap();
         let sources = assemble_workspace(&config).unwrap();
@@ -571,8 +571,8 @@ mod tests {
     #[test]
     fn watches_logo_creation_edits_and_removal_outside_content_collections() {
         let root = tempfile::tempdir().unwrap();
-        let config = root.path().join("diplodocus.toml");
-        fs::write(&config, "[project]\nname='Observe'\n[presentation.logo]\nrepository='repo'\npath='logo.svg'\n[[repository]]\nid='repo'\npath='.'\n").unwrap();
+        let config = root.path().join("diplodocus.yaml");
+        fs::write(&config, "project:\n  name: \"Observe\"\npresentation:\n  logo:\n    repository: \"repo\"\n    path: \"logo.svg\"\nrepositories:\n  - id: \"repo\"\n    path: \".\"\n").unwrap();
         let mut observer = Observer::new(&config, &root.path().join("site")).unwrap();
         let missing = observer.capture();
         let logo = root.path().join("logo.svg");
@@ -596,8 +596,8 @@ mod tests {
     #[test]
     fn watches_open_graph_image_creation_edits_and_removal() {
         let root = tempfile::tempdir().unwrap();
-        let config = root.path().join("diplodocus.toml");
-        fs::write(&config, "[project]\nname='Observe'\n[presentation]\nsite-url='https://example.test/'\n[presentation.open-graph]\nrepository='repo'\npath='og.png'\nalt='A preview'\n[[repository]]\nid='repo'\npath='.'\n").unwrap();
+        let config = root.path().join("diplodocus.yaml");
+        fs::write(&config, "project:\n  name: \"Observe\"\npresentation:\n  site-url: \"https://example.test/\"\n  open-graph:\n    repository: \"repo\"\n    path: \"og.png\"\n    alt: \"A preview\"\nrepositories:\n  - id: \"repo\"\n    path: \".\"\n").unwrap();
         let mut observer = Observer::new(&config, &root.path().join("site")).unwrap();
         let missing = observer.capture();
         let image = root.path().join("og.png");
@@ -624,8 +624,8 @@ mod tests {
             "def documented():\n    \"\"\"[Download](payload.txt).\"\"\"\n    pass\n",
         )
         .unwrap();
-        let config = root.path().join("diplodocus.toml");
-        fs::write(&config, "[project]\nname='Observe'\n[[repository]]\nid='repo'\npath='.'\n[[package]]\nid='pkg'\nname='Package'\nslug='package'\necosystem='python'\nrepository='repo'\npath='.'\nmetadata-path='pyproject.toml'\ntargets=[{id='api', extractor='python', path='python/pkg', role='public-api'}]\n").unwrap();
+        let config = root.path().join("diplodocus.yaml");
+        fs::write(&config, "project:\n  name: \"Observe\"\nrepositories:\n  - id: \"repo\"\n    path: \".\"\npackages:\n  - id: \"pkg\"\n    name: \"Package\"\n    slug: \"package\"\n    ecosystem: \"python\"\n    repository: \"repo\"\n    path: \".\"\n    metadata-path: \"pyproject.toml\"\n    targets:\n      - id: \"api\"\n        extractor: \"python\"\n        path: \"python/pkg\"\n        role: \"public-api\"\n").unwrap();
         let asset = root.path().join("python/pkg/payload.txt");
         fs::write(&asset, "before").unwrap();
         let sources = assemble_workspace(&config).unwrap();
@@ -646,8 +646,8 @@ mod tests {
         )
         .unwrap();
         fs::write(root.path().join("r/NAMESPACE"), "").unwrap();
-        let config = root.path().join("diplodocus.toml");
-        fs::write(&config, "[project]\nname='Observe'\n[[repository]]\nid='repo'\npath='.'\n[[package]]\nid='r'\nname='R package'\nslug='r'\necosystem='r'\nrepository='repo'\npath='r'\nmetadata-path='DESCRIPTION'\ntargets=[{id='api', extractor='r', path='.', role='public-api'}]\n").unwrap();
+        let config = root.path().join("diplodocus.yaml");
+        fs::write(&config, "project:\n  name: \"Observe\"\nrepositories:\n  - id: \"repo\"\n    path: \".\"\npackages:\n  - id: \"r\"\n    name: \"R package\"\n    slug: \"r\"\n    ecosystem: \"r\"\n    repository: \"repo\"\n    path: \"r\"\n    metadata-path: \"DESCRIPTION\"\n    targets:\n      - id: \"api\"\n        extractor: \"r\"\n        path: \".\"\n        role: \"public-api\"\n").unwrap();
         let mut observer = Observer::new(&config, &root.path().join("site")).unwrap();
         let before = observer.capture();
         fs::write(root.path().join("r/COPYING"), "First license text").unwrap();

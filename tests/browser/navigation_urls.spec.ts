@@ -32,48 +32,57 @@ test.beforeAll(async () => {
     copyFile("assets/brand/favicon-96x96.png", join(workspace, "logo.png")),
   ]);
   for (const style of ["file", "clean"]) {
-    const configuration = join(workspace, "diplodocus.toml");
-    await writeFile(configuration, `[project]
-name = "URL navigation"
-[presentation]
-site-url = "${publicRoot}"
-canonical-url-style = "${style}"
-description = "Nested documentation"
-[[presentation.sections]]
-label = "Reference"
-path = "reference/index.html"
-[presentation.home]
-tagline = "Home"
-description = "A shared home for the documentation."
-guide = "guides/nested.html"
-actions = [{ label = "Get started", path = "guides/nested.html" }]
-features = [{ title = "Nested documentation", description = "Explore guides without moving the navbar.", path = "guides/nested.html" }]
-[presentation.logo]
-repository = "docs"
-path = "logo.png"
-[presentation.open-graph]
-repository = "docs"
-path = "logo.png"
-alt = "Documentation logo"
-[[repository]]
-id = "docs"
-path = "."
-[[package]]
-id = "rmath"
-name = "Navigation math"
-slug = "r"
-ecosystem = "r"
-repository = "docs"
-path = "r"
-metadata-path = "DESCRIPTION"
-targets = [{ id = "api", extractor = "r", path = ".", role = "public-api" }]
-[[content]]
-id = "guide"
-owner = "project"
-repository = "docs"
-path = "docs"
-mount = ""
-format = "qmd"
+    const configuration = join(workspace, "diplodocus.yaml");
+    await writeFile(configuration, `project:
+  name: "URL navigation"
+presentation:
+  site-url: "${publicRoot}"
+  canonical-url-style: "${style}"
+  description: "Nested documentation"
+  sections:
+    - label: "Reference"
+      path: "reference/index.html"
+  home:
+    tagline: "Home"
+    description: "A shared home for the documentation."
+    guide: "guides/nested.html"
+    actions:
+      - label: "Get started"
+        path: "guides/nested.html"
+    features:
+      - title: "Nested documentation"
+        description: "Explore guides without moving the navbar."
+        path: "guides/nested.html"
+  logo:
+    repository: "docs"
+    path: "logo.png"
+  open-graph:
+    repository: "docs"
+    path: "logo.png"
+    alt: "Documentation logo"
+repositories:
+  - id: "docs"
+    path: "."
+packages:
+  - id: "rmath"
+    name: "Navigation math"
+    slug: "r"
+    ecosystem: "r"
+    repository: "docs"
+    path: "r"
+    metadata-path: "DESCRIPTION"
+    targets:
+      - id: "api"
+        extractor: "r"
+        path: "."
+        role: "public-api"
+content:
+  - id: "guide"
+    owner: "project"
+    repository: "docs"
+    path: "docs"
+    mount: ""
+    format: "qmd"
 `);
     const destination = join(workspace, style);
     const built = spawnSync(binary, ["build", "--config", configuration, "--output", destination], { encoding: "utf8" });

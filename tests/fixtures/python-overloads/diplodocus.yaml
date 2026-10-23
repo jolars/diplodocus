@@ -1,0 +1,20 @@
+project:
+  name: "Python overloads"
+presentation:
+  site-url: "https://example.test/"
+repositories:
+  - id: "demo"
+    path: "."
+packages:
+  - id: "python"
+    name: "Overload demo"
+    slug: "python"
+    ecosystem: "python"
+    repository: "demo"
+    path: "python"
+    metadata-path: "pyproject.toml"
+    targets:
+      - id: "api"
+        extractor: "python"
+        path: "demo"
+        role: "public-api"

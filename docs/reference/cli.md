@@ -2,7 +2,7 @@
 
 # Commands
 
-`check`, `extract`, `build`, and `serve` use `./diplodocus.toml` unless given
+`check`, `extract`, `build`, and `serve` use `./diplodocus.yaml` unless given
 `--config PATH`. Extraction writes `.diplodocus/documentation.sqlite` beside
 that configuration; `extract --output PATH` changes the snapshot destination.
 `generate` requires `--input PATH`. `generate`, `build`, and `serve` write to
@@ -65,7 +65,7 @@ Build a static documentation site
 
     Path to the workspace configuration file
 
-    Default value: `./diplodocus.toml`
+    Default value: `./diplodocus.yaml`
 
 - `--output <PATH>`
 
@@ -85,7 +85,7 @@ Check documentation without writing a site
 
     Path to the workspace configuration file
 
-    Default value: `./diplodocus.toml`
+    Default value: `./diplodocus.yaml`
 
 ## `diplodocus extract`
 
@@ -99,7 +99,7 @@ Extract a portable SQLite documentation snapshot
 
     Path to the workspace configuration file
 
-    Default value: `./diplodocus.toml`
+    Default value: `./diplodocus.yaml`
 
 - `--output <PATH>`
 
@@ -151,7 +151,7 @@ Build and serve a site, rebuilding when declared inputs change
 
     Path to the workspace configuration file
 
-    Default value: `./diplodocus.toml`
+    Default value: `./diplodocus.yaml`
 
 - `--output <PATH>`
 

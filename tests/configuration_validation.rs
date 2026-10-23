@@ -6,8 +6,8 @@ use diplodocus::diagnostics::{
     Diagnostic, DiagnosticCode, DiagnosticEntity, DiagnosticSource, Severity,
 };
 
-const COMPLETE: &str = include_str!("fixtures/configuration/complete.toml");
-const ACCEPTANCE: &str = include_str!("fixtures/acceptance/workspace/diplodocus.toml");
+const COMPLETE: &str = include_str!("fixtures/configuration/complete.yaml");
+const ACCEPTANCE: &str = include_str!("fixtures/acceptance/workspace/diplodocus.yaml");
 
 fn configuration() -> WorkspaceConfiguration {
     parse_configuration(COMPLETE).unwrap()
@@ -28,7 +28,7 @@ fn only_diagnostic(configuration: &WorkspaceConfiguration, code: DiagnosticCode)
 #[test]
 fn logo_requires_a_declared_repository() {
     let config = parse_configuration(
-        "[project]\nname='Docs'\n[presentation.logo]\nrepository='missing'\npath='logo.svg'\n",
+        "project:\n  name: \"Docs\"\npresentation:\n  logo:\n    repository: \"missing\"\n    path: \"logo.svg\"\n",
     )
     .unwrap();
     let diagnostic = only_diagnostic(&config, DiagnosticCode::InvalidRepositoryReference);
@@ -46,8 +46,8 @@ fn duplicate_repository_ids_have_repository_context() {
             id: "python".into()
         })
     );
-    assert!(diagnostic.message.contains("repository[1].id"));
-    assert!(diagnostic.message.contains("repository[0].id"));
+    assert!(diagnostic.message.contains("repositories[1].id"));
+    assert!(diagnostic.message.contains("repositories[0].id"));
 }
 
 #[test]
@@ -73,8 +73,8 @@ fn package_slugs_are_unique_across_ecosystems_and_visibility() {
         diagnostic.related_entity,
         Some(DiagnosticEntity::Package { id: "rfoo".into() })
     );
-    assert!(diagnostic.message.contains("package[0].slug"));
-    assert!(diagnostic.message.contains("package[1].slug"));
+    assert!(diagnostic.message.contains("packages[0].slug"));
+    assert!(diagnostic.message.contains("packages[1].slug"));
 }
 
 #[test]
@@ -89,8 +89,8 @@ fn duplicate_target_ids_have_package_scoped_context() {
             id: "api".into()
         })
     );
-    assert!(diagnostic.message.contains("package[0].targets[0].id"));
-    assert!(diagnostic.message.contains("package[0].targets[1].id"));
+    assert!(diagnostic.message.contains("packages[0].targets[0].id"));
+    assert!(diagnostic.message.contains("packages[0].targets[1].id"));
 }
 
 #[test]
@@ -132,10 +132,10 @@ fn every_later_duplicate_refers_to_the_first_declaration() {
     assert!(
         diagnostics
             .iter()
-            .all(|diagnostic| diagnostic.message.contains("concept[0].id"))
+            .all(|diagnostic| diagnostic.message.contains("concepts[0].id"))
     );
-    assert!(diagnostics[0].message.contains("concept[1].id"));
-    assert!(diagnostics[1].message.contains("concept[2].id"));
+    assert!(diagnostics[0].message.contains("concepts[1].id"));
+    assert!(diagnostics[1].message.contains("concepts[2].id"));
 }
 
 #[test]
@@ -186,7 +186,7 @@ fn both_unknown_relationship_endpoints_are_reported_without_external_inference()
         assert!(
             diagnostic
                 .message
-                .contains(&format!("relationship[0].{field}"))
+                .contains(&format!("relationships[0].{field}"))
         );
         assert!(diagnostic.message.contains(&format!("`{endpoint}`")));
     }
@@ -232,7 +232,7 @@ fn malformed_external_coordinates_do_not_hide_unknown_endpoints() {
             diagnostic.related_entity,
             Some(DiagnosticEntity::Relationship { index: 0 })
         );
-        assert!(diagnostic.message.contains("relationship[0].to"));
+        assert!(diagnostic.message.contains("relationships[0].to"));
     }
 }
 
@@ -286,7 +286,11 @@ fn concept_packages_must_exist_but_item_resolution_waits_for_extraction() {
             id: "foo-model.fit".into()
         })
     );
-    assert!(diagnostic.message.contains("concept[0].members[0].package"));
+    assert!(
+        diagnostic
+            .message
+            .contains("concepts[0].members[0].package")
+    );
 }
 
 #[test]
@@ -304,14 +308,14 @@ fn distinct_namespaces_and_target_ids_reused_across_packages_are_valid() {
 #[test]
 fn valid_fixtures_and_empty_workspaces_have_no_identity_diagnostics() {
     for source in [
-        "[project]\nname = 'Empty'\n",
+        "project:\n  name: \"Empty\"\n",
         COMPLETE,
         ACCEPTANCE,
-        include_str!("fixtures/acceptance/workspace/variants/relationship-compatible.toml"),
-        include_str!("fixtures/acceptance/workspace/variants/relationship-incompatible.toml"),
-        include_str!("fixtures/acceptance/workspace/variants/relationship-external.toml"),
-        include_str!("fixtures/acceptance/workspace/variants/visibility.toml"),
-        include_str!("../diplodocus.toml"),
+        include_str!("fixtures/acceptance/workspace/variants/relationship-compatible.yaml"),
+        include_str!("fixtures/acceptance/workspace/variants/relationship-incompatible.yaml"),
+        include_str!("fixtures/acceptance/workspace/variants/relationship-external.yaml"),
+        include_str!("fixtures/acceptance/workspace/variants/visibility.yaml"),
+        include_str!("../diplodocus.yaml"),
     ] {
         let config = parse_configuration(source).unwrap();
         assert!(validate_configuration(&config).is_empty());
@@ -329,13 +333,13 @@ fn diagnostics_are_sorted_and_can_carry_a_portable_configuration_source() {
     sorted.sort();
     assert_eq!(diagnostics, sorted);
     assert_eq!(validate_configuration(&config), diagnostics);
-    let path = "config/diplodocus.toml".try_into().unwrap();
+    let path = "config/diplodocus.yaml".try_into().unwrap();
     let sourced = validate_configuration_with_source(&config, path);
     let expected = diagnostics
         .into_iter()
         .map(|diagnostic| {
             diagnostic.with_source(DiagnosticSource::Configuration {
-                path: "config/diplodocus.toml".try_into().unwrap(),
+                path: "config/diplodocus.yaml".try_into().unwrap(),
             })
         })
         .collect::<Vec<_>>();
