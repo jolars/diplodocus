@@ -4,7 +4,8 @@ The [prepared-environment decision](../decisions/0003-prepared-environment.md)
 supersedes the static-only extraction and inert-example requirements below.
 This reference describes current adapter behavior, manifests, and parser pins;
 it does not constrain the replacement contract to static extraction. Runtime
-assistance and required example execution are not yet implemented.
+assistance and required example execution follow the prepared-environment
+contract.
 
 ## Outcome
 
@@ -237,9 +238,10 @@ of effective export sets and known-generic coordinates as parser settings.
 
 The selected Python stack and its represented surface are recorded in the
 [accepted decision](../decisions/0001-static-extraction.md) and the
-[Python extractor reference](../ir/python-extraction.md). The executable probes in
-[`tests/python_extraction_spike.rs`](../../tests/python_extraction_spike.rs) and
-[`tests/r_extraction_spike.rs`](../../tests/r_extraction_spike.rs) verify the
-parser modes, semantic inputs, source ranges, and no-evaluation boundary. The
+[Python extractor reference](../ir/python-extraction.md). The production
+[Python source tests](../../tests/python_source.rs),
+[Python extraction tests](../../tests/milestone_four.rs), and
+[R extraction tests](../../tests/r_extraction.rs) verify parser modes, semantic
+inputs, source ranges, and the static adapters' no-evaluation boundary. The
 production diagnostic and provenance behavior is described in the
 [Python](../ir/python-extraction.md), [R](../ir/r-extraction.md), and [Julia](../ir/julia-extraction.md) references.

@@ -568,60 +568,103 @@ async fn pages_without_candidates_do_not_launch() {
     }
 }
 
-#[tokio::test]
-async fn failures_stop_submission_and_are_attributed_to_the_active_cell() {
-    for (mode, expected) in [
-        ("execute-error", ExecutionFailureKind::CellError),
-        ("execute-iopub-error", ExecutionFailureKind::CellError),
-        ("execute-aborted", ExecutionFailureKind::CellError),
-        ("execute-malformed-reply", ExecutionFailureKind::Protocol),
-        ("execute-stdin", ExecutionFailureKind::InputRequested),
-        ("execute-exit", ExecutionFailureKind::Protocol),
-        ("execute-wrong-reply", ExecutionFailureKind::Protocol),
-        (
-            "execute-no-terminal",
-            ExecutionFailureKind::Timeout {
-                phase: ExecutionPhase::Cell,
-            },
-        ),
-        (
-            "execute-no-idle",
-            ExecutionFailureKind::Timeout {
-                phase: ExecutionPhase::TerminalSync,
-            },
-        ),
-        (
-            "execute-no-reply",
-            ExecutionFailureKind::Timeout {
-                phase: ExecutionPhase::TerminalSync,
-            },
-        ),
-    ] {
-        let root = TempDir::new().unwrap();
-        fixture_kernel(root.path(), mode).await;
-        let mut context = context(root.path());
-        context.deadlines.cell = 600;
-        context.deadlines.terminal_sync = 150;
-        let mut request = two_cells();
-        if !matches!(mode, "execute-error" | "execute-iopub-error") {
-            request.cells[0].options.execution.error.value = true;
-        }
-        let failure = execute_page_with_environment(context, &request, &environment(root.path()))
-            .await
-            .err()
-            .unwrap();
-        assert_eq!(failure.kind, expected, "{mode}: {failure:?}");
-        assert_eq!(
-            failure.diagnostics.last().unwrap().span,
-            Some(request.cells[0].cell.span)
-        );
-        assert!(
-            failure.cleanup_diagnostics.is_empty(),
-            "{mode}: {failure:?}"
-        );
-        assert_eq!(submitted(root.path()).len(), 1, "{mode}");
-        assert_cleaned(root.path()).await;
+async fn assert_failure_stops_submission(mode: &str, expected: ExecutionFailureKind) {
+    // Leave scheduling time for cleanup in the other subprocess tests.
+    static CASES: tokio::sync::Semaphore = tokio::sync::Semaphore::const_new(2);
+    let _permit = CASES.acquire().await.unwrap();
+    let root = TempDir::new().unwrap();
+    fixture_kernel(root.path(), mode).await;
+    let mut context = context(root.path());
+    context.deadlines.cell = 600;
+    context.deadlines.terminal_sync = 150;
+    let mut request = two_cells();
+    if !matches!(mode, "execute-error" | "execute-iopub-error") {
+        request.cells[0].options.execution.error.value = true;
     }
+    let failure = execute_page_with_environment(context, &request, &environment(root.path()))
+        .await
+        .err()
+        .unwrap();
+    assert_eq!(failure.kind, expected, "{mode}: {failure:?}");
+    assert_eq!(
+        failure.diagnostics.last().unwrap().span,
+        Some(request.cells[0].cell.span)
+    );
+    assert!(
+        failure.cleanup_diagnostics.is_empty(),
+        "{mode}: {failure:?}"
+    );
+    assert_eq!(submitted(root.path()).len(), 1, "{mode}");
+    assert_cleaned(root.path()).await;
+}
+
+#[tokio::test]
+async fn cell_error_stops_submission_and_retains_attribution() {
+    assert_failure_stops_submission("execute-error", ExecutionFailureKind::CellError).await;
+}
+
+#[tokio::test]
+async fn iopub_error_stops_submission_and_retains_attribution() {
+    assert_failure_stops_submission("execute-iopub-error", ExecutionFailureKind::CellError).await;
+}
+
+#[tokio::test]
+async fn aborted_reply_stops_submission_and_retains_attribution() {
+    assert_failure_stops_submission("execute-aborted", ExecutionFailureKind::CellError).await;
+}
+
+#[tokio::test]
+async fn malformed_reply_stops_submission_and_retains_attribution() {
+    assert_failure_stops_submission("execute-malformed-reply", ExecutionFailureKind::Protocol)
+        .await;
+}
+
+#[tokio::test]
+async fn stdin_request_stops_submission_and_retains_attribution() {
+    assert_failure_stops_submission("execute-stdin", ExecutionFailureKind::InputRequested).await;
+}
+
+#[tokio::test]
+async fn process_exit_stops_submission_and_retains_attribution() {
+    assert_failure_stops_submission("execute-exit", ExecutionFailureKind::Protocol).await;
+}
+
+#[tokio::test]
+async fn wrong_reply_stops_submission_and_retains_attribution() {
+    assert_failure_stops_submission("execute-wrong-reply", ExecutionFailureKind::Protocol).await;
+}
+
+#[tokio::test]
+async fn missing_terminal_stops_submission_and_retains_attribution() {
+    assert_failure_stops_submission(
+        "execute-no-terminal",
+        ExecutionFailureKind::Timeout {
+            phase: ExecutionPhase::Cell,
+        },
+    )
+    .await;
+}
+
+#[tokio::test]
+async fn missing_idle_stops_submission_and_retains_attribution() {
+    assert_failure_stops_submission(
+        "execute-no-idle",
+        ExecutionFailureKind::Timeout {
+            phase: ExecutionPhase::TerminalSync,
+        },
+    )
+    .await;
+}
+
+#[tokio::test]
+async fn missing_reply_stops_submission_and_retains_attribution() {
+    assert_failure_stops_submission(
+        "execute-no-reply",
+        ExecutionFailureKind::Timeout {
+            phase: ExecutionPhase::TerminalSync,
+        },
+    )
+    .await;
 }
 
 #[tokio::test]

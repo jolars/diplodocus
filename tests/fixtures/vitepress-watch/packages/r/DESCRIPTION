@@ -1,0 +1,7 @@
+Package: tinystats
+Version: 0.1.0
+Title: Watcher Metrics
+Description: A minimal package for frontend watcher tests.
+License: MIT
+Author: Fixture Authors
+Maintainer: Fixture Authors <fixtures@example.test>

@@ -44,8 +44,9 @@ site-capture
 
 `site-test` builds the current binary, copies the example into a temporary
 workspace, and starts its own server on a free port. Playwright waits for the
-server's ready message, then runs desktop and mobile projects. Tests cover
-titles, images, layout width, search, equivalent APIs, and keyboard navigation.
+server's ready message, then runs desktop and mobile projects with two workers.
+Tests cover titles, images, layout width, search, equivalent APIs, and keyboard
+navigation.
 JavaScript and console errors fail tests, except the browser's automatic request
 for an undeclared `/favicon.ico`.
 
@@ -140,8 +141,10 @@ browser environment supplied by devenv.
 The [VitePress example](../../examples/vitepress/README.md) combines watched
 package extraction with VitePress's own guide updates. Run `npm run vitepress-dev`
 for interactive development or `npm run vitepress-test` for isolated browser
-checks. Its temporary workspace includes both the VitePress site and the package
-sources; screenshots, traces, and logs go to `artifacts/vitepress/`.
+checks. Its temporary workspace includes the VitePress site and a small
+four-language fixture from `tests/fixtures/vitepress-watch/`. The fixture keeps watcher checks
+independent of the monorepo's example execution. Screenshots, traces, and logs go
+to `artifacts/vitepress/`.
 
 ## Concurrent runs and overrides
 

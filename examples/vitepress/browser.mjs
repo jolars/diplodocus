@@ -11,6 +11,7 @@ import { chromium, expect } from "@playwright/test";
 
 const repository = fileURLToPath(new URL("../../", import.meta.url));
 const script = join(repository, "examples/vitepress/run.mjs");
+const fixture = join(repository, "tests/fixtures/vitepress-watch");
 const temporary = await mkdtemp(join(tmpdir(), "diplodocus-vitepress-"));
 const root = join(temporary, "examples/vitepress");
 const artifacts = resolve(process.env.DIPLODOCUS_VITEPRESS_ARTIFACTS ??
@@ -50,14 +51,13 @@ let exited;
 try {
   if (!process.env.DIPLODOCUS_BIN) await run("cargo", ["build", "--locked", "--bin", "diplodocus"]);
   const env = { ...process.env, DIPLODOCUS_BIN: process.env.DIPLODOCUS_BIN ?? join(repository, "target/debug/diplodocus") };
-  for (const path of ["diplodocus.yaml", "docs/index.md", "docs/guide.md", "docs/.vitepress/config.mjs"]) {
+  for (const path of ["docs/index.md", "docs/guide.md", "docs/.vitepress/config.mjs"]) {
     await mkdir(join(root, path, ".."), { recursive: true });
     await cp(join(repository, "examples/vitepress", path), join(root, path));
   }
-  await cp(join(repository, "examples/monorepo"), join(temporary, "examples/monorepo"), {
-    recursive: true,
-    filter: (path) => !path.split("/").some((part) => [".diplodocus", "__pycache__"].includes(part)),
-  });
+  // Watcher behavior needs cross-language links, but not the monorepo's execution corpus.
+  await cp(join(fixture, "diplodocus.yaml"), join(root, "diplodocus.yaml"));
+  await cp(join(fixture, "packages"), join(root, "packages"), { recursive: true });
   await symlink(join(repository, "node_modules"), join(temporary, "node_modules"), "dir");
   const portServer = createServer();
   await new Promise((resolve_) => portServer.listen(0, "127.0.0.1", resolve_));
@@ -105,7 +105,7 @@ try {
   await expect(page.locator(".vp-doc")).toContainText("mean_squared_error");
   await page.goto(apiUrl);
 
-  const python = join(temporary, "examples/monorepo/python/src/tinystats/__init__.py");
+  const python = join(root, "packages/python/src/tinystats/__init__.py");
   const original = await readFile(python, "utf8");
   const updated = original.replace(
     "Compute the mean squared difference between observations and predictions.",
@@ -126,7 +126,7 @@ try {
   await page.goto(apiUrl);
   await expect(page.locator(".VPSidebar")).not.toContainText("live_metric");
 
-  const julia = join(temporary, "examples/monorepo/julia/src/TinyStats.jl");
+  const julia = join(root, "packages/julia/src/TinyStats.jl");
   await writeFile(julia, (await readFile(julia, "utf8")).replace(
     "Prediction metrics for numeric vectors.", "Julia documentation also updates automatically.",
   ));
@@ -174,7 +174,7 @@ try {
   assert.equal(await exited, 0);
   developer = undefined;
 
-  await rm(join(temporary, "examples/monorepo"), { recursive: true });
+  await rm(join(root, "packages"), { recursive: true });
   await run(process.execPath, [script, "build", "--root", root, "--snapshot", snapshot], env);
   const built = await readFile(join(root, "docs/.vitepress/dist/reference/python/tinystats.mean_squared_error.html"), "utf8");
   assert.ok(built.includes("Updated package documentation arrives automatically."));

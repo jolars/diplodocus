@@ -1,8 +1,10 @@
 mod support;
 
 use diplodocus::assembly::assemble_workspace;
+use diplodocus::commands::{GenerateOptions, generate};
 use diplodocus::ir::ProvenanceActivity;
 use diplodocus::snapshots::Snapshot;
+use diplodocus::validation::resolve_workspace;
 use std::fs;
 use std::process::{Command, Output};
 
@@ -148,53 +150,67 @@ fn native_doctests_verify_state_expected_errors_and_portable_outcomes() {
     }
 }
 
-#[test]
-fn output_mismatches_and_unexpected_errors_preserve_previous_publications() {
-    for (language, good, bad) in [
-        (
-            "python",
-            "    >>> answer()\n    42\n",
-            "    >>> answer()\n    99\n",
-        ),
-        (
-            "julia",
-            "```jldoctest\nanswer()\n# output\n42\n```",
-            "```jldoctest\nanswer()\n# output\n99\n```",
-        ),
-    ] {
-        let root = workspace(language, good);
-        success(command(&root, "build"));
-        let snapshot = root.path().join(".diplodocus/documentation.sqlite");
-        let original = fs::read(&snapshot).unwrap();
-        let site = fs::read(root.path().join("site/index.html")).unwrap();
-        let path = if language == "python" {
-            "repo/src/apiex/__init__.py"
+fn assert_failed_examples_preserve_publications(language: &str, good: &str, bad: &str) {
+    let root = workspace(language, good);
+    let snapshot = root.path().join(".diplodocus/documentation.sqlite");
+    // Native success has its own test; rollback only needs a valid existing publication.
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
+    Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap())
+        .unwrap()
+        .publish(&snapshot)
+        .unwrap();
+    generate(GenerateOptions {
+        input: snapshot.clone(),
+        output: root.path().join("site"),
+    })
+    .unwrap();
+    let original = fs::read(&snapshot).unwrap();
+    let site = fs::read(root.path().join("site/index.html")).unwrap();
+    let path = if language == "python" {
+        "repo/src/apiex/__init__.py"
+    } else {
+        "repo/src/ApiExamples.jl"
+    };
+    root.write(path, root.read(path).replace(good, bad));
+    success(command(&root, "check"));
+    let output = command(&root, "build");
+    assert!(!output.status.success());
+    let message = String::from_utf8_lossy(&output.stderr);
+    assert!(message.contains("Expected"), "{message}");
+    assert_eq!(original, fs::read(&snapshot).unwrap());
+    assert_eq!(site, fs::read(root.path().join("site/index.html")).unwrap());
+    let content = root.read(path).replace(bad, good);
+    root.write(
+        path,
+        if language == "python" {
+            content.replace("    return 42", "    raise RuntimeError('broken')")
         } else {
-            "repo/src/ApiExamples.jl"
-        };
-        root.write(path, root.read(path).replace(good, bad));
-        success(command(&root, "check"));
-        let output = command(&root, "build");
-        assert!(!output.status.success());
-        let message = String::from_utf8_lossy(&output.stderr);
-        assert!(message.contains("Expected"), "{message}");
-        assert_eq!(original, fs::read(&snapshot).unwrap());
-        assert_eq!(site, fs::read(root.path().join("site/index.html")).unwrap());
-        let content = root.read(path).replace(bad, good);
-        root.write(
-            path,
-            if language == "python" {
-                content.replace("    return 42", "    raise RuntimeError('broken')")
-            } else {
-                content.replace("answer() = 42", "answer() = error(\"broken\")")
-            },
-        );
-        let output = command(&root, "build");
-        assert!(!output.status.success());
-        assert!(String::from_utf8_lossy(&output.stderr).contains("broken"));
-        assert_eq!(original, fs::read(&snapshot).unwrap());
-        assert_eq!(site, fs::read(root.path().join("site/index.html")).unwrap());
-    }
+            content.replace("answer() = 42", "answer() = error(\"broken\")")
+        },
+    );
+    let output = command(&root, "build");
+    assert!(!output.status.success());
+    assert!(String::from_utf8_lossy(&output.stderr).contains("broken"));
+    assert_eq!(original, fs::read(&snapshot).unwrap());
+    assert_eq!(site, fs::read(root.path().join("site/index.html")).unwrap());
+}
+
+#[test]
+fn python_example_failures_preserve_previous_publications() {
+    assert_failed_examples_preserve_publications(
+        "python",
+        "    >>> answer()\n    42\n",
+        "    >>> answer()\n    99\n",
+    );
+}
+
+#[test]
+fn julia_example_failures_preserve_previous_publications() {
+    assert_failed_examples_preserve_publications(
+        "julia",
+        "```jldoctest\nanswer()\n# output\n42\n```",
+        "```jldoctest\nanswer()\n# output\n99\n```",
+    );
 }
 
 #[test]

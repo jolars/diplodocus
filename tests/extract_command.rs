@@ -157,29 +157,14 @@ fn cli_paths_and_completed_snapshot_match_the_contract() {
 
 #[test]
 fn generated_snapshots_never_become_sources_or_change_input_fingerprints() {
-    let root = static_workspace();
-    // This source-discovery case deliberately stores databases with R source
-    // extensions; it cannot also serve as a loadable package execution fixture.
-    for name in [
-        "fit",
-        "foo_model",
-        "mean_squared_error",
-        "experimental_summary",
-    ] {
-        let path = format!("r/man/{name}.Rd");
-        let text = root.read(&path);
-        let start = text.find("\\examples{").unwrap();
-        let end = start + text[start..].find("\n}\n").unwrap() + 3;
-        root.write(path, format!("{}{}", &text[..start], &text[end..]));
-    }
+    let root = support::acceptance_workspace();
     let config = root.path().join(CONFIG);
     let original = assemble_workspace(&config).unwrap();
     let expected_inputs: Vec<_> = original.input_paths().collect();
-    success(&extract(root.path(), None, false));
-    let expected = Snapshot::load(root.path().join(DEFAULT_OUTPUT))
-        .unwrap()
-        .canonical_export()
-        .unwrap();
+    // Discovery depends on the published database, not on executing its examples.
+    let snapshot =
+        Snapshot::from_sources(&original, &resolve_workspace(&original).unwrap()).unwrap();
+    let expected = snapshot.canonical_export().unwrap();
 
     // Output names are unrestricted, including extensions understood by extractors.
     for output in [
@@ -196,7 +181,7 @@ fn generated_snapshots_never_become_sources_or_change_input_fingerprints() {
         "r/CONTRIBUTING.md",
     ] {
         for _ in 0..2 {
-            success(&extract(root.path(), Some(Path::new(output)), false));
+            snapshot.publish(root.path().join(output)).unwrap();
             assert_eq!(
                 Snapshot::load(root.path().join(output))
                     .unwrap()
@@ -251,12 +236,15 @@ fn temporary_storage_does_not_enter_discovery_or_revalidation() {
 
 #[test]
 fn older_snapshots_are_excluded_without_touching_their_recovery_files() {
-    let root = static_workspace();
+    let root = support::acceptance_workspace();
     let config = root.path().join(CONFIG);
     let original = assemble_workspace(&config).unwrap();
     // URI punctuation must remain part of the filename during read-only inspection.
     let output = Path::new("core/docs/older ?#%.md");
-    success(&extract(root.path(), Some(output), false));
+    Snapshot::from_sources(&original, &resolve_workspace(&original).unwrap())
+        .unwrap()
+        .publish(root.path().join(output))
+        .unwrap();
     let path = root.path().join(output);
     assert_eq!(&fs::read(&path).unwrap()[68..72], b"DIPL");
     let database = rusqlite::Connection::open(&path).unwrap();
@@ -287,15 +275,17 @@ fn older_snapshots_are_excluded_without_touching_their_recovery_files() {
 fn source_aliases_to_snapshots_and_storage_are_excluded_within_the_boundary() {
     use std::os::unix::fs::symlink;
 
-    let root = static_workspace();
+    let root = support::acceptance_workspace();
     let config = root.path().join(CONFIG);
     let original = assemble_workspace(&config).unwrap();
+    let snapshot =
+        Snapshot::from_sources(&original, &resolve_workspace(&original).unwrap()).unwrap();
     for (output, alias) in [
         ("core/export.sqlite", "core/docs/alias.md"),
         ("python/export.sqlite", "python/python/foo/alias.py"),
         ("r/export.sqlite", "r/R/alias.R"),
     ] {
-        success(&extract(root.path(), Some(Path::new(output)), false));
+        snapshot.publish(root.path().join(output)).unwrap();
         symlink(root.path().join(output), root.path().join(alias)).unwrap();
     }
     root.write("core/.diplodocus/staging", b"\xffpartial storage");
@@ -329,10 +319,14 @@ fn source_aliases_to_snapshots_and_storage_are_excluded_within_the_boundary() {
 
 #[test]
 fn explicit_database_downloads_remain_inputs_and_cannot_be_overwritten() {
-    let root = static_workspace();
+    let root = support::acceptance_workspace();
     let config = root.path().join(CONFIG);
     let output = Path::new("core/docs/download.sqlite");
-    success(&extract(root.path(), Some(output), false));
+    let sources = assemble_workspace(&config).unwrap();
+    Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap())
+        .unwrap()
+        .publish(root.path().join(output))
+        .unwrap();
     let bytes = fs::read(root.path().join(output)).unwrap();
     let document = root.read("core/docs/index.md");
     root.write(

@@ -105,14 +105,17 @@ rejection does not claim that every parser lacks useful capabilities.
 
 ## Evidence and consequences
 
-[Python spike tests](../../tests/python_extraction_spike.rs) and [R spike
-tests](../../tests/r_extraction_spike.rs) obtain these observations inside the
-Rust process. The Python fixture's unavailable native module makes an
-import-based approach unsuitable, yet its stub declarations remain readable.
-Focused tests exercise malformed metadata and syntax, unsupported Python
-versions, namespace conditions, unresolved Rd expressions, and source-location
-gaps. The [contract tests](../../tests/static_extractor_contract.rs) check exact
-pins, capability lists, and provenance requirements.
+The initial parser probes have been replaced by tests of the production
+[Python source adapter](../../tests/python_source.rs),
+[surface reconciliation](../../tests/python_surface.rs),
+[docstring adapter](../../tests/python_docstrings.rs), and
+[R extractor](../../tests/r_extraction.rs). The Python fixture's unavailable
+native module makes an import-based approach unsuitable, yet its stub
+declarations remain readable. These tests exercise malformed metadata and
+syntax, unsupported Python versions, namespace conditions, unresolved Rd
+expressions, and source-location gaps. The
+[Python extraction tests](../../tests/milestone_four.rs) also check parser pins
+against emitted provenance.
 
 The [Python golden](../../tests/snapshots/spikes/python.json) preserves every
 fixture module's declarations, exports, aliases, annotations, documentation, and

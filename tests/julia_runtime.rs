@@ -145,19 +145,21 @@ fn missing_runtime_and_package_load_failure_preserve_the_previous_snapshot() {
 
 #[test]
 fn plain_checkouts_are_validated_before_publication() {
+    let root = workspace();
+    root.write("package/src/Demo.jl", "module Demo\nvalue = 42\nend\n");
+    let configuration = root.read("diplodocus.yaml");
+    let built = command(&root, "build", false);
+    assert!(
+        built.status.success(),
+        "{}",
+        String::from_utf8_lossy(&built.stderr)
+    );
+    let snapshot = root.path().join(".diplodocus/documentation.sqlite");
+    let previous = fs::read(&snapshot).unwrap();
+    let site = root.path().join("site/index.html");
+    let previous_site = fs::read(&site).unwrap();
+
     for broken in ["runtime", "dependency", "checkout", "load"] {
-        let root = workspace();
-        root.write("package/src/Demo.jl", "module Demo\nvalue = 42\nend\n");
-        let built = command(&root, "build", false);
-        assert!(
-            built.status.success(),
-            "{}",
-            String::from_utf8_lossy(&built.stderr)
-        );
-        let snapshot = root.path().join(".diplodocus/documentation.sqlite");
-        let previous = fs::read(&snapshot).unwrap();
-        let site = root.path().join("site/index.html");
-        let previous_site = fs::read(&site).unwrap();
         let (source, expected) = match broken {
             "dependency" => (
                 "module Demo\nusing UnavailableDocumentationDependency\nend\n",
@@ -172,10 +174,9 @@ fn plain_checkouts_are_validated_before_publication() {
         root.write("package/src/Demo.jl", source);
         if broken == "checkout" {
             root.write("package/src/Other.jl", source);
-            let config = fs::read_to_string(root.path().join("diplodocus.yaml")).unwrap();
             root.write(
                 "diplodocus.yaml",
-                config.replace("src/Demo.jl", "src/Other.jl"),
+                configuration.replace("src/Demo.jl", "src/Other.jl"),
             );
         }
         let checked = command(&root, "check", true);
@@ -199,6 +200,10 @@ fn plain_checkouts_are_validated_before_publication() {
             );
             assert_eq!(previous, fs::read(&snapshot).unwrap());
             assert_eq!(previous_site, fs::read(&site).unwrap());
+        }
+        if broken == "checkout" {
+            root.write("diplodocus.yaml", &configuration);
+            root.remove("package/src/Other.jl");
         }
     }
 }
