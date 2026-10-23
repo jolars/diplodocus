@@ -1136,6 +1136,11 @@ test("shared guides, API trees, and page headings support a round trip", async (
 
 test("page TOC stays close to content when the window narrows", async ({ page }, info) => {
   test.skip(info.project.name !== "desktop", "This checks resizing through the desktop breakpoints.");
+  const textLeft = (selector: string) => page.locator(selector).evaluate(element => {
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    return range.getBoundingClientRect().left;
+  });
   await page.setViewportSize({ width: 1280, height: 1400 });
   await page.goto("/getting-started/installation.html");
   for (const width of [1099, 1000, 761, 760]) {
@@ -1148,6 +1153,10 @@ test("page TOC stays close to content when the window narrows", async ({ page },
       const gap = title.top - summary.bottom;
       return gap >= 0 && gap <= 40;
     }), { message: `TOC-to-title spacing at ${width}px` }).toBe(true);
+    if (width > 760) {
+      const title = (await page.getByRole("heading", { level: 1 }).boundingBox())!;
+      expect(await textLeft(".page-toc summary"), `TOC-to-title alignment at ${width}px`).toBeCloseTo(title.x, 1);
+    }
     await fitsViewport(page);
   }
   await page.setViewportSize({ width: 761, height: 1000 });
@@ -1160,6 +1169,7 @@ test("page TOC stays close to content when the window narrows", async ({ page },
   const title = await page.getByRole("heading", { level: 1 }).boundingBox();
   expect(title!.y).toBeCloseTo(withToc.y, 1);
   await expect(page.getByRole("link", { name: "Back to top", exact: true })).toBeVisible();
+  expect(await textLeft(".back-to-top")).toBeCloseTo(title!.x, 1);
   await capture(page, info, "medium-without-toc");
 });
 

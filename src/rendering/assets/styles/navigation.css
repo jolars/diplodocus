@@ -468,6 +468,13 @@ body:has(.documentation-drawer[open]) {
   }
 }
 
+@media (min-width: 761px) and (max-width: 1099px) {
+  .page-toc > nav > .back-to-top,
+  .toc-disclosure > summary {
+    padding-inline: 0;
+  }
+}
+
 @media (max-width: 1099px) {
   .page-toc {
     position: relative;
