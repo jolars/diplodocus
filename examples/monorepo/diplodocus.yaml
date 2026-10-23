@@ -9,8 +9,10 @@ presentation:
     actions:
       - label: "Get started"
         path: "getting-started/quick-start.html"
+        icon: "terminal"
       - label: "Explore the guide"
         path: "overview.html"
+        icon: "book-open"
     features:
       - title: "One API, four languages"
         description: "Use the same six operations in Python, R, Julia, and Rust. Each reference links to its counterparts in the other languages."

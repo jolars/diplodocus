@@ -139,6 +139,26 @@ for (const [path, title, name] of [
   });
 }
 
+test("homepage action icons preserve accessible labels and navigation", async ({ page }) => {
+  await page.goto("/");
+  for (const [label, heading] of [["Get started", "Quick start"], ["Explore the guide", "Tiny Stats"]]) {
+    const action = page.locator(".home-action").filter({ hasText: label });
+    await expect(action).toHaveAccessibleName(label);
+    const icon = action.locator("svg");
+    await expect(icon).toBeVisible();
+    await expect(icon).toHaveAttribute("aria-hidden", "true");
+    await expect(icon).toHaveAttribute("focusable", "false");
+    await expect(icon).toHaveCSS("width", "18px");
+    await expect(icon).toHaveCSS("height", "18px");
+    await expect(icon).toHaveCSS("stroke", await action.evaluate(element => getComputedStyle(element).color));
+    await fitsViewport(page);
+    await action.click();
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(heading);
+    await page.goBack();
+    await expect(action.locator("svg")).toBeVisible();
+  }
+});
+
 test("navbar links stay in place when switching sections", async ({ page }, info) => {
   test.skip(info.project.name !== "desktop", "The top navbar is shown on desktop.");
   await page.goto("/overview.html");

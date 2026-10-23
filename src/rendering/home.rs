@@ -3,7 +3,7 @@
 use std::fmt::Write;
 
 use super::html::escape;
-use crate::configuration::HomeDefaults;
+use crate::configuration::{HomeActionIcon, HomeDefaults};
 use crate::ir::Block;
 use crate::site::{Site, SiteError};
 
@@ -40,8 +40,16 @@ pub(super) fn render(
         for action in &home.actions {
             write!(
                 html,
-                "<a class=\"home-action\" href=\"{}\">{}<span aria-hidden=\"true\"> &rarr;</span></a>",
+                "<a class=\"home-action\" href=\"{}\">",
                 escape(&site.url(route, action.path.as_str())),
+            )
+            .unwrap();
+            if let Some(icon) = action.icon {
+                render_action_icon(html, icon);
+            }
+            write!(
+                html,
+                "{}<span aria-hidden=\"true\"> &rarr;</span></a>",
                 escape(&action.label),
             )
             .unwrap();
@@ -73,4 +81,22 @@ pub(super) fn render(
         html.push_str("</section>");
     }
     Ok(())
+}
+
+fn render_action_icon(html: &mut String, icon: HomeActionIcon) {
+    html.push_str("<svg class=\"home-action-icon\" aria-hidden=\"true\" focusable=\"false\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\">");
+    html.push_str(match icon {
+        HomeActionIcon::ArrowRight => "<path d=\"M4 12h16m-7-7 7 7-7 7\"></path>",
+        HomeActionIcon::BookOpen => {
+            "<path d=\"M12 5C9 3 6 3 3 4v15c3-1 6-1 9 1 3-2 6-2 9-1V4c-3-1-6-1-9 1Zm0 0v15\"></path>"
+        }
+        HomeActionIcon::Code => "<path d=\"m8 6-6 6 6 6m8-12 6 6-6 6\"></path>",
+        HomeActionIcon::Download => {
+            "<path d=\"M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5\"></path>"
+        }
+        HomeActionIcon::Terminal => {
+            "<rect x=\"3\" y=\"4\" width=\"18\" height=\"16\" rx=\"2\"></rect><path d=\"m7 8 4 4-4 4m7 0h3\"></path>"
+        }
+    });
+    html.push_str("</svg>");
 }

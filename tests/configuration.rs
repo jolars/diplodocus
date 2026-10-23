@@ -2,7 +2,7 @@ use std::error::Error;
 use std::path::PathBuf;
 
 use diplodocus::configuration::{
-    ConceptKind, ConfigurationError, ExecutionEngine, ExecutionMode, PackageKind,
+    ConceptKind, ConfigurationError, ExecutionEngine, ExecutionMode, HomeActionIcon, PackageKind,
     PackageVisibility, RelationshipKind, load_configuration, parse_configuration,
 };
 use diplodocus::documents::AuthoredFormat;
@@ -11,6 +11,91 @@ mod support;
 
 const COMPLETE: &str = include_str!("fixtures/configuration/complete.yaml");
 const ACCEPTANCE: &str = include_str!("fixtures/acceptance/workspace/diplodocus.yaml");
+
+const HOMEPAGE: &str = r#"project:
+  name: Docs
+presentation:
+  home:
+    tagline: Start here
+    description: A guide
+    guide: guide/index.html
+    actions:
+      - label: Read the guide
+        path: guide/index.html
+        icon: book-open
+"#;
+
+#[test]
+fn homepage_action_icons_parse_and_serialize_as_named_icons() {
+    for (name, icon) in [
+        ("arrow-right", HomeActionIcon::ArrowRight),
+        ("book-open", HomeActionIcon::BookOpen),
+        ("code", HomeActionIcon::Code),
+        ("download", HomeActionIcon::Download),
+        ("terminal", HomeActionIcon::Terminal),
+    ] {
+        let config =
+            parse_configuration(&HOMEPAGE.replace("icon: book-open", &format!("icon: {name}")))
+                .unwrap();
+        assert_eq!(
+            config.presentation.home.as_ref().unwrap().actions[0].icon,
+            Some(icon)
+        );
+        let serialized = serde_saphyr::to_string(&config).unwrap();
+        assert_eq!(parse_configuration(&serialized).unwrap(), config);
+        assert_eq!(
+            serde_json::to_value(&config).unwrap()["presentation"]["home"]["actions"][0]["icon"],
+            name
+        );
+    }
+}
+
+#[test]
+fn homepage_actions_omit_unconfigured_icons() {
+    for source in [
+        HOMEPAGE.replace("        icon: book-open\n", ""),
+        HOMEPAGE.replace("icon: book-open", "icon: null"),
+    ] {
+        let config = parse_configuration(&source).unwrap();
+        assert_eq!(
+            config.presentation.home.as_ref().unwrap().actions[0].icon,
+            None
+        );
+        assert!(
+            serde_json::to_value(&config).unwrap()["presentation"]["home"]["actions"][0]
+                .get("icon")
+                .is_none()
+        );
+        assert_eq!(
+            parse_configuration(&serde_saphyr::to_string(&config).unwrap()).unwrap(),
+            config
+        );
+    }
+}
+
+#[test]
+fn homepage_action_icons_reject_unknown_names_and_non_string_values() {
+    for value in [
+        "unknown",
+        "book_open",
+        "BookOpen",
+        "assets/book.svg",
+        "'<svg></svg>'",
+        "''",
+        "42",
+        "false",
+        "[]",
+        "{}",
+    ] {
+        let source = HOMEPAGE.replace("icon: book-open", &format!("icon: {value}"));
+        assert!(parse_configuration(&source).is_err(), "{value}");
+    }
+    let error = parse_configuration(&HOMEPAGE.replace("icon: book-open", "icon: unknown"))
+        .unwrap_err()
+        .to_string();
+    assert!(error.contains("unknown"), "{error}");
+    assert!(error.contains("book-open"), "{error}");
+}
 
 fn kebab_case_configuration() -> String {
     let mut source = COMPLETE.to_owned();

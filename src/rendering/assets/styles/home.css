@@ -112,6 +112,12 @@ body[data-layout=home] {
   border-color: #a8c4bc;
 }
 
+.home-action-icon {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex-shrink: 0;
+}
+
 .home-action:first-child {
   border-color: #2d7064;
   background: #2d7064;

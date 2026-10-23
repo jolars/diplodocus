@@ -163,6 +163,7 @@ presentation:
         path: "guide/quick-start.html"
       - label: "Read the guide"
         path: "guide/index.html"
+        icon: "book-open"
     features:
       - title: "Shared documentation"
         description: "Link across your packages."
@@ -174,6 +175,12 @@ Mount your guide collection at `guide` to keep it separate from the homepage.
 visible generated HTML pages, including `.html`, even when the site uses clean
 URLs. Diplodocus checks these destinations and renders links using the site's
 URL settings. The first action receives the primary button style.
+
+Actions accept an optional `icon`: `arrow-right`, `book-open`, `code`, `download`,
+or `terminal`. The built-in SVG appears before the label and inherits the
+button's text color. Icons are decorative, so the label still supplies the
+accessible link name. All actions retain their trailing arrow. Omitting `icon`
+keeps the text-and-arrow appearance. Unknown icon names are rejected.
 
 The hero uses the site title and optional logo. All text is plain text, and
 newlines in `tagline` separate heading lines. Actions and features can be

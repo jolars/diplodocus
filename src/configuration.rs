@@ -135,6 +135,25 @@ pub struct HomeAction {
     pub label: String,
     /// Normalized site-relative HTML artifact path, including its extension.
     pub path: DiagnosticPath,
+    /// Optional decorative icon shown before the link text.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub icon: Option<HomeActionIcon>,
+}
+
+/// A built-in SVG icon for a homepage action.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum HomeActionIcon {
+    /// An arrow pointing right.
+    ArrowRight,
+    /// An open book.
+    BookOpen,
+    /// A pair of angle brackets.
+    Code,
+    /// A downward arrow above a tray.
+    Download,
+    /// A command prompt in a terminal window.
+    Terminal,
 }
 
 /// A feature card pointing to its documentation.

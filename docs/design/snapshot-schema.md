@@ -270,6 +270,13 @@ and escapes them for HTML. The initial generator uses its built-in theme.
 Local theme paths, output directories, checkout roots, and execution authority
 are not presentation defaults. Unknown fields and malformed values are rejected.
 
+An optional `home` object retains the landing page's text, Guide destination,
+actions, and features. Each action contains a plain-text `label`, a generated
+`path`, and an optional named `icon`: `arrow-right`, `book-open`, `code`,
+`download`, or `terminal`. Writers omit an absent icon, preserving existing
+action records and their fingerprints. Generation renders icons from built-in
+SVGs and needs no source files or external assets. Unknown icon names are rejected.
+
 An optional `sections` array retains additional project navbar tabs in declaration
 order. Each entry contains a plain-text `label` and a generated `path` ending in
 `/index.html`. Generation validates the destination and assigns project pages in

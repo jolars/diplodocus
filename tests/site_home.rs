@@ -75,6 +75,7 @@ fn homepage_survives_snapshot_round_trip_and_respects_url_style() {
         };
         assert!(home.contains(&format!("href=\"{guide_url}\">Guide</a>")));
         assert!(home.contains(&format!("href=\"{quick_start_url}\">Start")));
+        assert!(!home.contains("class=\"home-action-icon\""));
         let guide = std::str::from_utf8(&rendered.files()["guide/index.html"].bytes).unwrap();
         assert!(guide.contains("data-layout=\"docs\""));
         assert!(guide.contains("Welcome to the guide."));
@@ -87,6 +88,58 @@ fn homepage_survives_snapshot_round_trip_and_respects_url_style() {
         assert!(markdown.contains("Read & explore."));
         assert!(markdown.contains(quick_start_url));
     }
+}
+
+#[test]
+fn homepage_action_icons_survive_snapshot_round_trip_without_sources() {
+    let root = workspace("file");
+    let icons = ["arrow-right", "book-open", "code", "download", "terminal"];
+    let actions: String = icons
+        .iter()
+        .map(|icon| {
+            format!(
+                "      - label: {icon}\n        path: guide/quick-start.html\n        icon: {icon}\n"
+            )
+        })
+        .collect();
+    let config = root
+        .read("diplodocus.yaml")
+        .replace("    actions:\n", &format!("    actions:\n{actions}"));
+    root.write("diplodocus.yaml", config);
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
+    let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+    let portable = support::TestWorkspace::new();
+    let path = portable.path().join("snapshot.sqlite");
+    snapshot.publish(&path).unwrap();
+    drop(root);
+    let loaded = Snapshot::load(&path).unwrap();
+    assert_eq!(loaded.presentation(), snapshot.presentation());
+    let rendered = render_site(&Site::new(&loaded).unwrap()).unwrap();
+    let home = std::str::from_utf8(&rendered.files()["index.html"].bytes).unwrap();
+    let actions = home
+        .split("<a class=\"home-action\"")
+        .skip(1)
+        .map(|action| action.split_once("</a>").unwrap().0)
+        .collect::<Vec<_>>();
+    assert_eq!(actions.len(), icons.len() + 1);
+    for (action, icon) in actions.iter().zip(icons) {
+        assert!(action.ends_with(&format!("{icon}<span aria-hidden=\"true\"> &rarr;</span>")));
+        let start = action.find("<svg").unwrap();
+        let end = action.find("</svg>").unwrap() + "</svg>".len();
+        let document = roxmltree::Document::parse(&action[start..end]).unwrap();
+        let element = document.root_element();
+        assert_eq!(element.attribute("aria-hidden"), Some("true"));
+        assert_eq!(element.attribute("focusable"), Some("false"));
+        assert_eq!(element.attribute("stroke"), Some("currentColor"));
+        assert_eq!(element.attribute("viewBox"), Some("0 0 24 24"));
+        assert!(element.children().any(|child| child.has_tag_name("path")));
+    }
+    assert!(!actions.last().unwrap().contains("<svg"));
+    let markdown = std::str::from_utf8(&rendered.files()["index.md"].bytes).unwrap();
+    for icon in icons {
+        assert!(markdown.contains(&format!("- [{icon}](<guide/quick-start.html>)")));
+    }
+    assert!(!markdown.contains("<svg"));
 }
 
 #[test]
