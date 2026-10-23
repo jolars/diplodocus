@@ -1,0 +1,143 @@
+.site-search {
+  min-width: 0;
+  flex: 1;
+  position: relative;
+  justify-self: end;
+  width: 100%;
+  max-width: 15rem;
+}
+
+.search-control {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 40px;
+  border: 1px solid transparent;
+  border-radius: .5rem;
+  background: #edf1f0;
+  color: var(--muted);
+  transition: border-color .15s, background .15s;
+}
+
+.search-control:hover {
+  border-color: #bbc9c5;
+}
+
+.search-control:focus-within {
+  border-color: var(--link);
+  background: white;
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+}
+
+.search-icon {
+  position: absolute;
+  left: .7rem;
+  pointer-events: none;
+}
+
+.site-search input {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  padding: .4rem .65rem .4rem 2.3rem;
+  border: 0;
+  border-radius: inherit;
+  outline: none;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: .85rem;
+}
+
+.site-search input::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+
+#search-results {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 26rem;
+  max-width: calc(100vw - 2rem);
+  max-height: min(60dvh, 30rem);
+  overflow-y: auto;
+  margin: .65rem 0 0;
+  padding: .35rem;
+  border: 1px solid var(--border);
+  border-radius: .65rem;
+  background: white;
+  box-shadow: 0 8px 24px #202c381a;
+  list-style: none;
+  font-size: .85rem;
+}
+
+#search-results:empty {
+  display: none;
+}
+
+#search-results a {
+  display: block;
+  padding: .65rem .75rem;
+  border-radius: .35rem;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+#search-results a:hover,
+#search-results a:focus-visible {
+  background: var(--selected);
+}
+
+@media (max-width: 760px) {
+  .site-search {
+    flex: none;
+    width: 44px;
+    max-width: none;
+  }
+
+  .site-search:focus-within {
+    position: absolute;
+    left: 1rem;
+    z-index: 1;
+    width: calc(100% - 2rem - 44px - .65rem);
+    justify-self: auto;
+  }
+
+  .site-search .search-control {
+    height: 44px;
+    transition: none;
+  }
+
+  .site-search input {
+    font-size: 1rem;
+  }
+
+  .site-search #search-results {
+    left: 0;
+    right: auto;
+  }
+
+  .site-search:not(:focus-within) .search-control {
+    background: transparent;
+  }
+
+  .site-search:not(:focus-within) input {
+    padding: 0;
+    color: transparent;
+    cursor: pointer;
+  }
+
+  .site-search:not(:focus-within) input::placeholder {
+    color: transparent;
+  }
+
+  .site-search:not(:focus-within) input::-webkit-search-cancel-button {
+    display: none;
+  }
+
+  .site-search:not(:focus-within) #search-results {
+    display: none;
+  }
+}

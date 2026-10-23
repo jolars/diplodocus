@@ -1841,6 +1841,13 @@ pub(super) fn plain(nodes: &[Inline]) -> String {
         })
         .collect()
 }
-const STYLE: &str = include_str!("assets/site.css");
+const STYLE: &str = concat!(
+    include_str!("assets/styles/base.css"),
+    include_str!("assets/styles/layout.css"),
+    include_str!("assets/styles/navigation.css"),
+    include_str!("assets/styles/search.css"),
+    include_str!("assets/styles/content.css"),
+    include_str!("assets/styles/home.css"),
+);
 const NAV_SCRIPT: &str = include_str!("navigation.js");
 const SEARCH: &str = include_str!("search.js");

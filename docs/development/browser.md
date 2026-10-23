@@ -21,6 +21,18 @@ Devenv supplies Node, the matching Playwright Chromium build, and a fixed font
 configuration. Browser downloads are disabled. The npm lockfile contains only
 development tools; the generated site has no Node runtime dependency.
 
+## Stylesheets
+
+Edit the plain CSS files in `src/rendering/assets/styles/`. The renderer embeds
+them in the order listed by `STYLE` in `src/rendering/html.rs`: `base.css`,
+`layout.css`, `navigation.css`, `search.css`, `content.css`, and `home.css`.
+Shared defaults come first, and homepage overrides come last. Keep responsive
+rules beside the components they affect, and preserve the cascade when moving
+rules between files.
+
+The renderer emits one `assets/site.css` with syntax highlighting appended.
+Cargo tracks the included files, so the preview recompiles when they change.
+
 ## Preview, test, and capture
 
 ```console
