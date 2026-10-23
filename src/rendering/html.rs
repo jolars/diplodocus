@@ -41,13 +41,27 @@ fn brand(html: &mut String, site: &Site<'_>, route: &str) -> Result<(), SiteErro
     if let Some(logo) = site.logo {
         write!(
             html,
-            "<img class=\"brand-logo\" src=\"{}\" alt=\"\">",
-            escape(&site.url(route, &site.asset_route(&logo.fingerprint.value)?))
+            "<img class=\"brand-logo\" src=\"{}\" alt=\"\"{}>",
+            escape(&site.url(route, &site.asset_route(&logo.fingerprint.value)?)),
+            image_dimensions(site, &logo.fingerprint.value)?
         )
         .unwrap();
     }
     write!(html, "<span>{}</span></a>", escape(site.title())).unwrap();
     Ok(())
+}
+
+fn image_dimensions(site: &Site<'_>, digest: &str) -> Result<String, SiteError> {
+    let asset = site.assets.get(digest).ok_or(SiteError::Evidence)?;
+    if !matches!(asset.media_type.as_str(), "image/png" | "image/jpeg") {
+        return Ok(String::new());
+    }
+    let (width, height) = image::ImageReader::new(std::io::Cursor::new(&asset.bytes))
+        .with_guessed_format()
+        .map_err(|_| SiteError::Evidence)?
+        .into_dimensions()
+        .map_err(|_| SiteError::Evidence)?;
+    Ok(format!(" width=\"{width}\" height=\"{height}\""))
 }
 
 fn navigation_shell_fingerprint(site: &Site<'_>) -> Result<String, SiteError> {
@@ -1238,6 +1252,22 @@ impl Renderer<'_, '_> {
         }
         self.site.target(self.route, &reference.target)
     }
+    fn image_dimensions(&self, spelling: &str) -> Result<String, SiteError> {
+        let reference = self
+            .resolved
+            .and_then(|document| {
+                document.references.iter().find(|reference| {
+                    reference.kind == ReferenceKind::Image && reference.spelling == spelling
+                })
+            })
+            .ok_or(SiteError::Evidence)?;
+        match &reference.target {
+            crate::validation::ReferenceTarget::Asset { asset, .. } => {
+                image_dimensions(self.site, &asset.fingerprint.value)
+            }
+            _ => Ok(String::new()),
+        }
+    }
     fn inlines(&self, inlines: &[Inline]) -> Result<String, SiteError> {
         let mut html = String::new();
         for inline in inlines {
@@ -1313,9 +1343,10 @@ impl Renderer<'_, '_> {
                     ..
                 } => write!(
                     html,
-                    "<img src=\"{}\" alt=\"{}\"{}{}>",
+                    "<img src=\"{}\" alt=\"{}\"{}{}{}>",
                     escape(&self.reference(ReferenceKind::Image, target)?),
                     escape(&plain(alt)),
+                    self.image_dimensions(target)?,
                     id(attributes),
                     title
                         .as_ref()
@@ -1735,12 +1766,13 @@ impl Renderer<'_, '_> {
                         let options = options.ok_or(SiteError::Evidence)?;
                         write!(
                             html,
-                            "<figure><img src=\"{}\" alt=\"{}\">",
+                            "<figure><img src=\"{}\" alt=\"{}\"{}>",
                             escape(&self.site.url(
                                 self.route,
                                 &self.site.asset_route(&asset.reference.fingerprint.value)?
                             )),
-                            escape(options.fig_alt.value.as_deref().unwrap_or(""))
+                            escape(options.fig_alt.value.as_deref().unwrap_or("")),
+                            image_dimensions(self.site, &asset.reference.fingerprint.value)?
                         )
                         .unwrap();
                         if let Some(caption) = options.fig_subcap.value.get(figure) {
@@ -1792,6 +1824,16 @@ impl Renderer<'_, '_> {
                             ),
                         };
                         write!(html, " {key}=\"{}\"", escape(&value)).unwrap();
+                    }
+                    if name == "img"
+                        && !attributes.contains_key("width")
+                        && !attributes.contains_key("height")
+                        && let Some(HtmlAttribute::Asset(asset)) = attributes.get("src")
+                    {
+                        html.push_str(&image_dimensions(
+                            self.site,
+                            &asset.reference.fingerprint.value,
+                        )?);
                     }
                     html.push('>');
                     html.push_str(&self.html_nodes(children)?);

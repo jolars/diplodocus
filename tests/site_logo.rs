@@ -76,9 +76,16 @@ fn raster_logos_are_preserved_and_use_their_image_extension() {
             .write_to(&mut bytes, format)
             .unwrap();
         root.write(format!("branding/logo.{extension}"), bytes.get_ref());
+        root.write(format!("docs/assets/image.{extension}"), bytes.get_ref());
+        root.write(
+            "docs/index.md",
+            format!("# Home\n\n![Raster](assets/image.{extension})\n"),
+        );
         let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
         let snapshot =
             Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+        drop(sources);
+        drop(root);
         let rendered =
             diplodocus::rendering::render_site(&diplodocus::site::Site::new(&snapshot).unwrap())
                 .unwrap();
@@ -87,6 +94,19 @@ fn raster_logos_are_preserved_and_use_their_image_extension() {
         let asset = &rendered.files()[&format!("assets/{digest}.{suffix}")];
         assert_eq!(asset.media_type, media);
         assert_eq!(&asset.bytes, bytes.get_ref());
+        let html = std::str::from_utf8(&rendered.files()["index.html"].bytes).unwrap();
+        assert!(html.contains(&format!(
+            "<img class=\"brand-logo\" src=\"assets/{digest}.{suffix}\" alt=\"\" width=\"4\" height=\"2\">"
+        )));
+        assert!(html.contains(&format!(
+            "<img src=\"assets/{digest}.{suffix}\" alt=\"Raster\" width=\"4\" height=\"2\">"
+        )));
+        let fragments = diplodocus::rendering::render_fragments(
+            &diplodocus::site::Site::new(&snapshot).unwrap(),
+        )
+        .unwrap();
+        let html = std::str::from_utf8(&fragments.files()["index.html"].bytes).unwrap();
+        assert!(html.contains("alt=\"Raster\" width=\"4\" height=\"2\""));
     }
 }
 
@@ -159,4 +179,66 @@ fn logo_cannot_follow_a_symlink_outside_its_repository() {
     std::os::unix::fs::symlink(target, root.path().join("branding/logo.svg")).unwrap();
     let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     assert!(resolve_workspace(&sources).is_err());
+}
+
+#[tokio::test]
+async fn execution_images_include_dimensions_without_overriding_html_sizes() {
+    use diplodocus::assembly::WorkspaceExecution;
+    use diplodocus::execution::ExecutionDeadlines;
+    use diplodocus::validation::resolve_executed_workspace;
+
+    let root = workspace(false);
+    root.write(
+        "diplodocus.yaml",
+        root.read("diplodocus.yaml").replace(
+            "format: gfm",
+            "format: qmd\n    execution:\n      mode: execute\n      engine: jupyter\n      kernel: python3",
+        ),
+    );
+    let mut bytes = std::io::Cursor::new(Vec::new());
+    image::RgbImage::from_pixel(12, 6, image::Rgb([10, 20, 40]))
+        .write_to(&mut bytes, image::ImageFormat::Png)
+        .unwrap();
+    root.write("docs/image.png", bytes.get_ref());
+    root.write(
+        "docs/index.qmd",
+        r#"# Images
+
+```{python}
+from IPython.display import display, Image, HTML
+display(Image(filename='image.png'))
+display(HTML('<img src="image.png" alt="HTML image">'))
+display(HTML('<img src="image.png" alt="Sized image" width="8" height="4">'))
+```
+"#,
+    );
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
+    let stage = tempfile::tempdir().unwrap();
+    let executed = sources
+        .execute(WorkspaceExecution {
+            staging_parent: stage.path(),
+            deadlines: ExecutionDeadlines::default(),
+            cancellation: Box::pin(std::future::pending()),
+        })
+        .await
+        .unwrap();
+    let snapshot =
+        Snapshot::from_executed(&executed, &resolve_executed_workspace(&executed).unwrap())
+            .unwrap();
+    executed.discard().unwrap();
+    drop(root);
+    let rendered =
+        diplodocus::rendering::render_site(&diplodocus::site::Site::new(&snapshot).unwrap())
+            .unwrap();
+    let html = std::str::from_utf8(&rendered.files()["index.html"].bytes).unwrap();
+    let digest = fingerprint_bytes(bytes.get_ref()).value;
+    assert!(html.contains(&format!(
+        "<figure><img src=\"assets/{digest}.png\" alt=\"\" width=\"12\" height=\"6\">"
+    )));
+    assert!(html.contains(&format!(
+        "<img alt=\"HTML image\" src=\"assets/{digest}.png\" width=\"12\" height=\"6\">"
+    )));
+    assert!(html.contains(&format!(
+        "<img alt=\"Sized image\" height=\"4\" src=\"assets/{digest}.png\" width=\"8\">"
+    )));
 }

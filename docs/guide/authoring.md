@@ -90,7 +90,9 @@ reference in another collection.
 Local fragment links must name an existing heading anchor. Keep images and other
 local assets inside a declared source boundary and link to them with relative
 paths. Diplodocus validates local destinations and copies accepted assets into
-the generated site. External HTTP links remain external.
+the generated site. Rendered PNG and JPEG images include their intrinsic width
+and height so browsers can reserve space before loading them. Diplodocus
+preserves the original image bytes. External HTTP links remain external.
 
 Code fences in GFM and API documentation are always display-only. R Markdown chunks execute during extraction. QMD cells run
 only when their collection explicitly authorizes execution; see [execution and
