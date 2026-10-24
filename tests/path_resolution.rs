@@ -656,3 +656,44 @@ mod symlinks {
         }
     }
 }
+
+#[test]
+fn package_overview_resolves_inside_the_package_and_requires_markdown() {
+    let (workspace, mut config, config_path) = workspace();
+    workspace.write("repo/packages/pkg/docs/introduction.md", "# Introduction\n");
+    config.packages[0].overview = Some("docs/introduction.md".into());
+    let resolved = resolve_workspace_paths(&config_path, &config).unwrap();
+    assert_eq!(
+        resolved.packages[0].overview,
+        Some(canonical(
+            &workspace,
+            "repo/packages/pkg/docs/introduction.md"
+        ))
+    );
+    for invalid in ["missing.md", "docs", "docs/index.qmd", "../README.md"] {
+        config.packages[0].overview = Some(invalid.into());
+        assert!(
+            resolve_workspace_paths(&config_path, &config).is_err(),
+            "{invalid}"
+        );
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn package_overview_rejects_symlinks_outside_the_package() {
+    let (workspace, mut config, config_path) = workspace();
+    workspace.write("repo/README.md", "# Repository\n");
+    std::os::unix::fs::symlink(
+        "../../README.md",
+        workspace.path().join("repo/packages/pkg/README.md"),
+    )
+    .unwrap();
+    config.packages[0].overview = Some("README.md".into());
+    assert!(matches!(
+        resolve_workspace_paths(&config_path, &config)
+            .unwrap_err()
+            .kind,
+        PathResolutionErrorKind::OutsideBoundary { .. }
+    ));
+}

@@ -328,7 +328,7 @@ blockquote,
 }
 
 .package-overview {
-  max-width: none;
+  margin-inline: auto;
 }
 
 .package-overview-body {
@@ -342,24 +342,30 @@ blockquote,
 
 .package-metadata {
   min-width: 0;
-  margin-top: 2rem;
-  padding: 1rem;
+  margin: 0 0 2rem;
+  padding: 1rem 1.25rem;
   border: 1px solid var(--border);
-  border-radius: .3rem;
+  border-radius: .5rem;
   font-size: .85rem;
 }
 
-.package-metadata h2 {
-  margin: 0 0 1rem;
-  font-size: 1rem;
-}
-
 .package-metadata dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+  gap: .75rem 1.25rem;
   margin: 0;
 }
 
+.package-metadata dl > div {
+  min-width: 0;
+}
+
+.package-metadata-people {
+  grid-column: 1 / -1;
+}
+
 .package-metadata dt {
-  margin-top: .6rem;
+  margin: 0 0 .15rem;
   color: var(--muted);
   font-size: .75rem;
   font-weight: 650;
@@ -370,25 +376,27 @@ blockquote,
 }
 
 .package-metadata ul {
-  margin: 1rem 0 0;
-  padding-left: 1.1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem 1rem;
+  margin: .9rem 0 0;
+  padding: .75rem 0 0;
+  border-top: 1px solid var(--border);
+  list-style: none;
 }
 
 .package-metadata li {
-  margin: .3rem 0;
+  margin: 0;
 }
 
-@media (min-width: 1280px) {
-  .package-overview {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 13rem;
-    gap: 2rem;
-    align-items: start;
-  }
+.package-metadata li a {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+}
 
-  .package-metadata {
-    margin-top: 0;
-  }
+.package-link-icon {
+  flex: none;
 }
 
 .math-display {

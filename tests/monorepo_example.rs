@@ -49,7 +49,7 @@ fn monorepo_example_builds_with_r_and_generates_without_sources_or_runtimes() {
     let snapshot = Snapshot::load(&database).unwrap();
     assert_eq!(snapshot.workspace().repositories.len(), 1);
     assert_eq!(snapshot.workspace().packages.len(), 4);
-    assert_eq!(snapshot.workspace().pages.len(), 16);
+    assert_eq!(snapshot.workspace().pages.len(), 19);
     assert_eq!(snapshot.workspace().concepts.len(), 6);
     assert_eq!(snapshot.assets().len(), 4);
     assert_eq!(
@@ -77,6 +77,20 @@ fn monorepo_example_builds_with_r_and_generates_without_sources_or_runtimes() {
     assert!(runtime.authors[0].contains("Diplodocus Contributors"));
     assert!(runtime.citation.as_ref().unwrap().bibtex.contains("2026"));
     let site = root.path().join("site");
+    for (language, id, published) in [
+        ("python", "pystats", "tinystats"),
+        ("julia", "juliastats", "TinyStats"),
+        ("rust", "ruststats", "tinystats"),
+    ] {
+        let metadata = snapshot.workspace().packages[id].metadata.as_ref().unwrap();
+        assert_eq!(metadata.name(), published);
+        assert_eq!(metadata.version(), Some("0.1.0"));
+        let overview =
+            fs::read_to_string(site.join(format!("packages/{language}/index.html"))).unwrap();
+        assert!(overview.contains("Package information"));
+        assert!(overview.contains("Compare predictions"));
+        assert_eq!(overview.matches("<h1").count(), 1);
+    }
     let overview = fs::read_to_string(site.join("packages/r/index.html")).unwrap();
     assert!(overview.contains("vignettes/evaluating-predictions.html"));
     let vignette =

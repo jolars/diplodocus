@@ -682,6 +682,7 @@ fn parse_fixture(root: &std::path::Path) -> ParsedPythonPackage {
         repository_index: 0,
         path: path.clone(),
         metadata_path: path.join("pyproject.toml"),
+        overview: None,
         targets: vec![target.clone()],
     };
     model::parse_target(&repository, &package, &target)

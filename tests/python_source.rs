@@ -21,6 +21,7 @@ fn parse(workspace: &support::TestWorkspace) -> ParsedPythonPackage {
         repository_index: 0,
         path: root.clone(),
         metadata_path: root.join("pyproject.toml"),
+        overview: None,
         targets: vec![target.clone()],
     };
     parse_target(&repository, &package, &target)

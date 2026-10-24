@@ -372,6 +372,9 @@ pub struct PackageConfiguration {
     pub path: PathBuf,
     /// Metadata file, relative to the package root.
     pub metadata_path: PathBuf,
+    /// GFM overview file, relative to the package root; omission discovers README.md.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub overview: Option<PathBuf>,
     /// Distribution or component classification; defaults to `package`.
     #[serde(default)]
     pub kind: PackageKind,

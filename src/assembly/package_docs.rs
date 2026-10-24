@@ -1,4 +1,4 @@
-//! Conventional R package documents share the authored link and asset pipeline.
+//! Package overviews and conventional R documents share the authored link and asset pipeline.
 
 use super::*;
 use crate::diagnostics::DiagnosticEntity;
@@ -11,7 +11,7 @@ mod native;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct PackageFiles {
-    pub readme: Option<PathBuf>,
+    pub overview: Option<PathBuf>,
     pub news: Option<PathBuf>,
     pub citation: Option<PathBuf>,
     pub licenses: Vec<PathBuf>,
@@ -20,7 +20,7 @@ pub(super) struct PackageFiles {
 
 impl PackageFiles {
     fn paths(&self) -> impl Iterator<Item = &PathBuf> {
-        self.readme
+        self.overview
             .iter()
             .chain(self.news.iter())
             .chain(self.citation.iter())
@@ -35,17 +35,20 @@ pub(super) fn discover(
 ) -> Result<BTreeMap<String, PackageFiles>, AssemblyError> {
     let mut result = BTreeMap::new();
     for package in &paths.packages {
-        let Some(PackageMetadata::R(metadata)) = &workspace.packages[&package.id].metadata else {
-            continue;
-        };
         let repository = &paths.repositories[package.repository_index];
+        let overview = match &package.overview {
+            Some(path) => Some(path.clone()),
+            None => optional(&package.path, "README.md", repository)?,
+        };
         let mut licenses = Vec::new();
-        for name in ["LICENSE", "LICENSE.md", "LICENCE", "LICENCE.md"] {
+        for name in PACKAGE_LICENSE_FILENAMES {
             if let Some(path) = optional(&package.path, name, repository)? {
                 licenses.push(path);
             }
         }
-        if let Some(license) = &metadata.description.license {
+        if let Some(PackageMetadata::R(metadata)) = &workspace.packages[&package.id].metadata
+            && let Some(license) = &metadata.description.license
+        {
             for name in crate::extractors::r::license_files(license) {
                 let path = resolve_input_file(
                     &repository.path,
@@ -58,6 +61,22 @@ pub(super) fn discover(
         }
         licenses.sort();
         licenses.dedup();
+        if !matches!(
+            &workspace.packages[&package.id].metadata,
+            Some(PackageMetadata::R(_))
+        ) {
+            result.insert(
+                package.id.clone(),
+                PackageFiles {
+                    overview,
+                    news: None,
+                    citation: None,
+                    licenses,
+                    community: Vec::new(),
+                },
+            );
+            continue;
+        }
         let mut community = Vec::new();
         for name in ["CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "CONDUCT.md"] {
             let selected = optional(&package.path, name, repository)?;
@@ -71,7 +90,7 @@ pub(super) fn discover(
         result.insert(
             package.id.clone(),
             PackageFiles {
-                readme: optional(&package.path, "README.md", repository)?,
+                overview,
                 news: first(&package.path, &["NEWS.md", "NEWS.Rd", "NEWS"], repository)?,
                 citation: optional(&package.path, "inst/CITATION", repository)?,
                 licenses,
@@ -123,6 +142,7 @@ fn first(
 pub(super) fn assemble(
     paths: &ResolvedWorkspacePaths,
     workspace: &mut Workspace,
+    prepared_pages: &BTreeMap<String, PreparedPage>,
     selections: &mut DeclaredSourceInputs,
     observed: &mut ObservedInputs,
 ) -> Result<BTreeMap<String, PackageFiles>, AssemblyError> {
@@ -148,33 +168,106 @@ pub(super) fn assemble(
                         .to_owned(),
                 );
         }
-        let metadata = match &workspace.packages[id].metadata {
-            Some(PackageMetadata::R(metadata)) => metadata.description.clone(),
-            _ => unreachable!(),
-        };
         let overview_overridden = register_authored_override(
             workspace,
+            prepared_pages,
             id,
             PackagePageRole::Overview,
             repository,
-            selected.readme.iter(),
+            selected.overview.iter(),
         )?;
-        let news_overridden = register_authored_override(
-            workspace,
-            id,
-            PackagePageRole::News,
-            repository,
-            selected.news.iter(),
-        )?;
+        if !overview_overridden {
+            let overview = if let Some(path) = selected
+                .overview
+                .as_ref()
+                .filter(|path| !already_authored(workspace, repository, path))
+            {
+                markdown(workspace, id, repository, path, true)?
+            } else {
+                let introduction = workspace.packages[id]
+                    .metadata
+                    .as_ref()
+                    .and_then(PackageMetadata::description)
+                    .unwrap_or_default()
+                    .to_owned();
+                generated(
+                    if introduction.is_empty() {
+                        Vec::new()
+                    } else {
+                        vec![paragraph(&introduction)]
+                    },
+                    introduction,
+                )
+            };
+            insert(
+                workspace,
+                prepared_pages,
+                id,
+                PackagePageRole::Overview,
+                overview,
+            );
+        }
         let license_overridden = register_authored_override(
             workspace,
+            prepared_pages,
             id,
             PackagePageRole::License,
             repository,
             &selected.licenses,
         )?;
+        let license = workspace.packages[id]
+            .metadata
+            .as_ref()
+            .and_then(PackageMetadata::license)
+            .map(str::to_owned);
+        if !license_overridden
+            && (!selected.licenses.is_empty()
+                || (matches!(
+                    &workspace.packages[id].metadata,
+                    Some(PackageMetadata::R(_))
+                ) && license.is_some()))
+        {
+            let mut document = generated(Vec::new(), String::new());
+            if let Some(license) = &license {
+                document.document.blocks.push(paragraph(license));
+                document.raw_source = Some(license.clone());
+            }
+            for path in selected
+                .licenses
+                .iter()
+                .filter(|path| !already_authored(workspace, repository, path))
+                .collect::<Vec<_>>()
+            {
+                let addition = if path.extension().is_some_and(|extension| extension == "md") {
+                    markdown(workspace, id, repository, path, false)?
+                } else {
+                    text_document(repository, path)?
+                };
+                merge(&mut document, addition, repository);
+            }
+            insert(
+                workspace,
+                prepared_pages,
+                id,
+                PackagePageRole::License,
+                document,
+            );
+        }
+        let Some(PackageMetadata::R(metadata)) = &workspace.packages[id].metadata else {
+            continue;
+        };
+        let metadata = metadata.description.clone();
+        let news_overridden = register_authored_override(
+            workspace,
+            prepared_pages,
+            id,
+            PackagePageRole::News,
+            repository,
+            selected.news.iter(),
+        )?;
         let community_overridden = register_authored_override(
             workspace,
+            prepared_pages,
             id,
             PackagePageRole::Community,
             repository,
@@ -231,26 +324,6 @@ pub(super) fn assemble(
                 )]));
             }
         }
-        if !overview_overridden {
-            let overview = if let Some(path) = selected
-                .readme
-                .as_ref()
-                .filter(|path| !already_authored(workspace, repository, path))
-            {
-                markdown(workspace, id, repository, path, true)?
-            } else {
-                generated(
-                    vec![paragraph(
-                        metadata.description.as_deref().unwrap_or(&metadata.title),
-                    )],
-                    metadata
-                        .description
-                        .clone()
-                        .unwrap_or_else(|| metadata.title.clone()),
-                )
-            };
-            insert(workspace, id, PackagePageRole::Overview, overview);
-        }
         if !news_overridden
             && let Some(path) = selected
                 .news
@@ -262,28 +335,13 @@ pub(super) fn assemble(
             } else {
                 text_document(repository, path)?
             };
-            insert(workspace, id, PackagePageRole::News, document);
-        }
-        if !license_overridden && (metadata.license.is_some() || !selected.licenses.is_empty()) {
-            let mut document = generated(Vec::new(), String::new());
-            if let Some(license) = &metadata.license {
-                document.document.blocks.push(paragraph(license));
-                document.raw_source = Some(license.clone());
-            }
-            for path in selected
-                .licenses
-                .iter()
-                .filter(|path| !already_authored(workspace, repository, path))
-                .collect::<Vec<_>>()
-            {
-                let addition = if path.extension().is_some_and(|extension| extension == "md") {
-                    markdown(workspace, id, repository, path, false)?
-                } else {
-                    text_document(repository, path)?
-                };
-                merge(&mut document, addition, repository);
-            }
-            insert(workspace, id, PackagePageRole::License, document);
+            insert(
+                workspace,
+                prepared_pages,
+                id,
+                PackagePageRole::News,
+                document,
+            );
         }
         if !community_overridden {
             let mut community = generated(Vec::new(), String::new());
@@ -297,7 +355,13 @@ pub(super) fn assemble(
                 merge(&mut community, addition, repository);
             }
             if !community.document.blocks.is_empty() {
-                insert(workspace, id, PackagePageRole::Community, community);
+                insert(
+                    workspace,
+                    prepared_pages,
+                    id,
+                    PackagePageRole::Community,
+                    community,
+                );
             }
         }
         if metadata.fields.contains_key("Authors@R")
@@ -312,6 +376,7 @@ pub(super) fn assemble(
                 .collect();
             insert(
                 workspace,
+                prepared_pages,
                 id,
                 PackagePageRole::Authors,
                 generated(blocks, String::new()),
@@ -339,7 +404,12 @@ fn already_authored(
     })
 }
 
-fn authored_override(workspace: &Workspace, id: &str, role: PackagePageRole) -> Option<String> {
+fn authored_override(
+    workspace: &Workspace,
+    prepared_pages: &BTreeMap<String, PreparedPage>,
+    id: &str,
+    role: PackagePageRole,
+) -> Option<String> {
     workspace.pages.iter().find_map(|(page_id, page)| {
         let PageKind::Authored { collection } = &page.kind else {
             return None;
@@ -347,31 +417,23 @@ fn authored_override(workspace: &Workspace, id: &str, role: PackagePageRole) -> 
         let collection = &workspace.content_collections[collection];
         let matches = page.owner == ContentOwner::Package { package: id.into() }
             && collection.mount.is_empty()
-            && page
-                .document
-                .source_location
-                .as_ref()
-                .is_some_and(|source| {
-                    let root = collection.path.as_ref().map_or("", DiagnosticPath::as_str);
-                    Path::new(source.path.as_str())
-                        .strip_prefix(root)
-                        .ok()
-                        .is_some_and(|path| {
-                            path.with_extension("html") == Path::new(role.filename())
-                        })
-                });
+            && prepared_pages.get(page_id).is_some_and(|prepared| {
+                Path::new(prepared.relative.as_str()).with_extension("html")
+                    == Path::new(role.filename())
+            });
         matches.then(|| page_id.clone())
     })
 }
 
 fn register_authored_override<'a>(
     workspace: &mut Workspace,
+    prepared_pages: &BTreeMap<String, PreparedPage>,
     id: &str,
     role: PackagePageRole,
     repository: &ResolvedRepositoryPaths,
     paths: impl IntoIterator<Item = &'a PathBuf>,
 ) -> Result<bool, AssemblyError> {
-    let Some(page_id) = authored_override(workspace, id, role) else {
+    let Some(page_id) = authored_override(workspace, prepared_pages, id, role) else {
         return Ok(false);
     };
     // Source aliases keep incoming links working without parsing replaced content.
@@ -398,8 +460,14 @@ pub(super) fn page_id(id: &str, role: PackagePageRole) -> String {
     format!("package-page1:{}:{id}:{}", id.len(), role.filename())
 }
 
-fn insert(workspace: &mut Workspace, id: &str, role: PackagePageRole, document: SourcedDocument) {
-    if let Some(page_id) = authored_override(workspace, id, role) {
+fn insert(
+    workspace: &mut Workspace,
+    prepared_pages: &BTreeMap<String, PreparedPage>,
+    id: &str,
+    role: PackagePageRole,
+    document: SourcedDocument,
+) {
+    if let Some(page_id) = authored_override(workspace, prepared_pages, id, role) {
         let mut aliases: Vec<_> = document
             .provenance
             .into_iter()
@@ -451,6 +519,11 @@ fn markdown(
     let mut identifiers = crate::validation::document_anchors(&document.blocks);
     identifiers.extend(["main", "search", "search-results"].map(str::to_owned));
     heading_identifiers(&mut document.blocks, &mut identifiers);
+    let title_heading = overview
+        && matches!(
+            document.blocks.first(),
+            Some(Block::Heading { level: 1, .. })
+        );
     for block in &mut document.blocks {
         if let Block::Heading { level, .. } = block
             && *level == 1
@@ -458,7 +531,7 @@ fn markdown(
             *level = 2;
         }
     }
-    if overview
+    if title_heading
         && let Some(Block::Heading {
             level: 2, inlines, ..
         }) = document.blocks.first_mut()
@@ -844,7 +917,13 @@ impl WorkspaceSources {
                     );
                 }
                 document.provenance.push(provenance.clone());
-                insert(&mut self.workspace, &id, PackagePageRole::Authors, document);
+                insert(
+                    &mut self.workspace,
+                    &self.prepared_pages,
+                    &id,
+                    PackagePageRole::Authors,
+                    document,
+                );
             }
             if let Some(text) = result.news
                 && let Some(page) = self

@@ -259,12 +259,12 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
             if home.is_some() {
                 html.push_str("<main id=\"main\" class=\"home-page\">");
             } else if package_overview {
-                html.push_str("<main id=\"main\" class=\"package-overview\"><div class=\"package-overview-body\">");
+                html.push_str("<main id=\"main\" class=\"package-overview\">");
             } else {
                 html.push_str("<main id=\"main\">");
             }
         } else if package_overview {
-            html.push_str("<div class=\"package-overview-body\">");
+            html.push_str("<div class=\"package-overview\">");
         }
         let julia_method = page.item.filter(|item| {
             item.kind == ItemKind::Method
@@ -304,7 +304,9 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
             let document = page.document.expect("authored title");
             html.push_str(&renderer.blocks(&document.document.blocks[..1])?);
         }
-        if let Some(owner) = &page.owner {
+        if let Some(owner) = &page.owner
+            && !package_overview
+        {
             let package = &site.workspace.packages[owner];
             write!(
                 html,
@@ -383,6 +385,14 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                 escape(&metadata.description.title)
             )
             .unwrap();
+        }
+        if package_overview {
+            html.push_str(&super::package_metadata::panel(
+                site,
+                route,
+                page.owner.as_deref().expect("package overview owner"),
+            ));
+            html.push_str("<div class=\"package-overview-body\">");
         }
         let mut rd_body_start = None;
         if let Some(item) = page.item
@@ -648,11 +658,9 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
         }
         if package_overview {
             html.push_str("</div>");
-            html.push_str(&super::package_metadata::panel(
-                site,
-                route,
-                page.owner.as_deref().expect("package overview owner"),
-            ));
+            if !standalone {
+                html.push_str("</div>");
+            }
         }
         if home.is_some() && page.document.is_some() {
             html.push_str("</div>");

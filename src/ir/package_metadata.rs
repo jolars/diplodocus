@@ -73,6 +73,12 @@ pub struct RVersionConstraint {
 pub enum PackageMetadata {
     /// R DESCRIPTION and native author and citation results.
     R(RPackageMetadata),
+    /// Static PEP 621 distribution metadata.
+    Python(PythonMetadata),
+    /// Static Julia Project.toml metadata.
+    Julia(JuliaMetadata),
+    /// Cargo-resolved package metadata, including workspace inheritance.
+    Rust(RustMetadata),
 }
 
 /// Metadata from the supplied R checkout, never an unrelated installed release.
@@ -136,4 +142,154 @@ pub struct RCitation {
     pub text: String,
     /// BibTeX suitable for copying into a bibliography.
     pub bibtex: String,
+}
+
+/// Static PEP 621 metadata; dependencies use normalized PEP 508 spelling.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PythonMetadata {
+    /// Distribution name, independent of its configured documentation ID.
+    pub name: String,
+    /// PEP 440 distribution version.
+    pub version: String,
+    /// Optional short description.
+    pub description: Option<String>,
+    /// Declared license expression or inline license text.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub license: Option<String>,
+    /// Maintained author names and contact information.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub authors: Vec<String>,
+    /// Maintainer names and contact information.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub maintainers: Vec<String>,
+    /// Declared project links in deterministic label order.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub urls: BTreeMap<String, String>,
+    /// Declared PEP 440 interpreter constraints.
+    pub requires_python: Option<String>,
+    /// Dependencies in metadata order.
+    pub dependencies: Vec<String>,
+    /// Optional dependency groups sorted by name.
+    pub optional_dependencies: BTreeMap<String, Vec<String>>,
+    /// Dynamic, unused metadata fields retained for diagnostics.
+    pub dynamic: Vec<String>,
+    /// Explicit grammar selected by the adapter, in `major.minor` form.
+    pub target_version: String,
+    /// File-level metadata evidence; the typed parser does not locate fields.
+    pub source: SourceLocation,
+}
+
+/// Static Project.toml values; no manifest or Julia environment is consulted.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct JuliaMetadata {
+    /// Published package name.
+    pub name: String,
+    /// Validated package UUID.
+    pub uuid: String,
+    /// Declared SemVer version when supplied.
+    pub version: Option<String>,
+    /// Maintained author names.
+    pub authors: Vec<String>,
+    /// Direct dependency UUIDs.
+    pub dependencies: BTreeMap<String, String>,
+    /// Julia/Pkg compatibility syntax retained without Cargo interpretation.
+    pub compatibility: BTreeMap<String, String>,
+    /// Every original top-level field with source evidence.
+    pub fields: BTreeMap<String, JuliaMetadataField>,
+    /// Portable metadata file location.
+    pub source: SourceLocation,
+}
+
+/// A top-level metadata value and its exact TOML source range.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct JuliaMetadataField {
+    /// Original value represented as portable JSON.
+    pub value: serde_json::Value,
+    /// Exact value range in the metadata file.
+    pub source: SourceLocation,
+}
+
+/// Cargo-resolved package identity and presentation metadata.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RustMetadata {
+    /// Published Cargo package name.
+    pub name: String,
+    /// Resolved package version.
+    pub version: String,
+    /// Short package description.
+    pub description: Option<String>,
+    /// Declared SPDX license expression.
+    pub license: Option<String>,
+    /// Maintained author names and contact information.
+    pub authors: Vec<String>,
+    /// Declared project links in deterministic label order.
+    pub urls: BTreeMap<String, String>,
+    /// Portable location of the package manifest.
+    pub source: SourceLocation,
+}
+
+impl PackageMetadata {
+    /// Published package name, independent of its workspace display name.
+    pub fn name(&self) -> &str {
+        match self {
+            Self::R(metadata) => &metadata.description.name,
+            Self::Python(metadata) => &metadata.name,
+            Self::Julia(metadata) => &metadata.name,
+            Self::Rust(metadata) => &metadata.name,
+        }
+    }
+
+    /// Declared package version, when supplied by the ecosystem.
+    pub fn version(&self) -> Option<&str> {
+        match self {
+            Self::R(metadata) => Some(&metadata.description.version),
+            Self::Python(metadata) => Some(&metadata.version),
+            Self::Julia(metadata) => metadata.version.as_deref(),
+            Self::Rust(metadata) => Some(&metadata.version),
+        }
+    }
+
+    /// Short introduction suitable for an overview without authored content.
+    pub fn description(&self) -> Option<&str> {
+        match self {
+            Self::R(metadata) => metadata
+                .description
+                .description
+                .as_deref()
+                .or(Some(&metadata.description.title)),
+            Self::Python(metadata) => metadata.description.as_deref(),
+            Self::Julia(metadata) => metadata
+                .fields
+                .get("description")
+                .and_then(|field| field.value.as_str()),
+            Self::Rust(metadata) => metadata.description.as_deref(),
+        }
+    }
+
+    /// Declared license expression or text, when supplied by the ecosystem.
+    pub fn license(&self) -> Option<&str> {
+        match self {
+            Self::R(metadata) => metadata.description.license.as_deref(),
+            Self::Python(metadata) => metadata.license.as_deref(),
+            Self::Julia(metadata) => metadata
+                .fields
+                .get("license")
+                .and_then(|field| field.value.as_str()),
+            Self::Rust(metadata) => metadata.license.as_deref(),
+        }
+    }
+
+    /// Metadata file from the declared checkout.
+    pub fn source(&self) -> &SourceLocation {
+        match self {
+            Self::R(metadata) => &metadata.description.source,
+            Self::Python(metadata) => &metadata.source,
+            Self::Julia(metadata) => &metadata.source,
+            Self::Rust(metadata) => &metadata.source,
+        }
+    }
 }

@@ -39,6 +39,18 @@ mod references;
 mod rmarkdown;
 mod rust_native;
 
+/// Conventional license inputs shared by package discovery and preview watching.
+pub(crate) const PACKAGE_LICENSE_FILENAMES: &[&str] = &[
+    "LICENSE",
+    "LICENSE.md",
+    "LICENCE",
+    "LICENCE.md",
+    "LICENSE-MIT",
+    "LICENSE-APACHE",
+    "COPYING",
+    "COPYING.md",
+];
+
 /// A failed source assembly or execution, without a publishable workspace.
 #[derive(Debug, thiserror::Error)]
 pub enum AssemblyError {
@@ -413,8 +425,13 @@ fn assemble_with_native(
         &mut selections,
         &mut observed,
     )?;
-    let package_files =
-        package_docs::assemble(&paths, &mut workspace, &mut selections, &mut observed)?;
+    let package_files = package_docs::assemble(
+        &paths,
+        &mut workspace,
+        &prepared_pages,
+        &mut selections,
+        &mut observed,
+    )?;
     references::concepts_and_relationships(&configuration, &mut workspace, &config_name);
     reject_errors(workspace.diagnostics.iter().cloned().collect())?;
     let evidence = collect_static_provenance(path, &configuration, &selections)?;

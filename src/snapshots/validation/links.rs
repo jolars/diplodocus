@@ -19,6 +19,35 @@ pub(super) fn validate(workspace: &Workspace) -> Result {
     }
     for (package_id, package) in &workspace.packages {
         route(&package.slug)?;
+        if let Some(metadata) = &package.metadata {
+            let root = package.path.as_ref().map_or("", DiagnosticPath::as_str);
+            let path = std::path::Path::new(root).join(package.metadata_path.as_str());
+            let ecosystem = match metadata {
+                PackageMetadata::R(_) => "r",
+                PackageMetadata::Python(_) => "python",
+                PackageMetadata::Julia(_) => "julia",
+                PackageMetadata::Rust(_) => "rust",
+            };
+            require(
+                package.ecosystem == ecosystem
+                    && !metadata.name().trim().is_empty()
+                    && package.version.as_deref() == metadata.version()
+                    && metadata.source().repository == package.repository
+                    && path == std::path::Path::new(metadata.source().path.as_str()),
+                "package metadata identity",
+            )?;
+            links.source(metadata.source())?;
+            if let PackageMetadata::Julia(metadata) = metadata {
+                for field in metadata.fields.values() {
+                    require(
+                        field.source.repository == metadata.source.repository
+                            && field.source.path == metadata.source.path,
+                        "Julia metadata field source",
+                    )?;
+                    links.source(&field.source)?;
+                }
+            }
+        }
         if let Some(PackageMetadata::R(metadata)) = &package.metadata {
             let description = &metadata.description;
             let root = package.path.as_ref().map_or("", DiagnosticPath::as_str);

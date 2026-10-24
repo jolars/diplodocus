@@ -11,20 +11,24 @@ IR into separate rows.
   | Manifest field     | Current value | Governs                                                                                                                                        |
   | ---                | ---           | ---                                                                                                                                            |
   | `storage_version`  | `2`           | SQLite tables, columns, keys, record kinds, splitting entities into rows, and storage-specific envelopes. Defined by `STORAGE_SCHEMA_VERSION`. |
-  | `ir_version`       | `7`           | Semantic IR field shapes and meaning, including nested documents, signatures, and language extensions. Defined by `WORKSPACE_SCHEMA_VERSION`.  |
+  | `ir_version`       | `8`           | Semantic IR field shapes and meaning, including nested documents, signatures, and language extensions. Defined by `WORKSPACE_SCHEMA_VERSION`.  |
   | `encoding_version` | `1`           | Canonical record encoding, fingerprint inputs, and text export. Defined by `RECORD_ENCODING_VERSION`.                                          |
 
 These versions are independent: a table-layout change requires a storage version
 change; an incompatible signature or language-extension change requires an IR
 version change even if the SQL tables stay the same. Changing canonical hashing
 or export rules requires an encoding version change. A change may affect more
-than one version. The current reader accepts only `(2, 7, 1)` and rejects any
+than one version. The current reader accepts only `(2, 8, 1)` and rejects any
 unsupported component; it does not migrate snapshots automatically.
 
 Storage version 2 adds the required `presentation` record. Version 1 snapshots
 must be extracted again. Presentation defaults are storage metadata outside the IR.
 
-IR version 7 adds generated console output containers, keeping R Markdown and
+IR version 8 retains Python, Julia, and Cargo package metadata and allows
+package overview and license documents for every ecosystem. Version 7 snapshots must be
+extracted again. Storage and canonical encoding versions are unchanged.
+
+IR version 7 added generated console output containers, keeping R Markdown and
 Rd example results separate from their source code. Version 6 snapshots must be
 extracted again. Storage and canonical encoding versions are unchanged.
 
@@ -54,7 +58,7 @@ IR version 2 added inline and display equations and installed R help-link
 evidence. Version 1 snapshots must be extracted again. The canonical record
 encoding remains at version 1.
 
-The workspace record also carries `schema_version: 7`, which must agree with
+The workspace record also carries `schema_version: 8`, which must agree with
 `manifest.ir_version`. Nested JSON inherits the containing snapshot's versions;
 there is no additional version wrapper on every syntax node or signature.
 Consumers must read the manifest before interpreting a detached record.
@@ -541,8 +545,18 @@ output and unselected alternatives, without writing staging files.
 
 ### Package metadata
 
-The optional `metadata` field uses `{"language":"r","data":...}` for R
-packages. Its `description` retains the complete DESCRIPTION metadata, including
+The optional `metadata` field uses `{"language":...,"data":...}` with
+`r`, `python`, `julia`, or `rust` as the language. Python data retains static
+PEP 621 identity, description, license, authors, maintainers, project URLs,
+interpreter requirements, dependencies, dynamic fields, selected grammar, and
+source evidence. Julia data retains Project.toml identity, authors,
+dependencies, compatibility constraints, and original fields with source
+ranges. Rust data retains Cargo-resolved identity, description, license,
+authors, project URLs, and manifest evidence, including values inherited from
+the Cargo workspace. All metadata identifies the owning package's ecosystem,
+version, repository, and declared metadata file.
+
+For R packages, `description` retains the complete DESCRIPTION metadata, including
 original fields, dependency constraints, and source locations. Its optional
 `runtime` contains `authors`, optional `maintainers`, `citation` (text and
 BibTeX, or null), and `r_version`. Source validation leaves runtime results absent. CLI extraction
@@ -551,8 +565,8 @@ without metadata remain readable, and SQLite storage version 2 is unchanged.
 
 Automatically discovered pages use `page.kind` with
 `{"kind":"package-documentation","role":...}`. Roles are `overview`, `news`,
-`authors`, `license`, and `community`. Their owner must be an R package with
-retained metadata. They have ordinary document resolution records and asset
+`authors`, `license`, and `community`. Every package may own an `overview` or
+`license` document; the other roles require an R package with retained metadata. They have ordinary document resolution records and asset
 references, with no collection-relative path or execution row. Page identities
 use `package-page1:<package ID byte length>:<package ID>:<filename>`.
 

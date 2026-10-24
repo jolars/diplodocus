@@ -137,10 +137,11 @@ impl Snapshot {
                         return Err(SnapshotError::Invalid("package documentation owner"));
                     };
                     require(
-                        matches!(
-                            workspace.packages[package].metadata,
-                            Some(PackageMetadata::R(_))
-                        ),
+                        matches!(role, PackagePageRole::Overview | PackagePageRole::License)
+                            || matches!(
+                                workspace.packages[package].metadata,
+                                Some(PackageMetadata::R(_))
+                            ),
                         "package documentation owner",
                     )?;
                     require(

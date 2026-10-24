@@ -18,6 +18,7 @@ const PREPARATION_LIMIT: Duration = Duration::from_secs(600);
 
 pub(crate) struct RustNativeExtraction {
     pub extraction: RustExtraction,
+    pub metadata: RustMetadata,
     pub provenance: Provenance,
     pub doctests: Option<Provenance>,
 }
@@ -34,6 +35,13 @@ struct CargoPackage {
     id: String,
     name: String,
     version: String,
+    description: Option<String>,
+    license: Option<String>,
+    #[serde(default)]
+    authors: Vec<String>,
+    homepage: Option<String>,
+    repository: Option<String>,
+    documentation: Option<String>,
     manifest_path: PathBuf,
     source: Option<String>,
     targets: Vec<CargoTarget>,
@@ -653,6 +661,22 @@ pub(super) async fn extract_target(
     };
     Ok(RustNativeExtraction {
         extraction,
+        metadata: RustMetadata {
+            name: selected.name.clone(),
+            version: selected.version.clone(),
+            description: selected.description.clone(),
+            license: selected.license.clone(),
+            authors: selected.authors.clone(),
+            urls: [
+                ("Website", &selected.homepage),
+                ("Source repository", &selected.repository),
+                ("Documentation", &selected.documentation),
+            ]
+            .into_iter()
+            .filter_map(|(label, value)| value.as_ref().map(|url| (label.into(), url.clone())))
+            .collect(),
+            source: repository.source_location(&package.metadata_path, None)?,
+        },
         provenance,
         doctests,
     })
@@ -1198,6 +1222,7 @@ mod tests {
                 repository_index: 0,
                 path: root.clone(),
                 metadata_path: root.join("Cargo.toml"),
+                overview: None,
                 targets: vec![target.clone()],
             };
             let repository = ResolvedRepositoryPaths {
@@ -1308,6 +1333,12 @@ mod tests {
             id: format!("{name}@{version}"),
             name: name.into(),
             version: version.into(),
+            description: None,
+            license: None,
+            authors: Vec::new(),
+            homepage: None,
+            repository: None,
+            documentation: None,
             manifest_path: PathBuf::from("/unused/Cargo.toml"),
             source: Some("registry".into()),
             targets: vec![CargoTarget {

@@ -189,14 +189,18 @@ See the R extraction contract below for discovery and import limits.
 
 ### Package landing pages
 
-Diplodocus automatically reads `README.md` from the declared R package root and
-uses it as the package overview. Without a README, DESCRIPTION supplies the
-introduction. The page shows package metadata and links to available release
-notes, authors and citation information, licenses, and community guidelines.
+Every package receives a [standard landing page](authoring.md#package-landing-pages).
+Diplodocus uses an authored package index, a configured `overview` file, or the
+package-root `README.md`, in that order. Without those sources, package metadata
+supplies an introduction when available. The compact information block shows
+available details from DESCRIPTION, pyproject.toml, Project.toml, or Cargo
+metadata. R overviews also link to available release notes, authors and citation
+information, licenses, and community guidelines.
 
 Release notes use `NEWS.md`, then `NEWS.Rd`, then plain `NEWS`. Licenses include
 the DESCRIPTION declaration, its local `file` references, and conventional
-`LICENSE`, `LICENSE.md`, `LICENCE`, and `LICENCE.md` files. Contribution guidelines
+`LICENSE`, `LICENSE.md`, `LICENCE`, `LICENCE.md`, `LICENSE-MIT`, `LICENSE-APACHE`,
+`COPYING`, and `COPYING.md` files. Contribution guidelines
 and a code of conduct use `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, and `CONDUCT.md`, preferring
 package files over files at the repository root. Missing optional files do not
 create empty pages. A missing file explicitly named by License is an error.

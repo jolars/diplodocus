@@ -55,6 +55,7 @@ packages:
     repository: "tinystats"
     path: "python"
     metadata-path: "pyproject.toml"
+    overview: "OVERVIEW.md"
     targets:
       - id: "api"
         extractor: "python"
@@ -110,6 +111,14 @@ content:
     repository: "tinystats"
     path: "python/docs"
     mount: "guides"
+    format: "gfm"
+    execution:
+      mode: "never"
+  - id: "rust-overview"
+    owner: "ruststats"
+    repository: "tinystats"
+    path: "rust/docs"
+    mount: ""
     format: "gfm"
     execution:
       mode: "never"

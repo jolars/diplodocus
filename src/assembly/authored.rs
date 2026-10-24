@@ -59,12 +59,21 @@ pub(super) fn assemble(
         for relative in &files {
             let declared = resolved.path.join(relative);
             let location = repository.source_location(&declared, None)?;
+            let path = repository.path.join(location.path.as_str());
+            // Explicit overview files have one route, even when a collection contains them.
+            if paths.packages.iter().any(|package| {
+                package.overview.as_ref() == Some(&path)
+                    && !(collection.owner == package.id
+                        && collection.mount.is_empty()
+                        && relative.with_extension("html") == Path::new("index.html"))
+            }) {
+                continue;
+            }
             let key = (location.repository.clone(), location.path.clone());
             if collection.id.starts_with("rmd-vignettes:") && seen.contains(&key) {
                 continue;
             }
             seen.insert(key);
-            let path = repository.path.join(location.path.as_str());
             let text = fs::read_to_string(&path)?;
             observe(observed, &location, fingerprint_bytes(text.as_bytes()))?;
             let prepared = prepare_collection_document(&text, collection).map_err(|error| {

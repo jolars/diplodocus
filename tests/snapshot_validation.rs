@@ -213,6 +213,30 @@ fn rejects_inconsistent_r_metadata_and_package_page_ownership() {
 }
 
 #[test]
+fn rejects_inconsistent_python_metadata_identity() {
+    let snapshot = snapshot();
+    for field in ["version", "source", "ecosystem"] {
+        let result = changed(&snapshot, |export| {
+            let package = export["records"]
+                .as_array_mut()
+                .unwrap()
+                .iter_mut()
+                .find(|record| record["kind"] == "package" && record["id"] == "pyfoo")
+                .unwrap();
+            match field {
+                "version" => package["content"]["metadata"]["data"]["version"] = "9.9.9".into(),
+                "source" => {
+                    package["content"]["metadata"]["data"]["source"]["repository"] = "r".into()
+                }
+                "ecosystem" => package["content"]["ecosystem"] = "julia".into(),
+                _ => unreachable!(),
+            }
+        });
+        assert!(result.is_err(), "{field}");
+    }
+}
+
+#[test]
 fn rejects_missing_or_malformed_presentation_even_with_valid_fingerprints() {
     let snapshot = snapshot();
     for case in [

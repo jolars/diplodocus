@@ -125,6 +125,7 @@ fn extract(bytes: &[u8]) -> RustExtraction {
         repository_index: 0,
         path: root.clone(),
         metadata_path: root.join("Cargo.toml"),
+        overview: None,
         targets: vec![target.clone()],
     };
     extract_rustdoc(&repository, &package, &target, bytes)
@@ -449,6 +450,7 @@ fn compiler_character_columns_become_exact_utf8_byte_ranges() {
         repository_index: 0,
         path: root.clone(),
         metadata_path: root.join("Cargo.toml"),
+        overview: None,
         targets: vec![target.clone()],
     };
     let krate: rd::Crate = serde_json::from_slice(&fixture(0)).unwrap();

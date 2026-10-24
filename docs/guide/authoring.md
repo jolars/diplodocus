@@ -6,10 +6,57 @@ configuration](configuration.md). Set `format: "gfm"` for `.md` files or
 prefix; an empty mount places its `index.md` at the site root. The `owner`
 determines whether pages appear in project or package navigation.
 
-R packages also have [automatically discovered package pages](extraction.md).
-Use a package-owned collection with an empty mount and `index.md` or `index.qmd`
-to replace the automatic overview. The metadata panel remains available. The
-supporting routes are `news.html`, `authors.html`, `license.html`, and
+## Package landing pages {#package-landing-pages}
+
+Every package has a landing page at `/packages/<slug>/`. A compact information
+block above the content shows the package's available metadata and links. It
+uses the same centered reading column as the page content, including on wide
+screens. Missing metadata fields are omitted. Link icons distinguish source
+repositories, issue trackers, websites, and supporting documents.
+
+When a license page is available, the license value links to it. Diplodocus
+renders conventional `LICENSE`, `LICENSE.md`, `LICENCE`, `LICENCE.md`,
+`LICENSE-MIT`, `LICENSE-APACHE`, `COPYING`, and `COPYING.md` files at
+`license.html` for every package. The snapshot retains their contents, and an
+authored package page at `license.html` takes precedence.
+
+To author the page, use a package-owned collection with an empty mount and an
+`index.md` or `index.qmd` file. The page keeps its authored title
+and the collection's normal execution settings. The package-information block
+appears above the authored body.
+
+Alternatively, set `overview` on the package declaration to select an existing
+Markdown file:
+
+```yaml
+packages:
+  - id: "python"
+    name: "Models for Python"
+    slug: "python"
+    ecosystem: "python"
+    repository: "core"
+    path: "python"
+    metadata-path: "pyproject.toml"
+    overview: "docs/introduction.md"
+    targets: []
+```
+
+The path is relative to the package root and must name a `.md` file inside the
+package. Its code fences remain display-only. Links and images resolve relative
+to that file. Diplodocus replaces an initial README-style heading with the
+configured package display name, preserving its anchor and avoiding a second
+top-level heading.
+If a content collection contains the selected file, Diplodocus mounts that file
+only at the package root rather than creating a second page for it.
+
+An authored package index takes precedence over `overview`. Without either,
+Diplodocus uses the package-root `README.md`, then the package description when
+available. If neither exists, the page contains just the package information.
+The selected content, metadata, and assets are retained in the snapshot, so
+`generate` needs no checkout or language runtime.
+
+R packages also have [automatically discovered supporting pages](extraction.md).
+Their routes are `news.html`, `authors.html`, `license.html`, and
 `community.html`; an authored page at one of these routes takes precedence.
 
 ## Navigation

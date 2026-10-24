@@ -1,43 +1,11 @@
 use std::collections::BTreeMap;
 
-use serde::{Deserialize, Serialize};
-
 use crate::diagnostics::{Diagnostic, DiagnosticCode, Severity};
 use crate::ir::{SourceLocation, SourceSpan};
 
 use super::diagnostic;
 
-/// Static Project.toml values; no manifest or Julia environment is consulted.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct JuliaMetadata {
-    /// Published package name.
-    pub name: String,
-    /// Validated package UUID.
-    pub uuid: String,
-    /// Declared SemVer version when supplied.
-    pub version: Option<String>,
-    /// Maintained author names.
-    pub authors: Vec<String>,
-    /// Direct dependency UUIDs.
-    pub dependencies: BTreeMap<String, String>,
-    /// Julia/Pkg compatibility syntax retained without Cargo interpretation.
-    pub compatibility: BTreeMap<String, String>,
-    /// Every original top-level field with source evidence.
-    pub fields: BTreeMap<String, JuliaMetadataField>,
-    /// Portable metadata file location.
-    pub source: SourceLocation,
-}
-
-/// A top-level metadata value and its exact TOML source range.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct JuliaMetadataField {
-    /// Original value represented as portable JSON.
-    pub value: serde_json::Value,
-    /// Exact value range in the metadata file.
-    pub source: SourceLocation,
-}
+pub use crate::ir::{JuliaMetadata, JuliaMetadataField};
 
 pub(super) fn parse(
     text: &str,

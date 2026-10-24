@@ -99,6 +99,9 @@
     }
   ],
   "metadata": {
+    "authors": [
+      "Foo contributors"
+    ],
     "dependencies": [
       "foo-core>=1.9,<2"
     ],

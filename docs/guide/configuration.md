@@ -58,6 +58,15 @@ Repository links retain their canonical target and repository identity in the
 snapshot. Generation derives the URL from that snapshot without accessing the
 checkout or fetching the destination.
 
+## Package overviews
+
+Every declared package has a landing page with a compact metadata block.
+Set the optional `overview` package field to select a `.md` file relative to
+that package's root. An authored package index takes precedence; otherwise,
+Diplodocus uses `overview`, the package-root `README.md`, or the package
+description, in that order. Selected files remain display-only. See
+[package landing pages](authoring.md#package-landing-pages) for examples.
+
 ## Authored content
 
 Each collection in `content` names a repository, source directory, mount,

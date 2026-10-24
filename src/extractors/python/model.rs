@@ -31,28 +31,7 @@ pub struct ParsedPythonPackage {
     pub provenance: Provenance,
 }
 
-/// Static PEP 621 metadata; dependencies use normalized PEP 508 spelling.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct PythonMetadata {
-    /// Distribution name, independent of its configured documentation ID.
-    pub name: String,
-    /// PEP 440 distribution version.
-    pub version: String,
-    /// Optional short description.
-    pub description: Option<String>,
-    /// Declared PEP 440 interpreter constraints.
-    pub requires_python: Option<String>,
-    /// Dependencies in metadata order.
-    pub dependencies: Vec<String>,
-    /// Optional dependency groups sorted by name.
-    pub optional_dependencies: BTreeMap<String, Vec<String>>,
-    /// Dynamic, unused metadata fields retained for diagnostics.
-    pub dynamic: Vec<String>,
-    /// Explicit grammar selected by the adapter, in `major.minor` form.
-    pub target_version: String,
-    /// File-level metadata evidence; the typed parser does not locate fields.
-    pub source: SourceLocation,
-}
+pub use crate::ir::PythonMetadata;
 
 /// A file read by the source adapter.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

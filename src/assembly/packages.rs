@@ -48,7 +48,7 @@ pub(super) fn assemble(
                         workspace.provenance.push(doctests);
                     }
                     Fragment {
-                        metadata: None,
+                        metadata: Some(crate::ir::PackageMetadata::Rust(result.metadata)),
                         version: result.extraction.version,
                         items: result.extraction.items,
                         diagnostics: result.extraction.diagnostics,
@@ -60,8 +60,11 @@ pub(super) fn assemble(
                         .remove(&(declaration.id.clone(), target.id.clone()))
                         .unwrap_or_else(|| julia::extract_target(repository, resolved, selected));
                     Fragment {
-                        metadata: None,
-                        version: result.metadata.and_then(|metadata| metadata.version),
+                        version: result
+                            .metadata
+                            .as_ref()
+                            .and_then(|metadata| metadata.version.clone()),
+                        metadata: result.metadata.map(crate::ir::PackageMetadata::Julia),
                         items: result.items,
                         diagnostics: result.diagnostics,
                         provenance: result.provenance,
@@ -70,8 +73,11 @@ pub(super) fn assemble(
                 "python" => {
                     let result = python::extract_target(repository, resolved, selected);
                     Fragment {
-                        metadata: None,
-                        version: result.metadata.map(|m| m.version),
+                        version: result
+                            .metadata
+                            .as_ref()
+                            .map(|metadata| metadata.version.clone()),
+                        metadata: result.metadata.map(crate::ir::PackageMetadata::Python),
                         items: result.items,
                         diagnostics: result.diagnostics,
                         provenance: result.provenance,
@@ -140,6 +146,7 @@ pub(super) fn assemble(
                             previous.description != current.description
                                 || previous.runtime != current.runtime
                         }
+                        _ => previous != &metadata,
                     })
                 {
                     workspace.diagnostics.insert(

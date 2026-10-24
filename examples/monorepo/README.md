@@ -26,8 +26,10 @@ The landing page reuses it in the hero. `[presentation.home]` configures the
 heading, introduction, actions, feature cards, and Guide destination.
 Edit `docs/index.md` to add Markdown content below the feature cards.
 
-The R package has a landing page built from its README and DESCRIPTION. Package
-information links to release notes, authors and citation information, the
+All four packages have centered landing pages with a compact metadata block.
+Python selects `python/OVERVIEW.md` through its `overview` setting. R and Julia
+use their package READMEs, and Rust uses an authored `rust/docs/index.md` page.
+The R package information links to release notes, authors and citation information, the
 license, and community guidelines. These pages require no content collection.
 Diplodocus also discovers `r/vignettes/evaluating-predictions.Rmd` automatically.
 Its R chunks compute scores and a table, and draw a residual plot.
@@ -52,11 +54,13 @@ monorepo/
       logo.svg
   python/
     pyproject.toml
+    OVERVIEW.md
     src/tinystats/__init__.py
     docs/evaluating-models.md
     tests/test_metrics.py
   julia/
     Project.toml
+    README.md
     src/TinyStats.jl
     src/metrics.jl
   r/
@@ -73,6 +77,10 @@ monorepo/
     man/
     tests/metrics.R
     vignettes/evaluating-predictions.Rmd
+  rust/
+    Cargo.toml
+    docs/index.md
+    src/lib.rs
 ```
 
 ## Build and preview
@@ -168,7 +176,8 @@ package. Shared pages mount at the site root, with `docs/overview.md` supplying
 the Guide overview and `docs/index.md` adding content to the landing page at
 `index.html`. Package references live under `packages/python/`, `packages/r/`,
 `packages/julia/`, and `packages/rust/`. The Python-owned collection mounts its
-guide at `packages/python/guides/`. The R overview lives at `packages/r/`, with
+guide at `packages/python/guides/`. Each package root opens its overview.
+The R overview lives at `packages/r/`, with
 `news.html`, `authors.html`, `license.html`, and `community.html` beneath it.
 The executable vignette lives at `packages/r/vignettes/evaluating-predictions.html`.
 Links between collections and automatically discovered package pages use ordinary

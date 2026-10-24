@@ -886,14 +886,21 @@ test("R package overview exposes metadata and supporting documentation", async (
   await expect(metadata).toContainText("0.1.0");
   await expect(metadata).toContainText("MIT + file LICENSE");
   await expect(metadata.getByRole("link", { name: "Report an issue" })).toHaveAttribute("href", "https://github.com/jolars/diplodocus/issues");
+  const license = metadata.getByRole("link", { name: "MIT + file LICENSE", exact: true });
+  expect(await license.evaluate((link: HTMLAnchorElement) => link.pathname)).toBe("/packages/r/license.html");
   await expect(main.getByRole("img")).toBeVisible();
   await expect.poll(() => main.getByRole("img").evaluate((element: HTMLImageElement) => element.naturalWidth)).toBeGreaterThan(0);
   const body = await page.locator(".package-overview-body").boundingBox();
   const panel = await metadata.boundingBox();
-  if (info.project.name === "desktop") expect(panel!.x).toBeGreaterThanOrEqual(body!.x + body!.width);
-  else expect(panel!.y).toBeGreaterThanOrEqual(body!.y + body!.height);
+  expect(panel!.y + panel!.height).toBeLessThanOrEqual(body!.y);
+  expect(panel!.x).toBeCloseTo(body!.x, 1);
+  expect(panel!.width).toBeCloseTo(body!.width, 1);
   await fitsViewport(page);
   await capture(page, info, "r-package-overview");
+  await license.click();
+  await expect(main.getByRole("heading", { level: 1 })).toHaveText("License");
+  await expect(main).toContainText("Permission is hereby granted");
+  await page.goto("/packages/r/");
 
   for (const [title, expected, filename] of [
     ["News", "tinystats 0.1.0", "news"],
@@ -916,6 +923,51 @@ test("R package overview exposes metadata and supporting documentation", async (
   await toc.getByRole("link", { name: "Citation", exact: true }).click();
   await expect(page).toHaveURL(/#citation$/);
 });
+
+for (const [language, published, content] of [
+  ["python", "tinystats", "from tinystats import mean_squared_error"],
+  ["r", "tinystats", "library(tinystats)"],
+  ["julia", "TinyStats", "using TinyStats"],
+  ["rust", "tinystats", "tinystats::mean_squared_error"],
+]) {
+  test(`${language} package landing page has a compact centered summary`, async ({ page }, info) => {
+    const widths = info.project.name === "desktop" ? [1000, 1280, 1920] : [320, 390, 760];
+    for (const width of widths) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(`/packages/${language}/`);
+      const main = page.getByRole("main");
+      const metadata = main.getByRole("complementary", { name: "Package information", exact: true });
+      await expect(main.getByRole("heading", { level: 1 })).toHaveCount(1);
+      await expect(metadata).toContainText(published);
+      await expect(metadata).toContainText("0.1.0");
+      await expect(metadata.getByRole("link", { name: "Source repository", exact: true })).toBeVisible();
+      for (const link of await metadata.locator("li a").all()) {
+        await expect(link.locator("svg[aria-hidden=true][focusable=false]")).toHaveCount(1);
+      }
+      await expect(main.locator(".package-overview-body")).toContainText(content);
+      const body = (await main.locator(".package-overview-body").boundingBox())!;
+      const panel = (await metadata.boundingBox())!;
+      const article = (await main.boundingBox())!;
+      expect(panel.y + panel.height).toBeLessThanOrEqual(body.y);
+      expect(panel.x).toBeCloseTo(body.x, 1);
+      expect(panel.width).toBeCloseTo(body.width, 1);
+      expect(panel.x + panel.width / 2).toBeCloseTo(article.x + article.width / 2, 1);
+      expect(article.width).toBeLessThanOrEqual(832);
+      if (width >= 1100) {
+        const columnCenter = await main.evaluate(element => {
+          const parent = element.parentElement!;
+          const width = Number.parseFloat(getComputedStyle(parent).gridTemplateColumns);
+          return parent.getBoundingClientRect().x + width / 2;
+        });
+        expect(article.x + article.width / 2).toBeCloseTo(columnCenter, 1);
+        expect(panel.height).toBeLessThan(300);
+      }
+      await fitsViewport(page);
+      if (width === 1280 || width === 390) await capture(page, info, `${language}-package-overview`);
+      if (width === 1920) await capture(page, info, `${language}-package-overview-wide`);
+    }
+  });
+}
 
 test("R package overview is searchable by DESCRIPTION content", async ({ page }) => {
   await page.goto("/");

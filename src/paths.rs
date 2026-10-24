@@ -179,6 +179,8 @@ pub struct ResolvedPackagePaths {
     pub path: PathBuf,
     /// Canonical regular metadata file, contained in the package directory.
     pub metadata_path: PathBuf,
+    /// Explicit GFM overview file, contained in the package directory.
+    pub overview: Option<PathBuf>,
     /// Explicit targets, in target declaration order; never inferred.
     pub targets: Vec<ResolvedTargetPath>,
 }
@@ -413,6 +415,26 @@ pub fn resolve_workspace_paths(
             &path,
             PathType::File,
         )?;
+        let overview = package
+            .overview
+            .as_ref()
+            .map(|declared| {
+                let field = format!("{field}.overview");
+                if declared
+                    .extension()
+                    .is_none_or(|extension| extension != "md")
+                {
+                    return Err(resolver.error(
+                        &field,
+                        PathResolutionErrorKind::InvalidPath {
+                            path: declared.clone(),
+                            reason: "overview files must use the GFM .md extension",
+                        },
+                    ));
+                }
+                resolver.child(&field, declared, &path, PathType::File)
+            })
+            .transpose()?;
         let mut targets = Vec::with_capacity(package.targets.len());
         for (index, target) in package.targets.iter().enumerate() {
             targets.push(ResolvedTargetPath {
@@ -430,6 +452,7 @@ pub fn resolve_workspace_paths(
             repository_index,
             path,
             metadata_path,
+            overview,
             targets,
         });
     }

@@ -53,6 +53,7 @@ pub(super) fn page(
             .extend(rust.members().map(|member| member.anchor.clone()));
     }
     let mut output = String::new();
+    let package_overview = super::package_metadata::is_overview(site, route, page.owner.as_deref());
     let authored_title = page.item.is_none()
         && page.concept.is_none()
         && page.document.is_some_and(|d| {
@@ -61,6 +62,10 @@ pub(super) fn page(
         });
     if !authored_title {
         writeln!(output, "# {}\n", escape(&page.title)).unwrap();
+    } else if package_overview {
+        output.push_str(
+            &renderer.blocks(&page.document.expect("authored title").document.blocks[..1])?,
+        );
     }
     if let Some(home) = site.home(route) {
         writeln!(
@@ -91,7 +96,11 @@ pub(super) fn page(
             .unwrap();
         }
     }
-    if let Some(owner) = &page.owner {
+    if let Some(owner) = &page.owner
+        && package_overview
+    {
+        output.push_str(&super::package_metadata::markdown(site, route, owner));
+    } else if let Some(owner) = &page.owner {
         let package = &site.workspace.packages[owner];
         writeln!(
             output,
@@ -188,7 +197,8 @@ pub(super) fn page(
         }
     }
     if let Some(document) = page.document {
-        output.push_str(&renderer.blocks(&document.document.blocks)?);
+        let start = usize::from(package_overview && authored_title);
+        output.push_str(&renderer.blocks(&document.document.blocks[start..])?);
     }
     if let Some(item) = page.item {
         let members = super::html::julia_members(item);
@@ -832,7 +842,7 @@ fn source_location(site: &Site<'_>, source: Option<&SourceLocation>) -> String {
 fn anchor(output: &mut String, id: &str) {
     writeln!(output, "<a id=\"{}\"></a>\n", super::html::escape(id)).unwrap();
 }
-fn escape(value: &str) -> String {
+pub(super) fn escape(value: &str) -> String {
     value
         .chars()
         .flat_map(|ch| {
@@ -847,7 +857,7 @@ fn escape(value: &str) -> String {
         })
         .collect()
 }
-fn link_url(value: &str) -> String {
+pub(super) fn link_url(value: &str) -> String {
     format!("<{}>", value.replace('<', "%3C").replace('>', "%3E"))
 }
 fn code(value: &str) -> String {

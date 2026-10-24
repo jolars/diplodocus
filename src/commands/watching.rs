@@ -221,6 +221,13 @@ impl Observer {
             };
             let root = root.join(&package.path);
             observe(&root.join(&package.metadata_path), &mut observed);
+            observe(&root.join("README.md"), &mut observed);
+            if let Some(overview) = &package.overview {
+                observe(&root.join(overview), &mut observed);
+            }
+            for name in crate::assembly::PACKAGE_LICENSE_FILENAMES {
+                observe(&root.join(name), &mut observed);
+            }
             if package.ecosystem == "r" {
                 observe(&root.join("NAMESPACE"), &mut observed);
                 let mut vignettes = Vec::new();
@@ -232,15 +239,10 @@ impl Observer {
                     &|_| true,
                 );
                 for name in [
-                    "README.md",
                     "NEWS.md",
                     "NEWS.Rd",
                     "NEWS",
                     "inst/CITATION",
-                    "LICENSE",
-                    "LICENSE.md",
-                    "LICENCE",
-                    "LICENCE.md",
                     "CONTRIBUTING.md",
                     "CODE_OF_CONDUCT.md",
                 ] {
@@ -634,6 +636,34 @@ mod tests {
         let before = observer.capture();
         fs::write(&asset, "after").unwrap();
         assert_ne!(observer.capture(), before);
+    }
+
+    #[test]
+    fn watches_package_readmes_and_explicit_overviews_in_every_ecosystem() {
+        for ecosystem in ["python", "julia", "rust"] {
+            let root = tempfile::tempdir().unwrap();
+            fs::create_dir(root.path().join("package")).unwrap();
+            fs::write(root.path().join("package/manifest"), "metadata").unwrap();
+            let config = root.path().join("diplodocus.yaml");
+            fs::write(&config, format!("project:\n  name: Observe\nrepositories:\n  - id: repo\n    path: .\npackages:\n  - id: pkg\n    name: Package\n    slug: package\n    ecosystem: {ecosystem}\n    repository: repo\n    path: package\n    metadata-path: manifest\n    overview: introduction.md\n    targets: []\n")).unwrap();
+            let mut observer = Observer::new(&config, &root.path().join("site")).unwrap();
+            let before = observer.capture();
+            fs::write(root.path().join("package/README.md"), "# Readme\n").unwrap();
+            assert_ne!(observer.capture(), before);
+            let before = observer.capture();
+            fs::write(
+                root.path().join("package/introduction.md"),
+                "# Introduction\n",
+            )
+            .unwrap();
+            assert_ne!(observer.capture(), before);
+            let before = observer.capture();
+            fs::write(root.path().join("package/introduction.md"), "# Updated\n").unwrap();
+            assert_ne!(observer.capture(), before);
+            let before = observer.capture();
+            fs::write(root.path().join("package/LICENSE"), "License terms\n").unwrap();
+            assert_ne!(observer.capture(), before);
+        }
     }
 
     #[test]

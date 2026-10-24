@@ -447,8 +447,14 @@ fn refresh_replaces_generated_figures_and_removes_obsolete_execution_records() {
         extract(&root, &path).unwrap();
         assert_only_snapshot(&path);
         let loaded = Snapshot::load(&path).unwrap();
-        assert_eq!(loaded.workspace().pages.len(), 1);
-        let page = loaded.workspace().pages.keys().next().unwrap().clone();
+        assert_eq!(loaded.workspace().pages.len(), 2);
+        let page = loaded
+            .workspace()
+            .pages
+            .iter()
+            .find(|(_, page)| page.title == "Figure")
+            .map(|(id, _)| id.clone())
+            .unwrap();
         assert_eq!(retained_page.get_or_insert(page.clone()), &page);
         assert!(loaded.executed_page(&page).is_some());
         assert_eq!(loaded.assets().len(), 1);

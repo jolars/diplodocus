@@ -59,6 +59,16 @@ fn extracts_compiler_public_surface_and_native_example_outcomes() {
     let workspace = snapshot.workspace();
     let package = &workspace.packages["rustdemo"];
     assert_eq!(package.version.as_deref(), Some("0.1.0"));
+    let Some(diplodocus::ir::PackageMetadata::Rust(metadata)) = &package.metadata else {
+        panic!("Cargo metadata");
+    };
+    assert_eq!(metadata.name, "rust_demo");
+    assert_eq!(metadata.version, "0.1.0");
+    assert_eq!(metadata.license.as_deref(), Some("MIT"));
+    assert_eq!(
+        metadata.description.as_deref(),
+        Some("A compiler-backed documentation fixture")
+    );
     for name in [
         "rust_demo::Counter",
         "rust_demo::Counter::new",

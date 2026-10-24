@@ -21,6 +21,7 @@ fn contextmanagers_are_static_and_private_decorators_do_not_fail_public_extracti
         repository_index: 0,
         path: root.clone(),
         metadata_path: root.join("pyproject.toml"),
+        overview: None,
         targets: vec![target.clone()],
     };
     let parsed = parse_target(&repository, &package, &target);

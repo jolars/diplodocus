@@ -1,4 +1,4 @@
-use pyproject_toml::{Project, PyProjectToml};
+use pyproject_toml::{Contact, License, Project, PyProjectToml};
 
 use crate::diagnostics::{Diagnostic, DiagnosticCode, Severity};
 use crate::ir::SourceLocation;
@@ -93,6 +93,23 @@ pub(super) fn parse(
         name: project.name,
         version: project.version?.to_string(),
         description: project.description,
+        license: project.license.and_then(|license| match license {
+            License::Spdx(value) | License::Text { text: value } => Some(value),
+            License::File { .. } => None,
+        }),
+        authors: project
+            .authors
+            .unwrap_or_default()
+            .iter()
+            .map(contact)
+            .collect(),
+        maintainers: project
+            .maintainers
+            .unwrap_or_default()
+            .iter()
+            .map(contact)
+            .collect(),
+        urls: project.urls.unwrap_or_default().into_iter().collect(),
         requires_python: project.requires_python.as_ref().map(ToString::to_string),
         dependencies: project
             .dependencies
@@ -110,6 +127,14 @@ pub(super) fn parse(
         target_version: target_version?,
         source: source.clone(),
     })
+}
+
+fn contact(person: &Contact) -> String {
+    match person {
+        Contact::NameEmail { name, email } => format!("{name} <{email}>"),
+        Contact::Name { name } => name.clone(),
+        Contact::Email { email } => email.clone(),
+    }
 }
 
 fn grammar(project: &Project) -> Option<String> {
