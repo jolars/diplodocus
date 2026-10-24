@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.8.0](https://github.com/jolars/diplodocus/compare/v0.7.0...v0.8.0) (2026-10-24)
+
+### Features
+
+- **web:** add package summaries ([`5fff829`](https://github.com/jolars/diplodocus/commit/5fff8294fa301c668ad3722fda5d1f60f6b29ae7))
+
 ## [0.7.0](https://github.com/jolars/diplodocus/compare/v0.6.0...v0.7.0) (2026-10-23)
 
 ### Features
