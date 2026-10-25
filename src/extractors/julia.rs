@@ -25,7 +25,7 @@ mod surface;
 
 pub use metadata::{JuliaMetadata, JuliaMetadataField};
 
-pub(crate) const FATOU_VERSION: &str = "0.8.1";
+pub(crate) const FATOU_VERSION: &str = env!("DIPLODOCUS_FATOU_VERSION");
 pub(crate) const CAPABILITIES: &[&str] = &[
     "diagnostics.unsupported-visible",
     "julia.declarations",

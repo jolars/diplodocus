@@ -87,7 +87,7 @@
             "end": 269
           },
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         }
       ]
@@ -232,7 +232,7 @@
             "end": 686
           },
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         },
         {
@@ -249,7 +249,7 @@
             "end": 218
           },
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         }
       ]
@@ -344,7 +344,7 @@
             "end": 3256
           },
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         },
         {
@@ -361,7 +361,7 @@
             "end": 786
           },
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         }
       ]
@@ -501,7 +501,7 @@
             "end": 223
           },
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         },
         {
@@ -518,7 +518,7 @@
             "end": 113
           },
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         }
       ]
@@ -684,7 +684,7 @@
             "end": 325
           },
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         },
         {
@@ -701,7 +701,7 @@
             "end": 155
           },
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         }
       ]
@@ -838,7 +838,7 @@
             "end": 269
           },
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         }
       ]
@@ -997,7 +997,7 @@
             "end": 1145
           },
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         },
         {
@@ -1014,7 +1014,7 @@
             "end": 320
           },
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         }
       ]
@@ -1125,7 +1125,7 @@
             "end": 217
           },
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         }
       ]
@@ -1252,7 +1252,7 @@
             "end": 686
           },
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         },
         {
@@ -1269,7 +1269,7 @@
             "end": 218
           },
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         }
       ]
@@ -1396,7 +1396,7 @@
             "end": 666
           },
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         },
         {
@@ -1413,7 +1413,7 @@
             "end": 198
           },
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         }
       ]
@@ -1553,7 +1553,7 @@
             "end": 328
           },
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         }
       ]
@@ -1667,7 +1667,7 @@
             "end": 404
           },
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         }
       ]
@@ -2112,7 +2112,7 @@
             "end": 5592
           },
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         },
         {
@@ -2129,7 +2129,7 @@
             "end": 1026
           },
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         },
         {
@@ -2146,7 +2146,7 @@
             "end": 1279
           },
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         }
       ]
@@ -2380,7 +2380,7 @@
             "end": 1026
           },
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         }
       ]
@@ -2629,7 +2629,7 @@
             "end": 1279
           },
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         }
       ]
@@ -2791,7 +2791,7 @@
             "end": 6425
           },
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         },
         {
@@ -2808,7 +2808,7 @@
             "end": 1375
           },
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         }
       ]
@@ -3006,7 +3006,7 @@
             "end": 2205
           },
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         },
         {
@@ -3023,7 +3023,7 @@
             "end": 610
           },
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         }
       ]
@@ -3285,7 +3285,7 @@
             "end": 2891
           },
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         },
         {
@@ -3302,7 +3302,7 @@
             "end": 690
           },
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         },
         {
@@ -3319,7 +3319,7 @@
             "end": 786
           },
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         }
       ]
@@ -3479,7 +3479,7 @@
             "end": 786
           },
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         }
       ]
@@ -3619,7 +3619,7 @@
             "end": 690
           },
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         }
       ]
@@ -3699,7 +3699,7 @@
           },
           "span": null,
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         },
         {
@@ -3713,7 +3713,7 @@
           },
           "span": null,
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         }
       ]
@@ -3759,7 +3759,7 @@
           },
           "span": null,
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         }
       ]
@@ -3823,7 +3823,7 @@
           },
           "span": null,
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         }
       ]
@@ -3873,7 +3873,7 @@
           },
           "span": null,
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         },
         {
@@ -3887,7 +3887,7 @@
           },
           "span": null,
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         }
       ]
@@ -4048,7 +4048,7 @@
             "end": 1283
           },
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         },
         {
@@ -4065,7 +4065,7 @@
             "end": 387
           },
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         }
       ]
@@ -4212,7 +4212,7 @@
             "end": 1400
           },
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         },
         {
@@ -4229,7 +4229,7 @@
             "end": 439
           },
           "tools": {
-            "ruff_python_parser": "0.0.17"
+            "ruff_python_parser": "0.0.18"
           }
         }
       ]
