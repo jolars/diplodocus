@@ -20,6 +20,24 @@ fn build_versions_follow_selected_edges_and_reject_ambiguity() {
     assert!(components.windows(2).all(|pair| pair[0].0 < pair[1].0));
 }
 
+#[test]
+fn parser_provenance_uses_selected_dependency_versions() {
+    let lock = include_str!("../Cargo.lock");
+    for (name, reported) in [
+        ("panache-parser", diplodocus::provenance::PANACHE_VERSION),
+        ("fatou-parser", env!("DIPLODOCUS_FATOU_VERSION")),
+        ("ruff_python_parser", env!("DIPLODOCUS_RUFF_VERSION")),
+        ("ruff_python_ast", env!("DIPLODOCUS_RUFF_VERSION")),
+        ("ruff_text_size", env!("DIPLODOCUS_RUFF_VERSION")),
+    ] {
+        assert_eq!(
+            build_metadata::selected_version(lock, env!("CARGO_PKG_VERSION"), name).unwrap(),
+            reported,
+            "incorrect provenance for {name}"
+        );
+    }
+}
+
 fn fixture() -> serde_json::Value {
     serde_json::from_str(include_str!(
         "../docs/spikes/fixtures/execution-cache-key-v1.json"

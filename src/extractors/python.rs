@@ -30,7 +30,7 @@ pub mod surface;
 pub use extraction::{PythonExtraction, extract_target};
 pub use model::*;
 
-const RUFF_VERSION: &str = "0.0.17";
+const RUFF_VERSION: &str = env!("DIPLODOCUS_RUFF_VERSION");
 
 /// Parse one explicitly selected Python module file or package directory.
 ///

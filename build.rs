@@ -21,6 +21,15 @@ fn main() {
     }
     let lock = std::fs::read_to_string("Cargo.lock").expect("read locked component graph");
     let version = std::env::var("CARGO_PKG_VERSION").expect("Cargo package version");
+    for (variable, name) in [
+        ("DIPLODOCUS_PANACHE_VERSION", "panache-parser"),
+        ("DIPLODOCUS_RUFF_VERSION", "ruff_python_parser"),
+        ("DIPLODOCUS_FATOU_VERSION", "fatou-parser"),
+    ] {
+        let selected = build_metadata::selected_version(&lock, &version, name)
+            .expect("unambiguous locked parser version");
+        println!("cargo:rustc-env={variable}={selected}");
+    }
     let components = build_metadata::components(&lock, &version)
         .expect("unambiguous locked execution components");
     let mut generated = String::from("pub const COMPONENTS: &[(&str, &str, &str)] = &[\n");

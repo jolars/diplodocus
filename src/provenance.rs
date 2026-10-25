@@ -28,8 +28,8 @@ mod observations;
 pub use fingerprints::fingerprint_bytes;
 pub use observations::*;
 
-/// Exact in-process Panache dependency version, checked against the manifest.
-pub const PANACHE_VERSION: &str = "0.33.0";
+/// Exact in-process Panache dependency version selected from the lockfile.
+pub const PANACHE_VERSION: &str = env!("DIPLODOCUS_PANACHE_VERSION");
 
 /// Component identities available to the authored adapter in this build.
 ///
