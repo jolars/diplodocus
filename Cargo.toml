@@ -49,9 +49,9 @@ regex = "1.12"
 roxmltree = "=0.21.1"
 rowan = "=0.17.0"
 rusqlite = { version = "=0.40.2", default-features = false, features = ["bundled"] }
-ruff_python_ast = "=0.0.18"
-ruff_python_parser = "=0.0.18"
-ruff_text_size = "=0.0.18"
+ruff_python_ast = "=0.0.19"
+ruff_python_parser = "=0.0.19"
+ruff_text_size = "=0.0.19"
 rustdoc-types = "=0.61.0"
 serde = { version = "1.0", features = ["derive"] }
 semver = "=1.0.28"
