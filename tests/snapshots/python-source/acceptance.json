@@ -3957,7 +3957,7 @@
         "ruff_python_ast": {
           "role": "python-ast",
           "settings": {},
-          "version": "0.0.18"
+          "version": "0.0.19"
         },
         "ruff_python_parser": {
           "role": "python-syntax",
@@ -3972,12 +3972,12 @@
             "target_version": "3.11",
             "target_version_origin": "metadata"
           },
-          "version": "0.0.18"
+          "version": "0.0.19"
         },
         "ruff_text_size": {
           "role": "source-ranges",
           "settings": {},
-          "version": "0.0.18"
+          "version": "0.0.19"
         }
       },
       "target": {
@@ -3991,9 +3991,9 @@
       "diplodocus": "[DIPLODOCUS_VERSION]",
       "pyproject-toml": "0.13.7",
       "python": "[DIPLODOCUS_VERSION]",
-      "ruff_python_ast": "0.0.18",
-      "ruff_python_parser": "0.0.18",
-      "ruff_text_size": "0.0.18"
+      "ruff_python_ast": "0.0.19",
+      "ruff_python_parser": "0.0.19",
+      "ruff_text_size": "0.0.19"
     }
   }
 }
