@@ -120,3 +120,38 @@ test("client navigation respects keyboard scrolling while an image is pending", 
     image.release();
   }
 });
+
+test("scrolling defers history writes until the viewport settles", async ({ page }) => {
+  await page.goto(guide);
+  const writes = await page.evaluate(async () => {
+    const replaceState = history.replaceState;
+    let count = 0;
+    history.replaceState = function (...args) {
+      count++;
+      return replaceState.apply(this, args);
+    };
+    for (let frame = 1; frame <= 20; frame++) {
+      window.scrollTo(0, frame * 10);
+      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+    }
+    history.replaceState = replaceState;
+    return count;
+  });
+  expect(writes).toBe(0);
+  await expect.poll(() => page.evaluate(() => history.state.diplodocus.scroll[1])).toBe(200);
+});
+
+test("Forward restores a scroll made immediately before Back", async ({ page }) => {
+  await page.goto("/");
+  await follow(page, guide);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Comparing predictions");
+  await page.evaluate(() => {
+    window.scrollTo(0, 200);
+    window.dispatchEvent(new Event("scroll"));
+    history.back();
+  });
+  await expect(page.locator("body")).toHaveAttribute("data-layout", "home");
+  await page.goForward({ waitUntil: "commit" });
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Comparing predictions");
+  await expect.poll(() => page.evaluate(() => scrollY)).toBe(200);
+});

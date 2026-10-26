@@ -118,6 +118,7 @@
   rememberAssets(document);
   const emit = (name, detail) => document.dispatchEvent(new CustomEvent(`diplodocus:${name}`, { detail }));
   const sidebarStates = new Map();
+  const scrollPositions = new Map();
   let serial = 0;
   let sequence = 0;
   let controller;
@@ -130,6 +131,7 @@
     const state = { ...history.state, diplodocus: value };
     if (push) history.pushState(state, '', url);
     else history.replaceState(state, '', url);
+    scrollPositions.set(value.id, value);
     mountedEntry = value;
     mountedUrl = new URL(url);
   };
@@ -147,13 +149,14 @@
     if (pendingPosition || location.href !== mountedUrl.href || entry(history.state)?.id !== mountedEntry.id) return;
     writeEntry(viewportEntry(), location.href);
   };
-  let scrollFrame;
+  let scrollTimer;
   const recordScroll = () => {
-    if (scrollFrame) return;
-    scrollFrame = requestAnimationFrame(() => {
-      scrollFrame = undefined;
-      recordPosition();
-    });
+    // History writes notify the browser process; keep them out of active scrolling.
+    if (!pendingPosition && location.href === mountedUrl.href && entry(history.state)?.id === mountedEntry.id) {
+      scrollPositions.set(mountedEntry.id, viewportEntry());
+    }
+    clearTimeout(scrollTimer);
+    scrollTimer = setTimeout(recordPosition, 120);
   };
   window.addEventListener('scroll', recordScroll, { passive: true });
   disclosure.addEventListener('scroll', recordScroll, { passive: true });
@@ -296,7 +299,8 @@
     const signal = controller.signal;
     if (!traversal && !positioning) recordPosition();
     const current = () => request === sequence;
-    const saved = traversal ? entry(state) : undefined;
+    const historyEntry = traversal ? entry(state) : undefined;
+    const saved = scrollPositions.get(historyEntry?.id) || historyEntry;
     try {
       if (documentKey(destination) === documentKey(mountedUrl)) {
         if (traversal) writeEntry(saved || newEntry(), destination.href);
