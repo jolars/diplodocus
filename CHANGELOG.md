@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.9.0](https://github.com/jolars/diplodocus/compare/v0.8.0...v0.9.0) (2026-10-27)
+
+### Features
+
+- render math in GFM documentation ([`1bc0793`](https://github.com/jolars/diplodocus/commit/1bc07934e586ecdf46fe48e137400e033ba9ae03))
+
+### Bug Fixes
+
+- **security:** override miniflare's undici dep ([`adbf07a`](https://github.com/jolars/diplodocus/commit/adbf07a6b6d39d3938f2ffd6558c661dbbefc507))
+
 ## [0.8.0](https://github.com/jolars/diplodocus/compare/v0.7.0...v0.8.0) (2026-10-26)
 
 ### Features
