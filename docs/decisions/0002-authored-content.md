@@ -44,7 +44,7 @@ to the command path and production tests.
 ### Execution authority and lifecycle
 
 Use engine `jupyter` behind one Diplodocus-owned adapter, with
-`jupyter-zmq-client = 1.0.1`, `jupyter-protocol = 2.0.2`, and the Tokio version
+`jupyter-zmq-client = 2.0.0`, `jupyter-protocol = 2.0.3`, and the Tokio version
 resolved in [Cargo.lock](../../Cargo.lock). The protocol crate supplies wire
 types; the ZMQ client supplies transport and launch-command facilities.
 Diplodocus owns discovery policy, the process, request matching, output
