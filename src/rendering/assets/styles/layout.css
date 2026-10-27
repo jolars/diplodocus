@@ -17,7 +17,7 @@ header {
   border-bottom: 1px solid var(--border);
   background: var(--background);
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(12rem, 18rem);
+  grid-template-columns: minmax(0, 1fr) minmax(12rem, 22rem);
   gap: 2.5rem;
   align-items: center;
 }
@@ -52,7 +52,7 @@ main {
 
 @media (min-width: 761px) {
   body {
-    background: linear-gradient(to right, var(--sidebar-background) calc(var(--outer-gutter) + var(--sidebar-width)), var(--background) 0);
+    background-image: linear-gradient(to right, var(--sidebar-background) calc(var(--outer-gutter) + var(--sidebar-width)), var(--background) 0);
   }
 
   header {

@@ -1,36 +1,44 @@
 :root {
-  color-scheme: light;
-  --ink: #202c38;
-  --muted: #4d606b;
-  --link: #165c7c;
-  --border: #d6dedc;
-  --surface: #fafbf9;
-  --sidebar-background: #f6f6f7;
-  --selected: #e8f0ee;
-  --background: white;
-  --focus-ring: #a04605;
-  --code-background: #f6f6f7;
-  --inline-code-background: rgba(142, 150, 170, .14);
-  --callout-border: #688b84;
-  --warning-border: #a04605;
-  --search-background: #edf1f0;
-  --search-hover-border: #bbc9c5;
-  --popup-shadow-color: #202c381a;
-  --backdrop: #202c3866;
-  --accent: #30776b;
-  --accent-border: #a8c4bc;
-  --accent-background: #2d7064;
-  --accent-hover-background: #225b51;
-  --on-accent: white;
-  --feature-hover-background: #f0f4f1;
-  --artwork-glow: #e3efe6;
-  --artwork-glow-fade: #f1f6eb70;
+  color-scheme: light dark;
+  --ink: light-dark(#202c38, #e6edf3);
+  --muted: light-dark(#4d606b, #a5b3bd);
+  --link: light-dark(#165c7c, #79c7e3);
+  --border: light-dark(#d6dedc, #34434c);
+  --surface: light-dark(#fafbf9, #202b33);
+  --sidebar-background: light-dark(#f6f6f7, #182128);
+  --selected: light-dark(#e8f0ee, #293e43);
+  --background: light-dark(white, #11191f);
+  --focus-ring: light-dark(#a04605, #f5b36b);
+  --code-background: light-dark(#f6f6f7, #0d1117);
+  --inline-code-background: light-dark(rgba(142, 150, 170, .14), rgba(142, 150, 170, .18));
+  --callout-border: light-dark(#688b84, #8db8ad);
+  --warning-border: light-dark(#a04605, #f5b36b);
+  --search-background: light-dark(#edf1f0, #202d34);
+  --search-hover-border: light-dark(#bbc9c5, #66837b);
+  --popup-shadow-color: light-dark(#202c381a, #00000066);
+  --backdrop: light-dark(#202c3866, #00000099);
+  --accent: light-dark(#30776b, #90cfbe);
+  --accent-border: light-dark(#a8c4bc, #557e71);
+  --accent-background: light-dark(#2d7064, #90cfbe);
+  --accent-hover-background: light-dark(#225b51, #aaddce);
+  --on-accent: light-dark(white, #10251e);
+  --feature-hover-background: light-dark(#f0f4f1, #24362f);
+  --artwork-glow: light-dark(#e3efe6, #1d3d33);
+  --artwork-glow-fade: light-dark(#f1f6eb70, #203d3070);
   --header-height: 74px;
   --layout-width: 96rem;
   --page-gutter: 2rem;
   --sidebar-width: 16.2rem;
   --outer-gutter: max(var(--page-gutter), calc((100% - var(--layout-width)) / 2 + var(--page-gutter)));
   --font-code: ui-monospace, "SFMono-Regular", Menlo, Consolas, "DejaVu Sans Mono", monospace;
+}
+
+:root[data-theme=light] {
+  color-scheme: light;
+}
+
+:root[data-theme=dark] {
+  color-scheme: dark;
 }
 
 @media (max-width: 760px) {

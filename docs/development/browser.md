@@ -36,6 +36,13 @@ interaction states, shadows, and gradients. Keep colors with different roles
 independent even when their light palette values match. Syntax highlighting
 keeps its palettes in `src/rendering/assets/highlighting/`.
 
+The palette uses `light-dark()` colors with `color-scheme: light dark` to follow
+the system preference, including without JavaScript. Explicit choices set
+`data-theme="light"` or `data-theme="dark"` on the document root, which overrides
+the color scheme. The inline `src/rendering/theme.js` script restores the
+browser's saved choice before loading CSS, synchronizes the desktop and mobile
+selectors, and shares changes between tabs. **System** removes the saved choice.
+
 The renderer emits one `assets/site.css` with syntax highlighting appended.
 Cargo tracks the included files, so the preview recompiles when they change.
 
@@ -69,7 +76,8 @@ JavaScript and console errors fail tests, except the browser's automatic request
 for an undeclared `/favicon.ico`.
 
 The header contains the Tiny Stats logo and title, section links, search, and
-repository links. On desktop, the logo and title sit above the gray sidebar.
+repository links. The **Theme** selector sits in the header on desktop and in
+the navigation menu on phones. On desktop, the logo and title sit above the sidebar.
 On phones, they sit at the left of the navbar, and search expands from a
 magnifying glass when tapped. Branding stays pinned while the sidebar links
 scroll. A hamburger menu in the upper-right corner holds the section and
@@ -79,7 +87,7 @@ prefix.
 
 On phones, the staggered-lines **Menu** control and the right-aligned
 **On this page** control share a row below the navbar. As the upper navbar
-scrolls away, this row stays at the top with a divider beneath it. **Menu** opens a white
+scrolls away, this row stays at the top with a divider beneath it. **Menu** opens a
 drawer from the left over a dimmed page without moving the content. The drawer
 keeps keyboard focus inside it and closes through its close button, Escape,
 a tap on the backdrop, or navigation.

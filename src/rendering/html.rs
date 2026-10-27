@@ -79,12 +79,15 @@ fn navigation_shell_fingerprint(
     super::navigation::sections(&mut shell, site, "index.html", "desktop-sections");
     super::navigation::sections(&mut shell, site, "index.html", "mobile-sections");
     super::navigation::repositories(&mut shell, site);
+    super::navigation::theme_control(&mut shell);
     brand(&mut shell, site, "index.html", images)?;
     super::footer::render(&mut shell, site);
     // A retained document must not combine runtimes or styles from different builds.
+    let syntax_style = super::highlighting::stylesheet();
     for source in [
         STYLE,
-        super::highlighting::stylesheet(),
+        &syntax_style,
+        THEME_SCRIPT,
         NAV_SCRIPT,
         SEARCH,
         include_str!("code.js"),
@@ -202,8 +205,8 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
             super::package_metadata::is_overview(site, route, page.owner.as_deref());
         let mut html = String::new();
         if standalone {
-            html = String::from(
-                "<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><script>document.documentElement.classList.add('js')</script>",
+            html = format!(
+                "<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><script>{THEME_SCRIPT}</script>",
             );
             if let Some(description) = &site.presentation.description {
                 write!(
@@ -237,9 +240,11 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
             brand(&mut html, site, route, &images)?;
             super::navigation::sections(&mut html, site, route, "desktop-sections");
             html.push_str("<div class=\"header-actions\"><form class=\"site-search\" role=\"search\"><label class=\"visually-hidden\" for=\"search\">Search documentation</label><div class=\"search-control\"><svg class=\"search-icon\" aria-hidden=\"true\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><circle cx=\"10.5\" cy=\"10.5\" r=\"6.5\"></circle><path d=\"m16 16 4 4\"></path></svg><input id=\"search\" type=\"search\" placeholder=\"Search\" autocomplete=\"off\" aria-controls=\"search-results\"></div><ul id=\"search-results\" aria-live=\"polite\"></ul></form>");
+            super::navigation::theme_control(&mut html);
             super::navigation::repositories(&mut html, site);
             html.push_str("<details class=\"mobile-menu\"><summary aria-label=\"Navigation menu\"><svg aria-hidden=\"true\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M4 6h16M4 12h16M4 18h16\"></path></svg></summary><div class=\"mobile-menu-panel\">");
             super::navigation::sections(&mut html, site, route, "mobile-sections");
+            super::navigation::theme_control(&mut html);
             super::navigation::repositories(&mut html, site);
             html.push_str("</div></details></div>");
             html.push_str("</header><div class=\"layout\"><nav aria-label=\"Documentation\">");
@@ -1948,4 +1953,5 @@ const STYLE: &str = concat!(
     include_str!("assets/styles/home.css"),
 );
 const NAV_SCRIPT: &str = include_str!("navigation.js");
+const THEME_SCRIPT: &str = include_str!("theme.js");
 const SEARCH: &str = include_str!("search.js");

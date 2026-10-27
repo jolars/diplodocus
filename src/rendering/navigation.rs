@@ -8,6 +8,10 @@ use crate::ir::{ItemReference, Package};
 use crate::site::Site;
 use crate::validation::DocumentIdentity;
 
+pub(super) fn theme_control(html: &mut String) {
+    html.push_str("<label class=\"theme-control\"><span>Theme</span><select data-theme-select aria-label=\"Color theme\" title=\"Color theme\"><option value=\"system\">System</option><option value=\"light\">Light</option><option value=\"dark\">Dark</option></select></label>");
+}
+
 pub(super) fn repositories(html: &mut String, site: &Site<'_>) {
     let mut seen = BTreeSet::new();
     for (id, repository) in &site.workspace.repositories {

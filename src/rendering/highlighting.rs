@@ -47,31 +47,46 @@ impl Highlighter {
     }
 }
 
-pub(super) fn stylesheet() -> &'static str {
-    LIGHT_STYLE
+pub(super) fn stylesheet() -> String {
+    let mut css = LIGHT_STYLE.to_owned();
+    // Keep the original specificity so content styles can still set code backgrounds.
+    css.push_str(&scoped_stylesheet(
+        ":where(:root[data-theme=dark])",
+        DARK_STYLE,
+    ));
+    css.push_str("@media (prefers-color-scheme: dark) {\n");
+    css.push_str(&scoped_stylesheet(
+        ":where(:root:not([data-theme=light]))",
+        DARK_STYLE,
+    ));
+    css.push_str("}\n");
+    css
 }
 
 pub(super) fn fragment_stylesheet() -> String {
+    format!(
+        "{}{}",
+        scoped_stylesheet(".diplodocus-content", LIGHT_STYLE),
+        scoped_stylesheet(".dark .diplodocus-content", DARK_STYLE),
+    )
+}
+
+fn scoped_stylesheet(selector: &str, rules: &str) -> String {
     let mut css = String::new();
-    for (selector, rules) in [
-        (".diplodocus-content", LIGHT_STYLE),
-        (".dark .diplodocus-content", DARK_STYLE),
-    ] {
-        // Scope every selector, including comma-separated syntax alternatives,
-        // because a host may retain this stylesheet across client navigation.
-        for rule in rules.split_inclusive('}') {
-            if let Some((selectors, body)) = rule.split_once('{') {
-                css.push_str(
-                    &selectors
-                        .split(',')
-                        .map(|part| format!("{selector} {}", part.trim()))
-                        .collect::<Vec<_>>()
-                        .join(",\n"),
-                );
-                css.push_str(" {");
-                css.push_str(body);
-                css.push('\n');
-            }
+    // Scope every selector, including comma-separated syntax alternatives,
+    // because a host may retain this stylesheet across client navigation.
+    for rule in rules.split_inclusive('}') {
+        if let Some((selectors, body)) = rule.split_once('{') {
+            css.push_str(
+                &selectors
+                    .split(',')
+                    .map(|part| format!("{selector} {}", part.trim()))
+                    .collect::<Vec<_>>()
+                    .join(",\n"),
+            );
+            css.push_str(" {");
+            css.push_str(body);
+            css.push('\n');
         }
     }
     css
@@ -112,7 +127,7 @@ mod tests {
             0.2126 * channel(color.r) + 0.7152 * channel(color.g) + 0.0722 * channel(color.b)
         }
 
-        for (name, css) in [("light", stylesheet()), ("dark", DARK_STYLE)] {
+        for (name, css) in [("light", LIGHT_STYLE), ("dark", DARK_STYLE)] {
             let background = color(css, "background-color").unwrap();
             let foreground = color(css, "color").unwrap();
             if name == "light" {

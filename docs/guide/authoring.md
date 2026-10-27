@@ -92,7 +92,7 @@ in `#|` lines; the latter take precedence.
 
 Add a language label such as `python`, `r`, `julia`, or `rust` to a code fence to enable
 syntax highlighting. Diplodocus also highlights visible QMD cell source and API
-signature blocks. Highlighting uses a built-in light theme and works without
+signature blocks. Highlighting follows the site's light or dark theme and works without
 JavaScript. Unlabeled fences, unknown languages, and `text` fences remain plain.
 Plain-text execution output and errors also remain unhighlighted.
 

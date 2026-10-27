@@ -47,6 +47,195 @@ async function fitsViewport(page: Page) {
   )).toBe(true);
 }
 
+async function chooseTheme(page: Page, info: TestInfo, value: string) {
+  if (info.project.name === "mobile") await page.locator(".mobile-menu > summary").click();
+  await page.getByRole("combobox", { name: "Color theme" }).selectOption(value);
+  if (info.project.name === "mobile") await page.keyboard.press("Escape");
+}
+
+test("color theme follows the system and explicit choices override it", async ({ page }, info) => {
+  await page.goto("/guides/comparing-predictions.html");
+  const root = page.locator("html");
+  const keyword = page.locator("main .syntax-keyword").first();
+  await expect(root).toHaveAttribute("data-theme", "system");
+  await expect(page.locator("body")).toHaveCSS("background-color", "rgb(255, 255, 255)");
+  await expect(keyword).toHaveCSS("color", "rgb(207, 34, 46)");
+  await page.emulateMedia({ colorScheme: "dark" });
+  await expect(page.locator("body")).toHaveCSS("background-color", "rgb(17, 25, 31)");
+  await expect(keyword).toHaveCSS("color", "rgb(255, 123, 114)");
+  await chooseTheme(page, info, "light");
+  await expect(root).toHaveCSS("color-scheme", "light");
+  await expect(page.locator("body")).toHaveCSS("background-color", "rgb(255, 255, 255)");
+  await expect(keyword).toHaveCSS("color", "rgb(207, 34, 46)");
+  await page.emulateMedia({ colorScheme: "light" });
+  await chooseTheme(page, info, "dark");
+  await expect(root).toHaveCSS("color-scheme", "dark");
+  await expect(keyword).toHaveCSS("color", "rgb(255, 123, 114)");
+  await page.emulateMedia({ colorScheme: "dark" });
+  await page.emulateMedia({ colorScheme: "light" });
+  await expect(root).toHaveAttribute("data-theme", "dark");
+  await chooseTheme(page, info, "system");
+  expect(await page.evaluate(() => localStorage.getItem("diplodocus-theme"))).toBeNull();
+  await expect(page.locator("body")).toHaveCSS("background-color", "rgb(255, 255, 255)");
+  await page.emulateMedia({ colorScheme: "dark" });
+  await expect(keyword).toHaveCSS("color", "rgb(255, 123, 114)");
+});
+
+test("color theme selector works from the keyboard", async ({ page }, info) => {
+  await page.goto("/");
+  if (info.project.name === "mobile") {
+    await page.locator(".mobile-menu > summary").focus();
+    await page.keyboard.press("Enter");
+  }
+  const select = page.getByRole("combobox", { name: "Color theme" });
+  await select.focus();
+  await select.press("End");
+  await select.press("Enter");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await select.press("Home");
+  await select.press("Enter");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "system");
+});
+
+test("color theme persists through client navigation and applies before styles load", async ({ page }, info) => {
+  await page.goto("/");
+  await chooseTheme(page, info, "dark");
+  const documentIdentity = await page.evaluateHandle(() => document);
+  await page.getByRole("link", { name: "Explore the guide", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Tiny Stats");
+  expect(await documentIdentity.evaluate(original => original === document)).toBe(true);
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  let release!: () => void;
+  let requested!: () => void;
+  const ready = new Promise<void>(resolve => { release = resolve; });
+  const pending = new Promise<void>(resolve => { requested = resolve; });
+  await page.route("**/assets/site.css", async route => {
+    requested();
+    await ready;
+    await route.continue();
+  });
+  const navigation = page.reload();
+  try {
+    await pending;
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  } finally {
+    release();
+    await navigation;
+  }
+  for (const select of await page.locator("[data-theme-select]").all()) {
+    await expect(select).toHaveValue("dark");
+  }
+  await expect(page.locator("body")).toHaveCSS("background-color", "rgb(17, 25, 31)");
+});
+
+test("color theme synchronizes between tabs and rejects invalid saved values", async ({ page, context }, info) => {
+  await page.goto("/");
+  const other = await context.newPage();
+  try {
+    await other.goto(page.url());
+    await chooseTheme(page, info, "dark");
+    await expect(other.locator("html")).toHaveAttribute("data-theme", "dark");
+    for (const select of await other.locator("[data-theme-select]").all()) {
+      await expect(select).toHaveValue("dark");
+    }
+    await other.evaluate(() => localStorage.setItem("diplodocus-theme", "invalid"));
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "system");
+    await page.reload();
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "system");
+    await chooseTheme(page, info, "dark");
+    await other.evaluate(() => localStorage.clear());
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "system");
+  } finally {
+    await other.close();
+  }
+});
+
+test("color theme remains usable when browser storage is unavailable", async ({ page }, info) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(window, "localStorage", {
+      get() { throw new DOMException("Storage blocked", "SecurityError"); },
+    });
+  });
+  await page.emulateMedia({ colorScheme: "dark" });
+  await page.goto("/");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "system");
+  await chooseTheme(page, info, "light");
+  await expect(page.locator("body")).toHaveCSS("background-color", "rgb(255, 255, 255)");
+  await chooseTheme(page, info, "dark");
+  await expect(page.locator("body")).toHaveCSS("background-color", "rgb(17, 25, 31)");
+});
+
+test("color theme follows the system without JavaScript", async ({ browser, baseURL }, info) => {
+  const context = await browser.newContext({
+    javaScriptEnabled: false, colorScheme: "dark", baseURL, viewport: info.project.use.viewport,
+  });
+  const page = await context.newPage();
+  try {
+    await page.goto("/guides/comparing-predictions.html");
+    await expect(page.locator("body")).toHaveCSS("background-color", "rgb(17, 25, 31)");
+    await expect(page.locator("main .syntax-keyword").first()).toHaveCSS("color", "rgb(255, 123, 114)");
+    for (const select of await page.locator("[data-theme-select]").all()) await expect(select).toBeHidden();
+    await capture(page, info, "dark-no-js", false);
+    await page.emulateMedia({ colorScheme: "light" });
+    await expect(page.locator("body")).toHaveCSS("background-color", "rgb(255, 255, 255)");
+    await expect(page.locator("main .syntax-keyword").first()).toHaveCSS("color", "rgb(207, 34, 46)");
+  } finally {
+    await context.close();
+  }
+});
+
+test("color theme covers landing pages, search, code controls, and mobile menus", async ({ page }, info) => {
+  await page.goto("/");
+  await chooseTheme(page, info, "dark");
+  await fitsViewport(page);
+  await expect(page.locator(".home-action").first()).toHaveCSS("color", "rgb(16, 37, 30)");
+  // Measure contrast after the action's existing background transition finishes.
+  await expect(page.locator(".home-action").first()).toHaveCSS("background-color", "rgb(144, 207, 190)");
+  const contrast = await page.evaluate(() => {
+    const luminance = (color: string) => {
+      const [r, g, b] = color.match(/[\d.]+/g)!.slice(0, 3).map(value => {
+        const channel = Number(value) / 255;
+        return channel <= .04045 ? channel / 12.92 : ((channel + .055) / 1.055) ** 2.4;
+      });
+      return .2126 * r + .7152 * g + .0722 * b;
+    };
+    return [
+      [".home-name", "body"],
+      [".home-description", "body"],
+      [".home-content a", "body"],
+      [".home-action", ".home-action"],
+      [".home-feature p", ".home-feature"],
+    ].map(([text, surface]) => {
+      const foreground = luminance(getComputedStyle(document.querySelector(text)!).color);
+      const background = luminance(getComputedStyle(document.querySelector(surface)!).backgroundColor);
+      return { text, ratio: (Math.max(foreground, background) + .05) / (Math.min(foreground, background) + .05) };
+    });
+  });
+  for (const { text, ratio } of contrast) expect(ratio, `${text} contrast`).toBeGreaterThanOrEqual(4.5);
+  await capture(page, info, "dark-home");
+  await page.goto("/guides/comparing-predictions.html");
+  await expect(page.locator(".code-block").first()).toHaveCSS("background-color", "rgb(13, 17, 23)");
+  await expect(page.locator(".code-toolbar button").first()).toHaveCSS("background-color", "rgb(17, 25, 31)");
+  await capture(page, info, "dark-guide");
+  await page.getByRole("searchbox").fill("mean_squared_error");
+  await expect(page.locator("#search-results a").first()).toBeVisible();
+  await expect(page.locator("#search-results")).toHaveCSS("background-color", "rgb(17, 25, 31)");
+  await capture(page, info, "dark-search", true, false);
+  await page.getByRole("searchbox").fill("");
+  await page.getByRole("searchbox").blur();
+  if (info.project.name === "mobile") {
+    await page.locator(".mobile-menu > summary").click();
+    await expect(page.getByRole("combobox", { name: "Color theme" })).toHaveValue("dark");
+    await capture(page, info, "dark-mobile-menu", true, false);
+    await page.keyboard.press("Escape");
+    await page.locator(".nav-disclosure > summary").click();
+    await expect(page.getByRole("dialog")).toHaveCSS("background-color", "rgb(17, 25, 31)");
+    await capture(page, info, "dark-drawer", true, false);
+    await page.keyboard.press("Escape");
+  }
+  await fitsViewport(page);
+});
+
 test("code chunks and API signatures stay highlighted without JavaScript", async ({ browser, baseURL }, info) => {
   const context = await browser.newContext({ javaScriptEnabled: false, baseURL, viewport: info.project.use.viewport });
   const page = await context.newPage();

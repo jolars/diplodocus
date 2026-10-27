@@ -168,7 +168,11 @@ presentation:
     built-with: true
 ```
 
-The title defaults to `project.name`. Diplodocus uses its built-in theme.
+The title defaults to `project.name`. Diplodocus uses its built-in theme, which
+follows the visitor's system color preference. Visitors can choose **System**,
+**Light**, or **Dark** in the header's **Theme** selector, or in the navigation
+menu on phones. The browser remembers explicit choices across visits. With
+JavaScript disabled, the theme follows the system preference.
 Generated sites and portable snapshots keep the presentation metadata, so
 `generate` does not need the original configuration. Read about [portable
 snapshots](snapshots.md) before separating extraction and generation.
