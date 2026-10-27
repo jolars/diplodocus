@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.10.0](https://github.com/jolars/diplodocus/compare/v0.9.0...v0.10.0) (2026-10-27)
+
+### Features
+
+- support single-file content collections ([`c7623d6`](https://github.com/jolars/diplodocus/commit/c7623d619d2e8ccde43f85b8cf83a9972f627108))
+- add light and dark theme selection ([`1cfe52f`](https://github.com/jolars/diplodocus/commit/1cfe52fc9a200bc32d259b2beb97ecd0a6cd3718))
+- support full-width page layouts ([`a46b2d3`](https://github.com/jolars/diplodocus/commit/a46b2d35d1d8bae1fbac16917a7c22951ce420f7))
+
 ## [0.9.0](https://github.com/jolars/diplodocus/compare/v0.8.0...v0.9.0) (2026-10-27)
 
 ### Features
