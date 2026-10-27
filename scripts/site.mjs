@@ -58,6 +58,7 @@ if (mode === "serve-test") {
     }
     const configuration = join(workspace, "diplodocus.yaml");
     cpSync(join(root, "tests/fixtures/tabsets.md"), join(workspace, "docs/tabsets.md"));
+    cpSync(join(root, "tests/fixtures/full-layout.md"), join(workspace, "docs/full-layout.md"));
     writeFileSync(configuration, readFileSync(configuration, "utf8")
       .replace(/^    url: "https:\/\/github\.com\/jolars\/diplodocus"\n/m, '$&    revision: "main"\n'));
     mkdirSync(join(workspace, "spec"));

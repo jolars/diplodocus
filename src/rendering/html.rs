@@ -119,6 +119,7 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
     let highlighter = super::highlighting::Highlighter::new();
     for (route, page) in &site.pages {
         let home = site.home(route);
+        let full_layout = page.has_full_layout();
         let markdown_path = format!(
             "{}.md",
             route.strip_suffix(".html").ok_or(SiteError::Evidence)?
@@ -231,7 +232,7 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                 escape(&site.url(route, &markdown_path))
             )
             .unwrap();
-            write!(html, "</head><body data-diplodocus-navigation=\"1\" data-diplodocus-shell=\"{}\" data-layout=\"{}\"><a class=\"skip-link\" href=\"#main\">Skip to content</a>", shell_fingerprint.as_deref().expect("standalone shell fingerprint"), if home.is_some() { "home" } else { "docs" }).unwrap();
+            write!(html, "</head><body data-diplodocus-navigation=\"1\" data-diplodocus-shell=\"{}\" data-layout=\"{}\"><a class=\"skip-link\" href=\"#main\">Skip to content</a>", shell_fingerprint.as_deref().expect("standalone shell fingerprint"), if home.is_some() { "home" } else if full_layout { "full" } else { "docs" }).unwrap();
             html.push_str("<header>");
             brand(&mut html, site, route, &images)?;
             super::navigation::sections(&mut html, site, route, "desktop-sections");
@@ -674,7 +675,7 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
         );
         if standalone {
             html.push_str("</main>");
-            if home.is_none() {
+            if home.is_none() && !full_layout {
                 html.push_str(&renderer.page_navigation());
             }
             html.push_str("</div></div>");

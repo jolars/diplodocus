@@ -139,6 +139,60 @@ for (const [path, title, name] of [
   });
 }
 
+test("full layout shares the landing container and restores documentation navigation", async ({ page }, info) => {
+  await page.goto("/");
+  const homeBounds = (await page.locator("main").boundingBox())!;
+  const brandBounds = await page.locator(".brand").boundingBox();
+  await page.goto("/full-layout.html");
+  await expect(page.locator("body")).toHaveAttribute("data-layout", "full");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Project overview");
+  await expect(page.locator(".layout > nav")).toBeHidden();
+  await expect(page.locator(".nav-disclosure")).toBeHidden();
+  await expect(page.locator(".page-toc")).toHaveCount(0);
+  await expect(page.locator(".home-hero")).toHaveCount(0);
+  const fullBounds = (await page.locator("main").boundingBox())!;
+  expect(fullBounds.x).toBeCloseTo(homeBounds.x, 1);
+  expect(fullBounds.width).toBeCloseTo(homeBounds.width, 1);
+  expect(await page.locator(".brand").boundingBox()).toEqual(brandBounds);
+  await fitsViewport(page);
+  await capture(page, info, "full-layout");
+  const shell = await page.evaluateHandle(() => ({ document, header: document.querySelector("header") }));
+  await page.getByRole("main").getByRole("link", { name: "Read the guide" }).click();
+  await expect(page.locator("body")).toHaveAttribute("data-layout", "docs");
+  await expect(page.locator(".page-toc")).toBeVisible();
+  await openNavigation(page, info);
+  await page.getByRole("navigation", { name: "Documentation" }).getByRole("link", { name: "Project overview", exact: true }).click();
+  await expect(page.locator("body")).toHaveAttribute("data-layout", "full");
+  await expect(page.locator(".layout > nav")).toBeHidden();
+  await expect(page.locator(".page-toc")).toHaveCount(0);
+  await page.goBack();
+  await expect(page.locator("body")).toHaveAttribute("data-layout", "docs");
+  await page.goForward();
+  await expect(page.locator("body")).toHaveAttribute("data-layout", "full");
+  expect(await shell.evaluate(value => value.document === document && value.header === document.querySelector("header"))).toBe(true);
+  await shell.dispose();
+  await page.getByRole("main").getByRole("link", { name: "landing page" }).click();
+  await expect(page.locator("body")).toHaveAttribute("data-layout", "home");
+  await expect(page.locator(".layout > nav")).toBeHidden();
+});
+
+test("full layout works without JavaScript", async ({ browser, baseURL }, info) => {
+  const context = await browser.newContext({ javaScriptEnabled: false, baseURL, viewport: info.project.use.viewport });
+  try {
+    const page = await context.newPage();
+    await page.goto("/full-layout.html");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Project overview");
+    await expect(page.locator(".layout > nav")).toBeHidden();
+    await expect(page.locator(".page-toc")).toHaveCount(0);
+    await fitsViewport(page);
+    await page.getByRole("main").getByRole("link", { name: "Read the guide" }).click();
+    await expect(page.locator("body")).toHaveAttribute("data-layout", "docs");
+    await expect(page.locator(".nav-disclosure")).toBeVisible();
+  } finally {
+    await context.close();
+  }
+});
+
 test("homepage action icons preserve accessible labels and navigation", async ({ page }) => {
   await page.goto("/");
   for (const [label, heading] of [["Get started", "Quick start"], ["Explore the guide", "Tiny Stats"]]) {
@@ -1071,7 +1125,7 @@ test("global sections select a contextual sidebar", async ({ page }, info) => {
   await openNavigation(page, info);
   await expect(global.locator("a")).toHaveText(["Guide", "Python", "R", "Julia", "Rust"]);
   await expect(global.locator('[aria-current="true"]')).toHaveText("Guide");
-  await expect(navigation.getByRole("group", { name: "Guide", exact: true }).getByRole("link", { name: "Overview" })).toBeVisible();
+  await expect(navigation.getByRole("group", { name: "Guide", exact: true }).getByRole("link", { name: "Overview", exact: true })).toBeVisible();
   await expect(navigation.getByRole("group", { name: "Guides", exact: true }).getByRole("link", { name: "Comparing predictions" })).toBeVisible();
   await expect(navigation.getByRole("group", { name: "API reference" })).toHaveCount(0);
 

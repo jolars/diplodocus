@@ -73,6 +73,14 @@ pub(crate) struct PageModel<'a> {
     pub rust_page: Option<crate::rendering::rust::RustPage<'a>>,
 }
 impl PageModel<'_> {
+    pub(crate) fn has_full_layout(&self) -> bool {
+        self.item.is_none()
+            && self.document.is_some_and(|document| {
+                crate::documents::PageLayout::from_metadata(document.document.frontmatter.as_ref())
+                    == Ok(crate::documents::PageLayout::Full)
+            })
+    }
+
     fn empty(title: String, owner: Option<String>, visible: bool) -> Self {
         Self {
             title,

@@ -25,6 +25,8 @@ pub(super) fn document_defaults(
     duplicate_metadata(entries, diagnostics);
     for entry in entries {
         match entry.key.value.as_str() {
+            // Shared page metadata is validated for every authored format.
+            "layout" => {}
             "title" => {
                 if Value::Yaml(&entry.value, source)
                     .string()

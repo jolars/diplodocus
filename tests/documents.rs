@@ -5,6 +5,63 @@ use diplodocus::ir::{Block, CalloutKind, CellOptionResolution, Inline, TableAlig
 mod support;
 
 #[test]
+fn page_layout_metadata_is_supported_and_validated_in_all_authored_formats() {
+    for format in [
+        AuthoredFormat::Gfm,
+        AuthoredFormat::Qmd,
+        AuthoredFormat::Rmd,
+    ] {
+        for layout in ["full", "docs", "\"full\"", "'full'"] {
+            let source = format!("---\nlayout: {layout}\n---\n\n# Overview\n\n## Details\n");
+            let parsed = parse_authored_document(&source, format);
+            assert!(
+                parsed.diagnostics.is_empty(),
+                "{format:?}: {:?}",
+                parsed.diagnostics
+            );
+            assert!(parsed.document.frontmatter.is_some());
+            assert!(matches!(
+                parsed.document.blocks[0],
+                Block::Heading { level: 1, .. }
+            ));
+        }
+        for declaration in [
+            "layout: wide",
+            "layout: false",
+            "layout: [full]",
+            "layout:",
+            "layout: {kind: full}",
+            "layout: full\nlayout: docs",
+        ] {
+            let source = format!("---\n{declaration}\n---\n\n# Overview\n");
+            let parsed = parse_authored_document(&source, format);
+            if format != AuthoredFormat::Gfm && declaration.contains("\nlayout:") {
+                assert!(
+                    parsed
+                        .diagnostics
+                        .iter()
+                        .any(|d| d.code == DiagnosticCode::InvalidEmbeddedYaml
+                            && d.severity == Severity::Error)
+                );
+                continue;
+            }
+            let diagnostic = parsed
+                .diagnostics
+                .iter()
+                .find(|d| d.code == DiagnosticCode::InvalidPageLayout)
+                .unwrap_or_else(|| panic!("{format:?}, {declaration}: {:?}", parsed.diagnostics));
+            assert_eq!(diagnostic.severity, Severity::Error);
+            let span = diagnostic.span.unwrap();
+            assert!(source[span.start..span.end].starts_with("layout:"));
+            assert_eq!(
+                diagnostic.related_spans.len(),
+                usize::from(declaration.contains("\nlayout:"))
+            );
+        }
+    }
+}
+
+#[test]
 fn tabsets_retain_attributes_content_and_source_spans_in_each_profile() {
     let source = "::: {#languages .panel-tabset group=\"language\"}\n\n### Python\n\n```python\nprint(1)\n```\n\n### R {.active}\n\n[More](#details)\n\n#### Details\n\nAll panels are retained.\n\n:::\n";
     for format in [

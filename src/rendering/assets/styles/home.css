@@ -1,12 +1,12 @@
-body[data-layout=home] {
+body:is([data-layout=home], [data-layout=full]) {
   background: white;
 }
 
-[data-layout=home] header {
+:is([data-layout=home], [data-layout=full]) header {
   border-bottom-color: transparent;
 }
 
-[data-layout=home] header::after {
+:is([data-layout=home], [data-layout=full]) header::after {
   content: "";
   position: fixed;
   top: calc(var(--header-height) - 1px);
@@ -17,30 +17,31 @@ body[data-layout=home] {
   pointer-events: none;
 }
 
-[data-layout=home] header[data-scrolled]::after {
+:is([data-layout=home], [data-layout=full]) header[data-scrolled]::after {
   opacity: 1;
 }
 
-[data-layout=home] .layout > nav {
+:is([data-layout=home], [data-layout=full]) .layout > nav {
   display: none;
 }
 
-[data-layout=home] .nav-disclosure {
+:is([data-layout=home], [data-layout=full]) .nav-disclosure {
   display: none;
 }
 
-[data-layout=home] .page-content {
+:is([data-layout=home], [data-layout=full]) .page-content {
   grid-column: 1 / -1;
   display: block;
 }
 
-[data-layout=home] .site-footer {
+:is([data-layout=home], [data-layout=full]) .site-footer {
   margin-left: 0;
   padding-left: var(--outer-gutter);
   border-top: 1px solid var(--border);
 }
 
-.home-page {
+.home-page,
+[data-layout=full] main {
   max-width: 76rem;
   margin: 0 auto;
   padding: 4.5rem 2.5rem 5rem;
@@ -194,7 +195,7 @@ body[data-layout=home] {
 
 @media (min-width: 761px) {
   /* The fixed branding sits outside the header's box in the sidebar column. */
-  [data-layout=home] header::before {
+  :is([data-layout=home], [data-layout=full]) header::before {
     content: "";
     position: absolute;
     inset: 0 0 0 calc(0px - var(--outer-gutter) - var(--sidebar-width));
@@ -204,11 +205,12 @@ body[data-layout=home] {
 }
 
 @media (max-width: 760px) {
-  [data-layout=home] header::after {
+  :is([data-layout=home], [data-layout=full]) header::after {
     display: none;
   }
 
-  .home-page {
+  .home-page,
+  [data-layout=full] main {
     padding: 2.5rem 1.5rem 3rem;
   }
 

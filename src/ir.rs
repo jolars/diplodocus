@@ -125,7 +125,7 @@ pub struct MetadataEntry {
 pub struct Document {
     /// Full document range.
     pub span: SourceSpan,
-    /// Optional QMD frontmatter.
+    /// Optional authored-page YAML front matter.
     pub frontmatter: Option<MetadataValue>,
     /// Renderable blocks in source order.
     pub blocks: Vec<Block>,

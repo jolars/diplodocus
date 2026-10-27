@@ -412,6 +412,8 @@ against this evidence without consulting R or installed libraries.
 Spans are zero-based, half-open byte ranges `{start, end}`. Tree spans are
 relative to document source; a source-location span refers to its repository
 file. `frontmatter` is a nullable typed metadata tree, not a free-form JSON map.
+Authored pages retain their optional `layout: full` or `layout: docs` selection
+in that tree, so generation can select the page layout without source files.
 Code cells retain options and structured outputs; [output
 types](../../src/ir/outputs.rs) distinguish plain text, Markdown, HTML
 candidates, and asset references.

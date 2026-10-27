@@ -57,7 +57,7 @@ fn tabsets_prepare_cells_in_every_panel_in_source_order() {
 
 #[test]
 fn defaults_and_all_precedence_tiers_retain_their_origins() {
-    let source = "---\ntitle: Résumé 🦕\naudience: [Python, R]\nexecute: {eval: false, echo: false, output: false}\n---\n\n```{python #setup, echo=true, output=asis}\n#| echo: false\n#| eval: true\n#| fig-alt: 'A **literal** figure'\n#| fig-cap: Caption\n#| fig-subcap: [Second, First]\nprint('unchanged')\n```\n";
+    let source = "---\ntitle: Résumé 🦕\nlayout: full\naudience: [Python, R]\nexecute: {eval: false, echo: false, output: false}\n---\n\n```{python #setup, echo=true, output=asis}\n#| echo: false\n#| eval: true\n#| fig-alt: 'A **literal** figure'\n#| fig-cap: Caption\n#| fig-subcap: [Second, First]\nprint('unchanged')\n```\n";
     let result = prepare(source, true);
     assert!(
         result.parsed.diagnostics.is_empty(),

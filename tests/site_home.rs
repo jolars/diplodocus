@@ -171,12 +171,13 @@ fn homepage_preserves_authored_body_and_title_anchor_without_a_second_heading() 
     );
     root.write(
         "home/index.qmd",
-        "---\ntitle: Overview\n---\n\n# Welcome {#welcome}\n\nAn authored introduction.\n",
+        "---\ntitle: Overview\nlayout: full\n---\n\n# Welcome {#welcome}\n\nAn authored introduction.\n",
     );
     let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let rendered = render_site(&Site::new(&snapshot).unwrap()).unwrap();
     let html = std::str::from_utf8(&rendered.files()["index.html"].bytes).unwrap();
+    assert!(html.contains("data-layout=\"home\""));
     assert_eq!(html.matches("<h1").count(), 1);
     assert!(html.contains("<h1 id=\"welcome\">One &lt;home&gt;</h1>"));
     assert!(html.contains("An authored introduction."));

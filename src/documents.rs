@@ -22,10 +22,12 @@ use crate::ir::{
     SourceSpan, SpannedString, TableAlignment, TableCell, TableRow,
 };
 mod fragments;
+mod layout;
 mod preparation;
 mod rmarkdown;
 
 pub use fragments::{MarkdownFragmentOrigin, MarkdownFragmentParse, parse_markdown_fragment};
+pub(crate) use layout::PageLayout;
 pub use preparation::{PreparedDocument, QmdPreparation, prepare_collection_document};
 pub use rmarkdown::{RmdPreparation, parse_evaluated_rmd, prepare_rmd_document};
 
@@ -92,6 +94,7 @@ fn parse_document(source: &str, format: AuthoredFormat, mode: ParseMode) -> Docu
     let mut options = ParserOptions::for_flavor(flavor);
     options.preserve_unresolved_references = true;
     if !fragment {
+        options.extensions.yaml_metadata_block = true;
         options.extensions.fenced_divs = true;
         options.extensions.header_attributes = true;
     }
@@ -174,6 +177,9 @@ fn parse_document(source: &str, format: AuthoredFormat, mode: ParseMode) -> Docu
                 |value| yaml_value(&value),
             )
         });
+    if !fragment && let Err(diagnostic) = PageLayout::from_metadata(frontmatter.as_ref()) {
+        context.diagnostics.push(*diagnostic);
+    }
     let mut blocks: Vec<_> = parsed
         .document()
         .block_nodes()

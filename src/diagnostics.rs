@@ -181,6 +181,9 @@ pub enum DiagnosticCode {
     /// Authored syntax is outside Diplodocus's supported profile.
     #[serde(rename = "unsupported-authored-syntax")]
     UnsupportedAuthoredSyntax,
+    /// An authored page selects an invalid or ambiguous layout.
+    #[serde(rename = "invalid-page-layout")]
+    InvalidPageLayout,
     /// Panache reported malformed embedded YAML.
     #[serde(rename = "invalid-embedded-yaml")]
     InvalidEmbeddedYaml,
@@ -381,6 +384,7 @@ impl DiagnosticCode {
             Self::DocumentExecutionNotAuthorized => "document-execution-not-authorized",
             Self::UnsupportedQmdMetadata => "unsupported-qmd-metadata",
             Self::InvalidQmdMetadata => "invalid-qmd-metadata",
+            Self::InvalidPageLayout => "invalid-page-layout",
             Self::ConfigurationReadFailed => "configuration-read-failed",
             Self::InvalidConfiguration => "invalid-configuration",
             Self::InvalidExecutionConfiguration => "invalid-execution-configuration",

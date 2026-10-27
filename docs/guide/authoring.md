@@ -82,9 +82,10 @@ tables, thematic breaks, inline `$...$` math, display `$$...$$` math, and
 display-only code fences. Equations render during the build with native KaTeX,
 including HTML and MathML, bundled CSS, and local fonts. GFM pages need no
 browser math renderer or R runtime. Escape literal dollar signs with a
-backslash or put them in code spans. QMD pages add YAML front
-matter, callouts, and braced code cells. The supported document metadata
-includes `title`, `audience`, and execution settings. Supported cell options
+backslash or put them in code spans. All three formats support YAML front
+matter with a `layout` option. QMD pages add callouts and braced code cells.
+The supported QMD document metadata includes `title`, `audience`, `layout`, and
+execution settings. Supported cell options
 include `eval`, `echo`, `include`, `output`, `error`, `label`, `fig-alt`,
 `fig-cap`, and `fig-subcap`. Cell options may appear in a fence's info string or
 in `#|` lines; the latter take precedence.
@@ -101,6 +102,29 @@ diagnostics. Raw authored HTML and arbitrary directives are outside the supporte
 R Markdown additionally supports math, footnotes, citations, simple tables, and
 definition lists. Run `diplodocus check` after editing
 a page to see parser and link diagnostics before any cell executes.
+
+## Page layout
+
+Add `layout: full` to a page's YAML front matter to hide the documentation
+sidebar and the **On this page** table of contents and use the landing page's
+wide, centered container:
+
+```markdown
+---
+layout: full
+---
+
+# Project overview
+
+Your page content goes here.
+```
+
+This works in `.md`, `.qmd`, and `.Rmd` pages. The navbar, search, and
+configured footer remain available. The page keeps its title and content without
+adding the homepage hero. Its links, search entry, and appearance in other
+pages' sidebars are unchanged. Omit `layout` or set `layout: docs` for the
+default documentation layout. At the site root, `presentation.home` takes
+precedence.
 
 ## Tabsets
 

@@ -62,7 +62,13 @@ impl Images {
         ));
         let sizes = if logo {
             "1.75rem"
-        } else if standalone && site.home(route).is_none() {
+        } else if standalone
+            && site.home(route).is_none()
+            && !site
+                .pages
+                .get(route)
+                .is_some_and(|page| page.has_full_layout())
+        {
             CONTENT_SIZES
         } else {
             "100vw"
