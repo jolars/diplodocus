@@ -73,9 +73,9 @@
             }
           },
           {
-            "type": "unsupported",
-            "source_kind": "INLINE_MATH",
-            "raw": "$x$",
+            "type": "math",
+            "latex": "x",
+            "fallback": null,
             "span": {
               "start": 157,
               "end": 160
@@ -151,15 +151,6 @@
       "span": {
         "start": 124,
         "end": 152
-      }
-    },
-    {
-      "code": "unsupported-authored-syntax",
-      "severity": "warning",
-      "message": "unsupported authored syntax: INLINE_MATH",
-      "span": {
-        "start": 157,
-        "end": 160
       }
     }
   ]

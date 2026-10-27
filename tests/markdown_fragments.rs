@@ -323,7 +323,7 @@ fn metadata_and_unsupported_html_remain_visible_with_fragment_diagnostics() {
             .any(|block| matches!(block, Block::Unsupported { raw, .. }
         if raw.contains("<script>")))
     );
-    assert!(parsed.diagnostics.len() >= 4);
+    assert_eq!(parsed.diagnostics.len(), 3);
     for diagnostic in &parsed.diagnostics {
         assert_eq!(diagnostic.code, DiagnosticCode::UnsupportedAuthoredSyntax);
         assert_eq!(diagnostic.severity, Severity::Warning);

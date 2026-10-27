@@ -78,7 +78,11 @@ omitted. Shared concepts with authored documentation appear in the Guide sidebar
 ## Supported writing surface
 
 GFM pages support headings, paragraphs, emphasis, links, images, lists, quotes,
-tables, thematic breaks, and display-only code fences. QMD pages add YAML front
+tables, thematic breaks, inline `$...$` math, display `$$...$$` math, and
+display-only code fences. Equations render during the build with native KaTeX,
+including HTML and MathML, bundled CSS, and local fonts. GFM pages need no
+browser math renderer or R runtime. Escape literal dollar signs with a
+backslash or put them in code spans. QMD pages add YAML front
 matter, callouts, and braced code cells. The supported document metadata
 includes `title`, `audience`, and execution settings. Supported cell options
 include `eval`, `echo`, `include`, `output`, `error`, `label`, `fig-alt`,
@@ -146,8 +150,8 @@ large images and adds `srcset` and `sizes` to the HTML. Browsers can download a
 variant that suits the display width and pixel density. Content variants have
 widths of 480, 960, 1440, and 1920 pixels; navbar logos use 32, 64, and 96 pixels.
 Diplodocus never enlarges images and only offers variants smaller in bytes than
-the original. PNG variants retain transparency, and JPEG variants use quality
-90. Variants retain embedded ICC color profiles. SVGs, animated PNGs, and images
+the original. PNG variants retain transparency, and JPEG variants use
+quality 90. Variants retain embedded ICC color profiles. SVGs, animated PNGs, and images
 with an EXIF rotation or reflection remain unchanged.
 
 Variants are generated from snapshot bytes, so generation does not need the
