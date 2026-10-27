@@ -30,6 +30,12 @@ Shared defaults come first, and homepage overrides come last. Keep responsive
 rules beside the components they affect, and preserve the cascade when moving
 rules between files.
 
+Define the site's color palette as semantic custom properties in `base.css`.
+Component styles should use these properties for colors, including backgrounds,
+interaction states, shadows, and gradients. Keep colors with different roles
+independent even when their light palette values match. Syntax highlighting
+keeps its palettes in `src/rendering/assets/highlighting/`.
+
 The renderer emits one `assets/site.css` with syntax highlighting appended.
 Cargo tracks the included files, so the preview recompiles when they change.
 

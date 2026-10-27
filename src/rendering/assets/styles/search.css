@@ -14,18 +14,18 @@
   height: 40px;
   border: 1px solid transparent;
   border-radius: .5rem;
-  background: #edf1f0;
+  background: var(--search-background);
   color: var(--muted);
   transition: border-color .15s, background .15s;
 }
 
 .search-control:hover {
-  border-color: #bbc9c5;
+  border-color: var(--search-hover-border);
 }
 
 .search-control:focus-within {
   border-color: var(--link);
-  background: white;
+  background: var(--background);
   outline: 2px solid var(--link);
   outline-offset: 2px;
 }
@@ -67,8 +67,8 @@
   padding: .35rem;
   border: 1px solid var(--border);
   border-radius: .65rem;
-  background: white;
-  box-shadow: 0 8px 24px #202c381a;
+  background: var(--background);
+  box-shadow: 0 8px 24px var(--popup-shadow-color);
   list-style: none;
   font-size: .85rem;
 }

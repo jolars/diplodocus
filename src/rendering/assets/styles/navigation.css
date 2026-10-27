@@ -114,8 +114,8 @@ nav [aria-current=page] {
     padding: .5rem;
     border: 1px solid var(--border);
     border-radius: .65rem;
-    background: white;
-    box-shadow: 0 8px 24px #202c381a;
+    background: var(--background);
+    box-shadow: 0 8px 24px var(--popup-shadow-color);
   }
 
   .mobile-menu .repository-link {
@@ -238,7 +238,7 @@ nav [aria-current=page] {
   margin: 0;
   padding: 1.25rem;
   border: 0;
-  background: white;
+  background: var(--background);
   color: var(--ink);
   overscroll-behavior: contain;
 }
@@ -248,7 +248,7 @@ nav [aria-current=page] {
 }
 
 .documentation-drawer::backdrop {
-  background: #202c3866;
+  background: var(--backdrop);
 }
 
 .drawer-heading {
@@ -263,7 +263,7 @@ nav [aria-current=page] {
   height: 44px;
   border: 0;
   border-radius: .25rem;
-  background: white;
+  background: var(--background);
   color: var(--muted);
   font: inherit;
   font-size: 1.5rem;
@@ -271,7 +271,7 @@ nav [aria-current=page] {
 }
 
 .drawer-heading button:focus-visible {
-  outline: 3px solid #a04605;
+  outline: 3px solid var(--focus-ring);
   outline-offset: 3px;
 }
 
@@ -371,7 +371,7 @@ body:has(.documentation-drawer[open]) {
     max-height: 70dvh;
     margin-top: 0;
     padding: 0 1rem;
-    background: white;
+    background: var(--background);
   }
 
   .nav-disclosure > summary {
@@ -381,7 +381,7 @@ body:has(.documentation-drawer[open]) {
     width: fit-content;
     min-height: 44px;
     list-style: none;
-    background: white;
+    background: var(--background);
   }
 
   .nav-disclosure > summary::-webkit-details-marker {
@@ -515,8 +515,8 @@ body:has(.documentation-drawer[open]) {
     padding: .5rem;
     border: 1px solid var(--border);
     border-radius: .5rem;
-    background: white;
-    box-shadow: 0 8px 24px #202c381a;
+    background: var(--background);
+    box-shadow: 0 8px 24px var(--popup-shadow-color);
   }
 
   /* Keep the popup hidden until the responsive disclosure state is ready. */
@@ -538,7 +538,7 @@ body:has(.documentation-drawer[open]) {
     justify-content: flex-end;
     min-height: 44px;
     padding: 0 1rem;
-    background: white;
+    background: var(--background);
   }
 
   .toc-disclosure > ul {

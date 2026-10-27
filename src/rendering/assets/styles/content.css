@@ -57,7 +57,7 @@ main a {
 pre,
 pre.syntax-code {
   padding: 20px 24px;
-  background: #f6f6f7;
+  background: var(--code-background);
   overflow: auto;
   border-radius: 8px;
   font-size: .875rem;
@@ -75,7 +75,7 @@ pre.syntax-code {
   position: relative;
   min-width: 0;
   margin: 1rem 0;
-  background: #f6f6f7;
+  background: var(--code-background);
   border-radius: 8px;
 }
 
@@ -107,7 +107,7 @@ pre.syntax-code {
   padding: .35rem .5rem;
   border: 1px solid var(--border);
   border-radius: .25rem;
-  background: white;
+  background: var(--background);
 }
 
 .code-toolbar button {
@@ -120,7 +120,7 @@ pre.syntax-code {
   padding: 0;
   border: 1px solid var(--border);
   border-radius: .25rem;
-  background: white;
+  background: var(--background);
   color: var(--muted);
   cursor: pointer;
 }
@@ -153,7 +153,7 @@ code {
 :not(pre) > code {
   border-radius: 4px;
   padding: 3px 6px;
-  background: rgba(142, 150, 170, .14);
+  background: var(--inline-code-background);
   font-size: .875em;
 }
 
@@ -317,13 +317,13 @@ td > :last-child {
 
 blockquote,
 .callout {
-  border-left: 4px solid #688b84;
+  border-left: 4px solid var(--callout-border);
   padding: .2rem 1rem;
   margin: 1rem 0;
 }
 
 .unsupported {
-  border-left: 4px solid #a04605;
+  border-left: 4px solid var(--warning-border);
   padding-left: 1rem;
 }
 

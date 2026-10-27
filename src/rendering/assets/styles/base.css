@@ -7,6 +7,24 @@
   --surface: #fafbf9;
   --sidebar-background: #f6f6f7;
   --selected: #e8f0ee;
+  --background: white;
+  --focus-ring: #a04605;
+  --code-background: #f6f6f7;
+  --inline-code-background: rgba(142, 150, 170, .14);
+  --callout-border: #688b84;
+  --warning-border: #a04605;
+  --search-background: #edf1f0;
+  --search-hover-border: #bbc9c5;
+  --popup-shadow-color: #202c381a;
+  --backdrop: #202c3866;
+  --accent: #30776b;
+  --accent-border: #a8c4bc;
+  --accent-background: #2d7064;
+  --accent-hover-background: #225b51;
+  --on-accent: white;
+  --feature-hover-background: #f0f4f1;
+  --artwork-glow: #e3efe6;
+  --artwork-glow-fade: #f1f6eb70;
   --header-height: 74px;
   --layout-width: 96rem;
   --page-gutter: 2rem;
@@ -37,7 +55,7 @@ a:focus-visible,
 input:focus-visible,
 summary:focus-visible,
 pre:focus-visible {
-  outline: 3px solid #a04605;
+  outline: 3px solid var(--focus-ring);
   outline-offset: 3px;
 }
 
@@ -68,6 +86,6 @@ img {
   left: 1rem;
   top: 1rem;
   z-index: 20;
-  background: white;
+  background: var(--background);
   padding: 1rem;
 }

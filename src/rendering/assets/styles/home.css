@@ -1,5 +1,5 @@
 body:is([data-layout=home], [data-layout=full]) {
-  background: white;
+  background: var(--background);
 }
 
 :is([data-layout=home], [data-layout=full]) header {
@@ -61,7 +61,7 @@ body:is([data-layout=home], [data-layout=full]) {
 
 .home-name {
   margin: 0 0 .6rem;
-  color: #30776b;
+  color: var(--accent);
   font-size: 1.5rem;
   font-weight: 700;
   letter-spacing: -.03em;
@@ -110,7 +110,7 @@ body:is([data-layout=home], [data-layout=full]) {
 
 .home-action:hover {
   background: var(--selected);
-  border-color: #a8c4bc;
+  border-color: var(--accent-border);
 }
 
 .home-action-icon {
@@ -120,21 +120,21 @@ body:is([data-layout=home], [data-layout=full]) {
 }
 
 .home-action:first-child {
-  border-color: #2d7064;
-  background: #2d7064;
-  color: white;
+  border-color: var(--accent-background);
+  background: var(--accent-background);
+  color: var(--on-accent);
 }
 
 .home-action:first-child:hover {
-  border-color: #225b51;
-  background: #225b51;
+  border-color: var(--accent-hover-background);
+  background: var(--accent-hover-background);
 }
 
 .home-artwork {
   display: grid;
   place-items: center;
   aspect-ratio: 1;
-  background: radial-gradient(ellipse, #e3efe6 0, #f1f6eb70 45%, transparent 70%);
+  background: radial-gradient(ellipse, var(--artwork-glow) 0, var(--artwork-glow-fade) 45%, transparent 70%);
 }
 
 .home-artwork img {
@@ -163,8 +163,8 @@ body:is([data-layout=home], [data-layout=full]) {
 }
 
 .home-feature:hover {
-  border-color: #a8c4bc;
-  background: #f0f4f1;
+  border-color: var(--accent-border);
+  background: var(--feature-hover-background);
 }
 
 .home-feature h2 {
@@ -179,7 +179,7 @@ body:is([data-layout=home], [data-layout=full]) {
 }
 
 .home-feature h2 span {
-  color: #30776b;
+  color: var(--accent);
 }
 
 .home-feature p {
