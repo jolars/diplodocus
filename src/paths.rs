@@ -201,8 +201,10 @@ pub struct ResolvedContentPaths {
     pub id: String,
     /// Index of the containing repository in [`ResolvedWorkspacePaths::repositories`].
     pub repository_index: usize,
-    /// Canonical absolute content directory, contained in its repository.
+    /// Canonical absolute source directory or file, contained in its repository.
     pub path: PathBuf,
+    /// Source directory, or the parent directory of a single-file collection.
+    pub source_root: PathBuf,
     /// Canonical regular files relative to the repository, in declaration order.
     pub declared_environment_inputs: Vec<PathBuf>,
 }
@@ -311,11 +313,11 @@ pub enum PathResolutionErrorKind {
 /// Filesystem type required by a configuration field.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PathType {
-    /// Repository, package, or content root.
+    /// Repository or package root.
     Directory,
     /// Package metadata or declared environment input.
     File,
-    /// Explicit extraction target.
+    /// Explicit extraction target or authored content source.
     FileOrDirectory,
 }
 
@@ -356,9 +358,11 @@ impl fmt::Display for PathType {
 /// Returns the first invalid path or unresolved/ambiguous repository reference.
 /// Order is configuration directory, repository declarations, package declarations
 /// (root, metadata, targets), then content declarations (root, environment inputs).
-/// Roots must be directories, metadata and environment inputs regular files, and
-/// targets regular files or directories. Errors retain the configuration path,
-/// indexed field and declaration ID, and underlying filesystem cause when present.
+/// Repository and package roots must be directories, metadata and environment
+/// inputs regular files, and targets and content sources regular files or
+/// directories. Content files must match their declared format's extension.
+/// Errors retain the configuration path, indexed field and declaration ID, and
+/// underlying filesystem cause when present.
 pub fn resolve_workspace_paths(
     configuration_path: impl AsRef<Path>,
     configuration: &WorkspaceConfiguration,
@@ -470,8 +474,24 @@ pub fn resolve_workspace_paths(
             &format!("{field}.path"),
             &collection.path,
             root,
-            PathType::Directory,
+            PathType::FileOrDirectory,
         )?;
+        let source_root = if path.is_file() {
+            if !collection.format.matches_path(&path) {
+                return Err(resolver.error(
+                    &format!("{field}.path"),
+                    PathResolutionErrorKind::InvalidPath {
+                        path,
+                        reason: "content file extension does not match the declared format",
+                    },
+                ));
+            }
+            path.parent()
+                .expect("contained content file parent")
+                .to_owned()
+        } else {
+            path.clone()
+        };
         let mut declared_environment_inputs = Vec::new();
         for (index, input) in collection
             .execution
@@ -490,6 +510,7 @@ pub fn resolve_workspace_paths(
             id: collection.id.clone(),
             repository_index,
             path,
+            source_root,
             declared_environment_inputs,
         });
     }

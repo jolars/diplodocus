@@ -43,6 +43,18 @@ pub enum AuthoredFormat {
     Rmd,
 }
 
+impl AuthoredFormat {
+    pub(crate) fn matches_path(self, path: &std::path::Path) -> bool {
+        matches!(
+            (
+                self,
+                path.extension().and_then(|extension| extension.to_str())
+            ),
+            (Self::Gfm, Some("md")) | (Self::Qmd, Some("qmd")) | (Self::Rmd, Some("rmd" | "Rmd"))
+        )
+    }
+}
+
 /// A retained document plus diagnostics produced during translation or validation.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DocumentParse {

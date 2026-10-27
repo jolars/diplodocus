@@ -1,10 +1,14 @@
 # Authored pages
 
-Declare each source directory as a collection in `content` in [workspace
-configuration](configuration.md). Set `format: "gfm"` for `.md` files or
+Declare each source directory or individual file as a collection in `content`
+in [workspace configuration](configuration.md). Set `format: "gfm"` for `.md` files or
 `format: "qmd"` for `.qmd` files, or `format: "rmd"` for R Markdown articles. A collection's `mount` determines its URL
 prefix; an empty mount places its `index.md` at the site root. The `owner`
 determines whether pages appear in project or package navigation.
+
+Individual files keep their basename beneath the mount, so `CHANGELOG.md` with
+`mount: project` becomes `/project/CHANGELOG.html`. Links and images resolve
+from the original source directory.
 
 ## Package landing pages {#package-landing-pages}
 

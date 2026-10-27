@@ -738,7 +738,7 @@ impl Resolver<'_> {
             .paths()
             .content
             .iter()
-            .map(|c| &c.path)
+            .map(|c| &c.source_root)
             .chain(self.sources.paths().packages.iter().map(|p| &p.path))
             .filter(|root| canonical.starts_with(root))
             .max_by_key(|root| root.components().count());

@@ -524,6 +524,12 @@ ordered array of `{kind, spelling, target}`. Reference kinds are `semantic`,
 relationships. Targets remain portable semantic identities until generation
 assigns routes.
 
+A collection's `path` retains its repository-relative source directory or
+individual source file. For a single-file collection, `collection_path` is the
+file's basename; its mount remains a directory prefix. The page's source
+location retains the original repository-relative filename for resolving links
+and assets.
+
 The storage-specific [execution envelope](../../src/snapshots/outputs.rs) has
 `record` ([PageExecutionRecord](../../src/execution/records.rs)), `diagnostics`
 (typed execution diagnostics), `diagnostic_offset` (their starting index in the

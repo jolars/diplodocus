@@ -182,6 +182,10 @@ implemented as an optional `serve --live-reload` feature.
   preserving bundle paths. Use Eunoia's integrated diagram app and inline
   documentation examples as motivating cases, with a small browser runtime
   or adapters where useful.
+- [ ] Add Markdown includes for composing authored pages from existing files.
+  Preserve each included file's source location for relative links, images,
+  diagnostics, preview watching, and portable snapshots. Define nested
+  includes and cycle detection before adding partial-file selection.
 
 Change this page when a release gate changes. Keep detailed validation evidence
 in tests and CI results rather than adding another dated ledger.

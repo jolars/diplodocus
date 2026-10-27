@@ -145,7 +145,7 @@ pub struct ContentCollection {
     pub owner: ContentOwner,
     /// Repository containing these sources.
     pub repository: String,
-    /// Repository-relative root; `None` means the repository root.
+    /// Repository-relative source directory or file; `None` means the repository root.
     pub path: Option<DiagnosticPath>,
     /// URL mount relative to the owner's documentation root.
     pub mount: String,

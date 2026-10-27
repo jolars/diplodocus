@@ -35,6 +35,28 @@ fn success(output: Output) {
 }
 
 #[test]
+fn explicitly_selected_rmarkdown_file_assembles_without_discovering_siblings() {
+    let root = workspace("# An article\n");
+    fs::rename(
+        root.path().join("r/vignettes/article.Rmd"),
+        root.path().join("r/article.Rmd"),
+    )
+    .unwrap();
+    fs::remove_dir(root.path().join("r/vignettes")).unwrap();
+    root.write("r/ignored.Rmd", "[Broken](missing.md)\n");
+    root.write("diplodocus.yaml", format!("{}content:\n  - id: article\n    owner: demo\n    repository: r\n    path: article.Rmd\n    mount: articles\n    format: rmd\n", root.read("diplodocus.yaml")));
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
+    assert_eq!(sources.prepared_pages().len(), 1);
+    assert!(
+        !sources
+            .input_paths()
+            .any(|path| path.ends_with("ignored.Rmd"))
+    );
+    diplodocus::validation::resolve_workspace(&sources).unwrap();
+    sources.revalidate().unwrap();
+}
+
+#[test]
 fn package_data_articles_execute_and_generate_without_the_source_package() {
     let root = workspace(
         r#"---

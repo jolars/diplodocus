@@ -69,11 +69,44 @@ description, in that order. Selected files remain display-only. See
 
 ## Authored content
 
-Each collection in `content` names a repository, source directory, mount,
+Each collection in `content` names a repository, source directory or file, mount,
 format, and owner. The `project` owner puts pages in project navigation; a
 package ID puts them under `/packages/<slug>/`. GFM collections read `.md`
 files. QMD collections read `.qmd` files and can include executable cells.
 Checked-in assets can live beside the pages that use them.
+
+To publish an existing file such as `CHANGELOG.md` or `CONTRIBUTING.md`, set
+`path` to that file relative to its repository:
+
+```yaml
+content:
+  - id: changelog
+    owner: project
+    repository: core
+    path: CHANGELOG.md
+    mount: project
+    format: gfm
+  - id: contributing
+    owner: project
+    repository: core
+    path: CONTRIBUTING.md
+    mount: project
+    format: gfm
+```
+
+These collections produce `/project/CHANGELOG.html` and
+`/project/CONTRIBUTING.html`. The mount remains a URL directory prefix; an empty
+mount puts the pages at the owner's documentation root. The source filename's
+case is preserved. A single-file collection reads only that page. Its links
+and images resolve from the original file's directory, which also provides
+the boundary for local assets. Links to other declared pages resolve to their
+generated URLs, including across collections. Preview watches the original
+file and its referenced assets, and snapshots retain the content for generation
+without the checkout.
+
+Single files must match their collection's format: `.md` for `gfm`, `.qmd` for
+`qmd`, and `.Rmd` or `.rmd` for `rmd`. Execution and navigation settings work
+as they do for directory collections.
 
 The monorepo example has one shared GFM guide and four extracted packages,
 including a compiler-backed Rust library. The root configuration mounts this GFM

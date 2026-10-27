@@ -54,7 +54,8 @@ pub struct DeclaredSourceInputs {
     pub extraction: BTreeMap<TargetReference, Vec<PathBuf>>,
     /// Conventional package documentation files relative to each repository root.
     pub package_documentation: BTreeMap<String, Vec<PathBuf>>,
-    /// Selected authored files relative to each configured content root.
+    /// Selected authored files relative to each source directory, or to the
+    /// parent directory for a single-file collection.
     pub content: BTreeMap<String, Vec<PathBuf>>,
 }
 
@@ -214,8 +215,19 @@ pub fn collect_static_provenance(
                     configuration_path,
                     "content.inputs",
                     file,
-                    &collection.path,
+                    &collection.source_root,
                 )?;
+                if collection.path != collection.source_root && path != collection.path {
+                    return Err(PathResolutionError {
+                        configuration_path: configuration_path.to_owned(),
+                        field: "content.inputs".into(),
+                        kind: PathResolutionErrorKind::InvalidPath {
+                            path: file.to_owned(),
+                            reason: "single-file collections select only their declared file",
+                        },
+                    }
+                    .into());
+                }
                 result.insert(read_input(configuration_path, repository, &path, None)?)?;
             }
         } else {

@@ -310,11 +310,6 @@ impl Observer {
             for input in &content.execution.declared_environment_inputs {
                 observe(&root.join(input), &mut observed);
             }
-            let extension = match content.format {
-                crate::documents::AuthoredFormat::Gfm => "md",
-                crate::documents::AuthoredFormat::Qmd => "qmd",
-                crate::documents::AuthoredFormat::Rmd => "rmd",
-            };
             let mut pages = Vec::new();
             discover(
                 &root.join(&content.path),
@@ -323,12 +318,12 @@ impl Observer {
                 &mut pages,
                 &|p| {
                     content.format == crate::documents::AuthoredFormat::Rmd
-                        || p.extension().is_some_and(|e| e == extension)
+                        || content.format.matches_path(p)
                 },
             );
             for page in pages {
                 if content.format == crate::documents::AuthoredFormat::Rmd
-                    && !page.extension().is_some_and(|e| e == "Rmd" || e == "rmd")
+                    && !content.format.matches_path(&page)
                 {
                     continue;
                 }
@@ -539,6 +534,35 @@ fn discover(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn watches_single_file_collections_and_their_assets_without_selecting_siblings() {
+        let root = tempfile::tempdir().unwrap();
+        let config = root.path().join("diplodocus.yaml");
+        fs::write(&config, "project:\n  name: Files\nrepositories:\n  - id: repo\n    path: .\ncontent:\n  - id: changelog\n    owner: project\n    repository: repo\n    path: CHANGELOG.md\n    mount: project\n    format: gfm\n").unwrap();
+        let mut observer = Observer::new(&config, &root.path().join("site")).unwrap();
+        let missing = observer.capture();
+        let page = root.path().join("CHANGELOG.md");
+        let image = root.path().join("plot.svg");
+        fs::write(&page, "# Changelog\n\n![Plot](plot.svg)\n").unwrap();
+        let created = observer.capture();
+        assert_ne!(created, missing);
+        fs::write(root.path().join("IGNORED.md"), "# Unselected\n").unwrap();
+        assert_eq!(observer.capture(), created);
+        fs::write(&image, "<svg xmlns='http://www.w3.org/2000/svg'/>").unwrap();
+        let with_image = observer.capture();
+        assert_ne!(with_image, created);
+        fs::write(
+            &image,
+            "<svg xmlns='http://www.w3.org/2000/svg'><circle r='3'/></svg>",
+        )
+        .unwrap();
+        assert_ne!(observer.capture(), with_image);
+        fs::write(&page, "# Updated changelog\n\n![Plot](plot.svg)\n").unwrap();
+        assert_ne!(observer.capture(), with_image);
+        fs::remove_file(page).unwrap();
+        assert_eq!(observer.capture(), missing);
+    }
 
     #[test]
     fn generated_storage_does_not_trigger_rebuilds_but_source_edits_do() {

@@ -147,7 +147,14 @@ fn resolves_the_authored_only_project_configuration() {
             .iter()
             .map(|content| content.id.as_str())
             .collect::<Vec<_>>(),
-        ["home", "guide", "reference", "examples"]
+        [
+            "home",
+            "guide",
+            "reference",
+            "examples",
+            "changelog",
+            "contributing"
+        ]
     );
 }
 
@@ -288,7 +295,6 @@ fn roots_are_directories_and_metadata_and_environment_are_regular_files() {
     for (field, invalid, expected) in [
         (Field::Repository, "diplodocus.yaml", PathType::Directory),
         (Field::Package, "uv.lock", PathType::Directory),
-        (Field::Content, "uv.lock", PathType::Directory),
         (Field::Metadata, "src", PathType::File),
         (Field::Environment, "docs", PathType::File),
     ] {

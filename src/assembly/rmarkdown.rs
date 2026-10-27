@@ -78,6 +78,11 @@ pub(super) fn inputs(
         repository: &crate::paths::ResolvedRepositoryPaths,
         output: &mut Vec<PathBuf>,
     ) -> Result<(), AssemblyError> {
+        if root.is_file() {
+            let source = repository.source_location(root, None)?;
+            output.push(PathBuf::from(source.path.as_str()));
+            return Ok(());
+        }
         let mut entries = fs::read_dir(root)?.collect::<Result<Vec<_>, _>>()?;
         entries.sort_by_key(fs::DirEntry::file_name);
         for entry in entries {

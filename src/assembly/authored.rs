@@ -57,7 +57,7 @@ pub(super) fn assemble(
         );
         let files = discover(&resolved.path, collection.format, repository)?;
         for relative in &files {
-            let declared = resolved.path.join(relative);
+            let declared = resolved.source_root.join(relative);
             let location = repository.source_location(&declared, None)?;
             let path = repository.path.join(location.path.as_str());
             // Explicit overview files have one route, even when a collection contains them.
@@ -170,7 +170,7 @@ pub(super) fn discover(
     fn visit(
         root: &Path,
         directory: &Path,
-        extension: &str,
+        format: AuthoredFormat,
         repository: &crate::paths::ResolvedRepositoryPaths,
         files: &mut Vec<PathBuf>,
     ) -> Result<(), AssemblyError> {
@@ -195,12 +195,8 @@ pub(super) fn discover(
                 }
             }
             if kind.is_dir() {
-                visit(root, &path, extension, repository, files)?;
-            } else if path
-                .extension()
-                .and_then(|s| s.to_str())
-                .is_some_and(|s| s == extension || (extension == "rmd" && s == "Rmd"))
-            {
+                visit(root, &path, format, repository, files)?;
+            } else if format.matches_path(&path) {
                 if !fs::metadata(&path)?.is_file() {
                     return Err(AssemblyError::Diagnostics(vec![diagnostic(
                         DiagnosticCode::SourcePathWrongType,
@@ -221,18 +217,19 @@ pub(super) fn discover(
         }
         Ok(())
     }
+    if root.is_file() {
+        repository.source_location(root, None)?;
+        if crate::generated_storage::is_generated_file(root)
+            || crate::generated_storage::is_reserved(root)
+        {
+            return Ok(vec![]);
+        }
+        return Ok(vec![PathBuf::from(
+            root.file_name().expect("authored file name"),
+        )]);
+    }
     let mut files = vec![];
-    visit(
-        root,
-        root,
-        match format {
-            AuthoredFormat::Gfm => "md",
-            AuthoredFormat::Qmd => "qmd",
-            AuthoredFormat::Rmd => "rmd",
-        },
-        repository,
-        &mut files,
-    )?;
+    visit(root, root, format, repository, &mut files)?;
     files.sort();
     Ok(files)
 }

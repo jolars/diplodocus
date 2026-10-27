@@ -477,7 +477,7 @@ pub struct ContentConfiguration {
     pub owner: String,
     /// Repository containing the authored sources.
     pub repository: String,
-    /// Collection root, relative to its repository.
+    /// Source directory or single authored file, relative to its repository.
     pub path: PathBuf,
     /// URL mount beneath the owner's documentation root.
     pub mount: String,
