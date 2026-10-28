@@ -41,7 +41,9 @@ the system preference, including without JavaScript. Explicit choices set
 `data-theme="light"` or `data-theme="dark"` on the document root, which overrides
 the color scheme. The inline `src/rendering/theme.js` script restores the
 browser's saved choice before loading CSS, synchronizes the desktop and mobile
-selectors, and shares changes between tabs. **System** removes the saved choice.
+toggles, and shares changes between tabs. Without a saved choice, the theme and
+toggles follow changes to the system preference. Using a toggle saves an explicit
+light or dark choice.
 
 The renderer emits one `assets/site.css` with syntax highlighting appended.
 Cargo tracks the included files, so the preview recompiles when they change.
@@ -76,7 +78,7 @@ JavaScript and console errors fail tests, except the browser's automatic request
 for an undeclared `/favicon.ico`.
 
 The header contains the Tiny Stats logo and title, section links, search, and
-repository links. The **Theme** selector sits in the header on desktop and in
+repository links. The **Dark mode** toggle sits in the header on desktop and in
 the navigation menu on phones. On desktop, the logo and title sit above the sidebar.
 On phones, they sit at the left of the navbar, and search expands from a
 magnifying glass when tapped. Branding stays pinned while the sidebar links

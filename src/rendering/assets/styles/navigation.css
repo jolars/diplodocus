@@ -181,22 +181,59 @@ nav [aria-current=page] {
   display: none;
 }
 
-.theme-control select {
-  min-height: 40px;
-  padding: .35rem .4rem;
-  border: 1px solid var(--border);
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 44px;
+  padding: 0;
+  border: 0;
   border-radius: .5rem;
-  background: var(--background);
-  color: var(--ink);
-  font: inherit;
+  background: transparent;
   cursor: pointer;
 }
 
-.theme-control select:hover {
+.theme-toggle-track {
+  position: relative;
+  width: 46px;
+  height: 26px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--search-background);
+}
+
+.theme-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--background);
+  color: var(--ink);
+}
+
+.theme-toggle[aria-checked=true] .theme-toggle-thumb {
+  transform: translateX(20px);
+}
+
+.theme-toggle-moon,
+.theme-toggle[aria-checked=true] .theme-toggle-sun {
+  display: none;
+}
+
+.theme-toggle[aria-checked=true] .theme-toggle-moon {
+  display: block;
+}
+
+.theme-toggle:hover .theme-toggle-track {
   border-color: var(--link);
 }
 
-.theme-control select:focus-visible {
+.theme-toggle:focus-visible {
   outline: 3px solid var(--focus-ring);
   outline-offset: 3px;
 }
@@ -236,11 +273,6 @@ nav [aria-current=page] {
     padding: .65rem .75rem;
     border-top: 1px solid var(--border);
     font-size: .95rem;
-  }
-
-  .theme-control select {
-    min-height: 44px;
-    font-size: 1rem;
   }
 
   .header-actions > .repository-link {

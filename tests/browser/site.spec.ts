@@ -49,7 +49,8 @@ async function fitsViewport(page: Page) {
 
 async function chooseTheme(page: Page, info: TestInfo, value: string) {
   if (info.project.name === "mobile") await page.locator(".mobile-menu > summary").click();
-  await page.getByRole("combobox", { name: "Color theme" }).selectOption(value);
+  const toggle = page.getByRole("switch", { name: "Dark mode" });
+  if (await toggle.isChecked() !== (value === "dark")) await toggle.click();
   if (info.project.name === "mobile") await page.keyboard.press("Escape");
 }
 
@@ -58,9 +59,15 @@ test("color theme follows the system and explicit choices override it", async ({
   const root = page.locator("html");
   const keyword = page.locator("main .syntax-keyword").first();
   await expect(root).toHaveAttribute("data-theme", "system");
+  for (const toggle of await page.locator("[data-theme-toggle]").all()) {
+    await expect(toggle).not.toBeChecked();
+  }
   await expect(page.locator("body")).toHaveCSS("background-color", "rgb(255, 255, 255)");
   await expect(keyword).toHaveCSS("color", "rgb(207, 34, 46)");
   await page.emulateMedia({ colorScheme: "dark" });
+  for (const toggle of await page.locator("[data-theme-toggle]").all()) {
+    await expect(toggle).toBeChecked();
+  }
   await expect(page.locator("body")).toHaveCSS("background-color", "rgb(17, 25, 31)");
   await expect(keyword).toHaveCSS("color", "rgb(255, 123, 114)");
   await chooseTheme(page, info, "light");
@@ -68,33 +75,38 @@ test("color theme follows the system and explicit choices override it", async ({
   await expect(page.locator("body")).toHaveCSS("background-color", "rgb(255, 255, 255)");
   await expect(keyword).toHaveCSS("color", "rgb(207, 34, 46)");
   await page.emulateMedia({ colorScheme: "light" });
+  await page.emulateMedia({ colorScheme: "dark" });
+  await expect(root).toHaveAttribute("data-theme", "light");
+  for (const toggle of await page.locator("[data-theme-toggle]").all()) {
+    await expect(toggle).not.toBeChecked();
+  }
   await chooseTheme(page, info, "dark");
   await expect(root).toHaveCSS("color-scheme", "dark");
   await expect(keyword).toHaveCSS("color", "rgb(255, 123, 114)");
   await page.emulateMedia({ colorScheme: "dark" });
   await page.emulateMedia({ colorScheme: "light" });
   await expect(root).toHaveAttribute("data-theme", "dark");
-  await chooseTheme(page, info, "system");
-  expect(await page.evaluate(() => localStorage.getItem("diplodocus-theme"))).toBeNull();
+  await chooseTheme(page, info, "light");
+  expect(await page.evaluate(() => localStorage.getItem("diplodocus-theme"))).toBe("light");
   await expect(page.locator("body")).toHaveCSS("background-color", "rgb(255, 255, 255)");
   await page.emulateMedia({ colorScheme: "dark" });
-  await expect(keyword).toHaveCSS("color", "rgb(255, 123, 114)");
+  await expect(keyword).toHaveCSS("color", "rgb(207, 34, 46)");
 });
 
-test("color theme selector works from the keyboard", async ({ page }, info) => {
+test("color theme toggle works from the keyboard", async ({ page }, info) => {
   await page.goto("/");
   if (info.project.name === "mobile") {
     await page.locator(".mobile-menu > summary").focus();
     await page.keyboard.press("Enter");
   }
-  const select = page.getByRole("combobox", { name: "Color theme" });
-  await select.focus();
-  await select.press("End");
-  await select.press("Enter");
+  const toggle = page.getByRole("switch", { name: "Dark mode" });
+  await toggle.focus();
+  await toggle.press("Space");
+  await expect(toggle).toBeChecked();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-  await select.press("Home");
-  await select.press("Enter");
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "system");
+  await toggle.press("Enter");
+  await expect(toggle).not.toBeChecked();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
 });
 
 test("color theme persists through client navigation and applies before styles load", async ({ page }, info) => {
@@ -122,8 +134,8 @@ test("color theme persists through client navigation and applies before styles l
     release();
     await navigation;
   }
-  for (const select of await page.locator("[data-theme-select]").all()) {
-    await expect(select).toHaveValue("dark");
+  for (const toggle of await page.locator("[data-theme-toggle]").all()) {
+    await expect(toggle).toBeChecked();
   }
   await expect(page.locator("body")).toHaveCSS("background-color", "rgb(17, 25, 31)");
 });
@@ -135,11 +147,14 @@ test("color theme synchronizes between tabs and rejects invalid saved values", a
     await other.goto(page.url());
     await chooseTheme(page, info, "dark");
     await expect(other.locator("html")).toHaveAttribute("data-theme", "dark");
-    for (const select of await other.locator("[data-theme-select]").all()) {
-      await expect(select).toHaveValue("dark");
+    for (const toggle of await other.locator("[data-theme-toggle]").all()) {
+      await expect(toggle).toBeChecked();
     }
     await other.evaluate(() => localStorage.setItem("diplodocus-theme", "invalid"));
     await expect(page.locator("html")).toHaveAttribute("data-theme", "system");
+    for (const toggle of await page.locator("[data-theme-toggle]").all()) {
+      await expect(toggle).not.toBeChecked();
+    }
     await page.reload();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "system");
     await chooseTheme(page, info, "dark");
@@ -174,7 +189,7 @@ test("color theme follows the system without JavaScript", async ({ browser, base
     await page.goto("/guides/comparing-predictions.html");
     await expect(page.locator("body")).toHaveCSS("background-color", "rgb(17, 25, 31)");
     await expect(page.locator("main .syntax-keyword").first()).toHaveCSS("color", "rgb(255, 123, 114)");
-    for (const select of await page.locator("[data-theme-select]").all()) await expect(select).toBeHidden();
+    for (const toggle of await page.locator("[data-theme-toggle]").all()) await expect(toggle).toBeHidden();
     await capture(page, info, "dark-no-js", false);
     await page.emulateMedia({ colorScheme: "light" });
     await expect(page.locator("body")).toHaveCSS("background-color", "rgb(255, 255, 255)");
@@ -225,7 +240,7 @@ test("color theme covers landing pages, search, code controls, and mobile menus"
   await page.getByRole("searchbox").blur();
   if (info.project.name === "mobile") {
     await page.locator(".mobile-menu > summary").click();
-    await expect(page.getByRole("combobox", { name: "Color theme" })).toHaveValue("dark");
+    await expect(page.getByRole("switch", { name: "Dark mode" })).toBeChecked();
     await capture(page, info, "dark-mobile-menu", true, false);
     await page.keyboard.press("Escape");
     await page.locator(".nav-disclosure > summary").click();
