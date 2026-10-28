@@ -74,8 +74,13 @@ fn homepage_survives_snapshot_round_trip_and_respects_url_style() {
             "guide/quick-start"
         };
         assert!(home.contains(&format!("href=\"{guide_url}\">Guide</a>")));
-        assert!(home.contains(&format!("href=\"{quick_start_url}\">Start")));
+        assert!(home.contains(&format!(
+            "href=\"{quick_start_url}\">Start &lt;here&gt;</a>"
+        )));
         assert!(!home.contains("class=\"home-action-icon\""));
+        assert!(home.contains(&format!(
+            "<a class=\"home-feature\" href=\"{guide_url}\"><h2>One &amp; all<span aria-hidden=\"true\"> &nearr;</span></h2>"
+        )));
         let guide = std::str::from_utf8(&rendered.files()["guide/index.html"].bytes).unwrap();
         assert!(guide.contains("data-layout=\"docs\""));
         assert!(guide.contains("Welcome to the guide."));
@@ -123,7 +128,7 @@ fn homepage_action_icons_survive_snapshot_round_trip_without_sources() {
         .collect::<Vec<_>>();
     assert_eq!(actions.len(), icons.len() + 1);
     for (action, icon) in actions.iter().zip(icons) {
-        assert!(action.ends_with(&format!("{icon}<span aria-hidden=\"true\"> &rarr;</span>")));
+        assert!(action.ends_with(&format!("</svg>{icon}")));
         let start = action.find("<svg").unwrap();
         let end = action.find("</svg>").unwrap() + "</svg>".len();
         let document = roxmltree::Document::parse(&action[start..end]).unwrap();

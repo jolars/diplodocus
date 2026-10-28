@@ -332,8 +332,8 @@ URL settings. The first action receives the primary button style.
 Actions accept an optional `icon`: `arrow-right`, `book-open`, `code`, `download`,
 or `terminal`. The built-in SVG appears before the label and inherits the
 button's text color. Icons are decorative, so the label still supplies the
-accessible link name. All actions retain their trailing arrow. Omitting `icon`
-keeps the text-and-arrow appearance. Unknown icon names are rejected.
+accessible link name. Omitting `icon` displays only the label. Unknown icon
+names are rejected.
 
 The hero uses the site title and optional logo. All text is plain text, and
 newlines in `tagline` separate heading lines. Actions and features can be

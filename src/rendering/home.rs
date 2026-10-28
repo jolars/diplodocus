@@ -50,12 +50,7 @@ pub(super) fn render(
             if let Some(icon) = action.icon {
                 render_action_icon(html, icon);
             }
-            write!(
-                html,
-                "{}<span aria-hidden=\"true\"> &rarr;</span></a>",
-                escape(&action.label),
-            )
-            .unwrap();
+            write!(html, "{}</a>", escape(&action.label)).unwrap();
         }
         html.push_str("</div>");
     }
