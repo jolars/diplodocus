@@ -149,6 +149,92 @@ under that directory belong to the section and leave the Guide sidebar.
 Section directories must be distinct and cannot contain the Guide landing page.
 Tabs appear after Guide in declaration order, before package tabs.
 
+### Sidebar groups and nesting
+
+Without an explicit sidebar, Diplodocus groups authored pages by their generated
+URL directories. The first directory level creates headings, and deeper pages
+appear in the same group. A directory's index page supplies the heading and
+appears first as **Overview**; otherwise, the directory name supplies the
+heading. Other pages follow in route order.
+
+For explicit ordering, nested groups, and collapsible headings, set
+`presentation.sidebar`. Its item structure follows [VitePress's sidebar
+configuration](https://vitepress.dev/reference/default-theme-sidebar):
+
+```yaml
+presentation:
+  sidebar:
+    - text: Introduction
+      collapsed: false
+      items:
+        - text: What is Diplodocus?
+          link: guide/index.html
+        - text: Quick start
+          link: guide/quick-start.html
+    - text: Reference
+      items:
+        - text: Configuration
+          link: guide/configuration.html
+        - text: Authoring
+          items:
+            - text: Overview
+              link: guide/authoring.html
+            - text: Executable examples
+              link: guide/execution.html
+```
+
+Every item needs `text` and either a `link`, nonempty `items`, or both. A group
+with a link has a clickable heading. Links name generated HTML routes relative
+to the site root, without a leading slash, even when the site uses clean URLs or
+a hosting prefix. They must identify existing, visible pages. External URLs,
+fragments, and source paths such as `guide/index.md` are not accepted.
+
+Top-level groups appear beneath headings. Nested groups indent their children
+and add a vertical guide line. Items retain declaration order and may nest up to
+six levels, including the top level. Deeper trees fail validation.
+
+Omitting `collapsed` creates an always-expanded group. Set `collapsed: false` to
+add a toggle that starts open, or `collapsed: true` to start closed. The current
+page's ancestor groups open automatically. Toggles work without JavaScript.
+During client-side navigation, Diplodocus remembers expanded and collapsed
+groups within each sidebar until the page is reloaded.
+
+### Different sidebars by directory
+
+A sidebar list applies to every page. To configure only particular directories,
+use a map instead:
+
+```yaml
+presentation:
+  sidebar:
+    /guide/:
+      - text: Introduction
+        collapsed: false
+        items:
+          - text: Overview
+            link: guide/index.html
+          - text: Quick start
+            link: guide/quick-start.html
+    /reference/:
+      - text: Reference
+        items:
+          - text: Overview
+            link: reference/index.html
+```
+
+Map keys start and end with `/` and refer to generated URL directories,
+independent of any hosting prefix. The longest matching directory wins. `/`
+provides a site-wide fallback; pages without a matching key keep automatic
+navigation. An empty list explicitly removes authored navigation for that
+sidebar. Package directories such as `/packages/python/` also work.
+
+An explicit sidebar replaces automatic authored groups and the automatic shared
+concepts group for matching pages. Package API trees still appear below it.
+Explicit links may include pages omitted by a collection's `navigation` setting;
+that setting controls automatic inclusion. Pages left out of the sidebar still
+render and remain searchable. Sidebar settings are stored in the snapshot, so
+`generate` can reproduce them without source checkouts.
+
 ## Execution
 
 Execution defaults to `never`. To allow it, set the collection to QMD and

@@ -4,6 +4,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write;
 
 use super::html::escape;
+use crate::configuration::SidebarItem;
 use crate::ir::{ItemReference, Package};
 use crate::site::Site;
 use crate::validation::DocumentIdentity;
@@ -137,6 +138,18 @@ fn package_label<'a>(site: &Site<'_>, package: &'a Package) -> &'a str {
 }
 
 pub(super) fn contextual(html: &mut String, site: &Site<'_>, route: &str) {
+    if let Some((_, items)) = site
+        .presentation
+        .sidebar
+        .as_ref()
+        .and_then(|sidebar| sidebar.for_route(route))
+    {
+        sidebar_items(html, site, route, items, "", true);
+        if let Some(owner) = site.pages[route].owner.as_deref() {
+            package_api_pages(html, site, route, owner);
+        }
+        return;
+    }
     if let Some(owner) = site.pages[route].owner.as_deref() {
         package_pages(html, site, route, owner);
     } else if let Some(section) = site.project_section(route) {
@@ -155,6 +168,100 @@ pub(super) fn contextual(html: &mut String, site: &Site<'_>, route: &str) {
             .map(|(destination, page)| (destination.clone(), page.title.clone()))
             .collect::<Vec<_>>();
         group(html, site, route, "Shared concepts", &concepts);
+    }
+}
+
+fn sidebar_items(
+    html: &mut String,
+    site: &Site<'_>,
+    route: &str,
+    items: &[SidebarItem],
+    parent: &str,
+    top: bool,
+) {
+    for (index, item) in items.iter().enumerate() {
+        let key = format!("{parent}{index}");
+        if top {
+            write!(
+                html,
+                "<section class=\"nav-group sidebar-group\" role=\"group\" aria-label=\"{}\">",
+                escape(&item.text)
+            )
+            .unwrap();
+        } else {
+            html.push_str("<li>");
+        }
+        if item.items.is_empty() {
+            if top {
+                html.push_str("<ul><li>");
+            }
+            sidebar_label(html, site, route, item);
+            if top {
+                html.push_str("</li></ul>");
+            }
+        } else {
+            if let Some(collapsed) = item.collapsed {
+                let open = !collapsed || sidebar_contains(item, route);
+                write!(
+                    html,
+                    "<details class=\"sidebar-disclosure\" data-sidebar-key=\"{key}\"{}><summary>",
+                    if open { " open" } else { "" }
+                )
+                .unwrap();
+            }
+            let heading = if top { "h2" } else { "span" };
+            write!(html, "<{heading} class=\"sidebar-heading\">").unwrap();
+            sidebar_label(html, site, route, item);
+            write!(html, "</{heading}>").unwrap();
+            if item.collapsed.is_some() {
+                html.push_str("</summary>");
+            }
+            write!(
+                html,
+                "<ul class=\"{}\">",
+                if top {
+                    "sidebar-links"
+                } else {
+                    "sidebar-items"
+                }
+            )
+            .unwrap();
+            sidebar_items(html, site, route, &item.items, &format!("{key}."), false);
+            html.push_str("</ul>");
+            if item.collapsed.is_some() {
+                html.push_str("</details>");
+            }
+        }
+        html.push_str(if top { "</section>" } else { "</li>" });
+    }
+}
+
+fn sidebar_contains(item: &SidebarItem, route: &str) -> bool {
+    item.link
+        .as_ref()
+        .is_some_and(|link| link.as_str() == route)
+        || item
+            .items
+            .iter()
+            .any(|child| sidebar_contains(child, route))
+}
+
+fn sidebar_label(html: &mut String, site: &Site<'_>, route: &str, item: &SidebarItem) {
+    if let Some(link) = &item.link {
+        let active = if link.as_str() == route {
+            " aria-current=\"page\""
+        } else {
+            ""
+        };
+        write!(
+            html,
+            "<a href=\"{}\"{active}>{}</a>",
+            escape(&site.url(route, link.as_str())),
+            escape(&item.text)
+        )
+        .unwrap();
+    } else {
+        html.push_str(&escape(&item.text));
     }
 }
 
@@ -273,6 +380,14 @@ fn package_pages(html: &mut String, site: &Site<'_>, route: &str, id: &str) {
         package_label(site, package),
         &format!("packages/{}/", package.slug),
     );
+    package_api_pages(html, site, route, id);
+}
+
+fn package_api_pages(html: &mut String, site: &Site<'_>, route: &str, id: &str) {
+    let package = &site.workspace.packages[id];
+    if package.visibility == crate::configuration::PackageVisibility::Hidden {
+        return;
+    }
     if !package.items.values().any(crate::ir::Item::discoverable) {
         return;
     }

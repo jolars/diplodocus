@@ -1,0 +1,28 @@
+  sidebar:
+    /sidebar/:
+      - text: Introduction
+        collapsed: false
+        items:
+          - text: Welcome
+            link: sidebar/index.html
+          - text: Getting started
+            link: sidebar/start.html
+      - text: Reference
+        items:
+          - text: Default Theme
+            items:
+              - text: Overview
+                link: sidebar/theme.html
+              - text: Advanced
+                link: sidebar/advanced.html
+                collapsed: true
+                items:
+                  - text: Nav
+                    link: sidebar/nav.html
+                  - text: Sidebar
+                    link: sidebar/sidebar.html
+      - text: More topics
+        collapsed: true
+        items:
+          - text: Extra topic
+            link: sidebar/extra.html

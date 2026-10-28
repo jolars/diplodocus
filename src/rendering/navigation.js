@@ -165,10 +165,12 @@
   window.addEventListener('pagehide', recordPosition);
   window.addEventListener('pageshow', () => { history.scrollRestoration = 'manual'; });
 
+  const sidebarDisclosures = '.item-disclosure, .sidebar-disclosure';
+  const disclosureKey = details => details.dataset.sidebarKey ?? details.querySelector('a').href;
   const rememberSidebar = () => {
     const contextual = document.querySelector('.contextual-nav');
     sidebarStates.set(contextual.dataset.section, {
-      open: new Map(Array.from(contextual.querySelectorAll('.item-disclosure'), details => [details.querySelector('a').href, details.open])),
+      open: new Map(Array.from(contextual.querySelectorAll(sidebarDisclosures), details => [disclosureKey(details), details.open])),
       scroll: [(narrow.matches ? drawer : disclosure).scrollTop, sidebar.scrollTop],
     });
   };
@@ -177,8 +179,13 @@
     const replacement = next.querySelector('.contextual-nav');
     const saved = sidebarStates.get(replacement.dataset.section);
     if (saved) {
-      for (const details of replacement.querySelectorAll('.item-disclosure')) {
-        details.open ||= saved.open.get(details.querySelector('a').href) || false;
+      for (const details of replacement.querySelectorAll(sidebarDisclosures)) {
+        const remembered = saved.open.get(disclosureKey(details));
+        if (details.classList.contains('sidebar-disclosure')) {
+          if (remembered !== undefined) details.open = remembered || !!details.querySelector('[aria-current="page"]');
+        } else {
+          details.open ||= remembered || false;
+        }
       }
     }
     contextual.replaceWith(replacement);

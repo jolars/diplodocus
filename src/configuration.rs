@@ -8,7 +8,7 @@
 //! identity and reference validation.
 //! Use [`crate::paths::resolve_workspace_paths`] for explicit filesystem validation.
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -73,6 +73,9 @@ pub struct PresentationDefaults {
     /// Additional project sections shown after Guide in the navbar.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub sections: Vec<NavigationSection>,
+    /// Authored navigation trees; omission keeps automatic directory grouping.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sidebar: Option<SidebarConfiguration>,
     /// Optional image shown before the site title in the navbar's home link.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub logo: Option<LogoDefaults>,
@@ -91,6 +94,47 @@ pub struct PresentationDefaults {
     /// Optional notices and links shown at the bottom of every page.
     #[serde(skip_serializing_if = "FooterDefaults::is_default")]
     pub footer: FooterDefaults,
+}
+
+/// An explicit sidebar for every page, or sidebars selected by URL directory.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum SidebarConfiguration {
+    /// The same authored navigation on every page.
+    Single(Vec<SidebarItem>),
+    /// The longest matching site-root directory prefix selects the sidebar.
+    Multiple(BTreeMap<String, Vec<SidebarItem>>),
+}
+
+impl SidebarConfiguration {
+    pub(crate) fn for_route(&self, route: &str) -> Option<(&str, &[SidebarItem])> {
+        match self {
+            Self::Single(items) => Some(("/", items)),
+            Self::Multiple(sidebars) => sidebars
+                .iter()
+                .filter(|(prefix, _)| route.starts_with(prefix.trim_start_matches('/')))
+                .max_by_key(|(prefix, _)| prefix.len())
+                .map(|(prefix, items)| (prefix.as_str(), items.as_slice())),
+        }
+    }
+}
+
+/// A sidebar link or a group containing further links and groups.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+pub struct SidebarItem {
+    /// Visible label, rendered as plain text.
+    pub text: String,
+    /// Generated site-relative HTML route, independent of the public URL style.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub link: Option<DiagnosticPath>,
+    /// Children in display order; groups may also link to a landing page.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub items: Vec<SidebarItem>,
+    /// Enable collapse controls, initially closed when true and open when false.
+    /// Omission renders a permanently expanded group.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub collapsed: Option<bool>,
 }
 
 /// A project navigation section containing pages beneath its landing page's directory.

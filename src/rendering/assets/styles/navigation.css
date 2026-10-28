@@ -378,6 +378,47 @@ body:has(.documentation-drawer[open]) {
   border-left: 1px solid var(--border);
 }
 
+.sidebar-disclosure > summary {
+  padding: .2rem 0;
+  cursor: pointer;
+}
+
+.sidebar-disclosure > summary > .sidebar-heading {
+  display: inline;
+}
+
+.sidebar-heading {
+  display: block;
+  padding: .2rem .45rem;
+  font-weight: 650;
+}
+
+.sidebar-group h2.sidebar-heading {
+  padding: 0;
+}
+
+.sidebar-heading a {
+  display: inline;
+  padding: 0;
+  color: inherit;
+}
+
+.sidebar-disclosure > summary:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+.sidebar-items {
+  margin: .25rem 0 .6rem .65rem;
+  padding-left: .5rem;
+  border-left: 1px solid var(--border);
+}
+
+.sidebar-links > li > .sidebar-heading,
+.sidebar-links > li > .sidebar-disclosure > summary {
+  margin-inline: -.45rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .documentation-drawer[open] {
     animation: none;

@@ -57,6 +57,7 @@ if (mode === "serve-test") {
       });
     }
     const configuration = join(workspace, "diplodocus.yaml");
+    cpSync(join(root, "tests/fixtures/sidebar-navigation/pages"), join(workspace, "docs/sidebar"), { recursive: true });
     cpSync(join(root, "tests/fixtures/tabsets.md"), join(workspace, "docs/tabsets.md"));
     cpSync(join(root, "tests/fixtures/full-layout.md"), join(workspace, "docs/full-layout.md"));
     writeFileSync(configuration, readFileSync(configuration, "utf8")
@@ -90,7 +91,10 @@ if (mode === "serve-test") {
       kernel: python3
 `;
     const configurationSource = readFileSync(configuration, "utf8");
-    writeFileSync(configuration, configurationSource.replace(/^concepts:/m, `${consoleCollection}concepts:`));
+    const sidebarConfiguration = readFileSync(join(root, "tests/fixtures/sidebar-navigation/config.yaml"), "utf8");
+    writeFileSync(configuration, configurationSource
+      .replace(/^presentation:\n/m, `presentation:\n${sidebarConfiguration}`)
+      .replace(/^concepts:/m, `${consoleCollection}concepts:`));
     const internalTopics = join(root, "tests/fixtures/r-internal-topics");
     for (const directory of ["R", "man"]) {
       cpSync(join(internalTopics, directory), join(workspace, "r", directory), { recursive: true });

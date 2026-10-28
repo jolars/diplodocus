@@ -16,6 +16,9 @@ use crate::validation::{ContentAsset, DocumentIdentity, ReferenceTarget, Resolve
 mod urls;
 pub use urls::UrlMap;
 
+#[path = "site_navigation.rs"]
+mod navigation;
+
 /// Site construction, rendering, or publication failed.
 #[derive(Debug, thiserror::Error)]
 pub enum SiteError {
@@ -478,6 +481,7 @@ impl<'a> Site<'a> {
             }
             section_prefixes.push(prefix);
         }
+        site.validate_sidebar()?;
         Ok(site)
     }
 
