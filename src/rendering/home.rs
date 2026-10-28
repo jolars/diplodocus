@@ -3,6 +3,7 @@
 use std::fmt::Write;
 
 use super::html::escape;
+use super::images::{ImageRole, Images};
 use crate::configuration::{HomeActionIcon, HomeDefaults};
 use crate::ir::Block;
 use crate::site::{Site, SiteError};
@@ -12,6 +13,8 @@ pub(super) fn render(
     site: &Site<'_>,
     route: &str,
     home: &HomeDefaults,
+    images: &Images,
+    standalone: bool,
 ) -> Result<(), SiteError> {
     // Preserve links to the authored title when the hero supplies its heading.
     let anchor = site.pages[route]
@@ -60,8 +63,9 @@ pub(super) fn render(
     if let Some(logo) = site.logo {
         write!(
             html,
-            "<div class=\"home-artwork\"><img src=\"{}\" alt=\"\" width=\"384\" height=\"384\"></div>",
+            "<div class=\"home-artwork\"><img src=\"{}\" alt=\"\" width=\"384\" height=\"384\"{}></div>",
             escape(&site.url(route, &site.asset_route(&logo.fingerprint.value)?)),
+            images.attributes(site, route, &logo.fingerprint.value, ImageRole::Hero, standalone)?,
         )
         .unwrap();
     }

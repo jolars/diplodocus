@@ -124,7 +124,7 @@
 - add binaries to releases ([`41eef5b`](https://github.com/jolars/diplodocus/commit/41eef5b3e3fcd06f23abbbdf6ef40f319bcba2c5))
 - **python:** support embedded API references ([`72c8f35`](https://github.com/jolars/diplodocus/commit/72c8f353f4a597119213f200721f9bd250a1c7f6))
 
-## [0.2.0](https://github.com/jolars/diplodocus/compare/v0.1.0...v0.2.0) (2026-10-15)
+## [0.2.0](https://github.com/jolars/diplodocus/releases/tag/v0.2.0) (2026-10-15)
 
 ### Breaking changes
 

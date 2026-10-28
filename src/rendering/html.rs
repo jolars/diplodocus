@@ -1,6 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write;
 
+use super::images::ImageRole;
 use super::{
     RenderedFile, RenderedSite, present_cell, present_prepared_cell, render_preformatted_text,
 };
@@ -49,7 +50,7 @@ fn brand(
             "<img class=\"brand-logo\" src=\"{}\" alt=\"\"{}{}>",
             escape(&site.url(route, &site.asset_route(&logo.fingerprint.value)?)),
             image_dimensions(site, &logo.fingerprint.value)?,
-            images.attributes(site, route, &logo.fingerprint.value, true, true)?
+            images.attributes(site, route, &logo.fingerprint.value, ImageRole::Logo, true)?
         )
         .unwrap();
     }
@@ -303,7 +304,7 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                 )
             });
         if let Some(home) = home {
-            super::home::render(&mut html, site, route, home)?;
+            super::home::render(&mut html, site, route, home, &images, standalone)?;
             if page.document.is_some() {
                 html.push_str("<div class=\"home-content\">");
             }
@@ -1341,7 +1342,7 @@ impl Renderer<'_, '_> {
                     self.site,
                     self.route,
                     &asset.fingerprint.value,
-                    false,
+                    ImageRole::Content,
                     self.standalone
                 )?
             )),
@@ -1884,7 +1885,7 @@ impl Renderer<'_, '_> {
                                 self.site,
                                 self.route,
                                 &asset.reference.fingerprint.value,
-                                false,
+                                ImageRole::Content,
                                 self.standalone
                             )?
                         )
@@ -1956,7 +1957,7 @@ impl Renderer<'_, '_> {
                             self.site,
                             self.route,
                             &asset.reference.fingerprint.value,
-                            false,
+                            ImageRole::Content,
                             self.standalone,
                         )?);
                     }

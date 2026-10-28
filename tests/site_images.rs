@@ -10,15 +10,20 @@ use diplodocus::site::{Site, UrlMap};
 use diplodocus::snapshots::Snapshot;
 use diplodocus::validation::resolve_workspace;
 
-fn snapshot(format: image::ImageFormat) -> (Snapshot, Vec<u8>, String) {
+fn snapshot(format: image::ImageFormat, home: bool) -> (Snapshot, Vec<u8>, String) {
     let root = support::TestWorkspace::new();
     let extension = if format == image::ImageFormat::Png {
         "png"
     } else {
         "jpg"
     };
+    let home = if home {
+        "  home:\n    tagline: Responsive artwork\n    description: An illustrated homepage.\n    guide: nested/page.html\n"
+    } else {
+        ""
+    };
     root.write("diplodocus.yaml", format!(
-        "project:\n  name: Images\npresentation:\n  logo:\n    repository: docs\n    path: docs/image.{extension}\nrepositories:\n  - id: docs\n    path: .\ncontent:\n  - id: guide\n    owner: project\n    repository: docs\n    path: docs\n    mount: ''\n    format: gfm\n"
+        "project:\n  name: Images\npresentation:\n{home}  logo:\n    repository: docs\n    path: docs/image.{extension}\nrepositories:\n  - id: docs\n    path: .\ncontent:\n  - id: guide\n    owner: project\n    repository: docs\n    path: docs\n    mount: ''\n    format: gfm\n"
     ));
     let mut state = 42_u32;
     let image = image::RgbaImage::from_fn(1200, 600, |_, _| {
@@ -88,7 +93,7 @@ fn candidates(tag: &str) -> Vec<(String, u32)> {
 #[test]
 fn responsive_images_preserve_originals_and_export_smaller_content_addressed_variants() {
     for format in [image::ImageFormat::Png, image::ImageFormat::Jpeg] {
-        let (snapshot, bytes, original) = snapshot(format);
+        let (snapshot, bytes, original) = snapshot(format, false);
         let rendered = render_site(&Site::new(&snapshot).unwrap()).unwrap();
         assert_eq!(rendered.files()[&original].bytes, bytes);
         let html = std::str::from_utf8(&rendered.files()["index.html"].bytes).unwrap();
@@ -137,7 +142,7 @@ fn responsive_images_preserve_originals_and_export_smaller_content_addressed_var
 
 #[test]
 fn responsive_fragments_use_mapped_urls_and_conservative_sizes() {
-    let (snapshot, _, _) = snapshot(image::ImageFormat::Png);
+    let (snapshot, _, _) = snapshot(image::ImageFormat::Png, false);
     let rendered = render_fragments(&Site::new(&snapshot).unwrap()).unwrap();
     let assets = rendered
         .files()
@@ -169,5 +174,40 @@ fn responsive_fragments_use_mapped_urls_and_conservative_sizes() {
         .filter(|(path, _)| path.starts_with("assets/"))
     {
         assert_eq!(file.bytes, mapped.files()[path].bytes);
+    }
+}
+
+#[test]
+fn homepage_artwork_exports_smaller_variants_for_mobile_and_desktop() {
+    for format in [image::ImageFormat::Png, image::ImageFormat::Jpeg] {
+        let (snapshot, bytes, original) = snapshot(format, true);
+        let site = Site::new(&snapshot).unwrap();
+        for (rendered, sizes) in [
+            (
+                render_site(&site).unwrap(),
+                "(max-width: 760px) 12rem, 24rem",
+            ),
+            (render_fragments(&site).unwrap(), "100vw"),
+        ] {
+            let html = std::str::from_utf8(&rendered.files()["index.html"].bytes).unwrap();
+            let artwork = html
+                .split("<div class=\"home-artwork\"><img ")
+                .nth(1)
+                .unwrap()
+                .split('>')
+                .next()
+                .unwrap();
+            assert!(artwork.contains(&format!("sizes=\"{sizes}\"")));
+            let sources = candidates(artwork);
+            for width in [192, 384, 768] {
+                let (path, _) = sources.iter().find(|(_, w)| *w == width).unwrap();
+                let variant = &rendered.files()[path];
+                assert!(variant.bytes.len() < bytes.len());
+                let image = image::load_from_memory(&variant.bytes).unwrap();
+                assert_eq!((image.width(), image.height()), (width, width / 2));
+            }
+            assert_eq!(sources.last().unwrap().0, original);
+            assert_eq!(rendered.files()[&original].bytes, bytes);
+        }
     }
 }

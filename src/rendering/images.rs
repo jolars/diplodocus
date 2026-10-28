@@ -14,9 +14,16 @@ use super::html::escape;
 // These expressions follow the standalone theme's gutters, sidebars, and main width.
 const CONTENT_SIZES: &str = "(max-width: 760px) calc(100vw - 2rem), (max-width: 1099px) min(47rem, calc(100vw - 25.2rem)), min(45rem, calc(100vw - 43.4rem))";
 
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub(super) enum ImageRole {
+    Content,
+    Logo,
+    Hero,
+}
+
 #[derive(Default)]
 pub(super) struct Images {
-    variants: RefCell<BTreeMap<(String, bool), Vec<Variant>>>,
+    variants: RefCell<BTreeMap<(String, ImageRole), Vec<Variant>>>,
 }
 
 struct Variant {
@@ -31,17 +38,17 @@ impl Images {
         site: &Site<'_>,
         route: &str,
         digest: &str,
-        logo: bool,
+        role: ImageRole,
         standalone: bool,
     ) -> Result<String, SiteError> {
         let asset = site.assets.get(digest).ok_or(SiteError::Evidence)?;
         if !matches!(asset.media_type.as_str(), "image/png" | "image/jpeg") {
             return Ok(String::new());
         }
-        let key = (digest.to_owned(), logo);
+        let key = (digest.to_owned(), role);
         let mut cache = self.variants.borrow_mut();
         if !cache.contains_key(&key) {
-            cache.insert(key.clone(), variants(asset, logo)?);
+            cache.insert(key.clone(), variants(asset, role)?);
         }
         let variants = &cache[&key];
         if variants.is_empty() {
@@ -60,18 +67,20 @@ impl Images {
             "{} {width}w",
             site.url(route, &site.asset_route(digest)?)
         ));
-        let sizes = if logo {
-            "1.75rem"
-        } else if standalone
-            && site.home(route).is_none()
-            && !site
-                .pages
-                .get(route)
-                .is_some_and(|page| page.has_full_layout())
-        {
-            CONTENT_SIZES
-        } else {
-            "100vw"
+        let sizes = match role {
+            ImageRole::Logo => "1.75rem",
+            ImageRole::Hero if standalone => "(max-width: 760px) 12rem, 24rem",
+            ImageRole::Content
+                if standalone
+                    && site.home(route).is_none()
+                    && !site
+                        .pages
+                        .get(route)
+                        .is_some_and(|page| page.has_full_layout()) =>
+            {
+                CONTENT_SIZES
+            }
+            _ => "100vw",
         };
         Ok(format!(
             " srcset=\"{}\" sizes=\"{}\"",
@@ -89,7 +98,7 @@ impl Images {
     }
 }
 
-fn variants(asset: &ContentAsset, logo: bool) -> Result<Vec<Variant>, SiteError> {
+fn variants(asset: &ContentAsset, role: ImageRole) -> Result<Vec<Variant>, SiteError> {
     if asset.media_type == "image/png" {
         let reader = png::Decoder::new(Cursor::new(&asset.bytes))
             .read_info()
@@ -103,10 +112,10 @@ fn variants(asset: &ContentAsset, logo: bool) -> Result<Vec<Variant>, SiteError>
         .with_guessed_format()
         .map_err(|_| SiteError::Evidence)?;
     let mut decoder = reader.into_decoder().map_err(|_| SiteError::Evidence)?;
-    let widths: &[u32] = if logo {
-        &[32, 64, 96]
-    } else {
-        &[480, 960, 1440, 1920]
+    let widths: &[u32] = match role {
+        ImageRole::Content => &[480, 960, 1440, 1920],
+        ImageRole::Logo => &[32, 64, 96],
+        ImageRole::Hero => &[192, 384, 576, 768, 1152],
     };
     let width = decoder.dimensions().0;
     if width <= widths[0] {
@@ -191,8 +200,9 @@ mod tests {
             writer.finish().unwrap();
         }
         let asset = asset(bytes, "image/png");
-        assert!(variants(&asset, false).unwrap().is_empty());
-        assert!(variants(&asset, true).unwrap().is_empty());
+        for role in [ImageRole::Content, ImageRole::Logo, ImageRole::Hero] {
+            assert!(variants(&asset, role).unwrap().is_empty());
+        }
     }
 
     #[test]
@@ -218,7 +228,8 @@ mod tests {
             decoder.orientation().unwrap(),
             image::metadata::Orientation::Rotate90
         );
-        assert!(variants(&asset, false).unwrap().is_empty());
-        assert!(variants(&asset, true).unwrap().is_empty());
+        for role in [ImageRole::Content, ImageRole::Logo, ImageRole::Hero] {
+            assert!(variants(&asset, role).unwrap().is_empty());
+        }
     }
 }
