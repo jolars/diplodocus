@@ -114,12 +114,13 @@ pub(super) async fn build_attempt(
         cancellation,
     )
     .await?;
-    generate_attempt(&input, &options.output, false)
+    generate_attempt(&input, &options.output, false, true)
 }
 pub(super) fn generate_attempt(
     input: &Path,
     output: &Path,
     report_diagnostics: bool,
+    allow_components: bool,
 ) -> Result<RenderedSite, CommandError> {
     reject_overlap(output, input)?;
     let snapshot = Snapshot::load(input)?;
@@ -128,7 +129,7 @@ pub(super) fn generate_attempt(
             eprintln!("{}", format_diagnostic(diagnostic));
         }
     }
-    let site = Site::new(&snapshot)?;
+    let site = Site::new(&snapshot)?.with_components(allow_components);
     let rendered = render_site(&site)?;
     rendered.publish(output)?;
     Ok(rendered)

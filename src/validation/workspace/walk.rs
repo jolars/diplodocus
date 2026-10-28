@@ -12,6 +12,7 @@ pub(crate) fn references(
             }
             Block::BlockQuote { blocks, .. }
             | Block::Container { blocks, .. }
+            | Block::Component { blocks, .. }
             | Block::Tabset { blocks, .. }
             | Block::Callout { blocks, .. } => references(blocks, generated, visit),
             Block::List { items, .. } => {
@@ -134,6 +135,9 @@ fn collect_anchors(blocks: &[Block], anchors: &mut BTreeSet<String>) {
             }
             Block::Paragraph { inlines, .. } => inline_anchors(inlines, anchors),
             Block::Callout {
+                attributes, blocks, ..
+            }
+            | Block::Component {
                 attributes, blocks, ..
             }
             | Block::Tabset {

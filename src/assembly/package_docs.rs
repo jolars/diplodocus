@@ -607,6 +607,7 @@ fn heading_identifiers(blocks: &mut [Block], identifiers: &mut std::collections:
             }
             Block::BlockQuote { blocks, .. }
             | Block::Container { blocks, .. }
+            | Block::Component { blocks, .. }
             | Block::Tabset { blocks, .. }
             | Block::Callout { blocks, .. } => heading_identifiers(blocks, identifiers),
             Block::List { items, .. } => {
@@ -731,6 +732,7 @@ fn rebase_blocks(
             }
             Block::BlockQuote { blocks, .. }
             | Block::Container { blocks, .. }
+            | Block::Component { blocks, .. }
             | Block::Tabset { blocks, .. }
             | Block::Callout { blocks, .. } => rebase_blocks(blocks, base, origin, repository),
             Block::List { items, .. } => {

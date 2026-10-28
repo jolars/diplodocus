@@ -154,6 +154,7 @@ pub struct ContentAsset {
 #[derive(Debug)]
 pub struct ResolvedWorkspace {
     records: Vec<ResolvedDocument>,
+    pub(crate) components: BTreeMap<String, crate::components::ComponentBundle>,
     logo: Option<AssetReference>,
     open_graph: Option<AssetReference>,
     assets: BTreeMap<String, ContentAsset>,
@@ -432,6 +433,7 @@ fn resolve(
         generated,
         result: ResolvedWorkspace {
             records: vec![],
+            components: BTreeMap::new(),
             logo: None,
             open_graph: None,
             assets: BTreeMap::new(),
@@ -591,6 +593,23 @@ fn resolve(
         return Err(ResolutionError::Diagnostics(
             resolution.result.diagnostics.into_iter().collect(),
         ));
+    }
+    let (components, assets, inputs) = crate::components::collect(sources)
+        .map_err(|diagnostic| ResolutionError::Diagnostics(vec![*diagnostic]))?;
+    resolution.result.components = components;
+    for (digest, asset) in assets {
+        resolution.result.assets.entry(digest).or_insert(asset);
+    }
+    for (path, boundary) in inputs {
+        let fingerprint = fingerprint_bytes(&fs::read(&path).map_err(AssemblyError::from)?);
+        resolution.result.inputs.insert(
+            path.clone(),
+            AssetObservation {
+                path,
+                boundary,
+                fingerprint,
+            },
+        );
     }
     sources.revalidate()?;
     resolution.result.revalidate()?;

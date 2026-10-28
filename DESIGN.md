@@ -793,9 +793,19 @@ At least initially, Diplodocus is not:
 - a complete Quarto, Pandoc, R Markdown, or Jupyter implementation;
 - a package or kernel installer;
 - a sandbox for authored code;
-- a host for interactive widgets or arbitrary trusted notebook HTML.
+- a host for arbitrary notebook JavaScript or trusted notebook HTML.
 
 The focus is deliberately narrow:
 
 > Generate one coherent documentation snapshot from supplied repositories for
 > related Python and R packages, with explicit links between corresponding APIs.
+
+## Authored browser components
+
+Authors may explicitly declare local, prebuilt component bundles and mount them
+with a fenced `.component` block. The nested Markdown remains the static and
+exported explanation. Component modules are a separate author-controlled browser
+capability, independent of notebook output validation and authored execution.
+Snapshots retain complete bundles with their relative paths. Loading a snapshot
+does not enable these modules: snapshot-only generation requires an explicit
+caller choice. The generator neither builds bundles nor installs their tools.

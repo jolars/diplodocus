@@ -170,6 +170,38 @@ impl Snapshot {
             "document record set",
         )?;
         let mut used_assets = BTreeSet::new();
+        let known_components = self.components.keys().map(String::as_str).collect();
+        for (id, bundle) in &self.components {
+            require(
+                !id.is_empty()
+                    && id
+                        .bytes()
+                        .all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_'),
+                "component identity",
+            )?;
+            require(
+                crate::components::safe_path(&bundle.module)
+                    && bundle.files.contains_key(&bundle.module)
+                    && matches!(
+                        std::path::Path::new(&bundle.module)
+                            .extension()
+                            .and_then(|s| s.to_str()),
+                        Some("js" | "mjs")
+                    )
+                    && bundle
+                        .stylesheets
+                        .iter()
+                        .all(|s| s.ends_with(".css") && bundle.files.contains_key(s)),
+                "component entry assets",
+            )?;
+            for (path, digest) in &bundle.files {
+                require(
+                    crate::components::safe_path(path) && self.assets.contains_key(digest),
+                    "component asset",
+                )?;
+                used_assets.insert(digest.clone());
+            }
+        }
         require(
             self.presentation.open_graph.is_some() == self.open_graph.is_some(),
             "Open Graph presentation evidence",
@@ -226,6 +258,8 @@ impl Snapshot {
             })
             .collect();
         for (identity, (document, owner)) in expected_documents {
+            crate::components::validate_blocks(&document.document.blocks, &known_components)
+                .map_err(|_| SnapshotError::Invalid("component block"))?;
             if let Some(source) = &document.source_location {
                 require(
                     workspace.repositories.contains_key(&source.repository),

@@ -225,7 +225,15 @@ pub fn watch_extract(options: ExtractOptions) -> Result<(), CommandError> {
 
 /// Generate and atomically publish a site using only a completed snapshot.
 pub fn generate(options: GenerateOptions) -> Result<(), CommandError> {
-    pipeline::generate_attempt(&options.input, &options.output, true)?;
+    generate_with_components(options, false)
+}
+
+/// Generate a site, optionally enabling explicitly trusted component bundles.
+pub fn generate_with_components(
+    options: GenerateOptions,
+    allow_components: bool,
+) -> Result<(), CommandError> {
+    pipeline::generate_attempt(&options.input, &options.output, true, allow_components)?;
     Ok(())
 }
 

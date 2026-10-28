@@ -56,6 +56,9 @@ pub(super) struct ExtractArgs {
 
 #[derive(Debug, Args)]
 pub(super) struct GenerateArgs {
+    /// Emit executable browser bundles retained in this trusted snapshot.
+    #[arg(long)]
+    pub(super) allow_components: bool,
     /// Completed SQLite documentation snapshot.
     #[arg(long, value_name = "PATH")]
     pub(super) input: PathBuf,

@@ -6,6 +6,7 @@
 
 pub mod assembly;
 pub mod commands;
+pub mod components;
 pub mod configuration;
 pub mod configuration_validation;
 pub mod diagnostics;

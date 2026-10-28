@@ -207,6 +207,7 @@ fn decode(
     let mut presentation = None;
     let mut logo = None;
     let mut open_graph = None;
+    let mut components = BTreeMap::new();
     let mut entities: BTreeMap<&str, serde_json::Map<String, Value>> = BTreeMap::new();
     let mut nested = Vec::new();
     let mut documents = Vec::new();
@@ -224,6 +225,9 @@ fn decode(
                 }
                 if let Some(asset) = object.remove("open-graph-asset") {
                     open_graph = Some(serde_json::from_value(asset)?);
+                }
+                if let Some(bundles) = object.remove("component-bundles") {
+                    components = serde_json::from_value(bundles)?;
                 }
                 presentation = Some(serde_json::from_value(content)?);
                 continue;
@@ -327,6 +331,7 @@ fn decode(
         presentation: presentation.ok_or(SnapshotError::Invalid("missing presentation"))?,
         logo,
         open_graph,
+        components,
         documents,
         assets,
         producer,

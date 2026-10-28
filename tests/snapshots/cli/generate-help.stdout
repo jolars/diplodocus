@@ -3,8 +3,9 @@ Generate a site using only a completed snapshot
 Usage: diplodocus generate [OPTIONS] --input <PATH>
 
 Options:
-      --input <PATH>     Completed SQLite documentation snapshot
-      --output <PATH>    Directory in which to write the generated site [default: ./site]
-      --format <FORMAT>  Output complete site pages or embeddable HTML and Markdown fragments [default: site] [possible values: site, fragments]
-      --url-map <PATH>   Public document and asset URL map (requires --format fragments)
-  -h, --help             Print help
+      --allow-components  Emit executable browser bundles retained in this trusted snapshot
+      --input <PATH>      Completed SQLite documentation snapshot
+      --output <PATH>     Directory in which to write the generated site [default: ./site]
+      --format <FORMAT>   Output complete site pages or embeddable HTML and Markdown fragments [default: site] [possible values: site, fragments]
+      --url-map <PATH>    Public document and asset URL map (requires --format fragments)
+  -h, --help              Print help

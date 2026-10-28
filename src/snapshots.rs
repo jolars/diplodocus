@@ -32,6 +32,7 @@ pub struct Snapshot {
     presentation: PresentationDefaults,
     logo: Option<AssetReference>,
     open_graph: Option<AssetReference>,
+    components: BTreeMap<String, crate::components::ComponentBundle>,
     documents: Vec<ResolvedDocument>,
     assets: BTreeMap<String, ContentAsset>,
     producer: String,
@@ -80,6 +81,7 @@ impl Snapshot {
             presentation: sources.configuration().presentation.clone(),
             logo: resolved.logo().cloned(),
             open_graph: resolved.open_graph().cloned(),
+            components: resolved.components.clone(),
             documents: resolved.records().to_vec(),
             assets: resolved.assets().clone(),
             producer: env!("CARGO_PKG_VERSION").into(),
@@ -97,6 +99,10 @@ impl Snapshot {
     /// Recorded site defaults, available without the original configuration.
     pub fn presentation(&self) -> &PresentationDefaults {
         &self.presentation
+    }
+    /// Retained browser component bundles, inert until generation enables them.
+    pub fn components(&self) -> &BTreeMap<String, crate::components::ComponentBundle> {
+        &self.components
     }
     /// Portable navbar image, available without the original repository.
     pub fn logo(&self) -> Option<&AssetReference> {

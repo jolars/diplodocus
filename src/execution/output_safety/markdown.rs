@@ -401,6 +401,7 @@ impl Live<'_> {
                         span,
                     },
                     Block::Container { .. }
+                    | Block::Component { .. }
                     | Block::Tabset { .. }
                     | Block::CodeCell(_)
                     | Block::DisplayMath { .. } => {

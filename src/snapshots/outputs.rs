@@ -117,6 +117,7 @@ impl Snapshot {
             presentation: executed.sources().configuration().presentation.clone(),
             logo: resolved.logo().cloned(),
             open_graph: resolved.open_graph().cloned(),
+            components: resolved.components.clone(),
             documents: resolved.records().to_vec(),
             assets: resolved.assets().clone(),
             producer: env!("CARGO_PKG_VERSION").into(),
@@ -324,6 +325,7 @@ fn cells(blocks: &[Block], visit: &mut impl FnMut(&CodeCell)) {
             Block::CodeCell(cell) => visit(cell),
             Block::BlockQuote { blocks, .. }
             | Block::Container { blocks, .. }
+            | Block::Component { blocks, .. }
             | Block::Tabset { blocks, .. }
             | Block::Callout { blocks, .. } => cells(blocks, visit),
             Block::List { items, .. } => {
@@ -367,6 +369,7 @@ fn project(
             }
             Block::BlockQuote { blocks, .. }
             | Block::Container { blocks, .. }
+            | Block::Component { blocks, .. }
             | Block::Tabset { blocks, .. }
             | Block::Callout { blocks, .. } => project(blocks, records, ordinal)?,
             Block::List { items, .. } => {

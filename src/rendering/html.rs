@@ -92,6 +92,7 @@ fn navigation_shell_fingerprint(
         SEARCH,
         include_str!("code.js"),
         include_str!("tabsets.js"),
+        include_str!("components.js"),
         include_str!("markdown_worker.js"),
     ] {
         shell.push('\0');
@@ -235,6 +236,14 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                 escape(&site.url(route, &markdown_path))
             )
             .unwrap();
+            if site.components_enabled && !site.components.is_empty() {
+                write!(
+                    html,
+                    "<script defer src=\"{}\"></script>",
+                    escape(&site.url(route, "assets/components.js"))
+                )
+                .unwrap();
+            }
             write!(html, "</head><body data-diplodocus-navigation=\"1\" data-diplodocus-shell=\"{}\" data-layout=\"{}\"><a class=\"skip-link\" href=\"#main\">Skip to content</a>", shell_fingerprint.as_deref().expect("standalone shell fingerprint"), if home.is_some() { "home" } else if full_layout { "full" } else { "docs" }).unwrap();
             html.push_str("<header>");
             brand(&mut html, site, route, &images)?;
@@ -858,6 +867,27 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
         .into(),
         file(style.into_bytes(), "text/css; charset=utf-8"),
     );
+    if standalone && site.components_enabled && !site.components.is_empty() {
+        files.insert(
+            "assets/components.js".into(),
+            file(
+                include_str!("components.js").as_bytes().to_vec(),
+                "text/javascript; charset=utf-8",
+            ),
+        );
+        for (id, bundle) in site.components {
+            let prefix = bundle.prefix(id);
+            for (path, digest) in &bundle.files {
+                files.insert(
+                    format!("{prefix}{path}"),
+                    file(
+                        site.assets[digest].bytes.clone(),
+                        crate::components::media_type(path),
+                    ),
+                );
+            }
+        }
+    }
     if standalone {
         files.insert(
             "assets/search.js".into(),
@@ -1507,6 +1537,33 @@ impl Renderer<'_, '_> {
                     });
             }
             match block {
+                Block::Component {
+                    attributes, blocks, ..
+                } => {
+                    if self.standalone && self.site.components_enabled {
+                        let name =
+                            crate::components::name(attributes).ok_or(SiteError::Evidence)?;
+                        let bundle = self.site.components.get(name).ok_or(SiteError::Evidence)?;
+                        let prefix = bundle.prefix(name);
+                        let module = self
+                            .site
+                            .url(self.route, &format!("{prefix}{}", bundle.module));
+                        let styles: Vec<_> = bundle
+                            .stylesheets
+                            .iter()
+                            .map(|s| self.site.url(self.route, &format!("{prefix}{s}")))
+                            .collect();
+                        write!(html, "<div class=\"diplodocus-component\"{} data-component-module=\"{}\" data-component-styles=\"{}\"><div data-component-fallback>{}</div></div>", id(attributes), escape(&module), escape(&serde_json::to_string(&styles).map_err(|_| SiteError::Evidence)?), self.blocks(blocks)?).unwrap();
+                    } else {
+                        write!(
+                            html,
+                            "<div{}>{}</div>",
+                            id(attributes),
+                            self.blocks(blocks)?
+                        )
+                        .unwrap();
+                    }
+                }
                 Block::Tabset {
                     attributes, blocks, ..
                 } => {

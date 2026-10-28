@@ -581,7 +581,10 @@ impl Markdown<'_, '_> {
         let mut output = String::new();
         for node in nodes {
             match node {
-                Block::Tabset {
+                Block::Component {
+                    attributes, blocks, ..
+                }
+                | Block::Tabset {
                     attributes, blocks, ..
                 } => {
                     if let Some(identifier) = &attributes.identifier {

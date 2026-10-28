@@ -6,6 +6,7 @@ pub(super) fn contains_math(blocks: &[Block]) -> bool {
         Block::Paragraph { inlines, .. } | Block::Heading { inlines, .. } => inline_math(inlines),
         Block::BlockQuote { blocks, .. }
         | Block::Container { blocks, .. }
+        | Block::Component { blocks, .. }
         | Block::Tabset { blocks, .. }
         | Block::Callout { blocks, .. } => contains_math(blocks),
         Block::List { items, .. } => items.iter().any(|item| contains_math(&item.blocks)),

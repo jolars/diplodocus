@@ -148,6 +148,9 @@ impl PreparationContext<'_> {
                 Block::Callout {
                     attributes, blocks, ..
                 }
+                | Block::Component {
+                    attributes, blocks, ..
+                }
                 | Block::Tabset {
                     attributes, blocks, ..
                 } => {

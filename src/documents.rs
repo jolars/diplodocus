@@ -342,6 +342,17 @@ impl AdapterContext {
             }
             BlockNode::CodeBlock(code) => Some(self.code_block(code)),
             BlockNode::FencedDiv(div) => {
+                if !self.evaluated
+                    && div
+                        .attributes()
+                        .is_some_and(|a| a.classes().iter().any(|c| c == "component"))
+                {
+                    return Some(Block::Component {
+                        attributes: div.attributes().map(attributes).unwrap_or_default(),
+                        blocks: div.block_nodes().filter_map(|b| self.block(b)).collect(),
+                        span: span(div.syntax().text_range()),
+                    });
+                }
                 if div
                     .attributes()
                     .is_some_and(|a| a.classes().iter().any(|c| c == "panel-tabset"))

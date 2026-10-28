@@ -62,7 +62,9 @@ fn dispatch(cli: Cli) -> Result<(), CommandError> {
                         "--url-map requires --format fragments".into(),
                     )))
                 }
-                GenerateFormat::Site => commands::generate(options),
+                GenerateFormat::Site => {
+                    commands::generate_with_components(options, args.allow_components)
+                }
                 GenerateFormat::Fragments => commands::generate_fragments(options, args.url_map),
             }
         }

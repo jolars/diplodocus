@@ -44,6 +44,8 @@ pub enum SiteError {
 
 /// Complete generation inputs, independent of databases and source checkouts.
 pub struct Site<'a> {
+    pub(crate) components: &'a BTreeMap<String, crate::components::ComponentBundle>,
+    pub(crate) components_enabled: bool,
     pub(crate) workspace: &'a Workspace,
     pub(crate) presentation: &'a PresentationDefaults,
     pub(crate) logo: Option<&'a AssetReference>,
@@ -107,12 +109,19 @@ impl PageModel<'_> {
 }
 
 impl<'a> Site<'a> {
+    /// Enable trusted browser bundles for complete site generation.
+    pub fn with_components(mut self, enabled: bool) -> Self {
+        self.components_enabled = enabled;
+        self
+    }
     /// Assign collision-checked routes and normalize authored cell presentation.
     /// No source files, database connections, or language runtimes are used.
     pub fn new(snapshot: &'a Snapshot) -> Result<Self, SiteError> {
         let workspace = snapshot.workspace();
         let mut site = Self {
             workspace,
+            components: snapshot.components(),
+            components_enabled: false,
             presentation: snapshot.presentation(),
             logo: snapshot.logo(),
             open_graph: snapshot.open_graph(),

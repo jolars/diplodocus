@@ -135,6 +135,15 @@ pub struct Document {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "kebab-case")]
 pub enum Block {
+    /// An explicitly declared browser component with ordinary Markdown fallback.
+    Component {
+        /// Component name and optional local anchor.
+        attributes: Attributes,
+        /// Content retained when scripting is unavailable.
+        blocks: Vec<Block>,
+        /// Range in the enclosing document.
+        span: SourceSpan,
+    },
     /// Heading-delimited panels presented as an interactive tabset in HTML.
     Tabset {
         /// Tabset identifier, classes, and optional synchronization group.

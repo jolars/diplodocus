@@ -215,6 +215,22 @@ impl Observer {
         {
             observe(&root.join(image.path.as_str()), &mut observed);
         }
+        for component in &config.components {
+            if let Some(root) = roots.get(component.repository.as_str()) {
+                fn bundle(path: &Path, observed: &mut Observation) {
+                    observe(path, observed);
+                    if path.is_symlink() {
+                        return;
+                    }
+                    if let Ok(entries) = fs::read_dir(path) {
+                        for entry in entries.flatten() {
+                            bundle(&entry.path(), observed);
+                        }
+                    }
+                }
+                bundle(&root.join(&component.path), &mut observed);
+            }
+        }
         for package in &config.packages {
             let Some(root) = roots.get(package.repository.as_str()) else {
                 continue;

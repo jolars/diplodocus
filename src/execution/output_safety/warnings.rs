@@ -64,6 +64,7 @@ fn visit_blocks<'a>(
             }
             Block::BlockQuote { blocks, .. }
             | Block::Container { blocks, .. }
+            | Block::Component { blocks, .. }
             | Block::Tabset { blocks, .. }
             | Block::Callout { blocks, .. } => visit_blocks(blocks, nodes, depth + 1)?,
             Block::List { items, .. } => {

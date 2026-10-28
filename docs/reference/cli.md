@@ -117,6 +117,10 @@ Generate a site using only a completed snapshot
 
 ### Options
 
+- `--allow-components`
+
+    Emit executable browser bundles retained in this trusted snapshot
+
 - `--input <PATH>`
 
     Completed SQLite documentation snapshot

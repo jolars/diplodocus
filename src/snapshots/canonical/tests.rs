@@ -27,6 +27,7 @@ fn fixture() -> Snapshot {
         documents: Vec::new(),
         logo: None,
         open_graph: None,
+        components: BTreeMap::new(),
         assets: BTreeMap::new(),
         producer: "canonical-fixture".into(),
         executions: BTreeMap::new(),
@@ -105,7 +106,7 @@ fn minimal_export_and_snapshot_digest_match_independent_fixture() {
     );
     assert_eq!(
         content_fingerprint(&snapshot, &records(&snapshot).unwrap()).unwrap(),
-        "493c956bf921bc329336c1abe4a5a27ae6cce2caa788a64d11b2b8784384960c"
+        "d3b3a1e55bee5f78cbbbf1dedbc2cb317f384a0e0aec4a95db869713dbff18e5"
     );
 }
 

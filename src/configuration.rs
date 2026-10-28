@@ -34,6 +34,9 @@ pub struct WorkspaceConfiguration {
     /// Explicit local source repositories; omission declares none.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub repositories: Vec<RepositoryConfiguration>,
+    /// Explicit bundles for browser components in authored pages.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub components: Vec<crate::components::ComponentConfiguration>,
     /// Explicit packages and internal components to document; omission declares none.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub packages: Vec<PackageConfiguration>,

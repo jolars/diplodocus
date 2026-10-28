@@ -127,6 +127,7 @@ impl Resolver<'_> {
                     self.inlines(inlines)
                 }
                 Block::Container { blocks, .. }
+                | Block::Component { blocks, .. }
                 | Block::Tabset { blocks, .. }
                 | Block::BlockQuote { blocks, .. }
                 | Block::Callout { blocks, .. } => self.blocks(blocks),
@@ -331,6 +332,7 @@ fn prepare_blocks(blocks: &mut [Block], identifiers: &mut BTreeSet<String>) {
                 *source_segments = visible;
             }
             Block::Container { blocks, .. }
+            | Block::Component { blocks, .. }
             | Block::Tabset { blocks, .. }
             | Block::BlockQuote { blocks, .. }
             | Block::Callout { blocks, .. } => prepare_blocks(blocks, identifiers),

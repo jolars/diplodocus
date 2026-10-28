@@ -148,6 +148,7 @@ fn paragraph_roles(
         }
         Block::BlockQuote { blocks, .. }
         | Block::Container { blocks, .. }
+        | Block::Component { blocks, .. }
         | Block::Tabset { blocks, .. }
         | Block::Callout { blocks, .. } => {
             for block in blocks {
@@ -256,6 +257,11 @@ fn remap_block(block: &mut Block, offsets: &[usize]) {
             blocks,
             span,
             ..
+        }
+        | Block::Component {
+            attributes,
+            blocks,
+            span,
         }
         | Block::Tabset {
             attributes,

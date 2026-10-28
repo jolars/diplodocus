@@ -76,6 +76,9 @@ pub(super) fn records(snapshot: &Snapshot) -> Result<Vec<Record>, SnapshotError>
         }
     }
     let mut presentation = serde_json::to_value(&snapshot.presentation)?;
+    if !snapshot.components.is_empty() {
+        presentation["component-bundles"] = serde_json::to_value(&snapshot.components)?;
+    }
     if let Some(logo) = &snapshot.logo {
         presentation["logo-asset"] = serde_json::to_value(logo)?;
     }

@@ -10,6 +10,9 @@ use crate::ir::SourceSpan;
 /// Stable diagnostic identifier.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DiagnosticCode {
+    /// An explicitly declared browser component or bundle is invalid.
+    #[serde(rename = "invalid-component")]
+    InvalidComponent,
     /// An authored local page, asset, or anchor cannot be resolved safely.
     #[serde(rename = "unresolved-document-reference")]
     UnresolvedDocumentReference,
@@ -375,6 +378,7 @@ impl DiagnosticCode {
             Self::RRdInformationLoss => "r-rd-information-loss",
             Self::RRdSourceAttribution => "r-rd-source-attribution",
             Self::UnsupportedRd => "unsupported-rd",
+            Self::InvalidComponent => "invalid-component",
             Self::UnsupportedAuthoredSyntax => "unsupported-authored-syntax",
             Self::InvalidEmbeddedYaml => "invalid-embedded-yaml",
             Self::AmbiguousCellOption => "ambiguous-cell-option",
