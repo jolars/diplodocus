@@ -356,8 +356,8 @@ There is no fallback to stale execution after a failed fresh run.
 
 ## Toolchain requirements
 
-Use the exact `panache-parser = 0.29.2`, `jupyter-zmq-client = 1.0.1`, and
-`jupyter-protocol = 2.0.2` pins in [Cargo.toml](../../Cargo.toml), with the
+Use the exact `panache-parser = 0.29.2`, `jupyter-zmq-client = 2.0.0`, and
+`jupyter-protocol = 2.0.3` pins in [Cargo.toml](../../Cargo.toml), with the
 Tokio version resolved in [Cargo.lock](../../Cargo.lock). Parser crates remain
 in-process. The client crates and Tokio are production dependencies of the
 internal session adapter; the test-kernel feature remains a development

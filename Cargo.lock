@@ -1383,9 +1383,9 @@ dependencies = [
 
 [[package]]
 name = "jupyter-protocol"
-version = "2.0.2"
+version = "2.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "670197bfdc3b171334f450d9a3ae47999e8aec048579cc3c52f752cc8ff59843"
+checksum = "cf199c30e61505042f5c0d79a33b5a71c552ea8b64243ff3498b1f4592d8e692"
 dependencies = [
  "async-trait",
  "bytes",
@@ -1399,9 +1399,9 @@ dependencies = [
 
 [[package]]
 name = "jupyter-zmq-client"
-version = "1.0.1"
+version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d6bf4fcff2a9c9c6af169e14f7717bd1d67d51851d3c40fc9c6315da57d74947"
+checksum = "f59bf6241faf6a8c06416c351756be9a79976e8faad220604b9a26f568270ab0"
 dependencies = [
  "bytes",
  "data-encoding",
