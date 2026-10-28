@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.0](https://github.com/jolars/diplodocus/compare/v0.10.0...v0.11.0) (2026-10-28)
+
+### Features
+
+- support portable browser components ([`d3260c1`](https://github.com/jolars/diplodocus/commit/d3260c1e942f04bf6f6d7f1e4bd7f3c42a299886))
+- add configurable nested sidebars ([`f677d82`](https://github.com/jolars/diplodocus/commit/f677d820a4e613161c87fd4e8b75b071fe17931c))
+
 ## [0.10.0](https://github.com/jolars/diplodocus/compare/v0.9.0...v0.10.0) (2026-10-27)
 
 ### Features
