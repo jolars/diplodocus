@@ -179,7 +179,8 @@ impl PreparationContext<'_> {
                     self.inlines(inlines);
                 }
                 Block::Paragraph { inlines, .. } => self.inlines(inlines),
-                Block::ThematicBreak { .. }
+                Block::ApiDocumentation { .. }
+                | Block::ThematicBreak { .. }
                 | Block::CodeBlock { .. }
                 | Block::Unsupported { .. }
                 | Block::DisplayMath { .. } => {}

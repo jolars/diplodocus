@@ -646,6 +646,9 @@ impl ContentConfiguration {
         if self.format == AuthoredFormat::Gfm {
             return Err(ExecutionConfigurationError::GfmExecution);
         }
+        if self.format == AuthoredFormat::Documenter {
+            return Err(ExecutionConfigurationError::DocumenterExecution);
+        }
         if self.format == AuthoredFormat::Qmd {
             if execution.engine != Some(ExecutionEngine::Jupyter) {
                 return Err(ExecutionConfigurationError::MissingEngine);
@@ -736,6 +739,9 @@ pub enum ExecutionConfigurationError {
     /// A GFM collection requested execution.
     #[error("`mode: execute` requires `format: qmd`")]
     GfmExecution,
+    /// Documenter execution is outside the static authored profile.
+    #[error("`format: documenter` supports only `mode: never`")]
+    DocumenterExecution,
     /// Execution has no explicitly selected Jupyter engine.
     #[error("`mode: execute` requires `engine: jupyter`")]
     MissingEngine,

@@ -19,6 +19,7 @@ pub(super) fn page(
     let mut renderer = Markdown {
         site,
         route,
+        document_route: route,
         page,
         resolved: page.resolved,
         identifiers: page.resolved.map(|d| d.anchors.clone()).unwrap_or_default(),
@@ -228,6 +229,7 @@ pub(super) fn page(
                 let mut method_renderer = Markdown {
                     site,
                     route,
+                    document_route: route,
                     page: method_page,
                     resolved: method_page.resolved,
                     identifiers: BTreeSet::new(),
@@ -294,6 +296,7 @@ pub(super) fn page(
                 let mut member_renderer = Markdown {
                     site,
                     route,
+                    document_route: route,
                     page,
                     resolved: member.resolved,
                     identifiers: BTreeSet::new(),
@@ -435,6 +438,7 @@ fn rust_document(
         let mut renderer = Markdown {
             site,
             route,
+            document_route: route,
             page,
             resolved: member.resolved,
             identifiers: BTreeSet::new(),
@@ -484,6 +488,7 @@ fn concept_links(site: &Site<'_>, route: &str, concept: &Concept) -> Result<Stri
 struct Markdown<'a, 'b> {
     site: &'a Site<'b>,
     route: &'a str,
+    document_route: &'a str,
     page: &'a PageModel<'b>,
     resolved: Option<&'a ResolvedDocument>,
     identifiers: BTreeSet<String>,
@@ -493,6 +498,60 @@ struct Markdown<'a, 'b> {
 }
 
 impl Markdown<'_, '_> {
+    fn api_documentation(
+        &self,
+        reference: &ItemReference,
+        identifier: &str,
+    ) -> Result<String, SiteError> {
+        let item = &self.site.workspace.packages[&reference.package].items[&reference.item];
+        let target = self.site.target(
+            self.route,
+            &ReferenceTarget::Item {
+                item: reference.clone(),
+            },
+        )?;
+        let mut output = String::new();
+        anchor(&mut output, identifier);
+        writeln!(
+            output,
+            "## [{}]({})\n",
+            code(&item.qualified_name),
+            link_url(&target)
+        )
+        .unwrap();
+        for reference in std::iter::once(reference).chain(super::html::julia_members(item)) {
+            let (document_route, page) = self.site.api_page(reference)?;
+            let item = page.item.ok_or(SiteError::Evidence)?;
+            for signature in &item.signatures {
+                output.push_str(&fence(
+                    &super::signatures::signature_for_site(
+                        self.site,
+                        &item.name,
+                        &signature.signature,
+                        "julia",
+                    ),
+                    "julia",
+                ));
+            }
+            output.push_str(&sources(self.site, item));
+            if let Some(document) = page.document {
+                let mut renderer = Markdown {
+                    site: self.site,
+                    route: self.route,
+                    document_route,
+                    page,
+                    resolved: page.resolved,
+                    identifiers: BTreeSet::new(),
+                    headings: false,
+                    heading_offset: 2,
+                    cell: 0,
+                };
+                output.push_str(&renderer.blocks(&document.document.blocks)?);
+            }
+        }
+        Ok(output)
+    }
+
     fn reference(&self, kind: ReferenceKind, spelling: &str) -> Result<String, SiteError> {
         let target = &self
             .resolved
@@ -503,6 +562,20 @@ impl Markdown<'_, '_> {
             })
             .ok_or(SiteError::Evidence)?
             .target;
+        if self.document_route != self.route
+            && let ReferenceTarget::Anchor { fragment } = target
+        {
+            let fragment = self
+                .page
+                .anchor_prefix
+                .as_ref()
+                .map_or_else(|| fragment.clone(), |prefix| format!("{prefix}-{fragment}"));
+            return Ok(format!(
+                "{}#{}",
+                self.site.url(self.route, self.document_route),
+                crate::site::encode(&fragment)
+            ));
+        }
         if let ReferenceTarget::Anchor { fragment } = target
             && let Some(prefix) = &self.page.anchor_prefix
         {
@@ -581,6 +654,11 @@ impl Markdown<'_, '_> {
         let mut output = String::new();
         for node in nodes {
             match node {
+                Block::ApiDocumentation {
+                    item, identifier, ..
+                } => {
+                    output.push_str(&self.api_documentation(item, identifier)?);
+                }
                 Block::Component {
                     attributes, blocks, ..
                 }
@@ -623,7 +701,9 @@ impl Markdown<'_, '_> {
                     inlines,
                     ..
                 } => {
-                    if self.headings && *level + self.heading_offset > 1 {
+                    if self.headings
+                        && (attributes.identifier.is_some() || *level + self.heading_offset > 1)
+                    {
                         let identifier = if let Some(id) = &attributes.identifier {
                             id.value.clone()
                         } else {

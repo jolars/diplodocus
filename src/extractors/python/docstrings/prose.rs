@@ -311,6 +311,8 @@ fn remap_block(block: &mut Block, offsets: &[usize]) {
         Block::ThematicBreak { span }
         | Block::DisplayMath { span, .. }
         | Block::Unsupported { span, .. } => remap(span, offsets),
-        Block::CodeCell(_) => unreachable!("GFM prose cannot create executable cells"),
+        Block::ApiDocumentation { .. } | Block::CodeCell(_) => {
+            unreachable!("GFM prose cannot create executable cells")
+        }
     }
 }

@@ -56,6 +56,7 @@ fn visit_blocks<'a>(
     }
     for block in blocks {
         match block {
+            Block::ApiDocumentation { .. } => {}
             Block::Unsupported {
                 span, source_kind, ..
             } => nodes.push((*span, source_kind)),

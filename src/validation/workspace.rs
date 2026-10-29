@@ -633,6 +633,16 @@ impl Resolver<'_> {
         generated: bool,
     ) -> Result<ReferenceTarget, DiagnosticCode> {
         let invalid = DiagnosticCode::UnresolvedDocumentReference;
+        if kind == ReferenceKind::Link
+            && let Some(target) = super::documenter_reference(
+                self.sources.workspace(),
+                context.document,
+                context.owner,
+                spelling,
+            )
+        {
+            return target;
+        }
         if let Some(spelling) = semantic_target(context.document, kind, spelling) {
             if matches!(&context.document.source_format, DocumentFormat::Extracted { name } if name == "rd")
                 && kind == ReferenceKind::Link

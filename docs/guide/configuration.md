@@ -104,8 +104,8 @@ generated URLs, including across collections. Preview watches the original
 file and its referenced assets, and snapshots retain the content for generation
 without the checkout.
 
-Single files must match their collection's format: `.md` for `gfm`, `.qmd` for
-`qmd`, and `.Rmd` or `.rmd` for `rmd`. Execution and navigation settings work
+Single files must match their collection's format: `.md` for `gfm` or
+`documenter`, `.qmd` for `qmd`, and `.Rmd` or `.rmd` for `rmd`. Execution and navigation settings work
 as they do for directory collections.
 
 The monorepo example has one shared GFM guide and four extracted packages,

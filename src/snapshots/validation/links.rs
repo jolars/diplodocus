@@ -310,7 +310,7 @@ pub(super) fn validate(workspace: &Workspace) -> Result {
             }
             links.provenance(&item.provenance)?;
             if let Some(document) = &item.documentation {
-                links.document(document)?;
+                links.document(document, false)?;
             }
         }
     }
@@ -323,7 +323,9 @@ pub(super) fn validate(workspace: &Workspace) -> Result {
         links.provenance(&relationship.provenance)?;
     }
     for page in workspace.pages.values() {
-        links.document(&page.document)?;
+        let allow_api = matches!(&page.kind, PageKind::Authored { collection }
+            if workspace.content_collections.get(collection).is_some_and(|collection| collection.format == crate::documents::AuthoredFormat::Documenter));
+        links.document(&page.document, allow_api)?;
         for record in &page.document.provenance {
             if let ProvenanceActivity::RMarkdown { package, .. } = &record.activity {
                 require(
@@ -335,7 +337,7 @@ pub(super) fn validate(workspace: &Workspace) -> Result {
     }
     for concept in workspace.concepts.values() {
         if let Some(document) = &concept.documentation {
-            links.document(document)?;
+            links.document(document, false)?;
         }
     }
     Ok(())
@@ -851,7 +853,7 @@ impl Links<'_> {
         }
     }
 
-    fn document(&self, document: &SourcedDocument) -> Result {
+    fn document(&self, document: &SourcedDocument, allow_api: bool) -> Result {
         self.provenance(&document.provenance)?;
         if matches!(
             document.source_format,
@@ -991,26 +993,49 @@ impl Links<'_> {
                 )?;
             }
         }
-        self.blocks(&document.document.blocks)
+        self.blocks(
+            &document.document.blocks,
+            allow_api
+                && matches!(
+                    document.source_format,
+                    DocumentFormat::Authored {
+                        format: crate::documents::AuthoredFormat::Documenter
+                    }
+                ),
+        )
     }
 
-    fn blocks(&self, blocks: &[Block]) -> Result {
+    fn blocks(&self, blocks: &[Block], allow_api: bool) -> Result {
         for block in blocks {
             match block {
+                Block::ApiDocumentation {
+                    item, identifier, ..
+                } => {
+                    self.item(item)?;
+                    require(
+                        allow_api
+                            && !identifier.is_empty()
+                            && matches!(
+                                self.0.packages[&item.package].items[&item.item].language_data,
+                                Some(ItemLanguageData::Julia(_))
+                            ),
+                        "embedded Julia API item",
+                    )?;
+                }
                 Block::BlockQuote { blocks, .. }
                 | Block::Container { blocks, .. }
                 | Block::Component { blocks, .. }
                 | Block::Tabset { blocks, .. }
-                | Block::Callout { blocks, .. } => self.blocks(blocks)?,
+                | Block::Callout { blocks, .. } => self.blocks(blocks, allow_api)?,
                 Block::List { items, .. } => {
                     for item in items {
-                        self.blocks(&item.blocks)?;
+                        self.blocks(&item.blocks, allow_api)?;
                     }
                 }
                 Block::Table { rows, .. } => {
                     for row in rows {
                         for cell in &row.cells {
-                            self.blocks(&cell.blocks)?;
+                            self.blocks(&cell.blocks, allow_api)?;
                         }
                     }
                 }
@@ -1040,7 +1065,7 @@ impl Links<'_> {
                             if let OutputRepresentation::MarkdownBlocks { blocks, .. } =
                                 representation
                             {
-                                self.blocks(blocks)?;
+                                self.blocks(blocks, false)?;
                             }
                         }
                     }

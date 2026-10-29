@@ -400,7 +400,8 @@ impl Live<'_> {
                         raw,
                         span,
                     },
-                    Block::Container { .. }
+                    Block::ApiDocumentation { .. }
+                    | Block::Container { .. }
                     | Block::Component { .. }
                     | Block::Tabset { .. }
                     | Block::CodeCell(_)

@@ -199,12 +199,12 @@ Documenter compatibility.
   Extraction and detached-fragment regressions run normally. The Eunoia recipe
   requires both examples to render as code in HTML and Markdown, with no
   literal fences in HTML list items.
-- [ ] Support the Documenter page syntax used in Eunoia.jl's `docs/src/`.
-  `@index` and `@autodocs` currently remain literal code blocks. Bare page and
-  heading `@ref` links fail validation, while explicit references can leave
-  stray markup in rendered prose. Define an authored Documenter profile with
-  API, page, and heading references and the required page assembly directives,
-  including `Modules` and `Private = false`.
+- [x] Support the Documenter page syntax used in Eunoia.jl's `docs/src/`.
+  Add `format: documenter` for Julia Markdown with implicit and explicit API,
+  page, and heading `@ref` links and named heading anchors. Expand `@index`
+  and `@autodocs`, including literal `Modules` and `Private = false`.
+  Retain embedded API context and anchors in detached HTML and Markdown.
+  Verify Eunoia's three pages, 23 public bindings, and mapped local links.
 - [ ] Execute Documenter `@example` blocks with prepared Julia dependencies.
   Eunoia.jl has 30 gallery blocks and one homepage example; importing them as GFM
   produces no figures. Preserve named sessions within a page, anonymous example

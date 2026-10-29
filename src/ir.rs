@@ -135,6 +135,15 @@ pub struct Document {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "kebab-case")]
 pub enum Block {
+    /// API documentation embedded by a static authored assembly directive.
+    ApiDocumentation {
+        /// Canonical item whose signatures and documentation are presented.
+        item: ItemReference,
+        /// Page-local anchor used by the generated index.
+        identifier: String,
+        /// Authored directive range, independent of the item's source ranges.
+        span: SourceSpan,
+    },
     /// An explicitly declared browser component with ordinary Markdown fallback.
     Component {
         /// Component name and optional local anchor.

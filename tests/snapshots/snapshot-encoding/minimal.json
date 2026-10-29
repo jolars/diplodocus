@@ -1,7 +1,7 @@
 {
   "assets": [],
   "encoding_version": 1,
-  "ir_version": 9,
+  "ir_version": 10,
   "producer": "canonical-fixture",
   "records": [
     {
@@ -33,9 +33,9 @@
         "name": "Canonical café",
         "provenance": [],
         "relationships": [],
-        "schema_version": 9
+        "schema_version": 10
       },
-      "fingerprint": "5504a6050bb397bbbbee4227024d2ba39475ebe8718dcebcc4678fc19bdce2af",
+      "fingerprint": "eeb0eff7745c065d1dc5b44846351380b8216d729a4821ba0a9c51794afa19ff",
       "id": "",
       "kind": "workspace",
       "owner": ""

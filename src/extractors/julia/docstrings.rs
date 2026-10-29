@@ -27,8 +27,9 @@ pub struct JuliaDocstringParse {
 pub fn parse(text: &StaticDocText, source: SourceLocation) -> JuliaDocstringParse {
     let parsed = documentation::parse(text.as_str());
     let mut context = Context {
-        text,
-        source: source.clone(),
+        text: Some(text),
+        source: Some(source.clone()),
+        authored: false,
         diagnostics: Vec::new(),
         provenance: Vec::new(),
     };
@@ -88,41 +89,85 @@ pub(super) fn opaque(raw: String, source: SourceLocation) -> SourcedDocument {
     }
 }
 
+pub(crate) fn parse_documenter(source: &str) -> crate::documents::DocumentParse {
+    let parsed = documentation::parse(source);
+    let mut context = Context {
+        text: None,
+        source: None,
+        authored: true,
+        diagnostics: Vec::new(),
+        provenance: Vec::new(),
+    };
+    for diagnostic in parsed.diagnostics {
+        context.warning(
+            diagnostic.range,
+            format!("Malformed Julia Markdown: {:?}.", diagnostic.kind),
+        );
+    }
+    let root = md::Document::cast(parsed.cst).unwrap();
+    let blocks = root.blocks().map(|block| context.block(block)).collect();
+    crate::documents::DocumentParse {
+        document: Document {
+            span: SourceSpan {
+                start: 0,
+                end: source.len(),
+            },
+            frontmatter: None,
+            blocks,
+        },
+        diagnostics: context.diagnostics,
+    }
+}
+
 struct Context<'a> {
-    text: &'a StaticDocText,
-    source: SourceLocation,
+    text: Option<&'a StaticDocText>,
+    source: Option<SourceLocation>,
+    authored: bool,
     diagnostics: Vec<Diagnostic>,
     provenance: Vec<Provenance>,
 }
 
 impl Context<'_> {
-    fn location(&self, range: TextRange) -> SourceLocation {
-        SourceLocation {
+    fn location(&self, range: TextRange) -> Option<SourceLocation> {
+        self.source.as_ref().map(|source| SourceLocation {
             span: self
                 .text
-                .source_map()
-                .source_range(range)
+                .and_then(|text| text.source_map().source_range(range))
                 .map(span)
-                .or(self.source.span),
-            ..self.source.clone()
-        }
+                .or(source.span),
+            ..source.clone()
+        })
     }
 
     fn record(&mut self, range: TextRange) {
-        let mut provenance = declaration_provenance(&self.location(range));
-        provenance.activity = ProvenanceActivity::DecodedDocumentation {
-            decoded_span: span(range),
-        };
-        self.provenance.push(provenance);
+        if let Some(location) = self.location(range) {
+            let mut provenance = declaration_provenance(&location);
+            provenance.activity = ProvenanceActivity::DecodedDocumentation {
+                decoded_span: span(range),
+            };
+            self.provenance.push(provenance);
+        }
     }
 
     fn warning(&mut self, range: TextRange, message: impl Into<String>) {
-        self.diagnostics.push(diagnostic(
-            DiagnosticCode::JuliaUnsupportedMarkdown,
-            Severity::Warning,
-            message,
-            &self.location(range),
-        ));
+        let mut diagnostic = if let Some(location) = self.location(range) {
+            diagnostic(
+                DiagnosticCode::JuliaUnsupportedMarkdown,
+                Severity::Warning,
+                message,
+                &location,
+            )
+        } else {
+            Diagnostic::new(
+                DiagnosticCode::UnsupportedAuthoredSyntax,
+                Severity::Warning,
+                message,
+            )
+        };
+        if self.authored {
+            diagnostic.span = Some(span(range));
+        }
+        self.diagnostics.push(diagnostic);
     }
 
     fn unsupported(&mut self, node: &SyntaxNode) -> Block {
@@ -149,18 +194,36 @@ impl Context<'_> {
                 inlines: self.inlines(node.inlines()),
                 span,
             },
-            md::Block::Heading(node) => Block::Heading {
-                level: (usize::from(node.level()) + 1).min(6),
-                attributes: Attributes {
-                    identifier: Some(SpannedString {
-                        value: node.slug(),
-                        span,
-                    }),
-                    ..Attributes::default()
-                },
-                inlines: self.inlines(node.inlines()),
-                span,
-            },
+            md::Block::Heading(node) => {
+                let anchor = if self.authored && node.inlines().count() == 1 {
+                    node.inlines().next().and_then(|inline| {
+                        if let md::Inline::Link(link) = inline
+                            && let Some(anchor) = link.documenter_link()
+                            && anchor.kind() == md::DocumenterLinkKind::Id
+                            && let Some(target) = anchor.target()
+                        {
+                            return Some((target.to_owned(), self.inlines(link.label())));
+                        }
+                        None
+                    })
+                } else {
+                    None
+                };
+                let (identifier, inlines) =
+                    anchor.unwrap_or_else(|| (node.slug(), self.inlines(node.inlines())));
+                Block::Heading {
+                    level: (usize::from(node.level()) + usize::from(!self.authored)).min(6),
+                    attributes: Attributes {
+                        identifier: Some(SpannedString {
+                            value: identifier,
+                            span,
+                        }),
+                        ..Attributes::default()
+                    },
+                    inlines,
+                    span,
+                }
+            }
             md::Block::BlockQuote(node) => Block::BlockQuote {
                 blocks: node.blocks().map(|block| self.block(block)).collect(),
                 span,
@@ -207,6 +270,18 @@ impl Context<'_> {
             }
             md::Block::CodeBlock(node) => {
                 let language = match node.fence_kind() {
+                    md::FenceKind::Documenter {
+                        directive,
+                        arguments: None,
+                    } if self.authored
+                        && matches!(
+                            directive,
+                            md::DocumenterDirective::Autodocs | md::DocumenterDirective::Index
+                        ) =>
+                    {
+                        Some(node.info())
+                    }
+
                     md::FenceKind::Plain => None,
                     md::FenceKind::Julia
                     | md::FenceKind::JuliaRepl
@@ -391,6 +466,7 @@ impl Context<'_> {
                 let span = super::span(node.syntax().text_range());
                 if let Some(documenter) = node.documenter_link() {
                     if documenter.kind() == md::DocumenterLinkKind::Ref {
+                        let label = self.inlines(node.label());
                         let inferred = node.label().find_map(|inline| {
                             if let md::Inline::Code(code) = inline {
                                 Some((code.content(), code.syntax().text_range()))
@@ -398,6 +474,24 @@ impl Context<'_> {
                                 None
                             }
                         });
+                        let inferred = if self.authored {
+                            Some((
+                                if let [Inline::Code { value, .. }] = label.as_slice() {
+                                    format!("`{value}`")
+                                } else {
+                                    format!(
+                                        "\"{}\"",
+                                        crate::documents::inline_text(&label)
+                                            .split_whitespace()
+                                            .collect::<Vec<_>>()
+                                            .join(" ")
+                                    )
+                                },
+                                node.syntax().text_range(),
+                            ))
+                        } else {
+                            inferred
+                        };
                         let target = documenter
                             .target()
                             .map(|target| (target.to_owned(), documenter.target_range().unwrap()))
@@ -406,7 +500,7 @@ impl Context<'_> {
                             self.record(range);
                             return Inline::Link {
                                 target: format!("@ref {target}"),
-                                inlines: self.inlines(node.label()),
+                                inlines: label,
                                 title: None,
                                 attributes: Attributes::default(),
                                 span,

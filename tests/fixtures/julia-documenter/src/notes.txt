@@ -1,0 +1,3 @@
+# Retained notes
+
+Notes referenced from the original Julia source directory.

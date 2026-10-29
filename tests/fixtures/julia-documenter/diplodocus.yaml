@@ -1,0 +1,25 @@
+project:
+  name: "Documenter pages"
+repositories:
+  - id: "repo"
+    path: "."
+packages:
+  - id: "demo"
+    name: "Demo"
+    slug: "julia"
+    ecosystem: "julia"
+    repository: "repo"
+    path: "."
+    metadata-path: "Project.toml"
+    targets:
+      - id: "api"
+        extractor: "julia"
+        path: "src/Demo.jl"
+        role: "public-api"
+content:
+  - id: "manual"
+    owner: "demo"
+    repository: "repo"
+    path: "docs"
+    mount: ""
+    format: "documenter"

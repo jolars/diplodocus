@@ -294,6 +294,17 @@ impl Snapshot {
                 let rd_help = kind == ReferenceKind::Link
                     && matches!(&document.source_format, DocumentFormat::Extracted { name } if name == "rd")
                     && spelling.starts_with("@ref ");
+                if kind == ReferenceKind::Link
+                    && let Some(target) = crate::validation::documenter_reference(
+                        workspace, document, owner, &spelling,
+                    )
+                {
+                    require(
+                        target.as_ref() == Ok(&reference.target),
+                        "Documenter reference",
+                    )?;
+                    continue;
+                }
                 if rd_help {
                     require(
                         crate::validation::resolve_rd_help(workspace, owner, &spelling[5..])

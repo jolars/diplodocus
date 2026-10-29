@@ -109,6 +109,9 @@ pub(crate) fn anchors(blocks: &[Block]) -> BTreeSet<String> {
 fn collect_anchors(blocks: &[Block], anchors: &mut BTreeSet<String>) {
     for block in blocks {
         match block {
+            Block::ApiDocumentation { identifier, .. } => {
+                anchors.insert(identifier.clone());
+            }
             Block::Container {
                 kind,
                 identifier,

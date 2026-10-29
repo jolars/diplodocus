@@ -11,18 +11,30 @@ IR into separate rows.
   | Manifest field     | Current value | Governs                                                                                                                                        |
   | ---                | ---           | ---                                                                                                                                            |
   | `storage_version`  | `2`           | SQLite tables, columns, keys, record kinds, splitting entities into rows, and storage-specific envelopes. Defined by `STORAGE_SCHEMA_VERSION`. |
-  | `ir_version`       | `9`           | Semantic IR field shapes and meaning, including nested documents, signatures, and language extensions. Defined by `WORKSPACE_SCHEMA_VERSION`.  |
+  | `ir_version`       | `10`          | Semantic IR field shapes and meaning, including nested documents, signatures, and language extensions. Defined by `WORKSPACE_SCHEMA_VERSION`.  |
   | `encoding_version` | `1`           | Canonical record encoding, fingerprint inputs, and text export. Defined by `RECORD_ENCODING_VERSION`.                                          |
 
 These versions are independent: a table-layout change requires a storage version
 change; an incompatible signature or language-extension change requires an IR
 version change even if the SQL tables stay the same. Changing canonical hashing
 or export rules requires an encoding version change. A change may affect more
-than one version. The current reader accepts only `(2, 9, 1)` and rejects any
+than one version. The current reader accepts only `(2, 10, 1)` and rejects any
 unsupported component; it does not migrate snapshots automatically.
 
 Storage version 2 adds the required `presentation` record. Version 1 snapshots
 must be extracted again. Presentation defaults are storage metadata outside the IR.
+
+IR version 10 adds the authored `documenter` profile and `api-documentation`
+blocks. Each block retains a canonical Julia item reference, a page-local
+`identifier`, and the authored directive's `span`. The item owns its original
+signatures, document, source evidence, and resolved references; embedding does
+not copy those ranges into the authored page. Blocks are valid only in authored
+Documenter documents, and referenced items must belong to an extracted Julia
+package. Generation presents the item and its callable methods using their own
+resolution contexts. Empty `@index` directives become ordinary lists of links to
+these embedded anchors. Documenter `@ref` targets are validated again from the
+retained workspace when loading a snapshot. Version 9 snapshots must be
+extracted again. Storage and canonical encoding versions are unchanged.
 
 IR version 9 adds authored component blocks and optional retained component bundles.
 Component assets remain inert unless the generation caller enables them.
@@ -62,7 +74,7 @@ IR version 2 added inline and display equations and installed R help-link
 evidence. Version 1 snapshots must be extracted again. The canonical record
 encoding remains at version 1.
 
-The workspace record also carries `schema_version: 9`, which must agree with
+The workspace record also carries `schema_version: 10`, which must agree with
 `manifest.ir_version`. Nested JSON inherits the containing snapshot's versions;
 there is no additional version wrapper on every syntax node or signature.
 Consumers must read the manifest before interpreting a detached record.

@@ -718,6 +718,22 @@ impl<'a> Site<'a> {
         }
         Ok(url)
     }
+
+    pub(crate) fn api_page(
+        &self,
+        item: &ItemReference,
+    ) -> Result<(&str, &PageModel<'a>), SiteError> {
+        let route = self
+            .routes
+            .get(&DocumentIdentity::Item { item: item.clone() })
+            .ok_or(SiteError::Evidence)?;
+        let page = self
+            .embedded_pages
+            .get(item)
+            .or_else(|| self.pages.get(route))
+            .ok_or(SiteError::Evidence)?;
+        Ok((route, page))
+    }
     pub(crate) fn asset_route(&self, digest: &str) -> Result<String, SiteError> {
         let asset = self.assets.get(digest).ok_or(SiteError::Evidence)?;
         let extension = match asset.media_type.as_str() {

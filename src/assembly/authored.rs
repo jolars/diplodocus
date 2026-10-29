@@ -2,7 +2,7 @@ use super::*;
 use crate::diagnostics::DiagnosticEntity;
 use crate::documents::{AuthoredFormat, prepare_collection_document};
 use crate::ir::{
-    Block, ContentCollection, ContentOwner, Document, DocumentFormat, Inline, MetadataValue, Page,
+    Block, ContentCollection, ContentOwner, Document, DocumentFormat, MetadataValue, Page,
     PageKind, Provenance, ProvenanceActivity, SourcedDocument,
 };
 use crate::provenance::builtin_tools;
@@ -120,6 +120,13 @@ pub(super) fn assemble(
                 relative.as_str()
             );
             let title = title(&parsed.document).unwrap_or_else(|| relative.as_str().to_owned());
+            let mut tools = builtin_tools();
+            if collection.format == AuthoredFormat::Documenter {
+                tools.insert(
+                    "fatou-parser".into(),
+                    crate::extractors::julia::FATOU_VERSION.into(),
+                );
+            }
             workspace.pages.insert(
                 id.clone(),
                 Page {
@@ -140,7 +147,7 @@ pub(super) fn assemble(
                             activity: ProvenanceActivity::Declaration,
                             source: Some(source(&location)),
                             span: None,
-                            tools: builtin_tools(),
+                            tools,
                         }],
                     },
                 },
@@ -250,29 +257,4 @@ fn title(document: &Document) -> Option<String> {
     })
 }
 
-pub(super) fn inline_text(inlines: &[Inline]) -> String {
-    inlines
-        .iter()
-        .map(|inline| match inline {
-            Inline::Text { value, .. } | Inline::Code { value, .. } => value.clone(),
-            Inline::Space { .. }
-            | Inline::SoftBreak { .. }
-            | Inline::HardBreak { .. }
-            | Inline::NonbreakingSpace { .. } => " ".into(),
-            Inline::Emphasis { inlines, .. }
-            | Inline::Strong { inlines, .. }
-            | Inline::Styled { inlines, .. }
-            | Inline::Citation { inlines, .. }
-            | Inline::Strikeout { inlines, .. }
-            | Inline::Link { inlines, .. } => inline_text(inlines),
-            Inline::Image { alt, .. } => inline_text(alt),
-            Inline::AutoLink { target, .. } | Inline::SemanticReference { target, .. } => {
-                target.clone()
-            }
-            Inline::Unsupported { raw, .. } => raw.clone(),
-            Inline::Math {
-                latex, fallback, ..
-            } => fallback.as_ref().unwrap_or(latex).clone(),
-        })
-        .collect()
-}
+pub(super) use crate::documents::inline_text;

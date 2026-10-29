@@ -41,6 +41,8 @@ pub enum AuthoredFormat {
     Qmd,
     /// R Markdown articles evaluated by native knitr.
     Rmd,
+    /// Julia Markdown pages with static Documenter references and assembly directives.
+    Documenter,
 }
 
 impl AuthoredFormat {
@@ -50,7 +52,9 @@ impl AuthoredFormat {
                 self,
                 path.extension().and_then(|extension| extension.to_str())
             ),
-            (Self::Gfm, Some("md")) | (Self::Qmd, Some("qmd")) | (Self::Rmd, Some("rmd" | "Rmd"))
+            (Self::Gfm | Self::Documenter, Some("md"))
+                | (Self::Qmd, Some("qmd"))
+                | (Self::Rmd, Some("rmd" | "Rmd"))
         )
     }
 }
@@ -97,11 +101,15 @@ enum ParseMode {
 }
 
 fn parse_document(source: &str, format: AuthoredFormat, mode: ParseMode) -> DocumentParse {
+    if format == AuthoredFormat::Documenter {
+        return crate::extractors::julia::docstrings::parse_documenter(source);
+    }
     let fragment = mode == ParseMode::Fragment;
     let flavor = match format {
         AuthoredFormat::Gfm => Flavor::Gfm,
         AuthoredFormat::Qmd => Flavor::Quarto,
         AuthoredFormat::Rmd => Flavor::RMarkdown,
+        AuthoredFormat::Documenter => unreachable!(),
     };
     let mut options = ParserOptions::for_flavor(flavor);
     options.preserve_unresolved_references = true;
@@ -1161,4 +1169,31 @@ fn span(range: TextRange) -> SourceSpan {
         start: range.start().into(),
         end: range.end().into(),
     }
+}
+
+pub(crate) fn inline_text(inlines: &[Inline]) -> String {
+    inlines
+        .iter()
+        .map(|inline| match inline {
+            Inline::Text { value, .. } | Inline::Code { value, .. } => value.clone(),
+            Inline::Space { .. }
+            | Inline::SoftBreak { .. }
+            | Inline::HardBreak { .. }
+            | Inline::NonbreakingSpace { .. } => " ".into(),
+            Inline::Emphasis { inlines, .. }
+            | Inline::Strong { inlines, .. }
+            | Inline::Styled { inlines, .. }
+            | Inline::Citation { inlines, .. }
+            | Inline::Strikeout { inlines, .. }
+            | Inline::Link { inlines, .. } => inline_text(inlines),
+            Inline::Image { alt, .. } => inline_text(alt),
+            Inline::AutoLink { target, .. } | Inline::SemanticReference { target, .. } => {
+                target.clone()
+            }
+            Inline::Unsupported { raw, .. } => raw.clone(),
+            Inline::Math {
+                latex, fallback, ..
+            } => fallback.as_ref().unwrap_or(latex).clone(),
+        })
+        .collect()
 }

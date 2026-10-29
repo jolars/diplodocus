@@ -57,7 +57,7 @@ fn snapshot(workspace: &support::TestWorkspace, reverse_inputs: bool) -> serde_j
             .insert(collection.id.clone(), files.clone());
         let repository = &resolved.repositories[paths.repository_index];
         let extension = match collection.format {
-            AuthoredFormat::Gfm => "md",
+            AuthoredFormat::Gfm | AuthoredFormat::Documenter => "md",
             AuthoredFormat::Qmd => "qmd",
             AuthoredFormat::Rmd => "Rmd",
         };

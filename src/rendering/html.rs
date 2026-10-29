@@ -1048,6 +1048,65 @@ struct Renderer<'a, 'b> {
     heading_offset: usize,
 }
 impl Renderer<'_, '_> {
+    fn api_documentation(
+        &mut self,
+        reference: &ItemReference,
+        identifier: &str,
+    ) -> Result<String, SiteError> {
+        let item = &self.site.workspace.packages[&reference.package].items[&reference.item];
+        let target = self.site.target(
+            self.route,
+            &crate::validation::ReferenceTarget::Item {
+                item: reference.clone(),
+            },
+        )?;
+        let mut html = format!(
+            "<section id=\"{}\"><h2><a href=\"{}\"><code>{}</code></a></h2>",
+            escape(identifier),
+            escape(&target),
+            escape(&item.qualified_name)
+        );
+        self.headings
+            .push((2, identifier.into(), item.qualified_name.clone()));
+        for reference in std::iter::once(reference).chain(julia_members(item)) {
+            let (document_route, page) = self.site.api_page(reference)?;
+            let item = page.item.ok_or(SiteError::Evidence)?;
+            for signature in &item.signatures {
+                html.push_str(&self.highlighter.render_signature(
+                    &super::signatures::signature_for_site(
+                        self.site,
+                        &item.name,
+                        &signature.signature,
+                        "julia",
+                    ),
+                    Some("julia"),
+                ));
+            }
+            html.push_str(&super::r_topics::source_links(self.site, item));
+            if let Some(document) = page.document {
+                let mut renderer = Renderer {
+                    images: self.images,
+                    standalone: self.standalone,
+                    highlighter: self.highlighter,
+                    math_context: self.math_context,
+                    site: self.site,
+                    page,
+                    resolved: page.resolved,
+                    route: self.route,
+                    document_route,
+                    cell: 0,
+                    headings: Vec::new(),
+                    identifiers: BTreeSet::new(),
+                    document_navigation: false,
+                    heading_offset: 2,
+                };
+                html.push_str(&renderer.blocks(&document.document.blocks)?);
+            }
+        }
+        html.push_str("</section>");
+        Ok(html)
+    }
+
     fn rust_members(&mut self) -> Result<String, SiteError> {
         let Some(rust) = &self.page.rust_page else {
             return Ok(String::new());
@@ -1325,10 +1384,15 @@ impl Renderer<'_, '_> {
             && let crate::validation::ReferenceTarget::Anchor { fragment } = &reference.target
         {
             // Embedded headings link to their method page to avoid ambiguous local anchors.
+            let fragment = self
+                .page
+                .anchor_prefix
+                .as_ref()
+                .map_or_else(|| fragment.clone(), |prefix| format!("{prefix}-{fragment}"));
             return Ok(format!(
                 "{}#{}",
                 self.site.url(self.route, self.document_route),
-                crate::site::encode(fragment)
+                crate::site::encode(&fragment)
             ));
         }
         if let crate::validation::ReferenceTarget::Anchor { fragment } = &reference.target
@@ -1554,6 +1618,11 @@ impl Renderer<'_, '_> {
                     });
             }
             match block {
+                Block::ApiDocumentation {
+                    item, identifier, ..
+                } => {
+                    html.push_str(&self.api_documentation(item, identifier)?);
+                }
                 Block::Component {
                     attributes, blocks, ..
                 } => {

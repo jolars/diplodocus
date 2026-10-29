@@ -1011,3 +1011,60 @@ async fn rejects_rd_example_evidence_that_disagrees_with_its_source_or_package()
         assert!(result.is_err(), "{field}: {result:?}");
     }
 }
+
+#[test]
+fn documenter_snapshots_validate_embedded_items_and_reference_destinations() {
+    let root = support::TestWorkspace::from_fixture("julia-documenter");
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
+    let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+    drop((root, sources));
+    for case in [
+        "missing-item",
+        "wrong-profile",
+        "reference-target",
+        "recursive-item",
+    ] {
+        let result = changed(&snapshot, |export| {
+            for record in export["records"].as_array_mut().unwrap() {
+                if case == "reference-target" && record["kind"] == "document" {
+                    for reference in record["content"]["references"].as_array_mut().unwrap() {
+                        if reference["spelling"] == "@ref \"API Reference\"" {
+                            reference["target"]["fragment"] = "missing".into();
+                            return;
+                        }
+                    }
+                }
+                if case == "recursive-item"
+                    && record["kind"] == "item"
+                    && record["content"]["documentation"].is_object()
+                {
+                    let item = json!({"package": record["owner"], "item": record["id"]});
+                    let document = &mut record["content"]["documentation"];
+                    document["source_format"] = json!({"kind": "authored", "format": "documenter"});
+                    document["document"]["blocks"] = json!([{
+                        "type": "api-documentation", "item": item, "identifier": "recursive",
+                        "span": {"start": 0, "end": 0}
+                    }]);
+                    return;
+                }
+                if record["kind"] != "page" {
+                    continue;
+                }
+                let document = &mut record["content"]["document"];
+                for block in document["document"]["blocks"].as_array_mut().unwrap() {
+                    if block["type"] == "api-documentation" {
+                        if case == "missing-item" {
+                            block["item"]["item"] = "missing".into();
+                            return;
+                        } else if case == "wrong-profile" {
+                            document["source_format"]["format"] = "gfm".into();
+                            return;
+                        }
+                    }
+                }
+            }
+            panic!("No mutation for {case}");
+        });
+        assert!(result.is_err(), "{case}");
+    }
+}

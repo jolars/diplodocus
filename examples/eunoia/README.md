@@ -58,10 +58,18 @@ with:
 devenv shell -- compute run -- cargo test --locked --test julia_extraction --test fragments
 ```
 
-This run covers the core API in Eunoia.jl 1.0.1. A recipe-owned GFM overview
-replaces README discovery in the disposable copy. Documenter guides, gallery
-execution and figures, Makie extension methods, public-only navigation, and
-field grouping remain follow-up work. The recipe leaves the original package and
+Static Documenter guides can use a package-owned collection with
+`path: docs/src`, `mount: ""`, and `format: documenter`. This profile resolves
+API, page-title, and heading references, expands `@index`, and embeds
+`@autodocs` selections such as `Modules = [Eunoia]` with `Private = false`.
+The [authoring guide](../../docs/guide/authoring.md#documenter-pages) defines the
+supported syntax. Gallery examples display Julia code without execution.
+
+This recipe covers the core API in Eunoia.jl 1.0.1. A recipe-owned GFM overview
+replaces README discovery in the disposable copy. Extending the recipe to
+Documenter guides and gallery figures, executing gallery blocks, supplying Makie
+extension methods, selecting public-only navigation, and grouping fields remain
+follow-up work. The recipe leaves the original package and
 Eunoia's website untouched.
 
 ## Python and R embedding experiment

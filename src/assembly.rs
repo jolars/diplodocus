@@ -28,6 +28,7 @@ use crate::provenance::{
 
 mod api_examples;
 mod authored;
+mod documenter;
 mod julia_runtime;
 pub(crate) use julia_runtime::assemble_for_extraction;
 #[cfg(target_os = "linux")]
@@ -425,6 +426,7 @@ fn assemble_with_native(
         &mut selections,
         &mut observed,
     )?;
+    documenter::assemble(&mut workspace, &prepared_pages);
     let package_files = package_docs::assemble(
         &paths,
         &mut workspace,

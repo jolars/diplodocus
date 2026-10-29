@@ -1,9 +1,11 @@
 //! Validation and semantic reference resolution.
 
+mod documenter;
 mod references;
 mod relationships;
 mod workspace;
 
+pub(crate) use documenter::reference as documenter_reference;
 pub(crate) use references::in_package as resolve_package_item;
 pub use references::resolve_item;
 pub(crate) use references::resolve_rd_help;

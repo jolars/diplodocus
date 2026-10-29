@@ -2,13 +2,92 @@
 
 Declare each source directory or individual file as a collection in `content`
 in [workspace configuration](configuration.md). Set `format: "gfm"` for `.md` files or
-`format: "qmd"` for `.qmd` files, or `format: "rmd"` for R Markdown articles. A collection's `mount` determines its URL
-prefix; an empty mount places its `index.md` at the site root. The `owner`
+`format: "qmd"` for `.qmd` files, or `format: "rmd"` for R Markdown articles.
+Use `format: "documenter"` for Julia Markdown pages with Documenter references
+and directives. A collection's `mount` determines its URL prefix; an empty mount
+places its `index.md` at the site root. The `owner`
 determines whether pages appear in project or package navigation.
 
 Individual files keep their basename beneath the mount, so `CHANGELOG.md` with
 `mount: project` becomes `/project/CHANGELOG.html`. Links and images resolve
 from the original source directory.
+
+## Documenter pages
+
+Use `format: documenter` for Julia Markdown `.md` pages that use Documenter
+references and API assembly directives:
+
+```yaml
+content:
+  - id: julia-manual
+    owner: julia
+    repository: core
+    path: julia/docs/src
+    mount: ""
+    format: documenter
+```
+
+The owner names a configured package, or `project`. A package-owned collection
+with an empty mount uses its authored `index.md` as the package overview.
+Diplodocus parses Julia Markdown with Fatou and retains heading levels, inline
+formatting, lists, admonitions, tables, code, and source ranges. Titles come
+from page headings. This profile does not read `docs/make.jl`.
+
+References use Documenter's link syntax. `` [`euler`](@ref) `` and
+`` [fit a diagram](@ref `Eunoia.euler`) `` resolve canonical API items.
+Legacy `[fit a diagram](@ref Eunoia.euler)` also works.
+
+`[API Reference](@ref)` infers a heading title from the visible label.
+`[gallery](@ref "A gallery of Euler and Venn diagrams")` supplies a title
+explicitly. Heading references search the containing collection, including
+other pages, and require a unique match.
+
+`## [Installation](@id install)` assigns a heading anchor. Link to it with
+`[setup](@ref install)`. Ordinary file and fragment links also work.
+
+API names use the owning package before requiring a unique workspace match.
+References can address private items and exported type fields, regardless of
+which items an assembly directive selects. Plain labels select headings;
+backticked labels select API items and fall back to headings when no API item
+matches. Explicit quoted targets select heading titles. Legacy unquoted
+references prefer a matching heading over an API item. See
+[Documenter's syntax reference](https://documenter.juliadocs.org/stable/man/syntax/)
+for the upstream forms.
+
+An `@autodocs` block embeds documented Julia bindings from the named modules:
+
+````markdown
+```@autodocs
+Modules = [Eunoia]
+Private = false
+```
+````
+
+`Modules` is required and accepts a literal vector of distinct, optionally
+qualified module names. Each name must identify one extracted Julia module.
+Submodules must be listed explicitly. `Private` and `Public` accept literal
+booleans and both default to `true`. `Private = false` selects exported bindings
+and bindings marked with Julia's `public` keyword; `Public = false` selects
+private bindings. These filters affect embedded documentation only. Entries
+follow module order, then modules, constants, types, functions, and macros,
+with names sorted within each category. Callable entries retain their methods
+and constructor documentation. Fields remain addressable through the canonical
+API surface.
+
+An empty `@index` block lists the entries assembled by `@autodocs` in the same
+collection and links to their page anchors. It may precede those blocks, and
+it includes entries assembled on other pages. An item may appear in only one
+`@autodocs` block per collection. Unsupported options, dynamic values,
+duplicate options, and unknown modules produce source-attributed errors.
+The supported options are `Modules`, `Private`, and `Public` for `@autodocs`;
+`@index` takes no options.
+
+Snapshots retain the assembled item references, original API documents,
+resolved links, and local assets. Standalone HTML and HTML and Markdown
+fragments render them without the checkout or Julia, including when the host
+maps their URLs. This static profile uses `execution.mode: never`.
+`@example`, `@repl`, and `jldoctest` fences display Julia code without execution;
+other Documenter directives remain visible with unsupported-syntax diagnostics.
 
 ## Package landing pages {#package-landing-pages}
 
