@@ -2,7 +2,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use fatou_parser::ast::{AstNode, AstToken, Expr};
+use fatou_parser::ast::{AstNode, AstToken, Expr, StringLiteral};
 
 use crate::diagnostics::{
     Diagnostic, DiagnosticCode, DiagnosticEntity, DiagnosticSource, Severity,
@@ -13,6 +13,7 @@ use crate::ir::*;
 #[derive(Default)]
 struct Options {
     modules: Vec<String>,
+    pages: Vec<String>,
     private: Option<bool>,
     public: Option<bool>,
 }
@@ -71,12 +72,68 @@ fn options(source: &str) -> Result<Options, &'static str> {
                     options.public = Some(boolean);
                 }
             }
+            "Pages" => {
+                let Expr::VectExpr(pages) = value else {
+                    return Err("`Pages` must be a literal vector of source-file suffix strings.");
+                };
+                for page in pages.syntax().children() {
+                    let literal = page
+                        .children()
+                        .next()
+                        .and_then(StringLiteral::cast)
+                        .filter(|literal| {
+                            literal.prefix().is_none()
+                                && literal.suffix().is_none()
+                                && literal.interpolations().next().is_none()
+                        })
+                        .ok_or("`Pages` requires ordinary strings without interpolation.")?;
+                    let path = fatou_parser::parser::string_value(
+                        &literal
+                            .content_tokens()
+                            .map(|token| token.text().to_owned())
+                            .collect::<String>(),
+                    )
+                    .map_err(|_| "Invalid string escape in `Pages`.")?;
+                    if path.is_empty() {
+                        return Err("`Pages` entries must not be empty.");
+                    }
+                    let path = normalized_suffix(&path);
+                    if options.pages.contains(&path) {
+                        return Err("`Pages` requires distinct source-file suffixes.");
+                    }
+                    options.pages.push(path);
+                }
+            }
             _ => {
-                return Err("Supported Documenter options are `Modules`, `Private`, and `Public`.");
+                return Err(
+                    "Supported `@autodocs` options are `Modules`, `Pages`, `Private`, and `Public`.",
+                );
             }
         }
     }
     Ok(options)
+}
+
+fn normalized_suffix(path: &str) -> String {
+    let mut parts = Vec::new();
+    for part in path.split('/') {
+        match part {
+            "" | "." => {}
+            ".." if parts.last().is_some_and(|part| *part != "..") => {
+                parts.pop();
+            }
+            _ => parts.push(part),
+        }
+    }
+    format!(
+        "{}{}",
+        if path.starts_with('/') { "/" } else { "" },
+        if parts.is_empty() && !path.starts_with('/') {
+            ".".into()
+        } else {
+            parts.join("/")
+        }
+    )
 }
 
 fn members(item: &Item) -> &[ItemReference] {
@@ -93,7 +150,99 @@ fn members(item: &Item) -> &[ItemReference] {
     }
 }
 
-fn select(workspace: &Workspace, options: &Options) -> Result<Vec<ItemReference>, &'static str> {
+struct Entry {
+    item: ItemReference,
+    selection: Vec<ItemReference>,
+}
+
+struct CatalogEntry {
+    page: String,
+    entry: Entry,
+    anchor: String,
+}
+
+fn entry(workspace: &Workspace, item: ItemReference) -> Entry {
+    let selection = std::iter::once(&item)
+        .chain(members(
+            &workspace.packages[&item.package].items[&item.item],
+        ))
+        .cloned()
+        .collect();
+    Entry { item, selection }
+}
+
+fn documented(workspace: &Workspace, reference: &ItemReference) -> bool {
+    let item = &workspace.packages[&reference.package].items[&reference.item];
+    item.documentation.is_some()
+        || members(item)
+            .iter()
+            .any(|member| documented(workspace, member))
+}
+
+fn explicit(
+    workspace: &Workspace,
+    owner: &ContentOwner,
+    source: &str,
+) -> Result<Vec<Entry>, String> {
+    let parsed = fatou_parser::parser::parse(source);
+    if !parsed.diagnostics.is_empty() {
+        return Err("Malformed `@docs` selectors.".into());
+    }
+    let binding = regex::Regex::new(
+        r"^(?:@?[\p{XID_Start}_][\p{XID_Continue}!]*)(?:\.@?[\p{XID_Start}_][\p{XID_Continue}!]*)*$",
+    ).unwrap();
+    let owner = match owner {
+        ContentOwner::Package { package } => Some(package.as_str()),
+        ContentOwner::Project => None,
+    };
+    let mut entries = Vec::new();
+    for node in parsed.cst.children() {
+        let target = node.text().to_string();
+        let target = target.trim();
+        if !binding.is_match(target)
+            && !crate::extractors::julia::method_selector(target)
+                .is_some_and(|(name, _)| binding.is_match(&name))
+        {
+            return Err(
+                "`@docs` supports binding names and exact static method selectors only.".into(),
+            );
+        }
+        let item = crate::validation::resolve_item(workspace, owner, target)
+            .or_else(|code| {
+                // Julia modules bind their own name, as in `SLOPE.SLOPE`.
+                if code == DiagnosticCode::UnresolvedItemReference
+                    && let Some((parent, name)) = target.rsplit_once('.')
+                    && parent.rsplit('.').next() == Some(name)
+                    && let Ok(reference) = crate::validation::resolve_item(workspace, owner, parent)
+                    && matches!(&workspace.packages[&reference.package].items[&reference.item].language_data,
+                        Some(ItemLanguageData::Julia(data)) if matches!(data.declaration, JuliaDeclaration::Module { .. })) {
+                    return Ok(reference);
+                }
+                Err(code)
+            })
+            .map_err(|code| format!("`@docs` selector `{target}` must identify exactly one extracted Julia item ({code:?})."))?;
+        if !matches!(
+            workspace.packages[&item.package].items[&item.item].language_data,
+            Some(ItemLanguageData::Julia(_))
+        ) {
+            return Err(format!(
+                "`@docs` selector `{target}` must identify a Julia item."
+            ));
+        }
+        if !documented(workspace, &item) {
+            return Err(format!(
+                "`@docs` selector `{target}` has no retained documentation."
+            ));
+        }
+        entries.push(entry(workspace, item));
+    }
+    if entries.is_empty() {
+        return Err("`@docs` requires at least one binding or method selector.".into());
+    }
+    Ok(entries)
+}
+
+fn select(workspace: &Workspace, options: &Options) -> Result<Vec<Entry>, &'static str> {
     if options.modules.is_empty() {
         return Err("`@autodocs` requires `Modules = [Module, ...]`.");
     }
@@ -144,14 +293,40 @@ fn select(workspace: &Workspace, options: &Options) -> Result<Vec<ItemReference>
                     } => 4,
                     _ => 3,
                 };
-                Some((order, &item.qualified_name, id))
+                let mut entry = entry(
+                    workspace,
+                    ItemReference {
+                        package: (*package_id).clone(),
+                        item: id.clone(),
+                    },
+                );
+                let mut page_order = 0;
+                if !options.pages.is_empty() {
+                    let mut matched: Vec<_> = entry
+                        .selection
+                        .into_iter()
+                        .filter_map(|reference| {
+                            let document = package.items[&reference.item].documentation.as_ref()?;
+                            let path = document.source_location.as_ref()?.path.as_str();
+                            let index = options
+                                .pages
+                                .iter()
+                                .position(|suffix| path.ends_with(suffix))?;
+                            Some((index, reference))
+                        })
+                        .collect();
+                    matched.sort_by_key(|(index, _)| *index);
+                    page_order = matched.first()?.0;
+                    entry.selection = matched
+                        .into_iter()
+                        .map(|(_, reference)| reference)
+                        .collect();
+                }
+                Some((page_order, order, &item.qualified_name, entry))
             })
             .collect();
-        entries.sort();
-        selected.extend(entries.into_iter().map(|(_, _, id)| ItemReference {
-            package: (*package_id).clone(),
-            item: id.clone(),
-        }));
+        entries.sort_by(|a, b| (&a.0, &a.1, a.2).cmp(&(&b.0, &b.1, b.2)));
+        selected.extend(entries.into_iter().map(|(_, _, _, entry)| entry));
     }
     Ok(selected)
 }
@@ -171,7 +346,7 @@ pub(super) fn assemble(
                 .then(|| (id.clone(), collection.clone()))
         })
         .collect();
-    let mut catalog: BTreeMap<String, Vec<(String, ItemReference, String)>> = BTreeMap::new();
+    let mut catalog: BTreeMap<String, Vec<CatalogEntry>> = BTreeMap::new();
     for (id, collection) in &pages {
         let mut page = workspace.pages.remove(id).unwrap();
         let location = page.document.source_location.clone().unwrap();
@@ -185,37 +360,52 @@ pub(super) fn assemble(
             else {
                 return None;
             };
-            if language != "@autodocs" && language != "@index" {
+            if !matches!(language.as_str(), "@docs" | "@autodocs" | "@index") {
                 return None;
             }
-            let result = options(source).and_then(|options| {
-                if language == "@index" {
-                    return if source.trim().is_empty() {
+            let result = match language.as_str() {
+                "@docs" => explicit(workspace, &page.owner, source).map(Some),
+                "@autodocs" => options(source)
+                    .and_then(|options| select(workspace, &options))
+                    .map(Some)
+                    .map_err(str::to_owned),
+                _ => {
+                    if source.trim().is_empty() {
                         Ok(None)
                     } else {
-                        Err("`@index` currently accepts an empty body only.")
-                    };
+                        Err("`@index` currently accepts an empty body only.".into())
+                    }
                 }
-                select(workspace, &options).map(Some)
-            });
+            };
             match result {
                 Ok(Some(items)) => {
                     let entries = catalog.entry(collection.clone()).or_default();
                     let mut blocks = Vec::new();
-                    for item in items {
-                        if entries.iter().any(|(_, other, _)| other == &item) {
-                            workspace.diagnostics.insert(error(&location, collection, &prepared[id].relative, *span, "An API item may appear in only one `@autodocs` block per collection."));
+                    for entry in items {
+                        if entries.iter().any(|other| {
+                            other.entry.item == entry.item
+                                || entry
+                                    .selection
+                                    .iter()
+                                    .any(|reference| other.entry.selection.contains(reference))
+                        }) {
+                            workspace.diagnostics.insert(error(&location, collection, &prepared[id].relative, *span, "An API item or its documentation may appear in only one `@docs` or `@autodocs` selection per collection."));
                             continue;
                         }
                         let digest = crate::provenance::fingerprint_bytes(
-                            format!("{}:{}", item.package, item.item).as_bytes(),
+                            format!("{}:{}", entry.item.package, entry.item.item).as_bytes(),
                         );
                         let identifier = format!("api-{}", digest.value);
-                        entries.push((id.clone(), item.clone(), identifier.clone()));
                         blocks.push(Block::ApiDocumentation {
-                            item,
-                            identifier,
+                            item: entry.item.clone(),
+                            selection: entry.selection.clone(),
+                            identifier: identifier.clone(),
                             span: *span,
+                        });
+                        entries.push(CatalogEntry {
+                            page: id.clone(),
+                            entry,
+                            anchor: identifier,
                         });
                     }
                     Some(blocks)
@@ -227,7 +417,7 @@ pub(super) fn assemble(
                         collection,
                         &prepared[id].relative,
                         *span,
-                        message,
+                        &message,
                     ));
                     None
                 }
@@ -250,18 +440,21 @@ pub(super) fn assemble(
             if language != "@index" {
                 return None;
             }
-            let mut entries = catalog.get(&collection).cloned().unwrap_or_default();
-            entries.sort_by_key(|(_, item, _)| {
+            let mut entries: Vec<_> = catalog.get(&collection).into_iter().flatten().collect();
+            entries.sort_by_key(|entry| {
+                let item = &entry.entry.item;
                 &workspace.packages[&item.package].items[&item.item].qualified_name
             });
             Some(vec![Block::List {
                 ordered: false,
                 items: entries
                     .into_iter()
-                    .map(|(page_id, item, anchor)| {
+                    .map(|entry| {
+                        let item = &entry.entry.item;
+                        let anchor = &entry.anchor;
                         let target = workspace
                             .pages
-                            .get(&page_id)
+                            .get(&entry.page)
                             .map_or(from, |page| page.document.source_location.as_ref().unwrap());
                         let target = format!(
                             "{}#{anchor}",

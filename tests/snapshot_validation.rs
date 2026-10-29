@@ -1017,12 +1017,19 @@ fn documenter_snapshots_validate_embedded_items_and_reference_destinations() {
     let root = support::TestWorkspace::from_fixture("julia-documenter");
     let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+    let unrelated =
+        diplodocus::validation::resolve_item(sources.workspace(), Some("demo"), "Demo.internal")
+            .unwrap();
     drop((root, sources));
     for case in [
         "missing-item",
         "wrong-profile",
         "reference-target",
         "recursive-item",
+        "empty-selection",
+        "missing-selection-item",
+        "unrelated-selection-item",
+        "duplicate-selection-item",
     ] {
         let result = changed(&snapshot, |export| {
             for record in export["records"].as_array_mut().unwrap() {
@@ -1042,7 +1049,7 @@ fn documenter_snapshots_validate_embedded_items_and_reference_destinations() {
                     let document = &mut record["content"]["documentation"];
                     document["source_format"] = json!({"kind": "authored", "format": "documenter"});
                     document["document"]["blocks"] = json!([{
-                        "type": "api-documentation", "item": item, "identifier": "recursive",
+                        "type": "api-documentation", "item": item, "selection": [item], "identifier": "recursive",
                         "span": {"start": 0, "end": 0}
                     }]);
                     return;
@@ -1058,6 +1065,18 @@ fn documenter_snapshots_validate_embedded_items_and_reference_destinations() {
                             return;
                         } else if case == "wrong-profile" {
                             document["source_format"]["format"] = "gfm".into();
+                            return;
+                        } else if case == "empty-selection" {
+                            block["selection"] = json!([]);
+                            return;
+                        } else if case == "missing-selection-item" {
+                            block["selection"][0]["item"] = "missing".into();
+                            return;
+                        } else if case == "unrelated-selection-item" {
+                            block["selection"] = json!([unrelated]);
+                            return;
+                        } else if case == "duplicate-selection-item" {
+                            block["selection"] = json!([block["item"], block["item"]]);
                             return;
                         }
                     }

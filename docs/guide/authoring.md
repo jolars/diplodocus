@@ -54,6 +54,27 @@ references prefer a matching heading over an API item. See
 [Documenter's syntax reference](https://documenter.juliadocs.org/stable/man/syntax/)
 for the upstream forms.
 
+An `@docs` block embeds selected Julia documentation in the order you list it:
+
+````markdown
+## Model Fitting
+
+```@docs
+SLOPE.slope
+SLOPE.SlopeFit
+SLOPE.predict(::SlopeFit)
+```
+````
+
+Selectors accept binding names, maintained aliases, and exact static method
+selectors. Bare names use the owning package before requiring a unique workspace
+match. A callable name includes its supplied methods; a method selector includes
+only that method. Types include their explicit constructors. Documented private
+items and type fields may be selected explicitly. A module's self-binding, such
+as `SLOPE.SLOPE`, selects the module. Missing, ambiguous, undocumented, and
+unsupported selectors produce source-attributed errors. Selection never
+evaluates Julia expressions.
+
 An `@autodocs` block embeds documented Julia bindings from the named modules:
 
 ````markdown
@@ -69,18 +90,45 @@ Submodules must be listed explicitly. `Private` and `Public` accept literal
 booleans and both default to `true`. `Private = false` selects exported bindings
 and bindings marked with Julia's `public` keyword; `Public = false` selects
 private bindings. These filters affect embedded documentation only. Entries
-follow module order, then modules, constants, types, functions, and macros,
-with names sorted within each category. Callable entries retain their methods
-and constructor documentation. Fields remain addressable through the canonical
-API surface.
+follow module order, then modules, constants, types, functions, and macros, with
+names sorted within each category. Callable entries retain their methods and
+constructor documentation. Fields remain addressable through the canonical API
+surface.
 
-An empty `@index` block lists the entries assembled by `@autodocs` in the same
-collection and links to their page anchors. It may precede those blocks, and
-it includes entries assembled on other pages. An item may appear in only one
-`@autodocs` block per collection. Unsupported options, dynamic values,
-duplicate options, and unknown modules produce source-attributed errors.
-The supported options are `Modules`, `Private`, and `Public` for `@autodocs`;
-`@index` takes no options.
+Add `Pages` to filter documentation by its Julia source file:
+
+````markdown
+```@autodocs
+Modules = [SLOPE]
+Pages = ["plots.jl", "utilities.jl"]
+```
+````
+
+`Pages` accepts a literal vector of distinct, nonempty ordinary strings. Paths
+use `/`; `.` and `..` components are normalized before matching. Each string
+matches the end of a retained docstring's repository-relative source path, so
+`plots.jl` also matches `src/more_plots.jl`. The first matching suffix
+determines page order, followed by declaration category and name within each
+module. Matching methods and constructors stay grouped under their binding,
+ordered by the first matching page. Documentation from other files is excluded
+even when it belongs to the same callable family. Omitting `Pages` or supplying
+`[]` leaves documentation unfiltered. This option names Julia source files,
+rather than authored Markdown pages.
+
+An empty `@index` block lists entries assembled by either directive in the same
+collection, sorted by qualified name, and links to their page anchors. It may
+precede those blocks and includes entries assembled on other pages. An item or
+its documentation may appear in only one selection per collection, including
+overlap between a callable family and a selected method. Unsupported options,
+dynamic values, duplicate options, and unknown modules produce source-attributed
+diagnostics. The supported options are `Modules`, `Pages`, `Private`, and
+`Public` for `@autodocs`; `@docs` and `@index` take no options.
+`canonical=false`, `Order`, `Filter`, and `@meta CurrentModule` are outside this
+authoring subset.
+
+These directives control the contents of authored pages. They do not change
+which API items Diplodocus extracts or advertises in generated navigation,
+search, or fragment metadata.
 
 Snapshots retain the assembled item references, original API documents, resolved
 links, and local assets. Standalone HTML and HTML and Markdown fragments render

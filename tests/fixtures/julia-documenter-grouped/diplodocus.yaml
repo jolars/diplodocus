@@ -1,0 +1,25 @@
+project:
+  name: Grouped Julia API
+repositories:
+  - id: repo
+    path: .
+packages:
+  - id: slope
+    name: SLOPE
+    slug: slope
+    ecosystem: julia
+    repository: repo
+    path: .
+    metadata-path: Project.toml
+    targets:
+      - id: api
+        extractor: julia
+        path: src/SLOPE.jl
+        role: public-api
+content:
+  - id: manual
+    owner: slope
+    repository: repo
+    path: docs
+    mount: ""
+    format: documenter

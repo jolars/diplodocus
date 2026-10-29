@@ -276,7 +276,9 @@ impl Context<'_> {
                     } if self.authored
                         && matches!(
                             directive,
-                            md::DocumenterDirective::Autodocs | md::DocumenterDirective::Index
+                            md::DocumenterDirective::Docs
+                                | md::DocumenterDirective::Autodocs
+                                | md::DocumenterDirective::Index
                         ) =>
                     {
                         Some(node.info())

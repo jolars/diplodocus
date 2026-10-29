@@ -1044,7 +1044,10 @@ impl Links<'_> {
         for block in blocks {
             match block {
                 Block::ApiDocumentation {
-                    item, identifier, ..
+                    item,
+                    selection,
+                    identifier,
+                    ..
                 } => {
                     self.item(item)?;
                     require(
@@ -1056,6 +1059,28 @@ impl Links<'_> {
                             ),
                         "embedded Julia API item",
                     )?;
+                    let members: &[ItemReference] =
+                        match &self.0.packages[&item.package].items[&item.item].language_data {
+                            Some(ItemLanguageData::Julia(data)) => match &data.declaration {
+                                JuliaDeclaration::Callable {
+                                    role: JuliaCallableRole::Family { methods },
+                                    ..
+                                } => methods,
+                                JuliaDeclaration::Type { constructors, .. } => constructors,
+                                _ => &[],
+                            },
+                            _ => &[],
+                        };
+                    let mut seen = std::collections::BTreeSet::new();
+                    require(!selection.is_empty(), "empty embedded Julia API selection")?;
+                    for reference in selection {
+                        self.item(reference)?;
+                        require(
+                            (reference == item || members.contains(reference))
+                                && seen.insert(reference),
+                            "embedded Julia API selection membership",
+                        )?;
+                    }
                 }
                 Block::BlockQuote { blocks, .. }
                 | Block::Container { blocks, .. }

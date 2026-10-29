@@ -139,6 +139,8 @@ pub enum Block {
     ApiDocumentation {
         /// Canonical item whose signatures and documentation are presented.
         item: ItemReference,
+        /// Exact item and member documents selected by the authored directive.
+        selection: Vec<ItemReference>,
         /// Page-local anchor used by the generated index.
         identifier: String,
         /// Authored directive range, independent of the item's source ranges.

@@ -973,6 +973,16 @@ pub(super) fn julia_members(item: &Item) -> &[ItemReference] {
         _ => &[],
     }
 }
+
+pub(super) fn julia_documentation_signatures(item: &Item) -> &[crate::ir::SourcedSignature] {
+    // Families aggregate their methods' signatures, which are presented with
+    // each selected method instead of repeating them above the documentation.
+    if item.kind == crate::ir::ItemKind::Function && !julia_members(item).is_empty() {
+        &[]
+    } else {
+        &item.signatures
+    }
+}
 fn file(bytes: Vec<u8>, media_type: &str) -> RenderedFile {
     RenderedFile {
         bytes,
@@ -1051,7 +1061,9 @@ impl Renderer<'_, '_> {
     fn api_documentation(
         &mut self,
         reference: &ItemReference,
+        selection: &[ItemReference],
         identifier: &str,
+        level: usize,
     ) -> Result<String, SiteError> {
         let item = &self.site.workspace.packages[&reference.package].items[&reference.item];
         let target = self.site.target(
@@ -1061,17 +1073,17 @@ impl Renderer<'_, '_> {
             },
         )?;
         let mut html = format!(
-            "<section id=\"{}\"><h2><a href=\"{}\"><code>{}</code></a></h2>",
+            "<section id=\"{}\"><h{level}><a href=\"{}\"><code>{}</code></a></h{level}>",
             escape(identifier),
             escape(&target),
             escape(&item.qualified_name)
         );
         self.headings
-            .push((2, identifier.into(), item.qualified_name.clone()));
-        for reference in std::iter::once(reference).chain(julia_members(item)) {
+            .push((level, identifier.into(), item.qualified_name.clone()));
+        for reference in selection {
             let (document_route, page) = self.site.api_page(reference)?;
             let item = page.item.ok_or(SiteError::Evidence)?;
-            for signature in &item.signatures {
+            for signature in julia_documentation_signatures(item) {
                 html.push_str(&self.highlighter.render_signature(
                     &super::signatures::signature_for_site(
                         self.site,
@@ -1098,7 +1110,7 @@ impl Renderer<'_, '_> {
                     headings: Vec::new(),
                     identifiers: BTreeSet::new(),
                     document_navigation: false,
-                    heading_offset: 2,
+                    heading_offset: level,
                 };
                 html.push_str(&renderer.blocks(&document.document.blocks)?);
             }
@@ -1607,6 +1619,7 @@ impl Renderer<'_, '_> {
     fn blocks(&mut self, blocks: &[Block]) -> Result<String, SiteError> {
         let mut html = String::new();
         let mut rd_usage = false;
+        let mut authored_heading = 1;
         for block in blocks {
             if let Block::Heading {
                 level: 2, inlines, ..
@@ -1619,9 +1632,17 @@ impl Renderer<'_, '_> {
             }
             match block {
                 Block::ApiDocumentation {
-                    item, identifier, ..
+                    item,
+                    selection,
+                    identifier,
+                    ..
                 } => {
-                    html.push_str(&self.api_documentation(item, identifier)?);
+                    html.push_str(&self.api_documentation(
+                        item,
+                        selection,
+                        identifier,
+                        (authored_heading + self.heading_offset + 1).min(6),
+                    )?);
                 }
                 Block::Component {
                     attributes, blocks, ..
@@ -1746,6 +1767,7 @@ impl Renderer<'_, '_> {
                     inlines,
                     ..
                 } => {
+                    authored_heading = *level;
                     let level = (*level + self.heading_offset).clamp(1, 6);
                     let label = plain(inlines);
                     let identifier = if self.document_navigation && level > 1 {

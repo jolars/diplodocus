@@ -501,7 +501,9 @@ impl Markdown<'_, '_> {
     fn api_documentation(
         &self,
         reference: &ItemReference,
+        selection: &[ItemReference],
         identifier: &str,
+        level: usize,
     ) -> Result<String, SiteError> {
         let item = &self.site.workspace.packages[&reference.package].items[&reference.item];
         let target = self.site.target(
@@ -514,15 +516,16 @@ impl Markdown<'_, '_> {
         anchor(&mut output, identifier);
         writeln!(
             output,
-            "## [{}]({})\n",
+            "{} [{}]({})\n",
+            "#".repeat(level),
             code(&item.qualified_name),
             link_url(&target)
         )
         .unwrap();
-        for reference in std::iter::once(reference).chain(super::html::julia_members(item)) {
+        for reference in selection {
             let (document_route, page) = self.site.api_page(reference)?;
             let item = page.item.ok_or(SiteError::Evidence)?;
-            for signature in &item.signatures {
+            for signature in super::html::julia_documentation_signatures(item) {
                 output.push_str(&fence(
                     &super::signatures::signature_for_site(
                         self.site,
@@ -543,7 +546,7 @@ impl Markdown<'_, '_> {
                     resolved: page.resolved,
                     identifiers: BTreeSet::new(),
                     headings: false,
-                    heading_offset: 2,
+                    heading_offset: level,
                     cell: 0,
                 };
                 output.push_str(&renderer.blocks(&document.document.blocks)?);
@@ -652,12 +655,21 @@ impl Markdown<'_, '_> {
 
     fn blocks(&mut self, nodes: &[Block]) -> Result<String, SiteError> {
         let mut output = String::new();
+        let mut authored_heading = 1;
         for node in nodes {
             match node {
                 Block::ApiDocumentation {
-                    item, identifier, ..
+                    item,
+                    selection,
+                    identifier,
+                    ..
                 } => {
-                    output.push_str(&self.api_documentation(item, identifier)?);
+                    output.push_str(&self.api_documentation(
+                        item,
+                        selection,
+                        identifier,
+                        (authored_heading + self.heading_offset + 1).min(6),
+                    )?);
                 }
                 Block::Component {
                     attributes, blocks, ..
@@ -701,6 +713,7 @@ impl Markdown<'_, '_> {
                     inlines,
                     ..
                 } => {
+                    authored_heading = *level;
                     if self.headings
                         && (attributes.identifier.is_some() || *level + self.heading_offset > 1)
                     {

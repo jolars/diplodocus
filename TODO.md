@@ -212,7 +212,7 @@ Documenter compatibility.
   in portable snapshots. The Eunoia.jl acceptance recipe verifies all 30 gallery
   blocks and the homepage example, 30 retained figures, and detached HTML and
   Markdown generation after removing disposable sources and configuration.
-- [ ] Extend the supported Documenter authoring subset for existing Julia pages.
+- [x] Extend the supported Documenter authoring subset for existing Julia pages.
   Add explicit `@docs` selection and the `@autodocs` `Pages` filter, using a
   representative page such as SLOPE's grouped API reference as an acceptance
   case. Preserve authored organization, explicitly selected private items,
