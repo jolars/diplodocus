@@ -45,10 +45,26 @@ anchors, and reports coverage counts. Its numbered routes under
 `/docs/reference/julia/` are acceptance URLs; Eunoia can assign its own routes
 when integrating the fragments.
 
-The current Fatou parser leaves Eunoia's two fenced examples inside `euler`'s
-list items as literal fence text. The summary reports list items containing
-literal fences separately from extraction diagnostics. Indented code blocks
-inside lists retain their structure.
+The pinned Fatou 0.8.2 parser leaves Eunoia's two fenced examples inside `euler`'s
+list items as literal fence text. The summary reports both rendered list code
+examples and list items containing literal fences separately from extraction
+diagnostics. Indented code blocks inside lists retain their structure.
+
+The parser fix is implemented in the neighboring Fatou checkout. Until its
+release, keep the published dependency pin and use a temporary Cargo patch to
+validate the new extraction and detached-fragment regressions:
+
+```console
+devenv shell -- compute run -- cargo --config 'patch.crates-io.fatou-parser.path="../fatou/crates/fatou-parser"' test --test julia_extraction --test fragments -- --include-ignored
+devenv shell -- compute run -- cargo --config 'patch.crates-io.fatou-parser.path="../fatou/crates/fatou-parser"' build --bin diplodocus
+devenv shell -- compute run -- python examples/eunoia/julia.py --source ../Eunoia.jl --diplodocus-bin target/debug/diplodocus --require-list-fences
+```
+
+The temporary patch changes `Cargo.lock`; restore that change after validation.
+After Fatou publishes the fix, update the exact parser pin and lockfile, remove
+the two tests' ignore annotations, and make the recipe require both examples as
+HTML code blocks and Markdown fences by default. The strict run also checks
+that list items contain no literal fences.
 
 This run covers the core API in Eunoia.jl 1.0.1. A recipe-owned GFM overview
 replaces README discovery in the disposable copy. Documenter guides, gallery

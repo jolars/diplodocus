@@ -219,18 +219,7 @@ impl Context<'_> {
                     _ => return self.unsupported(node.syntax()),
                 };
                 let content = node.content();
-                let segments = node
-                    .content_range()
-                    .map(|range| {
-                        vec![SourceSegment {
-                            span: SourceSpan {
-                                start: u32::from(range.start()) as usize,
-                                end: u32::from(range.start()) as usize + content.len(),
-                            },
-                            text: content.clone(),
-                        }]
-                    })
-                    .unwrap_or_default();
+                let segments = code_segments(node.syntax(), &content);
                 Block::CodeBlock {
                     language,
                     source: content,
@@ -240,32 +229,7 @@ impl Context<'_> {
             }
             md::Block::IndentedCodeBlock(node) => {
                 let source = node.content();
-                let mut source_segments = Vec::new();
-                for token in node
-                    .syntax()
-                    .descendants_with_tokens()
-                    .filter_map(|e| e.into_token())
-                {
-                    if matches!(
-                        token.kind(),
-                        documentation::syntax::SyntaxKind::CODE_CONTENT
-                            | documentation::syntax::SyntaxKind::NEWLINE
-                    ) {
-                        source_segments.push(SourceSegment {
-                            text: token.text().into(),
-                            span: super::span(token.text_range()),
-                        });
-                    }
-                }
-                // Julia chomps final newlines; retain only the contributing bytes.
-                let mut remaining = source.len();
-                for segment in &mut source_segments {
-                    let count = remaining.min(segment.text.len());
-                    segment.text.truncate(count);
-                    segment.span.end = segment.span.start + count;
-                    remaining -= count;
-                }
-                source_segments.retain(|segment| !segment.text.is_empty());
+                let source_segments = code_segments(node.syntax(), &source);
                 Block::CodeBlock {
                     language: Some("julia".into()),
                     source,
@@ -535,6 +499,35 @@ fn inline_child(element: SyntaxElement) -> Option<md::Inline> {
     }
 }
 
+fn code_segments(node: &SyntaxNode, source: &str) -> Vec<SourceSegment> {
+    use documentation::syntax::SyntaxKind as K;
+
+    let mut remaining = source.len();
+    node.children_with_tokens()
+        .filter_map(|element| element.into_token())
+        .filter(|token| {
+            token.kind() == K::CODE_CONTENT
+                || (node.kind() == K::INDENTED_CODE_BLOCK && token.kind() == K::NEWLINE)
+        })
+        .filter_map(|token| {
+            // Container prefixes do not contribute code; Julia also chomps
+            // trailing newlines, so retain only bytes present in the body.
+            let count = remaining.min(token.text().len());
+            remaining -= count;
+            (count > 0).then(|| {
+                let start = usize::from(token.text_range().start());
+                SourceSegment {
+                    text: token.text()[..count].into(),
+                    span: SourceSpan {
+                        start,
+                        end: start + count,
+                    },
+                }
+            })
+        })
+        .collect()
+}
+
 fn inline_range(inline: &md::Inline) -> TextRange {
     match inline {
         md::Inline::Text(token)
@@ -552,5 +545,49 @@ fn inline_range(inline: &md::Inline) -> TextRange {
         md::Inline::FootnoteReference(node) => node.syntax().text_range(),
         md::Inline::Interpolation(node) => node.syntax().text_range(),
         md::Inline::HardBreak(node) => node.syntax().text_range(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use documentation::syntax::{DocumentationLanguage, SyntaxKind as K};
+    use rowan::{GreenNodeBuilder, Language};
+
+    #[test]
+    fn fenced_code_segments_exclude_container_prefixes_and_chomped_newlines() {
+        let mut builder = GreenNodeBuilder::new();
+        builder.start_node(DocumentationLanguage::kind_to_raw(K::FENCED_CODE_BLOCK));
+        for (kind, text) in [
+            (K::WHITESPACE, "  "),
+            (K::FENCE, "```"),
+            (K::INFO_STRING, "julia"),
+            (K::NEWLINE, "\r\n"),
+            (K::WHITESPACE, "  "),
+            (K::CODE_CONTENT, "α = 1\r\n"),
+            (K::WHITESPACE, "  "),
+            (K::CODE_CONTENT, "  β = 2\r\n"),
+            (K::WHITESPACE, "  "),
+            (K::FENCE, "```"),
+            (K::NEWLINE, "\r\n"),
+        ] {
+            builder.token(DocumentationLanguage::kind_to_raw(kind), text);
+        }
+        builder.finish_node();
+        let node = SyntaxNode::new_root(builder.finish());
+        let source = "α = 1\r\n  β = 2";
+        let segments = code_segments(&node, source);
+        assert_eq!(segments.len(), 2);
+        assert_eq!(
+            segments
+                .iter()
+                .map(|segment| segment.text.as_str())
+                .collect::<String>(),
+            source
+        );
+        let raw = node.text().to_string();
+        for segment in segments {
+            assert_eq!(&raw[segment.span.start..segment.span.end], segment.text);
+        }
     }
 }

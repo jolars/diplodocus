@@ -137,6 +137,63 @@ fn detached_snapshot_supplies_content_without_a_site_shell() {
 }
 
 #[test]
+#[ignore = "Requires the Fatou list-fence fix; run with the local parser Cargo patch."]
+fn julia_list_fences_render_as_code_from_a_detached_snapshot() {
+    let root = support::TestWorkspace::from_fixture("julia-list-fences");
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
+    assert!(
+        sources.workspace().diagnostics.is_empty(),
+        "{:?}",
+        sources.workspace().diagnostics
+    );
+    let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+    let artifact = tempfile::tempdir().unwrap();
+    let database = artifact.path().join("documentation.sqlite");
+    snapshot.publish(&database).unwrap();
+    drop(snapshot);
+    drop(sources);
+    drop(root);
+
+    let snapshot = Snapshot::load(database).unwrap();
+    let fragments = render_fragments(&Site::new(&snapshot).unwrap()).unwrap();
+    let index: FragmentIndex =
+        serde_json::from_slice(&fragments.files()["documents.json"].bytes).unwrap();
+    let fit = index
+        .documents
+        .iter()
+        .find(|document| document.qualified_name.as_deref() == Some("Demo.fit"))
+        .unwrap();
+    let html = std::str::from_utf8(&fragments.files()[&fit.path].bytes).unwrap();
+    let markdown = std::str::from_utf8(&fragments.files()[&fit.markdown_path].bytes).unwrap();
+    assert_eq!(
+        html.matches("<pre class=\"syntax-code\"").count(),
+        4,
+        "{html}"
+    );
+    assert!(!html.contains("```"), "{html}");
+    assert!(!html.contains("~~~~"), "{html}");
+    assert_eq!(markdown.matches("```julia").count(), 4, "{markdown}");
+    assert!(
+        markdown.contains("```julia\n  α = 1\n    fit(α)\n  ```"),
+        "{markdown}"
+    );
+    for body in [html, markdown] {
+        let fence = body.find("After the fence.").unwrap();
+        let nested = body.find("Nested example:").unwrap();
+        let after_nested = body.find("After the nested list.").unwrap();
+        let after_indented = body.find("After the indented code.").unwrap();
+        let ordered = body.find("Membership:").unwrap();
+        assert!(
+            fence < nested
+                && nested < after_nested
+                && after_nested < after_indented
+                && after_indented < ordered,
+            "{body}"
+        );
+    }
+}
+
+#[test]
 fn julia_list_fragments_preserve_markup_spacing_and_mapped_references() {
     let root = support::TestWorkspace::from_fixture("julia-lists");
     let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();

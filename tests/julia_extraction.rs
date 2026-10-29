@@ -411,6 +411,94 @@ fn list_docstrings_convert_inline_markup_once_and_preserve_block_order() {
 }
 
 #[test]
+#[ignore = "Requires the Fatou list-fence fix; run with the local parser Cargo patch."]
+fn list_fences_preserve_code_block_order_and_exact_source_segments() {
+    use diplodocus::ir::{Block, ProvenanceActivity};
+
+    let workspace = support::TestWorkspace::from_fixture("julia-list-fences");
+    let result = extract(&workspace);
+    assert!(result.diagnostics.is_empty(), "{:?}", result.diagnostics);
+    let doc = item(&result, "Demo.fit").documentation.as_ref().unwrap();
+    let [
+        _,
+        Block::List { items, .. },
+        Block::List { items: ordered, .. },
+    ] = doc.document.blocks.as_slice()
+    else {
+        panic!(
+            "Expected unordered and ordered lists: {:?}",
+            doc.document.blocks
+        );
+    };
+    let [
+        Block::Paragraph { .. },
+        Block::CodeBlock {
+            source,
+            language,
+            source_segments,
+            ..
+        },
+        Block::Paragraph { .. },
+        Block::List { items: nested, .. },
+        Block::Paragraph { .. },
+        Block::CodeBlock {
+            source: indented, ..
+        },
+        Block::Paragraph { .. },
+    ] = items[0].blocks.as_slice()
+    else {
+        panic!("List blocks lost source order: {:?}", items[0]);
+    };
+    assert_eq!(language.as_deref(), Some("julia"));
+    assert_eq!(source, "α = 1\n  fit(α)");
+    assert_eq!(source_segments.len(), 2);
+    assert_eq!(indented, "fit(3)");
+    let [
+        _,
+        Block::CodeBlock {
+            source: nested_source,
+            ..
+        },
+    ] = nested[0].blocks.as_slice()
+    else {
+        panic!("Expected a nested fence");
+    };
+    assert_eq!(nested_source, "fit(2)");
+    let [
+        _,
+        Block::CodeBlock {
+            source: ordered_source,
+            ..
+        },
+    ] = ordered[0].blocks.as_slice()
+    else {
+        panic!("Expected an ordered-list fence");
+    };
+    assert_eq!(ordered_source, "fit(4)");
+    let decoded = doc.raw_source.as_ref().unwrap();
+    assert_eq!(
+        source_segments
+            .iter()
+            .map(|segment| segment.text.as_str())
+            .collect::<String>(),
+        *source
+    );
+    for segment in source_segments {
+        assert_eq!(&decoded[segment.span.start..segment.span.end], segment.text);
+    }
+    let original = workspace.read("src/Demo.jl");
+    for provenance in &doc.provenance {
+        if let ProvenanceActivity::DecodedDocumentation { decoded_span } = provenance.activity {
+            let original_span = provenance.span.unwrap();
+            assert_eq!(
+                &decoded[decoded_span.start..decoded_span.end],
+                &original[original_span.start..original_span.end]
+            );
+        }
+    }
+}
+
+#[test]
 fn unsupported_inline_markup_in_lists_retains_one_warning_and_exact_attribution() {
     use diplodocus::ir::{Block, Inline};
 

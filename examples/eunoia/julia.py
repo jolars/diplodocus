@@ -74,6 +74,8 @@ class FragmentHTML(HTMLParser):
         self.links = []
         self.list_items = []
         self.lists = []
+        self.list_code_blocks = []
+        self.code_block = None
         self.feed(body)
 
     def handle_starttag(self, tag, attributes):
@@ -85,14 +87,21 @@ class FragmentHTML(HTMLParser):
                 self.links.append(value)
         if tag == "li":
             self.lists.append([])
+        if tag == "pre" and self.lists:
+            self.code_block = []
 
     def handle_endtag(self, tag):
         if tag == "li":
             self.list_items.append(" ".join("".join(self.lists.pop()).split()))
+        if tag == "pre" and self.code_block is not None:
+            self.list_code_blocks.append("".join(self.code_block).rstrip("\r\n"))
+            self.code_block = None
 
     def handle_data(self, data):
         for item in self.lists:
             item.append(data)
+        if self.code_block is not None:
+            self.code_block.append(data)
 
 
 def api_coverage(items):
@@ -194,7 +203,7 @@ def snapshot_coverage(snapshot, forbidden_paths):
     return required, coverage | {"api_items": len(items)}, diagnostics
 
 
-def validate_fragments(root, required):
+def validate_fragments(root, required, require_list_fences=False):
     manifest = json.loads((root / "documents.json").read_text())
     require(manifest["format_version"] == 2, "Expected fragment manifest version 2")
     documents = manifest["documents"]
@@ -276,12 +285,35 @@ def validate_fragments(root, required):
                 markdown[document["url"]].count(formatted) == 1,
                 f"Duplicated or damaged Markdown list text in {name}",
             )
+    euler = next(d for d in documents if d["public_name"] == "Eunoia.euler")
+    examples = [
+        'euler(Dict("A" => 5, "B" => 3, "A&B" => 1.5))',
+        'euler(Dict("A" => ["x", "y"], "B" => ["y", "z"]))',
+    ]
+    code_examples = sum(
+        html[euler["url"]].list_code_blocks.count(example) == 1
+        and bool(
+            re.search(
+                r"(?m)^([ ]*)```julia\n\1" + re.escape(example) + r"\n\1```$",
+                markdown[euler["url"]],
+            )
+        )
+        for example in examples
+    )
+    literal_fences = sum(
+        "```" in item for body in html.values() for item in body.list_items
+    )
+    if require_list_fences:
+        require(
+            code_examples == 2,
+            "Eunoia.euler list examples must render as code in HTML and Markdown",
+        )
+        require(literal_fences == 0, "List items still contain literal fences")
     return {
         "fragment_documents": len(documents),
         "checked_local_links": links,
-        "list_items_with_literal_fences": sum(
-            "```" in item for body in html.values() for item in body.list_items
-        ),
+        "euler_list_code_examples": code_examples,
+        "list_items_with_literal_fences": literal_fences,
     }
 
 
@@ -291,6 +323,11 @@ def main():
     parser.add_argument("--source", type=Path, default=repository.parent / "Eunoia.jl")
     parser.add_argument("--output", type=Path)
     parser.add_argument("--diplodocus-bin", type=Path)
+    parser.add_argument(
+        "--require-list-fences",
+        action="store_true",
+        help="Require the pending Fatou list-fence parser fix",
+    )
     options = parser.parse_args()
     source = options.source.resolve(strict=True)
     metadata = tomllib.loads((source / "Project.toml").read_text())
@@ -458,7 +495,7 @@ packages:
         cwd=detached,
         env=environment,
     )
-    coverage |= validate_fragments(mapped, required)
+    coverage |= validate_fragments(mapped, required, options.require_list_fences)
     for path in (fragments / "assets").rglob("*"):
         # Search records contain mapped URLs; styles and retained assets keep their bytes.
         if (

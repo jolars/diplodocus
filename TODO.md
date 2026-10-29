@@ -195,9 +195,13 @@ Documenter compatibility.
   with focused extraction and fragment regressions.
 - [ ] Support fenced code nested in Julia Markdown list items. Fatou 0.8.2
   exposes Eunoia's two fenced examples in `euler`'s docstring as inline
-  content, so they still render as literal fence text. The API acceptance
-  summary reports this separately from extraction diagnostics. Preserve
-  indented code blocks and source attribution when extending the parser.
+  content. The fix is implemented in `../fatou`, with a Julia Markdown oracle
+  fixture and regressions for losslessness, indented code, and source mapping.
+  Diplodocus now preserves separate code tokens and has extraction and detached
+  fragment regressions, ignored until the upstream release. After Fatou ships,
+  bump the exact parser pin and lockfile, enable those two tests, and make the
+  Eunoia recipe's `--require-list-fences` check unconditional. See
+  `examples/eunoia/README.md` for local validation with the unreleased parser.
 - [ ] Support the Documenter page syntax used in Eunoia.jl's `docs/src/`.
   `@index` and `@autodocs` currently remain literal code blocks. Bare page and
   heading `@ref` links fail validation, while explicit references can leave
