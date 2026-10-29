@@ -411,25 +411,67 @@ fn list_docstrings_convert_inline_markup_once_and_preserve_block_order() {
 }
 
 #[test]
-#[ignore = "Requires the Fatou list-fence fix; run with the local parser Cargo patch."]
-fn list_fences_preserve_code_block_order_and_exact_source_segments() {
-    use diplodocus::ir::{Block, ProvenanceActivity};
+fn container_fences_and_wrapped_inlines_preserve_source_segments() {
+    use diplodocus::ir::{Block, Inline, ProvenanceActivity};
 
     let workspace = support::TestWorkspace::from_fixture("julia-list-fences");
     let result = extract(&workspace);
     assert!(result.diagnostics.is_empty(), "{:?}", result.diagnostics);
     let doc = item(&result, "Demo.fit").documentation.as_ref().unwrap();
     let [
-        _,
+        Block::Paragraph { inlines, .. },
         Block::List { items, .. },
         Block::List { items: ordered, .. },
+        Block::Callout { blocks: note, .. },
     ] = doc.document.blocks.as_slice()
     else {
         panic!(
-            "Expected unordered and ordered lists: {:?}",
+            "Expected prose, lists, and an admonition: {:?}",
             doc.document.blocks
         );
     };
+    for nested in inlines.iter().filter_map(|inline| match inline {
+        Inline::Strong { inlines, .. } | Inline::Emphasis { inlines, .. } => Some(inlines),
+        _ => None,
+    }) {
+        assert_eq!(nested.len(), 3);
+        assert!(matches!(&nested[1], Inline::SoftBreak { .. }));
+    }
+    assert!(
+        inlines
+            .iter()
+            .any(|inline| matches!(inline, Inline::Strong { .. }))
+    );
+    assert!(
+        inlines
+            .iter()
+            .any(|inline| matches!(inline, Inline::Emphasis { .. }))
+    );
+    assert!(
+        inlines
+            .iter()
+            .any(|inline| matches!(inline, Inline::Code { value, .. } if value == "wrapped code"))
+    );
+    let (target, label) = inlines
+        .iter()
+        .find_map(|inline| match inline {
+            Inline::Link {
+                target, inlines, ..
+            } => Some((target, inlines)),
+            _ => None,
+        })
+        .expect("Expected the wrapped API reference");
+    assert!(target.contains("sid1:julia:function:Demo.fit"));
+    let [
+        Inline::Text { value: first, .. },
+        Inline::SoftBreak { .. },
+        Inline::Text { value: last, .. },
+    ] = label.as_slice()
+    else {
+        panic!("Expected a label with a soft break: {label:?}");
+    };
+    assert_eq!(first, "fit");
+    assert_eq!(last, "reference");
     let [
         Block::Paragraph { .. },
         Block::CodeBlock {
@@ -475,16 +517,31 @@ fn list_fences_preserve_code_block_order_and_exact_source_segments() {
         panic!("Expected an ordered-list fence");
     };
     assert_eq!(ordered_source, "fit(4)");
+    let [
+        _,
+        Block::CodeBlock {
+            source: note_source,
+            source_segments: note_segments,
+            ..
+        },
+    ] = note.as_slice()
+    else {
+        panic!("Expected an admonition fence");
+    };
+    assert_eq!(note_source, "β = 5\n  fit(β)");
+    assert_eq!(note_segments.len(), 2);
     let decoded = doc.raw_source.as_ref().unwrap();
-    assert_eq!(
-        source_segments
-            .iter()
-            .map(|segment| segment.text.as_str())
-            .collect::<String>(),
-        *source
-    );
-    for segment in source_segments {
-        assert_eq!(&decoded[segment.span.start..segment.span.end], segment.text);
+    for (source, segments) in [(source, source_segments), (note_source, note_segments)] {
+        assert_eq!(
+            segments
+                .iter()
+                .map(|segment| segment.text.as_str())
+                .collect::<String>(),
+            *source
+        );
+        for segment in segments {
+            assert_eq!(&decoded[segment.span.start..segment.span.end], segment.text);
+        }
     }
     let original = workspace.read("src/Demo.jl");
     for provenance in &doc.provenance {

@@ -203,7 +203,7 @@ def snapshot_coverage(snapshot, forbidden_paths):
     return required, coverage | {"api_items": len(items)}, diagnostics
 
 
-def validate_fragments(root, required, require_list_fences=False):
+def validate_fragments(root, required):
     manifest = json.loads((root / "documents.json").read_text())
     require(manifest["format_version"] == 2, "Expected fragment manifest version 2")
     documents = manifest["documents"]
@@ -303,12 +303,11 @@ def validate_fragments(root, required, require_list_fences=False):
     literal_fences = sum(
         "```" in item for body in html.values() for item in body.list_items
     )
-    if require_list_fences:
-        require(
-            code_examples == 2,
-            "Eunoia.euler list examples must render as code in HTML and Markdown",
-        )
-        require(literal_fences == 0, "List items still contain literal fences")
+    require(
+        code_examples == 2,
+        "Eunoia.euler list examples must render as code in HTML and Markdown",
+    )
+    require(literal_fences == 0, "List items still contain literal fences")
     return {
         "fragment_documents": len(documents),
         "checked_local_links": links,
@@ -323,11 +322,6 @@ def main():
     parser.add_argument("--source", type=Path, default=repository.parent / "Eunoia.jl")
     parser.add_argument("--output", type=Path)
     parser.add_argument("--diplodocus-bin", type=Path)
-    parser.add_argument(
-        "--require-list-fences",
-        action="store_true",
-        help="Require the pending Fatou list-fence parser fix",
-    )
     options = parser.parse_args()
     source = options.source.resolve(strict=True)
     metadata = tomllib.loads((source / "Project.toml").read_text())
@@ -495,7 +489,7 @@ packages:
         cwd=detached,
         env=environment,
     )
-    coverage |= validate_fragments(mapped, required, options.require_list_fences)
+    coverage |= validate_fragments(mapped, required)
     for path in (fragments / "assets").rglob("*"):
         # Search records contain mapped URLs; styles and retained assets keep their bytes.
         if (

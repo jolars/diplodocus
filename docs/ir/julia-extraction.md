@@ -131,9 +131,13 @@ existing family or method. Conflicting attachments produce errors.
 
 Prose, headings, emphasis, inline code, links, images, lists, block quotes,
 tables, common admonitions, thematic breaks, and code blocks become portable
-document nodes. Docstring headings begin below the API page title. Source parsing
-retains code blocks without execution. The command pipeline executes `jldoctest`
-fences with expected-output verification; ordinary Julia fences remain illustrative.
+document nodes. Docstring headings begin below the API page title. Fatou
+recognizes inline markup across wrapped lines and fences in list items and
+admonitions. The adapter preserves exact decoded source spans and code
+indentation, with a separate source segment for each contributing code token.
+Source parsing retains code blocks without execution. The command pipeline
+executes `jldoctest` fences with expected-output verification; ordinary Julia
+fences remain illustrative.
 Unsupported executable directives fail extraction. See the
 [extraction guide](../guide/extraction.md) for the supported native subset.
 Math, footnotes, interpolation, unsupported admonitions, and other Documenter

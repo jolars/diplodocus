@@ -156,12 +156,12 @@ supported subset, and coarse document-range behavior.
 
 | Component | Version | Role and recorded settings |
 | --- | --- | --- |
-| `fatou-parser` | `0.8.1` | Parse Julia declarations, decode docstrings with source maps, and parse Julia Markdown. Record `grammar = "julia-superset"`, `includes = "unconditional-literal"`, `surface = "public-or-documented"`, and `documentation = "julia-markdown-inert"`. |
+| `fatou-parser` | `0.9.0` | Parse Julia declarations, decode docstrings with source maps, and parse Julia Markdown. Record `grammar = "julia-superset"`, `includes = "unconditional-literal"`, `surface = "public-or-documented"`, and `documentation = "julia-markdown-inert"`. |
 | `rowan` | `0.17.0` | Supply Fatou's syntax tree and zero-based, half-open UTF-8 byte ranges. |
 | `toml` | `1.1.8` | Read static Project.toml fields with their source ranges. |
 
 All three releases are exact pins in `Cargo.toml`. Fatou is a published crate;
-extraction does not depend on a sibling checkout or a Julia installation.
+static extraction does not depend on a sibling checkout or a Julia installation.
 
 ### Capability manifest
 

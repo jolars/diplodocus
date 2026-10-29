@@ -26,7 +26,7 @@ path = "src/main.rs"
 arity-parser = "=0.6.1"
 base64 = "=0.23.1"
 clap = { version = "4.5", features = ["derive"] }
-fatou-parser = "=0.8.2"
+fatou-parser = "=0.9.0"
 getrandom = "0.4"
 # RcDom implements TreeSink only for this html5ever release line.
 html5ever = "=0.39.0"

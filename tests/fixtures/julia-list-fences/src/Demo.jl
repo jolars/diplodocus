@@ -2,7 +2,12 @@ module Demo
 export fit
 
 """
-Fit α inputs.
+Fit α inputs with **wrapped
+bold** and *wrapped
+emphasis*, plus `wrapped
+code`. See [fit
+reference](@ref
+fit).
 
 - Areas:
   ```julia
@@ -24,6 +29,12 @@ Fit α inputs.
    ```julia
    fit(4)
    ```
+
+!!! note
+    ```julia
+    β = 5
+      fit(β)
+    ```
 """
 function fit end
 end

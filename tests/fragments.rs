@@ -137,8 +137,7 @@ fn detached_snapshot_supplies_content_without_a_site_shell() {
 }
 
 #[test]
-#[ignore = "Requires the Fatou list-fence fix; run with the local parser Cargo patch."]
-fn julia_list_fences_render_as_code_from_a_detached_snapshot() {
+fn julia_container_fences_and_wrapped_markup_survive_detached_rendering() {
     let root = support::TestWorkspace::from_fixture("julia-list-fences");
     let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     assert!(
@@ -167,12 +166,20 @@ fn julia_list_fences_render_as_code_from_a_detached_snapshot() {
     let markdown = std::str::from_utf8(&fragments.files()[&fit.markdown_path].bytes).unwrap();
     assert_eq!(
         html.matches("<pre class=\"syntax-code\"").count(),
-        4,
+        5,
         "{html}"
     );
     assert!(!html.contains("```"), "{html}");
     assert!(!html.contains("~~~~"), "{html}");
-    assert_eq!(markdown.matches("```julia").count(), 4, "{markdown}");
+    assert_eq!(markdown.matches("```julia").count(), 5, "{markdown}");
+    assert!(html.contains("<strong>wrapped bold</strong>"), "{html}");
+    assert!(html.contains("<em>wrapped emphasis</em>"), "{html}");
+    assert!(html.contains("<code>wrapped code</code>"), "{html}");
+    assert!(html.contains(">fit reference</a>"), "{html}");
+    assert!(markdown.contains("**wrapped bold**"), "{markdown}");
+    assert!(markdown.contains("*wrapped emphasis*"), "{markdown}");
+    assert!(markdown.contains("`wrapped code`"), "{markdown}");
+    assert!(markdown.contains("[fit reference](<"), "{markdown}");
     assert!(
         markdown.contains("```julia\n  α = 1\n    fit(α)\n  ```"),
         "{markdown}"
