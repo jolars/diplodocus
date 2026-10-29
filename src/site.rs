@@ -1,4 +1,4 @@
-//! Site routes and presentation models built solely from a validated snapshot.
+//! Site routes and presentation models shared by static checks and snapshot generation.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -19,6 +19,9 @@ pub use urls::UrlMap;
 #[path = "site_navigation.rs"]
 mod navigation;
 
+#[path = "site_redirects.rs"]
+mod redirects;
+
 /// Site construction, rendering, or publication failed.
 #[derive(Debug, thiserror::Error)]
 pub enum SiteError {
@@ -31,7 +34,7 @@ pub enum SiteError {
     /// Crawler metadata cannot be generated from the supplied presentation settings.
     #[error("site crawler metadata is invalid: {0}")]
     CrawlerMetadata(String),
-    /// Homepage and navigation links must identify existing, visible documentation pages.
+    /// Presentation declarations need valid destinations and safe, distinct URL paths.
     #[error("site presentation settings are invalid: {0}")]
     Presentation(String),
     /// The output directory could not be staged or replaced.
@@ -57,8 +60,20 @@ pub struct Site<'a> {
     pub(crate) assets: &'a BTreeMap<String, ContentAsset>,
     pub(crate) base_url: Option<url::Url>,
     pub(crate) canonical_urls: BTreeMap<String, String>,
+    pub(crate) redirects: BTreeMap<String, String>,
     pub(crate) url_map: Option<UrlMap>,
 }
+
+struct SiteInputs<'a> {
+    workspace: &'a Workspace,
+    presentation: &'a PresentationDefaults,
+    logo: Option<&'a AssetReference>,
+    open_graph: Option<&'a AssetReference>,
+    components: &'a BTreeMap<String, crate::components::ComponentBundle>,
+    documents: &'a [ResolvedDocument],
+    assets: &'a BTreeMap<String, ContentAsset>,
+}
+
 pub(crate) struct PageModel<'a> {
     pub title: String,
     pub anchor_prefix: Option<String>,
@@ -117,31 +132,66 @@ impl<'a> Site<'a> {
     /// Assign collision-checked routes and normalize authored cell presentation.
     /// No source files, database connections, or language runtimes are used.
     pub fn new(snapshot: &'a Snapshot) -> Result<Self, SiteError> {
-        let workspace = snapshot.workspace();
+        Self::from_inputs(
+            SiteInputs {
+                workspace: snapshot.workspace(),
+                presentation: snapshot.presentation(),
+                logo: snapshot.logo(),
+                open_graph: snapshot.open_graph(),
+                components: snapshot.components(),
+                documents: snapshot.documents(),
+                assets: snapshot.assets(),
+            },
+            |id| snapshot.executed_page(id),
+        )
+    }
+
+    pub(crate) fn check_presentation(
+        sources: &'a crate::assembly::WorkspaceSources,
+        resolved: &'a crate::validation::ResolvedWorkspace,
+    ) -> Result<Vec<crate::diagnostics::Diagnostic>, SiteError> {
+        // Static checks have no execution receipts and cannot form a complete snapshot.
+        let site = Self::from_inputs(
+            SiteInputs {
+                workspace: sources.workspace(),
+                presentation: &sources.configuration().presentation,
+                logo: resolved.logo(),
+                open_graph: resolved.open_graph(),
+                components: &resolved.components,
+                documents: resolved.records(),
+                assets: resolved.assets(),
+            },
+            |_| None,
+        )?;
+        Ok(site.title_diagnostics())
+    }
+
+    fn from_inputs(
+        inputs: SiteInputs<'a>,
+        executed_page: impl Fn(&str) -> Option<&'a ValidatedPage>,
+    ) -> Result<Self, SiteError> {
+        let workspace = inputs.workspace;
         let mut site = Self {
             workspace,
-            components: snapshot.components(),
+            components: inputs.components,
             components_enabled: false,
-            presentation: snapshot.presentation(),
-            logo: snapshot.logo(),
-            open_graph: snapshot.open_graph(),
+            presentation: inputs.presentation,
+            logo: inputs.logo,
+            open_graph: inputs.open_graph,
             pages: BTreeMap::new(),
             embedded_pages: BTreeMap::new(),
             routes: BTreeMap::new(),
             overload_anchors: BTreeMap::new(),
-            assets: snapshot.assets(),
-            base_url: snapshot
-                .presentation()
+            assets: inputs.assets,
+            base_url: inputs
+                .presentation
                 .site_base_url()
                 .map_err(|message| SiteError::CrawlerMetadata(message.into()))?,
             canonical_urls: BTreeMap::new(),
+            redirects: BTreeMap::new(),
             url_map: None,
         };
-        let records: BTreeMap<_, _> = snapshot
-            .documents()
-            .iter()
-            .map(|r| (&r.document, r))
-            .collect();
+        let records: BTreeMap<_, _> = inputs.documents.iter().map(|r| (&r.document, r)).collect();
         for (id, page) in &workspace.pages {
             let identity = DocumentIdentity::Page { page: id.clone() };
             let resolved = *records.get(&identity).ok_or(SiteError::Evidence)?;
@@ -155,7 +205,7 @@ impl<'a> Site<'a> {
             let mut model = PageModel::empty(page.title.clone(), owner.clone(), visible);
             model.document = Some(&page.document);
             model.resolved = Some(resolved);
-            model.executed = snapshot.executed_page(id);
+            model.executed = executed_page(id);
             let route = if let PageKind::Authored { collection } = &page.kind {
                 let collection = &workspace.content_collections[collection];
                 let path = resolved
@@ -469,6 +519,7 @@ impl<'a> Site<'a> {
             }
         }
         site.assign_canonical_urls()?;
+        site.assign_redirects()?;
         let mut section_prefixes: Vec<&str> = Vec::new();
         for section in &site.presentation.sections {
             let prefix = section.prefix();
@@ -571,6 +622,38 @@ impl<'a> Site<'a> {
             .title
             .as_deref()
             .unwrap_or(&self.workspace.name)
+    }
+
+    /// Warn when multiple visible pages have the same rendered HTML title.
+    /// Warnings name generated paths and do not alter page titles or visibility.
+    pub fn title_diagnostics(&self) -> Vec<crate::diagnostics::Diagnostic> {
+        use crate::diagnostics::{Diagnostic, DiagnosticCode, Severity};
+        let mut titles: BTreeMap<String, Vec<&str>> = BTreeMap::new();
+        for (route, page) in &self.pages {
+            if page.visible {
+                titles
+                    .entry(page.title.split_whitespace().collect::<Vec<_>>().join(" "))
+                    .or_default()
+                    .push(route);
+            }
+        }
+        let mut diagnostics: Vec<_> = titles
+            .into_iter()
+            .filter(|(_, routes)| routes.len() > 1)
+            .map(|(title, routes)| {
+                let title = format!("{title} · {}", self.title());
+                Diagnostic::new(
+                    DiagnosticCode::DuplicatePageTitle,
+                    Severity::Warning,
+                    format!(
+                        "pages {} share the HTML title {title:?}; choose distinct page titles",
+                        routes.join(", ")
+                    ),
+                )
+            })
+            .collect();
+        diagnostics.sort();
+        diagnostics
     }
     pub(crate) fn home(&self, route: &str) -> Option<&crate::configuration::HomeDefaults> {
         (route == "index.html")

@@ -143,7 +143,7 @@ The `records` kinds are:
   | Kind         | Owner      | ID                            | Content                                                                                                                                              |
   | ---          | ---        | ---                           | ---                                                                                                                                                  |
   | `workspace`  | Empty      | Empty                         | `schema_version`, `name`, `relationships`, `diagnostics`, `provenance`                                                                               |
-  | `presentation` | Empty    | Empty                         | `title`, `description`, optional `logo`, `logo-asset`, `open-graph`, `open-graph-asset`, `site-url`, `canonical-url-style`, and `footer`                     |
+  | `presentation` | Empty    | Empty                         | `title`, `description`, optional `logo`, `logo-asset`, `open-graph`, `open-graph-asset`, `site-url`, `canonical-url-style`, `redirects`, and `footer`                     |
   | `repository` | Empty      | Repository ID                 | `canonical_url`, `source_link_template`, `revision`, `dirty`, `declared_input_fingerprint`                                                           |
   | `package`    | Empty      | Package ID                    | `slug`, `name`, `ecosystem`, `version`, optional `metadata`, `repository`, `path`, `metadata_path`, `kind`, `visibility`                             |
   | `target`     | Package ID | Target ID                     | `extractor`, `path`, `role`                                                                                                                          |
@@ -303,6 +303,18 @@ directory prefix and emits a sitemap, robots file, and HTML canonical links.
 `canonical-url-style` accepts `file` or `clean`; omission defaults to `file`.
 The generator retains the declared URL spelling in storage and normalizes it
 only when constructing public URLs.
+
+An optional `redirects` object maps old site-root URL paths to generated HTML
+artifact paths. Sources begin with `/` and omit the hosting prefix. Destinations
+use normalized relative paths including `.html`, independent of the public URL
+style. Generation validates exact source paths, unique decoded sources, visible
+destinations, and collisions with current pages and reserved output. Every
+destination resolves directly to a generated page, preventing chains and loops.
+The standalone renderer emits permanent HTTP 301 hosting rules in `_redirects`;
+the preview uses the same mappings at its local root. Fragment rendering leaves
+redirect handling to its frontend. An empty object is omitted, preserving
+previous presentation records and fingerprints. Redirect metadata requires no
+source checkout and changes neither the storage nor IR version.
 
 An optional `footer` object retains `docs-version`, `copyright`, `licenses`,
 `links`, and `built-with`. The first two fields are optional strings. The link

@@ -129,9 +129,10 @@ pub fn check(options: CheckOptions) -> Result<CheckReport, CommandError> {
         .await
     })?;
     let resolved = resolve_workspace(&sources)?;
-    Ok(CheckReport {
-        diagnostics: resolved.diagnostics().iter().cloned().collect(),
-    })
+    let mut diagnostics: Vec<_> = resolved.diagnostics().iter().cloned().collect();
+    diagnostics.extend(crate::site::Site::check_presentation(&sources, &resolved)?);
+    diagnostics.sort();
+    Ok(CheckReport { diagnostics })
 }
 
 /// Format a source diagnostic on one terminal-safe line.

@@ -10,6 +10,9 @@ use crate::ir::SourceSpan;
 /// Stable diagnostic identifier.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DiagnosticCode {
+    /// Several visible generated pages have the same HTML title.
+    #[serde(rename = "duplicate-page-title")]
+    DuplicatePageTitle,
     /// An explicitly declared browser component or bundle is invalid.
     #[serde(rename = "invalid-component")]
     InvalidComponent,
@@ -322,6 +325,7 @@ impl DiagnosticCode {
     /// Stable serialized identifier, also used to order diagnostics.
     pub const fn as_str(self) -> &'static str {
         match self {
+            Self::DuplicatePageTitle => "duplicate-page-title",
             Self::UnsupportedKernelMessage => "unsupported-kernel-message",
             Self::ShadowedKernelspec => "shadowed-kernelspec",
             Self::ExecutionStartupFailed => "execution-startup-failed",

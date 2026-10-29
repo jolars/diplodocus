@@ -1,4 +1,4 @@
-# Diplodocus
+# Guide
 
 Diplodocus builds one site for related Python, R, Julia, and Rust packages. It
 combines extracted API references with authored guides, shared

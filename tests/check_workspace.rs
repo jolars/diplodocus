@@ -1,6 +1,7 @@
 mod support;
 
 use diplodocus::commands::{CheckOptions, check};
+use diplodocus::diagnostics::{DiagnosticCode, Severity};
 use snapbox::cmd::{Command, cargo_bin};
 
 #[test]
@@ -48,6 +49,37 @@ fn check_reports_reference_failures_repeatedly_without_publishing() {
         previous = Some(result.stderr);
         assert_eq!(tree(root.path()), before);
     }
+}
+
+#[test]
+fn check_warns_about_duplicate_visible_titles_without_writing_files() {
+    let root = support::TestWorkspace::new();
+    root.write("diplodocus.yaml", "project:\n  name: Titles\nrepositories:\n  - id: docs\n    path: .\ncontent:\n  - id: guide\n    owner: project\n    repository: docs\n    path: docs\n    mount: \"\"\n    format: gfm\n");
+    root.write("docs/index.md", "# Repeated title\n");
+    root.write("docs/guide/index.md", "# Repeated   title\n");
+    let before = tree(root.path());
+    let options = CheckOptions {
+        config: root.path().join("diplodocus.yaml"),
+    };
+    let report = check(options.clone()).unwrap();
+    assert_eq!(report.diagnostics.len(), 1);
+    let warning = &report.diagnostics[0];
+    assert_eq!(warning.code, DiagnosticCode::DuplicatePageTitle);
+    assert_eq!(warning.severity, Severity::Warning);
+    assert!(warning.message.contains("guide/index.html"));
+    assert!(warning.message.contains("index.html"));
+    assert_eq!(check(options.clone()).unwrap(), report);
+    assert_eq!(tree(root.path()), before);
+    let output = std::process::Command::new(cargo_bin("diplodocus"))
+        .current_dir(root.path())
+        .args(["check"])
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    assert!(output.stdout.is_empty());
+    assert!(String::from_utf8_lossy(&output.stderr).contains("warning[duplicate-page-title]"));
+    root.write("docs/guide/index.md", "# Guide\n");
+    assert!(check(options).unwrap().diagnostics.is_empty());
 }
 
 fn tree(root: &std::path::Path) -> Vec<(std::path::PathBuf, Option<Vec<u8>>)> {

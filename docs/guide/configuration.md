@@ -426,6 +426,57 @@ paths, and the local preview serves both clean URLs and generated file paths.
 Clean URLs require matching support from your host. Ambiguous routes, such as
 `foo.html` alongside `foo/index.html`, fail generation before site publication.
 
+### Redirects after moving pages
+
+Declare old URLs in `presentation.redirects` when moving documentation:
+
+```yaml
+presentation:
+  site-url: "https://example.org/docs/"
+  canonical-url-style: "clean"
+  redirects:
+    /installation: "guide/installation.html"
+    /installation.html: "guide/installation.html"
+    /old-guide/: "guide/index.html"
+```
+
+Each key is an exact old URL path beginning with `/`, relative to the site's
+root. Omit the hosting prefix. Each value names a visible generated HTML page,
+including its `.html` extension, as navigation destinations do. Diplodocus
+resolves the destination using `canonical-url-style`. The example redirects
+`/docs/installation` and `/docs/installation.html` to `/docs/guide/installation`
+with HTTP 301 responses.
+
+Declare each old spelling you need to preserve. A trailing slash is significant.
+Sources may contain Unicode or percent-encoded characters; encode spaces as
+`%20`. Existing escapes keep their exact spelling and case to match static hosts.
+Paths that decode to the same source cannot be declared twice. Encoded separators,
+control characters, and dot segments are rejected. Wildcards, placeholders,
+external destinations, query-specific rules, and
+fragments are not supported. Targets must exist, and sources cannot replace
+current pages, their Markdown exports, or reserved output paths. These checks
+also prevent redirect chains and loops. `diplodocus check` validates
+declarations without publishing output.
+
+The standalone generator writes a deterministic `_redirects` file for
+[Cloudflare static
+assets](https://developers.cloudflare.com/workers/static-assets/redirects/) and
+[Netlify](https://docs.netlify.com/manage/routing/redirects/overview/). It
+limits the file to 2,000 rules and each rule to 1,000 characters, matching
+Cloudflare's static redirect limits. Other hosts need equivalent server rules;
+the generated file does not itself make those hosts redirect. When deploying
+under a prefix, place the rules in the host's redirect configuration at its
+publish root.
+
+`diplodocus serve` returns the same permanent redirects locally and preserves
+query strings. Preview destinations use its local root, without the public
+hosting prefix. Redirects are retained in snapshots, so `generate` recreates the
+rules without source files. They do not create duplicate pages or entries in
+search or the sitemap. Fragment generation leaves redirects to the external
+frontend and does not write `_redirects`.
+
+### Crawler discovery
+
 The generated `robots.txt` allows crawling and advertises the sitemap's full
 URL. Crawlers read this file from the host's root `/robots.txt`. For a site
 deployed under `/docs/`, add the generated `Sitemap` directive to the host's

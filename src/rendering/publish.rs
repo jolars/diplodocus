@@ -14,11 +14,18 @@ pub struct RenderedFile {
 #[derive(Debug)]
 pub struct RenderedSite {
     pub(super) files: BTreeMap<String, RenderedFile>,
+    pub(super) redirects: BTreeMap<String, String>,
 }
 impl RenderedSite {
     /// Files keyed by validated relative output path.
     pub fn files(&self) -> &BTreeMap<String, RenderedFile> {
         &self.files
+    }
+    /// Permanent (HTTP 301) redirects keyed by encoded site-root URL path.
+    /// Destinations omit the hosting prefix so local servers can use them directly.
+    /// Fragment output leaves redirect handling to its frontend and returns no rules.
+    pub fn redirects(&self) -> &BTreeMap<String, String> {
+        &self.redirects
     }
     /// Stage a sibling tree and publish it only after every file is written.
     /// Existing sites are replaced in one filesystem operation on Linux.

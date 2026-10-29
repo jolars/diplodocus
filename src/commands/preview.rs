@@ -153,9 +153,22 @@ async fn response(
     let mut parts = line.split_ascii_whitespace();
     let method = parts.next().unwrap_or("");
     let target = parts.next().unwrap_or("");
-    let decoded = percent_encoding::percent_decode_str(target.split('?').next().unwrap_or(""))
+    let request_path = target.split('?').next().unwrap_or("");
+    let decoded = percent_encoding::percent_decode_str(request_path)
         .decode_utf8()
         .ok();
+    if matches!(method, "GET" | "HEAD")
+        && let Some(destination) = generation.site.redirects().get(request_path)
+    {
+        let query = target.split_once('?').map_or("", |(_, query)| query);
+        let location = if query.is_empty() {
+            destination.clone()
+        } else {
+            format!("{destination}?{query}")
+        };
+        socket.write_all(format!("HTTP/1.1 301 Moved Permanently\r\nLocation: {location}\r\nContent-Length: 0\r\nCache-Control: no-cache\r\nConnection: close\r\n\r\n").as_bytes()).await?;
+        return socket.shutdown().await;
+    }
     let path = decoded
         .as_deref()
         .and_then(|p| p.strip_prefix('/'))
@@ -387,6 +400,74 @@ mod tests {
             "text/markdown;q=NaN",
         ] {
             assert!(!accepts_markdown(accept), "{accept}");
+        }
+    }
+
+    #[tokio::test]
+    async fn http_redirects_use_local_canonical_urls_and_preserve_queries() {
+        let root = tempfile::tempdir().unwrap();
+        let config = root.path().join("diplodocus.yaml");
+        fs::write(&config, "project:\n  name: Redirects\npresentation:\n  site-url: https://example.test/docs/\n  canonical-url-style: clean\n  redirects:\n    /old: guide/start.html\n    /old.html: guide/start.html\n    /café%20old/: guide/start.html\n    /old%2dpath: guide/start.html\n    /old&path: guide/start.html\nrepositories:\n  - id: repo\n    path: .\ncontent:\n  - id: guide\n    owner: project\n    repository: repo\n    path: docs\n    mount: guide\n    format: gfm\n").unwrap();
+        fs::create_dir(root.path().join("docs")).unwrap();
+        fs::write(root.path().join("docs/start.md"), "# Start\n").unwrap();
+        let sources = assemble_workspace(config).unwrap();
+        let snapshot = crate::snapshots::Snapshot::from_sources(
+            &sources,
+            &resolve_workspace(&sources).unwrap(),
+        )
+        .unwrap();
+        let generation = ServedGeneration {
+            site: crate::rendering::render_site(&crate::site::Site::new(&snapshot).unwrap())
+                .unwrap(),
+            revision: 1,
+        };
+        for (method, target, expected_status, destination) in [
+            ("GET", "/old", "301", Some("/guide/start")),
+            ("HEAD", "/old.html", "301", Some("/guide/start")),
+            (
+                "GET",
+                "/old?from=old&q=a%20b",
+                "301",
+                Some("/guide/start?from=old&q=a%20b"),
+            ),
+            ("GET", "/caf%C3%A9%20old/", "301", Some("/guide/start")),
+            ("GET", "/old%2dpath", "301", Some("/guide/start")),
+            ("GET", "/old&path", "301", Some("/guide/start")),
+            ("GET", "/%6Fld", "404", None),
+            ("GET", "/old-path", "404", None),
+            ("GET", "/old/", "404", None),
+            ("GET", "/guide/start", "200", None),
+            ("GET", "/missing", "404", None),
+            ("POST", "/old", "405", None),
+        ] {
+            let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+            let mut client = TcpStream::connect(listener.local_addr().unwrap())
+                .await
+                .unwrap();
+            let (socket, _) = listener.accept().await.unwrap();
+            let server = response(socket, &generation, true);
+            let client = async {
+                client.write_all(format!("{method} {target} HTTP/1.1\r\nHost: localhost\r\nAccept: text/markdown\r\n\r\n").as_bytes()).await.unwrap();
+                let mut bytes = Vec::new();
+                client.read_to_end(&mut bytes).await.unwrap();
+                String::from_utf8(bytes).unwrap()
+            };
+            let (result, response) = tokio::join!(server, client);
+            result.unwrap();
+            let (headers, body) = response.split_once("\r\n\r\n").unwrap();
+            assert!(
+                headers.starts_with(&format!("HTTP/1.1 {expected_status}")),
+                "{method} {target}: {response}"
+            );
+            if let Some(destination) = destination {
+                assert!(
+                    headers.contains(&format!("\r\nLocation: {destination}\r\n")),
+                    "{headers}"
+                );
+                assert!(body.is_empty());
+            } else {
+                assert!(!headers.contains("Location:"));
+            }
         }
     }
 }

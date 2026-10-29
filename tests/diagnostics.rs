@@ -354,6 +354,7 @@ fn stable_codes_match_their_serialized_identifiers() {
         (InvalidQmdMetadata, "invalid-qmd-metadata"),
         (ConfigurationReadFailed, "configuration-read-failed"),
         (InvalidConfiguration, "invalid-configuration"),
+        (DuplicatePageTitle, "duplicate-page-title"),
         (
             InvalidExecutionConfiguration,
             "invalid-execution-configuration",

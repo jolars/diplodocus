@@ -94,6 +94,10 @@ pub struct PresentationDefaults {
     /// Public URL spelling used by page links, search, and crawler metadata.
     #[serde(skip_serializing_if = "CanonicalUrlStyle::is_default")]
     pub canonical_url_style: CanonicalUrlStyle,
+    /// Permanent redirects from old site-root URL paths to generated HTML paths.
+    /// Destinations follow `canonical_url_style`; sources omit the hosting prefix.
+    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
+    pub redirects: BTreeMap<String, DiagnosticPath>,
     /// Optional notices and links shown at the bottom of every page.
     #[serde(skip_serializing_if = "FooterDefaults::is_default")]
     pub footer: FooterDefaults,

@@ -925,6 +925,15 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
     );
     if standalone {
         super::sitemap::render(site, &mut files)?;
+        if !site.redirects.is_empty() {
+            files.insert(
+                "_redirects".into(),
+                file(
+                    site.redirect_rules().into_bytes(),
+                    "text/plain; charset=utf-8",
+                ),
+            );
+        }
     } else {
         files.insert(
             "documents.json".into(),
@@ -941,7 +950,14 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
     if let Some(map) = &site.url_map {
         map.validate_assets(&files)?;
     }
-    Ok(RenderedSite { files })
+    Ok(RenderedSite {
+        files,
+        redirects: if standalone {
+            site.redirects.clone()
+        } else {
+            BTreeMap::new()
+        },
+    })
 }
 
 pub(super) fn julia_members(item: &Item) -> &[ItemReference] {
