@@ -212,11 +212,20 @@ Documenter compatibility.
   in portable snapshots. The Eunoia.jl acceptance recipe verifies all 30 gallery
   blocks and the homepage example, 30 retained figures, and detached HTML and
   Markdown generation after removing disposable sources and configuration.
-- [ ] Define Julia API visibility for navigation and fragment consumers.
-  Documented private helpers currently appear as visible API pages, unlike the
-  existing `Private = false` reference. `Item::discoverable` does not apply Julia
-  visibility. Preserve addressable references and fields of exported types when
-  selecting the public surface.
+- [ ] Extend the supported Documenter authoring subset for existing Julia pages.
+  Add explicit `@docs` selection and the `@autodocs` `Pages` filter, using a
+  representative page such as SLOPE's grouped API reference as an acceptance
+  case. Preserve authored organization, explicitly selected private items,
+  references, and anchors in snapshot-backed HTML and Markdown. Document the
+  supported subset and diagnose unsupported syntax; keep directive selection
+  separate from automatic API discovery.
+- [ ] Define Julia API discovery for generated navigation, search, and fragment
+  consumers. `Item::discoverable` currently advertises documented private
+  helpers. Define rules for exported and `public` bindings, aliases, module
+  containers, and members of public types and callable families. Apply them
+  consistently to generated indexes and fragment visibility while preserving
+  direct references and routes to retained private items and type fields.
+  Keep these defaults independent of authored `@docs` and `@autodocs` selection.
 - [ ] Improve Julia type presentation. Fields currently receive separate,
   mostly empty pages. Consider grouping them under their owning type with stable
   anchors and consistent HTML, Markdown, navigation, and URL mapping.
