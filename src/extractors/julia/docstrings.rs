@@ -1,7 +1,7 @@
 //! Inert Julia Markdown with exact attribution through Fatou's string maps.
 
 use fatou_parser::ast::{AstNode, StaticDocText};
-use fatou_parser::documentation::syntax::SyntaxNode;
+use fatou_parser::documentation::syntax::{SyntaxElement, SyntaxNode};
 use fatou_parser::documentation::{self, ast as md};
 use rowan::TextRange;
 
@@ -171,29 +171,7 @@ impl Context<'_> {
                 }
                 Block::List {
                     ordered: node.ordered_start().is_some(),
-                    items: node
-                        .items()
-                        .map(|item| {
-                            let item_span = super::span(item.syntax().text_range());
-                            let mut blocks: Vec<_> =
-                                item.blocks().map(|block| self.block(block)).collect();
-                            let inlines = self.inlines(item.inlines());
-                            if !inlines.is_empty() {
-                                blocks.insert(
-                                    0,
-                                    Block::Paragraph {
-                                        inlines,
-                                        span: item_span,
-                                    },
-                                );
-                            }
-                            ListItem {
-                                checked: None,
-                                blocks,
-                                span: item_span,
-                            }
-                        })
-                        .collect(),
+                    items: node.items().map(|item| self.list_item(item)).collect(),
                     span,
                 }
             }
@@ -347,6 +325,62 @@ impl Context<'_> {
         }
     }
 
+    fn list_item(&mut self, item: md::ListItem) -> ListItem {
+        use documentation::syntax::SyntaxKind as K;
+
+        let range = item.syntax().text_range();
+        self.record(range);
+        let mut blocks = Vec::new();
+        let mut paragraph = Vec::new();
+        let mut native_blocks = item.blocks();
+        // Fatou exposes inline nodes as blocks here and leaves continuation
+        // newlines untyped. Walk both together to avoid duplication and lost spaces.
+        for element in item.syntax().children_with_tokens() {
+            match element {
+                rowan::NodeOrToken::Node(node) => {
+                    let block = native_blocks.next().unwrap();
+                    if let Some(inline) = inline_child(node.into()) {
+                        paragraph.push(inline);
+                    } else {
+                        self.list_paragraph(&mut paragraph, &mut blocks);
+                        blocks.push(self.block(block));
+                    }
+                }
+                rowan::NodeOrToken::Token(token) => match token.kind() {
+                    K::NEWLINE if !paragraph.is_empty() => {
+                        paragraph.push(md::Inline::SoftBreak(token));
+                    }
+                    K::BLANK_LINE => self.list_paragraph(&mut paragraph, &mut blocks),
+                    _ => {
+                        if let Some(inline) = inline_child(token.into()) {
+                            paragraph.push(inline);
+                        }
+                    }
+                },
+            }
+        }
+        self.list_paragraph(&mut paragraph, &mut blocks);
+        ListItem {
+            checked: None,
+            blocks,
+            span: span(range),
+        }
+    }
+
+    fn list_paragraph(&mut self, paragraph: &mut Vec<md::Inline>, blocks: &mut Vec<Block>) {
+        while matches!(paragraph.last(), Some(md::Inline::SoftBreak(_))) {
+            paragraph.pop();
+        }
+        if let (Some(first), Some(last)) = (paragraph.first(), paragraph.last()) {
+            let range = TextRange::new(inline_range(first).start(), inline_range(last).end());
+            self.record(range);
+            blocks.push(Block::Paragraph {
+                inlines: self.inlines(paragraph.drain(..)),
+                span: span(range),
+            });
+        }
+    }
+
     fn inlines(&mut self, inlines: impl Iterator<Item = md::Inline>) -> Vec<Inline> {
         inlines.map(|inline| self.inline(inline)).collect()
     }
@@ -464,37 +498,41 @@ impl Context<'_> {
     }
 }
 
-// Fatou 0.8.1 has typed emphasis wrappers but no child accessors for them.
+// Fatou has typed emphasis wrappers but no child accessors for them.
 // Keep this navigation bridge local; Julia Markdown parsing remains in Fatou.
 fn inline_children(node: &SyntaxNode) -> Vec<md::Inline> {
-    use documentation::syntax::SyntaxKind as K;
     node.children_with_tokens()
-        .filter_map(|element| match element {
-            rowan::NodeOrToken::Token(token) => match token.kind() {
-                K::TEXT => Some(md::Inline::Text(token)),
-                K::ESCAPE => Some(md::Inline::Escape(token)),
-                K::EN_DASH => Some(md::Inline::EnDash(token)),
-                K::EM_DASH => Some(md::Inline::EmDash(token)),
-                K::SOFT_BREAK => Some(md::Inline::SoftBreak(token)),
-                _ => None,
-            },
-            rowan::NodeOrToken::Node(node) => match node.kind() {
-                K::EMPHASIS => md::Emphasis::cast(node).map(md::Inline::Emphasis),
-                K::STRONG => md::Strong::cast(node).map(md::Inline::Strong),
-                K::INLINE_CODE => md::InlineCode::cast(node).map(md::Inline::Code),
-                K::INLINE_MATH => md::InlineMath::cast(node).map(md::Inline::Math),
-                K::LINK => md::Link::cast(node).map(md::Inline::Link),
-                K::IMAGE => md::Image::cast(node).map(md::Inline::Image),
-                K::AUTOLINK => md::Autolink::cast(node).map(md::Inline::Autolink),
-                K::FOOTNOTE_REFERENCE => {
-                    md::FootnoteReference::cast(node).map(md::Inline::FootnoteReference)
-                }
-                K::INTERPOLATION => md::Interpolation::cast(node).map(md::Inline::Interpolation),
-                K::HARD_BREAK => md::HardBreak::cast(node).map(md::Inline::HardBreak),
-                _ => None,
-            },
-        })
+        .filter_map(inline_child)
         .collect()
+}
+
+fn inline_child(element: SyntaxElement) -> Option<md::Inline> {
+    use documentation::syntax::SyntaxKind as K;
+    match element {
+        rowan::NodeOrToken::Token(token) => match token.kind() {
+            K::TEXT => Some(md::Inline::Text(token)),
+            K::ESCAPE => Some(md::Inline::Escape(token)),
+            K::EN_DASH => Some(md::Inline::EnDash(token)),
+            K::EM_DASH => Some(md::Inline::EmDash(token)),
+            K::SOFT_BREAK => Some(md::Inline::SoftBreak(token)),
+            _ => None,
+        },
+        rowan::NodeOrToken::Node(node) => match node.kind() {
+            K::EMPHASIS => md::Emphasis::cast(node).map(md::Inline::Emphasis),
+            K::STRONG => md::Strong::cast(node).map(md::Inline::Strong),
+            K::INLINE_CODE => md::InlineCode::cast(node).map(md::Inline::Code),
+            K::INLINE_MATH => md::InlineMath::cast(node).map(md::Inline::Math),
+            K::LINK => md::Link::cast(node).map(md::Inline::Link),
+            K::IMAGE => md::Image::cast(node).map(md::Inline::Image),
+            K::AUTOLINK => md::Autolink::cast(node).map(md::Inline::Autolink),
+            K::FOOTNOTE_REFERENCE => {
+                md::FootnoteReference::cast(node).map(md::Inline::FootnoteReference)
+            }
+            K::INTERPOLATION => md::Interpolation::cast(node).map(md::Inline::Interpolation),
+            K::HARD_BREAK => md::HardBreak::cast(node).map(md::Inline::HardBreak),
+            _ => None,
+        },
+    }
 }
 
 fn inline_range(inline: &md::Inline) -> TextRange {

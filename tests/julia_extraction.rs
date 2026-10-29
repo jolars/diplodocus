@@ -320,6 +320,129 @@ end
 }
 
 #[test]
+fn list_docstrings_convert_inline_markup_once_and_preserve_block_order() {
+    use diplodocus::ir::{Block, Inline, ProvenanceActivity};
+
+    let workspace = support::TestWorkspace::from_fixture("julia-lists");
+    let result = extract(&workspace);
+    assert!(result.diagnostics.is_empty(), "{:?}", result.diagnostics);
+    let doc = item(&result, "Demo.fit").documentation.as_ref().unwrap();
+    let lists: Vec<_> = doc
+        .document
+        .blocks
+        .iter()
+        .filter_map(|block| match block {
+            Block::List { ordered, items, .. } => Some((*ordered, items)),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(lists.len(), 2);
+    assert!(!lists[0].0);
+    assert!(lists[1].0);
+    assert_eq!(lists[0].1.len(), 2);
+    assert_eq!(lists[1].1.len(), 2);
+
+    let [Block::Paragraph { inlines, .. }] = lists[0].1[0].blocks.as_slice() else {
+        panic!("Inline markup must stay in one paragraph: {:?}", lists[0]);
+    };
+    assert!(matches!(&inlines[0], Inline::Code { value, .. } if value == "original_values"));
+    assert_eq!(
+        inlines
+            .iter()
+            .filter(|i| matches!(i, Inline::SoftBreak { .. }))
+            .count(),
+        1
+    );
+    assert_eq!(
+        inlines
+            .iter()
+            .filter(|i| matches!(i, Inline::Emphasis { .. }))
+            .count(),
+        1
+    );
+    assert_eq!(
+        inlines
+            .iter()
+            .filter(|i| matches!(i, Inline::Strong { .. }))
+            .count(),
+        1
+    );
+    let [
+        Block::Paragraph { inlines, .. },
+        Block::List { items, .. },
+        Block::Paragraph { .. },
+        Block::Paragraph { .. },
+        Block::CodeBlock { source, .. },
+        Block::Paragraph { .. },
+    ] = lists[0].1[1].blocks.as_slice()
+    else {
+        panic!(
+            "Nested blocks must retain source order: {:?}",
+            lists[0].1[1]
+        );
+    };
+    assert_eq!(items.len(), 1);
+    assert_eq!(source, "fit(1)");
+    assert!(inlines.iter().any(|i| matches!(i, Inline::Link { target, .. } if target.contains("sid1:julia:function:Demo.score"))));
+    let [Block::Paragraph { inlines, .. }] = lists[1].1[0].blocks.as_slice() else {
+        panic!("The ordered item must have one paragraph");
+    };
+    assert!(inlines.iter().any(|i| matches!(i, Inline::Link { target, .. } if target.contains("sid1:julia:method:Demo.score"))));
+    assert_eq!(
+        inlines
+            .iter()
+            .filter(|i| matches!(i, Inline::SoftBreak { .. }))
+            .count(),
+        1
+    );
+
+    let decoded = doc.raw_source.as_ref().unwrap();
+    let original = workspace.read("src/Demo.jl");
+    for provenance in &doc.provenance {
+        let ProvenanceActivity::DecodedDocumentation { decoded_span } = provenance.activity else {
+            continue;
+        };
+        let original_span = provenance.span.unwrap();
+        assert_eq!(
+            &decoded[decoded_span.start..decoded_span.end],
+            &original[original_span.start..original_span.end]
+        );
+    }
+}
+
+#[test]
+fn unsupported_inline_markup_in_lists_retains_one_warning_and_exact_attribution() {
+    use diplodocus::ir::{Block, Inline};
+
+    let workspace = small(
+        "module Demo\n    \"\"\"\n    - Keep \\u0060\\u0060α\\u0060\\u0060 visible.\n    \"\"\"\nfunction fit end\nend\n",
+    );
+    let result = extract(&workspace);
+    assert_eq!(result.diagnostics.len(), 1, "{:?}", result.diagnostics);
+    let warning = &result.diagnostics[0];
+    assert_eq!(warning.code.as_str(), "julia-unsupported-markdown");
+    let span = warning.span.unwrap();
+    assert_eq!(
+        &workspace.read("src/Demo.jl")[span.start..span.end],
+        r"\u0060\u0060α\u0060\u0060"
+    );
+    let doc = item(&result, "Demo.fit").documentation.as_ref().unwrap();
+    let [Block::List { items, .. }] = doc.document.blocks.as_slice() else {
+        panic!("Expected a list");
+    };
+    let [Block::Paragraph { inlines, .. }] = items[0].blocks.as_slice() else {
+        panic!("Unsupported inline markup must stay in its paragraph");
+    };
+    assert_eq!(
+        inlines
+            .iter()
+            .filter(|i| matches!(i, Inline::Unsupported { raw, .. } if raw == "``α``"))
+            .count(),
+        1
+    );
+}
+
+#[test]
 fn unsupported_documentation_remains_visible_and_diagnostics_map_escapes() {
     use diplodocus::ir::Block;
     let source =

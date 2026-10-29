@@ -17,6 +17,45 @@ prints its temporary artifact directory and coverage counts. Use `--output` to
 select a fresh directory or `--diplodocus-bin` to select an existing executable.
 It does not modify Eunoia or integrate the generated pages into its website.
 
+## Julia acceptance run
+
+The Julia recipe checks Eunoia.jl's 23 exported bindings, including
+`eunoiaplot!`, result fields, callable relationships, API references, and list
+formatting. It copies the package into a disposable directory and extracts a
+SQLite snapshot. It then relocates the snapshot, removes the staged sources and
+configuration, and generates a standalone site and HTML and Markdown fragments
+with an empty `PATH` and Julia environment settings removed.
+
+```console
+devenv shell -- compute run -- python examples/eunoia/julia.py --source ../Eunoia.jl
+```
+
+Prepare Julia and the package's dependencies before running the recipe. The
+native library must be available through an installed Eunoia artifact or an
+absolute `EUNOIA_CAPI_LIB` path. Extraction loads the staged package; the recipe
+does not install or resolve dependencies. Python 3.11 or later runs the recipe,
+and Cargo builds Diplodocus unless `--diplodocus-bin` selects an executable. Use
+`--output` to select a fresh directory outside the Eunoia.jl checkout.
+
+The output includes `summary.json`, full snapshot diagnostics in
+`diagnostics.json`, and a `detached/` directory containing the relocated
+snapshot, site, original fragments, URL map, and mapped fragments. The recipe
+maps every document and asset, checks local links and matching HTML and Markdown
+anchors, and reports coverage counts. Its numbered routes under
+`/docs/reference/julia/` are acceptance URLs; Eunoia can assign its own routes
+when integrating the fragments.
+
+The current Fatou parser leaves Eunoia's two fenced examples inside `euler`'s
+list items as literal fence text. The summary reports list items containing
+literal fences separately from extraction diagnostics. Indented code blocks
+inside lists retain their structure.
+
+This run covers the core API in Eunoia.jl 1.0.1. A recipe-owned GFM overview
+replaces README discovery in the disposable copy. Documenter guides, gallery
+execution and figures, Makie extension methods, public-only navigation, and
+field grouping remain follow-up work. The recipe leaves the original package and
+Eunoia's website untouched.
+
 ## Python and R embedding experiment
 
 Eunoia now integrates the complete Python API through the supported

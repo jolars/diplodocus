@@ -1,0 +1,18 @@
+project:
+  name: "Julia list documentation"
+repositories:
+  - id: "repo"
+    path: "."
+packages:
+  - id: "demo"
+    name: "Demo"
+    slug: "julia"
+    ecosystem: "julia"
+    repository: "repo"
+    path: "."
+    metadata-path: "Project.toml"
+    targets:
+      - id: "api"
+        extractor: "julia"
+        path: "src/Demo.jl"
+        role: "public-api"

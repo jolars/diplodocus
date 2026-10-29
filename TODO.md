@@ -179,17 +179,25 @@ Documenter compatibility.
 
 ### Diplodocus work
 
-- [ ] Add a real Eunoia.jl acceptance recipe alongside `examples/eunoia/rust.py`.
-  Cover exported functions, `eunoiaplot!`, result types, fields, API references,
-  figures, and matching HTML and Markdown anchors. Verify generation from a
-  relocated snapshot without the source checkout or Julia runtime. Use
-  disposable source copies for destructive portability checks.
-- [ ] Fix Julia Markdown list conversion in
-  `src/extractors/julia/docstrings.rs`. The trial emitted 199 warnings, mostly
-  because inline code, emphasis, and links also became unsupported blocks inside
-  lists. Rendered output duplicates those nodes and loses spaces in some wrapped
-  prose. Add focused regressions with inline markup and wrapped list text; the
-  existing prose/reference test passes despite this real-package failure.
+- [x] Add a real Eunoia.jl API acceptance recipe alongside
+  `examples/eunoia/rust.py`. Cover all 23 exported bindings, `eunoiaplot!`,
+  result types, fields, API references, and matching HTML and Markdown
+  anchors. Verify generation from a relocated snapshot without the staged
+  source checkout, configuration, or Julia runtime. Use disposable source
+  copies for destructive portability checks.
+- [ ] Extend the Eunoia.jl acceptance recipe to authored Documenter guides,
+  gallery execution, and retained figures. Verify figure bytes and links in
+  detached HTML and Markdown output after removing the disposable sources.
+- [x] Fix Julia Markdown list conversion in
+  `src/extractors/julia/docstrings.rs`. Convert inline markup once, preserve
+  spaces in wrapped prose, and retain nested blocks in source order. Cover
+  inline code, emphasis, links, API references, and exact source attribution
+  with focused extraction and fragment regressions.
+- [ ] Support fenced code nested in Julia Markdown list items. Fatou 0.8.2
+  exposes Eunoia's two fenced examples in `euler`'s docstring as inline
+  content, so they still render as literal fence text. The API acceptance
+  summary reports this separately from extraction diagnostics. Preserve
+  indented code blocks and source attribution when extending the parser.
 - [ ] Support the Documenter page syntax used in Eunoia.jl's `docs/src/`.
   `@index` and `@autodocs` currently remain literal code blocks. Bare page and
   heading `@ref` links fail validation, while explicit references can leave

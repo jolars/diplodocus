@@ -137,6 +137,103 @@ fn detached_snapshot_supplies_content_without_a_site_shell() {
 }
 
 #[test]
+fn julia_list_fragments_preserve_markup_spacing_and_mapped_references() {
+    let root = support::TestWorkspace::from_fixture("julia-lists");
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
+    assert!(
+        sources.workspace().diagnostics.is_empty(),
+        "{:?}",
+        sources.workspace().diagnostics
+    );
+    let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+    let artifact = tempfile::tempdir().unwrap();
+    let database = artifact.path().join("documentation.sqlite");
+    snapshot.publish(&database).unwrap();
+    drop(snapshot);
+    drop(sources);
+    drop(root);
+
+    let snapshot = Snapshot::load(database).unwrap();
+    let fragments = render_fragments(&Site::new(&snapshot).unwrap()).unwrap();
+    let index: FragmentIndex =
+        serde_json::from_slice(&fragments.files()["documents.json"].bytes).unwrap();
+    let urls = UrlMap {
+        format_version: 1,
+        documents: index
+            .documents
+            .iter()
+            .enumerate()
+            .map(|(i, d)| (d.path.clone(), format!("/docs/reference/julia/{i}/")))
+            .collect(),
+        assets: Default::default(),
+    };
+    let mapped = render_fragments(
+        &Site::new(&snapshot)
+            .unwrap()
+            .with_url_map(urls.clone())
+            .unwrap(),
+    )
+    .unwrap();
+    let fit = index
+        .documents
+        .iter()
+        .find(|d| d.qualified_name.as_deref() == Some("Demo.fit"))
+        .unwrap();
+    let score = index
+        .documents
+        .iter()
+        .find(|d| d.qualified_name.as_deref() == Some("Demo.score") && d.public_name.is_some())
+        .unwrap();
+    let html = std::str::from_utf8(&mapped.files()[&fit.path].bytes).unwrap();
+    let markdown = std::str::from_utf8(&mapped.files()[&fit.markdown_path].bytes).unwrap();
+    assert_eq!(html.matches("<code>original_values</code>").count(), 1);
+    assert_eq!(markdown.matches("`original_values`").count(), 1);
+    assert!(
+        html.contains(
+            "keyed by combination string with <em>care</em> and <strong>precision</strong>."
+        ),
+        "{html}"
+    );
+    assert!(
+        markdown.contains("keyed by combination string with *care* and **precision**."),
+        "{markdown}"
+    );
+    assert!(html.contains(&format!("href=\"{}\"", urls.documents[&score.path])));
+    assert!(markdown.contains(&format!("[`score`](<{}>)", urls.documents[&score.path])));
+    let method_anchor = &score
+        .headings
+        .iter()
+        .find(|(_, anchor, _)| anchor.starts_with("method-"))
+        .unwrap()
+        .1;
+    let method_url = format!("{}#{method_anchor}", urls.documents[&score.path]);
+    assert!(html.contains(&format!("href=\"{method_url}\"")));
+    assert!(markdown.contains(&format!("[the integer method](<{method_url}>)")));
+    assert!(html.contains("href=\"https://julialang.org\""));
+    assert!(markdown.contains("[Julia](<https://julialang.org>)"));
+    assert!(markdown.contains("```julia\n  fit(1)\n  ```"));
+    let separate = html.find("A separate paragraph.").unwrap();
+    let after = html.find("After the code.").unwrap();
+    assert!(html[separate..after].contains("<pre"));
+    for body in [html, markdown] {
+        let nested = body.find("After the nested list.").unwrap();
+        let separate = body.find("A separate paragraph.").unwrap();
+        let after = body.find("After the code.").unwrap();
+        assert!(nested < separate && separate < after, "{body}");
+        assert_eq!(body.matches("across wrapped lines.").count(), 1);
+        assert!(!body.contains("@ref"));
+    }
+    for document in [fit, score] {
+        let html = std::str::from_utf8(&mapped.files()[&document.path].bytes).unwrap();
+        let markdown = std::str::from_utf8(&mapped.files()[&document.markdown_path].bytes).unwrap();
+        for (_, anchor, _) in &document.headings {
+            assert!(html.contains(&format!("id=\"{anchor}\"")));
+            assert!(markdown.contains(&format!("id=\"{anchor}\"")));
+        }
+    }
+}
+
+#[test]
 fn cli_fragment_generation_preserves_output_after_invalid_mapping() {
     let root = support::TestWorkspace::from_fixture("python-overloads");
     let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
