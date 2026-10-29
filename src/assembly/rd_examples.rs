@@ -73,7 +73,7 @@ impl WorkspaceSources {
         {
             return Err(AssemblyError::InputsChanged);
         }
-        self.rd_assets = execute(self, deadlines, cancellation).await?;
+        self.native_assets = execute(self, deadlines, cancellation).await?;
         Ok(())
     }
 }

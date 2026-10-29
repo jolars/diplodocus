@@ -1068,3 +1068,70 @@ fn documenter_snapshots_validate_embedded_items_and_reference_destinations() {
         assert!(result.is_err(), "{case}");
     }
 }
+
+#[tokio::test]
+async fn documenter_snapshots_require_complete_consistent_execution_evidence() {
+    use diplodocus::execution::{ExecutionCancellation, ExecutionDeadlines};
+    let root = support::TestWorkspace::new();
+    root.write("diplodocus.yaml", "project:\n  name: Documenter evidence\nrepositories:\n  - id: repo\n    path: .\ncontent:\n  - id: manual\n    owner: project\n    repository: repo\n    path: docs\n    mount: manual\n    format: documenter\n    execution:\n      mode: execute\n      engine: julia\n      julia-project: Project.toml\n");
+    root.write("Project.toml", "[deps]\n");
+    root.write(
+        "docs/index.md",
+        "# Native examples\n\n```@example state\n41 + 1\n```\n",
+    );
+    let mut sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
+    let resolved = resolve_workspace(&sources).unwrap();
+    assert!(Snapshot::from_sources(&sources, &resolved).is_err());
+    let mut cancellation: ExecutionCancellation<'_> = Box::pin(std::future::pending());
+    sources
+        .execute_documenter_examples(ExecutionDeadlines::default(), &mut cancellation)
+        .await
+        .unwrap();
+    let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+    for case in [
+        "missing",
+        "input",
+        "span",
+        "session",
+        "text",
+        "environment",
+        "project",
+        "presentation",
+    ] {
+        let result = changed(&snapshot, |export| {
+            let page = record(export, "page");
+            let document = &mut page["document"];
+            if case == "missing" {
+                document["provenance"]
+                    .as_array_mut()
+                    .unwrap()
+                    .retain(|record| record["activity"]["kind"] != "documenter-examples");
+                return;
+            }
+            if case == "presentation" {
+                document["document"]["blocks"]
+                    .as_array_mut()
+                    .unwrap()
+                    .retain(|block| block["type"] != "container");
+                return;
+            }
+            let activity = document["provenance"]
+                .as_array_mut()
+                .unwrap()
+                .iter_mut()
+                .find(|record| record["activity"]["kind"] == "documenter-examples")
+                .map(|record| &mut record["activity"])
+                .unwrap();
+            match case {
+                "input" => activity["input"]["fingerprint"]["value"] = "0".repeat(64).into(),
+                "span" => activity["examples"][0]["span"]["start"] = 0.into(),
+                "session" => activity["examples"][0]["session"] = "other".into(),
+                "text" => activity["examples"][0]["outputs"][0]["text"] = "forged".into(),
+                "environment" => activity["environment_inputs"] = json!([]),
+                "project" => activity["project"]["source"]["path"] = "Other.toml".into(),
+                _ => unreachable!(),
+            }
+        });
+        assert!(result.is_err(), "accepted {case}: {result:?}");
+    }
+}

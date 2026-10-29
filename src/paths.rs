@@ -207,6 +207,10 @@ pub struct ResolvedContentPaths {
     pub source_root: PathBuf,
     /// Canonical regular files relative to the repository, in declaration order.
     pub declared_environment_inputs: Vec<PathBuf>,
+    /// Prepared native Julia project file, contained in the repository.
+    pub julia_project: Option<PathBuf>,
+    /// Project and available Julia manifest files, in sorted order.
+    pub julia_environment_inputs: Vec<PathBuf>,
 }
 
 /// A filesystem resolution failure tied to a specific configuration field.
@@ -506,12 +510,50 @@ pub fn resolve_workspace_paths(
                 PathType::File,
             )?);
         }
+        let julia_project = collection
+            .execution
+            .julia_project
+            .as_ref()
+            .map(|project| {
+                resolver.child(
+                    &format!("{field}.execution.julia-project"),
+                    project,
+                    root,
+                    PathType::File,
+                )
+            })
+            .transpose()?;
+        let mut julia_environment_inputs = Vec::new();
+        if let Some(project) = &julia_project {
+            julia_environment_inputs.push(project.clone());
+            let directory = project.parent().expect("project parent");
+            for entry in fs::read_dir(directory)
+                .map_err(|error| resolver.io_error(&field, directory, error))?
+            {
+                let entry = entry.map_err(|error| resolver.io_error(&field, directory, error))?;
+                let name = entry.file_name();
+                let name = name.to_string_lossy();
+                if (name.starts_with("Manifest") || name.starts_with("JuliaManifest"))
+                    && name.ends_with(".toml")
+                {
+                    julia_environment_inputs.push(resolver.child(
+                        &format!("{field}.execution.julia-project manifest"),
+                        Path::new(name.as_ref()),
+                        directory,
+                        PathType::File,
+                    )?);
+                }
+            }
+            julia_environment_inputs.sort();
+        }
         content.push(ResolvedContentPaths {
             id: collection.id.clone(),
             repository_index,
             path,
             source_root,
             declared_environment_inputs,
+            julia_project,
+            julia_environment_inputs,
         });
     }
 

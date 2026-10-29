@@ -39,6 +39,15 @@ pub(super) fn assemble(
                     mode: collection.execution.mode,
                     engine: collection.execution.engine,
                     kernel: collection.execution.kernel.clone(),
+                    julia_project: resolved
+                        .julia_project
+                        .as_ref()
+                        .map(|path| {
+                            repository
+                                .source_location(path, None)
+                                .map(|location| location.path)
+                        })
+                        .transpose()?,
                     declared_environment_inputs: collection
                         .execution
                         .declared_environment_inputs
@@ -51,7 +60,20 @@ pub(super) fn assemble(
                             )
                             .map_err(AssemblyError::from)
                         })
-                        .collect::<Result<_, _>>()?,
+                        .collect::<Result<Vec<_>, _>>()?
+                        .into_iter()
+                        .chain(
+                            resolved
+                                .julia_environment_inputs
+                                .iter()
+                                .map(|path| {
+                                    repository
+                                        .source_location(path, None)
+                                        .map(|location| location.path)
+                                })
+                                .collect::<Result<Vec<_>, _>>()?,
+                        )
+                        .collect(),
                 },
             },
         );

@@ -209,6 +209,7 @@ pub(crate) fn validate_prepared(
             mode: ExecutionMode::Execute,
             engine: Some(ExecutionEngine::Jupyter),
             kernel: Some(request.kernel.clone()),
+            julia_project: None,
             declared_environment_inputs: Vec::new(),
         },
     };

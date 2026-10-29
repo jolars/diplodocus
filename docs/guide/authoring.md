@@ -12,7 +12,7 @@ Individual files keep their basename beneath the mount, so `CHANGELOG.md` with
 `mount: project` becomes `/project/CHANGELOG.html`. Links and images resolve
 from the original source directory.
 
-## Documenter pages
+## Documenter pages {#documenter-pages}
 
 Use `format: documenter` for Julia Markdown `.md` pages that use Documenter
 references and API assembly directives:
@@ -82,12 +82,43 @@ duplicate options, and unknown modules produce source-attributed errors.
 The supported options are `Modules`, `Private`, and `Public` for `@autodocs`;
 `@index` takes no options.
 
-Snapshots retain the assembled item references, original API documents,
-resolved links, and local assets. Standalone HTML and HTML and Markdown
-fragments render them without the checkout or Julia, including when the host
-maps their URLs. This static profile uses `execution.mode: never`.
-`@example`, `@repl`, and `jldoctest` fences display Julia code without execution;
-other Documenter directives remain visible with unsupported-syntax diagnostics.
+Snapshots retain the assembled item references, original API documents, resolved
+links, and local assets. Standalone HTML and HTML and Markdown fragments render
+them without the checkout or Julia, including when the host maps their URLs.
+Execution defaults to `never`, which displays `@example`, `@repl`, and
+`jldoctest` fences as Julia code. To execute `@example` blocks, select a
+prepared Julia environment explicitly:
+
+```yaml
+    execution:
+      mode: execute
+      engine: julia
+      julia-project: julia/docs/Project.toml
+```
+
+The project file is relative to the collection's repository. Prepare its
+dependencies before extraction; Diplodocus does not install them. Each page uses
+a fresh Julia process, and examples run in source order. `@example gallery`
+shares a module with other examples named `gallery` on that page. Unnamed
+examples each get a separate module. The page's source directory is the working
+directory. A package-owned collection verifies that its prepared environment
+loads the declared Julia checkout.
+
+Lines ending in a Julia `# hide` comment execute but disappear from the rendered
+source. Hiding every line leaves only the output. The last expression becomes
+the result, even with a trailing semicolon, and updates `ans` for later
+expressions. When it returns `nothing`, captured stdout and stderr become
+literal output instead. Explicit displays retain their order. Supported image
+results are PNG, inert SVG, and JPEG, selected in that order before a
+`text/plain` fallback. Renderers escape text and retain validated image bytes as
+local assets.
+
+This execution profile accepts an optional example session name. It rejects
+example keyword options and executable `@meta`, `@setup`, `@repl`, and `@eval`
+directives. `jldoctest` and ordinary Julia fences remain illustrative on
+authored pages. Other unsupported directives retain their diagnostics. See
+[native Documenter execution](execution.md#native-documenter-execution) for
+publication and environment evidence.
 
 ## Package landing pages {#package-landing-pages}
 

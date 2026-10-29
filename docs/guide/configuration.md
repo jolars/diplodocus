@@ -237,8 +237,8 @@ render and remain searchable. Sidebar settings are stored in the snapshot, so
 
 ## Execution
 
-Execution defaults to `never`. To allow it, set the collection to QMD and
-declare a Jupyter engine and kernel explicitly:
+Execution defaults to `never` for GFM, QMD, and Documenter. To execute QMD, set
+the collection's format and declare a Jupyter engine and kernel explicitly:
 
 ```yaml
 content:
@@ -261,6 +261,12 @@ They contribute to provenance and execution cache keys; Diplodocus does not
 install or interpret them. Document metadata can restrict execution but cannot
 enable it when the collection forbids it. `check` never runs cells. `extract`,
 `build`, and `serve` may run authorized cells with your user permissions.
+
+Documenter pages use the native Julia engine instead: declare `engine: julia`
+and `julia-project: path/to/Project.toml`, with no kernel. The selected project
+and available manifests are automatically fingerprinted alongside any declared
+environment inputs. See [native Documenter
+execution](execution.md#native-documenter-execution).
 
 ## Presentation
 

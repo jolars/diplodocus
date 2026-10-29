@@ -593,7 +593,7 @@ fn inline_child(element: SyntaxElement) -> Option<md::Inline> {
     }
 }
 
-fn code_segments(node: &SyntaxNode, source: &str) -> Vec<SourceSegment> {
+pub(crate) fn code_segments(node: &SyntaxNode, source: &str) -> Vec<SourceSegment> {
     use documentation::syntax::SyntaxKind as K;
 
     let mut remaining = source.len();

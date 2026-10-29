@@ -185,7 +185,7 @@ Documenter compatibility.
   anchors. Verify generation from a relocated snapshot without the staged
   source checkout, configuration, or Julia runtime. Use disposable source
   copies for destructive portability checks.
-- [ ] Extend the Eunoia.jl acceptance recipe to authored Documenter guides,
+- [x] Extend the Eunoia.jl acceptance recipe to authored Documenter guides,
   gallery execution, and retained figures. Verify figure bytes and links in
   detached HTML and Markdown output after removing the disposable sources.
 - [x] Fix Julia Markdown list conversion in
@@ -205,13 +205,13 @@ Documenter compatibility.
   and `@autodocs`, including literal `Modules` and `Private = false`.
   Retain embedded API context and anchors in detached HTML and Markdown.
   Verify Eunoia's three pages, 23 public bindings, and mapped local links.
-- [ ] Execute Documenter `@example` blocks with prepared Julia dependencies.
-  Eunoia.jl has 30 gallery blocks and one homepage example; importing them as GFM
-  produces no figures. Preserve named sessions within a page, anonymous example
-  isolation, `# hide`, and native text and image output. Retain validated figures,
-  execution observations, and environment inputs in portable snapshots. The
-  existing native Julia adapter supports `jldoctest` and rejects `@example` and
-  `@repl`; authored GFM does not execute them either.
+- [x] Execute Documenter `@example` blocks with prepared Julia dependencies.
+  Add `engine: julia` and an explicit `julia-project`, with page-local named
+  sessions, isolated anonymous examples, `# hide`, and native text and images.
+  Retain validated figures, execution observations, and environment fingerprints
+  in portable snapshots. The Eunoia.jl acceptance recipe verifies all 30 gallery
+  blocks and the homepage example, 30 retained figures, and detached HTML and
+  Markdown generation after removing disposable sources and configuration.
 - [ ] Define Julia API visibility for navigation and fragment consumers.
   Documented private helpers currently appear as visible API pages, unlike the
   existing `Private = false` reference. `Item::discoverable` does not apply Julia

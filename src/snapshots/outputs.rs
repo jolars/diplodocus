@@ -178,6 +178,11 @@ impl Snapshot {
                     mode: declaration.execution.mode,
                     engine: declaration.execution.engine,
                     kernel: declaration.execution.kernel.clone(),
+                    julia_project: declaration
+                        .execution
+                        .julia_project
+                        .as_ref()
+                        .map(|path| path.as_str().into()),
                     declared_environment_inputs: Vec::new(),
                 },
             };

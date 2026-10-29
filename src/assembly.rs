@@ -29,6 +29,7 @@ use crate::provenance::{
 mod api_examples;
 mod authored;
 mod documenter;
+mod documenter_examples;
 mod julia_runtime;
 pub(crate) use julia_runtime::assemble_for_extraction;
 #[cfg(target_os = "linux")]
@@ -123,7 +124,7 @@ pub struct WorkspaceSources {
     rmd_inputs: BTreeMap<String, Vec<PathBuf>>,
     selections: DeclaredSourceInputs,
     evidence: StaticProvenance,
-    pub(crate) rd_assets: BTreeMap<DiagnosticPath, crate::validation::ContentAsset>,
+    pub(crate) native_assets: BTreeMap<DiagnosticPath, crate::validation::ContentAsset>,
 }
 impl WorkspaceSources {
     /// Portable records assembled so far, without a claim of final validation.
@@ -461,7 +462,7 @@ fn assemble_with_native(
         rmd_inputs,
         selections,
         evidence,
-        rd_assets: BTreeMap::new(),
+        native_assets: BTreeMap::new(),
     };
     result.revalidate()?;
     Ok(result)

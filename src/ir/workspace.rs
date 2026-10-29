@@ -24,9 +24,9 @@ use super::{
 };
 
 /// Current portable workspace schema version.
-pub const WORKSPACE_SCHEMA_VERSION: u32 = 10;
+pub const WORKSPACE_SCHEMA_VERSION: u32 = 11;
 
-/// The supported schema version, serialized as the integer `10`.
+/// The supported schema version, serialized as the integer `11`.
 ///
 /// Deserialization rejects unsupported versions instead of interpreting another
 /// schema as this one. The workspace version field is required even though a
@@ -171,6 +171,9 @@ pub struct ExecutionConfiguration {
     pub engine: Option<ExecutionEngine>,
     /// Explicit kernel selector when enabled.
     pub kernel: Option<String>,
+    /// Repository-relative project file for prepared native Julia execution.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub julia_project: Option<DiagnosticPath>,
     /// Normalized repository-relative input files, sorted by path.
     pub declared_environment_inputs: BTreeSet<DiagnosticPath>,
 }

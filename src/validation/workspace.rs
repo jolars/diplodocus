@@ -266,7 +266,7 @@ impl ResolutionError {
 /// This operation never discovers a kernel, runs authored code, reads an
 /// execution cache, or publishes output. It checks only outputs already present.
 pub fn resolve_workspace(sources: &WorkspaceSources) -> Result<ResolvedWorkspace, ResolutionError> {
-    resolve(sources, sources.rd_assets.clone())
+    resolve(sources, sources.native_assets.clone())
 }
 
 /// Resolve executed documents and copy their verified final staged asset bytes.
@@ -276,7 +276,7 @@ pub fn resolve_workspace(sources: &WorkspaceSources) -> Result<ResolvedWorkspace
 pub fn resolve_executed_workspace(
     executed: &ExecutedWorkspace,
 ) -> Result<ResolvedWorkspace, ResolutionError> {
-    let mut generated = executed.sources().rd_assets.clone();
+    let mut generated = executed.sources().native_assets.clone();
     for result in executed.executed_pages().values() {
         for staged in result.staged_assets() {
             let asset = result
@@ -716,6 +716,13 @@ impl Resolver<'_> {
                 || (spelling.starts_with("rmd-assets/sha256/")
                     && context.document.provenance.iter().any(|record| {
                         matches!(record.activity, ProvenanceActivity::RMarkdown { .. })
+                    }))
+                || (spelling.starts_with("documenter-assets/sha256/")
+                    && context.document.provenance.iter().any(|record| {
+                        matches!(
+                            record.activity,
+                            ProvenanceActivity::DocumenterExamples { .. }
+                        )
                     }));
         if (generated || rd_figure) && kind == ReferenceKind::Image {
             let path = DiagnosticPath::try_from(file.as_ref()).map_err(|_| invalid)?;

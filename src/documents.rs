@@ -21,6 +21,7 @@ use crate::ir::{
     Document, Inline, ListItem, MetadataEntry, MetadataValue, ResolvedCellOption, SourceSegment,
     SourceSpan, SpannedString, TableAlignment, TableCell, TableRow,
 };
+pub(crate) mod documenter;
 mod fragments;
 mod layout;
 mod preparation;
@@ -41,7 +42,7 @@ pub enum AuthoredFormat {
     Qmd,
     /// R Markdown articles evaluated by native knitr.
     Rmd,
-    /// Julia Markdown pages with static Documenter references and assembly directives.
+    /// Julia Markdown with Documenter references, assembly, and optional native examples.
     Documenter,
 }
 

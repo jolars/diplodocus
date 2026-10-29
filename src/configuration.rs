@@ -537,7 +537,7 @@ pub struct ContentConfiguration {
     /// Sidebar inclusion; does not affect rendering, search, or sitemaps.
     #[serde(default, skip_serializing_if = "ContentNavigation::is_default")]
     pub navigation: ContentNavigation,
-    /// Execution defaults to native knitr for Rmd and `never` for GFM and QMD.
+    /// Execution defaults to native knitr for Rmd and `never` for other formats.
     #[serde(default)]
     pub execution: ExecutionConfiguration,
 }
@@ -552,6 +552,7 @@ impl<'de> Deserialize<'de> for ContentConfiguration {
             mode: Option<ExecutionMode>,
             engine: Option<ExecutionEngine>,
             kernel: Option<String>,
+            julia_project: Option<PathBuf>,
             #[serde(default)]
             declared_environment_inputs: Vec<PathBuf>,
         }
@@ -594,6 +595,7 @@ impl<'de> Deserialize<'de> for ContentConfiguration {
                         None
                     }),
                     kernel: execution.kernel,
+                    julia_project: execution.julia_project,
                     declared_environment_inputs: execution.declared_environment_inputs,
                 }
             },
@@ -620,6 +622,13 @@ impl ContentConfiguration {
     /// symlink containment separately. Reading file contents remains a later step.
     pub fn validate_execution(&self) -> Result<(), ExecutionConfigurationError> {
         let execution = &self.execution;
+        if execution.julia_project.is_some()
+            && !(self.format == AuthoredFormat::Documenter
+                && execution.mode == ExecutionMode::Execute
+                && execution.engine == Some(ExecutionEngine::Julia))
+        {
+            return Err(ExecutionConfigurationError::JuliaProject);
+        }
         if self.format == AuthoredFormat::Rmd
             && (execution.mode != ExecutionMode::Execute
                 || execution.engine != Some(ExecutionEngine::Knitr)
@@ -646,8 +655,22 @@ impl ContentConfiguration {
         if self.format == AuthoredFormat::Gfm {
             return Err(ExecutionConfigurationError::GfmExecution);
         }
-        if self.format == AuthoredFormat::Documenter {
+        if self.format == AuthoredFormat::Documenter
+            && (execution.engine != Some(ExecutionEngine::Julia)
+                || execution.kernel.is_some()
+                || execution.julia_project.is_none())
+        {
             return Err(ExecutionConfigurationError::DocumenterExecution);
+        }
+        if let Some(project) = &execution.julia_project {
+            environment_input_components(project)
+                .map_err(|_| ExecutionConfigurationError::JuliaProject)?;
+            if !matches!(
+                project.file_name().and_then(|name| name.to_str()),
+                Some("Project.toml" | "JuliaProject.toml")
+            ) {
+                return Err(ExecutionConfigurationError::JuliaProject);
+            }
         }
         if self.format == AuthoredFormat::Qmd {
             if execution.engine != Some(ExecutionEngine::Jupyter) {
@@ -739,9 +762,16 @@ pub enum ExecutionConfigurationError {
     /// A GFM collection requested execution.
     #[error("`mode: execute` requires `format: qmd`")]
     GfmExecution,
-    /// Documenter execution is outside the static authored profile.
-    #[error("`format: documenter` supports only `mode: never`")]
+    /// Documenter execution requires a prepared native Julia environment.
+    #[error(
+        "Documenter execution requires `engine: julia`, `julia-project: path/to/Project.toml`, and no kernel"
+    )]
     DocumenterExecution,
+    /// A Julia environment selector is absent, misplaced, or malformed.
+    #[error(
+        "`julia-project` must name a repository-relative Project.toml or JuliaProject.toml for Documenter execution with `engine: julia`"
+    )]
+    JuliaProject,
     /// Execution has no explicitly selected Jupyter engine.
     #[error("`mode: execute` requires `engine: jupyter`")]
     MissingEngine,
@@ -804,6 +834,9 @@ pub struct ExecutionConfiguration {
     /// Explicit kernel selector, such as `python3` or `ir`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kernel: Option<String>,
+    /// Prepared native Julia environment's repository-relative project file.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub julia_project: Option<PathBuf>,
     /// Environment manifests or lockfiles, relative to the collection's repository.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub declared_environment_inputs: Vec<PathBuf>,
@@ -828,6 +861,8 @@ pub enum ExecutionEngine {
     Jupyter,
     /// A native R session using knitr.
     Knitr,
+    /// A native Julia process executing Documenter examples.
+    Julia,
 }
 
 /// An explicitly declared group of corresponding APIs.

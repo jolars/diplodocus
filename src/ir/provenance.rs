@@ -40,6 +40,25 @@ pub struct Provenance {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum ProvenanceActivity {
+    /// Completed native Documenter examples in a prepared Julia environment.
+    DocumenterExamples {
+        /// Owning authored collection.
+        collection: String,
+        /// Native execution and output contract.
+        policy: String,
+        /// Observed Julia version.
+        julia_version: String,
+        /// Loaded dependency UUIDs and versions, without checkout paths.
+        dependencies: BTreeMap<String, String>,
+        /// Selected Julia environment's project file.
+        project: InputFingerprint,
+        /// Project, available manifests, and explicitly declared environment files.
+        environment_inputs: Vec<InputFingerprint>,
+        /// Original authored page and its content fingerprint.
+        input: InputFingerprint,
+        /// Completed examples in authored order.
+        examples: Vec<DocumenterExampleOutcome>,
+    },
     /// Native Rust doctests checked against the selected checkout and features.
     RustDoctests {
         /// Owning Rust extraction target.
@@ -201,6 +220,36 @@ pub enum ProvenanceActivity {
         origin: ExecutionOrigin,
         /// Declared environment evidence sorted by repository and relative path.
         declared_environment_inputs: Vec<InputFingerprint>,
+    },
+}
+
+/// One successfully executed Documenter example.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct DocumenterExampleOutcome {
+    /// Full fence range in the original authored page.
+    pub span: SourceSpan,
+    /// Page-local session name; absent for an isolated anonymous example.
+    pub session: Option<String>,
+    /// Validated native results, in display order.
+    pub outputs: Vec<DocumenterOutput>,
+}
+
+/// Native Julia output admitted by the Documenter adapter.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "kebab-case", deny_unknown_fields)]
+pub enum DocumenterOutput {
+    /// Literal native text, escaped by renderers.
+    Text {
+        /// Captured streams or a native text/plain representation.
+        text: String,
+    },
+    /// A validated, retained native image.
+    Image {
+        /// Image format verified against its exact bytes.
+        media_type: String,
+        /// Content-addressed portable asset.
+        asset: super::AssetReference,
     },
 }
 

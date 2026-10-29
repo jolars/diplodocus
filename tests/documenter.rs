@@ -311,7 +311,7 @@ fn documenter_public_and_module_filters_are_explicit() {
 }
 
 #[test]
-fn documenter_rejects_execution_and_ambiguous_heading_references() {
+fn documenter_requires_native_execution_settings_and_unique_heading_references() {
     let root = support::TestWorkspace::from_fixture("julia-documenter");
     root.write(
         "diplodocus.yaml",
@@ -321,7 +321,7 @@ fn documenter_rejects_execution_and_ambiguous_heading_references() {
         assemble_workspace(root.path().join("diplodocus.yaml"))
             .unwrap_err()
             .to_string()
-            .contains("mode: never")
+            .contains("engine: julia")
     );
     let root = support::TestWorkspace::from_fixture("julia-documenter");
     root.write("docs/duplicate.md", "# API Reference\n");

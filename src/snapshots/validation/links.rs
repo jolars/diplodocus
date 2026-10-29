@@ -461,6 +461,41 @@ impl Links<'_> {
                 self.diagnostic_source(source)?;
             }
             match &record.activity {
+                ProvenanceActivity::DocumenterExamples {
+                    collection,
+                    policy,
+                    julia_version,
+                    dependencies,
+                    project,
+                    environment_inputs,
+                    input,
+                    examples,
+                } => {
+                    require(
+                        self.0
+                            .content_collections
+                            .get(collection)
+                            .is_some_and(|collection| {
+                                collection.format == crate::documents::AuthoredFormat::Documenter
+                                    && collection.execution.mode == ExecutionMode::Execute
+                                    && collection.execution.engine == Some(ExecutionEngine::Julia)
+                                    && collection.execution.julia_project.as_ref()
+                                        == Some(&project.source.path)
+                                    && collection.repository == project.source.repository
+                            })
+                            && policy == crate::documents::documenter::POLICY
+                            && !julia_version.is_empty()
+                            && !dependencies.is_empty()
+                            && !examples.is_empty()
+                            && environment_inputs.contains(project),
+                        "Documenter execution provenance",
+                    )?;
+                    self.source(&project.source)?;
+                    self.source(&input.source)?;
+                    for input in environment_inputs {
+                        self.source(&input.source)?;
+                    }
+                }
                 ProvenanceActivity::RustDoctests {
                     target,
                     policy,

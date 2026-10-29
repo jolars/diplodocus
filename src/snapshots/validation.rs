@@ -10,6 +10,7 @@ use crate::validation::{
     resolve_item,
 };
 
+mod documenter;
 mod links;
 
 pub(super) fn require(condition: bool, message: &'static str) -> Result<(), SnapshotError> {
@@ -26,6 +27,7 @@ impl Snapshot {
             .site_base_url()
             .map_err(SnapshotError::Invalid)?;
         links::validate(&self.workspace)?;
+        documenter::validate(self)?;
         let outputs = self.restore_outputs()?;
         let workspace = &self.workspace;
         require(!self.producer.is_empty(), "missing producer")?;

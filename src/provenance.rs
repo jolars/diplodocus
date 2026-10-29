@@ -264,6 +264,11 @@ pub fn collect_static_provenance(
             result.insert(input.clone())?;
             environment.insert(portable, input);
         }
+        for path in &collection.julia_environment_inputs {
+            let input = read_input(configuration_path, repository, path, None)?;
+            result.insert(input.clone())?;
+            environment.insert(input.source.path.clone(), input);
+        }
         result
             .declared_environment_inputs
             .insert(collection.id.clone(), environment.into_values().collect());

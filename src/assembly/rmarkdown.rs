@@ -284,7 +284,7 @@ impl WorkspaceSources {
             if let Some(title) = page_title {
                 self.workspace.pages.get_mut(&id).expect("article").title = title;
             }
-            self.rd_assets.extend(assets);
+            self.native_assets.extend(assets);
             staging.close()?;
         }
         self.revalidate()

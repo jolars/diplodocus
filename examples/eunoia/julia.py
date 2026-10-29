@@ -1,6 +1,7 @@
 """Validate Eunoia.jl's API and generate documentation from a detached snapshot."""
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -203,6 +204,75 @@ def snapshot_coverage(snapshot, forbidden_paths):
     return required, coverage | {"api_items": len(items)}, diagnostics
 
 
+def documenter_coverage(snapshot):
+    with sqlite3.connect(f"{snapshot.as_uri()}?mode=ro", uri=True) as database:
+        pages = [
+            json.loads(content)
+            for (content,) in database.execute(
+                "SELECT content FROM records WHERE kind = 'page'"
+            )
+        ]
+        assets = {
+            digest: bytes(content)
+            for digest, content in database.execute("SELECT digest, bytes FROM assets")
+        }
+    counts = {}
+    figures = {}
+    for page in pages:
+        document = page["document"]
+        for record in document["provenance"]:
+            activity = record["activity"]
+            if activity["kind"] != "documenter-examples":
+                continue
+            require(
+                activity["policy"] == "documenter-examples-v1",
+                "Unexpected Documenter policy",
+            )
+            require(activity["julia_version"], "Missing observed Julia version")
+            require(
+                "13f3f980-e62b-5c42-98c6-ff1f3baf88f0" in activity["dependencies"],
+                "CairoMakie was not loaded",
+            )
+            inputs = {item["source"]["path"] for item in activity["environment_inputs"]}
+            require(
+                {"docs/Project.toml", "docs/Manifest.toml"} <= inputs,
+                "Missing prepared environment fingerprints",
+            )
+            counts[document["source_location"]["path"]] = len(activity["examples"])
+            for example in activity["examples"]:
+                for output in example["outputs"]:
+                    if output["type"] == "image":
+                        digest = output["asset"]["fingerprint"]["value"]
+                        require(digest in assets, f"Missing native figure {digest}")
+                        require(
+                            hashlib.sha256(assets[digest]).hexdigest() == digest,
+                            "Native figure digest mismatch",
+                        )
+                        figures[digest] = assets[digest]
+    require(
+        counts == {"docs/src/index.md": 1, "docs/src/gallery.md": 30},
+        f"Incomplete Documenter execution: {counts}",
+    )
+    require(len(figures) == 30, f"Expected 30 native figures, found {len(figures)}")
+    return figures
+
+
+def validate_retained_figures(root, figures):
+    found = {}
+    for path in root.rglob("*"):
+        if path.is_file():
+            content = path.read_bytes()
+            digest = hashlib.sha256(content).hexdigest()
+            if digest in figures:
+                require(
+                    content == figures[digest], f"Changed native figure bytes: {path}"
+                )
+                found[digest] = path
+    require(
+        found.keys() == figures.keys(), f"Missing detached native figures in {root}"
+    )
+
+
 def validate_fragments(root, required):
     manifest = json.loads((root / "documents.json").read_text())
     require(manifest["format_version"] == 2, "Expected fragment manifest version 2")
@@ -322,6 +392,11 @@ def main():
     parser.add_argument("--source", type=Path, default=repository.parent / "Eunoia.jl")
     parser.add_argument("--output", type=Path)
     parser.add_argument("--diplodocus-bin", type=Path)
+    parser.add_argument(
+        "--execute-documenter",
+        action="store_true",
+        help="Execute the original guides with an already prepared docs/Project.toml and Manifest.toml",
+    )
     options = parser.parse_args()
     source = options.source.resolve(strict=True)
     metadata = tomllib.loads((source / "Project.toml").read_text())
@@ -387,6 +462,23 @@ def main():
             "__pycache__",
         ),
     )
+    if options.execute_documenter:
+        manifest = checkout / "docs/Manifest.toml"
+        require(
+            manifest.is_file(),
+            "Prepare Eunoia's documentation dependencies before running --execute-documenter",
+        )
+        text = manifest.read_text()
+        text, replaced = re.subn(
+            r"(?ms)(^\[\[deps\.Eunoia\]\]\n(?:(?!^\[).)*?^path\s*=\s*)[^\n]+",
+            r'\g<1>".."',
+            text,
+        )
+        require(
+            replaced == 1,
+            "The prepared docs manifest must select the Eunoia checkout by path",
+        )
+        manifest.write_text(text)
     (checkout / "diplodocus-overview.md").write_text(
         "# Eunoia.jl API\n\n"
         "This acceptance run covers Julia API documentation.\n\n"
@@ -418,10 +510,29 @@ packages:
         role: "public-api"
 """.replace("REVISION", f"    revision: {json.dumps(revision)}" if revision else "")
     )
+    if options.execute_documenter:
+        configuration.write_text(
+            configuration.read_text().replace(
+                '    overview: "diplodocus-overview.md"\n', ""
+            )
+            + """content:
+  - id: "julia-manual"
+    owner: "eunoia"
+    repository: "eunoia"
+    path: "docs/src"
+    mount: ""
+    format: "documenter"
+    execution:
+      mode: "execute"
+      engine: "julia"
+      julia-project: "docs/Project.toml"
+"""
+        )
     snapshot = extraction / "documentation.sqlite"
     run(binary, "check", "--config", configuration)
     run(binary, "extract", "--config", configuration, "--output", snapshot)
     required, coverage, diagnostics = snapshot_coverage(snapshot, [source, extraction])
+    figures = documenter_coverage(snapshot) if options.execute_documenter else {}
     (output / "diagnostics.json").write_text(json.dumps(diagnostics, indent=2) + "\n")
 
     detached = output / "detached"
@@ -490,6 +601,13 @@ packages:
         env=environment,
     )
     coverage |= validate_fragments(mapped, required)
+    if figures:
+        for root in [detached / "site", fragments, mapped]:
+            validate_retained_figures(root, figures)
+        coverage |= {
+            "executed_documenter_examples": 31,
+            "retained_native_figures": len(figures),
+        }
     for path in (fragments / "assets").rglob("*"):
         # Search records contain mapped URLs; styles and retained assets keep their bytes.
         if (
@@ -509,7 +627,9 @@ packages:
         "diagnostics": dict(Counter(d["code"] for d in diagnostics)),
         "source_removed": not extraction.exists(),
         "generation_path": environment["PATH"],
-        "scope": "core-api-without-guides-or-gallery",
+        "scope": "core-api-and-executed-documenter-guides"
+        if options.execute_documenter
+        else "core-api-without-guides-or-gallery",
     }
     (output / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
     print(json.dumps(summary, indent=2))

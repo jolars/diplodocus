@@ -142,6 +142,21 @@ cargo run --locked --example export-fragments -- \
 
 ## Verification
 
+The Julia acceptance recipe can also execute Eunoia's original Documenter
+homepage and gallery. Prepare the source checkout's `docs/Project.toml` and
+`docs/Manifest.toml` first, including CairoMakie and a path dependency on that
+Eunoia checkout. Then run:
+
+```console
+compute run -- python examples/eunoia/julia.py --execute-documenter
+```
+
+The recipe retargets the manifest in its disposable source copy, executes all 31
+examples, and verifies 30 retained figures. It removes that source copy and
+configuration before generating standalone HTML and HTML and Markdown fragments
+with an empty `PATH`. It also checks figure bytes, anchors, and local links with
+remapped URLs. The sibling Eunoia checkout remains available for other work.
+
 The host adapter checks route collisions and rejects local links it cannot map.
 Its focused tests run with:
 

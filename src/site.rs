@@ -244,6 +244,11 @@ impl<'a> Site<'a> {
                         mode: collection.execution.mode,
                         engine: collection.execution.engine,
                         kernel: collection.execution.kernel.clone(),
+                        julia_project: collection
+                            .execution
+                            .julia_project
+                            .as_ref()
+                            .map(|path| path.as_str().into()),
                         declared_environment_inputs: Vec::new(),
                     },
                 };

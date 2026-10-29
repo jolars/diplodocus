@@ -60,6 +60,33 @@ fn every_collection_requires_a_supported_explicit_format() {
 }
 
 #[test]
+fn documenter_execution_requires_a_prepared_native_project_and_no_kernel() {
+    let valid = "mode: execute\nengine: julia\njulia-project: docs/Project.toml\n";
+    let configuration = configuration("documenter", &execution(valid));
+    let parsed = parse_configuration(&configuration).unwrap();
+    assert_eq!(
+        parsed.content[0].execution.julia_project.as_deref(),
+        Some(std::path::Path::new("docs/Project.toml"))
+    );
+    for invalid in [
+        valid.replace("engine: julia", "engine: jupyter"),
+        valid.replace("julia-project: docs/Project.toml\n", ""),
+        valid.to_owned() + "kernel: julia\n",
+        valid.replace("docs/Project.toml", "../outside/Project.toml"),
+        valid.replace("docs/Project.toml", "docs/Manifest.toml"),
+        valid.replace("mode: execute", "mode: never"),
+    ] {
+        assert!(
+            parse_configuration(&self::configuration("documenter", &execution(&invalid))).is_err(),
+            "{invalid}"
+        );
+    }
+    for format in ["gfm", "qmd", "rmd"] {
+        assert!(parse_configuration(&self::configuration(format, &execution(valid))).is_err());
+    }
+}
+
+#[test]
 fn omitted_empty_and_explicit_never_settings_have_the_same_serialized_defaults() {
     for format in ["gfm", "qmd"] {
         let sources = [

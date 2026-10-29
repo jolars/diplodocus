@@ -66,6 +66,12 @@ pub fn prepare_collection_document(
 ) -> Result<PreparedDocument, ExecutionConfigurationError> {
     collection.validate_execution()?;
     let mut parsed = parse_document(source, collection.format, ParseMode::Collection);
+    if collection.format == AuthoredFormat::Documenter
+        && collection.execution.mode == ExecutionMode::Execute
+        && let Err(diagnostics) = super::documenter::examples(source)
+    {
+        parsed.diagnostics.extend(diagnostics);
+    }
     if collection.format != AuthoredFormat::Qmd {
         return Ok(PreparedDocument {
             parsed,
