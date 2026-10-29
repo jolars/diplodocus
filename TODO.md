@@ -162,6 +162,85 @@ and package dependencies.
   Datamonger and Shrinkage, by packaging platform binaries without requiring
   a postinstall download.
 
+## Eunoia.jl documentation integration
+
+Use the local checkouts at `/home/jola/projects/Eunoia.jl` and
+`/home/jola/projects/eunoia` as the acceptance case. Keep Julia docstrings and
+guides in Eunoia.jl, and import their generated HTML and Markdown into Eunoia's
+SvelteKit site. The existing integration is documented in
+[Eunoia's Python docs guide](../eunoia/web/PYTHON-DOCS.md) and implemented in
+[`python-docs.mjs`](../eunoia/web/scripts/python-docs.mjs).
+
+The initial trial with Diplodocus 0.11.0 and Eunoia.jl 1.0.1 extracted all 23
+exported Julia bindings. Fragment generation and host URL mapping worked after
+isolating the authored-page reference failures. Complete documentation still
+needs the work below; successful API extraction does not establish gallery or
+Documenter compatibility.
+
+### Diplodocus work
+
+- [ ] Add a real Eunoia.jl acceptance recipe alongside `examples/eunoia/rust.py`.
+  Cover exported functions, `eunoiaplot!`, result types, fields, API references,
+  figures, and matching HTML and Markdown anchors. Verify generation from a
+  relocated snapshot without the source checkout or Julia runtime. Use
+  disposable source copies for destructive portability checks.
+- [ ] Fix Julia Markdown list conversion in
+  `src/extractors/julia/docstrings.rs`. The trial emitted 199 warnings, mostly
+  because inline code, emphasis, and links also became unsupported blocks inside
+  lists. Rendered output duplicates those nodes and loses spaces in some wrapped
+  prose. Add focused regressions with inline markup and wrapped list text; the
+  existing prose/reference test passes despite this real-package failure.
+- [ ] Support the Documenter page syntax used in Eunoia.jl's `docs/src/`.
+  `@index` and `@autodocs` currently remain literal code blocks. Bare page and
+  heading `@ref` links fail validation, while explicit references can leave
+  stray markup in rendered prose. Define an authored Documenter profile with
+  API, page, and heading references and the required page assembly directives,
+  including `Modules` and `Private = false`.
+- [ ] Execute Documenter `@example` blocks with prepared Julia dependencies.
+  Eunoia.jl has 30 gallery blocks and one homepage example; importing them as GFM
+  produces no figures. Preserve named sessions within a page, anonymous example
+  isolation, `# hide`, and native text and image output. Retain validated figures,
+  execution observations, and environment inputs in portable snapshots. The
+  existing native Julia adapter supports `jldoctest` and rejects `@example` and
+  `@repl`; authored GFM does not execute them either.
+- [ ] Define Julia API visibility for navigation and fragment consumers.
+  Documented private helpers currently appear as visible API pages, unlike the
+  existing `Private = false` reference. `Item::discoverable` does not apply Julia
+  visibility. Preserve addressable references and fields of exported types when
+  selecting the public surface.
+- [ ] Improve Julia type presentation. Fields currently receive separate,
+  mostly empty pages. Consider grouping them under their owning type with stable
+  anchors and consistent HTML, Markdown, navigation, and URL mapping.
+- [ ] Define support for explicitly supplied Julia package extensions. The
+  current include traversal misses `ext/EunoiaMakieExt.jl`, so plotting pages
+  show core fallback method signatures instead of the extension implementations.
+  Preserve the existing generic documentation and avoid inventing methods from
+  unavailable dependencies.
+- [ ] Resolve the package-overview choice. Automatic README ingestion rejects
+  Eunoia.jl's remote badge images. An authored package index can replace that
+  fallback; determine whether remote-image support also belongs in Diplodocus.
+
+### Eunoia integration follow-up
+
+- [ ] Upgrade the existing Python integration when advancing the Diplodocus pin.
+  Eunoia pins 0.2.0 and generates TOML with singular collection keys; current
+  Diplodocus requires YAML with plural keys. Regenerate snapshots as part of the
+  upgrade: the existing Python snapshot uses IR version 5, while 0.11.0 uses
+  version 9 and rejects that snapshot.
+- [ ] Prepare both package environments in local builds and CI. Fresh Python
+  extraction now imports the checkout and fails without the built
+  `eunoia._eunoia` extension. Julia extraction requires its package dependencies
+  and native library; gallery execution additionally needs the environment in
+  Eunoia.jl's `docs/Project.toml`, including CairoMakie. Supply the native library
+  through a matching artifact or `EUNOIA_CAPI_LIB`.
+- [ ] Generalize Eunoia's Python generator for pinned Julia sources, snapshots,
+  assets, and routes. Its API selection currently assumes top-level Python
+  names; support Julia's `!` names and type/member relationships. Preserve
+  generated-directory ownership, atomic replacement, caching, and link checks.
+  Add Julia navigation and update the reference overview, quickstart links, and
+  `web/static/llms.txt`. Existing concrete-route sitemap discovery and
+  `reference.md` export can include the generated pages automatically.
+
 ## Scope held for later
 
 Incremental extraction and rendering; older snapshot migrations; historical
