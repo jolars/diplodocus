@@ -23,7 +23,7 @@ name = "diplodocus"
 path = "src/main.rs"
 
 [dependencies]
-arity-parser = "=0.6.1"
+arity-parser = "=0.7.0"
 base64 = "=0.23.1"
 clap = { version = "4.5", features = ["derive"] }
 fatou-parser = "=0.9.0"
@@ -32,11 +32,11 @@ getrandom = "0.4"
 html5ever = "=0.39.0"
 hayagriva = "=0.10.1"
 image = { version = "=0.25.10", default-features = false, features = ["jpeg", "png"] }
-jupyter-protocol = "=2.0.2"
-jupyter-zmq-client = { version = "=1.0.1", features = ["tokio-runtime"] }
+jupyter-protocol = "=2.0.3"
+jupyter-zmq-client = { version = "=3.0.1", features = ["tokio-runtime"] }
 katex = { package = "katex-rs", version = "=0.3.0", default-features = false }
 markup5ever_rcdom = "=0.39.0"
-panache-parser = "=0.34.0"
+panache-parser = "=0.34.1"
 pep440_rs = "=0.7.3"
 percent-encoding = "=2.3.2"
 png = "=0.18.1"
@@ -46,12 +46,12 @@ rd-ast = { version = "=0.5.0", default-features = false }
 rd-source = "=0.5.0"
 rd-rds = { version = "=0.5.0", default-features = false, features = ["lazyload"] }
 regex = "1.12"
-roxmltree = "=0.21.1"
+roxmltree = "=0.21.2"
 rowan = "=0.17.0"
-rusqlite = { version = "=0.40.2", default-features = false, features = ["bundled"] }
-ruff_python_ast = "=0.0.19"
-ruff_python_parser = "=0.0.19"
-ruff_text_size = "=0.0.19"
+rusqlite = { version = "=0.41.1", default-features = false, features = ["bundled"] }
+ruff_python_ast = "=0.0.20"
+ruff_python_parser = "=0.0.20"
+ruff_text_size = "=0.0.20"
 rustdoc-types = "=0.61.0"
 serde = { version = "1.0", features = ["derive"] }
 semver = "=1.0.28"
@@ -73,7 +73,7 @@ zune-jpeg = "=0.5.15"
 rustix = { version = "1.1", features = ["fs", "process"] }
 
 [dev-dependencies]
-jupyter-zmq-client = { version = "=1.0.1", features = ["test-kernel"] }
+jupyter-zmq-client = { version = "=3.0.1", features = ["test-kernel"] }
 snapbox = { version = "1.2", features = ["cmd", "dir"] }
 tokio = { version = "1.36", features = ["macros", "rt-multi-thread", "signal", "time"] }
 
