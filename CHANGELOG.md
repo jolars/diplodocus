@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.12.0](https://github.com/jolars/diplodocus/compare/v0.11.0...v0.12.0) (2026-10-29)
+
+### Breaking changes
+
+- support explicit Documenter API selection ([`d962dfe`](https://github.com/jolars/diplodocus/commit/d962dfe095aaea2481b751218c8c7a1e8faca2d7))
+- execute native Documenter examples ([`0444697`](https://github.com/jolars/diplodocus/commit/0444697efe68a2f8af9e2dada8726458f5b77d80))
+- support authored Documenter pages ([`f51d7a2`](https://github.com/jolars/diplodocus/commit/f51d7a2c7d0f91bcd734385b3f3036a1e26bf9c0))
+
+### Features
+
+- support explicit Documenter API selection ([`d962dfe`](https://github.com/jolars/diplodocus/commit/d962dfe095aaea2481b751218c8c7a1e8faca2d7))
+- execute native Documenter examples ([`0444697`](https://github.com/jolars/diplodocus/commit/0444697efe68a2f8af9e2dada8726458f5b77d80))
+- support authored Documenter pages ([`f51d7a2`](https://github.com/jolars/diplodocus/commit/f51d7a2c7d0f91bcd734385b3f3036a1e26bf9c0))
+- add portable page redirects ([`22f4df3`](https://github.com/jolars/diplodocus/commit/22f4df335f58779fbe18042b473047b80ca4cb88))
+- default to no arrows on actions on landing page ([`0b95558`](https://github.com/jolars/diplodocus/commit/0b95558ad5d707721ddbdba2453e28e9ff5085c0))
+
+### Bug Fixes
+
+- adopt Fatou 0.9.0 for Julia Markdown ([`7ac952b`](https://github.com/jolars/diplodocus/commit/7ac952b8e29d7af220199d6e26dc7873f716aaa4))
+- prepare Julia list fences for Fatou release ([`70d5758`](https://github.com/jolars/diplodocus/commit/70d57582d193291965ce45e612c48fa253c65cb3))
+- correct Julia lists and validate Eunoia exports ([`b1c5275`](https://github.com/jolars/diplodocus/commit/b1c52753b7408bdfaa92b8bc228ae9df210ba101))
+- reduce hero rendering size, fix changelog links ([`c7fd63b`](https://github.com/jolars/diplodocus/commit/c7fd63b0e2d49526c1bf56ce8404ee6e88b84612))
+
 ## [0.11.0](https://github.com/jolars/diplodocus/compare/v0.10.0...v0.11.0) (2026-10-28)
 
 ### Features
