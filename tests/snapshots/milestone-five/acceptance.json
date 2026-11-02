@@ -498,11 +498,11 @@
             },
             "span": null,
             "tools": {
-              "arity-parser": "0.6.1",
-              "diplodocus": "[DIPLODOCUS_VERSION]",
-              "r": "[DIPLODOCUS_VERSION]",
-              "rd-ast": "0.5.0",
-              "rd-source": "0.5.0"
+              "arity-parser": "[TOOL_VERSION]",
+              "diplodocus": "[TOOL_VERSION]",
+              "r": "[TOOL_VERSION]",
+              "rd-ast": "[TOOL_VERSION]",
+              "rd-source": "[TOOL_VERSION]"
             }
           }
         ],
@@ -543,9 +543,9 @@
             "start": 0
           },
           "tools": {
-            "arity-parser": "0.6.1",
-            "diplodocus": "[DIPLODOCUS_VERSION]",
-            "r": "[DIPLODOCUS_VERSION]"
+            "arity-parser": "[TOOL_VERSION]",
+            "diplodocus": "[TOOL_VERSION]",
+            "r": "[TOOL_VERSION]"
           }
         },
         {
@@ -562,9 +562,9 @@
             "start": 0
           },
           "tools": {
-            "arity-parser": "0.6.1",
-            "diplodocus": "[DIPLODOCUS_VERSION]",
-            "r": "[DIPLODOCUS_VERSION]"
+            "arity-parser": "[TOOL_VERSION]",
+            "diplodocus": "[TOOL_VERSION]",
+            "r": "[TOOL_VERSION]"
           }
         }
       ],
@@ -1308,11 +1308,11 @@
             },
             "span": null,
             "tools": {
-              "arity-parser": "0.6.1",
-              "diplodocus": "[DIPLODOCUS_VERSION]",
-              "r": "[DIPLODOCUS_VERSION]",
-              "rd-ast": "0.5.0",
-              "rd-source": "0.5.0"
+              "arity-parser": "[TOOL_VERSION]",
+              "diplodocus": "[TOOL_VERSION]",
+              "r": "[TOOL_VERSION]",
+              "rd-ast": "[TOOL_VERSION]",
+              "rd-source": "[TOOL_VERSION]"
             }
           }
         ],
@@ -1373,9 +1373,9 @@
             "start": 1022
           },
           "tools": {
-            "arity-parser": "0.6.1",
-            "diplodocus": "[DIPLODOCUS_VERSION]",
-            "r": "[DIPLODOCUS_VERSION]"
+            "arity-parser": "[TOOL_VERSION]",
+            "diplodocus": "[TOOL_VERSION]",
+            "r": "[TOOL_VERSION]"
           }
         },
         {
@@ -1392,9 +1392,9 @@
             "start": 41
           },
           "tools": {
-            "arity-parser": "0.6.1",
-            "diplodocus": "[DIPLODOCUS_VERSION]",
-            "r": "[DIPLODOCUS_VERSION]"
+            "arity-parser": "[TOOL_VERSION]",
+            "diplodocus": "[TOOL_VERSION]",
+            "r": "[TOOL_VERSION]"
           }
         }
       ],
@@ -1914,11 +1914,11 @@
             },
             "span": null,
             "tools": {
-              "arity-parser": "0.6.1",
-              "diplodocus": "[DIPLODOCUS_VERSION]",
-              "r": "[DIPLODOCUS_VERSION]",
-              "rd-ast": "0.5.0",
-              "rd-source": "0.5.0"
+              "arity-parser": "[TOOL_VERSION]",
+              "diplodocus": "[TOOL_VERSION]",
+              "r": "[TOOL_VERSION]",
+              "rd-ast": "[TOOL_VERSION]",
+              "rd-source": "[TOOL_VERSION]"
             }
           }
         ],
@@ -1959,9 +1959,9 @@
             "start": 0
           },
           "tools": {
-            "arity-parser": "0.6.1",
-            "diplodocus": "[DIPLODOCUS_VERSION]",
-            "r": "[DIPLODOCUS_VERSION]"
+            "arity-parser": "[TOOL_VERSION]",
+            "diplodocus": "[TOOL_VERSION]",
+            "r": "[TOOL_VERSION]"
           }
         },
         {
@@ -1978,9 +1978,9 @@
             "start": 59
           },
           "tools": {
-            "arity-parser": "0.6.1",
-            "diplodocus": "[DIPLODOCUS_VERSION]",
-            "r": "[DIPLODOCUS_VERSION]"
+            "arity-parser": "[TOOL_VERSION]",
+            "diplodocus": "[TOOL_VERSION]",
+            "r": "[TOOL_VERSION]"
           }
         }
       ],
@@ -3045,11 +3045,11 @@
             },
             "span": null,
             "tools": {
-              "arity-parser": "0.6.1",
-              "diplodocus": "[DIPLODOCUS_VERSION]",
-              "r": "[DIPLODOCUS_VERSION]",
-              "rd-ast": "0.5.0",
-              "rd-source": "0.5.0"
+              "arity-parser": "[TOOL_VERSION]",
+              "diplodocus": "[TOOL_VERSION]",
+              "r": "[TOOL_VERSION]",
+              "rd-ast": "[TOOL_VERSION]",
+              "rd-source": "[TOOL_VERSION]"
             }
           }
         ],
@@ -3123,9 +3123,9 @@
             "start": 0
           },
           "tools": {
-            "arity-parser": "0.6.1",
-            "diplodocus": "[DIPLODOCUS_VERSION]",
-            "r": "[DIPLODOCUS_VERSION]"
+            "arity-parser": "[TOOL_VERSION]",
+            "diplodocus": "[TOOL_VERSION]",
+            "r": "[TOOL_VERSION]"
           }
         },
         {
@@ -3142,9 +3142,9 @@
             "start": 29
           },
           "tools": {
-            "arity-parser": "0.6.1",
-            "diplodocus": "[DIPLODOCUS_VERSION]",
-            "r": "[DIPLODOCUS_VERSION]"
+            "arity-parser": "[TOOL_VERSION]",
+            "diplodocus": "[TOOL_VERSION]",
+            "r": "[TOOL_VERSION]"
           }
         }
       ],
@@ -4211,11 +4211,11 @@
             },
             "span": null,
             "tools": {
-              "arity-parser": "0.6.1",
-              "diplodocus": "[DIPLODOCUS_VERSION]",
-              "r": "[DIPLODOCUS_VERSION]",
-              "rd-ast": "0.5.0",
-              "rd-source": "0.5.0"
+              "arity-parser": "[TOOL_VERSION]",
+              "diplodocus": "[TOOL_VERSION]",
+              "r": "[TOOL_VERSION]",
+              "rd-ast": "[TOOL_VERSION]",
+              "rd-source": "[TOOL_VERSION]"
             }
           }
         ],
@@ -4301,9 +4301,9 @@
             "start": 48
           },
           "tools": {
-            "arity-parser": "0.6.1",
-            "diplodocus": "[DIPLODOCUS_VERSION]",
-            "r": "[DIPLODOCUS_VERSION]"
+            "arity-parser": "[TOOL_VERSION]",
+            "diplodocus": "[TOOL_VERSION]",
+            "r": "[TOOL_VERSION]"
           }
         }
       ],
@@ -5456,11 +5456,11 @@
             },
             "span": null,
             "tools": {
-              "arity-parser": "0.6.1",
-              "diplodocus": "[DIPLODOCUS_VERSION]",
-              "r": "[DIPLODOCUS_VERSION]",
-              "rd-ast": "0.5.0",
-              "rd-source": "0.5.0"
+              "arity-parser": "[TOOL_VERSION]",
+              "diplodocus": "[TOOL_VERSION]",
+              "r": "[TOOL_VERSION]",
+              "rd-ast": "[TOOL_VERSION]",
+              "rd-source": "[TOOL_VERSION]"
             }
           }
         ],
@@ -5546,9 +5546,9 @@
             "start": 743
           },
           "tools": {
-            "arity-parser": "0.6.1",
-            "diplodocus": "[DIPLODOCUS_VERSION]",
-            "r": "[DIPLODOCUS_VERSION]"
+            "arity-parser": "[TOOL_VERSION]",
+            "diplodocus": "[TOOL_VERSION]",
+            "r": "[TOOL_VERSION]"
           }
         }
       ],
@@ -6385,11 +6385,11 @@
             },
             "span": null,
             "tools": {
-              "arity-parser": "0.6.1",
-              "diplodocus": "[DIPLODOCUS_VERSION]",
-              "r": "[DIPLODOCUS_VERSION]",
-              "rd-ast": "0.5.0",
-              "rd-source": "0.5.0"
+              "arity-parser": "[TOOL_VERSION]",
+              "diplodocus": "[TOOL_VERSION]",
+              "r": "[TOOL_VERSION]",
+              "rd-ast": "[TOOL_VERSION]",
+              "rd-source": "[TOOL_VERSION]"
             }
           }
         ],
@@ -6469,9 +6469,9 @@
             "start": 1263
           },
           "tools": {
-            "arity-parser": "0.6.1",
-            "diplodocus": "[DIPLODOCUS_VERSION]",
-            "r": "[DIPLODOCUS_VERSION]"
+            "arity-parser": "[TOOL_VERSION]",
+            "diplodocus": "[TOOL_VERSION]",
+            "r": "[TOOL_VERSION]"
           }
         }
       ],
@@ -6959,7 +6959,7 @@
             "grammar:man/foo_model.Rd": "r",
             "grammar:man/mean_squared_error.Rd": "r"
           },
-          "version": "0.6.1"
+          "version": "[TOOL_VERSION]"
         },
         "rd-ast": {
           "role": "rd-semantics",
@@ -6968,7 +6968,7 @@
             "source_locations": "file",
             "views": "strict"
           },
-          "version": "0.5.0"
+          "version": "[TOOL_VERSION]"
         },
         "rd-rds": {
           "role": "r-installed-namespace-metadata",
@@ -6984,14 +6984,14 @@
             "os-type": "unix",
             "r-version": "4.6.1"
           },
-          "version": "0.5.0"
+          "version": "[TOOL_VERSION]"
         },
         "rd-source": {
           "role": "rd-syntax",
           "settings": {
             "dynamic_markup": "unresolved"
           },
-          "version": "0.5.0"
+          "version": "[TOOL_VERSION]"
         }
       },
       "target": {
@@ -7002,12 +7002,12 @@
     "source": null,
     "span": null,
     "tools": {
-      "arity-parser": "0.6.1",
-      "diplodocus": "[DIPLODOCUS_VERSION]",
-      "r": "[DIPLODOCUS_VERSION]",
-      "rd-ast": "0.5.0",
-      "rd-rds": "0.5.0",
-      "rd-source": "0.5.0"
+      "arity-parser": "[TOOL_VERSION]",
+      "diplodocus": "[TOOL_VERSION]",
+      "r": "[TOOL_VERSION]",
+      "rd-ast": "[TOOL_VERSION]",
+      "rd-rds": "[TOOL_VERSION]",
+      "rd-source": "[TOOL_VERSION]"
     }
   },
   "schema_version": 12,

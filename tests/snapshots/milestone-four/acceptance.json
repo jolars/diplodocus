@@ -84,9 +84,9 @@
               "start": 136
             },
             "tools": {
-              "diplodocus": "[DIPLODOCUS_VERSION]",
-              "panache-parser": "0.34.0",
-              "pydocstring": "0.4.1"
+              "diplodocus": "[TOOL_VERSION]",
+              "panache-parser": "[TOOL_VERSION]",
+              "pydocstring": "[TOOL_VERSION]"
             }
           }
         ],
@@ -139,7 +139,7 @@
             "start": 109
           },
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         }
       ],
@@ -383,9 +383,9 @@
               "start": 422
             },
             "tools": {
-              "diplodocus": "[DIPLODOCUS_VERSION]",
-              "panache-parser": "0.34.0",
-              "pydocstring": "0.4.1"
+              "diplodocus": "[TOOL_VERSION]",
+              "panache-parser": "[TOOL_VERSION]",
+              "pydocstring": "[TOOL_VERSION]"
             }
           }
         ],
@@ -491,7 +491,7 @@
             "start": 372
           },
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         },
         {
@@ -508,7 +508,7 @@
             "start": 157
           },
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         }
       ],
@@ -755,9 +755,9 @@
               "start": 709
             },
             "tools": {
-              "diplodocus": "[DIPLODOCUS_VERSION]",
-              "panache-parser": "0.34.0",
-              "pydocstring": "0.4.1"
+              "diplodocus": "[TOOL_VERSION]",
+              "panache-parser": "[TOOL_VERSION]",
+              "pydocstring": "[TOOL_VERSION]"
             }
           }
         ],
@@ -810,7 +810,7 @@
             "start": 689
           },
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         },
         {
@@ -827,7 +827,7 @@
             "start": 220
           },
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         }
       ],
@@ -962,9 +962,9 @@
               "start": 224
             },
             "tools": {
-              "diplodocus": "[DIPLODOCUS_VERSION]",
-              "panache-parser": "0.34.0",
-              "pydocstring": "0.4.1"
+              "diplodocus": "[TOOL_VERSION]",
+              "panache-parser": "[TOOL_VERSION]",
+              "pydocstring": "[TOOL_VERSION]"
             }
           }
         ],
@@ -1009,7 +1009,7 @@
             "start": 192
           },
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         },
         {
@@ -1026,7 +1026,7 @@
             "start": 82
           },
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         }
       ],
@@ -1220,9 +1220,9 @@
               "start": 326
             },
             "tools": {
-              "diplodocus": "[DIPLODOCUS_VERSION]",
-              "panache-parser": "0.34.0",
-              "pydocstring": "0.4.1"
+              "diplodocus": "[TOOL_VERSION]",
+              "panache-parser": "[TOOL_VERSION]",
+              "pydocstring": "[TOOL_VERSION]"
             }
           }
         ],
@@ -1267,7 +1267,7 @@
             "start": 282
           },
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         },
         {
@@ -1284,7 +1284,7 @@
             "start": 114
           },
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         }
       ],
@@ -1456,7 +1456,7 @@
             "start": 222
           },
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         }
       ],
@@ -1593,7 +1593,7 @@
             "start": 951
           },
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         },
         {
@@ -1610,7 +1610,7 @@
             "start": 240
           },
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         }
       ],
@@ -1763,7 +1763,7 @@
             "start": 203
           },
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         }
       ],
@@ -1874,7 +1874,7 @@
             "start": 671
           },
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         },
         {
@@ -1891,7 +1891,7 @@
             "start": 203
           },
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         }
       ],
@@ -2018,7 +2018,7 @@
             "start": 651
           },
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         },
         {
@@ -2035,7 +2035,7 @@
             "start": 183
           },
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         }
       ],
@@ -2168,7 +2168,7 @@
             "start": 271
           },
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         }
       ],
@@ -2280,9 +2280,9 @@
               "start": 166
             },
             "tools": {
-              "diplodocus": "[DIPLODOCUS_VERSION]",
-              "panache-parser": "0.34.0",
-              "pydocstring": "0.4.1"
+              "diplodocus": "[TOOL_VERSION]",
+              "panache-parser": "[TOOL_VERSION]",
+              "pydocstring": "[TOOL_VERSION]"
             }
           }
         ],
@@ -2333,7 +2333,7 @@
             "start": 101
           },
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         }
       ],
@@ -3185,9 +3185,9 @@
               "start": 3506
             },
             "tools": {
-              "diplodocus": "[DIPLODOCUS_VERSION]",
-              "panache-parser": "0.34.0",
-              "pydocstring": "0.4.1"
+              "diplodocus": "[TOOL_VERSION]",
+              "panache-parser": "[TOOL_VERSION]",
+              "pydocstring": "[TOOL_VERSION]"
             }
           }
         ],
@@ -3272,7 +3272,7 @@
             "start": 3259
           },
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         },
         {
@@ -3289,7 +3289,7 @@
             "start": 788
           },
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         },
         {
@@ -3306,7 +3306,7 @@
             "start": 1027
           },
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         }
       ],
@@ -3709,7 +3709,7 @@
             "start": 788
           },
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         }
       ],
@@ -3943,7 +3943,7 @@
             "start": 1027
           },
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         }
       ],
@@ -4492,9 +4492,9 @@
               "start": 5685
             },
             "tools": {
-              "diplodocus": "[DIPLODOCUS_VERSION]",
-              "panache-parser": "0.34.0",
-              "pydocstring": "0.4.1"
+              "diplodocus": "[TOOL_VERSION]",
+              "panache-parser": "[TOOL_VERSION]",
+              "pydocstring": "[TOOL_VERSION]"
             }
           }
         ],
@@ -4545,7 +4545,7 @@
             "start": 5595
           },
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         },
         {
@@ -4562,7 +4562,7 @@
             "start": 1280
           },
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         }
       ],
@@ -5024,9 +5024,9 @@
               "start": 1591
             },
             "tools": {
-              "diplodocus": "[DIPLODOCUS_VERSION]",
-              "panache-parser": "0.34.0",
-              "pydocstring": "0.4.1"
+              "diplodocus": "[TOOL_VERSION]",
+              "panache-parser": "[TOOL_VERSION]",
+              "pydocstring": "[TOOL_VERSION]"
             }
           }
         ],
@@ -5077,7 +5077,7 @@
             "start": 1406
           },
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         },
         {
@@ -5094,7 +5094,7 @@
             "start": 444
           },
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         }
       ],
@@ -5480,9 +5480,9 @@
               "start": 2333
             },
             "tools": {
-              "diplodocus": "[DIPLODOCUS_VERSION]",
-              "panache-parser": "0.34.0",
-              "pydocstring": "0.4.1"
+              "diplodocus": "[TOOL_VERSION]",
+              "panache-parser": "[TOOL_VERSION]",
+              "pydocstring": "[TOOL_VERSION]"
             }
           }
         ],
@@ -5567,7 +5567,7 @@
             "start": 2211
           },
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         },
         {
@@ -5584,7 +5584,7 @@
             "start": 615
           },
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         },
         {
@@ -5601,7 +5601,7 @@
             "start": 695
           },
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         }
       ],
@@ -5821,7 +5821,7 @@
             "start": 695
           },
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         }
       ],
@@ -5981,7 +5981,7 @@
             "start": 615
           },
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         }
       ],
@@ -6111,9 +6111,9 @@
               "start": 0
             },
             "tools": {
-              "diplodocus": "[DIPLODOCUS_VERSION]",
-              "panache-parser": "0.34.0",
-              "pydocstring": "0.4.1"
+              "diplodocus": "[TOOL_VERSION]",
+              "panache-parser": "[TOOL_VERSION]",
+              "pydocstring": "[TOOL_VERSION]"
             }
           }
         ],
@@ -6186,7 +6186,7 @@
           },
           "span": null,
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         },
         {
@@ -6200,7 +6200,7 @@
           },
           "span": null,
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         }
       ],
@@ -6246,7 +6246,7 @@
           },
           "span": null,
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         }
       ],
@@ -6304,9 +6304,9 @@
               "start": 0
             },
             "tools": {
-              "diplodocus": "[DIPLODOCUS_VERSION]",
-              "panache-parser": "0.34.0",
-              "pydocstring": "0.4.1"
+              "diplodocus": "[TOOL_VERSION]",
+              "panache-parser": "[TOOL_VERSION]",
+              "pydocstring": "[TOOL_VERSION]"
             }
           }
         ],
@@ -6371,7 +6371,7 @@
           },
           "span": null,
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         }
       ],
@@ -6434,9 +6434,9 @@
               "start": 0
             },
             "tools": {
-              "diplodocus": "[DIPLODOCUS_VERSION]",
-              "panache-parser": "0.34.0",
-              "pydocstring": "0.4.1"
+              "diplodocus": "[TOOL_VERSION]",
+              "panache-parser": "[TOOL_VERSION]",
+              "pydocstring": "[TOOL_VERSION]"
             }
           }
         ],
@@ -6482,7 +6482,7 @@
           },
           "span": null,
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         },
         {
@@ -6496,7 +6496,7 @@
           },
           "span": null,
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         }
       ],
@@ -6588,9 +6588,9 @@
               "start": 1218
             },
             "tools": {
-              "diplodocus": "[DIPLODOCUS_VERSION]",
-              "panache-parser": "0.34.0",
-              "pydocstring": "0.4.1"
+              "diplodocus": "[TOOL_VERSION]",
+              "panache-parser": "[TOOL_VERSION]",
+              "pydocstring": "[TOOL_VERSION]"
             }
           }
         ],
@@ -6662,7 +6662,7 @@
             "start": 1151
           },
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         },
         {
@@ -6679,7 +6679,7 @@
             "start": 325
           },
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         }
       ],
@@ -6827,9 +6827,9 @@
               "start": 1341
             },
             "tools": {
-              "diplodocus": "[DIPLODOCUS_VERSION]",
-              "panache-parser": "0.34.0",
-              "pydocstring": "0.4.1"
+              "diplodocus": "[TOOL_VERSION]",
+              "panache-parser": "[TOOL_VERSION]",
+              "pydocstring": "[TOOL_VERSION]"
             }
           }
         ],
@@ -6901,7 +6901,7 @@
             "start": 1289
           },
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         },
         {
@@ -6918,7 +6918,7 @@
             "start": 392
           },
           "tools": {
-            "ruff_python_parser": "0.0.19"
+            "ruff_python_parser": "[TOOL_VERSION]"
           }
         }
       ],
@@ -7118,24 +7118,24 @@
             "execution": "never",
             "profile": "gfm"
           },
-          "version": "0.34.0"
+          "version": "[TOOL_VERSION]"
         },
         "pydocstring": {
           "role": "python-docstring",
           "settings": {
             "style": "numpy"
           },
-          "version": "0.4.1"
+          "version": "[TOOL_VERSION]"
         },
         "pyproject-toml": {
           "role": "python-metadata",
           "settings": {},
-          "version": "0.13.7"
+          "version": "[TOOL_VERSION]"
         },
         "ruff_python_ast": {
           "role": "python-ast",
           "settings": {},
-          "version": "0.0.19"
+          "version": "[TOOL_VERSION]"
         },
         "ruff_python_parser": {
           "role": "python-syntax",
@@ -7150,12 +7150,12 @@
             "target_version": "3.11",
             "target_version_origin": "metadata"
           },
-          "version": "0.0.19"
+          "version": "[TOOL_VERSION]"
         },
         "ruff_text_size": {
           "role": "source-ranges",
           "settings": {},
-          "version": "0.0.19"
+          "version": "[TOOL_VERSION]"
         }
       },
       "target": {
@@ -7166,14 +7166,14 @@
     "source": null,
     "span": null,
     "tools": {
-      "diplodocus": "[DIPLODOCUS_VERSION]",
-      "panache-parser": "0.34.0",
-      "pydocstring": "0.4.1",
-      "pyproject-toml": "0.13.7",
-      "python": "[DIPLODOCUS_VERSION]",
-      "ruff_python_ast": "0.0.19",
-      "ruff_python_parser": "0.0.19",
-      "ruff_text_size": "0.0.19"
+      "diplodocus": "[TOOL_VERSION]",
+      "panache-parser": "[TOOL_VERSION]",
+      "pydocstring": "[TOOL_VERSION]",
+      "pyproject-toml": "[TOOL_VERSION]",
+      "python": "[TOOL_VERSION]",
+      "ruff_python_ast": "[TOOL_VERSION]",
+      "ruff_python_parser": "[TOOL_VERSION]",
+      "ruff_text_size": "[TOOL_VERSION]"
     }
   },
   "schema_version": 12,

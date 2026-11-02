@@ -74,7 +74,7 @@ rustix = { version = "1.1", features = ["fs", "process"] }
 
 [dev-dependencies]
 jupyter-zmq-client = { version = "=3.0.1", features = ["test-kernel"] }
-snapbox = { version = "1.2", features = ["cmd", "dir"] }
+snapbox = { version = "1.2", features = ["cmd", "dir", "json"] }
 tokio = { version = "1.36", features = ["macros", "rt-multi-thread", "signal", "time"] }
 
 [build-dependencies]

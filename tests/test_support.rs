@@ -10,6 +10,34 @@ use support::{
 };
 
 #[test]
+fn golden_tool_versions_ignore_releases_and_preserve_semantic_versions() {
+    let observation = |version| {
+        serde_json::json!({
+            "schema_version": 12,
+            "metadata": {"version": "1.2.3"},
+            "tools": {"diplodocus": version, "panache-parser": version},
+            "activity": {"parsers": {"ruff_python_parser": {
+                "version": version,
+                "role": "python-syntax",
+                "settings": {"target_version": "3.11"}
+            }}}
+        })
+    };
+    let mut first = observation("0.1.0");
+    let mut second = observation("0.2.0");
+    support::normalize_golden_tool_versions(&mut first);
+    support::normalize_golden_tool_versions(&mut second);
+    assert_eq!(first, second);
+    assert_eq!(first["schema_version"], 12);
+    assert_eq!(first["metadata"]["version"], "1.2.3");
+    let parser = &first["activity"]["parsers"]["ruff_python_parser"];
+    assert_eq!(parser["role"], "python-syntax");
+    assert_eq!(parser["settings"]["target_version"], "3.11");
+    assert_eq!(parser["version"], "[TOOL_VERSION]");
+    assert_eq!(first["tools"]["panache-parser"], "[TOOL_VERSION]");
+}
+
+#[test]
 fn acceptance_workspaces_are_isolated_from_checked_in_fixtures() {
     let checked_in = fs::canonicalize(fixture_path("acceptance"))
         .expect("checked-in acceptance fixture should be canonicalizable");

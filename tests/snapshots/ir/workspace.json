@@ -163,7 +163,7 @@
                 ],
                 "parsers": {
                   "ruff": {
-                    "version": "0.0.12",
+                    "version": "[TOOL_VERSION]",
                     "role": "python-syntax",
                     "settings": {
                       "mode": "stub"
@@ -188,8 +188,8 @@
               "source": null,
               "span": null,
               "tools": {
-                "python-extractor": "0.1.0",
-                "ruff": "0.0.12"
+                "python-extractor": "[TOOL_VERSION]",
+                "ruff": "[TOOL_VERSION]"
               }
             }
           ]
@@ -332,9 +332,9 @@
                         "end": 40
                       },
                       "tools": {
-                        "jupyter-engine": "0.1.0",
-                        "jupyter-protocol": "2.0.2",
-                        "python": "3.13"
+                        "jupyter-engine": "[TOOL_VERSION]",
+                        "jupyter-protocol": "[TOOL_VERSION]",
+                        "python": "[TOOL_VERSION]"
                       }
                     }
                   ]
@@ -501,8 +501,8 @@
       "source": null,
       "span": null,
       "tools": {
-        "diplodocus": "0.1.0",
-        "panache": "0.29.0"
+        "diplodocus": "[TOOL_VERSION]",
+        "panache": "[TOOL_VERSION]"
       }
     }
   ]

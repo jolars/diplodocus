@@ -175,9 +175,49 @@ pub fn files_under(root: &Path) -> Vec<PathBuf> {
 }
 
 pub fn assert_json_golden(actual: &impl serde::Serialize, relative: impl AsRef<Path>) {
-    let serialized = serde_json::to_string_pretty(actual).expect("serialize spike observation");
+    let mut value = serde_json::to_value(actual).expect("serialize golden observation");
+    let serialized = serde_json::to_string(&value).unwrap();
     assert!(!serialized.contains(env!("CARGO_MANIFEST_DIR")));
-    assert_matches_golden(serialized, relative);
+    normalize_golden_tool_versions(&mut value);
+    Assert::new()
+        .action_env("SNAPSHOTS")
+        .eq(Data::json(value), golden(relative).is_json());
+}
+
+/// Keep golden comparisons independent of tool releases, retaining their names
+/// and parser settings. Dedicated provenance tests verify exact dependency pins.
+pub fn normalize_golden_tool_versions(value: &mut serde_json::Value) {
+    match value {
+        serde_json::Value::Object(object) => {
+            if let Some(tools) = object
+                .get_mut("tools")
+                .and_then(|value| value.as_object_mut())
+            {
+                for version in tools.values_mut().filter(|value| value.is_string()) {
+                    *version = serde_json::json!("[TOOL_VERSION]");
+                }
+            }
+            if let Some(parsers) = object
+                .get_mut("parsers")
+                .and_then(|value| value.as_object_mut())
+            {
+                for parser in parsers.values_mut() {
+                    if let Some(version) = parser.get_mut("version") {
+                        *version = serde_json::json!("[TOOL_VERSION]");
+                    }
+                }
+            }
+            for child in object.values_mut() {
+                normalize_golden_tool_versions(child);
+            }
+        }
+        serde_json::Value::Array(array) => {
+            for child in array {
+                normalize_golden_tool_versions(child);
+            }
+        }
+        _ => {}
+    }
 }
 
 pub fn normalize_build_tool_versions(tools: &mut BTreeMap<String, String>, names: &[&str]) {

@@ -12,7 +12,7 @@
       ],
       "parsers": {
         "ruff_python_parser": {
-          "version": "0.0.12",
+          "version": "[TOOL_VERSION]",
           "role": "python-syntax",
           "settings": {
             "target_version": "py310"
@@ -37,9 +37,9 @@
     "source": null,
     "span": null,
     "tools": {
-      "diplodocus": "[DIPLODOCUS_VERSION]",
-      "python": "[DIPLODOCUS_VERSION]",
-      "ruff_python_parser": "0.0.12"
+      "diplodocus": "[TOOL_VERSION]",
+      "python": "[TOOL_VERSION]",
+      "ruff_python_parser": "[TOOL_VERSION]"
     }
   },
   {
