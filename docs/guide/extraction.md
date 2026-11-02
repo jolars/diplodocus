@@ -254,12 +254,16 @@ unconditional literal includes. Declare `ecosystem: "julia"`,
 `path: "src/MyPackage.jl"`. Source directories are not valid Julia targets.
 
 Exported, `public`, and documented declarations form the maintained surface.
-Functions have a family page that includes method prose and separate pages for
-their supplied methods.
-Types retain fields and explicit constructors. Static imports and aliases
-resolve to maintained declarations. Julia Markdown docstrings supply prose,
-lists, tables, admonitions, and inert code examples. API `@ref` links can name a
-family or select a method, and they preserve their labels.
+Automatic API navigation, search, and indexes include exported and `public`
+bindings, their methods and explicit constructors, and required module
+containers. A public alias exposes its canonical item. Documentation alone does
+not advertise private helpers, and fields are excluded from automatic indexes.
+Retained private items and fields remain available through direct references.
+Functions group supplied methods and their prose on the family page with stable
+method anchors. Types retain fields and explicit constructors. Static imports
+and aliases resolve to maintained declarations. Julia Markdown docstrings supply
+prose, lists, tables, admonitions, and inert code examples. API `@ref` links can
+name a family or select a method, and they preserve their labels.
 
 During extraction, Julia loads every checkout in the configured package project
 and verifies its name, UUID, version, and entry file, even without doctests.

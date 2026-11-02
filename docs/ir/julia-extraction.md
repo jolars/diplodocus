@@ -99,6 +99,44 @@ supplied extension such as `Base.show` has a local callable family with an
 external owner; extraction does not invent the dependency's other methods or
 module declaration. Julia's implicit `Base` exports are not discovered.
 
+## Automatic API discovery
+
+Retention and discovery serve different purposes. A docstring retains a private
+declaration for direct references and authored documentation; it does not make
+that declaration part of automatic API navigation, search results, or indexes.
+Exported bindings and bindings marked with `public` are discoverable, including
+undocumented bindings. An exported or public alias makes its canonical item
+discoverable. Aliases keep the canonical identity, display name, and route;
+search includes the canonical name and retained alias spellings without
+creating duplicate results.
+
+Methods inherit discovery from their callable family, and explicit constructors
+inherit it from their type. They remain grouped on the family or type page,
+with searchable method prose and stable method anchors. An extension of an
+external generic is private unless a supplied export or `public` declaration
+exposes its binding or an alias. Mentioning a public type in a method signature
+does not make the external family discoverable.
+
+The package root and retained enclosing modules of discoverable items remain
+discoverable as containers. Explicitly exported or public modules are also
+discoverable, but their private children are not exposed automatically. Fields
+never receive automatic index entries, including fields of public types.
+Retained private items and fields keep their HTML and Markdown content, semantic
+identities, routes, and direct references. Fragment descriptors include these
+pages with `visible: false`.
+
+`Package::discoverable_items` derives this policy from retained declaration and
+ownership facts. `Item::discoverable` describes an item's intrinsic eligibility;
+the package query also accounts for method ownership and required module
+containers. Site generation applies package visibility separately and shares
+the resulting page visibility across navigation, HTML and Markdown indexes,
+search, sitemaps, and fragment descriptors. Existing snapshots acquire these
+defaults when regenerated, without a schema change.
+
+Authored `@docs`, `@autodocs`, and `@index` selections remain independent of
+automatic discovery. An authored page may embed private documentation and
+remain searchable without promoting those items into automatic API indexes.
+
 ## Families, methods, and identities
 
 Functions have a family item and separate method items. A type serves as the

@@ -71,6 +71,7 @@ fn generated_types_complete_extraction_while_check_stays_static_and_generation_i
     assert!(root.path().join("package/loaded").exists());
     let snapshot = Snapshot::load(root.path().join(".diplodocus/documentation.sqlite")).unwrap();
     let package = &snapshot.workspace().packages["demo"];
+    let discoverable = package.discoverable_items();
     for i in 1..=15 {
         let item = package
             .items
@@ -90,8 +91,10 @@ fn generated_types_complete_extraction_while_check_stays_static_and_generation_i
             .unwrap()
             .0;
         assert!(module.children.contains(id));
+        assert!(discoverable.contains(id.as_str()));
         assert!(item.source_location.is_none());
         assert_eq!(item.children.len(), 1);
+        assert!(!discoverable.contains(item.children[0].as_str()));
         assert_eq!(item.signatures.len(), 1);
         assert!(item.signatures[0].sources.is_empty());
         assert!(

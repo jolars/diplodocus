@@ -1,0 +1,4 @@
+# Authored catalog
+
+```@index
+```

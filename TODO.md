@@ -219,13 +219,13 @@ Documenter compatibility.
   references, and anchors in snapshot-backed HTML and Markdown. Document the
   supported subset and diagnose unsupported syntax; keep directive selection
   separate from automatic API discovery.
-- [ ] Define Julia API discovery for generated navigation, search, and fragment
-  consumers. `Item::discoverable` currently advertises documented private
-  helpers. Define rules for exported and `public` bindings, aliases, module
-  containers, and members of public types and callable families. Apply them
-  consistently to generated indexes and fragment visibility while preserving
-  direct references and routes to retained private items and type fields.
-  Keep these defaults independent of authored `@docs` and `@autodocs` selection.
+- [x] Define Julia API discovery for generated navigation, search, and fragment
+  consumers. `Package::discoverable_items` includes exported and `public`
+  bindings, canonical aliases, required module containers, and public callable
+  members. Keep methods and constructors grouped; omit fields and documented
+  private helpers from automatic indexes. Share page visibility across generated
+  indexes and fragments while preserving private routes and direct references.
+  Keep authored `@docs`, `@autodocs`, and `@index` selection independent.
 - [ ] Improve Julia type presentation. Fields currently receive separate,
   mostly empty pages. Consider grouping them under their owning type with stable
   anchors and consistent HTML, Markdown, navigation, and URL mapping.

@@ -286,6 +286,7 @@ impl<'a> Site<'a> {
             site.routes.insert(identity, route);
         }
         for (id, package) in &workspace.packages {
+            let discoverable = package.discoverable_items();
             let rust_owners = crate::rendering::rust::member_owners(package);
             let python_owners = if package.ecosystem == "python" {
                 crate::rendering::python::member_owners(package)
@@ -319,9 +320,7 @@ impl<'a> Site<'a> {
             }
             let r_routes = if package.ecosystem == "r" {
                 let reference = format!("{base}/reference/index.html");
-                if package.items.values().any(Item::discoverable)
-                    && !site.pages.contains_key(&reference)
-                {
+                if !discoverable.is_empty() && !site.pages.contains_key(&reference) {
                     let mut model = PageModel::empty(
                         "Reference".into(),
                         Some(id.clone()),
@@ -407,7 +406,8 @@ impl<'a> Site<'a> {
                 let mut model = PageModel::empty(
                     title,
                     Some(id.clone()),
-                    package.visibility != PackageVisibility::Hidden && item.discoverable(),
+                    package.visibility != PackageVisibility::Hidden
+                        && discoverable.contains(item_id.as_str()),
                 );
                 model.document = item.documentation.as_ref();
                 model.resolved = records.get(&identity).copied();

@@ -19,8 +19,8 @@ use crate::diagnostics::{Diagnostic, DiagnosticPath};
 use crate::documents::AuthoredFormat;
 
 use super::{
-    Document, Fingerprint, ItemAlias, ItemLanguageData, PackageMetadata, Provenance, SourceSpan,
-    SourcedSignature,
+    Document, Fingerprint, ItemAlias, ItemLanguageData, JuliaCallableRole, JuliaDeclaration,
+    JuliaVisibility, PackageMetadata, Provenance, SourceSpan, SourcedSignature,
 };
 
 /// Current portable workspace schema version.
@@ -123,6 +123,65 @@ pub struct Package {
     pub extraction_targets: BTreeMap<String, ExtractionTarget>,
     /// API items keyed by package-scoped semantic item ID.
     pub items: BTreeMap<String, Item>,
+}
+
+impl Package {
+    /// Item IDs that belong in automatic API navigation, search, and indexes.
+    ///
+    /// Julia methods inherit discovery from their family or type. The root and
+    /// enclosing modules remain discoverable as containers, without exposing
+    /// private children or fields. Aliases share their canonical item's visibility.
+    /// Package visibility is applied separately by the consumer.
+    pub fn discoverable_items(&self) -> BTreeSet<&str> {
+        let mut discoverable: BTreeSet<_> = self
+            .items
+            .iter()
+            .filter(|(_, item)| match &item.language_data {
+                Some(ItemLanguageData::Julia(data)) => match &data.declaration {
+                    JuliaDeclaration::Module { .. } if data.defining_module.is_empty() => true,
+                    JuliaDeclaration::Callable {
+                        role: JuliaCallableRole::Method { .. },
+                        ..
+                    } => false,
+                    _ => item.discoverable(),
+                },
+                _ => item.discoverable(),
+            })
+            .map(|(id, _)| id.as_str())
+            .collect();
+
+        for (id, item) in &self.items {
+            if let Some(ItemLanguageData::Julia(data)) = &item.language_data
+                && let JuliaDeclaration::Callable {
+                    role: JuliaCallableRole::Method { family, .. },
+                    ..
+                } = &data.declaration
+                && discoverable.contains(family.item.as_str())
+            {
+                discoverable.insert(id.as_str());
+            }
+        }
+
+        let modules: BTreeMap<_, _> = self
+            .items
+            .iter()
+            .filter(|(_, item)| {
+                matches!(&item.language_data, Some(ItemLanguageData::Julia(data))
+                    if matches!(data.declaration, JuliaDeclaration::Module { .. }))
+            })
+            .map(|(id, item)| (item.qualified_name.as_str(), id.as_str()))
+            .collect();
+        let mut pending: Vec<_> = discoverable.iter().copied().collect();
+        while let Some(id) = pending.pop() {
+            if let Some(ItemLanguageData::Julia(data)) = &self.items[id].language_data
+                && let Some(&module) = modules.get(data.defining_module.as_str())
+                && discoverable.insert(module)
+            {
+                pending.push(module);
+            }
+        }
+        discoverable
+    }
 }
 
 /// One authoritative source consumed by an extractor.
@@ -339,15 +398,29 @@ pub struct Item {
 }
 
 impl Item {
-    /// Whether the declaration belongs in public navigation and search.
+    /// Whether the declaration's own facts qualify it for API discovery.
+    ///
+    /// Use [`Package::discoverable_items`] for automatic indexes, which also
+    /// account for Julia method ownership and enclosing module containers.
     pub fn discoverable(&self) -> bool {
-        !matches!(&self.language_data, Some(super::ItemLanguageData::R(data)) if data.internal)
-            && !matches!(&self.language_data, Some(super::ItemLanguageData::Python(data))
-                if data.visibility == super::PythonVisibility::Private)
-            && !matches!(&self.language_data, Some(super::ItemLanguageData::Python(data))
-            if matches!(&data.declaration, super::PythonDeclaration::Callable {
-                role: super::PythonCallableRole::Overload { .. }, ..
-            }))
+        match &self.language_data {
+            Some(ItemLanguageData::R(data)) => !data.internal,
+            Some(ItemLanguageData::Python(data)) => {
+                data.visibility != super::PythonVisibility::Private
+                    && !matches!(
+                        &data.declaration,
+                        super::PythonDeclaration::Callable {
+                            role: super::PythonCallableRole::Overload { .. },
+                            ..
+                        }
+                    )
+            }
+            Some(ItemLanguageData::Julia(data)) => {
+                data.visibility != JuliaVisibility::Private
+                    && !matches!(data.declaration, JuliaDeclaration::Field { .. })
+            }
+            _ => true,
+        }
     }
 }
 

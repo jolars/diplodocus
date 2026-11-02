@@ -78,7 +78,10 @@ in `.diplodocus-content` to use the scoped syntax stylesheet. A `.dark` ancestor
 selects its dark colors. Retain the exported assets and load the KaTeX stylesheet
 when rendering math. Filter public navigation using each descriptor's
 `visible` flag and `public_name`; internal support documents are not public API
-pages.
+pages. Julia private items and fields retain their routes and content with
+`visible: false`. Public families and types include their methods at stable
+anchors; required module containers remain visible. Authored selections can
+include private documentation without changing automatic API visibility.
 
 Fragment format versions are independent of the SQLite storage contract. The
 [Eunoia experiment](https://github.com/jolars/diplodocus/tree/main/examples/eunoia)

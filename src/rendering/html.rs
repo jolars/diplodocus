@@ -821,8 +821,9 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                 ));
             }
             if let Some(item) = page.item
-                && package
-                    .is_some_and(|package| matches!(package.ecosystem.as_str(), "python" | "rust"))
+                && package.is_some_and(|package| {
+                    matches!(package.ecosystem.as_str(), "python" | "rust" | "julia")
+                })
             {
                 search_text.push('\n');
                 search_text.push_str(&item.qualified_name);
