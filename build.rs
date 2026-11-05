@@ -66,7 +66,7 @@ fn generate_cli_markdown() -> std::io::Result<()> {
 
     let command = cli::Cli::command().long_about(include_str!("docs/cli-intro.md").trim());
     let options = clapdown::Options::new()
-        .title("Commands")
+        .title("CLI Reference")
         .footer(false)
         .table_of_contents(false);
     let markdown = clapdown::render(&command, &options);

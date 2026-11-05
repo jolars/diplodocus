@@ -1,493 +1,109 @@
-# Workspace configuration
+# Configuration
 
-A `diplodocus.yaml` file uses YAML to declare the repositories, packages, and
-authored content that belong in one site. Diplodocus does not discover nearby packages or
-documents. Start from the working `examples/monorepo/diplodocus.yaml`
-configuration and adapt its paths and names. The root `diplodocus.yaml` shows an
-authored documentation site without API packages. See the [quick
-start](quick-start.md) for commands to build either site.
+Use `diplodocus.yaml` to tell Diplodocus which sources belong on your site.
+Start with the small configuration in [getting started](quick-start.md), then
+add packages and collections as your documentation grows. This guide explains
+the main choices; the [configuration reference](../reference/configuration.md)
+lists every option, default, and required field.
 
-The top-level lists are `repositories`, `packages`, `content`, `concepts`, and
-`relationships`. Field names use kebab-case. Diplodocus rejects unknown fields,
-duplicate keys, and configurations containing more than one YAML document.
-Use `--config PATH` to select another filename, including one ending in `.yml`.
-TOML configurations and singular top-level collection keys are no longer supported.
+## Name the project and its repositories
 
-## Repositories and packages
-
-Each repository path is relative to the configuration directory; it may point to
-a sibling checkout. A package names its repository and gives a path within it.
-Package metadata and extraction targets are relative to the package. Declare
-`targets: []` for a package with no API extraction.
-
-Python extraction reads source and package metadata. R reads source, package
-metadata, and checked-in Rd files. Julia reads `Project.toml`, an explicit `.jl`
-entry file, and its literal includes, with native completion when needed. Rust
-reads Cargo metadata and compiler-produced rustdoc JSON for an explicit library
-entry file. Native runtimes verify executable API examples. The [extraction
-guide](extraction.md) describes the supported inputs and limits.
-
-### Repository links
-
-Automatically discovered package pages use repository links for existing local
-targets that are not site pages or accepted downloads. For GitHub, set the
-repository's `url` to `https://github.com/OWNER/REPO`. Diplodocus constructs
-`blob` links for files and `tree` links for directories, using the declared
-`revision` or the observed Git commit. It does not guess a default branch.
-An optional `.git` suffix and trailing slash are accepted.
-
-For other hosts, supply `source-link-template`. The template must contain
-`{revision}` and `{path}`. Diplodocus encodes the revision as one URL segment
-and encodes each component of the canonical repository-relative path. An
-optional `{kind}` expands to `blob` for files or `tree` for directories;
-directory links require it in a custom template. Unknown placeholders are
-errors when the fallback is needed. Templates with `{line}` use `1`, but
-the template's fragment is replaced with the authored fragment or removed
-for a whole-file link. The resulting URL must use HTTP or HTTPS without
-credentials. For example:
+The project name appears in the site header. A repository identifies a local
+source checkout. For a project whose configuration lives at its repository
+root, use:
 
 ```yaml
+project:
+  name: "My project"
 repositories:
   - id: "core"
-    path: ".."
-    revision: "v1.2.0"
-    source-link-template: "https://forge.example/team/core/{kind}/{revision}/{path}"
+    path: "."
+    url: "https://github.com/example/my-project"
 ```
 
-Repository links retain their canonical target and repository identity in the
-snapshot. Generation derives the URL from that snapshot without accessing the
-checkout or fetching the destination.
+`path` is relative to the configuration file. It can also point to a sibling
+checkout, so one site can document packages from several repositories. Other
+declarations refer to a repository by its `id`. The optional `url` provides
+links back to your source repository.
 
-## Package overviews
+## Add pages
 
-Every declared package has a landing page with a compact metadata block.
-Set the optional `overview` package field to select a `.md` file relative to
-that package's root. An authored package index takes precedence; otherwise,
-Diplodocus uses `overview`, the package-root `README.md`, or the package
-description, in that order. Selected files remain display-only. See
-[package landing pages](authoring.md#package-landing-pages) for examples.
-
-## Authored content
-
-Each collection in `content` names a repository, source directory or file, mount,
-format, and owner. The `project` owner puts pages in project navigation; a
-package ID puts them under `/packages/<slug>/`. GFM collections read `.md`
-files. QMD collections read `.qmd` files and can include executable cells.
-Checked-in assets can live beside the pages that use them.
-
-To publish an existing file such as `CHANGELOG.md` or `CONTRIBUTING.md`, set
-`path` to that file relative to its repository:
+A content collection declares a directory or individual file to publish:
 
 ```yaml
 content:
-  - id: changelog
-    owner: project
-    repository: core
-    path: CHANGELOG.md
-    mount: project
-    format: gfm
-  - id: contributing
-    owner: project
-    repository: core
-    path: CONTRIBUTING.md
-    mount: project
-    format: gfm
-```
-
-These collections produce `/project/CHANGELOG.html` and
-`/project/CONTRIBUTING.html`. The mount remains a URL directory prefix; an empty
-mount puts the pages at the owner's documentation root. The source filename's
-case is preserved. A single-file collection reads only that page. Its links
-and images resolve from the original file's directory, which also provides
-the boundary for local assets. Links to other declared pages resolve to their
-generated URLs, including across collections. Preview watches the original
-file and its referenced assets, and snapshots retain the content for generation
-without the checkout.
-
-Single files must match their collection's format: `.md` for `gfm` or
-`documenter`, `.qmd` for `qmd`, and `.Rmd` or `.rmd` for `rmd`. Execution and navigation settings work
-as they do for directory collections.
-
-The monorepo example has one shared GFM guide and four extracted packages,
-including a compiler-backed Rust library. The root configuration mounts this GFM
-guide at `/guide/` and
-keeps its QMD example under `/examples/`. See [authored pages](authoring.md) for
-supported syntax, links, and assets.
-
-Collections include every page in the sidebar by default. For a generated catalog
-whose index already links to its entries, show only the collection's root index:
-
-```yaml
-content:
-  - id: datasets
-    owner: project
-    repository: docs
-    path: generated/datasets
-    mount: datasets
-    format: gfm
-    navigation: index
-```
-
-`navigation` accepts `all` (the default), `index` (only `index.md`, `index.qmd`,
-or `index.Rmd` at the collection root), and `none` (no sidebar links). The setting
-applies to project and package collections. It does not change page routes,
-rendered content, links, search entries, or sitemap inclusion. If the collection
-has no root index, `index` adds no sidebar links. The setting is stored in the
-snapshot, so `generate` retains it without the source checkout.
-
-To give a project collection its own navbar tab and sidebar, declare a section:
-
-```yaml
-presentation:
-  sections:
-    - label: "Reference"
-      path: "reference/index.html"
-```
-
-The path names a generated, visible project `index.html` page. All project pages
-under that directory belong to the section and leave the Guide sidebar.
-Section directories must be distinct and cannot contain the Guide landing page.
-Tabs appear after Guide in declaration order, before package tabs.
-
-### Sidebar groups and nesting
-
-Without an explicit sidebar, Diplodocus groups authored pages by their generated
-URL directories. The first directory level creates headings, and deeper pages
-appear in the same group. A directory's index page supplies the heading and
-appears first as **Overview**; otherwise, the directory name supplies the
-heading. Other pages follow in route order.
-
-For explicit ordering, nested groups, and collapsible headings, set
-`presentation.sidebar`. Its item structure follows [VitePress's sidebar
-configuration](https://vitepress.dev/reference/default-theme-sidebar):
-
-```yaml
-presentation:
-  sidebar:
-    - text: Introduction
-      collapsed: false
-      items:
-        - text: What is Diplodocus?
-          link: guide/index.html
-        - text: Quick start
-          link: guide/quick-start.html
-    - text: Reference
-      items:
-        - text: Configuration
-          link: guide/configuration.html
-        - text: Authoring
-          items:
-            - text: Overview
-              link: guide/authoring.html
-            - text: Executable examples
-              link: guide/execution.html
-```
-
-Every item needs `text` and either a `link`, nonempty `items`, or both. A group
-with a link has a clickable heading. Links name generated HTML routes relative
-to the site root, without a leading slash, even when the site uses clean URLs or
-a hosting prefix. They must identify existing, visible pages. External URLs,
-fragments, and source paths such as `guide/index.md` are not accepted.
-
-Top-level groups appear beneath headings. Nested groups indent their children
-and add a vertical guide line. Items retain declaration order and may nest up to
-six levels, including the top level. Deeper trees fail validation.
-
-Omitting `collapsed` creates an always-expanded group. Set `collapsed: false` to
-add a toggle that starts open, or `collapsed: true` to start closed. The current
-page's ancestor groups open automatically. Toggles work without JavaScript.
-During client-side navigation, Diplodocus remembers expanded and collapsed
-groups within each sidebar until the page is reloaded.
-
-### Different sidebars by directory
-
-A sidebar list applies to every page. To configure only particular directories,
-use a map instead:
-
-```yaml
-presentation:
-  sidebar:
-    /guide/:
-      - text: Introduction
-        collapsed: false
-        items:
-          - text: Overview
-            link: guide/index.html
-          - text: Quick start
-            link: guide/quick-start.html
-    /reference/:
-      - text: Reference
-        items:
-          - text: Overview
-            link: reference/index.html
-```
-
-Map keys start and end with `/` and refer to generated URL directories,
-independent of any hosting prefix. The longest matching directory wins. `/`
-provides a site-wide fallback; pages without a matching key keep automatic
-navigation. An empty list explicitly removes authored navigation for that
-sidebar. Package directories such as `/packages/python/` also work.
-
-An explicit sidebar replaces automatic authored groups and the automatic shared
-concepts group for matching pages. Package API trees still appear below it.
-Explicit links may include pages omitted by a collection's `navigation` setting;
-that setting controls automatic inclusion. Pages left out of the sidebar still
-render and remain searchable. Sidebar settings are stored in the snapshot, so
-`generate` can reproduce them without source checkouts.
-
-## Execution
-
-Execution defaults to `never` for GFM, QMD, and Documenter. To execute QMD, set
-the collection's format and declare a Jupyter engine and kernel explicitly:
-
-```yaml
-content:
-  - id: "examples"
+  - id: "guide"
     owner: "project"
-    repository: "diplodocus"
-    path: "docs/examples"
-    mount: "examples"
-    format: "qmd"
-    execution:
-      mode: "execute"
-      engine: "jupyter"
-      kernel: "python3"
-      declared-environment-inputs:
-        - "devenv.lock"
+    repository: "core"
+    path: "docs"
+    mount: "guide"
+    format: "gfm"
 ```
 
-Declared environment inputs are individual files relative to the repository.
-They contribute to provenance and execution cache keys; Diplodocus does not
-install or interpret them. Document metadata can restrict execution but cannot
-enable it when the collection forbids it. `check` never runs cells. `extract`,
-`build`, and `serve` may run authorized cells with your user permissions.
+Here, `path` is relative to the `core` repository, and `mount` is a URL prefix.
+For example, `docs/installation.md` becomes `guide/installation.html`. An empty
+mount puts pages at the site's root. The `project` owner makes this a shared
+guide; a package ID makes the collection part of that package's documentation.
 
-Documenter pages use the native Julia engine instead: declare `engine: julia`
-and `julia-project: path/to/Project.toml`, with no kernel. The selected project
-and available manifests are automatically fingerprinted alongside any declared
-environment inputs. See [native Documenter
-execution](execution.md#native-documenter-execution).
+Use `gfm` for ordinary Markdown, `qmd` for Quarto Markdown, `rmd` for R Markdown,
+or `documenter` for Julia Documenter pages. Start with GFM unless you need
+another format's features. See [writing pages](authoring.md) for examples.
 
-## Presentation
+## Add a package {#add-a-package}
 
-An optional `presentation` mapping controls the site name, logo, link preview
-image, HTML description, public URL, and footer:
+Declare the package and an explicit API extraction target. This example adds a
+Python package in the repository's `python/` directory:
 
 ```yaml
-presentation:
-  title: "Foo documentation"
-  description: "Guides and API documentation for Foo."
-  site-url: "https://example.com/docs/"
-  canonical-url-style: "file"
-  footer:
-    docs-version: "v1.0.0"
-    copyright: "© 2026 Foo contributors"
-    licenses:
-      - label: "MIT"
-        url: "https://github.com/example/foo/blob/main/LICENSE"
-    links:
-      - label: "GitHub"
-        url: "https://github.com/example/foo"
-      - label: "Report an issue"
-        url: "https://github.com/example/foo/issues"
-    built-with: true
+packages:
+  - id: "python"
+    name: "My Python package"
+    slug: "python"
+    ecosystem: "python"
+    repository: "core"
+    path: "python"
+    metadata-path: "pyproject.toml"
+    targets:
+      - id: "api"
+        extractor: "python"
+        path: "src/mypackage"
+        role: "public-api"
 ```
 
-The title defaults to `project.name`. Diplodocus uses its built-in theme, which
-follows the visitor's system color preference until they use the **Dark mode**
-toggle in the header, or in the navigation menu on phones. The browser remembers
-their light or dark choice across visits. With JavaScript disabled, the theme
-follows the system preference.
-Generated sites and portable snapshots keep the presentation metadata, so
-`generate` does not need the original configuration. Read about [portable
-snapshots](snapshots.md) before separating extraction and generation.
+The package `path` is relative to the repository. `metadata-path` and each
+target's `path` are relative to the package. The `id` identifies the package in
+links and other configuration; the `slug` places its documentation under
+`packages/python/`.
 
-### Landing page
+Use the [Python](extraction/python.md), [R](extraction/r.md),
+[Julia](extraction/julia.md), or [Rust](extraction/rust.md) guide to choose the
+metadata file, target, and required environment for your package. Declare
+`targets: []` if you want a package landing page and authored documentation
+without API extraction. Diplodocus does not discover undeclared packages or
+infer extraction targets.
 
-Add `presentation.home` to give the site root a full-width landing page. It
-shows the logo and title at the top left, beside the section links, search, and
-repository links. Documentation pages keep the branding in the same position
-at the top of the gray sidebar. Navigation keeps
-the header and sidebar mounted while page content updates. Navbar links keep
-the same positions when moving between the landing page and documentation.
+By default, a package landing page uses its `README.md`. Set `overview` to
+choose another Markdown file, or add an authored package index. See
+[package landing pages](authoring.md#package-landing-pages).
 
-```yaml
-presentation:
-  home:
-    tagline: "Four languages.\nOne home for docs."
-    description: "Guides and API references for all your packages."
-    guide: "guide/index.html"
-    actions:
-      - label: "Get started"
-        path: "guide/quick-start.html"
-      - label: "Read the guide"
-        path: "guide/index.html"
-        icon: "book-open"
-    features:
-      - title: "Shared documentation"
-        description: "Link across your packages."
-        path: "guide/authoring.html"
-```
+## Arrange and style the site
 
-Mount your guide collection at `guide` to keep it separate from the homepage.
-`guide` sets the navbar's Guide destination. Action and feature paths name
-visible generated HTML pages, including `.html`, even when the site uses clean
-URLs. Diplodocus checks these destinations and renders links using the site's
-URL settings. The first action receives the primary button style.
+Add `presentation.sidebar` to choose the order and groups in your navigation.
+Add `presentation.sections` when you want a navbar tab such as Reference.
+The [navigation guide](navigation.md) walks through both.
 
-Actions accept an optional `icon`: `arrow-right`, `book-open`, `code`, `download`,
-or `terminal`. The built-in SVG appears before the label and inherits the
-button's text color. Icons are decorative, so the label still supplies the
-accessible link name. Omitting `icon` displays only the label. Unknown icon
-names are rejected.
+Use `presentation` for the site title, logo, homepage, footer, and public URL.
+The [site appearance guide](presentation.md) provides examples you can adapt.
+Execution settings belong to each content collection; follow
+[executable examples](execution.md) when adding runnable pages.
 
-The hero uses the site title and optional logo. All text is plain text, and
-newlines in `tagline` separate heading lines. Actions and features can be
-omitted. If an authored page already occupies the site root, its body appears
-below the landing content, with its initial title supplied by the hero.
-Without `presentation.home`, the root retains the documentation layout.
+## Validate your changes
 
-### Branding
+Run `diplodocus check` after changing the configuration. It checks declarations,
+source paths, and links without running documentation examples. To use another
+configuration file, run `diplodocus check --config path/to/diplodocus.yaml`.
 
-To add a logo before the title in the leftmost navbar link, declare an image in
-one of your repositories:
-
-```yaml
-presentation:
-  logo:
-    repository: "docs"
-    path: "assets/logo.svg"
-```
-
-`repository` must match a declared `repositories` ID. `path` is relative to
-that repository's root and must name an SVG, PNG, or JPEG file. The image can
-live outside a content collection. Use forward slashes without leading slashes
-or `.` or `..` components. Symlinks must stay inside the repository.
-
-Diplodocus validates and embeds the image in the snapshot, so generation needs
-no source checkout. The logo keeps its proportions within the navbar and shares
-the title's link to the homepage. The title supplies the accessible link name.
-Omitting `presentation.logo` leaves the navbar with the title alone. `serve`
-watches the logo file and rebuilds when it changes.
-
-To use a shared image when people post links to your documentation, set
-`site-url` and declare an Open Graph image:
-
-```yaml
-presentation:
-  open-graph:
-    repository: "docs"
-    path: "assets/og.png"
-    alt: "Foo documentation, with the project mascot beside an open book."
-```
-
-The image must be a PNG or JPEG inside the declared repository. `alt` describes
-what the image contains and must not be empty. A 1200 by 630 pixel image works
-well for a wide preview. The image can live outside content collections and
-follows the same path and symlink rules as the navbar logo.
-
-Every generated HTML page receives Open Graph metadata and a large-image
-Twitter card. The preview uses that page's title and canonical URL, the site
-name and description, and the shared image with its dimensions and alt text.
-Image URLs are absolute and include any hosting prefix from `site-url`.
-Diplodocus validates and stores the image in the snapshot, so `generate` needs
-no source checkout. `serve` watches the image for changes. Omitting the mapping
-omits social preview metadata.
-
-The footer appears at the bottom of every page. All its fields are optional,
-and omitting the mapping produces no footer. `docs-version` is a free-form label
-such as `v1.0.0`, `dev`, or `main`; it identifies the documentation release or
-branch independently of individual package versions. Diplodocus does not infer
-the label or copyright notice from package metadata or the build date.
-
-`copyright` supplies the complete notice, including the symbol, years, and
-holder. `licenses` links to alternative licenses for the site's content and
-joins them with "or". Package-specific licenses remain on their package pages.
-`links` supplies project links in display order. Each license or project link
-requires a text `label` and an absolute HTTP or HTTPS `url` without credentials
-or whitespace. Footer text is escaped rather than parsed as Markdown or HTML.
-`built-with` defaults to `false`; setting it to `true` adds a linked
-"Built with Diplodocus" credit.
-
-Set `site-url` to generate `sitemap.xml`, `robots.txt`, and canonical links in
-HTML pages. It must be an absolute HTTP or HTTPS URL without credentials, query
-parameters, fragments, or whitespace. Include the hosting prefix when deploying
-under a subdirectory. Diplodocus treats the URL as a directory root, whether or
-not you include its trailing slash. Omitting `site-url` omits all three forms of
-crawler metadata.
-
-The sitemap lists the homepage, authored pages, package overviews, API pages,
-and concepts. It follows search visibility: public and internal package pages
-appear, and hidden package pages do not. Assets do not appear. Entries contain
-URLs only; Diplodocus does not infer modification dates from build times.
-
-`canonical-url-style` defaults to `file`, which retains generated filenames such
-as `/docs/index.html` and `/docs/installation.html`. Use `clean` when your host
-serves index pages at directory URLs and other HTML pages without their
-extension. For example, those URLs become `/docs/` and `/docs/installation`. The
-Diplodocus documentation uses `clean` to match Cloudflare's default static asset
-routing. This setting changes page links, search results, sitemap URLs,
-canonical links, and Open Graph page URLs. Output filenames retain their file
-paths, and the local preview serves both clean URLs and generated file paths.
-Clean URLs require matching support from your host. Ambiguous routes, such as
-`foo.html` alongside `foo/index.html`, fail generation before site publication.
-
-### Redirects after moving pages
-
-Declare old URLs in `presentation.redirects` when moving documentation:
-
-```yaml
-presentation:
-  site-url: "https://example.org/docs/"
-  canonical-url-style: "clean"
-  redirects:
-    /installation: "guide/installation.html"
-    /installation.html: "guide/installation.html"
-    /old-guide/: "guide/index.html"
-```
-
-Each key is an exact old URL path beginning with `/`, relative to the site's
-root. Omit the hosting prefix. Each value names a visible generated HTML page,
-including its `.html` extension, as navigation destinations do. Diplodocus
-resolves the destination using `canonical-url-style`. The example redirects
-`/docs/installation` and `/docs/installation.html` to `/docs/guide/installation`
-with HTTP 301 responses.
-
-Declare each old spelling you need to preserve. A trailing slash is significant.
-Sources may contain Unicode or percent-encoded characters; encode spaces as
-`%20`. Existing escapes keep their exact spelling and case to match static hosts.
-Paths that decode to the same source cannot be declared twice. Encoded separators,
-control characters, and dot segments are rejected. Wildcards, placeholders,
-external destinations, query-specific rules, and
-fragments are not supported. Targets must exist, and sources cannot replace
-current pages, their Markdown exports, or reserved output paths. These checks
-also prevent redirect chains and loops. `diplodocus check` validates
-declarations without publishing output.
-
-The standalone generator writes a deterministic `_redirects` file for
-[Cloudflare static
-assets](https://developers.cloudflare.com/workers/static-assets/redirects/) and
-[Netlify](https://docs.netlify.com/manage/routing/redirects/overview/). It
-limits the file to 2,000 rules and each rule to 1,000 characters, matching
-Cloudflare's static redirect limits. Other hosts need equivalent server rules;
-the generated file does not itself make those hosts redirect. When deploying
-under a prefix, place the rules in the host's redirect configuration at its
-publish root.
-
-`diplodocus serve` returns the same permanent redirects locally and preserves
-query strings. Preview destinations use its local root, without the public
-hosting prefix. Redirects are retained in snapshots, so `generate` recreates the
-rules without source files. They do not create duplicate pages or entries in
-search or the sitemap. Fragment generation leaves redirects to the external
-frontend and does not write `_redirects`.
-
-### Crawler discovery
-
-The generated `robots.txt` allows crawling and advertises the sitemap's full
-URL. Crawlers read this file from the host's root `/robots.txt`. For a site
-deployed under `/docs/`, add the generated `Sitemap` directive to the host's
-root robots file. A file at `/docs/robots.txt` does not provide crawler
-discovery. The first implementation writes one sitemap and rejects sites that
-exceed the sitemap protocol's URL count, file size, or URL length limits.
-
-Return to the [quick start](quick-start.md) or see the [commands](../reference/cli.md).
+Field names use kebab-case, such as `metadata-path`. Unknown fields, duplicate
+keys, and multiple YAML documents are errors. Keep only the settings your site
+needs, and look up less common options in the
+[configuration reference](../reference/configuration.md).

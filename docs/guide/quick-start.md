@@ -1,65 +1,103 @@
-# Quick start
+# Getting started
 
-Follow [installation](installation.md) to get the CLI and project checkout. Then
-build the small four-language monorepo in `examples/monorepo/`. It has four
-package APIs, a shared guide, search, and links between the Python, R, Julia,
-and Rust versions of the same function. Devenv supplies the native runtimes and
-the separate nightly Rust documentation toolchain needed to extract APIs and
-verify their examples. Authored GFM pages remain display-only.
+This tutorial builds a small documentation site with two Markdown pages. You
+need the [Diplodocus CLI](installation.md) and a text editor. You can add API
+references afterward, so no Python, R, Julia, or Rust environment is needed for
+this first site.
 
-From the Diplodocus repository root:
+## Create your project
 
-```console
-devenv shell
-task preview
+Create a directory with this structure:
+
+```text
+my-project/
+├── diplodocus.yaml
+└── docs/
+    ├── index.md
+    └── tutorial.md
 ```
 
-`task preview` builds Diplodocus and serves the example. Open the local URL
-printed in the terminal. Edit a page under `examples/monorepo/docs` to try a
-watched rebuild; successful rebuilds refresh the browser. Stop the server with
-Ctrl-C. The equivalent direct commands are:
+In `diplodocus.yaml`, declare the project and its documentation directory:
 
-```console
-cargo run --locked -- check --config examples/monorepo/diplodocus.yaml
-cargo run --locked -- build --config examples/monorepo/diplodocus.yaml --output site/monorepo
-cargo run --locked -- serve --config examples/monorepo/diplodocus.yaml --output site/monorepo --port 0 --live-reload
+```yaml
+project:
+  name: "My project"
+repositories:
+  - id: "project"
+    path: "."
+content:
+  - id: "guide"
+    owner: "project"
+    repository: "project"
+    path: "docs"
+    mount: ""
+    format: "gfm"
 ```
 
-`check` validates sources without writing a site. `build` writes the site, and
-`serve` builds and watches it. See the [command reference](../reference/cli.md) for the
-snapshot commands and defaults. Diplodocus does not install dependencies or
-kernels for a workspace. To adapt the example, read the [workspace
-configuration](configuration.md) and [authored-pages](authoring.md) guides.
+The repository path `.` means the directory containing the configuration.
+The collection reads Markdown files from `docs`. Its empty `mount` puts the
+pages at the site root.
 
-## Build Diplodocus's own documentation
+## Write two pages
 
-The root `diplodocus.yaml` builds a landing page, this guide at `/guide/`, and an executable
-Python example. The devenv shell supplies its `python3` kernel. From the
-repository root:
+Add a title, a short introduction, and a link to `docs/index.md`:
 
-```console
-cargo run --locked -- check
-cargo run --locked -- build
-cargo run --locked -- serve
+```markdown
+# My project
+
+Welcome to the documentation.
+
+Read the [tutorial](tutorial.md) to get started.
 ```
 
-The generated homepage is `site/index.html`, and the preview listens at
-`http://127.0.0.1:8000/` by default. `check` never executes cells; `build` and
-`serve` execute cells only in collections that the configuration authorizes.
+Then add `docs/tutorial.md`:
 
-## Exercise the full acceptance workspace
+```markdown
+# Tutorial
 
-The acceptance workspace at
-`tests/fixtures/acceptance/workspace/diplodocus.yaml` uses sibling core, Python,
-and R repositories, plus executable Python and R pages. The devenv shell
-supplies both kernels. This workspace is for broader validation after the small
-example and project site:
+Explain the first task your readers want to complete.
 
-```console
-cargo run --locked -- check --config tests/fixtures/acceptance/workspace/diplodocus.yaml
-cargo run --locked -- build --config tests/fixtures/acceptance/workspace/diplodocus.yaml --output site/acceptance
+Return to the [overview](index.md).
 ```
 
-Authorized cells run with your user permissions. Review a workspace's sources
-and [execution settings](execution.md) before building it. Document metadata
-cannot grant execution authority.
+Diplodocus uses the page headings as titles and turns the relative Markdown
+links into site links. Both pages appear in the sidebar and search.
+
+## Check and preview
+
+From `my-project/`, run:
+
+```console
+diplodocus check
+diplodocus serve --live-reload
+```
+
+Open the local URL printed in the terminal, normally
+`http://127.0.0.1:8000/`. Edit `docs/tutorial.md` and save it. Diplodocus
+rebuilds the site and refreshes the browser after a successful build. Stop the
+preview with Ctrl-C.
+
+## Build for publishing
+
+Run:
+
+```console
+diplodocus build
+```
+
+The generated site is in `site/`, starting at `site/index.html`. Upload that
+directory to your static host. Use `--output PATH` to choose another output
+directory. When you know the public address, set `presentation.site-url` as
+described in [site appearance](presentation.md).
+
+## Add your packages
+
+Keep this guide and add package declarations to the same configuration. Follow
+the [configuration guide](configuration.md#add-a-package), then the extraction
+guide for [Python](extraction/python.md), [R](extraction/r.md),
+[Julia](extraction/julia.md), or [Rust](extraction/rust.md).
+
+For a complete project using all four languages, see the
+[monorepo example](https://github.com/jolars/diplodocus/tree/main/examples/monorepo).
+Continue with [writing pages](authoring.md) and [navigation](navigation.md) to
+shape the guide for your readers.

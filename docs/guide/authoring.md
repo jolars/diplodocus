@@ -1,4 +1,4 @@
-# Authored pages
+# Writing pages
 
 Declare each source directory or individual file as a collection in `content`
 in [workspace configuration](configuration.md). Set `format: "gfm"` for `.md` files or
@@ -12,161 +12,28 @@ Individual files keep their basename beneath the mount, so `CHANGELOG.md` with
 `mount: project` becomes `/project/CHANGELOG.html`. Links and images resolve
 from the original source directory.
 
-## Documenter pages {#documenter-pages}
+## Write a page
 
-Use `format: documenter` for Julia Markdown `.md` pages that use Documenter
-references and API assembly directives:
-
-```yaml
-content:
-  - id: julia-manual
-    owner: julia
-    repository: core
-    path: julia/docs/src
-    mount: ""
-    format: documenter
-```
-
-The owner names a configured package, or `project`. A package-owned collection
-with an empty mount uses its authored `index.md` as the package overview.
-Diplodocus parses Julia Markdown with Fatou and retains heading levels, inline
-formatting, lists, admonitions, tables, code, and source ranges. Titles come
-from page headings. This profile does not read `docs/make.jl`.
-
-References use Documenter's link syntax. `` [`euler`](@ref) `` and
-`` [fit a diagram](@ref `Eunoia.euler`) `` resolve canonical API items.
-Legacy `[fit a diagram](@ref Eunoia.euler)` also works.
-
-`[API Reference](@ref)` infers a heading title from the visible label.
-`[gallery](@ref "A gallery of Euler and Venn diagrams")` supplies a title
-explicitly. Heading references search the containing collection, including
-other pages, and require a unique match.
-
-`## [Installation](@id install)` assigns a heading anchor. Link to it with
-`[setup](@ref install)`. Ordinary file and fragment links also work.
-
-API names use the owning package before requiring a unique workspace match.
-References can address private items and exported type fields, regardless of
-which items an assembly directive selects. Plain labels select headings;
-backticked labels select API items and fall back to headings when no API item
-matches. Explicit quoted targets select heading titles. Legacy unquoted
-references prefer a matching heading over an API item. See
-[Documenter's syntax reference](https://documenter.juliadocs.org/stable/man/syntax/)
-for the upstream forms.
-
-An `@docs` block embeds selected Julia documentation in the order you list it:
+Start with a heading and ordinary Markdown. For a GFM collection whose path is
+`docs` and mount is `guide`, save this as `docs/tutorial.md`:
 
 ````markdown
-## Model Fitting
+# Tutorial
 
-```@docs
-SLOPE.slope
-SLOPE.SlopeFit
-SLOPE.predict(::SlopeFit)
+Explain the task, then show a small example:
+
+```python
+values = [1, 2, 3]
+print(sum(values))
 ```
+
+Return to the [overview](index.md).
 ````
 
-Selectors accept binding names, maintained aliases, and exact static method
-selectors. Bare names use the owning package before requiring a unique workspace
-match. A callable name includes its supplied methods; a method selector includes
-only that method. Types include their explicit constructors. Documented private
-items and type fields may be selected explicitly. A module's self-binding, such
-as `SLOPE.SLOPE`, selects the module. Missing, ambiguous, undocumented, and
-unsupported selectors produce source-attributed errors. Selection never
-evaluates Julia expressions.
-
-An `@autodocs` block embeds documented Julia bindings from the named modules:
-
-````markdown
-```@autodocs
-Modules = [Eunoia]
-Private = false
-```
-````
-
-`Modules` is required and accepts a literal vector of distinct, optionally
-qualified module names. Each name must identify one extracted Julia module.
-Submodules must be listed explicitly. `Private` and `Public` accept literal
-booleans and both default to `true`. `Private = false` selects exported bindings
-and bindings marked with Julia's `public` keyword; `Public = false` selects
-private bindings. These filters affect embedded documentation only. Entries
-follow module order, then modules, constants, types, functions, and macros, with
-names sorted within each category. Callable entries retain their methods and
-constructor documentation. Fields remain addressable through the canonical API
-surface.
-
-Add `Pages` to filter documentation by its Julia source file:
-
-````markdown
-```@autodocs
-Modules = [SLOPE]
-Pages = ["plots.jl", "utilities.jl"]
-```
-````
-
-`Pages` accepts a literal vector of distinct, nonempty ordinary strings. Paths
-use `/`; `.` and `..` components are normalized before matching. Each string
-matches the end of a retained docstring's repository-relative source path, so
-`plots.jl` also matches `src/more_plots.jl`. The first matching suffix
-determines page order, followed by declaration category and name within each
-module. Matching methods and constructors stay grouped under their binding,
-ordered by the first matching page. Documentation from other files is excluded
-even when it belongs to the same callable family. Omitting `Pages` or supplying
-`[]` leaves documentation unfiltered. This option names Julia source files,
-rather than authored Markdown pages.
-
-An empty `@index` block lists entries assembled by either directive in the same
-collection, sorted by qualified name, and links to their page anchors. It may
-precede those blocks and includes entries assembled on other pages. An item or
-its documentation may appear in only one selection per collection, including
-overlap between a callable family and a selected method. Unsupported options,
-dynamic values, duplicate options, and unknown modules produce source-attributed
-diagnostics. The supported options are `Modules`, `Pages`, `Private`, and
-`Public` for `@autodocs`; `@docs` and `@index` take no options.
-`canonical=false`, `Order`, `Filter`, and `@meta CurrentModule` are outside this
-authoring subset.
-
-These directives control the contents of authored pages. They do not change
-which API items Diplodocus extracts or advertises in generated navigation,
-search, or fragment metadata.
-
-Snapshots retain the assembled item references, original API documents, resolved
-links, and local assets. Standalone HTML and HTML and Markdown fragments render
-them without the checkout or Julia, including when the host maps their URLs.
-Execution defaults to `never`, which displays `@example`, `@repl`, and
-`jldoctest` fences as Julia code. To execute `@example` blocks, select a
-prepared Julia environment explicitly:
-
-```yaml
-    execution:
-      mode: execute
-      engine: julia
-      julia-project: julia/docs/Project.toml
-```
-
-The project file is relative to the collection's repository. Prepare its
-dependencies before extraction; Diplodocus does not install them. Each page uses
-a fresh Julia process, and examples run in source order. `@example gallery`
-shares a module with other examples named `gallery` on that page. Unnamed
-examples each get a separate module. The page's source directory is the working
-directory. A package-owned collection verifies that its prepared environment
-loads the declared Julia checkout.
-
-Lines ending in a Julia `# hide` comment execute but disappear from the rendered
-source. Hiding every line leaves only the output. The last expression becomes
-the result, even with a trailing semicolon, and updates `ans` for later
-expressions. When it returns `nothing`, captured stdout and stderr become
-literal output instead. Explicit displays retain their order. Supported image
-results are PNG, inert SVG, and JPEG, selected in that order before a
-`text/plain` fallback. Renderers escape text and retain validated image bytes as
-local assets.
-
-This execution profile accepts an optional example session name. It rejects
-example keyword options and executable `@meta`, `@setup`, `@repl`, and `@eval`
-directives. `jldoctest` and ordinary Julia fences remain illustrative on
-authored pages. Other unsupported directives retain their diagnostics. See
-[native Documenter execution](execution.md#native-documenter-execution) for
-publication and environment evidence.
+The page appears at `guide/tutorial.html`. Code fences display source without
+running it. Run `diplodocus check` to catch broken links, then use
+`diplodocus serve --live-reload` to preview edits. See
+[executable examples](execution.md) when you want evaluated code and results.
 
 ## Package landing pages {#package-landing-pages}
 
@@ -217,25 +84,17 @@ available. If neither exists, the page contains just the package information.
 The selected content, metadata, and assets are retained in the snapshot, so
 `generate` needs no checkout or language runtime.
 
-R packages also have [automatically discovered supporting pages](extraction.md).
+R packages also have [automatically discovered supporting pages](extraction/r.md#package-landing-pages).
 Their routes are `news.html`, `authors.html`, `license.html`, and
 `community.html`; an authored page at one of these routes takes precedence.
 
 ## Navigation
 
-The navigation bar links to the shared Guide, configured project sections, and
-each visible package. Diplodocus
-uses language labels such as Python, R, Julia, and Rust when there is one visible
-package in that language; otherwise, it uses package names. The sidebar shows
-only the current section's pages, plus its API reference for package sections.
-On mobile, open **Menu** to browse documentation pages in a drawer. Use the
-hamburger menu in the top navbar to switch sections.
-
-Pages are grouped by their first URL directory within the section, including
-the collection's mount. A group's `index.md` or `index.qmd` supplies its label
-through its page title; otherwise, Diplodocus uses the directory name. For example,
-mounting R content at `vignettes` creates a Vignettes group. Empty groups are
-omitted. Shared concepts with authored documentation appear in the Guide sidebar.
+Page headings provide titles, and directories provide automatic sidebar groups.
+To choose your own order, labels, and nested groups, set
+`presentation.sidebar`. Follow the [navigation guide](navigation.md) for a
+complete example. The sidebar can differ between sections such as Guide and
+Reference without changing your source layout.
 
 ## Supported writing surface
 
@@ -244,7 +103,7 @@ tables, thematic breaks, inline `$...$` math, display `$$...$$` math, and
 display-only code fences. Equations render during the build with native KaTeX,
 including HTML and MathML, bundled CSS, and local fonts. GFM pages need no
 browser math renderer or R runtime. Escape literal dollar signs with a
-backslash or put them in code spans. All three formats support YAML front
+backslash or put them in code spans. GFM, QMD, and R Markdown support YAML front
 matter with a `layout` option. QMD pages add callouts and braced code cells.
 The supported QMD document metadata includes `title`, `audience`, `layout`, and
 execution settings. Supported cell options
@@ -322,7 +181,7 @@ Markdown exports retain every panel as ordinary sections.
 ## Links and assets
 
 Use ordinary relative links between declared pages, including links across
-collections. For example, `[Commands](../reference/cli.md)` targets the CLI
+collections. For example, `[CLI Reference](../reference/cli.md)` targets the CLI
 reference in another collection.
 Local fragment links must name an existing heading anchor. Keep images and other
 local assets inside a declared source boundary and link to them with relative
@@ -355,92 +214,25 @@ responsive variants. Generated execution output still requires validated local
 image assets.
 
 Code fences in GFM and API documentation are always display-only. R Markdown chunks execute during extraction. QMD cells run
-only when their collection explicitly authorizes execution; see [execution and
-security](execution.md) before enabling them.
+only when their collection explicitly authorizes execution; see [executable examples](execution.md) before enabling them.
+
 
 ## R Markdown articles
 
-Diplodocus discovers `.Rmd` and `.rmd` files under an R package's `vignettes/`
-directory and mounts them beneath `vignettes`. To choose a different mount,
-declare a package-owned collection with `format: "rmd"`. Explicit collections
-replace automatic discovery for the same source files.
+Use R Markdown for articles that evaluate R chunks and inline expressions with
+knitr. Diplodocus discovers package vignettes automatically, and you can also
+declare an `rmd` collection. The [R Markdown guide](authoring/rmarkdown.md)
+describes the environment, supported syntax, citations, and results.
 
-R Markdown uses native knitr execution with no kernel or execution opt-in.
-Prepare R, pkgload, evaluate, knitr, package dependencies, and prebuilt native
-extensions before building. Each article loads the supplied checkout in a fresh
-R process. Chunks and inline R share state within that article. Relative data
-paths resolve from the article's directory. `check` validates sources and links
-without loading the package or evaluating R.
+## Documenter pages {#documenter-pages}
 
-Fence options and `#|` options retain knitr semantics, including setup defaults,
-computed `eval`, hidden chunks, `results = "asis"`, `knitr::kable()`, warnings,
-messages, explicit permitted errors, and multiple captioned figures. Hidden
-chunks still execute; `eval = FALSE` remains illustrative, and computed false
-conditions retain skip outcomes. Unexpected errors stop publication. Local
-support files participate in input validation and preview watching.
-
-Console output appears separately from source code, without a shaded background,
-syntax highlighting, or a copy button. This also applies to warnings, messages,
-and permitted errors, including when `collapse = TRUE`. Source code keeps its
-usual highlighting and copy button. `results = "asis"` retains its Markdown
-formatting.
-
-Title, author, and evaluated date metadata appear in the article header.
-`bibliography` names one local BibTeX file or a list of files; optional `csl`
-names a local independent CSL style. Without a style, citations use Chicago
-author-date. Citations link to a formatted reference list beneath References.
-The CSL style and locale archive comes from Hayagriva and the upstream
-[Citation Style Language project](https://citationstyles.org/), with its
-CC BY-SA 3.0 attribution retained in the archive.
-
-Diplodocus renders the evaluated document itself. The `output` and `vignette`
-metadata do not select an rmarkdown HTML template, and neither rmarkdown nor
-Pandoc is required. This release supports R chunks, PNG figures, and static
-Markdown content. Other chunk engines, child documents, persistent knitr caches,
-interactive widgets, and README.Rmd rendering are unsupported. Runtime failures
-leave the previous snapshot and site available. A completed snapshot can be
-rendered with `generate` after removing the checkout and R.
+Use the Documenter format for Julia Markdown pages with `@ref` links, `@docs`
+and `@autodocs` API assembly, and optional native `@example` execution. The
+[Julia Documenter guide](authoring/documenter.md) describes each directive and
+shows how to select a prepared Julia environment.
 
 ## Browser components
 
-Declare a prebuilt bundle in the workspace configuration:
-
-```yaml
-components:
-  - id: explorer
-    repository: core
-    path: docs/explorer/dist
-    module: index.js
-    stylesheets: [style.css]
-```
-
-The bundle directory is relative to its declared repository. All files must be
-regular files inside that boundary; symlinks are rejected. Diplodocus retains
-the complete tree so relative module, worker, and WebAssembly URLs keep working.
-Build the bundle before running `check`, `build`, `extract`, or `serve`.
-
-Mount it in a GFM or QMD source, or an R Markdown collection with execution
-disabled:
-
-```markdown
-::: {.component name="explorer"}
-
-A static explanation, image, and links remain available without JavaScript.
-
-:::
-```
-
-Evaluated R Markdown articles do not retain component blocks.
-
-The module exports `mount(element, { signal, assetBaseUrl })`. It may return a
-cleanup function or a promise for one. Use the abort signal to stop workers,
-remove listeners, and cancel animation. Use `new URL("worker.js", import.meta.url)`
-for bundle-relative resources. Components initialize near the viewport on both
-direct visits and client-side navigation. Stylesheets should scope their rules
-to the component and use the theme's semantic CSS properties.
-
-Configuration-based builds enable their explicitly declared bundles. For a
-trusted snapshot, `generate --allow-components` enables retained bundles. Without
-that flag, generation emits only the fallback. Markdown and fragment exports
-always retain the ordinary fallback content. This capability does not enable
-raw HTML or executable notebook output.
+For custom interactive tools, see [browser components](authoring/components.md)
+in the Advanced section. Ordinary guides can use Markdown, code examples, and
+images without a browser bundle.

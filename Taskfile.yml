@@ -1,6 +1,24 @@
 version: "3"
 
 tasks:
+  docs:
+    desc: Watch the generator and serve the Diplodocus documentation.
+    cmds:
+      - >-
+        devenv shell -- watchexec --restart --shell=none
+        --stop-signal SIGTERM --stop-timeout 30s --debounce 500ms
+        --watch src
+        --watch Cargo.toml --watch Cargo.lock --watch build.rs
+        --watch rust-toolchain.toml --watch docs/cli-intro.md
+        --
+        cargo run --locked -- serve
+        --config diplodocus.yaml
+        --output "${DIPLODOCUS_SITE_OUTPUT:-site/docs}"
+        --host 127.0.0.1
+        --port "${DIPLODOCUS_SITE_PORT:-8000}"
+        --live-reload
+        {{.CLI_ARGS}}
+
   preview:
     desc: Watch the generator and serve the monorepo example.
     cmds:
