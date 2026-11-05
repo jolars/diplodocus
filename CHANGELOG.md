@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.1](https://github.com/jolars/diplodocus/compare/v0.12.0...v0.12.1) (2026-11-05)
+
+### Bug Fixes
+
+- support remote images in authored docs ([`c47ee40`](https://github.com/jolars/diplodocus/commit/c47ee40567b08af42ba9eb8cd4214a2934f254bb))
+- define Julia API discovery ([`afc23a1`](https://github.com/jolars/diplodocus/commit/afc23a11a3440984768a8abfaedc4444c96a56f4))
+
 ## [0.12.0](https://github.com/jolars/diplodocus/compare/v0.11.0...v0.12.0) (2026-10-29)
 
 ### Breaking changes
