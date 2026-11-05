@@ -623,7 +623,7 @@ dependencies = [
 
 [[package]]
 name = "diplodocus"
-version = "0.12.1"
+version = "0.13.0"
 dependencies = [
  "arity-parser",
  "base64",
