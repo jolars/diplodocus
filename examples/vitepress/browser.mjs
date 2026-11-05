@@ -75,6 +75,12 @@ try {
     if (developer.exitCode !== null) throw new Error(log);
     return generations() >= 1;
   }, "initial reference");
+  async function rebuild(change, generation, label) {
+    // Publication precedes the HMR client's reload after the VitePress restart.
+    const loaded = page.waitForEvent("load", { timeout: 60_000 });
+    await change();
+    await Promise.all([until(() => generations() >= generation, label), loaded]);
+  }
   const snapshot = join(root, ".diplodocus/documentation.sqlite");
   const initialSnapshot = await digest(snapshot);
 
@@ -111,26 +117,23 @@ try {
     "Compute the mean squared difference between observations and predictions.",
     "Updated package documentation arrives automatically.",
   );
-  await writeFile(python, updated);
-  await until(() => generations() >= 2, "docstring rebuild");
+  await rebuild(() => writeFile(python, updated), 2, "docstring rebuild");
   await expect(page.locator(".vp-doc")).toContainText("Updated package documentation arrives automatically.", { timeout: 30_000 });
 
   const extra = `${updated.replace('    "mean_squared_error",', '    "live_metric",\n    "mean_squared_error",')}\n\ndef live_metric():\n    \"\"\"A newly added public metric.\"\"\"\n    return 1\n`;
-  await writeFile(python, extra);
-  await until(() => generations() >= 3, "added API route");
+  await rebuild(() => writeFile(python, extra), 3, "added API route");
   await page.goto("/reference/python/tinystats.live_metric.html");
   await expect(page.locator(".vp-doc")).toContainText("A newly added public metric.");
-  await writeFile(python, updated);
-  await until(() => generations() >= 4, "removed API route");
+  await rebuild(() => writeFile(python, updated), 4, "removed API route");
   await assert.rejects(readFile(join(root, "docs/reference/python/tinystats.live_metric.md")), { code: "ENOENT" });
   await page.goto(apiUrl);
   await expect(page.locator(".VPSidebar")).not.toContainText("live_metric");
 
   const julia = join(root, "packages/julia/src/TinyStats.jl");
-  await writeFile(julia, (await readFile(julia, "utf8")).replace(
+  const juliaSource = await readFile(julia, "utf8");
+  await rebuild(() => writeFile(julia, juliaSource.replace(
     "Prediction metrics for numeric vectors.", "Julia documentation also updates automatically.",
-  ));
-  await until(() => generations() >= 5, "Julia source rebuild");
+  )), 5, "Julia source rebuild");
   await page.goto("/reference/julia/TinyStats.html");
   await expect(page.locator(".vp-doc")).toContainText("Julia documentation also updates automatically.");
 
@@ -145,8 +148,7 @@ try {
   await expect(page.locator(".vp-doc h1")).toContainText("Comparing predictions");
   await writeFile(guidePath, `${await readFile(guidePath, "utf8")}\nGuides keep updating during an extraction error.\n`);
   await expect(page.getByText("Guides keep updating during an extraction error.")).toBeVisible();
-  await writeFile(configPath, config);
-  await until(() => generations() >= 6, "extraction recovery");
+  await rebuild(() => writeFile(configPath, config), 6, "extraction recovery");
 
   await page.goto(apiUrl);
   await page.getByRole("button", { name: /Search/ }).click();
