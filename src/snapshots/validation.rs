@@ -282,13 +282,17 @@ impl Snapshot {
             document_references(
                 &document.document.blocks,
                 None,
-                &mut |kind, spelling, _, _| references.push((kind, spelling.to_owned())),
+                &mut |kind, spelling, _, generated| {
+                    references.push((kind, spelling.to_owned(), generated))
+                },
             );
             require(
                 references.len() == record.references.len(),
                 "reference count",
             )?;
-            for ((kind, spelling), reference) in references.into_iter().zip(&record.references) {
+            for ((kind, spelling, generated_output), reference) in
+                references.into_iter().zip(&record.references)
+            {
                 require(
                     kind == reference.kind && spelling == reference.spelling,
                     "reference association",
@@ -419,15 +423,13 @@ impl Snapshot {
                         )?;
                     }
                     ReferenceTarget::External { url } => {
-                        let parsed = url::Url::parse(url)
-                            .map_err(|_| SnapshotError::Invalid("external URL"))?;
                         require(
-                            kind == ReferenceKind::Link
-                                && *url == spelling
-                                && matches!(parsed.scheme(), "http" | "https" | "mailto")
-                                && parsed.username().is_empty()
-                                && parsed.password().is_none()
-                                && !url.chars().any(char::is_control),
+                            *url == spelling
+                                && crate::validation::external_url_allowed(
+                                    kind,
+                                    url,
+                                    generated_output,
+                                ),
                             "external URL policy",
                         )?;
                     }

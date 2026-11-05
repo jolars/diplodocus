@@ -226,7 +226,7 @@ fn missing_semantic_page_and_anchor_targets_are_errors_with_portable_context() {
 }
 
 #[test]
-fn local_assets_are_rechecked_and_remote_or_active_images_are_rejected() {
+fn local_assets_are_rechecked_and_active_images_are_rejected() {
     let root = support::acceptance_workspace();
     let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
     let resolved = resolve_workspace(&sources).unwrap();
@@ -237,12 +237,39 @@ fn local_assets_are_rechecked_and_remote_or_active_images_are_rejected() {
         "<svg xmlns='http://www.w3.org/2000/svg'><script>alert(1)</script></svg>",
     );
     assert!(resolve_workspace(&sources).is_err());
-    root.write(
-        "core/docs/getting-started/workspace.md",
-        "![remote](https://example.com/image.png)\n",
-    );
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
-    assert!(resolve_workspace(&sources).is_err());
+}
+
+#[test]
+fn authored_remote_images_require_http_urls_without_credentials() {
+    let root = support::TestWorkspace::new();
+    root.write("diplodocus.yaml", "project:\n  name: Images\nrepositories:\n  - id: docs\n    path: .\ncontent:\n  - id: guide\n    owner: project\n    repository: docs\n    path: docs\n    mount: ''\n    format: gfm\n");
+    for (url, allowed) in [
+        ("https://images.example.invalid/badge.svg", true),
+        ("http://images.example.invalid/badge", true),
+        ("mailto:badge@example.invalid", false),
+        ("ftp://images.example.invalid/badge.svg", false),
+        ("javascript:alert(1)", false),
+        ("data:image/svg+xml,example", false),
+        ("//images.example.invalid/badge.svg", false),
+        (
+            "https://user:password@images.example.invalid/badge.svg",
+            false,
+        ),
+        ("https://user@images.example.invalid/badge.svg", false),
+        ("https://images.example.invalid/%0abadge.svg", false),
+        ("https://images.example.invalid/%5cbadge.svg", false),
+    ] {
+        root.write("docs/index.md", format!("# Images\n\n![Badge]({url})\n"));
+        let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
+        let resolved = resolve_workspace(&sources);
+        assert_eq!(resolved.is_ok(), allowed, "{url}: {resolved:?}");
+        if let Ok(resolved) = resolved {
+            assert!(resolved.assets().is_empty());
+            assert!(resolved.records().iter().flat_map(|record| &record.references).any(
+                |reference| matches!(&reference.target, ReferenceTarget::External { url: target } if target == url)
+            ));
+        }
+    }
 }
 
 #[test]

@@ -10,6 +10,57 @@ use diplodocus::site::{Site, UrlMap};
 use diplodocus::snapshots::Snapshot;
 use diplodocus::validation::resolve_workspace;
 
+#[test]
+fn remote_readme_badges_survive_detached_html_and_markdown_exports() {
+    let root = support::TestWorkspace::from_fixture("python-overloads");
+    let url = "https://images.example.invalid/status/C%2FC%2B%2B?branch=main&style=flat#badge";
+    root.write(
+        "python/README.md",
+        format!("# Demo\n\n[![CI]({url})](https://example.invalid/actions)\n"),
+    );
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
+    let resolved = resolve_workspace(&sources).unwrap();
+    assert!(resolved.assets().is_empty());
+    let snapshot = Snapshot::from_sources(&sources, &resolved).unwrap();
+    let artifact = tempfile::tempdir().unwrap();
+    let database = artifact.path().join("snapshot.sqlite");
+    snapshot.publish(&database).unwrap();
+    drop((snapshot, sources, root));
+
+    let snapshot = Snapshot::load(database).unwrap();
+    let site = Site::new(&snapshot).unwrap();
+    let fragments = render_fragments(&site).unwrap();
+    let index: diplodocus::rendering::FragmentIndex =
+        serde_json::from_slice(&fragments.files()["documents.json"].bytes).unwrap();
+    let overview = index
+        .documents
+        .iter()
+        .find(|document| document.path == "packages/python/index.html")
+        .unwrap();
+    let mapped = Site::new(&snapshot)
+        .unwrap()
+        .with_url_map(UrlMap {
+            format_version: 1,
+            documents: BTreeMap::from([(overview.path.clone(), "/reference/python/".into())]),
+            assets: BTreeMap::new(),
+        })
+        .unwrap();
+    let expected = format!("<img src=\"{}\" alt=\"CI\">", url.replace('&', "&amp;"));
+    for rendered in [
+        render_site(&site).unwrap(),
+        fragments,
+        render_fragments(&mapped).unwrap(),
+    ] {
+        let html = std::str::from_utf8(&rendered.files()[&overview.path].bytes).unwrap();
+        let markdown =
+            std::str::from_utf8(&rendered.files()[&overview.markdown_path].bytes).unwrap();
+        assert!(html.contains(&expected), "{html}");
+        assert!(html.contains("<a href=\"https://example.invalid/actions\">"));
+        assert!(markdown.contains(url), "{markdown}");
+        assert!(markdown.contains("![CI]"));
+    }
+}
+
 fn snapshot(format: image::ImageFormat, home: bool) -> (Snapshot, Vec<u8>, String) {
     let root = support::TestWorkspace::new();
     let extension = if format == image::ImageFormat::Png {

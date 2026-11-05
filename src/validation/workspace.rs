@@ -18,6 +18,32 @@ mod walk;
 pub(crate) use repository_links::repository_target_url;
 pub(crate) use walk::{anchors as document_anchors, references as document_references};
 
+pub(crate) fn external_url_allowed(kind: ReferenceKind, spelling: &str, generated: bool) -> bool {
+    let Ok(decoded) = percent_encoding::percent_decode_str(spelling).decode_utf8() else {
+        return false;
+    };
+    if spelling
+        .chars()
+        .chain(decoded.chars())
+        .any(|c| c.is_control() || c == '\\')
+    {
+        return false;
+    }
+    let Ok(url) = url::Url::parse(spelling) else {
+        return false;
+    };
+    if !url.username().is_empty() || url.password().is_some() {
+        return false;
+    }
+    match kind {
+        ReferenceKind::Link => matches!(url.scheme(), "https" | "http" | "mailto"),
+        ReferenceKind::Image => {
+            !generated && matches!(url.scheme(), "https" | "http") && url.host_str().is_some()
+        }
+        ReferenceKind::Semantic => false,
+    }
+}
+
 pub(crate) fn semantic_target<'a>(
     document: &SourcedDocument,
     kind: ReferenceKind,
@@ -94,7 +120,7 @@ pub enum ReferenceTarget {
         /// Decoded fragment delegated to the repository host.
         fragment: Option<String>,
     },
-    /// An explicitly allowed external hyperlink, never fetched.
+    /// An external hyperlink or authored image, never fetched by Diplodocus.
     External {
         /// Original URL accepted by the URL parser.
         url: String,
@@ -665,12 +691,8 @@ impl Resolver<'_> {
         if decoded.chars().any(|c| c.is_control() || c == '\\') {
             return Err(invalid);
         }
-        if let Ok(url) = url::Url::parse(spelling) {
-            if kind != ReferenceKind::Image
-                && matches!(url.scheme(), "https" | "http" | "mailto")
-                && url.username().is_empty()
-                && url.password().is_none()
-            {
+        if url::Url::parse(spelling).is_ok() {
+            if external_url_allowed(kind, spelling, generated) {
                 return Ok(ReferenceTarget::External {
                     url: spelling.into(),
                 });

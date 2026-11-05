@@ -346,6 +346,14 @@ keep their existing URLs. Fragment output includes the variants and uses
 `100vw` as a conservative size for the embedding site's unknown layout.
 External HTTP links remain external.
 
+Authored images can also use HTTP or HTTPS URLs, including linked README
+badges. Diplodocus preserves these URLs in HTML and Markdown exports without
+downloading, validating, or copying the remote image bytes. Browsers load those
+images from their original hosts, so their contents can change and they require
+a network connection. Remote images do not receive local image dimensions or
+responsive variants. Generated execution output still requires validated local
+image assets.
+
 Code fences in GFM and API documentation are always display-only. R Markdown chunks execute during extraction. QMD cells run
 only when their collection explicitly authorizes execution; see [execution and
 security](execution.md) before enabling them.

@@ -11,6 +11,7 @@ pub use references::resolve_item;
 pub(crate) use references::resolve_rd_help;
 pub(crate) use relationships::r_versions_equal;
 pub(crate) use workspace::document_references;
+pub(crate) use workspace::external_url_allowed;
 pub use workspace::*;
 
 use crate::configuration::{ContentConfiguration, ExecutionConfigurationError, ExecutionMode};

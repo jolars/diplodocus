@@ -726,6 +726,50 @@ fn accepts_valid_nested_and_external_references_without_source_files() {
 }
 
 #[test]
+fn remote_image_urls_are_revalidated_without_source_files() {
+    const URL: &str = "https://images.example.invalid/badge.svg";
+    fn replace_url(value: &mut Value, url: &str) {
+        match value {
+            Value::String(value) if value == URL => *value = url.into(),
+            Value::Array(values) => values.iter_mut().for_each(|value| replace_url(value, url)),
+            Value::Object(values) => values
+                .values_mut()
+                .for_each(|value| replace_url(value, url)),
+            _ => {}
+        }
+    }
+
+    let root = support::TestWorkspace::from_fixture("python-overloads");
+    root.write("python/README.md", format!("# Demo\n\n![CI]({URL})\n"));
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
+    let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+    drop((sources, root));
+    for (url, allowed) in [
+        (URL, true),
+        (
+            "http://images.example.invalid/badge?label=C%2FC%2B%2B&style=flat",
+            true,
+        ),
+        ("mailto:badge@example.invalid", false),
+        ("ftp://images.example.invalid/badge.svg", false),
+        ("javascript:alert(1)", false),
+        ("data:image/svg+xml,example", false),
+        ("//images.example.invalid/badge.svg", false),
+        (
+            "https://user:password@images.example.invalid/badge.svg",
+            false,
+        ),
+        ("https://user@images.example.invalid/badge.svg", false),
+        ("https://images.example.invalid/\nbadge.svg", false),
+        ("https://images.example.invalid/%0abadge.svg", false),
+        ("https://images.example.invalid/%5cbadge.svg", false),
+    ] {
+        let result = changed(&snapshot, |export| replace_url(export, url));
+        assert_eq!(result.is_ok(), allowed, "{url}: {result:?}");
+    }
+}
+
+#[test]
 fn validates_asset_bytes_and_references_independently_of_record_fingerprints() {
     let snapshot = snapshot();
     for case in ["missing", "corrupt", "algorithm", "reference", "path"] {

@@ -234,8 +234,9 @@ and paths that leave the source repository remain errors, including symlinks
 that leave and reenter it. Diplodocus checks the target's existence and type
 without parsing it, reading its contents, or including it in the site.
 Fragments on repository links pass to the host without local anchor validation.
-Images still require local asset validation. Explicitly authored pages,
-including package overrides and R Markdown articles, keep the usual link rules.
+Local images still require asset validation; authored HTTP and HTTPS images
+retain their external URLs. Explicitly authored pages, including package
+overrides and R Markdown articles, keep the usual link rules.
 
 Computed names, conditional namespace directives, dynamic construction, roxygen
 generation, and unsupported Rd markup are not evaluated. Unsupported markup

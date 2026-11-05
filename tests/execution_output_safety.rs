@@ -129,6 +129,33 @@ fn html_images_are_typed_and_restore_only_from_verified_bytes() {
 }
 
 #[test]
+fn generated_remote_images_remain_rejected_in_html_and_markdown() {
+    let (_root, mut assets, context) = setup();
+    for url in [
+        "https://images.example.invalid/badge.svg",
+        "http://images.example.invalid/badge.svg",
+    ] {
+        assert!(matches!(
+            validate_html_live(
+                &format!("<img src='{url}' alt='Badge'>"),
+                &origin(),
+                &context,
+                &mut assets,
+            )
+            .unwrap(),
+            Validation::Rejected { .. }
+        ));
+        let source = format!("![Badge]({url})\n");
+        let origin = fragment_origin(&source);
+        assert!(matches!(
+            validate_markdown_live(parsed(&source, &origin), &origin, &context, &mut assets)
+                .unwrap(),
+            Validation::Rejected { .. }
+        ));
+    }
+}
+
+#[test]
 fn missing_and_escaping_images_are_fatal() {
     for target in ["missing.svg", "../../outside.svg", "/tmp/outside.svg"] {
         let (_root, mut assets, context) = setup();
