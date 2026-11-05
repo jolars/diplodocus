@@ -393,6 +393,36 @@ body:has(.documentation-drawer[open]) {
   margin: .1rem 0;
 }
 
+.item-disclosure > summary,
+.sidebar-disclosure > summary {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  list-style: none;
+}
+
+.item-disclosure > summary::-webkit-details-marker,
+.sidebar-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+
+.item-disclosure > summary::after,
+.sidebar-disclosure > summary::after {
+  content: "";
+  flex: 0 0 .35rem;
+  height: .35rem;
+  margin-inline-start: auto;
+  margin-inline-end: .2rem;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+}
+
+.item-disclosure[open] > summary::after,
+.sidebar-disclosure[open] > summary::after {
+  transform: rotate(45deg);
+}
+
 .item-disclosure > summary {
   padding: .2rem .45rem;
   cursor: pointer;
