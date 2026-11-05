@@ -167,8 +167,8 @@ and package dependencies.
 Use the local checkouts at `/home/jola/projects/Eunoia.jl` and
 `/home/jola/projects/eunoia` as the acceptance case. Keep Julia docstrings and
 guides in Eunoia.jl, and import their generated HTML and Markdown into Eunoia's
-SvelteKit site. The existing integration is documented in
-[Eunoia's Python docs guide](../eunoia/web/PYTHON-DOCS.md) and implemented in
+SvelteKit site. The existing integration is documented in [Eunoia's Python docs
+guide](../eunoia/web/PYTHON-DOCS.md) and implemented in
 [`python-docs.mjs`](../eunoia/web/scripts/python-docs.mjs).
 
 The initial trial with Diplodocus 0.11.0 and Eunoia.jl 1.0.1 extracted all 23
@@ -196,22 +196,23 @@ Documenter compatibility.
 - [x] Support fenced code nested in Julia Markdown list items. Pin
   `fatou-parser` 0.9.0 for the upstream parser fixes, preserve separate code
   tokens and exact source attribution, and retain indented code blocks.
-  Extraction and detached-fragment regressions run normally. The Eunoia recipe
-  requires both examples to render as code in HTML and Markdown, with no
-  literal fences in HTML list items.
-- [x] Support the Documenter page syntax used in Eunoia.jl's `docs/src/`.
-  Add `format: documenter` for Julia Markdown with implicit and explicit API,
+  Extraction and detached-fragment regressions run normally. The Eunoia
+  recipe requires both examples to render as code in HTML and Markdown, with
+  no literal fences in HTML list items.
+- [x] Support the Documenter page syntax used in Eunoia.jl's `docs/src/`. Add
+  `format: documenter` for Julia Markdown with implicit and explicit API,
   page, and heading `@ref` links and named heading anchors. Expand `@index`
-  and `@autodocs`, including literal `Modules` and `Private = false`.
-  Retain embedded API context and anchors in detached HTML and Markdown.
-  Verify Eunoia's three pages, 23 public bindings, and mapped local links.
-- [x] Execute Documenter `@example` blocks with prepared Julia dependencies.
-  Add `engine: julia` and an explicit `julia-project`, with page-local named
-  sessions, isolated anonymous examples, `# hide`, and native text and images.
-  Retain validated figures, execution observations, and environment fingerprints
-  in portable snapshots. The Eunoia.jl acceptance recipe verifies all 30 gallery
-  blocks and the homepage example, 30 retained figures, and detached HTML and
-  Markdown generation after removing disposable sources and configuration.
+  and `@autodocs`, including literal `Modules` and `Private = false`. Retain
+  embedded API context and anchors in detached HTML and Markdown. Verify
+  Eunoia's three pages, 23 public bindings, and mapped local links.
+- [x] Execute Documenter `@example` blocks with prepared Julia dependencies. Add
+  `engine: julia` and an explicit `julia-project`, with page-local named
+  sessions, isolated anonymous examples, `# hide`, and native text and
+  images. Retain validated figures, execution observations, and environment
+  fingerprints in portable snapshots. The Eunoia.jl acceptance recipe
+  verifies all 30 gallery blocks and the homepage example, 30 retained
+  figures, and detached HTML and Markdown generation after removing
+  disposable sources and configuration.
 - [x] Extend the supported Documenter authoring subset for existing Julia pages.
   Add explicit `@docs` selection and the `@autodocs` `Pages` filter, using a
   representative page such as SLOPE's grouped API reference as an acceptance
@@ -221,43 +222,47 @@ Documenter compatibility.
   separate from automatic API discovery.
 - [x] Define Julia API discovery for generated navigation, search, and fragment
   consumers. `Package::discoverable_items` includes exported and `public`
-  bindings, canonical aliases, required module containers, and public callable
-  members. Keep methods and constructors grouped; omit fields and documented
-  private helpers from automatic indexes. Share page visibility across generated
-  indexes and fragments while preserving private routes and direct references.
-  Keep authored `@docs`, `@autodocs`, and `@index` selection independent.
-- [ ] Improve Julia type presentation. Fields currently receive separate,
-  mostly empty pages. Consider grouping them under their owning type with stable
+  bindings, canonical aliases, required module containers, and public
+  callable members. Keep methods and constructors grouped; omit fields and
+  documented private helpers from automatic indexes. Share page visibility
+  across generated indexes and fragments while preserving private routes and
+  direct references. Keep authored `@docs`, `@autodocs`, and `@index`
+  selection independent.
+- [ ] Improve Julia type presentation. Fields currently receive separate, mostly
+  empty pages. Consider grouping them under their owning type with stable
   anchors and consistent HTML, Markdown, navigation, and URL mapping.
 - [ ] Define support for explicitly supplied Julia package extensions. The
-  current include traversal misses `ext/EunoiaMakieExt.jl`, so plotting pages
-  show core fallback method signatures instead of the extension implementations.
-  Preserve the existing generic documentation and avoid inventing methods from
-  unavailable dependencies.
+  current include traversal misses `ext/EunoiaMakieExt.jl`, so plotting
+  pages show core fallback method signatures instead of the extension
+  implementations. Preserve the existing generic documentation and avoid
+  inventing methods from unavailable dependencies.
 - [ ] Resolve the package-overview choice. Automatic README ingestion rejects
-  Eunoia.jl's remote badge images. An authored package index can replace that
-  fallback; determine whether remote-image support also belongs in Diplodocus.
+  Eunoia.jl's remote badge images. An authored package index can replace
+  that fallback; determine whether remote-image support also belongs in
+  Diplodocus.
 
 ### Eunoia integration follow-up
 
 - [ ] Upgrade the existing Python integration when advancing the Diplodocus pin.
-  Eunoia pins 0.2.0 and generates TOML with singular collection keys; current
-  Diplodocus requires YAML with plural keys. Regenerate snapshots as part of the
-  upgrade: the existing Python snapshot uses IR version 5, while 0.11.0 uses
-  version 9 and rejects that snapshot.
+  Eunoia pins 0.2.0 and generates TOML with singular collection keys;
+  current Diplodocus requires YAML with plural keys. Regenerate snapshots as
+  part of the upgrade: the existing Python snapshot uses IR version 5, while
+  0.11.0 uses version 9 and rejects that snapshot.
 - [ ] Prepare both package environments in local builds and CI. Fresh Python
   extraction now imports the checkout and fails without the built
-  `eunoia._eunoia` extension. Julia extraction requires its package dependencies
-  and native library; gallery execution additionally needs the environment in
-  Eunoia.jl's `docs/Project.toml`, including CairoMakie. Supply the native library
-  through a matching artifact or `EUNOIA_CAPI_LIB`.
+  `eunoia._eunoia` extension. Julia extraction requires its package
+  dependencies and native library; gallery execution additionally needs the
+  environment in Eunoia.jl's `docs/Project.toml`, including CairoMakie.
+  Supply the native library through a matching artifact or
+  `EUNOIA_CAPI_LIB`.
 - [ ] Generalize Eunoia's Python generator for pinned Julia sources, snapshots,
   assets, and routes. Its API selection currently assumes top-level Python
   names; support Julia's `!` names and type/member relationships. Preserve
-  generated-directory ownership, atomic replacement, caching, and link checks.
-  Add Julia navigation and update the reference overview, quickstart links, and
-  `web/static/llms.txt`. Existing concrete-route sitemap discovery and
-  `reference.md` export can include the generated pages automatically.
+  generated-directory ownership, atomic replacement, caching, and link
+  checks. Add Julia navigation and update the reference overview, quickstart
+  links, and `web/static/llms.txt`. Existing concrete-route sitemap
+  discovery and `reference.md` export can include the generated pages
+  automatically.
 
 ## Scope held for later
 
