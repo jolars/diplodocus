@@ -310,11 +310,14 @@ fn detached_julia_indexes_agree_and_preserve_private_routes_and_method_anchors()
     .unwrap();
     for path in [&fit.path, &fit.markdown_path] {
         let body = text(&mapped, path);
-        for name in ["Demo.helper", "Demo.Shape.value"] {
-            let private = document(&index, name);
-            assert!(!private.visible);
-            assert!(body.contains(&urls.documents[&private.path]), "{body}");
-        }
+        let private = document(&index, "Demo.helper");
+        assert!(!private.visible);
+        assert!(body.contains(&urls.documents[&private.path]), "{body}");
+        let shape = document(&index, "Demo.Shape");
+        assert!(
+            body.contains(&format!("{}#field-value", urls.documents[&shape.path])),
+            "{body}"
+        );
         assert!(
             body.contains(&format!("{}#method-", urls.documents[&fit.path])),
             "{body}"
@@ -352,7 +355,16 @@ fn authored_private_selections_remain_visible_without_promoting_api_items() {
         }
     }
     for name in ["Demo.helper", "Demo.Shape.value", "Demo.Hidden.secret"] {
-        assert!(!document(&index, name).visible);
+        if name == "Demo.Shape.value" {
+            assert!(
+                !index
+                    .documents
+                    .iter()
+                    .any(|document| document.qualified_name.as_deref() == Some(name))
+            );
+        } else {
+            assert!(!document(&index, name).visible);
+        }
         for path in [&catalog.path, &catalog.markdown_path] {
             assert!(text(&fragments, path).contains(name));
         }
@@ -365,4 +377,189 @@ fn authored_private_selections_remain_visible_without_promoting_api_items() {
         .unwrap();
     assert_eq!(entry["api"], false);
     assert!(entry["text"].as_str().unwrap().contains("Demo.helper"));
+}
+
+#[test]
+fn detached_julia_fields_share_type_pages_anchors_and_mapped_links() {
+    let root = support::TestWorkspace::from_fixture("julia-discovery");
+    root.remove("docs/api.md");
+    root.remove("docs/catalog.md");
+    root.write(
+        "src/Demo.jl",
+        r#"module Demo
+export Shape, Other, Empty
+
+"A shape with [stored data](@ref Demo.Shape.value)."
+mutable struct Shape
+    """
+    The first field stores observations.
+
+    ## Details
+
+    See [stored data](@ref Demo.Shape.value), [other data](@ref Demo.Other.value), and [details](#details).
+    """
+    zeta::Vector{Float64}
+    "The stored value."
+    value::Int
+    untyped
+    Shape(zeta, value, untyped) = new(zeta, value, untyped)
+end
+
+struct Other
+    "Another stored value."
+    value::Float64
+end
+
+abstract type Empty end
+
+"A documented private type."
+struct Private
+    "A private field."
+    value::Int
+end
+end
+"#,
+    );
+    let original = snapshot(&root);
+    let artifact = tempfile::tempdir().unwrap();
+    let database = artifact.path().join("documentation.sqlite");
+    original.publish(&database).unwrap();
+    drop((original, root));
+
+    let snapshot = Snapshot::load(database).unwrap();
+    let site = Site::new(&snapshot).unwrap();
+    let fragments = render_fragments(&site).unwrap();
+    let standalone = render_site(&site).unwrap();
+    let index: FragmentIndex =
+        serde_json::from_slice(&fragments.files()["documents.json"].bytes).unwrap();
+    let package = &snapshot.workspace().packages["demo"];
+    let shape = document(&index, "Demo.Shape");
+    let other = document(&index, "Demo.Other");
+    let private = document(&index, "Demo.Private");
+    assert!(shape.visible);
+    assert!(!private.visible);
+    for (owner, name, anchor) in [
+        (shape, "Demo.Shape.zeta", "field-zeta"),
+        (shape, "Demo.Shape.value", "field-value"),
+        (shape, "Demo.Shape.untyped", "field-untyped"),
+        (other, "Demo.Other.value", "field-value"),
+        (private, "Demo.Private.value", "field-value"),
+    ] {
+        let (id, _) = package
+            .items
+            .iter()
+            .find(|(_, item)| item.qualified_name == name)
+            .unwrap();
+        let identity = DocumentIdentity::Item {
+            item: diplodocus::ir::ItemReference {
+                package: "demo".into(),
+                item: id.clone(),
+            },
+        };
+        assert!(owner.identities.contains(&identity));
+        assert!(
+            owner
+                .headings
+                .iter()
+                .any(|(level, id, _)| *level == 3 && id == anchor)
+        );
+        assert!(
+            !index
+                .documents
+                .iter()
+                .any(|document| document.qualified_name.as_deref() == Some(name))
+        );
+        let old_path = format!(
+            "packages/julia/reference/{}.html",
+            diplodocus::provenance::fingerprint_bytes(id.as_bytes()).value
+        );
+        assert!(!standalone.files().contains_key(&old_path));
+        for rendered in [&fragments, &standalone] {
+            for path in [&owner.path, &owner.markdown_path] {
+                assert!(text(rendered, path).contains(&format!("id=\"{anchor}\"")));
+            }
+        }
+    }
+    let headings: Vec<_> = shape
+        .headings
+        .iter()
+        .map(|(_, id, title)| (id.as_str(), title.as_str()))
+        .collect();
+    assert!(headings.contains(&("field-value", "value::Int")));
+    assert!(
+        headings.contains(&("field-zeta-details", "Details")),
+        "{headings:?}"
+    );
+    for path in [&shape.path, &shape.markdown_path] {
+        let body = text(&fragments, path);
+        assert!(body.find("id=\"field-zeta\"").unwrap() < body.find("id=\"field-value\"").unwrap());
+        assert!(
+            body.find("id=\"field-value\"").unwrap() < body.find("id=\"field-untyped\"").unwrap()
+        );
+        assert!(body.contains("The stored value."));
+        assert!(body.contains("id=\"methods\""));
+        assert!(body.contains("#field-zeta-details"));
+    }
+    let empty = document(&index, "Demo.Empty");
+    assert!(!text(&fragments, &empty.path).contains("id=\"fields\""));
+    let search: Vec<serde_json::Value> =
+        serde_json::from_slice(&fragments.files()["assets/search.json"].bytes).unwrap();
+    let entry = search
+        .iter()
+        .find(|entry| entry["title"] == "Demo.Shape")
+        .unwrap();
+    assert!(
+        entry["text"]
+            .as_str()
+            .unwrap()
+            .contains("The first field stores")
+    );
+    assert!(
+        entry["text"]
+            .as_str()
+            .unwrap()
+            .contains("Demo.Shape.untyped")
+    );
+    assert!(
+        !search
+            .iter()
+            .any(|entry| entry["title"] == "Demo.Shape.value")
+    );
+    let navigation = text(&standalone, &shape.path)
+        .split("aria-label=\"API reference\"")
+        .nth(1)
+        .unwrap()
+        .split("</section>")
+        .next()
+        .unwrap();
+    assert!(!navigation.contains("#field-"));
+
+    let urls = UrlMap {
+        format_version: 1,
+        documents: index
+            .documents
+            .iter()
+            .enumerate()
+            .map(|(i, document)| (document.path.clone(), format!("/host/{i}/")))
+            .collect(),
+        assets: Default::default(),
+    };
+    let mapped = render_fragments(
+        &Site::new(&snapshot)
+            .unwrap()
+            .with_url_map(urls.clone())
+            .unwrap(),
+    )
+    .unwrap();
+    for path in [&shape.path, &shape.markdown_path] {
+        let body = text(&mapped, path);
+        assert!(
+            body.contains(&format!("{}#field-value", urls.documents[&shape.path])),
+            "{body}"
+        );
+        assert!(
+            body.contains(&format!("{}#field-value", urls.documents[&other.path])),
+            "{body}"
+        );
+    }
 }

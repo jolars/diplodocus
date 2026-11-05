@@ -91,6 +91,7 @@ pub(crate) struct PageModel<'a> {
     pub public_name: Option<String>,
     pub python_class: Option<crate::rendering::python::PythonClass<'a>>,
     pub rust_page: Option<crate::rendering::rust::RustPage<'a>>,
+    pub julia_sections: Vec<crate::rendering::julia::JuliaSection>,
 }
 impl PageModel<'_> {
     pub(crate) fn has_full_layout(&self) -> bool {
@@ -119,6 +120,7 @@ impl PageModel<'_> {
             public_name: None,
             python_class: None,
             rust_page: None,
+            julia_sections: Vec::new(),
         }
     }
 }
@@ -288,6 +290,7 @@ impl<'a> Site<'a> {
         for (id, package) in &workspace.packages {
             let discoverable = package.discoverable_items();
             let rust_owners = crate::rendering::rust::member_owners(package);
+            let julia_field_owners = crate::rendering::julia::field_owners(package);
             let python_owners = if package.ecosystem == "python" {
                 crate::rendering::python::member_owners(package)
             } else {
@@ -419,6 +422,26 @@ impl<'a> Site<'a> {
                 } else {
                     item.qualified_name.clone()
                 });
+                model.julia_sections = crate::rendering::julia::sections(id, package, item);
+                if let Some(owner) = julia_field_owners.get(item_id) {
+                    let reference = ItemReference {
+                        package: id.clone(),
+                        item: item_id.clone(),
+                    };
+                    let anchor = crate::rendering::julia::field_anchor(item);
+                    site.routes.insert(
+                        identity,
+                        format!(
+                            "{base}/reference/{}.html",
+                            crate::provenance::fingerprint_bytes(owner.as_bytes()).value
+                        ),
+                    );
+                    site.overload_anchors
+                        .insert(reference.clone(), anchor.clone());
+                    model.anchor_prefix = Some(anchor);
+                    site.embedded_pages.insert(reference, model);
+                    continue;
+                }
                 if package.ecosystem == "python" {
                     model.python_class =
                         crate::rendering::python::class(id, package, item_id, &records);

@@ -228,9 +228,10 @@ Documenter compatibility.
   across generated indexes and fragments while preserving private routes and
   direct references. Keep authored `@docs`, `@autodocs`, and `@index`
   selection independent.
-- [ ] Improve Julia type presentation. Fields currently receive separate, mostly
-  empty pages. Consider grouping them under their owning type with stable
-  anchors and consistent HTML, Markdown, navigation, and URL mapping.
+- [x] Improve Julia type presentation. Group fields under their owning type in
+  declaration order, with stable anchors, annotations, and documentation.
+  Keep HTML, Markdown, navigation, search, fragment identities, and host URL
+  mapping consistent without separate field pages.
 - [ ] Define support for explicitly supplied Julia package extensions. The
   current include traversal misses `ext/EunoiaMakieExt.jl`, so plotting
   pages show core fallback method signatures instead of the extension

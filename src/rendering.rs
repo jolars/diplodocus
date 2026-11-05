@@ -6,6 +6,7 @@ mod highlighting;
 mod home;
 mod html;
 mod images;
+pub(crate) mod julia;
 mod katex_assets;
 mod markdown;
 mod math;

@@ -1602,6 +1602,35 @@ test("compact page TOC overlays content and dismisses after use", async ({ page 
   }
 });
 
+test("Julia types group fields and constructors on one page", async ({ page }, info) => {
+  await page.goto("/");
+  await page.getByRole("searchbox").fill("TinyStats.Sample.values");
+  const results = page.locator("#search-results");
+  await expect(results.getByRole("link", {
+    name: "TinyStats.Sample.values · Tiny Stats for Julia", exact: true,
+  })).toHaveCount(0);
+  await results.getByRole("link", {
+    name: "TinyStats.Sample · Tiny Stats for Julia", exact: true,
+  }).click();
+  const main = page.getByRole("main");
+  await expect(main.getByRole("heading", { level: 1 })).toHaveText("TinyStats.Sample");
+  await expect(main.getByRole("heading", { level: 2 })).toHaveText(["Fields", "Methods"]);
+  await expect(main.locator('section[id^="field-"] h3')).toHaveText([
+    "values::Vector{Float64}", "weight::Float64", "label",
+  ]);
+  await expect(main.locator("#field-values")).toContainText("The observations in this sample.");
+  await expect(main.locator('section[id^="method-"]')).toHaveCount(1);
+  await fitsViewport(page);
+  await capture(page, info, "julia-type");
+  await main.getByRole("link", { name: "stored values", exact: true }).click();
+  await expect(page).toHaveURL(/#field-values$/);
+  await expect(main.locator("#field-values")).toBeInViewport();
+  await openNavigation(page, info);
+  const reference = page.getByRole("group", { name: "API reference", exact: true });
+  await expect(reference.getByRole("link", { name: "Sample", exact: true })).toHaveCount(1);
+  await expect(reference.getByRole("link", { name: "values", exact: true })).toHaveCount(0);
+});
+
 test("Julia functions include methods on one page", async ({ page }, info) => {
   await page.goto("/guides/comparing-predictions.html");
   await page.getByRole("main").getByRole("link", { name: "juliastats::TinyStats.mean_squared_error", exact: true }).click();

@@ -132,8 +132,8 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
         let page_math = page
             .document
             .is_some_and(|document| super::math::contains_math(&document.document.blocks))
-            || page.item.is_some_and(|item| {
-                julia_members(item).iter().any(|member| {
+            || page.julia_sections.iter().any(|section| {
+                section.members.iter().any(|member| {
                     site.workspace.packages[&member.package].items[&member.item]
                         .documentation
                         .as_ref()
@@ -540,70 +540,47 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
             };
             html.push_str(&renderer.blocks(blocks)?);
         }
-        if let Some(item) = page.item {
-            let members = julia_members(item);
-            if !members.is_empty() {
-                html.push_str("<h2 id=\"methods\">Methods</h2>");
-                renderer
-                    .headings
-                    .push((2, "methods".into(), "Methods".into()));
-                for member in members {
-                    let method = &site.workspace.packages[&member.package].items[&member.item];
-                    let method_page = &site.embedded_pages[member];
-                    let anchor = &site.overload_anchors[member];
-                    renderer.headings.push((
-                        3,
-                        anchor.clone(),
-                        method
-                            .signatures
-                            .first()
-                            .map(|s| {
-                                super::signatures::signature(&method.name, &s.signature, "julia")
-                            })
-                            .unwrap_or_else(|| method.name.clone()),
-                    ));
-                    let title = method
-                        .signatures
-                        .first()
-                        .map(|s| {
-                            super::signatures::signature_for_site(
-                                site,
-                                &method.name,
-                                &s.signature,
-                                "julia",
-                            )
-                        })
-                        .unwrap_or_else(|| method.name.clone());
-                    write!(
-                        html,
-                        "<section id=\"{}\"><h3><code>{}</code></h3>",
-                        escape(anchor),
-                        escape(&title)
-                    )
-                    .unwrap();
-                    if let Some(document) = &method.documentation {
-                        // Method references keep their own resolution context on the family page.
-                        let mut method_renderer = Renderer {
-                            images: &images,
-                            standalone,
-                            site,
-                            page: method_page,
-                            resolved: method_page.resolved,
-                            route,
-                            document_route: route,
-                            math_context: &math_context,
-                            highlighter: &highlighter,
-                            cell: 0,
-                            headings: Vec::new(),
-                            identifiers: BTreeSet::new(),
-                            document_navigation: true,
-                            heading_offset: 2,
-                        };
-                        html.push_str(&method_renderer.blocks(&document.document.blocks)?);
-                        renderer.headings.extend(method_renderer.headings);
-                    }
-                    html.push_str("</section>");
+        for section in &page.julia_sections {
+            write!(html, "<h2 id=\"{}\">{}</h2>", section.anchor, section.title).unwrap();
+            renderer
+                .headings
+                .push((2, section.anchor.into(), section.title.into()));
+            for member in &section.members {
+                let item = &site.workspace.packages[&member.package].items[&member.item];
+                let member_page = &site.embedded_pages[member];
+                let anchor = &site.overload_anchors[member];
+                let title = super::julia::member_title(item);
+                renderer.headings.push((3, anchor.clone(), title.clone()));
+                write!(
+                    html,
+                    "<section id=\"{}\"><h3><code>{}</code></h3>",
+                    escape(anchor),
+                    escape(&title)
+                )
+                .unwrap();
+                html.push_str(&super::r_topics::source_links(site, item));
+                if let Some(document) = &item.documentation {
+                    // Members keep their own resolution context on the owning page.
+                    let mut member_renderer = Renderer {
+                        images: &images,
+                        standalone,
+                        site,
+                        page: member_page,
+                        resolved: member_page.resolved,
+                        route,
+                        document_route: route,
+                        math_context: &math_context,
+                        highlighter: &highlighter,
+                        cell: 0,
+                        headings: Vec::new(),
+                        identifiers: BTreeSet::new(),
+                        document_navigation: true,
+                        heading_offset: 2,
+                    };
+                    html.push_str(&member_renderer.blocks(&document.document.blocks)?);
+                    renderer.headings.extend(member_renderer.headings);
                 }
+                html.push_str("</section>");
             }
         }
         html.push_str(&renderer.python_members()?);
@@ -745,9 +722,12 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                     write!(search_text, "\n{}\n{}", feature.title, feature.description).unwrap();
                 }
             }
-            if let Some(item) = page.item {
-                for member in julia_members(item) {
-                    if let Some(raw) = site.workspace.packages[&member.package].items[&member.item]
+            for section in &page.julia_sections {
+                for member in &section.members {
+                    let item = &site.workspace.packages[&member.package].items[&member.item];
+                    search_text.push('\n');
+                    search_text.push_str(&item.qualified_name);
+                    if let Some(raw) = item
                         .documentation
                         .as_ref()
                         .and_then(|d| d.raw_source.as_deref())
@@ -961,24 +941,10 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
     })
 }
 
-pub(super) fn julia_members(item: &Item) -> &[ItemReference] {
-    match &item.language_data {
-        Some(ItemLanguageData::Julia(data)) => match &data.declaration {
-            JuliaDeclaration::Callable {
-                role: JuliaCallableRole::Family { methods },
-                ..
-            } => methods,
-            JuliaDeclaration::Type { constructors, .. } => constructors,
-            _ => &[],
-        },
-        _ => &[],
-    }
-}
-
 pub(super) fn julia_documentation_signatures(item: &Item) -> &[crate::ir::SourcedSignature] {
     // Families aggregate their methods' signatures, which are presented with
     // each selected method instead of repeating them above the documentation.
-    if item.kind == crate::ir::ItemKind::Function && !julia_members(item).is_empty() {
+    if item.kind == crate::ir::ItemKind::Function && !super::julia::methods(item).is_empty() {
         &[]
     } else {
         &item.signatures

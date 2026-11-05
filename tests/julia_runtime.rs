@@ -122,6 +122,26 @@ fn generated_types_complete_extraction_while_check_stays_static_and_generation_i
         "{}",
         String::from_utf8_lossy(&generated.stderr)
     );
+    let search: Vec<serde_json::Value> =
+        serde_json::from_slice(&fs::read(root.path().join("site/assets/search.json")).unwrap())
+            .unwrap();
+    let error = search
+        .iter()
+        .find(|entry| entry["title"] == "Demo.Error1")
+        .unwrap();
+    let html = fs::read_to_string(
+        root.path()
+            .join("site")
+            .join(error["path"].as_str().unwrap()),
+    )
+    .unwrap();
+    assert!(html.contains("id=\"field-message\""));
+    assert!(html.contains("message::String"));
+    assert!(
+        !search
+            .iter()
+            .any(|entry| entry["title"] == "Demo.Error1.message")
+    );
 }
 
 #[test]

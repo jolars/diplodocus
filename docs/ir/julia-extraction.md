@@ -121,9 +121,16 @@ The package root and retained enclosing modules of discoverable items remain
 discoverable as containers. Explicitly exported or public modules are also
 discoverable, but their private children are not exposed automatically. Fields
 never receive automatic index entries, including fields of public types.
-Retained private items and fields keep their HTML and Markdown content, semantic
-identities, routes, and direct references. Fragment descriptors include these
-pages with `visible: false`.
+Fields appear in declaration order in a Fields section on their owning type's
+page, with annotations, retained documentation, and stable `field-<name>` anchors.
+HTML and Markdown use the same grouping. Field references
+and host URL maps target the type page and field anchor; separate field pages
+are not generated. The type's fragment descriptor retains field identities and
+headings, and its search entry includes field names and documentation.
+
+Retained private items keep their HTML and Markdown content, semantic identities,
+routes, and direct references. Fragment descriptors include private pages with
+`visible: false`, including private types with their fields.
 
 `Package::discoverable_items` derives this policy from retained declaration and
 ownership facts. `Item::discoverable` describes an item's intrinsic eligibility;

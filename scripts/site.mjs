@@ -75,6 +75,10 @@ if (mode === "serve-test") {
       .replace('__all__ = [', '__all__ = ["fetch_data", "Reader",');
     writeFileSync(join(workspace, "python/src/tinystats/_api.py"), overloadSource);
     writeFileSync(pythonEntry, `${pythonSource}\nfrom ._api import Reader, fetch_data\n`);
+    const juliaEntry = join(workspace, "julia/src/TinyStats.jl");
+    const juliaTypes = readFileSync(join(root, "tests/fixtures/julia-types.jl"), "utf8");
+    writeFileSync(juliaEntry, readFileSync(juliaEntry, "utf8")
+      .replace(/\nend\s*$/, `\n${juliaTypes}\nend\n`));
     cpSync(join(root, "tests/fixtures/r-vignettes"), join(workspace, "r/vignettes"), { recursive: true });
     cpSync(join(root, "tests/fixtures/code-output.Rmd"), join(workspace, "r/vignettes/code-output.Rmd"));
     mkdirSync(join(workspace, "console-output"));

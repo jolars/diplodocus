@@ -201,43 +201,28 @@ pub(super) fn page(
         let start = usize::from(package_overview && authored_title);
         output.push_str(&renderer.blocks(&document.document.blocks[start..])?);
     }
-    if let Some(item) = page.item {
-        let members = super::html::julia_members(item);
-        if !members.is_empty() {
-            anchor(&mut output, "methods");
-            output.push_str("## Methods\n\n");
-        }
-        for member in members {
-            let method_page = &site.embedded_pages[member];
-            let method = method_page.item.expect("embedded Julia method");
+    for section in &page.julia_sections {
+        anchor(&mut output, section.anchor);
+        writeln!(output, "## {}\n", section.title).unwrap();
+        for member in &section.members {
+            let member_page = &site.embedded_pages[member];
+            let item = member_page.item.expect("embedded Julia member");
             anchor(&mut output, &site.overload_anchors[member]);
-            for signature in &method.signatures {
-                writeln!(
-                    output,
-                    "### {}\n",
-                    code(&super::signatures::signature_for_site(
-                        site,
-                        &method.name,
-                        &signature.signature,
-                        "julia"
-                    ))
-                )
-                .unwrap();
-            }
-            output.push_str(&sources(site, method));
-            if let Some(document) = method_page.document {
-                let mut method_renderer = Markdown {
+            writeln!(output, "### {}\n", code(&super::julia::member_title(item))).unwrap();
+            output.push_str(&sources(site, item));
+            if let Some(document) = member_page.document {
+                let mut member_renderer = Markdown {
                     site,
                     route,
                     document_route: route,
-                    page: method_page,
-                    resolved: method_page.resolved,
+                    page: member_page,
+                    resolved: member_page.resolved,
                     identifiers: BTreeSet::new(),
                     headings: true,
                     heading_offset: 2,
                     cell: 0,
                 };
-                output.push_str(&method_renderer.blocks(&document.document.blocks)?);
+                output.push_str(&member_renderer.blocks(&document.document.blocks)?);
             }
         }
     }
