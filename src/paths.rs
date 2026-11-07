@@ -192,6 +192,8 @@ pub struct ResolvedTargetPath {
     pub id: String,
     /// Canonical absolute file or directory, contained in its package.
     pub path: PathBuf,
+    /// Canonical explicitly supplied Julia extension entry files inside the package.
+    pub julia_extensions: Vec<PathBuf>,
 }
 
 /// An authored collection's root and explicitly declared environment files.
@@ -445,6 +447,37 @@ pub fn resolve_workspace_paths(
             .transpose()?;
         let mut targets = Vec::with_capacity(package.targets.len());
         for (index, target) in package.targets.iter().enumerate() {
+            let mut julia_extensions = Vec::new();
+            if let Some(settings) = &target.julia {
+                for (extension_index, declared) in settings.extensions.iter().enumerate() {
+                    let extension_field =
+                        format!("{field}.targets[{index}].julia.extensions[{extension_index}]");
+                    if declared
+                        .extension()
+                        .is_none_or(|extension| extension != "jl")
+                    {
+                        return Err(resolver.error(
+                            &extension_field,
+                            PathResolutionErrorKind::InvalidPath {
+                                path: declared.clone(),
+                                reason: "Julia extension entries must be .jl files",
+                            },
+                        ));
+                    }
+                    let resolved =
+                        resolver.child(&extension_field, declared, &path, PathType::File)?;
+                    if julia_extensions.contains(&resolved) {
+                        return Err(resolver.error(
+                            &extension_field,
+                            PathResolutionErrorKind::InvalidPath {
+                                path: declared.clone(),
+                                reason: "Julia extension entries must be unique",
+                            },
+                        ));
+                    }
+                    julia_extensions.push(resolved);
+                }
+            }
             targets.push(ResolvedTargetPath {
                 id: target.id.clone(),
                 path: resolver.child(
@@ -453,6 +486,7 @@ pub fn resolve_workspace_paths(
                     &path,
                     PathType::FileOrDirectory,
                 )?,
+                julia_extensions,
             });
         }
         packages.push(ResolvedPackagePaths {

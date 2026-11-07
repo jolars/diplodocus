@@ -60,6 +60,227 @@ fn methods(result: &JuliaExtraction) -> Vec<&str> {
         .collect()
 }
 
+fn select_extensions(workspace: &support::TestWorkspace, entries: &[&str]) {
+    let path = workspace.path().join("diplodocus.yaml");
+    let mut config = load_configuration(&path).unwrap();
+    config.packages[0].targets[0].julia =
+        Some(diplodocus::configuration::JuliaTargetConfiguration {
+            extensions: entries.iter().map(Into::into).collect(),
+        });
+    workspace.write("diplodocus.yaml", serde_saphyr::to_string(&config).unwrap());
+}
+
+fn plotting_package() -> support::TestWorkspace {
+    let workspace = small(
+        r#"module Demo
+export Fit, plot
+struct Fit end
+"Plot a fit. Load a plotting backend to enable rendering."
+function plot end
+plot(::Fit, args...; kwargs...) = error("Load a plotting backend.")
+end
+"#,
+    );
+    workspace.write(
+        "ext/DemoMakieExt.jl",
+        r#"module DemoMakieExt
+using Demo
+using Makie
+import Demo: Fit, plot
+include("plot.jl")
+"Delegate to the local rendering method."
+Makie.plot(fit::Fit) = plot(fit)
+end
+"#,
+    );
+    workspace.write(
+        "ext/plot.jl",
+        r#""Render a fit with the supplied backend."
+plot(fit::Fit; figure=(;), axis=(;), kwargs...) = Figure()
+plot(gp::Makie.GridPosition, fit::Fit; axis=(;), kwargs...) = Axis(gp)
+private_helper(x) = x
+"#,
+    );
+    // Declared metadata and available source files do not opt an extension in.
+    workspace.write(
+        "Project.toml",
+        format!(
+            "{}\n[weakdeps]\nMakie = \"ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a\"\n[extensions]\nDemoMakieExt = \"Makie\"\n",
+            workspace.read("Project.toml")
+        ),
+    );
+    workspace
+}
+
+#[test]
+fn explicit_extensions_join_core_families_without_loading_dependencies() {
+    let workspace = plotting_package();
+    let core = extract(&workspace);
+    assert!(core.diagnostics.is_empty(), "{:?}", core.diagnostics);
+    assert_eq!(item(&core, "Demo.plot").signatures.len(), 1);
+    assert_eq!(core.inputs.len(), 2);
+
+    select_extensions(&workspace, &["ext/DemoMakieExt.jl"]);
+    let result = extract(&workspace);
+    assert!(result.diagnostics.is_empty(), "{:?}", result.diagnostics);
+    let family = item(&result, "Demo.plot");
+    assert_eq!(family.signatures.len(), 3);
+    assert_eq!(family.documentation, item(&core, "Demo.plot").documentation);
+    assert_eq!(family.children.len(), 3);
+    assert_eq!(result.inputs.len(), 4);
+    assert!(family.signatures.iter().any(|signature| {
+        signature
+            .sources
+            .iter()
+            .any(|evidence| evidence.source.path.as_str() == "ext/plot.jl")
+    }));
+    assert_eq!(item(&result, "Makie.plot").signatures.len(), 1);
+    assert!(
+        !result
+            .items
+            .values()
+            .any(|item| item.qualified_name == "Makie"
+                || item.qualified_name.ends_with("private_helper"))
+    );
+    assert_eq!(
+        result
+            .items
+            .values()
+            .filter(|item| item.kind == ItemKind::Method
+                && item.qualified_name == "Demo.plot"
+                && item.documentation.is_some())
+            .count(),
+        1
+    );
+    assert!(
+        !serde_json::to_string(&result)
+            .unwrap()
+            .contains(workspace.path().to_str().unwrap())
+    );
+
+    select_extensions(&workspace, &[]);
+    assert_eq!(extract(&workspace).items, core.items);
+}
+
+#[test]
+fn extension_methods_survive_detached_snapshots_and_rendering() {
+    use diplodocus::{
+        assembly::assemble_workspace,
+        rendering::{FragmentIndex, render_fragments, render_site},
+        site::Site,
+        snapshots::Snapshot,
+        validation::{resolve_item, resolve_workspace},
+    };
+    let workspace = plotting_package();
+    select_extensions(&workspace, &["ext/DemoMakieExt.jl"]);
+    let sources = assemble_workspace(workspace.path().join("diplodocus.yaml")).unwrap();
+    assert!(
+        sources.workspace().diagnostics.is_empty(),
+        "{:?}",
+        sources.workspace().diagnostics
+    );
+    let family = resolve_item(sources.workspace(), Some("demo"), "Demo.plot").unwrap();
+    let method = resolve_item(sources.workspace(), Some("demo"), "Demo.plot(::Fit)").unwrap();
+    let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+    let artifact = tempfile::tempdir().unwrap();
+    let database = artifact.path().join("documentation.sqlite");
+    snapshot.publish(&database).unwrap();
+    let canonical = snapshot.canonical_export().unwrap();
+    drop((sources, snapshot, workspace));
+
+    let snapshot = Snapshot::load(database).unwrap();
+    assert_eq!(snapshot.canonical_export().unwrap(), canonical);
+    let package = &snapshot.workspace().packages["demo"];
+    assert_eq!(package.items[&family.item].children.len(), 3);
+    assert!(package.discoverable_items().contains(method.item.as_str()));
+    let site = Site::new(&snapshot).unwrap();
+    let fragments = render_fragments(&site).unwrap();
+    let rendered = render_site(&site).unwrap();
+    let index: FragmentIndex =
+        serde_json::from_slice(&fragments.files()["documents.json"].bytes).unwrap();
+    let descriptor = index
+        .documents
+        .iter()
+        .find(|document| document.qualified_name.as_deref() == Some("Demo.plot"))
+        .unwrap();
+    let html = std::str::from_utf8(&rendered.files()[&descriptor.path].bytes).unwrap();
+    let markdown_path = descriptor.path.replace(".html", ".md");
+    let markdown = std::str::from_utf8(&rendered.files()[&markdown_path].bytes).unwrap();
+    for text in [html, markdown] {
+        assert!(text.contains("Load a plotting backend"));
+        assert!(text.contains("Render a fit with the supplied backend"));
+        assert!(text.contains("GridPosition"));
+    }
+}
+
+#[test]
+fn extensions_retain_static_conflict_and_include_diagnostics() {
+    for (source, code) in [
+        (
+            "module DemoMakieExt\nimport Demo: plot, Fit\nplot(::Fit, args...; kwargs...) = nothing\nend\n",
+            "julia-conflicting-surface",
+        ),
+        (
+            "module DemoMakieExt\ninclude(\"missing.jl\")\nend\n",
+            "julia-source-read",
+        ),
+        (
+            "module DemoMakieExt\nif true\ninclude(\"plot.jl\")\nend\nend\n",
+            "julia-unsupported-surface",
+        ),
+    ] {
+        let workspace = plotting_package();
+        workspace.write("ext/DemoMakieExt.jl", source);
+        select_extensions(&workspace, &["ext/DemoMakieExt.jl"]);
+        let result = extract(&workspace);
+        assert!(
+            result
+                .diagnostics
+                .iter()
+                .any(|d| d.code.as_str() == code && d.severity == Severity::Error),
+            "{:?}",
+            result.diagnostics
+        );
+    }
+}
+
+#[test]
+fn extension_paths_require_unique_package_local_julia_files() {
+    let workspace = plotting_package();
+    workspace.write("ext/not-julia.txt", "module Other end");
+    for entries in [
+        vec!["ext/missing.jl"],
+        vec!["ext/not-julia.txt"],
+        vec!["ext"],
+        vec!["../outside.jl"],
+        vec!["/tmp/outside.jl"],
+        vec!["ext/DemoMakieExt.jl", "ext/DemoMakieExt.jl"],
+    ] {
+        select_extensions(&workspace, &entries);
+        let path = workspace.path().join("diplodocus.yaml");
+        let configuration = load_configuration(&path).unwrap();
+        let error = resolve_workspace_paths(&path, &configuration).unwrap_err();
+        assert!(error.field.contains(".julia.extensions["), "{error}");
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn extension_symlinks_cannot_escape_the_package() {
+    let workspace = plotting_package();
+    let outside = support::TestWorkspace::new();
+    outside.write("Outside.jl", "module Outside end");
+    std::os::unix::fs::symlink(
+        outside.path().join("Outside.jl"),
+        workspace.path().join("ext/Outside.jl"),
+    )
+    .unwrap();
+    select_extensions(&workspace, &["ext/Outside.jl"]);
+    let path = workspace.path().join("diplodocus.yaml");
+    let configuration = load_configuration(&path).unwrap();
+    assert!(resolve_workspace_paths(&path, &configuration).is_err());
+}
+
 #[test]
 fn static_includes_preserve_modules_public_surface_and_method_docs() {
     let workspace = small(

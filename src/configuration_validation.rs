@@ -168,6 +168,18 @@ pub fn validate_configuration(configuration: &WorkspaceConfiguration) -> Vec<Dia
                     },
                 ));
             }
+            if target.julia.is_some()
+                && (target.extractor != "julia" || package.ecosystem != "julia")
+            {
+                diagnostics.push(error(
+                    DiagnosticCode::InvalidConfiguration,
+                    "Julia target settings require extractor `julia` and ecosystem `julia`.".into(),
+                    DiagnosticEntity::Target {
+                        package: package.id.clone(),
+                        id: target.id.clone(),
+                    },
+                ));
+            }
         }
     }
     for (index, collection) in configuration.content.iter().enumerate() {

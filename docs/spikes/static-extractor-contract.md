@@ -172,6 +172,7 @@ static extraction does not depend on a sibling checkout or a Julia installation.
 | `julia.docs.markdown` | Static decoded docstrings become Julia Markdown nodes, with visible retained unsupported syntax and inert examples. |
 | `julia.docs.references` | Explicit and inferred API `@ref` links resolve to supplied families or method selectors while preserving labels. |
 | `julia.exports.static` | Exported, public, and documented declarations, with their required containers and members. |
+| `julia.extensions.static` | Explicit extension entry files join core declarations without loading optional dependencies. |
 | `julia.includes.static` | Unconditional literal includes within the configured package and repository retain their defining module. |
 | `julia.metadata.project` | Project.toml name, UUID, optional version, authors, dependency UUIDs, compatibility strings, and original fields. |
 | `julia.methods` | Canonical families and addressable authored methods with normalized static dispatch identities. |

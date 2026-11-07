@@ -13,6 +13,7 @@ fn contextmanagers_are_static_and_private_decorators_do_not_fail_public_extracti
         path: root.clone(),
     };
     let target = ResolvedTargetPath {
+        julia_extensions: Vec::new(),
         id: "api".into(),
         path: root.join("python/context_fixture"),
     };

@@ -232,11 +232,11 @@ Documenter compatibility.
   declaration order, with stable anchors, annotations, and documentation.
   Keep HTML, Markdown, navigation, search, fragment identities, and host URL
   mapping consistent without separate field pages.
-- [ ] Define support for explicitly supplied Julia package extensions. The
-  current include traversal misses `ext/EunoiaMakieExt.jl`, so plotting
-  pages show core fallback method signatures instead of the extension
-  implementations. Preserve the existing generic documentation and avoid
-  inventing methods from unavailable dependencies.
+- [x] Support explicitly supplied Julia package extensions through target-level
+  `julia.extensions` entry files. Assemble their static methods with core
+  generics, preserving generic documentation and fallback methods without
+  inventing dependency methods. The Eunoia acceptance recipe verifies all
+  three Makie plotting implementations and detached HTML and Markdown.
 - [ ] Resolve the package-overview choice. Automatic README ingestion rejects
   Eunoia.jl's remote badge images. An authored package index can replace
   that fallback; determine whether remote-image support also belongs in

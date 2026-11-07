@@ -477,6 +477,17 @@ pub struct ExtractionTargetConfiguration {
     /// Cargo feature selection for Rust targets.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub rust: Option<RustTargetConfiguration>,
+    /// Explicit supplemental Julia extension sources.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub julia: Option<JuliaTargetConfiguration>,
+}
+
+/// Static source selection for one explicit Julia target.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, rename_all = "kebab-case", deny_unknown_fields)]
+pub struct JuliaTargetConfiguration {
+    /// Extension entry files relative to the package root, each with its own module.
+    pub extensions: Vec<PathBuf>,
 }
 
 /// Compiler feature selection for one explicit Rust library target.

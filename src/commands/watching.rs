@@ -285,6 +285,11 @@ impl Observer {
             }
             for target in &package.targets {
                 let mut selected = Vec::new();
+                if let Some(settings) = &target.julia {
+                    for extension in &settings.extensions {
+                        observe(&root.join(extension), &mut observed);
+                    }
+                }
                 if target.extractor == "rust" {
                     discover_rust(&root, &self.output, &mut observed);
                     let repository = &roots[package.repository.as_str()];
@@ -675,6 +680,51 @@ mod tests {
         let mut observer = Observer::new(&config, &root.path().join("site")).unwrap();
         let before = observer.capture();
         fs::write(&asset, "after").unwrap();
+        assert_ne!(observer.capture(), before);
+    }
+
+    #[test]
+    fn watches_julia_extension_entries_and_their_includes() {
+        let root = tempfile::tempdir().unwrap();
+        fs::create_dir(root.path().join("src")).unwrap();
+        fs::create_dir(root.path().join("ext")).unwrap();
+        fs::write(
+            root.path().join("Project.toml"),
+            "name = \"Demo\"\nuuid = \"12345678-1234-1234-1234-123456789abc\"\n",
+        )
+        .unwrap();
+        fs::write(
+            root.path().join("src/Demo.jl"),
+            "module Demo\nexport plot\nfunction plot end\nend\n",
+        )
+        .unwrap();
+        let config = root.path().join("diplodocus.yaml");
+        fs::write(&config, "project:\n  name: Observe\nrepositories:\n  - id: repo\n    path: .\npackages:\n  - id: demo\n    name: Demo\n    slug: julia\n    ecosystem: julia\n    repository: repo\n    path: .\n    metadata-path: Project.toml\n    targets:\n      - id: api\n        extractor: julia\n        path: src/Demo.jl\n        role: public-api\n        julia:\n          extensions: [ext/DemoExt.jl]\n").unwrap();
+        let mut observer = Observer::new(&config, &root.path().join("site")).unwrap();
+        let missing = observer.capture();
+        let extension = root.path().join("ext/DemoExt.jl");
+        fs::write(
+            &extension,
+            "module DemoExt\nimport Demo: plot\ninclude(\"plot.jl\")\nend\n",
+        )
+        .unwrap();
+        let created = observer.capture();
+        assert_ne!(created, missing);
+        let included = root.path().join("ext/plot.jl");
+        fs::write(&included, "plot(x::Int) = x\n").unwrap();
+        observer.refresh_assets();
+        let before = observer.capture();
+        fs::write(&included, "plot(x::Float64) = x\n").unwrap();
+        assert_ne!(observer.capture(), before);
+        let before = observer.capture();
+        fs::write(
+            &extension,
+            "module DemoExt\nimport Demo: plot\nplot(x) = x\nend\n",
+        )
+        .unwrap();
+        assert_ne!(observer.capture(), before);
+        let before = observer.capture();
+        fs::remove_file(extension).unwrap();
         assert_ne!(observer.capture(), before);
     }
 

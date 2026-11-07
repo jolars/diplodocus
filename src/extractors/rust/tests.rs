@@ -117,6 +117,7 @@ fn extract(bytes: &[u8]) -> RustExtraction {
         path: root.clone(),
     };
     let target = ResolvedTargetPath {
+        julia_extensions: Vec::new(),
         id: "api".into(),
         path: root.join("lib.rs"),
     };
@@ -442,6 +443,7 @@ fn compiler_character_columns_become_exact_utf8_byte_ranges() {
         path: root.clone(),
     };
     let target = ResolvedTargetPath {
+        julia_extensions: Vec::new(),
         id: "api".into(),
         path: path.clone(),
     };

@@ -9,7 +9,7 @@ use fatou_parser::syntax::{SyntaxKind as K, SyntaxNode};
 
 use crate::diagnostics::{DiagnosticCode as Code, Severity};
 use crate::ir::*;
-use crate::paths::{ResolvedPackagePaths, ResolvedRepositoryPaths};
+use crate::paths::{ResolvedPackagePaths, ResolvedRepositoryPaths, ResolvedTargetPath};
 use crate::provenance::ExtractionObservation;
 
 use super::signatures::{ParsedSignature, lower, node_name};
@@ -80,7 +80,7 @@ struct Context<'a> {
 pub(super) fn extract(
     repository: &ResolvedRepositoryPaths,
     package: &ResolvedPackagePaths,
-    entry: &Path,
+    target: &ResolvedTargetPath,
     result: &mut JuliaExtraction,
     observation: &mut ExtractionObservation,
 ) -> Declarations {
@@ -94,7 +94,24 @@ pub(super) fn extract(
         includes: Vec::new(),
         declarations: Declarations::default(),
     };
-    context.file(entry, "", None);
+    context.file(&target.path, "", None);
+    for entry in &target.julia_extensions {
+        // Extension modules are siblings of the package module, not includes in it.
+        if !entry.starts_with(&package.path)
+            || !entry.is_file()
+            || entry.extension().is_none_or(|extension| extension != "jl")
+            || !std::fs::canonicalize(entry)
+                .is_ok_and(|canonical| canonical.starts_with(&package.path))
+        {
+            context.result.diagnostics.push(crate::diagnostics::Diagnostic::new(
+                Code::JuliaSourceRead,
+                Severity::Error,
+                "Julia extension entries must be explicit .jl files inside the configured package.",
+            ));
+            continue;
+        }
+        context.file(entry, "", None);
+    }
     for (module, source) in std::mem::take(&mut context.includes) {
         let shadowed = context
             .declarations

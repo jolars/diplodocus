@@ -163,10 +163,33 @@ def api_coverage(items):
                 )
                 members.add(child)
     required = {exported[name][0] for name in EXPORTS} | members | methods
+    extension_methods = 0
+    for name, expected in [("eunoiaplot", 2), ("eunoiaplot!", 1)]:
+        _, family = exported[name]
+        require(family.get("documentation"), f"Missing generic documentation for {name}")
+        supplied = [
+            items[reference["item"]]
+            for reference in family["language_data"]["data"]["declaration"]["role"]["methods"]
+        ]
+        implementations = [
+            method
+            for method in supplied
+            if method["source_location"]["path"] == "ext/EunoiaMakieExt.jl"
+        ]
+        require(
+            len(implementations) == expected,
+            f"Expected {expected} extension methods for {name}, got {len(implementations)}",
+        )
+        require(
+            any(method["source_location"]["path"] == "src/Eunoia.jl" for method in supplied),
+            f"Missing core fallback method for {name}",
+        )
+        extension_methods += len(implementations)
     return required, {
         "exported_bindings": len(exported),
         "fields": len(members),
         "methods": len(methods),
+        "plotting_extension_methods": extension_methods,
     }
 
 
@@ -508,6 +531,8 @@ packages:
         extractor: "julia"
         path: "src/Eunoia.jl"
         role: "public-api"
+        julia:
+          extensions: ["ext/EunoiaMakieExt.jl"]
 """.replace("REVISION", f"    revision: {json.dumps(revision)}" if revision else "")
     )
     if options.execute_documenter:

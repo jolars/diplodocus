@@ -1214,6 +1214,7 @@ mod tests {
             )
             .unwrap();
             let target = ResolvedTargetPath {
+                julia_extensions: Vec::new(),
                 id: "library".into(),
                 path: root.join("src/lib.rs"),
             };

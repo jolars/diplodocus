@@ -13,6 +13,7 @@ fn parse(workspace: &support::TestWorkspace) -> ParsedPythonPackage {
         path: root.clone(),
     };
     let target = ResolvedTargetPath {
+        julia_extensions: Vec::new(),
         id: "api".into(),
         path: root.join("python/foo"),
     };

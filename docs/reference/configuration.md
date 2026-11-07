@@ -113,10 +113,27 @@ IDs must be unique within their package.
 | `path` | path | Required | Source path relative to the package root. |
 | `role` | string | Required | Target role, such as `public-api` or `internal-api`. |
 | `rust` | mapping | Default Cargo features | Optional Rust feature selection; valid only for a Rust target in a Rust package. |
+| `julia` | mapping | No extension sources | Optional Julia source selection; valid only for a Julia target in a Julia package. |
 
 Python targets select maintained source files or directories; R targets select
 the package source directory, usually `.`. Julia and Rust targets must name an
 explicit entry file, such as `src/MyPackage.jl` or `src/lib.rs`.
+
+### Julia target settings
+
+Fields in `packages[].targets[].julia`:
+
+| Option | Type | Default | Purpose |
+| --- | --- | --- | --- |
+| `extensions` | list of paths | `[]` | Explicit extension `.jl` entry files relative to the package root. |
+
+For example, `julia: { extensions: [ext/MyPackageMakieExt.jl] }` adds that
+extension's static declarations to the target. Extension files and their
+literal includes must remain inside the package. They retain their own module
+scope, and imports resolve against the supplied core declarations. Extension
+selection does not load optional dependencies or prove runtime activation.
+See the [Julia extraction
+contract](https://github.com/jolars/diplodocus/blob/main/docs/ir/julia-extraction.md#explicit-extension-sources).
 
 ### Rust target settings
 

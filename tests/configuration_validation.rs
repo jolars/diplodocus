@@ -13,6 +13,32 @@ fn configuration() -> WorkspaceConfiguration {
     parse_configuration(COMPLETE).unwrap()
 }
 
+#[test]
+fn julia_settings_require_a_julia_target_and_package() {
+    use diplodocus::configuration::JuliaTargetConfiguration;
+    for (extractor, ecosystem, valid) in [
+        ("python", "python", false),
+        ("julia", "python", false),
+        ("python", "julia", false),
+        ("julia", "julia", true),
+    ] {
+        let mut config = configuration();
+        let package = &mut config.packages[0];
+        package.ecosystem = ecosystem.into();
+        package.targets[0].extractor = extractor.into();
+        package.targets[0].julia = Some(JuliaTargetConfiguration {
+            extensions: vec!["ext/DemoExt.jl".into()],
+        });
+        let diagnostics = validate_configuration(&config);
+        assert_eq!(diagnostics.is_empty(), valid, "{diagnostics:?}");
+        if !valid {
+            assert_eq!(diagnostics[0].code, DiagnosticCode::InvalidConfiguration);
+        }
+        let serialized = serde_saphyr::to_string(&config).unwrap();
+        assert_eq!(parse_configuration(&serialized).unwrap(), config);
+    }
+}
+
 fn only_diagnostic(configuration: &WorkspaceConfiguration, code: DiagnosticCode) -> Diagnostic {
     let diagnostics = validate_configuration(configuration);
     assert_eq!(diagnostics.len(), 1, "{diagnostics:#?}");

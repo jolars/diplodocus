@@ -21,8 +21,10 @@ It does not modify Eunoia or integrate the generated pages into its website.
 
 The Julia recipe checks Eunoia.jl's 23 exported bindings, including
 `eunoiaplot!`, result fields, callable relationships, API references, and list
-formatting. It copies the package into a disposable directory and extracts a
-SQLite snapshot. It then relocates the snapshot, removes the staged sources and
+formatting. It explicitly supplies `ext/EunoiaMakieExt.jl` and requires its
+three plotting implementations alongside the core fallback methods and generic
+prose. It copies the package into a disposable directory and extracts a SQLite
+snapshot. It then relocates the snapshot, removes the staged sources and
 configuration, and generates a standalone site and HTML and Markdown fragments
 with an empty `PATH` and Julia environment settings removed.
 
@@ -65,12 +67,11 @@ API, page-title, and heading references, expands `@index`, and embeds
 The [authoring guide](../../docs/guide/authoring.md#documenter-pages) defines the
 supported syntax. Gallery examples display Julia code without execution.
 
-This recipe covers the core API in Eunoia.jl 1.0.1. A recipe-owned GFM overview
-replaces README discovery in the disposable copy. Extending the recipe to
-Documenter guides and gallery figures, executing gallery blocks, supplying Makie
-extension methods, selecting public-only navigation, and grouping fields remain
-follow-up work. The recipe leaves the original package and
-Eunoia's website untouched.
+This recipe covers the core API and explicitly selected Makie extension in
+Eunoia.jl 1.0.1. A recipe-owned GFM overview replaces README discovery in the
+disposable copy. The optional `--execute-documenter` profile also covers the
+original guides and gallery figures, as described below. The recipe leaves the
+original package and Eunoia's website untouched.
 
 ## Python and R embedding experiment
 

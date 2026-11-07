@@ -32,6 +32,7 @@ pub(crate) const CAPABILITIES: &[&str] = &[
     "julia.docs.markdown",
     "julia.docs.references",
     "julia.exports.static",
+    "julia.extensions.static",
     "julia.includes.static",
     "julia.metadata.project",
     "julia.methods",
@@ -76,7 +77,7 @@ pub struct JuliaInput {
     pub raw_bytes: Option<Vec<u8>>,
 }
 
-/// Extract a maintained Julia entry file and its unconditional literal includes.
+/// Extract maintained Julia entry and extension files and their literal includes.
 ///
 /// Files may be included from anywhere inside the configured package, but reads
 /// never escape that package or repository. Error-bearing results are inspectable
@@ -134,13 +135,7 @@ pub fn extract_target(
     {
         result.metadata = metadata::parse(text, &input.source, &mut result.diagnostics);
     }
-    let declarations = source::extract(
-        repository,
-        package,
-        &target.path,
-        &mut result,
-        &mut observation,
-    );
+    let declarations = source::extract(repository, package, target, &mut result, &mut observation);
     surface::assemble(declarations, &mut result);
     result.provenance = observation.into_provenance(None, None);
     result.diagnostics.sort();

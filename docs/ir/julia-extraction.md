@@ -66,7 +66,7 @@ its bytes and parser input are recorded once. Missing files, cycles, computed
 paths, include transforms, qualified includes, and conditional includes produce
 errors. A locally declared or imported `include` binding also produces an error
 because its semantics cannot be established from a call alone. Unreferenced
-files and package extensions are not discovered.
+files and package extensions are not discovered automatically.
 
 Metadata requires a nonempty `name` and a UUID. A supplied `version` must be
 SemVer; omitting it leaves the package version absent. Authors, dependency
@@ -74,6 +74,50 @@ UUIDs, and compatibility strings are retained. Compatibility strings use
 Julia/Pkg syntax and are not interpreted as Cargo constraints. Every original
 top-level metadata field retains its TOML value and source range. Extraction
 does not read `Manifest.toml` or resolve dependencies.
+
+### Explicit extension sources
+
+Supply extension entry files on the same target as the package entry:
+
+```yaml
+targets:
+  - id: api
+    extractor: julia
+    path: src/Eunoia.jl
+    role: public-api
+    julia:
+      extensions:
+        - ext/EunoiaMakieExt.jl
+```
+
+Each entry must name a unique `.jl` file relative to the package root. Missing
+files, directories, and paths or symlinks outside the package fail validation.
+Both `ext/NameExt.jl` and `ext/NameExt/NameExt.jl` layouts work when supplied
+explicitly. The adapter does not select files from `[extensions]`, inspect a
+depot, or load weak dependencies.
+
+Extension files start in their own top-level scope and follow the same static
+include and declaration rules as the core entry. Diplodocus assembles all
+supplied declarations together. For example, `import Eunoia: eunoiaplot` in the
+extension binds its methods to the existing `Eunoia.eunoiaplot` family. The
+family retains its generic documentation and core fallback methods, while its
+signatures also include the supplied extension implementations. Method
+documentation stays with its method. Duplicate dispatch identities still
+produce conflicts rather than simulating method replacement.
+
+Only authored methods from the selected files and their literal includes are
+retained. Imports from unavailable dependencies do not invent their modules,
+types, exports, or other methods. Macro-generated recipes remain subject to
+the existing unsupported-syntax policy. Selecting an extension describes a
+static documentation surface; it does not claim that Julia activated it.
+Runtime checkout validation continues to load the core package and requires
+its prepared dependencies, without explicitly activating selected extensions.
+
+Extension sources and includes retain repository-relative locations, original
+input bytes, and extraction fingerprints. Their methods share the core
+family's identities, discovery policy, and rendered page, including after
+detached snapshot generation. Removing an extension from the selection removes
+its methods on the next extraction without removing the core generic.
 
 ## Maintained surface
 

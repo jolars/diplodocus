@@ -5,6 +5,14 @@ unconditional literal includes. Declare `ecosystem: "julia"`,
 `metadata-path: "Project.toml"`, and a target with `extractor: "julia"` and
 `path: "src/MyPackage.jl"`. Source directories are not valid Julia targets.
 
+To document optional extension implementations, add `julia.extensions` to that
+target with package-relative entry files, such as `[ext/MyPackageMakieExt.jl]`.
+Their static methods join the existing generics, preserving generic prose and
+fallback methods. Selection does not load weak dependencies or infer their
+methods. See [explicit extension
+sources](https://github.com/jolars/diplodocus/blob/main/docs/ir/julia-extraction.md#explicit-extension-sources) for the
+configuration and supported subset.
+
 Exported, `public`, and documented declarations form the maintained surface.
 Automatic API navigation, search, and indexes include exported and `public`
 bindings, their methods and explicit constructors, and required module

@@ -674,6 +674,7 @@ fn parse_fixture(root: &std::path::Path) -> ParsedPythonPackage {
         path: path.clone(),
     };
     let target = paths::ResolvedTargetPath {
+        julia_extensions: Vec::new(),
         id: "api".into(),
         path: path.join("python/foo"),
     };
