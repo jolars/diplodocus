@@ -429,15 +429,14 @@ body:has(.documentation-drawer[open]) {
   color: var(--link);
 }
 
-.nav-group > ul > li > a,
-.nav-group > ul > li > .item-disclosure > summary {
+.nav-group li > a,
+.nav-group li > .item-disclosure > summary {
   margin-inline: -.45rem;
 }
 
-.item-disclosure > ul {
-  margin: .25rem 0 .6rem .65rem;
-  padding-left: .5rem;
-  border-left: 1px solid var(--border);
+.item-disclosure > ul,
+.sidebar-items {
+  margin: .25rem 0 .6rem;
 }
 
 .sidebar-disclosure > summary {
@@ -470,14 +469,8 @@ body:has(.documentation-drawer[open]) {
   outline-offset: 3px;
 }
 
-.sidebar-items {
-  margin: .25rem 0 .6rem .65rem;
-  padding-left: .5rem;
-  border-left: 1px solid var(--border);
-}
-
-.sidebar-links > li > .sidebar-heading,
-.sidebar-links > li > .sidebar-disclosure > summary {
+.sidebar-group li > .sidebar-heading,
+.sidebar-group li > .sidebar-disclosure > summary {
   margin-inline: -.45rem;
 }
 
