@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.13.0](https://github.com/jolars/diplodocus/compare/v0.12.1...v0.13.0) (2026-11-09)
+
+### Features
+
+- support Documenter HTML disclosures ([`10f0ea2`](https://github.com/jolars/diplodocus/commit/10f0ea285df227fd73ea1fa23788ca9ebce73078))
+- support explicit Julia extension sources ([`2273914`](https://github.com/jolars/diplodocus/commit/22739142930b54c1e3dd47e9f29719301aa94e93))
+- **css:** move chevrons in sidebar nav ([`0a662f8`](https://github.com/jolars/diplodocus/commit/0a662f89b6bbf8491934a1d00aaefdc615c94a33))
+
+### Bug Fixes
+
+- group Julia fields on type pages ([`30b6a06`](https://github.com/jolars/diplodocus/commit/30b6a069e05141dbf9da21d5659ed58bc03838e6))
+- **test:** wait for VitePress reloads ([`32fdc44`](https://github.com/jolars/diplodocus/commit/32fdc4472f26c35b023f43e8bad860af5928cc4f))
+
 ## [0.12.1](https://github.com/jolars/diplodocus/compare/v0.12.0...v0.12.1) (2026-11-05)
 
 ### Bug Fixes
