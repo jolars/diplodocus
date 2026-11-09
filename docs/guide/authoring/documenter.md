@@ -154,3 +154,34 @@ authored pages. Other unsupported directives retain their diagnostics. See
 [native Documenter execution](../execution.md#native-documenter-execution) for
 publication and environment evidence.
 
+## HTML disclosures
+
+Paired `@raw html` fences can wrap Markdown in a disclosure:
+
+````markdown
+```@raw html
+<details>
+<summary>BibLaTeX</summary>
+```
+
+```bibtex
+@online{example, title={An example}}
+```
+
+```@raw html
+</details>
+```
+````
+
+The opening fence contains `<details>` and its complete `<summary>`, and the
+closing fence contains `</details>`. Disclosures can nest. Add the boolean
+`open` attribute to `<details>` to expand it initially. Summaries accept text,
+HTML character references, `<b>`, `<strong>`, `<i>`, `<em>`, `<code>`, and
+`<br>`. Other attributes and markup remain unsupported and produce diagnostics.
+Unpaired wrappers also produce diagnostics and retain the original source.
+
+Diplodocus converts these wrappers to structured document containers. Markdown
+between the fences retains its links, anchors, API assembly, and examples.
+HTML renders an ordinary disclosure; Markdown expands its summary and body.
+Both representations work from detached snapshots and with host URL mapping.
+

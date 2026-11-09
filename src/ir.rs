@@ -311,6 +311,11 @@ impl Block {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum DocumentContainerKind {
+    /// A disclosure whose first paragraph is its summary and remaining blocks are its body.
+    Disclosure {
+        /// Whether the disclosure is initially expanded in HTML.
+        open: bool,
+    },
     /// Terms and their definitions.
     DefinitionList,
     /// One definition-list term.

@@ -246,6 +246,10 @@ Documenter compatibility.
   or work offline. Generated execution output still requires validated local
   image assets.
 
+- [x] Support Eunoia.jl's paired `@raw html` disclosure wrappers. Reject
+  unsupported authored syntax in the full acceptance recipe and check the
+  BibLaTeX disclosure in detached HTML and Markdown.
+
 ### Eunoia integration follow-up
 
 - [ ] Upgrade the existing Python integration when advancing the Diplodocus pin.

@@ -60,6 +60,15 @@ if (mode === "serve-test") {
     cpSync(join(root, "tests/fixtures/sidebar-navigation/pages"), join(workspace, "docs/sidebar"), { recursive: true });
     cpSync(join(root, "tests/fixtures/tabsets.md"), join(workspace, "docs/tabsets.md"));
     cpSync(join(root, "tests/fixtures/full-layout.md"), join(workspace, "docs/full-layout.md"));
+    mkdirSync(join(workspace, "disclosures"));
+    cpSync(join(root, "tests/fixtures/documenter-disclosures.md"), join(workspace, "disclosures/index.md"));
+    const disclosureCollection = `  - id: documenter-disclosures
+    owner: project
+    repository: tinystats
+    path: disclosures
+    mount: disclosures
+    format: documenter
+`;
     writeFileSync(configuration, readFileSync(configuration, "utf8")
       .replace(/^    url: "https:\/\/github\.com\/jolars\/diplodocus"\n/m, '$&    revision: "main"\n'));
     mkdirSync(join(workspace, "spec"));
@@ -98,7 +107,7 @@ if (mode === "serve-test") {
     const sidebarConfiguration = readFileSync(join(root, "tests/fixtures/sidebar-navigation/config.yaml"), "utf8");
     writeFileSync(configuration, configurationSource
       .replace(/^presentation:\n/m, `presentation:\n${sidebarConfiguration}`)
-      .replace(/^concepts:/m, `${consoleCollection}concepts:`));
+      .replace(/^concepts:/m, `${consoleCollection}${disclosureCollection}concepts:`));
     const internalTopics = join(root, "tests/fixtures/r-internal-topics");
     for (const directory of ["R", "man"]) {
       cpSync(join(internalTopics, directory), join(workspace, "r", directory), { recursive: true });

@@ -93,7 +93,12 @@ NativeFigure()
 
 #[test]
 fn native_documenter_examples_retain_sessions_figures_and_portable_evidence() {
-    let root = workspace(EXAMPLES);
+    let wrapped = EXAMPLES.replacen(
+        "# Gallery\n",
+        "# Gallery\n\n```@raw html\n<details><summary>Native examples</summary>\n```\n",
+        1,
+    ) + "\n```@raw html\n</details>\n```\n";
+    let root = workspace(&wrapped);
     root.write("docs/second.md", "# Another page\n\n```@example gallery\n@assert !isdefined(@__MODULE__, :shared)\nprintln(\"fresh page\")\n```\n");
     let figure = fs::read(root.path().join("figure.png")).unwrap();
     success(command(&root, "check"));
@@ -160,6 +165,12 @@ fn native_documenter_examples_retain_sessions_figures_and_portable_evidence() {
     let markdown = std::str::from_utf8(&fragments.files()[&gallery.markdown_path].bytes).unwrap();
     let html = std::str::from_utf8(&fragments.files()[&gallery.path].bytes).unwrap();
     let full = std::str::from_utf8(&standalone.files()[&gallery.path].bytes).unwrap();
+    for body in [html, full] {
+        assert!(
+            body.contains("<details class=\"disclosure\"><summary>Native examples</summary>"),
+            "{body}"
+        );
+    }
     for body in [markdown, html, full] {
         for text in [
             "42",

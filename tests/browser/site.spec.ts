@@ -54,6 +54,39 @@ async function chooseTheme(page: Page, info: TestInfo, value: string) {
   if (info.project.name === "mobile") await page.keyboard.press("Escape");
 }
 
+test("Documenter disclosures toggle with and without JavaScript", async ({ page, browser, baseURL }, info) => {
+  await page.goto("/disclosures/index.html");
+  const disclosure = page.locator("main details.disclosure").first();
+  const code = disclosure.locator("pre");
+  await expect(code).toBeHidden();
+  await expect(page.getByText("This content starts expanded.")).toBeVisible();
+  await disclosure.locator("summary").click();
+  await expect(code).toBeVisible();
+  await expect(code).toContainText("@online{example");
+  await fitsViewport(page);
+  await capture(page, info, "documenter-disclosure-light");
+  await page.emulateMedia({ colorScheme: "dark" });
+  await capture(page, info, "documenter-disclosure-dark");
+  await disclosure.locator("summary").click();
+  await expect(code).toBeHidden();
+
+  const context = await browser.newContext({
+    javaScriptEnabled: false,
+    viewport: info.project.use.viewport,
+  });
+  try {
+    const native = await context.newPage();
+    await native.goto(`${baseURL}/disclosures/index.html`);
+    const disclosure = native.locator("main details.disclosure").first();
+    await expect(disclosure.locator("pre")).toBeHidden();
+    await disclosure.locator("summary").focus();
+    await native.keyboard.press("Enter");
+    await expect(disclosure.locator("pre")).toBeVisible();
+  } finally {
+    await context.close();
+  }
+});
+
 test("color theme follows the system and explicit choices override it", async ({ page }, info) => {
   await page.goto("/guides/comparing-predictions.html");
   const root = page.locator("html");

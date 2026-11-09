@@ -1650,6 +1650,7 @@ impl Renderer<'_, '_> {
                     ..
                 } => {
                     let (tag, class) = match kind {
+                        DocumentContainerKind::Disclosure { .. } => ("details", "disclosure"),
                         DocumentContainerKind::DefinitionList => ("dl", "definition-list"),
                         DocumentContainerKind::DefinitionTerm => ("dt", "definition-term"),
                         DocumentContainerKind::Definition => ("dd", "definition-body"),
@@ -1662,11 +1663,16 @@ impl Renderer<'_, '_> {
                     };
                     write!(
                         html,
-                        "<{tag} class=\"{class}\"{}>",
+                        "<{tag} class=\"{class}\"{}{}>",
                         identifier
                             .as_ref()
                             .map(|id| format!(" id=\"{}\"", escape(id)))
-                            .unwrap_or_default()
+                            .unwrap_or_default(),
+                        if matches!(kind, DocumentContainerKind::Disclosure { open: true }) {
+                            " open"
+                        } else {
+                            ""
+                        }
                     )
                     .unwrap();
                     if *kind == DocumentContainerKind::Footnotes {
@@ -1691,7 +1697,19 @@ impl Renderer<'_, '_> {
                     ) {
                         self.document_navigation = false;
                     }
-                    if *kind == DocumentContainerKind::GeneratedOutput {
+                    if let DocumentContainerKind::Disclosure { .. } = kind {
+                        let Some((Block::Paragraph { inlines, .. }, body)) = blocks.split_first()
+                        else {
+                            return Err(SiteError::Evidence);
+                        };
+                        write!(
+                            html,
+                            "<summary>{}</summary>{}",
+                            self.inlines(inlines)?,
+                            self.blocks(body)?
+                        )
+                        .unwrap();
+                    } else if *kind == DocumentContainerKind::GeneratedOutput {
                         for block in blocks {
                             if let Block::CodeBlock { source, .. } = block {
                                 html.push_str(&render_preformatted_text(source));

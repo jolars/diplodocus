@@ -77,6 +77,7 @@ class FragmentHTML(HTMLParser):
         self.lists = []
         self.list_code_blocks = []
         self.code_block = None
+        self.text = []
         self.feed(body)
 
     def handle_starttag(self, tag, attributes):
@@ -99,6 +100,7 @@ class FragmentHTML(HTMLParser):
             self.code_block = None
 
     def handle_data(self, data):
+        self.text.append(data)
         for item in self.lists:
             item.append(data)
         if self.code_block is not None:
@@ -294,6 +296,26 @@ def validate_retained_figures(root, figures):
     require(
         found.keys() == figures.keys(), f"Missing detached native figures in {root}"
     )
+
+
+def validate_citation_disclosure(root):
+    html = (root / "packages/julia/index.html").read_text()
+    match = re.search(
+        r'<details\b[^>]*><summary>BibLaTeX</summary>(.*?)</details>',
+        html,
+        re.DOTALL,
+    )
+    require(match is not None, f"Missing BibLaTeX disclosure in {root}")
+    body = "".join(FragmentHTML(match.group(1)).text)
+    require("@online{larsson2026f," in body, "BibLaTeX is outside its disclosure")
+    markdown = (root / "packages/julia/index.md").read_text()
+    require(
+        "BibLaTeX" in markdown and "@online{larsson2026f," in markdown,
+        "Markdown lost the expanded BibLaTeX disclosure",
+    )
+    for content in [html, markdown]:
+        require("@raw html" not in content, "Raw disclosure fences leaked into output")
+        require("Unsupported content" not in content, "Unsupported homepage content")
 
 
 def validate_fragments(root, required):
@@ -558,6 +580,11 @@ packages:
     run(binary, "extract", "--config", configuration, "--output", snapshot)
     required, coverage, diagnostics = snapshot_coverage(snapshot, [source, extraction])
     figures = documenter_coverage(snapshot) if options.execute_documenter else {}
+    if options.execute_documenter:
+        require(
+            not any(d["code"] == "unsupported-authored-syntax" for d in diagnostics),
+            "The Documenter guides contain unsupported authored syntax",
+        )
     (output / "diagnostics.json").write_text(json.dumps(diagnostics, indent=2) + "\n")
 
     detached = output / "detached"
@@ -629,9 +656,11 @@ packages:
     if figures:
         for root in [detached / "site", fragments, mapped]:
             validate_retained_figures(root, figures)
+            validate_citation_disclosure(root)
         coverage |= {
             "executed_documenter_examples": 31,
             "retained_native_figures": len(figures),
+            "citation_disclosures": 1,
         }
     for path in (fragments / "assets").rglob("*"):
         # Search records contain mapped URLs; styles and retained assets keep their bytes.

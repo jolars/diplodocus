@@ -1082,6 +1082,17 @@ impl Links<'_> {
                         )?;
                     }
                 }
+                Block::Container {
+                    kind: DocumentContainerKind::Disclosure { .. },
+                    blocks,
+                    ..
+                } => {
+                    require(
+                        matches!(blocks.first(), Some(Block::Paragraph { .. })),
+                        "disclosure summary paragraph",
+                    )?;
+                    self.blocks(blocks, allow_api)?;
+                }
                 Block::BlockQuote { blocks, .. }
                 | Block::Container { blocks, .. }
                 | Block::Component { blocks, .. }

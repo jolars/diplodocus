@@ -4,6 +4,8 @@ use std::fs;
 use std::panic::catch_unwind;
 use std::path::Path;
 
+use diplodocus::ir::WORKSPACE_SCHEMA_VERSION;
+
 use support::{
     TestWorkspace, acceptance_workspace, assert_matches_golden, assert_output_tree, fixture_path,
     load_fixture,
@@ -13,7 +15,7 @@ use support::{
 fn golden_tool_versions_ignore_releases_and_preserve_semantic_versions() {
     let observation = |version| {
         serde_json::json!({
-            "schema_version": 12,
+            "schema_version": WORKSPACE_SCHEMA_VERSION,
             "metadata": {"version": "1.2.3"},
             "tools": {"diplodocus": version, "panache-parser": version},
             "activity": {"parsers": {"ruff_python_parser": {
@@ -28,7 +30,7 @@ fn golden_tool_versions_ignore_releases_and_preserve_semantic_versions() {
     support::normalize_golden_tool_versions(&mut first);
     support::normalize_golden_tool_versions(&mut second);
     assert_eq!(first, second);
-    assert_eq!(first["schema_version"], 12);
+    assert_eq!(first["schema_version"], WORKSPACE_SCHEMA_VERSION);
     assert_eq!(first["metadata"]["version"], "1.2.3");
     let parser = &first["activity"]["parsers"]["ruff_python_parser"];
     assert_eq!(parser["role"], "python-syntax");

@@ -157,6 +157,9 @@ examples, and verifies 30 retained figures. It removes that source copy and
 configuration before generating standalone HTML and HTML and Markdown fragments
 with an empty `PATH`. It also checks figure bytes, anchors, and local links with
 remapped URLs. The sibling Eunoia checkout remains available for other work.
+The recipe also rejects unsupported authored syntax and requires the homepage's
+BibLaTeX disclosure to contain its citation in HTML, with expanded content in
+Markdown, in all three detached outputs.
 
 The host adapter checks route collisions and rejects local links it cannot map.
 Its focused tests run with:

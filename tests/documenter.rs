@@ -4,7 +4,7 @@ use diplodocus::{
     assembly::assemble_workspace,
     diagnostics::DiagnosticCode,
     documents::{AuthoredFormat, parse_authored_document},
-    ir::{Block, Inline, ItemReference, Workspace},
+    ir::{Block, DocumentContainerKind, Inline, ItemReference, Workspace},
     rendering::{FragmentIndex, render_fragments, render_site},
     site::{Site, UrlMap},
     snapshots::Snapshot,
@@ -31,6 +31,188 @@ fn api_entries(workspace: &Workspace) -> Vec<(&ItemReference, &[ItemReference], 
             _ => None,
         })
         .collect()
+}
+
+#[test]
+fn documenter_disclosures_survive_detached_html_markdown_and_host_mapping() {
+    let root = support::TestWorkspace::from_fixture("julia-documenter");
+    root.write(
+        "docs/index.md",
+        "# Demo\n\nBefore the disclosure.\n\n```@raw html\n<details>\n<summary>BibLaTeX &amp; <em>sources</em></summary>\n```\n\nSee [`fit`](@ref) and [citation](#citation).\n\n## [Citation](@id citation)\n\n```bibtex\n@online{demo, title={A < B}}\n```\n\n```@raw html\n<details open>\n<summary><code>More</code></summary>\n```\n\nExtra **details**.\n\n```@raw html\n</details>\n```\n\n```@raw html\n</details>\n```\n\nAfter the disclosure.\n",
+    );
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
+    assert!(
+        sources.workspace().diagnostics.is_empty(),
+        "{:?}",
+        sources.workspace().diagnostics
+    );
+    let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+    let artifact = tempfile::tempdir().unwrap();
+    let database = artifact.path().join("documentation.sqlite");
+    snapshot.publish(&database).unwrap();
+    drop(snapshot);
+    drop(sources);
+    drop(root);
+
+    let snapshot = Snapshot::load(database).unwrap();
+    let site = Site::new(&snapshot).unwrap();
+    let fragments = render_fragments(&site).unwrap();
+    let standalone = render_site(&site).unwrap();
+    let index: FragmentIndex =
+        serde_json::from_slice(&fragments.files()["documents.json"].bytes).unwrap();
+    let urls = UrlMap {
+        format_version: 1,
+        documents: index
+            .documents
+            .iter()
+            .enumerate()
+            .map(|(i, document)| (document.path.clone(), format!("/host/{i}/")))
+            .collect(),
+        assets: Default::default(),
+    };
+    let mapped = render_fragments(
+        &Site::new(&snapshot)
+            .unwrap()
+            .with_url_map(urls.clone())
+            .unwrap(),
+    )
+    .unwrap();
+    let fit = index
+        .documents
+        .iter()
+        .find(|document| document.public_name.as_deref() == Some("Demo.fit"))
+        .unwrap();
+    for output in [&standalone, &fragments, &mapped] {
+        let html = std::str::from_utf8(&output.files()["packages/julia/index.html"].bytes).unwrap();
+        let markdown =
+            std::str::from_utf8(&output.files()["packages/julia/index.md"].bytes).unwrap();
+        assert!(
+            html.contains(
+                "<details class=\"disclosure\"><summary>BibLaTeX &amp; <em>sources</em></summary>"
+            ),
+            "{html}"
+        );
+        assert!(
+            html.contains(
+                "<details class=\"disclosure\" open><summary><code>More</code></summary>"
+            ),
+            "{html}"
+        );
+        assert!(
+            html.contains("</p></details></details><p>After the disclosure."),
+            "{html}"
+        );
+        assert!(markdown.contains("BibLaTeX & *sources*"), "{markdown}");
+        assert!(
+            markdown.contains("```bibtex\n@online{demo, title={A < B}}\n```"),
+            "{markdown}"
+        );
+        assert!(markdown.contains("Extra **details**."), "{markdown}");
+        for body in [html, markdown] {
+            assert!(!body.contains("@raw"), "{body}");
+            assert!(!body.contains("Unsupported content"), "{body}");
+            assert!(body.contains("citation"), "{body}");
+        }
+    }
+    let html = std::str::from_utf8(&mapped.files()["packages/julia/index.html"].bytes).unwrap();
+    let markdown = std::str::from_utf8(&mapped.files()["packages/julia/index.md"].bytes).unwrap();
+    assert!(
+        html.contains(&format!("href=\"{}\"", urls.documents[&fit.path])),
+        "{html}"
+    );
+    assert!(markdown.contains(&urls.documents[&fit.path]), "{markdown}");
+}
+
+#[test]
+fn documenter_disclosures_retain_ranges_inside_nested_markdown() {
+    let source = "# Guide\n\n!!! note\n\n    ```@raw html\n    <DETAILS OPEN=\"false\"><SUMMARY><strong>A &amp; B</strong><br/>more</SUMMARY>\n    ```\n\n    Body.\n\n    ```@raw html\n    </DETAILS>\n    ```\n";
+    let parsed = parse_authored_document(source, AuthoredFormat::Documenter);
+    assert!(parsed.diagnostics.is_empty(), "{:?}", parsed.diagnostics);
+    let Block::Callout { blocks, .. } = &parsed.document.blocks[1] else {
+        panic!("callout")
+    };
+    let Block::Container {
+        kind: DocumentContainerKind::Disclosure { open },
+        blocks,
+        span,
+        ..
+    } = &blocks[1]
+    else {
+        panic!("disclosure: {blocks:?}")
+    };
+    assert!(*open);
+    assert!(
+        source[span.start..span.end]
+            .trim_start()
+            .starts_with("```@raw html")
+    );
+    assert!(source[span.start..span.end].trim_end().ends_with("```"));
+    let Block::Paragraph { inlines, .. } = &blocks[0] else {
+        panic!("summary")
+    };
+    assert!(matches!(&inlines[0], Inline::Strong { .. }));
+    assert!(matches!(&inlines[1], Inline::HardBreak { .. }));
+    assert!(matches!(&blocks[1], Block::Paragraph { .. }));
+}
+
+#[test]
+fn documenter_raw_html_diagnoses_unpaired_malformed_and_active_markup() {
+    for markup in [
+        "<details><summary>Unclosed</summary>",
+        "</details>",
+        "<details><summary>Unclosed summary",
+        "<details>Missing summary",
+        "<details onclick=\"alert(1)\"><summary>Unsafe</summary>",
+        "<details><summary><img src=x onerror=alert(1)></summary>",
+        "<details><summary><script>alert(1)</script></summary>",
+        "<details open open><summary>Duplicate</summary>",
+        "<details><summary>Unsafe</summary><script>alert(1)</script>",
+        "<details><summary><em>Broken</strong></summary>",
+        "<details/><summary>Self-closing</summary>",
+        "<details><summary>&#0;</summary>",
+        "<iframe src=\"https://example.com\"></iframe>",
+    ] {
+        let raw = format!("```@raw html\n{markup}\n```\n");
+        let source = format!("# Guide\n\n{raw}\nPreserved body.\n");
+        let parsed = parse_authored_document(&source, AuthoredFormat::Documenter);
+        assert_eq!(
+            parsed.diagnostics.len(),
+            1,
+            "{markup}: {:?}",
+            parsed.diagnostics
+        );
+        let diagnostic = &parsed.diagnostics[0];
+        assert_eq!(diagnostic.code, DiagnosticCode::UnsupportedAuthoredSyntax);
+        let span = diagnostic.span.unwrap();
+        assert_eq!(&source[span.start..span.end], raw);
+        assert!(
+            matches!(&parsed.document.blocks[1], Block::Unsupported { raw: retained, .. } if retained == &raw),
+            "{:?}",
+            parsed.document.blocks
+        );
+        assert!(matches!(
+            &parsed.document.blocks[2],
+            Block::Paragraph { .. }
+        ));
+    }
+}
+
+#[test]
+fn documenter_raw_html_keeps_active_markup_inert_in_fragments() {
+    let root = support::TestWorkspace::from_fixture("julia-documenter");
+    root.write("docs/index.md", "# Demo\n\n```@raw html\n<details><summary><script>alert(1)</script></summary>\n```\n\nPreserved body.\n\n```@raw html\n</details>\n```\n\n```@raw html\n<details><summary>&lt;script&gt;literal&lt;/script&gt;</summary>\n```\n\nOrdinary content.\n\n```@raw html\n</details>\n```\n");
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
+    assert_eq!(sources.workspace().diagnostics.len(), 2);
+    let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+    let fragments = render_fragments(&Site::new(&snapshot).unwrap()).unwrap();
+    let html = std::str::from_utf8(&fragments.files()["packages/julia/index.html"].bytes).unwrap();
+    assert!(!html.contains("<script"), "{html}");
+    assert_eq!(html.matches("<details class=\"disclosure\"").count(), 1);
+    assert!(
+        html.contains("<summary>&lt;script&gt;literal&lt;/script&gt;</summary>"),
+        "{html}"
+    );
+    assert!(html.contains("Preserved body."), "{html}");
 }
 
 #[test]

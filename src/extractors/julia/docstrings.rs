@@ -10,6 +10,8 @@ use crate::ir::*;
 
 use super::{declaration_provenance, diagnostic, span};
 
+mod disclosures;
+
 /// Structured documentation and diagnostics mapped into the original .jl file.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct JuliaDocstringParse {
@@ -106,6 +108,7 @@ pub(crate) fn parse_documenter(source: &str) -> crate::documents::DocumentParse 
     }
     let root = md::Document::cast(parsed.cst).unwrap();
     let blocks = root.blocks().map(|block| context.block(block)).collect();
+    let blocks = disclosures::resolve(blocks, source, &mut context.diagnostics);
     crate::documents::DocumentParse {
         document: Document {
             span: SourceSpan {
@@ -270,6 +273,12 @@ impl Context<'_> {
             }
             md::Block::CodeBlock(node) => {
                 let language = match node.fence_kind() {
+                    md::FenceKind::Documenter {
+                        directive: md::DocumenterDirective::Raw,
+                        ..
+                    } if self.authored && node.info().split_whitespace().eq(["@raw", "html"]) => {
+                        Some("@raw html".into())
+                    }
                     md::FenceKind::Documenter {
                         directive,
                         arguments: None,
