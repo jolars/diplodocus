@@ -237,10 +237,14 @@ Documenter compatibility.
   generics, preserving generic documentation and fallback methods without
   inventing dependency methods. The Eunoia acceptance recipe verifies all
   three Makie plotting implementations and detached HTML and Markdown.
-- [ ] Resolve the package-overview choice. Automatic README ingestion rejects
-  Eunoia.jl's remote badge images. An authored package index can replace
-  that fallback; determine whether remote-image support also belongs in
-  Diplodocus.
+- [x] Use Eunoia.jl's authored `docs/src/index.md` as the package overview in
+  the full Documenter recipe. Keep overview precedence: authored package
+  index, configured `overview`, README, then package description. Preserve
+  authored HTTP and HTTPS image URLs, including README badges, in snapshots
+  and detached HTML and Markdown without fetching their bytes during
+  extraction or generation. Use local assets when images must remain fixed
+  or work offline. Generated execution output still requires validated local
+  image assets.
 
 ### Eunoia integration follow-up
 
