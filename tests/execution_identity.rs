@@ -5,16 +5,34 @@ mod build_metadata;
 
 #[test]
 fn build_versions_follow_selected_edges_and_reject_ambiguity() {
-    let lock = include_str!("../Cargo.lock");
+    let lock = r#"
+version = 4
+
+[[package]]
+name = "diplodocus"
+version = "0.1.0"
+dependencies = ["toml 1.1.8+spec-1.1.0"]
+
+[[package]]
+name = "toml"
+version = "1.2.0+spec-1.1.0"
+
+[[package]]
+name = "toml"
+version = "1.1.8+spec-1.1.0"
+"#;
     assert_eq!(
-        build_metadata::selected_version(lock, env!("CARGO_PKG_VERSION"), "toml").unwrap(),
+        build_metadata::selected_version(lock, "0.1.0", "toml").unwrap(),
         "1.1.8+spec-1.1.0"
     );
     let ambiguous = lock.replace("\"toml 1.1.8+spec-1.1.0\"", "\"toml\"");
-    assert!(
-        build_metadata::selected_version(&ambiguous, env!("CARGO_PKG_VERSION"), "toml").is_err()
-    );
-    assert!(build_metadata::selected_version(lock, env!("CARGO_PKG_VERSION"), "missing").is_err());
+    assert!(build_metadata::selected_version(&ambiguous, "0.1.0", "toml").is_err());
+    assert!(build_metadata::selected_version(lock, "0.1.0", "missing").is_err());
+}
+
+#[test]
+fn build_components_are_complete_and_sorted() {
+    let lock = include_str!("../Cargo.lock");
     let components = build_metadata::components(lock, env!("CARGO_PKG_VERSION")).unwrap();
     assert_eq!(components.len(), 18);
     assert!(components.windows(2).all(|pair| pair[0].0 < pair[1].0));
