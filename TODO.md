@@ -162,6 +162,79 @@ and package dependencies.
   Datamonger and Shrinkage, by packaging platform binaries without requiring
   a postinstall download.
 
+## Qualpal and qualpalr documentation integration
+
+Use the local checkouts at `../qualpal` and `../qualpalr` as the acceptance case
+for a shared C++ and R documentation site. Both API extractors, cross-repository
+configuration, and explicit R/C++ API associations work. The existing
+documentation still needs the compatibility fixes and migration work below
+before it can build in full.
+
+### Diplodocus work
+
+- [ ] Accept `\item{\dots}` argument labels in Rd documentation. Qualpalr's
+  `plot.qualpal`, `pairs.qualpal`, and `print.qualpal` topics currently fail
+  with `Rd argument names must be static text`. Normalize the ellipsis to
+  the maintained `...` formal and add focused regression coverage.
+- [ ] Preserve argument documentation in standalone deprecated Rd topics without
+  requiring callable formals. `man/autopal-deprecated.Rd` currently produces
+  four argument-matching errors despite having no usage section. Retain its
+  arguments, return values, prose, and help links.
+- [ ] Keep Doxygen diagram suppression from breaking existing Doxyfiles with
+  `WARN_AS_ERROR=YES`. The forced `HAVE_DOT=NO` makes qualpal's `@dot`
+  diagram abort extraction. Cover the generated `build/Doxyfile.docs`,
+  retain genuine extraction diagnostics, and document a headers-only
+  Doxyfile as an alternative.
+- [ ] Support the static Matplotlib SVGs used for qualpal's palette figures
+  through safe normalization or a documented conversion path. Existing files
+  use a DTD, metadata, styles, definitions, references, and clipping paths
+  outside the accepted subset; 15 guide image references currently fail
+  validation. Preserve appearance without enabling scripts or external
+  resource loading, and report asset failures clearly.
+- [ ] Fix `LINE_PREFIX` handling in authored Markdown. Wrapped list text in
+  qualpalr's `NEWS.md`, `CONDUCT.md`, and qualpal's guides currently
+  produces warnings and unsupported spans in HTML and inline code containing
+  spaces in Markdown exports. Preserve continuation spacing and nested
+  structure without rendering parser bookkeeping as content.
+- [ ] Add a complete qualpal/qualpalr acceptance recipe. Cover C++ namespaces,
+  types, templates, overloads, R help topics and S3 methods, executed Rd
+  examples and articles, explicit API associations, and retained figures.
+  Verify detached generation from a relocated snapshot without either
+  checkout, Doxygen, or R. Keep all trial work in disposable source copies.
+
+### Qualpal integration follow-up
+
+- [ ] Configure one site with both repositories, shared guides, separate C++ and
+  R reference sections, explicit API concepts, and the R package's binding
+  relationship to the C++ library. Choose package overviews and navigation
+  explicitly rather than relying on the existing site layouts.
+- [ ] Migrate qualpal's Doxygen guides into content collections. Replace
+  document-wide `#page-id` links and Doxygen API links with supported page
+  and semantic references, convert `\f$...\f$` math, and replace the `@dot`
+  color-space diagram with a supported static figure. Standalone Doxygen
+  pages, groups, and generated diagrams are not currently imported.
+- [ ] Replace or support the inline `<sub>ab</sub>` markup in
+  `vignettes/comparisons.Rmd`. It currently causes rendered R Markdown to
+  fail, although source checking reports only a warning. Preserve the
+  subscript in the published article.
+- [ ] Choose how to publish the introduction's four `rglwidget()` outputs.
+  Provide static figures that work in the prepared build environment, or add
+  explicit widget support with retained browser dependencies and portable
+  snapshots. The current Markdown path attempts an OpenGL snapshot and fails
+  in the supplied headless R environment.
+- [ ] Preserve published URLs using `qualpal/docs/site-contract.json` as the
+  compatibility fixture. Map its 61 legacy paths and recorded anchors to the
+  new site, including member and source pages, and redirect qualpalr's old
+  site. Handle fragment aliases and redirects between origins separately:
+  `presentation.redirects` currently supports neither.
+- [ ] Replace the documentation build and deployment workflows with a shared
+  Diplodocus build under `/docs/`. Prepare both checkouts at selected
+  revisions, Doxygen, R dependencies, and qualpalr's compiled extension
+  before extraction. Include article dependencies such as `maps` and
+  `randtoolbox`, plus the chosen 3D rendering prerequisites. Keep
+  `README.Rmd` generation as a separate knitr step while needed, and
+  validate links, assets, and legacy URLs before deployment.
+
 ## Eunoia.jl documentation integration
 
 Use the local checkouts at `/home/jola/projects/Eunoia.jl` and
@@ -185,26 +258,31 @@ Documenter compatibility.
   anchors. Verify generation from a relocated snapshot without the staged
   source checkout, configuration, or Julia runtime. Use disposable source
   copies for destructive portability checks.
+
 - [x] Extend the Eunoia.jl acceptance recipe to authored Documenter guides,
   gallery execution, and retained figures. Verify figure bytes and links in
   detached HTML and Markdown output after removing the disposable sources.
+
 - [x] Fix Julia Markdown list conversion in
   `src/extractors/julia/docstrings.rs`. Convert inline markup once, preserve
   spaces in wrapped prose, and retain nested blocks in source order. Cover
   inline code, emphasis, links, API references, and exact source attribution
   with focused extraction and fragment regressions.
+
 - [x] Support fenced code nested in Julia Markdown list items. Pin
   `fatou-parser` 0.9.0 for the upstream parser fixes, preserve separate code
   tokens and exact source attribution, and retain indented code blocks.
   Extraction and detached-fragment regressions run normally. The Eunoia
   recipe requires both examples to render as code in HTML and Markdown, with
   no literal fences in HTML list items.
+
 - [x] Support the Documenter page syntax used in Eunoia.jl's `docs/src/`. Add
   `format: documenter` for Julia Markdown with implicit and explicit API,
   page, and heading `@ref` links and named heading anchors. Expand `@index`
   and `@autodocs`, including literal `Modules` and `Private = false`. Retain
   embedded API context and anchors in detached HTML and Markdown. Verify
   Eunoia's three pages, 23 public bindings, and mapped local links.
+
 - [x] Execute Documenter `@example` blocks with prepared Julia dependencies. Add
   `engine: julia` and an explicit `julia-project`, with page-local named
   sessions, isolated anonymous examples, `# hide`, and native text and
@@ -213,6 +291,7 @@ Documenter compatibility.
   verifies all 30 gallery blocks and the homepage example, 30 retained
   figures, and detached HTML and Markdown generation after removing
   disposable sources and configuration.
+
 - [x] Extend the supported Documenter authoring subset for existing Julia pages.
   Add explicit `@docs` selection and the `@autodocs` `Pages` filter, using a
   representative page such as SLOPE's grouped API reference as an acceptance
@@ -220,6 +299,7 @@ Documenter compatibility.
   references, and anchors in snapshot-backed HTML and Markdown. Document the
   supported subset and diagnose unsupported syntax; keep directive selection
   separate from automatic API discovery.
+
 - [x] Define Julia API discovery for generated navigation, search, and fragment
   consumers. `Package::discoverable_items` includes exported and `public`
   bindings, canonical aliases, required module containers, and public
@@ -228,15 +308,18 @@ Documenter compatibility.
   across generated indexes and fragments while preserving private routes and
   direct references. Keep authored `@docs`, `@autodocs`, and `@index`
   selection independent.
+
 - [x] Improve Julia type presentation. Group fields under their owning type in
   declaration order, with stable anchors, annotations, and documentation.
   Keep HTML, Markdown, navigation, search, fragment identities, and host URL
   mapping consistent without separate field pages.
+
 - [x] Support explicitly supplied Julia package extensions through target-level
   `julia.extensions` entry files. Assemble their static methods with core
   generics, preserving generic documentation and fallback methods without
   inventing dependency methods. The Eunoia acceptance recipe verifies all
   three Makie plotting implementations and detached HTML and Markdown.
+
 - [x] Use Eunoia.jl's authored `docs/src/index.md` as the package overview in
   the full Documenter recipe. Keep overview precedence: authored package
   index, configured `overview`, README, then package description. Preserve
