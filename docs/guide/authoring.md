@@ -205,6 +205,62 @@ keep their existing URLs. Fragment output includes the variants and uses
 `100vw` as a conservative size for the embedding site's unknown layout.
 External HTTP links remain external.
 
+### SVG conversion
+
+Local SVG images must satisfy the inert SVG allowlist. Diplodocus rejects DTDs,
+style sheets and attributes, definitions, references, clipping paths, scripts,
+and external resources. A rejected image produces `invalid-content-image` at the
+reference's source location, including the asset path. A missing file still
+produces `unresolved-document-reference`.
+
+For static Matplotlib figures, convert the SVG to PNG before linking it. The
+repository provides [`scripts/convert-svg.py`](../../scripts/convert-svg.py),
+using CairoSVG 2.8.2 with an explicit resource fetcher that rejects every
+secondary resource request. It retains local definitions, glyph references,
+styles, clipping, and transparency. It ignores the unused Matplotlib DTD without
+fetching it, rejects XML entities, active elements, and event handlers, and
+removes metadata and XML processing instructions. Conversion preserves the
+drawing at a fixed pixel density; it does not retain vector scaling or SVG
+accessibility metadata. Keep meaningful alternative text on the Markdown image.
+
+Install Cairo's shared library and `uv` first. From the Diplodocus checkout,
+convert figures in a disposable copy of the source documentation:
+
+```sh
+trial=$(mktemp -d)
+cp -R ../qualpal/docs "$trial/docs"
+uv run scripts/convert-svg.py "$trial"/docs/images/examples/*.svg
+```
+
+On NixOS, expose Cairo's library to the Python process:
+
+```sh
+export LD_LIBRARY_PATH="$(nix build --no-link --print-out-paths nixpkgs#cairo)/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+```
+
+Run that export before conversion. `uv` installs the Python dependencies
+declared in the script. The converter writes a sibling `.png` for each `.svg`,
+refuses to overwrite existing PNGs, and reports failures per input with a
+nonzero exit status. The default `--scale 2` renders twice the SVG's nominal
+pixel dimensions; increase it up to 8 for larger displays. Inspect the converted
+figures before publishing them.
+
+In the disposable guide files, change image destinations such as
+`images/examples/hsl_pal.svg` to `images/examples/hsl_pal.png`. Convert each
+distinct image once, including images referenced by multiple guides. Keep the
+PNGs inside the declared content boundary, run `diplodocus check --config PATH`,
+and then extract and generate normally. Snapshots retain the PNG bytes, so
+detached generation needs neither the original SVGs nor CairoSVG. Conversion is
+an explicit preparation step; Diplodocus does not invoke the converter during
+extraction or generation.
+
+Run the converter's regression tests with `uv run scripts/convert-svg.test.py`
+in an environment with Cairo available. The resource boundary uses CairoSVG's
+[renderer fetch
+hook](https://github.com/Kozea/CairoSVG/blob/2.8.2/cairosvg/surface.py) and [XML
+parser
+protections](https://github.com/Kozea/CairoSVG/blob/2.8.2/cairosvg/parser.py).
+
 Authored images can also use HTTP or HTTPS URLs, including linked README
 badges. Diplodocus preserves these URLs in HTML and Markdown exports without
 downloading, validating, or copying the remote image bytes. Browsers load those

@@ -240,6 +240,39 @@ fn local_assets_are_rechecked_and_active_images_are_rejected() {
 }
 
 #[test]
+fn invalid_content_images_report_validation_failures_with_source_context() {
+    let root = support::acceptance_workspace();
+    for (filename, bytes) in [
+        (
+            "palette.svg",
+            "<!DOCTYPE svg><svg xmlns='http://www.w3.org/2000/svg'/>",
+        ),
+        ("broken.png", "not a PNG"),
+    ] {
+        root.write(format!("core/docs/assets/{filename}"), bytes);
+        root.write(
+            "core/docs/index.md",
+            format!("# Palette\n\n![Palette](assets/{filename})\n"),
+        );
+        let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
+        let error = resolve_workspace(&sources).unwrap_err();
+        let diagnostic = error
+            .diagnostics()
+            .iter()
+            .find(|d| d.code == DiagnosticCode::InvalidContentImage)
+            .unwrap();
+        assert!(diagnostic.message.contains(filename));
+        assert!(
+            diagnostic
+                .message
+                .contains("Convert static Matplotlib SVGs to PNG")
+        );
+        assert!(diagnostic.source.is_some());
+        assert!(diagnostic.span.is_some());
+    }
+}
+
+#[test]
 fn authored_remote_images_require_http_urls_without_credentials() {
     let root = support::TestWorkspace::new();
     root.write("diplodocus.yaml", "project:\n  name: Images\nrepositories:\n  - id: docs\n    path: .\ncontent:\n  - id: guide\n    owner: project\n    repository: docs\n    path: docs\n    mount: ''\n    format: gfm\n");

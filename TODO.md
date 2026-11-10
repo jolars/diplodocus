@@ -184,12 +184,13 @@ before it can build in full.
   with `WARN_AS_ERROR=YES` accept `@dot` blocks without invoking Graphviz. Cover
   the generated `build/Doxyfile.docs`, retain genuine extraction diagnostics,
   and document a headers-only Doxyfile as an alternative.
-- [ ] Support the static Matplotlib SVGs used for qualpal's palette figures
-  through safe normalization or a documented conversion path. Existing files
-  use a DTD, metadata, styles, definitions, references, and clipping paths
-  outside the accepted subset; 15 guide image references currently fail
-  validation. Preserve appearance without enabling scripts or external
-  resource loading, and report asset failures clearly.
+- [x] Support qualpal's static Matplotlib SVGs through a documented PNG
+  conversion path. The converter retains styles, definitions, references,
+  and clipping without scripts or external resource loading. All 15 guide
+  image references validate after conversion in disposable copies, and
+  detached generation retains the figures. Image validation failures now
+  identify the asset and conversion remedy at the authored reference's
+  source location.
 - [ ] Fix `LINE_PREFIX` handling in authored Markdown. Wrapped list text in
   qualpalr's `NEWS.md`, `CONDUCT.md`, and qualpal's guides currently
   produces warnings and unsupported spans in HTML and inline code containing

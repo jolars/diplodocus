@@ -10,6 +10,9 @@ use crate::ir::SourceSpan;
 /// Stable diagnostic identifier.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DiagnosticCode {
+    /// A local image exists but fails image format or inert SVG validation.
+    #[serde(rename = "invalid-content-image")]
+    InvalidContentImage,
     /// Several visible generated pages have the same HTML title.
     #[serde(rename = "duplicate-page-title")]
     DuplicatePageTitle,
@@ -344,6 +347,7 @@ impl DiagnosticCode {
             Self::ExecutionOutputFailed => "execution-output-failed",
             Self::ConflictingExtraction => "conflicting-extraction",
             Self::UnresolvedDocumentReference => "unresolved-document-reference",
+            Self::InvalidContentImage => "invalid-content-image",
             Self::IncompatiblePackageRelationship => "incompatible-package-relationship",
             Self::IndeterminatePackageRelationship => "indeterminate-package-relationship",
             Self::UnsupportedExtractor => "unsupported-extractor",

@@ -560,9 +560,15 @@ fn resolve(
                     let mut diagnostic = Diagnostic::new(
                         code,
                         Severity::Error,
-                        format!(
-                            "Cannot resolve {kind:?} target `{spelling}` unambiguously and safely."
-                        ),
+                        if code == DiagnosticCode::InvalidContentImage {
+                            format!(
+                                "Image asset `{spelling}` failed validation. PNG and JPEG must decode completely; SVG must satisfy the inert image policy, which excludes DTDs, styles, definitions, references, and clipping paths. Convert static Matplotlib SVGs to PNG before linking them; see the SVG conversion recipe in the authoring guide."
+                            )
+                        } else {
+                            format!(
+                                "Cannot resolve {kind:?} target `{spelling}` unambiguously and safely."
+                            )
+                        },
                     )
                     .with_entity(context.entity.clone());
                     diagnostic.span = context
@@ -845,7 +851,7 @@ impl Resolver<'_> {
         if (kind == ReferenceKind::Image || media_type.starts_with("image/"))
             && validate_authored_image_bytes(media_type, &bytes).is_err()
         {
-            return Err(invalid);
+            return Err(DiagnosticCode::InvalidContentImage);
         }
         let fingerprint = fingerprint_bytes(&bytes);
         let asset = AssetReference {
