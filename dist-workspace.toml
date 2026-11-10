@@ -26,6 +26,10 @@ github-release = "host"
 # Whether to install an updater program
 install-updater = false
 
+# cargo-dist 0.33 defaults to macos-14, which GitHub no longer supports.
+[dist.github-custom-runners]
+aarch64-apple-darwin = "macos-15"
+
 # Keep the generated workflow consistent with the checkout version used in CI.
 [dist.github-action-commits]
 "actions/checkout" = "v7"
