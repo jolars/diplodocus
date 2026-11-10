@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.13.1](https://github.com/jolars/diplodocus/compare/v0.13.0...v0.13.1) (2026-11-10)
+
+### Bug Fixes
+
+- use supported macOS runner for releases ([`92350eb`](https://github.com/jolars/diplodocus/commit/92350eb1d48399af3591546d8d0f0b6804d4b130))
+
 ## [0.13.0](https://github.com/jolars/diplodocus/compare/v0.12.1...v0.13.0) (2026-11-09)
 
 ### Features
