@@ -68,13 +68,7 @@ impl Context<'_> {
         let mut diagnostics: Vec<_> = parsed
             .diagnostics
             .into_iter()
-            .filter(|diagnostic| {
-                !matches!(
-                    diagnostic.message.as_str(),
-                    "unsupported authored syntax: LINE_PREFIX"
-                        | "unsupported authored syntax: EMOJI"
-                )
-            })
+            .filter(|diagnostic| diagnostic.message != "unsupported authored syntax: EMOJI")
             .collect();
         for block in &mut parsed.document.blocks {
             paragraph_roles(block, &text, &mut diagnostics, &mut self.panache_used);

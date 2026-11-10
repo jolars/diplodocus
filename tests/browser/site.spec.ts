@@ -54,6 +54,22 @@ async function chooseTheme(page: Page, info: TestInfo, value: string) {
   if (info.project.name === "mobile") await page.keyboard.press("Escape");
 }
 
+test("wrapped Markdown preserves continuation spacing and nested structure", async ({ page }, info) => {
+  await page.goto("/continuations.html");
+  const main = page.getByRole("main");
+  await expect(main.locator(".unsupported")).toHaveCount(0);
+  await expect(main).toContainText("experimental continuous refinement");
+  await expect(main).toContainText("electronic address, without explicit permission");
+  await expect(main.locator("em")).toHaveText("emphasized continuation");
+  await expect(main.getByRole("link", { name: "linked continuation", exact: true })).toBeVisible();
+  await expect(main.locator("ul ul > li > p")).toContainText("Inner text continues with literal  spaces.");
+  await expect(main.locator("blockquote blockquote")).toHaveText("Deeper quote continues.");
+  await expect(main.locator("ul ol > li")).toHaveText("Ordered text continues.");
+  await expect(main.locator("code").filter({ hasText: /^\s+$/ })).toHaveCount(0);
+  await fitsViewport(page);
+  await capture(page, info, "markdown-continuations");
+});
+
 test("Documenter disclosures toggle with and without JavaScript", async ({ page, browser, baseURL }, info) => {
   await page.goto("/disclosures/index.html");
   const disclosure = page.locator("main details.disclosure").first();

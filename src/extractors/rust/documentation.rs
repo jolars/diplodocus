@@ -63,17 +63,9 @@ pub(super) fn parse(
         links: &links,
         substitutions: &substitutions,
         diagnostics: Vec::new(),
-        layout_spans: BTreeSet::new(),
     };
     resolver.blocks(&mut parsed.document.blocks);
     for mut diagnostic in parsed.diagnostics.into_iter().chain(resolver.diagnostics) {
-        if diagnostic.message == "unsupported authored syntax: LINE_PREFIX"
-            && diagnostic
-                .span
-                .is_some_and(|span| resolver.layout_spans.contains(&(span.start, span.end)))
-        {
-            continue;
-        }
         diagnostic.code = DiagnosticCode::RustDocumentation;
         diagnostic.related_entity = Some(DiagnosticEntity::Item {
             package: package.into(),
@@ -109,7 +101,6 @@ struct Resolver<'a> {
     links: &'a BTreeMap<String, rd::Id>,
     substitutions: &'a BTreeMap<String, rd::Id>,
     diagnostics: Vec<Diagnostic>,
-    layout_spans: BTreeSet<(usize, usize)>,
 }
 
 impl Resolver<'_> {
@@ -205,17 +196,6 @@ impl Resolver<'_> {
                 | Inline::Styled { inlines, .. }
                 | Inline::Citation { inlines, .. } => self.inlines(inlines),
                 Inline::Image { alt, .. } => self.inlines(alt),
-                Inline::Unsupported {
-                    source_kind,
-                    raw,
-                    span,
-                } if source_kind == "LINE_PREFIX" && raw.trim().is_empty() => {
-                    self.layout_spans.insert((span.start, span.end));
-                    *inline = Inline::Text {
-                        value: raw.clone(),
-                        span: *span,
-                    };
-                }
                 _ => {}
             }
         }

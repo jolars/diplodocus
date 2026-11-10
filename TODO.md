@@ -191,11 +191,11 @@ before it can build in full.
   detached generation retains the figures. Image validation failures now
   identify the asset and conversion remedy at the authored reference's
   source location.
-- [ ] Fix `LINE_PREFIX` handling in authored Markdown. Wrapped list text in
-  qualpalr's `NEWS.md`, `CONDUCT.md`, and qualpal's guides currently
-  produces warnings and unsupported spans in HTML and inline code containing
-  spaces in Markdown exports. Preserve continuation spacing and nested
-  structure without rendering parser bookkeeping as content.
+- [x] Handle `LINE_PREFIX` as parser layout in authored Markdown. Wrapped
+  list text in qualpalr's `NEWS.md`, `CONDUCT.md`, and qualpal's guides
+  retains continuation spacing and nested structure without warnings,
+  unsupported HTML spans, or whitespace-only code in Markdown exports.
+  Regression tests cover GFM, QMD, R Markdown, CRLF, fragments, and rendering.
 - [ ] Add a complete qualpal/qualpalr acceptance recipe. Cover C++ namespaces,
   types, templates, overloads, R help topics and S3 methods, executed Rd
   examples and articles, explicit API associations, and retained figures.

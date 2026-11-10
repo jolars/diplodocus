@@ -293,27 +293,18 @@ impl AdapterContext {
                     });
                 }
                 Some(Block::Paragraph {
-                    inlines: paragraph
-                        .inline_nodes()
-                        .map(|inline| self.inline(inline))
-                        .collect(),
+                    inlines: self.inlines(paragraph.inline_nodes()),
                     span: span(paragraph.syntax().text_range()),
                 })
             }
             BlockNode::Plain(plain) => Some(Block::Paragraph {
-                inlines: plain
-                    .inline_nodes()
-                    .map(|inline| self.inline(inline))
-                    .collect(),
+                inlines: self.inlines(plain.inline_nodes()),
                 span: span(plain.syntax().text_range()),
             }),
             BlockNode::Heading(heading) => Some(Block::Heading {
                 level: heading.level(),
                 attributes: heading.attributes().map(attributes).unwrap_or_default(),
-                inlines: heading
-                    .inline_nodes()
-                    .map(|inline| self.inline(inline))
-                    .collect(),
+                inlines: self.inlines(heading.inline_nodes()),
                 span: span(heading.syntax().text_range()),
             }),
             BlockNode::BlockQuote(quote) => {
@@ -458,11 +449,9 @@ impl AdapterContext {
                             (
                                 crate::ir::DocumentContainerKind::DefinitionTerm,
                                 vec![Block::Paragraph {
-                                    inlines: child
-                                        .children_with_tokens()
-                                        .map(InlineNode::cast)
-                                        .map(|i| self.inline(i))
-                                        .collect(),
+                                    inlines: self.inlines(
+                                        child.children_with_tokens().map(InlineNode::cast),
+                                    ),
                                     span: range,
                                 }],
                             )
@@ -661,12 +650,7 @@ impl AdapterContext {
         };
         let caption = table
             .caption()
-            .map(|caption| {
-                caption
-                    .inline_nodes()
-                    .map(|inline| self.inline(inline))
-                    .collect()
-            })
+            .map(|caption| self.inlines(caption.inline_nodes()))
             .unwrap_or_default();
         let alignments = table
             .alignments()
@@ -699,10 +683,7 @@ impl AdapterContext {
                                 .collect()
                         } else {
                             vec![Block::Paragraph {
-                                inlines: cell
-                                    .inline_nodes()
-                                    .map(|inline| self.inline(inline))
-                                    .collect(),
+                                inlines: self.inlines(cell.inline_nodes()),
                                 span: cell_span,
                             }]
                         };
@@ -721,6 +702,15 @@ impl AdapterContext {
             rows,
             span: span(table.syntax().text_range()),
         }
+    }
+
+    fn inlines(&mut self, nodes: impl Iterator<Item = InlineNode>) -> Vec<Inline> {
+        // Container prefixes retain source indentation and quote markers. The
+        // parser emits separate breaks, which preserve continuation spacing.
+        nodes
+            .filter(|node| node.syntax_kind() != panache_parser::syntax::SyntaxKind::LINE_PREFIX)
+            .map(|node| self.inline(node))
+            .collect()
     }
 
     fn inline(&mut self, inline: InlineNode) -> Inline {
@@ -752,24 +742,15 @@ impl AdapterContext {
                 span: span(text.text_range()),
             },
             InlineNode::Emphasis(container) => Inline::Emphasis {
-                inlines: container
-                    .inline_nodes()
-                    .map(|inline| self.inline(inline))
-                    .collect(),
+                inlines: self.inlines(container.inline_nodes()),
                 span: span(container.syntax().text_range()),
             },
             InlineNode::Strong(container) => Inline::Strong {
-                inlines: container
-                    .inline_nodes()
-                    .map(|inline| self.inline(inline))
-                    .collect(),
+                inlines: self.inlines(container.inline_nodes()),
                 span: span(container.syntax().text_range()),
             },
             InlineNode::Strikeout(container) => Inline::Strikeout {
-                inlines: container
-                    .inline_nodes()
-                    .map(|inline| self.inline(inline))
-                    .collect(),
+                inlines: self.inlines(container.inline_nodes()),
                 span: span(container.syntax().text_range()),
             },
             InlineNode::Code(code) => Inline::Code {
@@ -804,14 +785,14 @@ impl AdapterContext {
             InlineNode::Superscript(container) if self.format == AuthoredFormat::Rmd => {
                 Inline::Styled {
                     style: crate::ir::InlineStyle::Superscript,
-                    inlines: container.inline_nodes().map(|i| self.inline(i)).collect(),
+                    inlines: self.inlines(container.inline_nodes()),
                     span: span(container.syntax().text_range()),
                 }
             }
             InlineNode::Subscript(container) if self.format == AuthoredFormat::Rmd => {
                 Inline::Styled {
                     style: crate::ir::InlineStyle::Subscript,
-                    inlines: container.inline_nodes().map(|i| self.inline(i)).collect(),
+                    inlines: self.inlines(container.inline_nodes()),
                     span: span(container.syntax().text_range()),
                 }
             }
@@ -872,10 +853,7 @@ impl AdapterContext {
             link.text().map(|text| text.raw_label()),
         );
         Inline::Link {
-            inlines: link
-                .inline_nodes()
-                .map(|inline| self.inline(inline))
-                .collect(),
+            inlines: self.inlines(link.inline_nodes()),
             target,
             title,
             attributes: link.attributes().map(attributes).unwrap_or_default(),
@@ -892,10 +870,7 @@ impl AdapterContext {
             image.alt().map(|alt| alt.syntax().text().to_string()),
         );
         Inline::Image {
-            alt: image
-                .inline_nodes()
-                .map(|inline| self.inline(inline))
-                .collect(),
+            alt: self.inlines(image.inline_nodes()),
             target,
             title,
             attributes: image.attributes().map(attributes).unwrap_or_default(),

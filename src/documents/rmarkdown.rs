@@ -163,7 +163,7 @@ impl AdapterContext {
         let range = span(table.syntax().text_range());
         let caption = table
             .caption()
-            .map(|c| c.inline_nodes().map(|i| self.inline(i)).collect())
+            .map(|c| self.inlines(c.inline_nodes()))
             .unwrap_or_default();
         let rows: Vec<_> = table
             .rows()
@@ -176,7 +176,7 @@ impl AdapterContext {
                         let range = span(cell.syntax().text_range());
                         TableCell {
                             blocks: vec![Block::Paragraph {
-                                inlines: cell.inline_nodes().map(|i| self.inline(i)).collect(),
+                                inlines: self.inlines(cell.inline_nodes()),
                                 span: range,
                             }],
                             span: range,
@@ -197,11 +197,7 @@ impl AdapterContext {
     }
 
     pub(super) fn rmd_unknown(&mut self, unknown: &UnknownNode) -> Option<Inline> {
-        if matches!(
-            unknown.syntax_kind(),
-            panache_parser::syntax::SyntaxKind::LINE_PREFIX
-                | panache_parser::syntax::SyntaxKind::TABLE_CAPTION_PREFIX
-        ) {
+        if unknown.syntax_kind() == panache_parser::syntax::SyntaxKind::TABLE_CAPTION_PREFIX {
             return Some(Inline::Text {
                 value: String::new(),
                 span: span(unknown.text_range()),

@@ -74,6 +74,7 @@ if (mode === "serve-test") {
     writeFileSync(configuration, readFileSync(configuration, "utf8").replace(/^content:/m, `${cppPackage}content:`));
     cpSync(join(root, "tests/fixtures/sidebar-navigation/pages"), join(workspace, "docs/sidebar"), { recursive: true });
     cpSync(join(root, "tests/fixtures/tabsets.md"), join(workspace, "docs/tabsets.md"));
+    cpSync(join(root, "tests/fixtures/markdown-continuations/index.md"), join(workspace, "docs/continuations.md"));
     cpSync(join(root, "tests/fixtures/full-layout.md"), join(workspace, "docs/full-layout.md"));
     mkdirSync(join(workspace, "disclosures"));
     cpSync(join(root, "tests/fixtures/documenter-disclosures.md"), join(workspace, "disclosures/index.md"));
