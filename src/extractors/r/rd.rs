@@ -1107,8 +1107,15 @@ pub(super) fn attach(
                     .map(|parameter| parameter.name.as_str())
             })
             .collect();
+        // Standalone deprecated topics document removed APIs without callable formals.
+        // Topics attached to maintained declarations still require matching arguments.
+        let standalone_deprecated = !targets.is_empty()
+            && targets.keys().all(|id| matches!(&items[id].language_data,
+                Some(ItemLanguageData::R(data)) if matches!(data.declaration, RDeclaration::DeprecatedTopic)));
         for part in &topic.parts {
-            if let Part::Arguments(arguments) = part {
+            if let Part::Arguments(arguments) = part
+                && !standalone_deprecated
+            {
                 for (names, _) in arguments {
                     for name in names {
                         if !parameters.contains(name.as_str()) {

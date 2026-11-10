@@ -537,6 +537,115 @@ fn constants_and_deprecated_aliases_survive_snapshot_and_link_resolution() {
 }
 
 #[test]
+fn qualpal_deprecated_topic_content_and_links_survive_without_sources() {
+    let workspace = support::shared_r_workspace();
+    let rd = include_str!("fixtures/qualpalr-help/autopal-deprecated.Rd");
+    workspace.write("r/man/autopal-deprecated.Rd", rd);
+    workspace.write("r/R/qualpal.R", "qualpal <- function() NULL");
+    workspace.write(
+        "r/man/qualpal.Rd",
+        r"\name{qualpal}\alias{qualpal}\title{Palette}\usage{qualpal()}\description{A palette.}",
+    );
+    workspace.write("r/man/qualpal-deprecated.Rd", r"\name{qualpal-deprecated}\alias{qualpal-deprecated}\title{Deprecated palette API}\description{Earlier palette API.}");
+
+    let sources = assemble_workspace(workspace.path().join("workspace/diplodocus.yaml")).unwrap();
+    let resolved = resolve_workspace(&sources).unwrap();
+    for (spelling, identity) in [
+        (
+            "@ref qualpal",
+            diplodocus::ir::SemanticIdentity::r_function("qualpal").unwrap(),
+        ),
+        (
+            "@ref qualpal-deprecated",
+            diplodocus::ir::SemanticIdentity::r_deprecated_topic("qualpal-deprecated").unwrap(),
+        ),
+    ] {
+        assert!(resolved.records().iter().flat_map(|record| &record.references).any(|reference|
+            reference.spelling == spelling && matches!(&reference.target,
+                ReferenceTarget::Item { item } if item.package == "rfoo" && item.item == identity.item_id())), "{spelling}");
+    }
+    let snapshot = Snapshot::from_sources(&sources, &resolved).unwrap();
+    let topic = snapshot.workspace().packages["rfoo"]
+        .items
+        .values()
+        .find(|item| item.name == "autopal-deprecated")
+        .unwrap();
+    assert!(topic.signatures.is_empty());
+    assert_eq!(
+        topic.documentation.as_ref().unwrap().raw_source.as_deref(),
+        Some(rd)
+    );
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("snapshot.sqlite");
+    snapshot.publish(&path).unwrap();
+    let expected = snapshot.canonical_export().unwrap();
+    drop(snapshot);
+    drop(sources);
+    drop(workspace);
+    let loaded = Snapshot::load(&path).unwrap();
+    assert_eq!(loaded.canonical_export().unwrap(), expected);
+    let rendered =
+        diplodocus::rendering::render_site(&diplodocus::site::Site::new(&loaded).unwrap()).unwrap();
+    let page = std::str::from_utf8(
+        &rendered.files()["packages/r/reference/autopal-deprecated.html"].bytes,
+    )
+    .unwrap();
+    for text in [
+        ">Arguments</h2>",
+        ">Value</h2>",
+        ">Details</h2>",
+        ">See also</h2>",
+        "<code>n</code>",
+        "<code>colorspace</code>",
+        "<code>cvd</code>",
+        "<code>target</code>",
+        "Number of colors to generate.",
+        "specifying one of the predefined color spaces",
+        "Color vision deficiency adaptation to adapt the color palette to.",
+        "Target color difference.",
+        "A matrix of the colors in the HSL color space.",
+        "A matrix of the colors in the sRGB color space.",
+        "character vector of the colors in hex notation.",
+        "de_DIN99d",
+        "A distance matrix of color differences according to the",
+        "backwards compatibility.",
+        "min_de_DIN99d",
+        "The minimum pairwise DIN99d color difference among all colors in the",
+        "This function is deprecated and will be removed in a future",
+        "This function adapts color palettes to color vision deficiency (CVD) by",
+        "The rationale for this function is that when there are few colors in a color",
+        "href=\"qualpal.html\"",
+        "href=\"qualpal-deprecated.html\"",
+    ] {
+        assert!(page.contains(text), "{text}");
+    }
+    assert!(!page.contains("data-signature"));
+    let markdown =
+        std::str::from_utf8(&rendered.files()["packages/r/reference/autopal-deprecated.md"].bytes)
+            .unwrap();
+    for text in [
+        "Arguments",
+        "`n`",
+        "`colorspace`",
+        "`cvd`",
+        "`target`",
+        "Number of colors to generate.",
+        "Value",
+        "A matrix of the colors in the HSL color space.",
+        "A matrix of the colors in the sRGB color space.",
+        "character vector of the colors in hex notation.",
+        "backwards compatibility.",
+        "This function is deprecated and will be removed in a future",
+        "Details",
+        "See also",
+        "qualpal.html",
+        "qualpal-deprecated.html",
+    ] {
+        assert!(markdown.contains(text), "{text}");
+    }
+}
+
+#[test]
 fn described_lists_preserve_interstitial_prose_and_nested_content() {
     let workspace = fixture();
     replace_topic(

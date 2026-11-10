@@ -171,6 +171,12 @@ Package topics with `\docType{package}` create a documented namespace item
 without a maintained function or signature. Their aliases remain separate
 from callable aliases, and conflicting package topics or aliases are errors.
 
+Standalone topics named `*-deprecated` or `*_deprecated` without `\usage`
+retain argument documentation without requiring callable formals. Their return
+values, prose, and help links use the same lowering and resolution rules as other
+Rd topics, and they have no function signature. If the topic attaches to a
+maintained declaration, its arguments must still match that declaration's formals.
+
 Dataset usage supports bare object names, including backtick names. Calls,
 assignments, and other expressions produce errors. The `\docType{data}` marker
 sets the declaration kind, while `\format` and `\source` become headed sections

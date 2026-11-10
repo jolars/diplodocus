@@ -1628,6 +1628,102 @@ fn deprecated_help_topics_preserve_aliases_without_inventing_functions() {
 }
 
 #[test]
+fn standalone_deprecated_topics_preserve_arguments_without_callable_formals() {
+    let original = include_str!("fixtures/qualpalr-help/autopal-deprecated.Rd");
+    for name in ["autopal-deprecated", "autopal_deprecated"] {
+        let rd = original.replace("autopal-deprecated", name);
+        let result = extract(&small("", "", &rd));
+        assert_eq!(codes(&result), ["r-rd-source-attribution"], "{name}");
+        assert_eq!(result.items.len(), 1);
+        let help = item(&result, name);
+        assert!(matches!(&help.language_data,
+            Some(ItemLanguageData::R(data)) if matches!(data.declaration, RDeclaration::DeprecatedTopic)));
+        assert!(help.signatures.is_empty());
+        assert!(!help.discoverable());
+        let doc = help.documentation.as_ref().unwrap();
+        assert_eq!(doc.raw_source.as_deref(), Some(rd.as_str()));
+        let arguments = doc
+            .document
+            .blocks
+            .iter()
+            .find_map(|block| match block {
+                Block::Container {
+                    kind: DocumentContainerKind::DefinitionList,
+                    blocks,
+                    ..
+                } => Some(blocks),
+                _ => None,
+            })
+            .unwrap();
+        let (arguments, remainder) = arguments.as_chunks::<2>();
+        assert!(remainder.is_empty());
+        assert_eq!(arguments.len(), 4);
+        for (entry, (name, description)) in arguments.iter().zip([
+            ("n", "Number of colors to generate."),
+            (
+                "colorspace",
+                "specifying one of the predefined color spaces",
+            ),
+            ("cvd", "Color vision deficiency adaptation"),
+            ("target", "Target color difference."),
+        ]) {
+            let Block::Container { kind, blocks, .. } = &entry[0] else {
+                panic!("expected an argument term");
+            };
+            assert_eq!(*kind, DocumentContainerKind::DefinitionTerm);
+            let Block::Paragraph { inlines, .. } = &blocks[0] else {
+                panic!("expected an argument label");
+            };
+            assert!(matches!(inlines.as_slice(), [Inline::Code { value, .. }] if value == name));
+            assert!(
+                serde_json::to_string(&entry[1])
+                    .unwrap()
+                    .contains(description)
+            );
+        }
+    }
+}
+
+#[test]
+fn topics_without_usage_still_validate_maintained_function_arguments() {
+    for name in ["old_api", "foo-deprecated", "foo_deprecated"] {
+        let rd = format!(
+            r"\name{{{name}}}\alias{{old_api}}\title{{Old API}}
+\arguments{{\item{{x}}{{A value.}}\item{{obsolete}}{{An unknown argument.}}}}
+\description{{Use another API.}}"
+        );
+        let result = extract(&small("old_api <- function(x) x", "export(old_api)", &rd));
+        let errors: Vec<_> = result
+            .diagnostics
+            .iter()
+            .filter(|diagnostic| diagnostic.severity == Severity::Error)
+            .collect();
+        assert_eq!(errors.len(), 1, "{name}: {:?}", result.diagnostics);
+        assert_eq!(errors[0].code.as_str(), "r-rd-information-loss");
+        assert!(
+            errors[0]
+                .message
+                .contains("Rd argument `obsolete` does not match")
+        );
+        assert_eq!(result.items.len(), 1);
+        let function = item(&result, "old_api");
+        assert!(matches!(
+            &function.signatures[0].signature,
+            Signature::Callable { .. }
+        ));
+        assert_eq!(
+            function
+                .documentation
+                .as_ref()
+                .unwrap()
+                .raw_source
+                .as_deref(),
+            Some(rd.as_str())
+        );
+    }
+}
+
+#[test]
 fn documented_constants_require_unambiguous_maintained_bindings() {
     for source in [
         "",

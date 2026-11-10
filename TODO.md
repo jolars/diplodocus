@@ -176,10 +176,10 @@ before it can build in full.
   `\dots` and `\ldots` to the maintained `...` formal, including grouped
   labels. Regression tests cover qualpalr's `plot.qualpal`, `pairs.qualpal`,
   and `print.qualpal` topics, preserved source, and unmatched formals.
-- [ ] Preserve argument documentation in standalone deprecated Rd topics without
-  requiring callable formals. `man/autopal-deprecated.Rd` currently produces
-  four argument-matching errors despite having no usage section. Retain its
-  arguments, return values, prose, and help links.
+- [x] Preserve argument documentation in standalone deprecated Rd topics without
+  requiring callable formals. Qualpalr's `man/autopal-deprecated.Rd` retains
+  its arguments, return values, prose, and help links through snapshot
+  rendering. Maintained functions still require matching formals.
 - [ ] Keep Doxygen diagram suppression from breaking existing Doxyfiles with
   `WARN_AS_ERROR=YES`. The forced `HAVE_DOT=NO` makes qualpal's `@dot`
   diagram abort extraction. Cover the generated `build/Doxyfile.docs`,
