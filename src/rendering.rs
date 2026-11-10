@@ -1,5 +1,6 @@
 //! Rendering of validated site models into static output.
 
+pub(crate) mod cpp;
 mod footer;
 mod fragments;
 mod highlighting;
@@ -10,6 +11,7 @@ pub(crate) mod julia;
 mod katex_assets;
 mod markdown;
 mod math;
+pub(crate) mod members;
 mod navigation;
 mod package_metadata;
 mod publish;

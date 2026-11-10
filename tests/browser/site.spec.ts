@@ -498,13 +498,13 @@ test("landing navbar stays opaque and its border spans the viewport after scroll
   await expect.poll(async () => (await border()).opacity).toBe("0");
 });
 
-test("landing page shares the navbar with guides and all four language sections", async ({ page }, info) => {
+test("landing page shares the navbar with guides and all language sections", async ({ page }, info) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(homeHeading);
   await expect(page.locator(".home-feature")).toHaveCount(4);
   await expect(page.locator(".home-artwork img")).toBeVisible();
   await openSections(page, info);
-  await expect(sections(page, info).getByRole("link")).toHaveText(["Guide", "Python", "R", "Julia", "Rust"]);
+  await expect(sections(page, info).getByRole("link")).toHaveText(["Guide", "Python", "R", "Julia", "Rust", "C++"]);
   await expect(sections(page, info).locator("[aria-current]")).toHaveCount(0);
   const shell = await page.evaluateHandle(() => ({
     document,
@@ -1024,7 +1024,7 @@ test("phone menu contains sections and repository links and dismisses", async ({
   await expect(page.locator(".mobile-sections")).toBeHidden();
   await expect(page.locator(".header-actions > .repository-link")).toBeHidden();
   await summary.tap();
-  await expect(menu.getByRole("link")).toHaveCount(6);
+  await expect(menu.getByRole("link")).toHaveCount(7);
   await expect(menu.locator(".repository-link")).toBeVisible();
   await capture(page, info, "phone-menu-open");
   await page.keyboard.press("Escape");
@@ -1360,7 +1360,7 @@ test("global sections select a contextual sidebar", async ({ page }, info) => {
     await expect(global).toBeVisible();
   }
   await openNavigation(page, info);
-  await expect(global.locator("a")).toHaveText(["Guide", "Python", "R", "Julia", "Rust"]);
+  await expect(global.locator("a")).toHaveText(["Guide", "Python", "R", "Julia", "Rust", "C++"]);
   await expect(global.locator('[aria-current="true"]')).toHaveText("Guide");
   await expect(navigation.getByRole("group", { name: "Guide", exact: true }).getByRole("link", { name: "Overview", exact: true })).toBeVisible();
   await expect(navigation.getByRole("group", { name: "Guides", exact: true }).getByRole("link", { name: "Comparing predictions" })).toBeVisible();
@@ -2081,4 +2081,28 @@ test("responsive images download smaller candidates at standard and high pixel d
       await context.close();
     }
   }
+});
+
+
+test("C++ overload families retain documentation and member anchors", async ({ page }, info) => {
+  await page.goto("/");
+  await page.getByRole("searchbox").fill("demo::Builder::setWhitePoint");
+  const result = page.locator("#search-results").getByRole("link", {
+    name: "demo::Builder::setWhitePoint · C++ API example", exact: true,
+  });
+  await expect(result).toHaveCount(1);
+  await result.click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("demo::Builder");
+  expect(new URL(page.url()).hash).toMatch(/^#cpp-/);
+  const main = page.getByRole("main");
+  await expect(main).toContainText("Standard white point index");
+  await expect(main).toContainText("Three XYZ values");
+  await expect(main).not.toContainText("private_value");
+  await expect(main.locator("pre").filter({ hasText: "setWhitePoint(int point)" })).toHaveCount(1);
+  await fitsViewport(page);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await capture(page, info, "cpp-builder");
+  const markdownUrl = await page.locator('link[rel="alternate"][type="text/markdown"]').getAttribute("href");
+  const response = await page.request.get(markdownUrl!);
+  expect(await response.text()).toContain("Builder & setWhitePoint(int point)");
 });

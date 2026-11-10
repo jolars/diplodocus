@@ -8,6 +8,9 @@ runtimes. Rust tests cover
 the extraction and generation contracts; Playwright tests exercise the pages
 through Chromium.
 
+The test workspace also includes a small C++ API fixture. Its Doxygen extraction
+checks templates, overloaded methods, links, and member anchors in the browser.
+
 ## Setup
 
 From the repository root:

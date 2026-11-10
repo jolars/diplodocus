@@ -9,8 +9,7 @@ pub(super) fn assemble(
     workspace: &mut Workspace,
     selections: &mut DeclaredSourceInputs,
     observed: &mut ObservedInputs,
-    julia_results: &mut BTreeMap<(String, String), julia::JuliaExtraction>,
-    rust_results: &mut BTreeMap<(String, String), super::rust_native::RustNativeExtraction>,
+    native: &mut super::NativeExtractions,
 ) -> Result<(), AssemblyError> {
     for (index, declaration) in configuration.packages.iter().enumerate() {
         let resolved = &paths.packages[index];
@@ -40,8 +39,22 @@ pub(super) fn assemble(
                 },
             );
             let fragment = match target.extractor.as_str() {
+                "doxygen" => {
+                    let result = native
+                        .doxygen
+                        .remove(&(declaration.id.clone(), target.id.clone()))
+                        .ok_or(AssemblyError::InputsChanged)?;
+                    Fragment {
+                        version: result.metadata.version.clone(),
+                        metadata: Some(crate::ir::PackageMetadata::Cpp(result.metadata)),
+                        items: result.extraction.items,
+                        diagnostics: result.extraction.diagnostics,
+                        provenance: result.provenance,
+                    }
+                }
                 "rust" => {
-                    let result = rust_results
+                    let result = native
+                        .rust
                         .remove(&(declaration.id.clone(), target.id.clone()))
                         .ok_or(AssemblyError::InputsChanged)?;
                     if let Some(doctests) = result.doctests {
@@ -56,7 +69,8 @@ pub(super) fn assemble(
                     }
                 }
                 "julia" => {
-                    let result = julia_results
+                    let result = native
+                        .julia
                         .remove(&(declaration.id.clone(), target.id.clone()))
                         .unwrap_or_else(|| julia::extract_target(repository, resolved, selected));
                     Fragment {
@@ -217,7 +231,7 @@ pub(super) fn assemble(
                         let absolute = repository.path.join(path.as_str());
                         if let Ok(relative) = absolute.strip_prefix(&resolved.path) {
                             selected_inputs.push(relative.to_owned());
-                        } else if target.extractor == "rust" {
+                        } else if matches!(target.extractor.as_str(), "rust" | "doxygen") {
                             selections
                                 .package_documentation
                                 .entry(repository.id.clone())

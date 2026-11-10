@@ -66,6 +66,20 @@ impl PythonIdentityKind {
 pub struct SemanticIdentity(String);
 
 impl SemanticIdentity {
+    /// Build a C++ declaration or callable-family key from its defining name.
+    pub fn cpp(name: &str, kind: &str) -> Result<Self, IdentityError> {
+        nonempty("canonical-name", name)?;
+        nonempty("cpp-kind", kind)?;
+        Ok(Self(format!("sid1:cpp:{}:{}", atom(kind), atom(name))))
+    }
+
+    /// Build a C++ overload key from normalized dispatch syntax.
+    /// Parameter names, defaults, source offsets, and native IDs are excluded.
+    pub fn cpp_overload(name: &str, dispatch: &SignatureExpression) -> Result<Self, IdentityError> {
+        let mut key = format!("{}:overload:", Self::cpp(name, "callable")?.0);
+        expression(&mut key, dispatch)?;
+        Ok(Self(key))
+    }
     /// Build a Rust declaration key from its defining path and declaration kind.
     pub fn rust(name: &str, kind: &str) -> Result<Self, IdentityError> {
         nonempty("canonical-name", name)?;

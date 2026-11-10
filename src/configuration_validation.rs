@@ -130,6 +130,16 @@ pub fn validate_configuration(configuration: &WorkspaceConfiguration) -> Vec<Dia
 
         let mut targets = Names::new(DiagnosticCode::DuplicateTargetId);
         for (target_index, target) in package.targets.iter().enumerate() {
+            if target.extractor == "doxygen" && package.ecosystem != "cpp" {
+                diagnostics.push(error(
+                    DiagnosticCode::InvalidConfiguration,
+                    "Doxygen targets require ecosystem `cpp`.".into(),
+                    DiagnosticEntity::Target {
+                        package: package.id.clone(),
+                        id: target.id.clone(),
+                    },
+                ));
+            }
             targets.declare(
                 &target.id,
                 format!("packages[{index}].targets[{target_index}].id"),

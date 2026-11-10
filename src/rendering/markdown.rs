@@ -24,10 +24,9 @@ pub(super) fn page(
         resolved: page.resolved,
         identifiers: page.resolved.map(|d| d.anchors.clone()).unwrap_or_default(),
         headings: true,
-        heading_offset: usize::from(
-            page.item
-                .is_some_and(|item| super::rust::data(item).is_some()),
-        ),
+        heading_offset: usize::from(page.item.is_some_and(|item| {
+            super::rust::data(item).is_some() || super::cpp::data(item).is_some()
+        })),
         cell: 0,
     };
     renderer
@@ -45,7 +44,7 @@ pub(super) fn page(
             renderer.identifiers.insert("constructor".into());
         }
     }
-    if let Some(rust) = &page.rust_page {
+    if let Some(rust) = &page.api_page {
         renderer
             .identifiers
             .extend(rust.sections.iter().map(|section| section.anchor.clone()));
@@ -293,7 +292,7 @@ pub(super) fn page(
             }
         }
     }
-    if let Some(rust) = &page.rust_page {
+    if let Some(rust) = &page.api_page {
         for section in &rust.sections {
             anchor(&mut output, &section.anchor);
             let title = if let Some(target) = section
@@ -329,10 +328,10 @@ pub(super) fn page(
                 ));
             }
             if let Some(documentation) = &section.documentation {
-                output.push_str(&rust_document(site, route, documentation, 2)?);
+                output.push_str(&api_document(site, route, documentation, 2)?);
             }
             for member in &section.members {
-                output.push_str(&rust_member(site, route, member, 3)?);
+                output.push_str(&api_member(site, route, member, 3)?);
             }
         }
     }
@@ -377,10 +376,10 @@ pub(super) fn page(
     Ok(format!("{}\n", output.trim_end()))
 }
 
-fn rust_member(
+fn api_member(
     site: &Site<'_>,
     route: &str,
-    member: &super::rust::RustMember<'_>,
+    member: &super::members::ApiMember<'_>,
     level: usize,
 ) -> Result<String, SiteError> {
     let mut output = String::new();
@@ -398,23 +397,23 @@ fn rust_member(
                 site,
                 &member.item.name,
                 &signature.signature,
-                "rust",
+                &site.workspace.packages[&member.reference.package].ecosystem,
             ),
-            "rust",
+            &site.workspace.packages[&member.reference.package].ecosystem,
         ));
     }
     output.push_str(&sources(site, member.item));
-    output.push_str(&rust_document(site, route, member, level)?);
+    output.push_str(&api_document(site, route, member, level)?);
     for child in &member.children {
-        output.push_str(&rust_member(site, route, child, level + 1)?);
+        output.push_str(&api_member(site, route, child, level + 1)?);
     }
     Ok(output)
 }
 
-fn rust_document(
+fn api_document(
     site: &Site<'_>,
     route: &str,
-    member: &super::rust::RustMember<'_>,
+    member: &super::members::ApiMember<'_>,
     level: usize,
 ) -> Result<String, SiteError> {
     let mut output = String::new();

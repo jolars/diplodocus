@@ -67,6 +67,7 @@ fn summary(site: &Site<'_>, route: &str, id: &str) -> Summary {
             "python" => "Python",
             "julia" => "Julia",
             "rust" => "Rust",
+            "cpp" => "C++",
             other => other,
         }),
     );
@@ -150,7 +151,7 @@ fn summary(site: &Site<'_>, route: &str, id: &str) -> Summary {
                 summary.external(label, url);
             }
         }
-        None => {}
+        Some(PackageMetadata::Cpp(_)) | None => {}
     }
     if let Some(url) = &site.workspace.repositories[&package.repository].canonical_url {
         summary.external("Source repository", url);

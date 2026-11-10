@@ -77,7 +77,9 @@ pub(super) fn sections(html: &mut String, site: &Site<'_>, route: &str, class: &
             "python" => 0,
             "r" => 1,
             "julia" => 2,
-            _ => 3,
+            "rust" => 3,
+            "cpp" => 4,
+            _ => 5,
         };
         (language, &package.name, *id)
     });
@@ -130,6 +132,7 @@ fn package_label<'a>(site: &Site<'_>, package: &'a Package) -> &'a str {
             "r" => "R",
             "julia" => "Julia",
             "rust" => "Rust",
+            "cpp" => "C++",
             _ => &package.name,
         }
     } else {
@@ -465,6 +468,7 @@ fn item_tree(
     let mut children = String::new();
     let expand = match package.ecosystem.as_str() {
         "rust" => item.kind == crate::ir::ItemKind::Module,
+        "cpp" => item.kind == crate::ir::ItemKind::Namespace,
         "python" => item.kind != crate::ir::ItemKind::Class,
         _ => true,
     };

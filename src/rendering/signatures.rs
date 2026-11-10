@@ -430,6 +430,9 @@ fn layout_rust(syntax: &SignatureExpression) -> String {
 }
 
 pub(super) fn expression(value: &SignatureExpression, ecosystem: &str) -> String {
+    if ecosystem == "cpp" {
+        return crate::extractors::doxygen::signatures::format(value);
+    }
     match value {
         SignatureExpression::Name { name, .. } => name.clone(),
         SignatureExpression::Literal { text } => text.clone(),

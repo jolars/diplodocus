@@ -1,6 +1,6 @@
 # Overview
 
-Diplodocus builds documentation sites for Python, R, Julia, and Rust packages.
+Diplodocus builds documentation sites for Python, R, Julia, Rust, and C++ packages.
 It combines guides you write with API references extracted from your packages,
 with shared navigation, cross-references, and search. You can document a single
 package or bring several related packages together on one site.

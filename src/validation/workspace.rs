@@ -53,7 +53,7 @@ pub(crate) fn semantic_target<'a>(
         return Some(spelling);
     }
     if kind == ReferenceKind::Link
-        && matches!(&document.source_format, DocumentFormat::Extracted { name } if matches!(name.as_str(), "julia-markdown" | "rd" | "numpy-docstring" | "rustdoc-markdown"))
+        && matches!(&document.source_format, DocumentFormat::Extracted { name } if matches!(name.as_str(), "julia-markdown" | "rd" | "numpy-docstring" | "rustdoc-markdown" | "doxygen-xml"))
     {
         return spelling.strip_prefix("@ref ");
     }

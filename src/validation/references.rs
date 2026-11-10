@@ -20,7 +20,10 @@ pub fn resolve_item(
     {
         match in_package(workspace, package, name) {
             Err(DiagnosticCode::UnresolvedItemReference)
-                if workspace.packages[package].ecosystem == "rust" =>
+                if matches!(
+                    workspace.packages[package].ecosystem.as_str(),
+                    "rust" | "cpp"
+                ) =>
             {
                 return in_package(workspace, package, target);
             }
@@ -70,7 +73,8 @@ pub(crate) fn in_package(
         id
     } else {
         let mut candidates = items.iter().filter(|(_, item)| {
-            !matches!(&item.language_data, Some(ItemLanguageData::Python(data)) if matches!(&data.declaration,
+            !matches!(&item.language_data, Some(ItemLanguageData::Cpp(data)) if data.family.is_some())
+            && !matches!(&item.language_data, Some(ItemLanguageData::Python(data)) if matches!(&data.declaration,
                 PythonDeclaration::Callable { role: PythonCallableRole::Overload { .. }, .. }))
             && !matches!(&item.language_data, Some(ItemLanguageData::Julia(data)) if matches!(&data.declaration,
                 JuliaDeclaration::Callable { role: JuliaCallableRole::Method { .. }, .. }))

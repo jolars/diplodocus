@@ -11,18 +11,22 @@ IR into separate rows.
   | Manifest field     | Current value | Governs                                                                                                                                        |
   | ---                | ---           | ---                                                                                                                                            |
   | `storage_version`  | `2`           | SQLite tables, columns, keys, record kinds, splitting entities into rows, and storage-specific envelopes. Defined by `STORAGE_SCHEMA_VERSION`. |
-  | `ir_version`       | `13`          | Semantic IR field shapes and meaning, including nested documents, signatures, and language extensions. Defined by `WORKSPACE_SCHEMA_VERSION`.  |
+  | `ir_version`       | `14`          | Semantic IR field shapes and meaning, including nested documents, signatures, and language extensions. Defined by `WORKSPACE_SCHEMA_VERSION`.  |
   | `encoding_version` | `1`           | Canonical record encoding, fingerprint inputs, and text export. Defined by `RECORD_ENCODING_VERSION`.                                          |
 
 These versions are independent: a table-layout change requires a storage version
 change; an incompatible signature or language-extension change requires an IR
 version change even if the SQL tables stay the same. Changing canonical hashing
 or export rules requires an encoding version change. A change may affect more
-than one version. The current reader accepts only `(2, 13, 1)` and rejects any
+than one version. The current reader accepts only `(2, 14, 1)` and rejects any
 unsupported component; it does not migrate snapshots automatically.
 
 Storage version 2 adds the required `presentation` record. Version 1 snapshots
 must be extracted again. Presentation defaults are storage metadata outside the IR.
+
+IR version 14 adds C++ metadata, declaration semantics, callable families, and
+overload ownership from Doxygen. Version 13 snapshots must be extracted again.
+Storage and canonical encoding versions are unchanged.
 
 IR version 13 adds semantic disclosure containers. Their first paragraph holds
 the summary, their remaining blocks hold the body, and their `open` flag
@@ -99,7 +103,7 @@ IR version 2 added inline and display equations and installed R help-link
 evidence. Version 1 snapshots must be extracted again. The canonical record
 encoding remains at version 1.
 
-The workspace record also carries `schema_version: 13`, which must agree with
+The workspace record also carries `schema_version: 14`, which must agree with
 `manifest.ir_version`. Nested JSON inherits the containing snapshot's versions;
 there is no additional version wrapper on every syntax node or signature.
 Consumers must read the manifest before interpreting a detached record.
@@ -789,7 +793,7 @@ asset's `bytes_base64` field and applying the compact encoding recovers the
 manifest's fingerprint input; hashing the pretty export does not. The
 [minimal export fixture](../../tests/snapshots/snapshot-encoding/minimal.json)
 pins this format and has logical snapshot fingerprint
-`9ead992309a5f20df37165895695554936eab87beb5b81b523dfd488b02888f2`.
+`0286bea5d4a64d37c370545c723f6e1743d24f9405384fe88f2bd9b1f39ea44f`.
 
 Fingerprints provide integrity checks, not authentication: loading also checks
 record sets, semantic references, anchors, paths, asset media, and active output

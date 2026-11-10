@@ -1,7 +1,8 @@
 //! Assemble explicitly declared sources before reference validation and storage.
 //!
 //! Loading prepares authored content and resolves API declarations. Rust targets
-//! use native compiler tooling, while other check adapters use source analysis.
+//! use native compiler tooling, and C++ targets invoke Doxygen. Other check
+//! adapters use source analysis.
 //! Extraction also completes native semantics and examples before publication.
 //! These operations require current command authority from their caller and do
 //! not publish a snapshot or site. The resulting IR still
@@ -30,6 +31,7 @@ mod api_examples;
 mod authored;
 mod documenter;
 mod documenter_examples;
+mod doxygen_native;
 mod julia_runtime;
 pub(crate) use julia_runtime::assemble_for_extraction;
 #[cfg(target_os = "linux")]
@@ -122,6 +124,7 @@ pub struct WorkspaceSources {
     prepared_pages: BTreeMap<String, PreparedPage>,
     package_files: BTreeMap<String, package_docs::PackageFiles>,
     rmd_inputs: BTreeMap<String, Vec<PathBuf>>,
+    doxygen_observations: Vec<doxygen_native::DoxygenObservation>,
     selections: DeclaredSourceInputs,
     evidence: StaticProvenance,
     pub(crate) native_assets: BTreeMap<DiagnosticPath, crate::validation::ContentAsset>,
@@ -159,11 +162,20 @@ impl WorkspaceSources {
         })
     }
 
+    pub(crate) fn doxygen_watch_roots(&self) -> impl Iterator<Item = &PathBuf> {
+        self.doxygen_observations
+            .iter()
+            .flat_map(|observation| observation.roots())
+    }
+
     /// Reread selected bytes and containment before accepting a later operation.
     ///
     /// This detects ordinary edits, including a later page changing an earlier
     /// page. It cannot snapshot undeclared reads or changes after this check.
     pub fn revalidate(&self) -> Result<(), AssemblyError> {
+        for observation in &self.doxygen_observations {
+            observation.verify()?;
+        }
         if fs::read(&self.configuration_path)? != self.configuration_source.as_bytes() {
             return Err(AssemblyError::InputsChanged);
         }
@@ -257,7 +269,8 @@ impl ExecutedWorkspace {
 
 /// Read and assemble declared sources without executing documentation examples.
 /// Rust targets use the prepared compiler and may compile dependencies and run
-/// build scripts. Other language adapters retain their source-only check path.
+/// build scripts. C++ targets invoke Doxygen and any configured input filters.
+/// Other language adapters retain their source-only check path.
 ///
 /// All packages and pages are inspected before errors are returned. Rust may
 /// write compilation caches; no examples, kernels, snapshots, or sites run.
@@ -274,15 +287,15 @@ pub fn assemble_workspace(path: impl AsRef<Path>) -> Result<WorkspaceSources, As
         package
             .targets
             .iter()
-            .any(|target| target.extractor == "rust")
+            .any(|target| matches!(target.extractor.as_str(), "rust" | "doxygen"))
     }) {
-        return assemble_with_native(path, BTreeMap::new(), BTreeMap::new());
+        return assemble_with_native(path, BTreeMap::new(), BTreeMap::new(), BTreeMap::new());
     }
     // Callers may already own a Tokio runtime; a separate thread keeps this
     // synchronous API usable from both synchronous and asynchronous hosts.
     let path = path.to_owned();
     std::thread::Builder::new()
-        .name("rust-documentation-check".into())
+        .name("native-documentation-check".into())
         .spawn(move || {
             let runtime = tokio::runtime::Builder::new_current_thread()
                 .enable_all()
@@ -296,13 +309,16 @@ pub fn assemble_workspace(path: impl AsRef<Path>) -> Result<WorkspaceSources, As
                     &mut cancellation,
                 )
                 .await?;
-                assemble_with_native(&path, BTreeMap::new(), results)
+                let doxygen =
+                    doxygen_results(&path, ExecutionDeadlines::default(), &mut cancellation)
+                        .await?;
+                assemble_with_native(&path, BTreeMap::new(), results, doxygen)
             })
         })?
         .join()
         .map_err(|_| {
             AssemblyError::Io(std::io::Error::other(
-                "Rust documentation check thread failed",
+                "Native documentation check thread failed",
             ))
         })?
 }
@@ -353,13 +369,58 @@ pub(crate) async fn assemble_for_check(
     cancellation: &mut ExecutionCancellation<'_>,
 ) -> Result<WorkspaceSources, AssemblyError> {
     let rust = rust_results(path, false, deadlines, cancellation).await?;
-    assemble_with_native(path, BTreeMap::new(), rust)
+    let doxygen = doxygen_results(path, deadlines, cancellation).await?;
+    assemble_with_native(path, BTreeMap::new(), rust, doxygen)
+}
+
+async fn doxygen_results(
+    path: &Path,
+    deadlines: ExecutionDeadlines,
+    cancellation: &mut ExecutionCancellation<'_>,
+) -> Result<BTreeMap<(String, String), doxygen_native::DoxygenNativeExtraction>, AssemblyError> {
+    let before = fs::read(path)?;
+    let configuration = crate::configuration::load_configuration(path)?;
+    reject_errors(validate_configuration_with_source(
+        &configuration,
+        "diplodocus.yaml".try_into().unwrap(),
+    ))?;
+    let paths = resolve_workspace_paths(path, &configuration)?;
+    let mut results = BTreeMap::new();
+    for (declaration, package) in configuration.packages.iter().zip(&paths.packages) {
+        let repository = &paths.repositories[package.repository_index];
+        for (target, selected) in declaration.targets.iter().zip(&package.targets) {
+            if target.extractor == "doxygen" {
+                results.insert(
+                    (package.id.clone(), target.id.clone()),
+                    doxygen_native::extract_target(
+                        repository,
+                        package,
+                        selected,
+                        deadlines,
+                        cancellation,
+                    )
+                    .await?,
+                );
+            }
+        }
+    }
+    if fs::read(path)? != before {
+        return Err(AssemblyError::InputsChanged);
+    }
+    Ok(results)
+}
+
+struct NativeExtractions {
+    julia: BTreeMap<(String, String), crate::extractors::julia::JuliaExtraction>,
+    rust: BTreeMap<(String, String), rust_native::RustNativeExtraction>,
+    doxygen: BTreeMap<(String, String), doxygen_native::DoxygenNativeExtraction>,
 }
 
 fn assemble_with_native(
     path: &Path,
-    mut julia_results: BTreeMap<(String, String), crate::extractors::julia::JuliaExtraction>,
-    mut rust_results: BTreeMap<(String, String), rust_native::RustNativeExtraction>,
+    julia_results: BTreeMap<(String, String), crate::extractors::julia::JuliaExtraction>,
+    rust_results: BTreeMap<(String, String), rust_native::RustNativeExtraction>,
+    doxygen_results: BTreeMap<(String, String), doxygen_native::DoxygenNativeExtraction>,
 ) -> Result<WorkspaceSources, AssemblyError> {
     let text = fs::read_to_string(path).map_err(|source| ConfigurationError::Read {
         path: path.to_owned(),
@@ -392,6 +453,15 @@ fn assemble_with_native(
     };
     let mut selections = DeclaredSourceInputs::default();
     let mut observed = BTreeMap::new();
+    let doxygen_observations = doxygen_results
+        .values()
+        .map(|result| result.observation.clone())
+        .collect();
+    let mut native = NativeExtractions {
+        julia: julia_results,
+        rust: rust_results,
+        doxygen: doxygen_results,
+    };
     let rmd_inputs = rmarkdown::inputs(&paths, &configuration)?;
     for (collection, resolved) in configuration.content.iter().zip(&paths.content) {
         if let Some(files) = rmd_inputs.get(&collection.id) {
@@ -417,8 +487,7 @@ fn assemble_with_native(
         &mut workspace,
         &mut selections,
         &mut observed,
-        &mut julia_results,
-        &mut rust_results,
+        &mut native,
     )?;
     let prepared_pages = authored::assemble(
         &configuration,
@@ -460,6 +529,7 @@ fn assemble_with_native(
         prepared_pages,
         package_files,
         rmd_inputs,
+        doxygen_observations,
         selections,
         evidence,
         native_assets: BTreeMap::new(),

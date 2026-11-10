@@ -31,6 +31,12 @@ pub enum DiagnosticCode {
     /// No built-in adapter implements an explicitly selected extractor.
     #[serde(rename = "unsupported-extractor")]
     UnsupportedExtractor,
+    /// Native Doxygen invocation, configuration, or XML extraction failed.
+    #[serde(rename = "doxygen-extraction")]
+    DoxygenExtraction,
+    /// C++ declarations or documentation exceed the supported adapter subset.
+    #[serde(rename = "doxygen-unsupported")]
+    DoxygenUnsupported,
     /// Cargo metadata or target selection is invalid.
     #[serde(rename = "rust-metadata")]
     RustMetadata,
@@ -341,6 +347,8 @@ impl DiagnosticCode {
             Self::IncompatiblePackageRelationship => "incompatible-package-relationship",
             Self::IndeterminatePackageRelationship => "indeterminate-package-relationship",
             Self::UnsupportedExtractor => "unsupported-extractor",
+            Self::DoxygenExtraction => "doxygen-extraction",
+            Self::DoxygenUnsupported => "doxygen-unsupported",
             Self::RustMetadata => "rust-metadata",
             Self::RustSourceRead => "rust-source-read",
             Self::RustToolchain => "rust-toolchain",

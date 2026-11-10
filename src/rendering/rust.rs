@@ -5,34 +5,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use crate::ir::*;
 use crate::validation::{DocumentIdentity, ResolvedDocument};
 
-pub(crate) struct RustPage<'a> {
-    pub sections: Vec<RustSection<'a>>,
-}
-
-pub(crate) struct RustSection<'a> {
-    pub title: String,
-    pub anchor: String,
-    pub implementation: Option<&'a RustImplementation>,
-    pub documentation: Option<RustMember<'a>>,
-    pub members: Vec<RustMember<'a>>,
-}
-
-pub(crate) struct RustMember<'a> {
-    pub reference: ItemReference,
-    pub item: &'a Item,
-    pub anchor: String,
-    pub resolved: Option<&'a ResolvedDocument>,
-    pub children: Vec<RustMember<'a>>,
-}
-
-impl RustPage<'_> {
-    pub fn members(&self) -> impl Iterator<Item = &RustMember<'_>> {
-        self.sections
-            .iter()
-            .flat_map(|section| section.documentation.iter().chain(&section.members))
-            .flat_map(|member| std::iter::once(member).chain(&member.children))
-    }
-}
+use super::members::{ApiMember as RustMember, ApiPage as RustPage, ApiSection as RustSection};
 
 pub(crate) fn data(item: &Item) -> Option<&RustItemData> {
     match &item.language_data {

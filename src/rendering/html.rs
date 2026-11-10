@@ -150,7 +150,7 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                         })
                 })
             })
-            || page.rust_page.as_ref().is_some_and(|rust| {
+            || page.api_page.as_ref().is_some_and(|rust| {
                 rust.members().any(|member| {
                     member.item.documentation.as_ref().is_some_and(|document| {
                         super::math::contains_math(&document.document.blocks)
@@ -175,10 +175,9 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                 .map(|document| document.anchors.clone())
                 .unwrap_or_default(),
             document_navigation: true,
-            heading_offset: usize::from(
-                page.item
-                    .is_some_and(|item| super::rust::data(item).is_some()),
-            ),
+            heading_offset: usize::from(page.item.is_some_and(|item| {
+                super::rust::data(item).is_some() || super::cpp::data(item).is_some()
+            })),
         };
         renderer
             .identifiers
@@ -195,7 +194,7 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                 renderer.identifiers.insert("constructor".into());
             }
         }
-        if let Some(rust) = &page.rust_page {
+        if let Some(rust) = &page.api_page {
             renderer
                 .identifiers
                 .extend(rust.sections.iter().map(|section| section.anchor.clone()));
@@ -584,7 +583,7 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
             }
         }
         html.push_str(&renderer.python_members()?);
-        html.push_str(&renderer.rust_members()?);
+        html.push_str(&renderer.api_members()?);
         if page.reference_index {
             html.push_str(&super::r_topics::index(
                 site,
@@ -756,12 +755,23 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                     }
                 }
             }
-            if let Some(rust) = &page.rust_page {
+            if let Some(rust) = &page.api_page {
                 for member in rust.members() {
+                    if super::cpp::data(member.item).is_some_and(|data| data.family.is_some()) {
+                        if let Some(raw) = member
+                            .item
+                            .documentation
+                            .as_ref()
+                            .and_then(|document| document.raw_source.as_deref())
+                        {
+                            search_text.push_str(raw);
+                        }
+                        continue;
+                    }
                     let public = super::rust::data(member.item)
-                        .expect("Rust member")
-                        .public_path
-                        .as_str();
+                        .map_or(member.item.qualified_name.as_str(), |data| {
+                            data.public_path.as_str()
+                        });
                     let mut text = member
                         .item
                         .documentation
@@ -778,6 +788,18 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                         text.push('\n');
                         text.push_str(&alias.qualified_name);
                     }
+                    if let Some(data) = super::cpp::data(member.item) {
+                        for overload in &data.overloads {
+                            if let Some(raw) = site.workspace.packages[&overload.package].items
+                                [&overload.item]
+                                .documentation
+                                .as_ref()
+                                .and_then(|document| document.raw_source.as_deref())
+                            {
+                                text.push_str(raw);
+                            }
+                        }
+                    }
                     search_text.push('\n');
                     search_text.push_str(public);
                     search_text.push('\n');
@@ -788,7 +810,7 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                             item: member.reference.clone(),
                         },
                     )?;
-                    search.push(serde_json::json!({"title": public, "path": destination, "package": package.map(|package| &package.name), "ecosystem": "rust", "api": true, "text": text}));
+                    search.push(serde_json::json!({"title": public, "path": destination, "package": package.map(|package| &package.name), "ecosystem": package.map(|p| &p.ecosystem), "api": true, "text": text}));
                 }
             }
             if package_overview {
@@ -802,7 +824,10 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
             }
             if let Some(item) = page.item
                 && package.is_some_and(|package| {
-                    matches!(package.ecosystem.as_str(), "python" | "rust" | "julia")
+                    matches!(
+                        package.ecosystem.as_str(),
+                        "python" | "rust" | "julia" | "cpp"
+                    )
                 })
             {
                 search_text.push('\n');
@@ -1086,8 +1111,8 @@ impl Renderer<'_, '_> {
         Ok(html)
     }
 
-    fn rust_members(&mut self) -> Result<String, SiteError> {
-        let Some(rust) = &self.page.rust_page else {
+    fn api_members(&mut self) -> Result<String, SiteError> {
+        let Some(rust) = &self.page.api_page else {
             return Ok(String::new());
         };
         let mut html = String::new();
@@ -1133,19 +1158,19 @@ impl Renderer<'_, '_> {
                 ));
             }
             if let Some(documentation) = &section.documentation {
-                html.push_str(&self.rust_document(documentation, 2)?);
+                html.push_str(&self.api_document(documentation, 2)?);
             }
             for member in &section.members {
-                html.push_str(&self.rust_member(member, 3)?);
+                html.push_str(&self.api_member(member, 3)?);
             }
             html.push_str("</section>");
         }
         Ok(html)
     }
 
-    fn rust_member(
+    fn api_member(
         &mut self,
-        member: &super::rust::RustMember<'_>,
+        member: &super::members::ApiMember<'_>,
         level: usize,
     ) -> Result<String, SiteError> {
         self.headings
@@ -1162,22 +1187,22 @@ impl Renderer<'_, '_> {
                     self.site,
                     &member.item.name,
                     &signature.signature,
-                    "rust",
+                    &self.site.workspace.packages[&member.reference.package].ecosystem,
                 ),
-                Some("rust"),
+                Some(&self.site.workspace.packages[&member.reference.package].ecosystem),
             ));
         }
-        html.push_str(&self.rust_document(member, level)?);
+        html.push_str(&self.api_document(member, level)?);
         for child in &member.children {
-            html.push_str(&self.rust_member(child, level + 1)?);
+            html.push_str(&self.api_member(child, level + 1)?);
         }
         html.push_str("</section>");
         Ok(html)
     }
 
-    fn rust_document(
+    fn api_document(
         &mut self,
-        member: &super::rust::RustMember<'_>,
+        member: &super::members::ApiMember<'_>,
         level: usize,
     ) -> Result<String, SiteError> {
         let mut html = String::new();

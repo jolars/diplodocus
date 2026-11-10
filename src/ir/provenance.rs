@@ -303,7 +303,7 @@ pub struct RMarkdownInlineOutcome {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum ExtractionMode {
-    /// Parse declared sources without importing or running their code.
+    /// Analyze sources without loading the documented package.
     Static,
     /// Resolve declarations with native compiler tooling, allowing local builds.
     Compiler,

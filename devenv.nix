@@ -76,6 +76,7 @@ in
 {
   packages = with pkgs; [
     julia
+    doxygen
     actionlint
     cargo-audit
     cargo-deny

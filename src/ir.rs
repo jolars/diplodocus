@@ -14,6 +14,7 @@
 
 use serde::{Deserialize, Serialize};
 
+mod cpp;
 mod identity;
 mod languages;
 mod outputs;
@@ -22,6 +23,7 @@ mod provenance;
 mod signatures;
 mod workspace;
 
+pub use cpp::*;
 pub use identity::*;
 pub use languages::*;
 pub use outputs::*;

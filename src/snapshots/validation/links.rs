@@ -23,6 +23,7 @@ pub(super) fn validate(workspace: &Workspace) -> Result {
             let root = package.path.as_ref().map_or("", DiagnosticPath::as_str);
             let path = std::path::Path::new(root).join(package.metadata_path.as_str());
             let ecosystem = match metadata {
+                PackageMetadata::Cpp(_) => "cpp",
                 PackageMetadata::R(_) => "r",
                 PackageMetadata::Python(_) => "python",
                 PackageMetadata::Julia(_) => "julia",
@@ -140,6 +141,12 @@ pub(super) fn validate(workspace: &Workspace) -> Result {
             require(!id.is_empty(), "empty target identity")?;
         }
         for (target_id, target) in &package.extraction_targets {
+            if target.extractor == "doxygen" {
+                require(package.ecosystem == "cpp", "Doxygen extraction ecosystem")?;
+                require(workspace.provenance.iter().any(|record| matches!(&record.activity,
+                    ProvenanceActivity::Extraction { target, mode: ExtractionMode::Static, parsers, .. }
+                    if target.package == *package_id && target.target == *target_id && parsers.contains_key("doxygen")) && record.tools.get("doxygen").is_some_and(|version| !version.is_empty())), "Doxygen extraction evidence")?;
+            }
             if target.extractor == "rust" {
                 require(package.ecosystem == "rust", "Rust extraction ecosystem")?;
                 require(
@@ -166,6 +173,64 @@ pub(super) fn validate(workspace: &Workspace) -> Result {
             }
         }
         for (item_id, item) in &package.items {
+            if let Some(ItemLanguageData::Cpp(data)) = &item.language_data {
+                require(package.ecosystem == "cpp", "C++ item ecosystem")?;
+                let reference = ItemReference {
+                    package: package_id.clone(),
+                    item: item_id.clone(),
+                };
+                let mut visited = std::collections::BTreeSet::from([item_id.as_str()]);
+                let mut owner = data.owner.as_ref();
+                while let Some(parent) = owner {
+                    require(
+                        parent.package == *package_id && visited.insert(parent.item.as_str()),
+                        "C++ member owner cycle or package",
+                    )?;
+                    let Some(ItemLanguageData::Cpp(parent_data)) = package
+                        .items
+                        .get(&parent.item)
+                        .and_then(|item| item.language_data.as_ref())
+                    else {
+                        return Err(SnapshotError::Invalid("C++ member owner language"));
+                    };
+                    owner = parent_data.owner.as_ref();
+                }
+                if let Some(family) = &data.family {
+                    require(
+                        data.owner.as_ref() == Some(family) && data.overloads.is_empty(),
+                        "C++ overload owner",
+                    )?;
+                    let Some(ItemLanguageData::Cpp(parent)) = package
+                        .items
+                        .get(&family.item)
+                        .and_then(|item| item.language_data.as_ref())
+                    else {
+                        return Err(SnapshotError::Invalid("C++ overload family"));
+                    };
+                    require(
+                        parent.family.is_none() && parent.overloads.contains(&reference),
+                        "C++ overload family membership",
+                    )?;
+                }
+                let mut overloads = std::collections::BTreeSet::new();
+                for overload in &data.overloads {
+                    require(
+                        overload.package == *package_id && overloads.insert(&overload.item),
+                        "C++ overload identity",
+                    )?;
+                    let Some(ItemLanguageData::Cpp(child)) = package
+                        .items
+                        .get(&overload.item)
+                        .and_then(|item| item.language_data.as_ref())
+                    else {
+                        return Err(SnapshotError::Invalid("C++ overload language"));
+                    };
+                    require(
+                        child.family.as_ref() == Some(&reference),
+                        "C++ family overload membership",
+                    )?;
+                }
+            }
             if let Some(ItemLanguageData::Rust(data)) = &item.language_data {
                 require(package.ecosystem == "rust", "Rust item ecosystem")?;
                 let mut owners = std::collections::BTreeSet::from([item_id.as_str()]);
@@ -774,6 +839,16 @@ impl Links<'_> {
 
     fn language(&self, data: &ItemLanguageData) -> Result {
         match data {
+            ItemLanguageData::Cpp(data) => {
+                if let Some(owner) = &data.owner {
+                    self.item(owner)?;
+                }
+                if let Some(family) = &data.family {
+                    self.item(family)?;
+                }
+                self.items(&data.overloads)?;
+                self.expressions(&data.bases)
+            }
             ItemLanguageData::Rust(data) => {
                 require(
                     !data.public_path.is_empty() && !data.public_path.chars().any(char::is_control),

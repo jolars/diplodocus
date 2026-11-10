@@ -163,6 +163,7 @@ struct Observer {
     output: PathBuf,
     configuration: Option<WorkspaceConfiguration>,
     assets: BTreeSet<PathBuf>,
+    native_roots: Vec<PathBuf>,
 }
 impl Observer {
     fn new(config: &Path, output: &Path) -> Result<Self, CommandError> {
@@ -177,6 +178,7 @@ impl Observer {
             output: pipeline::absolute(output)?,
             configuration: None,
             assets: BTreeSet::new(),
+            native_roots: Vec::new(),
         };
         observer.refresh_assets();
         Ok(observer)
@@ -186,6 +188,9 @@ impl Observer {
         observe(&self.config, &mut observed);
         for asset in &self.assets {
             observe(asset, &mut observed);
+        }
+        for root in &self.native_roots {
+            discover_doxygen(root, &self.output, &mut observed);
         }
         if let Ok(text) = fs::read_to_string(&self.config)
             && let Ok(config) = crate::configuration::parse_configuration(&text)
@@ -284,6 +289,11 @@ impl Observer {
                 }
             }
             for target in &package.targets {
+                if target.extractor == "doxygen" {
+                    discover_doxygen(&root, &self.output, &mut observed);
+                    observe(&root.join(&target.path), &mut observed);
+                    continue;
+                }
                 let mut selected = Vec::new();
                 if let Some(settings) = &target.julia {
                     for extension in &settings.extensions {
@@ -358,6 +368,7 @@ impl Observer {
             return;
         };
         let workspace = sources.workspace();
+        self.native_roots = sources.doxygen_watch_roots().cloned().collect();
         let mut assets = Observation::new();
         for path in sources.input_paths() {
             observe(&path, &mut assets);
@@ -471,6 +482,27 @@ fn observe(path: &Path, observed: &mut Observation) {
         Err(error) => format!("{:?}", error.kind()),
     };
     observed.insert(path.to_owned(), value);
+}
+
+fn discover_doxygen(root: &Path, output: &Path, observed: &mut Observation) {
+    if root.starts_with(output) {
+        return;
+    }
+    let Ok(metadata) = fs::symlink_metadata(root) else {
+        observe(root, observed);
+        return;
+    };
+    if metadata.is_file() || metadata.is_symlink() {
+        observe(root, observed);
+    } else if let Ok(entries) = fs::read_dir(root) {
+        for entry in entries.flatten() {
+            if !crate::extractors::doxygen::configuration::excluded(
+                &entry.file_name().to_string_lossy(),
+            ) {
+                discover_doxygen(&entry.path(), output, observed);
+            }
+        }
+    }
 }
 
 fn discover_rust(root: &Path, output: &Path, observed: &mut Observation) {

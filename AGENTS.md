@@ -3,7 +3,7 @@
 ## Project Structure & Module Organization
 
 Diplodocus is a Rust 2024 CLI that builds documentation sites for Python, R,
-Julia, and Rust packages.
+Julia, Rust, and C++ packages.
 
 - `src/` contains the CLI, extractors, documentation IR, assembly, execution,
   snapshots, and rendering modules.

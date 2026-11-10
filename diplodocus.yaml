@@ -1,7 +1,7 @@
 project:
   name: "Diplodocus"
 presentation:
-  description: "Guides for building Python, R, Julia, and Rust documentation with Diplodocus."
+  description: "Guides for building Python, R, Julia, Rust, and C++ documentation with Diplodocus."
   site-url: "https://diplodocus.cc/"
   canonical-url-style: "clean"
   redirects:
@@ -90,7 +90,7 @@ presentation:
             link: "reference/CONTRIBUTING.html"
   home:
     tagline: "One home for all your package docs."
-    description: "Bring your Python, R, Julia, and Rust packages together. Build API references and guides with shared navigation, cross-references, and search."
+    description: "Bring your Python, R, Julia, Rust, and C++ packages together. Build API references and guides with shared navigation, cross-references, and search."
     guide: "guide/index.html"
     actions:
       - label: "Get started"
@@ -98,8 +98,8 @@ presentation:
       - label: "Explore the guide"
         path: "guide/index.html"
     features:
-      - title: "Four languages, one home"
-        description: "Keep related packages together, with API references extracted from Python, R, Julia, and Rust."
+      - title: "Five languages, one home"
+        description: "Keep related packages together, with API references extracted from Python, R, Julia, Rust, and C++."
         path: "guide/extraction.html"
       - title: "Write alongside your code"
         description: "Combine Markdown guides with API documentation. Link across packages without stitching sites together."

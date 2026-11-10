@@ -24,9 +24,9 @@ use super::{
 };
 
 /// Current portable workspace schema version.
-pub const WORKSPACE_SCHEMA_VERSION: u32 = 13;
+pub const WORKSPACE_SCHEMA_VERSION: u32 = 14;
 
-/// The supported schema version, serialized as the integer `13`.
+/// The supported schema version, serialized as the integer `14`.
 ///
 /// Deserialization rejects unsupported versions instead of interpreting another
 /// schema as this one. The workspace version field is required even though a
@@ -404,6 +404,7 @@ impl Item {
     /// account for Julia method ownership and enclosing module containers.
     pub fn discoverable(&self) -> bool {
         match &self.language_data {
+            Some(ItemLanguageData::Cpp(data)) => data.family.is_none(),
             Some(ItemLanguageData::R(data)) => !data.internal,
             Some(ItemLanguageData::Python(data)) => {
                 data.visibility != super::PythonVisibility::Private

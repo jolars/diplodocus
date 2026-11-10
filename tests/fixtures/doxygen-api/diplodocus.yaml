@@ -1,0 +1,18 @@
+project:
+  name: C++ documentation
+repositories:
+  - id: source
+    path: .
+packages:
+  - id: demo
+    name: C++ API example
+    slug: cpp
+    ecosystem: cpp
+    repository: source
+    path: .
+    metadata-path: Doxyfile
+    targets:
+      - id: api
+        extractor: doxygen
+        path: Doxyfile
+        role: public-api

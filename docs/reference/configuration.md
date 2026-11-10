@@ -81,7 +81,7 @@ boundaries.
 | `id` | string | Required | Stable package identifier used by references and owners. |
 | `name` | string | Required | Package display name. |
 | `slug` | string | Required | URL segment beneath `packages/`. |
-| `ecosystem` | string | Required | Package language: `python`, `r`, `julia`, or `rust`. |
+| `ecosystem` | string | Required | Package language: `python`, `r`, `julia`, `rust`, or `cpp`. |
 | `repository` | string | Required | Declared repository ID. |
 | `path` | path | Required | Package root, relative to its repository. |
 | `metadata-path` | path | Required | Metadata file, relative to the package root. |
@@ -97,8 +97,8 @@ boundaries.
 - `hidden`: available as a semantic target without navigation or search entries.
 
 The conventional metadata files are `pyproject.toml`, `DESCRIPTION`,
-`Project.toml`, and `Cargo.toml`. See [API extraction](../guide/extraction.md)
-for language-specific setup and [package landing
+`Project.toml`, `Cargo.toml`, and `Doxyfile`. See [API
+extraction](../guide/extraction.md) for language-specific setup and [package landing
 pages](../guide/authoring.md#package-landing-pages) for overview precedence.
 
 ### Extraction targets
@@ -109,7 +109,7 @@ IDs must be unique within their package.
 | Option | Type | Default | Purpose |
 | --- | --- | --- | --- |
 | `id` | string | Required | Target identifier within the package. |
-| `extractor` | string | Required | `python`, `r`, `julia`, or `rust`. |
+| `extractor` | string | Required | `python`, `r`, `julia`, `rust`, or `doxygen`. |
 | `path` | path | Required | Source path relative to the package root. |
 | `role` | string | Required | Target role, such as `public-api` or `internal-api`. |
 | `rust` | mapping | Default Cargo features | Optional Rust feature selection; valid only for a Rust target in a Rust package. |
@@ -118,6 +118,11 @@ IDs must be unique within their package.
 Python targets select maintained source files or directories; R targets select
 the package source directory, usually `.`. Julia and Rust targets must name an
 explicit entry file, such as `src/MyPackage.jl` or `src/lib.rs`.
+
+C++ packages use `ecosystem: cpp` and `extractor: doxygen`. Both
+`metadata-path` and the extraction target `path` identify Doxyfiles, with paths
+inside each Doxyfile resolved from the package root. See
+[C++ extraction](../guide/extraction.md#cpp-with-doxygen) for setup.
 
 ### Julia target settings
 

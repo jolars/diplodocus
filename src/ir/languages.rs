@@ -13,6 +13,8 @@ use super::{ItemReference, SignatureExpression, SourceEvidence};
     deny_unknown_fields
 )]
 pub enum ItemLanguageData {
+    /// C++ declarations selected by Doxygen.
+    Cpp(super::CppItemData),
     /// Compiler-resolved Rust declarations and implementation relationships.
     Rust(RustItemData),
     /// Julia declaration semantics from maintained source.

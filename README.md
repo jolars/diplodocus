@@ -3,7 +3,8 @@
 [![CI](https://github.com/jolars/diplodocus/actions/workflows/ci.yml/badge.svg)](https://github.com/jolars/diplodocus/actions/workflows/ci.yml)
 [![crates.io](https://img.shields.io/crates/v/diplodocus.svg)](https://crates.io/crates/diplodocus)
 
-Diplodocus builds a shared documentation site for Python, R, Julia, and Rust packages.
+Diplodocus builds a shared documentation site for Python, R, Julia, Rust, and C++
+packages.
 It brings package API references and Markdown and Quarto guides together with
 shared navigation, cross-references, and search.
 
@@ -49,8 +50,8 @@ diplodocus build
 ```
 
 Install the language runtimes and package dependencies your documentation needs
-before building. See the [quick start](docs/guide/quick-start.md) for a complete
-example.
+before building. C++ API extraction uses Doxygen and an explicit Doxyfile. See the
+[quick start](docs/guide/quick-start.md) for a complete example.
 
 ## Documentation
 

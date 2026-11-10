@@ -124,5 +124,6 @@ pub(crate) async fn assemble_for_extraction(
         }
     }
     let rust = super::rust_results(path, true, deadlines, cancellation).await?;
-    super::assemble_with_native(path, results, rust)
+    let doxygen = super::doxygen_results(path, deadlines, cancellation).await?;
+    super::assemble_with_native(path, results, rust, doxygen)
 }

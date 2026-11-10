@@ -71,6 +71,8 @@ pub struct RVersionConstraint {
     deny_unknown_fields
 )]
 pub enum PackageMetadata {
+    /// Effective Doxyfile project metadata.
+    Cpp(CppMetadata),
     /// R DESCRIPTION and native author and citation results.
     R(RPackageMetadata),
     /// Static PEP 621 distribution metadata.
@@ -79,6 +81,20 @@ pub enum PackageMetadata {
     Julia(JuliaMetadata),
     /// Cargo-resolved package metadata, including workspace inheritance.
     Rust(RustMetadata),
+}
+
+/// Project identity from the package's explicit metadata Doxyfile.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CppMetadata {
+    /// Doxygen project name.
+    pub name: String,
+    /// Optional Doxygen project number.
+    pub version: Option<String>,
+    /// Optional project introduction.
+    pub description: Option<String>,
+    /// Portable location of the metadata Doxyfile.
+    pub source: SourceLocation,
 }
 
 /// Metadata from the supplied R checkout, never an unrelated installed release.
@@ -236,6 +252,7 @@ impl PackageMetadata {
     /// Published package name, independent of its workspace display name.
     pub fn name(&self) -> &str {
         match self {
+            Self::Cpp(metadata) => &metadata.name,
             Self::R(metadata) => &metadata.description.name,
             Self::Python(metadata) => &metadata.name,
             Self::Julia(metadata) => &metadata.name,
@@ -246,6 +263,7 @@ impl PackageMetadata {
     /// Declared package version, when supplied by the ecosystem.
     pub fn version(&self) -> Option<&str> {
         match self {
+            Self::Cpp(metadata) => metadata.version.as_deref(),
             Self::R(metadata) => Some(&metadata.description.version),
             Self::Python(metadata) => Some(&metadata.version),
             Self::Julia(metadata) => metadata.version.as_deref(),
@@ -256,6 +274,7 @@ impl PackageMetadata {
     /// Short introduction suitable for an overview without authored content.
     pub fn description(&self) -> Option<&str> {
         match self {
+            Self::Cpp(metadata) => metadata.description.as_deref(),
             Self::R(metadata) => metadata
                 .description
                 .description
@@ -273,6 +292,7 @@ impl PackageMetadata {
     /// Declared license expression or text, when supplied by the ecosystem.
     pub fn license(&self) -> Option<&str> {
         match self {
+            Self::Cpp(_) => None,
             Self::R(metadata) => metadata.description.license.as_deref(),
             Self::Python(metadata) => metadata.license.as_deref(),
             Self::Julia(metadata) => metadata
@@ -286,6 +306,7 @@ impl PackageMetadata {
     /// Metadata file from the declared checkout.
     pub fn source(&self) -> &SourceLocation {
         match self {
+            Self::Cpp(metadata) => &metadata.source,
             Self::R(metadata) => &metadata.description.source,
             Self::Python(metadata) => &metadata.source,
             Self::Julia(metadata) => &metadata.source,
