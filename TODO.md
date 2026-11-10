@@ -172,10 +172,10 @@ before it can build in full.
 
 ### Diplodocus work
 
-- [ ] Accept `\item{\dots}` argument labels in Rd documentation. Qualpalr's
-  `plot.qualpal`, `pairs.qualpal`, and `print.qualpal` topics currently fail
-  with `Rd argument names must be static text`. Normalize the ellipsis to
-  the maintained `...` formal and add focused regression coverage.
+- [x] Accept `\item{\dots}` argument labels in Rd documentation. Normalize
+  `\dots` and `\ldots` to the maintained `...` formal, including grouped
+  labels. Regression tests cover qualpalr's `plot.qualpal`, `pairs.qualpal`,
+  and `print.qualpal` topics, preserved source, and unmatched formals.
 - [ ] Preserve argument documentation in standalone deprecated Rd topics without
   requiring callable formals. `man/autopal-deprecated.Rd` currently produces
   four argument-matching errors despite having no usage section. Retain its

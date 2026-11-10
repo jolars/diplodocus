@@ -155,8 +155,9 @@ source; rendering never repeats that source for each unsupported construct.
 
 Each item on a shared topic receives the complete prose, usage, and argument
 listings. Grouped argument labels remain intact, including names used only by
-another method. Shared topic coordinates retain the topic name, primary
-declaration, and all members independently of their semantic identities.
+another method. In argument labels, `\dots` and `\ldots` normalize to the
+maintained `...` formal. Shared topic coordinates retain the topic name,
+primary declaration, and all members independently of their semantic identities.
 Usage supports ordinary calls and typed `\method` or `\S3method` syntax;
 maintained source remains authoritative for signatures. Conflicting usage,
 unknown declarations, and arguments with no matching formal produce errors.

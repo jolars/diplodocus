@@ -4,7 +4,8 @@ use diplodocus::configuration::load_configuration;
 use diplodocus::diagnostics::Severity;
 use diplodocus::extractors::r::{RExtraction, extract_target};
 use diplodocus::ir::{
-    Block, Item, ItemLanguageData, ProvenanceActivity, RDeclaration, RGenericReference,
+    Block, DocumentContainerKind, Inline, Item, ItemLanguageData, ProvenanceActivity, RDeclaration,
+    RGenericReference, Signature,
 };
 use diplodocus::paths::resolve_workspace_paths;
 
@@ -1252,6 +1253,100 @@ fn invalid_formals_and_conditional_rebindings_do_not_publish_old_definitions() {
                 .any(|d| d.severity == Severity::Error)
         );
     }
+}
+
+#[test]
+fn rd_ellipsis_argument_labels_match_variadic_formals() {
+    for (label, expected) in [
+        ("...", "..."),
+        (r"\dots", "..."),
+        (r"\ldots", "..."),
+        (r"{\dots}", "..."),
+        (r"x, \dots", "x, ..."),
+    ] {
+        let rd = format!(
+            r"\name{{f}}\alias{{f}}\title{{Variadic arguments}}
+\usage{{f(x, ...)}}
+\arguments{{\item{{{label}}}{{Additional arguments.}}}}
+\description{{A variadic function.}}"
+        );
+        let result = extract(&small("f <- function(x, ...) x", "export(f)", &rd));
+        assert_eq!(codes(&result), ["r-rd-source-attribution"], "{label}");
+        let function = item(&result, "f");
+        let Signature::Callable { parameters, .. } = &function.signatures[0].signature else {
+            panic!("expected a callable signature");
+        };
+        assert_eq!(parameters[1].name, "...");
+        let doc = function.documentation.as_ref().unwrap();
+        assert_eq!(doc.raw_source.as_deref(), Some(rd.as_str()));
+        let entries = doc
+            .document
+            .blocks
+            .iter()
+            .find_map(|block| match block {
+                Block::Container {
+                    kind: DocumentContainerKind::DefinitionList,
+                    blocks,
+                    ..
+                } => Some(blocks),
+                _ => None,
+            })
+            .unwrap();
+        let Block::Container { kind, blocks, .. } = &entries[0] else {
+            panic!("expected an argument term");
+        };
+        assert_eq!(*kind, DocumentContainerKind::DefinitionTerm);
+        let Block::Paragraph { inlines, .. } = &blocks[0] else {
+            panic!("expected an argument label");
+        };
+        assert!(matches!(inlines.as_slice(), [Inline::Code { value, .. }] if value == expected));
+        assert!(
+            serde_json::to_string(&entries[1])
+                .unwrap()
+                .contains("Additional arguments.")
+        );
+    }
+}
+
+#[test]
+fn qualpal_s3_method_topics_accept_rd_ellipsis_arguments() {
+    let workspace = small(
+        "plot.qualpal <- function(x, ...) x\npairs.qualpal <- function(x, ...) x\nprint.qualpal <- function(x, ...) x\n",
+        "S3method(plot, qualpal)\nS3method(pairs, qualpal)\nS3method(print, qualpal)\n",
+        "",
+    );
+    for generic in ["plot", "pairs", "print"] {
+        workspace.write(
+            format!("r/man/{generic}.qualpal.Rd"),
+            format!(
+                r"\name{{{generic}.qualpal}}\alias{{{generic}.qualpal}}\title{{Palette method}}
+\usage{{\method{{{generic}}}{{qualpal}}(x, ...)}}
+\arguments{{\item{{x}}{{A palette.}}\item{{\dots}}{{Additional method arguments.}}}}
+\description{{A method for qualitative color palettes.}}"
+            ),
+        );
+    }
+    let result = extract(&workspace);
+    assert_eq!(codes(&result), ["r-rd-source-attribution"; 3]);
+    for generic in ["plot", "pairs", "print"] {
+        let method = item(&result, &format!("{generic}.qualpal"));
+        assert!(matches!(&method.language_data,
+            Some(ItemLanguageData::R(data)) if matches!(data.declaration, RDeclaration::S3Method { .. })));
+        assert!(method.documentation.is_some());
+    }
+}
+
+#[test]
+fn rd_ellipsis_argument_labels_require_a_matching_formal() {
+    let rd = topic("f", "f(x)") + r"\arguments{\item{\dots}{Additional arguments.}}";
+    let result = extract(&small("f <- function(x) x", "export(f)", &rd));
+    assert!(result.diagnostics.iter().any(|diagnostic| {
+        diagnostic.code.as_str() == "r-rd-information-loss"
+            && diagnostic.severity == Severity::Error
+            && diagnostic
+                .message
+                .contains("Rd argument `...` does not match")
+    }));
 }
 
 #[test]

@@ -202,7 +202,7 @@ pub(super) fn parse(
             for argument in entries {
                 match argument {
                     Ok(argument) => {
-                        let Some(names) = plain(argument.name()) else {
+                        let Some(names) = argument_label(argument.name()) else {
                             context.error(
                                 DiagnosticCode::RRdInformationLoss,
                                 "Rd argument names must be static text.",
@@ -1420,6 +1420,24 @@ fn flush(blocks: &mut Vec<Block>, inlines: &mut Vec<Inline>, span: SourceSpan) {
     } else {
         inlines.clear();
     }
+}
+
+fn argument_label(nodes: &[RdNode]) -> Option<String> {
+    let mut result = String::new();
+    for node in nodes {
+        match node {
+            RdNode::Group(group) => result.push_str(&argument_label(group.children())?),
+            RdNode::Tagged(tagged) if tagged.option().is_none() => match tagged.tag() {
+                RdTag::Dots | RdTag::LDots if tagged.children().is_empty() => {
+                    result.push_str("...");
+                }
+                RdTag::List => result.push_str(&argument_label(tagged.children())?),
+                _ => return None,
+            },
+            _ => result.push_str(&plain(std::slice::from_ref(node))?),
+        }
+    }
+    Some(result)
 }
 
 fn plain(nodes: &[RdNode]) -> Option<String> {
