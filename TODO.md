@@ -180,11 +180,10 @@ before it can build in full.
   requiring callable formals. Qualpalr's `man/autopal-deprecated.Rd` retains
   its arguments, return values, prose, and help links through snapshot
   rendering. Maintained functions still require matching formals.
-- [ ] Keep Doxygen diagram suppression from breaking existing Doxyfiles with
-  `WARN_AS_ERROR=YES`. The forced `HAVE_DOT=NO` makes qualpal's `@dot`
-  diagram abort extraction. Cover the generated `build/Doxyfile.docs`,
-  retain genuine extraction diagnostics, and document a headers-only
-  Doxyfile as an alternative.
+- [x] Preserve native `HAVE_DOT` during XML-only extraction so existing Doxyfiles
+  with `WARN_AS_ERROR=YES` accept `@dot` blocks without invoking Graphviz. Cover
+  the generated `build/Doxyfile.docs`, retain genuine extraction diagnostics,
+  and document a headers-only Doxyfile as an alternative.
 - [ ] Support the static Matplotlib SVGs used for qualpal's palette figures
   through safe normalization or a documented conversion path. Existing files
   use a DTD, metadata, styles, definitions, references, and clipping paths

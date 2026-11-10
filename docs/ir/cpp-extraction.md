@@ -13,10 +13,14 @@ dependencies. The development environment supplies Doxygen 1.17.0.
 
 Both `check` and extraction invoke Doxygen. Native configuration normalization
 expands Doxyfile includes and environment variables. A temporary wrapper requests
-XML output, disables other output formats and diagrams, and redirects generated
-files into private staging. The remaining preprocessing and extraction settings,
-including custom input filters, retain their native meaning. Such filters run
-with the caller's privileges.
+XML output, disables other output formats, and redirects generated files into
+private staging. It preserves `HAVE_DOT`: XML retains diagram descriptions
+without invoking Graphviz, whereas forcing `HAVE_DOT=NO` would make existing
+`@dot` blocks warn or fail under `WARN_AS_ERROR=YES`. Doxygen still validates a
+configured `DOT_PATH`. Native warning settings retain their meaning, so genuine
+extraction warnings remain visible and can fail the run. The remaining
+preprocessing and extraction settings, including custom input filters, retain
+their native meaning. Such filters run with the caller's privileges.
 
 Native commands have a ten-minute preparation deadline. Cancellation and timeout
 terminate the supervised process group. Native failures, invalid XML, changed

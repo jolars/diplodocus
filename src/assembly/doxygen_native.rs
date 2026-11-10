@@ -227,8 +227,10 @@ pub(super) async fn extract_target(
                 .replace('"', "\\\"")
         )
     };
+    // XML retains graph descriptions without invoking Graphviz. Overriding
+    // HAVE_DOT would instead make existing @dot blocks warn or fail extraction.
     let mut configuration = format!(
-        "@INCLUDE = {}\nOUTPUT_DIRECTORY = {}\nXML_OUTPUT = xml\nGENERATE_XML = YES\nCREATE_SUBDIRS = NO\nXML_PROGRAMLISTING = NO\nHAVE_DOT = NO\nQUIET = YES\nGENERATE_TAGFILE =\nWARN_LOGFILE =\n",
+        "@INCLUDE = {}\nOUTPUT_DIRECTORY = {}\nXML_OUTPUT = xml\nGENERATE_XML = YES\nCREATE_SUBDIRS = NO\nXML_PROGRAMLISTING = NO\nQUIET = YES\nGENERATE_TAGFILE =\nWARN_LOGFILE =\n",
         quoted(&target.path),
         quoted(staging.path())
     );

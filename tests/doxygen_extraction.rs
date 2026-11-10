@@ -172,6 +172,88 @@ fn cpp_ids_survive_source_shifts_parameter_names_defaults_and_order() {
     assert_eq!(before, after);
 }
 
+#[cfg(unix)]
+#[test]
+fn generated_doxyfile_accepts_dot_pages_and_preserves_native_diagnostics() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let root = support::TestWorkspace::from_fixture("doxygen-api");
+    root.write(
+        "build/Doxyfile.docs",
+        format!(
+            "{}\nINPUT += docs\nHAVE_DOT = YES\nDOT_PATH = tools\n\
+             GENERATE_HTML = YES\nGENERATE_LATEX = YES\n\
+             OUTPUT_DIRECTORY = build/docs\nWARN_LOGFILE = build/warnings.log\n",
+            root.read("Doxyfile")
+        ),
+    );
+    root.remove("Doxyfile");
+    root.write(
+        "diplodocus.yaml",
+        root.read("diplodocus.yaml")
+            .replace("Doxyfile", "build/Doxyfile.docs"),
+    );
+    root.write(
+        "docs/colors.md",
+        "# Colors {#colors}\n\nColor conversions.\n\n\
+         @dot\ndigraph ColorSpaces { RGB -> XYZ; }\n@enddot\n",
+    );
+    root.write(
+        "tools/dot",
+        "#!/bin/sh\necho invoked > dot-invoked\nexit 1\n",
+    );
+    std::fs::set_permissions(
+        root.path().join("tools/dot"),
+        std::fs::Permissions::from_mode(0o755),
+    )
+    .unwrap();
+
+    successful(command(&root, "check"));
+    successful(command(&root, "extract"));
+    assert!(resolve_item(snapshot(&root).workspace(), Some("demo"), "demo::Builder").is_ok());
+    assert!(!root.path().join("dot-invoked").exists());
+    assert!(!root.path().join("build/docs").exists());
+    assert!(!root.path().join("build/warnings.log").exists());
+
+    let database = root.path().join(".diplodocus/documentation.sqlite");
+    let previous = std::fs::read(&database).unwrap();
+    root.write(
+        "docs/colors.md",
+        root.read("docs/colors.md").replace(
+            "Color conversions.",
+            "Color conversions. See @ref MissingType.",
+        ),
+    );
+    for operation in ["check", "extract"] {
+        let failed = command(&root, operation);
+        assert!(!failed.status.success());
+        let errors = String::from_utf8_lossy(&failed.stderr);
+        assert!(errors.contains("Doxygen failed"), "{errors}");
+        assert!(errors.contains("MissingType"), "{errors}");
+        assert_eq!(std::fs::read(&database).unwrap(), previous);
+    }
+
+    root.write(
+        "build/Doxyfile.docs",
+        root.read("build/Doxyfile.docs")
+            .replace("WARN_AS_ERROR = YES", "WARN_AS_ERROR = NO"),
+    );
+    successful(command(&root, "extract"));
+    assert!(
+        snapshot(&root)
+            .workspace()
+            .diagnostics
+            .iter()
+            .any(|diagnostic| {
+                diagnostic.code == diplodocus::diagnostics::DiagnosticCode::DoxygenUnsupported
+                    && diagnostic.severity == diplodocus::diagnostics::Severity::Warning
+                    && diagnostic.message.contains("MissingType")
+                    && diagnostic.message.contains("<repository>/docs/colors.md")
+            })
+    );
+    assert!(!root.path().join("dot-invoked").exists());
+}
+
 #[test]
 fn native_failure_and_missing_doxygen_preserve_previous_snapshot() {
     let root = support::TestWorkspace::from_fixture("doxygen-api");
