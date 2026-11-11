@@ -4,10 +4,19 @@ use crate::ir::MetadataValue;
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) enum PageLayout {
     Docs,
+    Wide,
     Full,
 }
 
 impl PageLayout {
+    pub(crate) fn as_str(self) -> &'static str {
+        match self {
+            Self::Docs => "docs",
+            Self::Wide => "wide",
+            Self::Full => "full",
+        }
+    }
+
     pub(crate) fn from_metadata(metadata: Option<&MetadataValue>) -> Result<Self, Box<Diagnostic>> {
         let Some(MetadataValue::Mapping { entries, .. }) = metadata else {
             return Ok(Self::Docs);
@@ -19,6 +28,7 @@ impl PageLayout {
         let duplicates: Vec<_> = declarations.map(|entry| entry.span).collect();
         let layout = match &entry.value {
             MetadataValue::Scalar { value, .. } if value == "docs" => Some(Self::Docs),
+            MetadataValue::Scalar { value, .. } if value == "wide" => Some(Self::Wide),
             MetadataValue::Scalar { value, .. } if value == "full" => Some(Self::Full),
             _ => None,
         };
@@ -31,7 +41,7 @@ impl PageLayout {
             code: DiagnosticCode::InvalidPageLayout,
             severity: Severity::Error,
             message: if duplicates.is_empty() {
-                "Page layout must be `docs` or `full`."
+                "Page layout must be `docs`, `wide`, or `full`."
             } else {
                 "Page layout must be declared only once."
             }

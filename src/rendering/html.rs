@@ -6,6 +6,7 @@ use super::{
     RenderedFile, RenderedSite, present_cell, present_prepared_cell, render_preformatted_text,
 };
 use crate::configuration::ConceptKind;
+use crate::documents::PageLayout;
 use crate::execution::ValidatedRepresentationRef;
 use crate::execution::output_safety::{HtmlAttribute, HtmlNode};
 use crate::ir::*;
@@ -145,7 +146,7 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
     for (route, page) in &site.pages {
         let metadata = site.page_metadata(route, page);
         let home = site.home(route);
-        let full_layout = page.has_full_layout();
+        let layout = page.layout();
         let markdown_path = format!(
             "{}.md",
             route.strip_suffix(".html").ok_or(SiteError::Evidence)?
@@ -266,7 +267,7 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                 )
                 .unwrap();
             }
-            write!(html, "</head><body data-diplodocus-navigation=\"1\" data-diplodocus-shell=\"{}\" data-layout=\"{}\"><a class=\"skip-link\" href=\"#main\">Skip to content</a>", shell_fingerprint.as_deref().expect("standalone shell fingerprint"), if home.is_some() { "home" } else if full_layout { "full" } else { "docs" }).unwrap();
+            write!(html, "</head><body data-diplodocus-navigation=\"1\" data-diplodocus-shell=\"{}\" data-layout=\"{}\"><a class=\"skip-link\" href=\"#main\">Skip to content</a>", shell_fingerprint.as_deref().expect("standalone shell fingerprint"), if home.is_some() { "home" } else { layout.as_str() }).unwrap();
             html.push_str("<header>");
             brand(&mut html, site, route, &images)?;
             super::navigation::sections(&mut html, site, route, "desktop-sections");
@@ -710,7 +711,7 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
         );
         if standalone {
             html.push_str("</main>");
-            if home.is_none() && !full_layout {
+            if home.is_none() && layout == PageLayout::Docs {
                 html.push_str(&renderer.page_navigation());
             }
             html.push_str("</div></div>");

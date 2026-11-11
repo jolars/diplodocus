@@ -2,15 +2,15 @@
 layout: full
 ---
 
-# Project overview
+# Workspace overview
 
-This page uses the same wide container as the landing page, with room for an
-overview of the project's documentation.
+This page uses the navbar's full container, with room for wide tables and plots.
 
 ## Explore the documentation
 
 [Read the guide](overview.md) to learn how to evaluate predictions, or visit the
-[landing page](index.md).
+[landing page](index.md). [Use the wide layout](wide-layout.md) for the landing
+page's centered container.
 
 ## Compare workflows
 

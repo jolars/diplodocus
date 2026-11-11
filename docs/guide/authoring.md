@@ -126,13 +126,19 @@ a page to see parser and link diagnostics before any cell executes.
 
 ## Page layout
 
-Add `layout: full` to a page's YAML front matter to hide the documentation
-sidebar and the **On this page** table of contents and use the landing page's
-wide, centered container:
+Choose a page layout in YAML front matter:
+
+  | Layout | Width and navigation                                                                     |
+  | ------ | ---------------------------------------------------------------------------------------- |
+  | `docs` | Default documentation layout, with a sidebar and the **On this page** table of contents. |
+  | `wide` | The landing page's wide, centered container, without either sidebar.                     |
+  | `full` | The navbar's full container and matching outer gutters, without either sidebar.          |
+
+For example, use `wide` for a project overview:
 
 ```markdown
 ---
-layout: full
+layout: wide
 ---
 
 # Project overview
@@ -140,12 +146,16 @@ layout: full
 Your page content goes here.
 ```
 
-This works in `.md`, `.qmd`, and `.Rmd` pages. The navbar, search, and
-configured footer remain available. The page keeps its title and content without
-adding the homepage hero. Its links, search entry, and appearance in other
-pages' sidebars are unchanged. Omit `layout` or set `layout: docs` for the
+Use `layout: full` when tables or plots need the same width as the navbar. Both
+`wide` and `full` work in `.md`, `.qmd`, and `.Rmd` pages. The navbar, search,
+and configured footer remain available. The page keeps its title and content
+without adding the homepage hero. Its links, search entry, and appearance in
+other pages' sidebars are unchanged. Omit `layout` or set `layout: docs` for the
 default documentation layout. At the site root, `presentation.home` takes
-precedence.
+precedence and keeps the landing page's wide container.
+
+The former `full` layout is now `wide`. Change existing pages to `layout: wide`
+to preserve their previous width.
 
 ## Tabsets
 

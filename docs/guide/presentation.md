@@ -155,7 +155,7 @@ already appears in the navbar.
 
 ## Landing page
 
-Add `presentation.home` to give the site root a full-width landing page. It
+Add `presentation.home` to give the site root a wide, centered landing page. It
 shows the logo and title at the top left, beside the section links, search, and
 repository links. Documentation pages keep the branding in the same position
 at the top of the gray sidebar. Navigation keeps

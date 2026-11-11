@@ -4,6 +4,7 @@ use std::io::Cursor;
 
 use image::{DynamicImage, ImageDecoder, ImageEncoder, ImageReader};
 
+use crate::documents::PageLayout;
 use crate::provenance::fingerprint_bytes;
 use crate::site::{Site, SiteError};
 use crate::validation::ContentAsset;
@@ -13,6 +14,10 @@ use super::html::escape;
 
 // These expressions follow the standalone theme's gutters, sidebars, and main width.
 const CONTENT_SIZES: &str = "(max-width: 760px) calc(100vw - 2rem), (max-width: 1099px) min(47rem, calc(100vw - 25.2rem)), min(45rem, calc(100vw - 43.4rem))";
+const WIDE_CONTENT_SIZES: &str =
+    "(max-width: 760px) calc(100vw - 3rem), min(71rem, calc(100vw - 9rem))";
+const FULL_CONTENT_SIZES: &str =
+    "(max-width: 760px) calc(100vw - 2rem), min(92rem, calc(100vw - 4rem))";
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub(super) enum ImageRole {
@@ -70,15 +75,12 @@ impl Images {
         let sizes = match role {
             ImageRole::Logo => "1.75rem",
             ImageRole::Hero if standalone => "(max-width: 760px) 12rem, 24rem",
-            ImageRole::Content
-                if standalone
-                    && site.home(route).is_none()
-                    && !site
-                        .pages
-                        .get(route)
-                        .is_some_and(|page| page.has_full_layout()) =>
-            {
-                CONTENT_SIZES
+            ImageRole::Content if standalone && site.home(route).is_none() => {
+                match site.pages.get(route).map(|page| page.layout()) {
+                    Some(PageLayout::Wide) => WIDE_CONTENT_SIZES,
+                    Some(PageLayout::Full) => FULL_CONTENT_SIZES,
+                    _ => CONTENT_SIZES,
+                }
             }
             _ => "100vw",
         };

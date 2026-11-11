@@ -233,7 +233,7 @@ or HTML.
 | `pages` | mapping | `{}` | Head metadata overrides keyed by generated site-relative HTML path. |
 | `site-url` | URL | Unset | Public site root, including any hosting prefix. Enables canonical links, `sitemap.xml`, and `robots.txt`. |
 | `canonical-url-style` | string | `file` | `file` preserves HTML filenames; `clean` uses directory URLs for indexes and removes other `.html` suffixes from links. |
-| `home` | mapping | Unset | Full-width homepage content. |
+| `home` | mapping | Unset | Wide, centered homepage content. |
 | `sections` | list | `[]` | Additional project navbar sections after Guide. |
 | `header` | mapping | All public repositories | Repository links in the navbar. |
 | `sidebar` | list or mapping | Automatic directory grouping | Authored navigation order and groups. |

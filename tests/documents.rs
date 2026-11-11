@@ -11,7 +11,9 @@ fn page_layout_metadata_is_supported_and_validated_in_all_authored_formats() {
         AuthoredFormat::Qmd,
         AuthoredFormat::Rmd,
     ] {
-        for layout in ["full", "docs", "\"full\"", "'full'"] {
+        for layout in [
+            "docs", "wide", "full", "\"wide\"", "'wide'", "\"full\"", "'full'",
+        ] {
             let source = format!("---\nlayout: {layout}\n---\n\n# Overview\n\n## Details\n");
             let parsed = parse_authored_document(&source, format);
             assert!(
@@ -26,7 +28,7 @@ fn page_layout_metadata_is_supported_and_validated_in_all_authored_formats() {
             ));
         }
         for declaration in [
-            "layout: wide",
+            "layout: fluid",
             "layout: false",
             "layout: [full]",
             "layout:",

@@ -75,7 +75,9 @@ if (mode === "serve-test") {
     cpSync(join(root, "tests/fixtures/sidebar-navigation/pages"), join(workspace, "docs/sidebar"), { recursive: true });
     cpSync(join(root, "tests/fixtures/tabsets.md"), join(workspace, "docs/tabsets.md"));
     cpSync(join(root, "tests/fixtures/markdown-continuations/index.md"), join(workspace, "docs/continuations.md"));
-    cpSync(join(root, "tests/fixtures/full-layout.md"), join(workspace, "docs/full-layout.md"));
+    for (const layout of ["wide", "full"]) {
+      cpSync(join(root, `tests/fixtures/${layout}-layout.md`), join(workspace, `docs/${layout}-layout.md`));
+    }
     mkdirSync(join(workspace, "disclosures"));
     cpSync(join(root, "tests/fixtures/documenter-disclosures.md"), join(workspace, "disclosures/index.md"));
     const disclosureCollection = `  - id: documenter-disclosures

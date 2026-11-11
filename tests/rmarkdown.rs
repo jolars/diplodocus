@@ -61,7 +61,7 @@ fn package_data_articles_execute_and_generate_without_the_source_package() {
     let root = workspace(
         r#"---
 title: Offline fixture
-layout: full
+layout: wide
 ---
 ```{r setup, include=FALSE}
 library(demo)
@@ -89,7 +89,7 @@ plot(seq_len(nrow(values)), values$measurement)
         .path()
         .join("site/packages/demo/vignettes/article.html");
     let html = fs::read_to_string(&path).unwrap();
-    assert!(html.contains("data-layout=\"full\""));
+    assert!(html.contains("data-layout=\"wide\""));
     assert!(!html.contains("class=\"page-toc"));
     for expected in [
         "Retrieved 5 rows and 4 columns",

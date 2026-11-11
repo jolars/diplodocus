@@ -1,12 +1,12 @@
-body:is([data-layout=home], [data-layout=full]) {
+body:is([data-layout=home], [data-layout=wide], [data-layout=full]) {
   background: var(--background);
 }
 
-:is([data-layout=home], [data-layout=full]) header {
+:is([data-layout=home], [data-layout=wide], [data-layout=full]) header {
   border-bottom-color: transparent;
 }
 
-:is([data-layout=home], [data-layout=full]) header::after {
+:is([data-layout=home], [data-layout=wide], [data-layout=full]) header::after {
   content: "";
   position: fixed;
   top: calc(var(--header-height) - 1px);
@@ -17,34 +17,44 @@ body:is([data-layout=home], [data-layout=full]) {
   pointer-events: none;
 }
 
-:is([data-layout=home], [data-layout=full]) header[data-scrolled]::after {
+:is([data-layout=home], [data-layout=wide], [data-layout=full]) header[data-scrolled]::after {
   opacity: 1;
 }
 
-:is([data-layout=home], [data-layout=full]) .layout > nav {
+:is([data-layout=home], [data-layout=wide], [data-layout=full]) .layout > nav {
   display: none;
 }
 
-:is([data-layout=home], [data-layout=full]) .nav-disclosure {
+:is([data-layout=home], [data-layout=wide], [data-layout=full]) .nav-disclosure {
   display: none;
 }
 
-:is([data-layout=home], [data-layout=full]) .page-content {
+:is([data-layout=home], [data-layout=wide], [data-layout=full]) .page-content {
   grid-column: 1 / -1;
   display: block;
 }
 
-:is([data-layout=home], [data-layout=full]) .site-footer {
+:is([data-layout=home], [data-layout=wide], [data-layout=full]) .site-footer {
   margin-left: 0;
   padding-left: var(--outer-gutter);
   border-top: 1px solid var(--border);
 }
 
 .home-page,
+[data-layout=wide] main,
 [data-layout=full] main {
   max-width: 76rem;
   margin: 0 auto;
   padding: 4.5rem 2.5rem 5rem;
+}
+
+[data-layout=full] .layout {
+  padding-inline: 0;
+}
+
+[data-layout=full] main {
+  max-width: none;
+  padding-inline: var(--page-gutter);
 }
 
 .home-hero {
@@ -195,7 +205,7 @@ body:is([data-layout=home], [data-layout=full]) {
 
 @media (min-width: 761px) {
   /* The fixed branding sits outside the header's box in the sidebar column. */
-  :is([data-layout=home], [data-layout=full]) header::before {
+  :is([data-layout=home], [data-layout=wide], [data-layout=full]) header::before {
     content: "";
     position: absolute;
     inset: 0 0 0 calc(0px - var(--outer-gutter) - var(--sidebar-width));
@@ -205,13 +215,18 @@ body:is([data-layout=home], [data-layout=full]) {
 }
 
 @media (max-width: 760px) {
-  :is([data-layout=home], [data-layout=full]) header::after {
+  :is([data-layout=home], [data-layout=wide], [data-layout=full]) header::after {
     display: none;
   }
 
   .home-page,
+  [data-layout=wide] main,
   [data-layout=full] main {
     padding: 2.5rem 1.5rem 3rem;
+  }
+
+  [data-layout=full] main {
+    padding-inline: var(--page-gutter);
   }
 
   .home-hero {

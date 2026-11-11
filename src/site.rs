@@ -6,7 +6,7 @@ use crate::configuration::{
     CanonicalUrlStyle, ExecutionMode, PackageVisibility, PresentationDefaults,
 };
 use crate::diagnostics::DiagnosticPath;
-use crate::documents::prepare_collection_document;
+use crate::documents::{PageLayout, prepare_collection_document};
 use crate::execution::{PreparedCell, ValidatedPage};
 use crate::ir::*;
 use crate::snapshots::Snapshot;
@@ -103,12 +103,13 @@ pub(crate) struct ResolvedPageMetadata<'a> {
 }
 
 impl PageModel<'_> {
-    pub(crate) fn has_full_layout(&self) -> bool {
-        self.item.is_none()
-            && self.document.is_some_and(|document| {
-                crate::documents::PageLayout::from_metadata(document.document.frontmatter.as_ref())
-                    == Ok(crate::documents::PageLayout::Full)
+    pub(crate) fn layout(&self) -> PageLayout {
+        self.document
+            .filter(|_| self.item.is_none())
+            .and_then(|document| {
+                PageLayout::from_metadata(document.document.frontmatter.as_ref()).ok()
             })
+            .unwrap_or(PageLayout::Docs)
     }
 
     fn empty(title: String, owner: Option<String>, visible: bool) -> Self {

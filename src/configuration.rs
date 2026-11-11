@@ -79,7 +79,7 @@ pub struct PresentationDefaults {
     /// Metadata overrides keyed by generated site-relative HTML path.
     #[serde(skip_serializing_if = "BTreeMap::is_empty")]
     pub pages: BTreeMap<String, PageMetadata>,
-    /// Optional full-width homepage, with the same navbar as documentation pages.
+    /// Optional wide, centered homepage, with the same navbar as documentation pages.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub home: Option<HomeDefaults>,
     /// Additional project sections shown after Guide in the navbar.

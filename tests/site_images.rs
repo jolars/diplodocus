@@ -99,10 +99,12 @@ fn snapshot(format: image::ImageFormat, home: bool) -> (Snapshot, Vec<u8>, Strin
         "docs/nested/page.md",
         format!("# Nested\n\n![Plot](../image.{extension})\n"),
     );
-    root.write(
-        "docs/full.md",
-        format!("---\nlayout: full\n---\n\n# Wide image\n\n![Plot](image.{extension})\n"),
-    );
+    for layout in ["wide", "full"] {
+        root.write(
+            format!("docs/{layout}.md"),
+            format!("---\nlayout: {layout}\n---\n\n# Overview\n\n![Plot](image.{extension})\n"),
+        );
+    }
     let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let artifact = tempfile::tempdir().unwrap();
@@ -152,9 +154,20 @@ fn responsive_images_preserve_originals_and_export_smaller_content_addressed_var
         let tag = image_tag(&rendered, "index.html", "Plot");
         assert!(tag.contains("width=\"1200\" height=\"600\""));
         assert!(tag.contains("sizes=\"(max-width: 760px)"));
-        let full = image_tag(&rendered, "full.html", "Plot");
-        assert!(full.contains("sizes=\"100vw\""));
-        assert_eq!(candidates(&full), candidates(&tag));
+        for (layout, sizes) in [
+            (
+                "wide",
+                "(max-width: 760px) calc(100vw - 3rem), min(71rem, calc(100vw - 9rem))",
+            ),
+            (
+                "full",
+                "(max-width: 760px) calc(100vw - 2rem), min(92rem, calc(100vw - 4rem))",
+            ),
+        ] {
+            let image = image_tag(&rendered, &format!("{layout}.html"), "Plot");
+            assert!(image.contains(&format!("sizes=\"{sizes}\"")));
+            assert_eq!(candidates(&image), candidates(&tag));
+        }
         let sources = candidates(&tag);
         assert_eq!(
             sources.iter().map(|(_, width)| *width).collect::<Vec<_>>(),
