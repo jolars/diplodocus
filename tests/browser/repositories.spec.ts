@@ -93,7 +93,7 @@ test("multiple repositories have named links and dismiss with Escape", async ({ 
   await expect(menu).not.toHaveAttribute("open", "");
   await summary.click();
   await page.getByRole("main").getByRole("link", { name: "Guide", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Guide", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Guide", exact: true })).toBeVisible();
   await expect(menu).not.toHaveAttribute("open", "");
   expect(errors).toEqual([]);
 });
