@@ -290,9 +290,28 @@ implemented as an optional `serve --live-reload` feature.
   documentation examples as motivating cases, with a small browser runtime
   or adapters where useful.
 - [ ] Add Markdown includes for composing authored pages from existing files.
-  Preserve each included file's source location for relative links, images,
-  diagnostics, preview watching, and portable snapshots. Define nested
-  includes and cycle detection before adding partial-file selection.
+  - [x] Define the [authoring contract](docs/design/markdown-includes.md):
+    VitePress syntax for GFM, Quarto syntax for QMD, paths relative to each
+    included file, collection-root paths, repository boundaries, and errors
+    for missing or invalid inputs.
+  - [ ] Implement whole-file and nested includes with cycle detection. Retain
+    each included file's source path and line locations so diagnostics can
+    identify the included source and its include chain.
+  - [ ] Resolve relative links and images from the included file's location,
+    including files outside the including page's directory.
+  - [ ] Track included files as build and preview dependencies. Rebuild affected
+    pages when an included file changes, is created, or is removed.
+  - [ ] Preserve expanded content, source locations, and referenced assets in
+    portable snapshots so `generate` works without the original source tree.
+  - [ ] Add partial-file selection after whole-file inclusion works: line
+    ranges, named regions, and heading anchors, with diagnostics for invalid
+    or missing selections and source locations retained after selection.
+  - [ ] Support verbatim includes inside code fences, preserving indentation and
+    allowing line-range selection without parsing the included code as
+    Markdown.
+  - [ ] Document the supported syntax and differences from VitePress and Quarto,
+    and add integration coverage for nested includes, source-relative
+    resources, preview updates, and generation from portable snapshots.
 
 Change this page when a release gate changes. Keep detailed validation evidence
 in tests and CI results rather than adding another dated ledger.
