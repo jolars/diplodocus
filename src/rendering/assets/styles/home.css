@@ -62,7 +62,7 @@ body:is([data-layout=home], [data-layout=full]) {
 .home-name {
   margin: 0 0 .6rem;
   color: var(--accent);
-  font-size: 1.5rem;
+  font-size: 2rem;
   font-weight: 700;
   letter-spacing: -.03em;
 }
@@ -230,7 +230,7 @@ body:is([data-layout=home], [data-layout=full]) {
   }
 
   .home-name {
-    font-size: 1.2rem;
+    font-size: 1.6rem;
   }
 
   .home-hero h1 {
