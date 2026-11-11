@@ -7,19 +7,6 @@ use super::*;
 use crate::documents::AuthoredFormat;
 use crate::ir::SourceSpan;
 
-/// One contiguous part of expanded Markdown and the source bytes it came from.
-#[derive(Debug, Clone)]
-pub struct IncludeSourceRange {
-    /// Byte range in the expanded page.
-    pub expanded: SourceSpan,
-    /// Original repository file and byte range.
-    pub original: SourceLocation,
-    /// One-based line number at the start of the original range.
-    pub line: usize,
-    /// Directives traversed from the main page to this source.
-    pub include_chain: Vec<SourceLocation>,
-}
-
 pub(super) struct Expanded {
     pub text: String,
     pub ranges: Vec<IncludeSourceRange>,

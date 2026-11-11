@@ -6,8 +6,8 @@ GFM and QMD collections. Prepared pages retain source ranges and include chains.
 Relative links and images resolve from their original source files, including
 partials outside the collection directory. Preview watching tracks nested
 partials even after failed resolution and retries when missing files appear.
-Portable source-map retention remains pending, so includes are not yet
-documented as a complete authoring feature.
+Portable snapshots retain these source maps and referenced asset bytes, so
+generation works after the source tree has been removed.
 Executable QMD pages with includes produce an explicit error until the execution
 engine can verify expanded inputs. The remaining slices are tracked in
 [TODO.md](../../TODO.md).
@@ -105,9 +105,15 @@ or restoring a nested partial must rebuild the affected pages.
 
 Portable snapshots retain the expanded document, original source attribution,
 and referenced assets. Generation must not reopen the original source tree.
+Each resolved document record carries the expanded byte ranges, original
+repository paths and byte ranges, starting line numbers, and include chains.
+Snapshot loading validates the map's coverage, UTF-8 boundaries, range lengths,
+and include-chain structure without reopening source files. Integration tests
+remove the source tree before loading and generating GFM and static QMD sites
+with nested includes, images, downloads, and reference definitions outside the
+collection directory.
 Included content must participate in execution cache invalidation just as main
-page content does. These requirements need explicit integration coverage before
-includes are described as supported in the authoring guide.
+page content does before executable includes can be enabled.
 
 ## Compatibility
 

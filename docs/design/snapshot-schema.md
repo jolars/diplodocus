@@ -192,7 +192,7 @@ The `records` kinds are:
   | `collection` | Empty      | Collection ID                 | `owner`, `repository`, `path`, `mount`, `format`, optional `navigation`, `execution`                                                                 |
   | `page`       | Empty      | Semantic page ID              | `owner`, `kind`, `title`, `document`                                                                                                                 |
   | `concept`    | Empty      | Concept ID                    | `kind`, `members`, `documentation`                                                                                                                   |
-  | `document`   | Empty      | Serialized `DocumentIdentity` | `document`, `collection_path`, `anchors`, `references`                                                                                               |
+  | `document`   | Empty      | Serialized `DocumentIdentity` | `document`, `collection_path`, optional `source_ranges`, `anchors`, `references`                                                                     |
   | `execution`  | Empty      | Page ID                       | `record`, `diagnostics`, `diagnostic_offset`, `slots`                                                                                                |
 
 There is exactly one `workspace` record and one `presentation` record. Every
@@ -606,6 +606,25 @@ individual source file. For a single-file collection, `collection_path` is the
 file's basename; its mount remains a directory prefix. The page's source
 location retains the original repository-relative filename for resolving links
 and assets.
+
+GFM and QMD document records also retain `source_ranges`, an ordered array of
+`{expanded, original, line, include_chain}` objects. `expanded` is a half-open
+byte range in the page's expanded `raw_source`. `original` is a `SourceLocation`
+with a repository ID, repository-relative path, and byte range of the same
+length. `line` is the one-based starting line in that original file.
+`include_chain` lists the directive source locations from the main page to the
+original file, preserving nested and repeated includes. Empty partials may
+contribute zero-length ranges. The ranges cover the expanded source in order,
+without gaps or overlaps, with endpoints on UTF-8 boundaries. Loading checks
+these invariants, positive line numbers, source repositories, and acyclic
+include chains rooted in the main page. It does not reopen original files.
+Resolved asset references retain the bytes selected relative to each original
+file, including reference definitions in other partials.
+
+`source_ranges` defaults to an empty array for older records and is omitted
+when empty. Existing snapshots remain readable without source maps; storage,
+IR, and canonical encoding versions are unchanged. Newly retained maps
+participate in document and snapshot fingerprints.
 
 The storage-specific [execution envelope](../../src/snapshots/outputs.rs) has
 `record` ([PageExecutionRecord](../../src/execution/records.rs)), `diagnostics`

@@ -2,12 +2,13 @@ mod support;
 
 use diplodocus::{
     assembly::{AssemblyError, assemble_workspace},
+    commands::{self, ExtractOptions, GenerateOptions},
     diagnostics::DiagnosticCode,
     provenance::fingerprint_bytes,
     rendering::{render_fragments, render_site},
     site::Site,
     snapshots::Snapshot,
-    validation::{ReferenceTarget, resolve_workspace},
+    validation::{DocumentIdentity, ReferenceTarget, resolve_workspace},
 };
 
 fn workspace(format: &str) -> support::TestWorkspace {
@@ -228,7 +229,7 @@ fn invalid_utf8_extensions_and_generated_storage_produce_include_errors() {
 }
 
 #[test]
-fn included_resources_resolve_from_their_sources_in_html_and_markdown() {
+fn nested_include_sources_and_assets_survive_portable_generation() {
     for format in ["gfm", "qmd"] {
         let root = workspace(format);
         let extension = if format == "gfm" { "md" } else { "qmd" };
@@ -245,14 +246,14 @@ fn included_resources_resolve_from_their_sources_in_html_and_markdown() {
             }
         };
         root.write(format!("pages/index.{extension}"), format!(
-            "# Main\n\n[Main download](data.txt) ![Main image](chart.svg)\n\n[Defined in partial][partial-data]\n\n{}\n\n[main-data]: data.txt\n",
+            "# Main\r\n\r\n[Main download](data.txt) ![Main image](chart.svg)\r\n\r\n[Defined in partial][partial-data]\r\n\r\n{}\r\n\r\n[main-data]: data.txt\r\n",
             directive(&format!("../shared % space/first.{extension}"))
         ));
         root.write(format!("shared % space/first.{extension}"), format!(
             "## Included\n\n- **[Included download](data.txt)** ![Included image](chart.svg)\n- [Main definition][main-data]\n\n{}\n",
             directive(&format!("nested/second.{extension}"))
         ));
-        let nested = "## Nested {#nested}\n\n> [Nested download](data.txt) ![Nested image][nested-image]\n\n[Page](../../pages/target.EXT#target) [Local](#nested) [External](https://example.com/a%2Fb)\n\n[partial-data]: data%23file.txt#section\n[nested-image]: chart.svg\n".replace("EXT", extension);
+        let nested = "## Nested {#nested}\n\nUnicode: π.\n\n> [Nested download](data.txt) ![Nested image][nested-image]\n\n[Page](../../pages/target.EXT#target) [Local](#nested) [External](https://example.com/a%2Fb)\n\n[partial-data]: data%23file.txt#section\n[nested-image]: chart.svg\n".replace("EXT", extension);
         root.write(format!("shared % space/nested/second.{extension}"), &nested);
         root.write(format!("pages/target.{extension}"), "# Target {#target}\n");
         let mut destinations = Vec::new();
@@ -276,18 +277,86 @@ fn included_resources_resolve_from_their_sources_in_html_and_markdown() {
             "Reference definition",
         );
         let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
-        let prepared = sources
+        let (page_id, prepared) = sources
             .prepared_pages()
-            .values()
-            .find(|p| p.source().contains("# Main"))
+            .iter()
+            .find(|(_, p)| p.source().contains("# Main"))
             .unwrap();
         assert!(prepared.source().contains("[Included download](data.txt)"));
+        let identity = DocumentIdentity::Page {
+            page: page_id.clone(),
+        };
+        let source_ranges = prepared.source_ranges().to_vec();
+        assert!(source_ranges.iter().any(|r| r.include_chain.len() == 2));
+        for range in &source_ranges {
+            let original = root.read(range.original.path.as_str());
+            let span = range.original.span.unwrap();
+            assert_eq!(
+                &prepared.source()[range.expanded.start..range.expanded.end],
+                &original[span.start..span.end]
+            );
+            assert_eq!(
+                range.line,
+                original[..span.start]
+                    .bytes()
+                    .filter(|b| *b == b'\n')
+                    .count()
+                    + 1
+            );
+            for entry in &range.include_chain {
+                let original = root.read(entry.path.as_str());
+                let span = entry.span.unwrap();
+                let target = if entry.path.as_str().starts_with("pages/") {
+                    format!("../shared % space/first.{extension}")
+                } else {
+                    format!("nested/second.{extension}")
+                };
+                assert_eq!(&original[span.start..span.end], directive(&target));
+            }
+        }
         let resolved = resolve_workspace(&sources).unwrap();
         assert_eq!(resolved.assets().len(), 7);
         assert!(resolved.records().iter().flat_map(|record| &record.references).any(|reference|
             matches!(&reference.target, ReferenceTarget::Page { fragment: Some(fragment), .. } if fragment == "target")));
         let snapshot = Snapshot::from_sources(&sources, &resolved).unwrap();
-        let site = Site::new(&snapshot).unwrap();
+        let target = tempfile::tempdir().unwrap();
+        let input = target.path().join("documentation.sqlite");
+        commands::extract(ExtractOptions {
+            config: root.path().join("diplodocus.yaml"),
+            output: Some(input.clone()),
+        })
+        .unwrap();
+        let export = snapshot.canonical_export().unwrap();
+        let documents = snapshot.documents().to_vec();
+        let assets = snapshot.assets().clone();
+        let source_path = root.path().to_owned();
+        assert!(!export.contains(source_path.to_str().unwrap()));
+        drop((snapshot, sources, resolved, root));
+        assert!(!source_path.exists());
+
+        let loaded = Snapshot::load(&input).unwrap();
+        assert_eq!(loaded.canonical_export().unwrap(), export);
+        assert_eq!(loaded.documents(), documents);
+        assert_eq!(loaded.assets(), &assets);
+        assert_eq!(
+            loaded
+                .documents()
+                .iter()
+                .find(|r| r.document == identity)
+                .unwrap()
+                .source_ranges,
+            source_ranges
+        );
+        let output = target.path().join("site");
+        commands::generate(GenerateOptions {
+            input,
+            output: output.clone(),
+        })
+        .unwrap();
+        let site = Site::new(&loaded).unwrap();
+        for (path, file) in render_site(&site).unwrap().files() {
+            assert_eq!(std::fs::read(output.join(path)).unwrap(), file.bytes);
+        }
         for rendered in [
             render_site(&site).unwrap(),
             render_fragments(&site).unwrap(),
@@ -295,6 +364,14 @@ fn included_resources_resolve_from_their_sources_in_html_and_markdown() {
             let html = std::str::from_utf8(&rendered.files()["index.html"].bytes).unwrap();
             let markdown = std::str::from_utf8(&rendered.files()["index.md"].bytes).unwrap();
             for (label, download, image) in &destinations {
+                assert_eq!(
+                    rendered.files()[&format!("assets/{download}.bin")].bytes,
+                    label.as_bytes()
+                );
+                assert_eq!(
+                    rendered.files()[&format!("assets/{image}.svg")].bytes,
+                    assets[image].bytes
+                );
                 assert!(
                     html.contains(&format!("href=\"assets/{download}.bin\"")),
                     "{label}: {html}"

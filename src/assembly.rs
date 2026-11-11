@@ -44,7 +44,7 @@ mod references;
 mod rmarkdown;
 mod rust_native;
 
-pub use includes::IncludeSourceRange;
+pub use crate::ir::IncludeSourceRange;
 pub(crate) use includes::remap as remap_include_diagnostic;
 pub(crate) use includes::watch_inputs as include_watch_inputs;
 

@@ -479,6 +479,20 @@ pub struct SourceLocation {
     pub span: Option<SourceSpan>,
 }
 
+/// One contiguous part of expanded Markdown and the source bytes it came from.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct IncludeSourceRange {
+    /// Byte range in the expanded page.
+    pub expanded: SourceSpan,
+    /// Original repository file and byte range.
+    pub original: SourceLocation,
+    /// One-based line number at the start of the original range.
+    pub line: usize,
+    /// Directives traversed from the main page to this source.
+    pub include_chain: Vec<SourceLocation>,
+}
+
 /// An explicit group of corresponding APIs.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

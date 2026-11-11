@@ -108,6 +108,129 @@ fn changed(
 }
 
 #[test]
+fn include_source_maps_are_validated_without_original_files() {
+    let root = support::TestWorkspace::new();
+    root.write("diplodocus.yaml", "project:\n  name: Source maps\nrepositories:\n  - id: docs\n    path: .\ncontent:\n  - id: guide\n    owner: project\n    repository: docs\n    path: pages/index.md\n    mount: \"\"\n    format: gfm\n");
+    root.write(
+        "pages/index.md",
+        "# Main π\n\n<!--@include: ../parts/first.md-->\n\n<!--@include: ../parts/first.md-->\n",
+    );
+    root.write("parts/first.md", "First.\n\n<!--@include: empty.md-->\n");
+    root.write("parts/empty.md", "");
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
+    let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+    let source_path = root.path().to_owned();
+    drop((sources, root));
+    assert!(!source_path.exists());
+    assert_eq!(
+        changed(&snapshot, |_| {}).unwrap().documents(),
+        snapshot.documents()
+    );
+
+    for case in [
+        "expanded start",
+        "expanded end",
+        "expanded reversed",
+        "UTF-8 boundary",
+        "original missing",
+        "original reversed",
+        "length",
+        "line zero",
+        "line impossible",
+        "repository",
+        "origin",
+        "chain root",
+        "chain repository",
+        "chain span missing",
+        "chain span reversed",
+        "chain span empty",
+        "chain cycle",
+        "chain origin cycle",
+        "chain depth",
+        "coverage",
+        "missing source",
+        "missing location",
+        "format",
+        "owner",
+    ] {
+        let result = changed(&snapshot, |export| {
+            let document = record(export, "document");
+            let ranges = document["source_ranges"].as_array_mut().unwrap();
+            let nested = ranges
+                .iter()
+                .position(|r| r["include_chain"].as_array().unwrap().len() == 2)
+                .unwrap();
+            match case {
+                "expanded start" => ranges[0]["expanded"]["start"] = 1.into(),
+                "expanded end" => ranges[0]["expanded"]["end"] = usize::MAX.into(),
+                "expanded reversed" => ranges[0]["expanded"]["start"] = usize::MAX.into(),
+                "UTF-8 boundary" => ranges[0]["expanded"]["end"] = 8.into(),
+                "original missing" => ranges[0]["original"]["span"] = Value::Null,
+                "original reversed" => ranges[0]["original"]["span"]["start"] = usize::MAX.into(),
+                "length" => ranges[0]["original"]["span"]["end"] = 0.into(),
+                "line zero" => ranges[0]["line"] = 0.into(),
+                "line impossible" => ranges[0]["line"] = usize::MAX.into(),
+                "repository" => ranges[0]["original"]["repository"] = "unknown".into(),
+                "origin" => ranges[0]["original"]["path"] = "other.md".into(),
+                "chain root" => ranges[nested]["include_chain"][0]["path"] = "other.md".into(),
+                "chain repository" => {
+                    ranges[nested]["include_chain"][1]["repository"] = "unknown".into()
+                }
+                "chain span missing" => ranges[nested]["include_chain"][0]["span"] = Value::Null,
+                "chain span reversed" => {
+                    ranges[nested]["include_chain"][0]["span"]["start"] = usize::MAX.into()
+                }
+                "chain span empty" => {
+                    ranges[nested]["include_chain"][0]["span"]["end"] =
+                        ranges[nested]["include_chain"][0]["span"]["start"].clone()
+                }
+                "chain cycle" => {
+                    ranges[nested]["include_chain"][1]["path"] =
+                        ranges[nested]["include_chain"][0]["path"].clone()
+                }
+                "chain origin cycle" => {
+                    ranges[nested]["original"]["path"] =
+                        ranges[nested]["include_chain"][1]["path"].clone()
+                }
+                "chain depth" => {
+                    ranges[nested]["include_chain"] =
+                        vec![ranges[nested]["include_chain"][0].clone(); 128].into()
+                }
+                "coverage" => {
+                    ranges.pop();
+                }
+                "missing source" => record(export, "page")["document"]["raw_source"] = Value::Null,
+                "missing location" => {
+                    record(export, "page")["document"]["source_location"] = Value::Null
+                }
+                "format" => {
+                    record(export, "page")["document"]["source_format"] =
+                        json!({"kind": "extracted", "name": "plain-text"})
+                }
+                "owner" => {
+                    document["collection_path"] = Value::Null;
+                    record(export, "page")["kind"] = json!({"kind": "overview"});
+                }
+                _ => unreachable!(),
+            }
+        });
+        assert!(
+            matches!(result, Err(SnapshotError::Invalid(message)) if message.starts_with("source map")),
+            "{case}: {result:?}"
+        );
+    }
+
+    let legacy = changed(&snapshot, |export| {
+        record(export, "document")
+            .as_object_mut()
+            .unwrap()
+            .remove("source_ranges");
+    })
+    .unwrap();
+    assert!(legacy.documents()[0].source_ranges.is_empty());
+}
+
+#[test]
 fn repository_hyperlinks_retain_their_policy_without_a_checkout() {
     let root = support::TestWorkspace::new();
     root.write("diplodocus.yaml", "project:\n  name: \"Repository links\"\nrepositories:\n  - id: \"repo\"\n    path: \".\"\n    url: \"https://github.com/example/models\"\n    revision: \"v2\"\npackages:\n  - id: \"rmodels\"\n    name: \"Models\"\n    slug: \"r\"\n    ecosystem: \"r\"\n    repository: \"repo\"\n    path: \"r\"\n    metadata-path: \"DESCRIPTION\"\n    targets:\n      - id: \"api\"\n        extractor: \"r\"\n        path: \".\"\n        role: \"public-api\"\n");

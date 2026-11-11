@@ -307,7 +307,7 @@ implemented as an optional `serve --live-reload` feature.
     including files outside the collection directory.
   - [x] Retain expanded Markdown and parsed content in the document records
     consumed by portable snapshots.
-  - [ ] Retain original source maps and included-file-relative assets in
+  - [x] Retain original source maps and included-file-relative assets in
     portable snapshots. Add a regression test that removes the source tree
     before loading a snapshot and generating a site with nested includes.
   - [x] Reject executable QMD pages with includes explicitly while expanded

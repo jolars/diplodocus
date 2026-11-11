@@ -159,6 +159,10 @@ pub struct ResolvedDocument {
     pub document: DocumentIdentity,
     /// Selected collection-relative filename, independent of canonical source aliases.
     pub collection_path: Option<DiagnosticPath>,
+    /// Expanded Markdown ranges mapped to original files and include directives.
+    /// Empty for documents without an include source map, including older snapshots.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub source_ranges: Vec<IncludeSourceRange>,
     /// Authored identifiers only; generated headings never add anchors.
     pub anchors: BTreeSet<String>,
     /// References in depth-first document order.
@@ -655,6 +659,14 @@ fn resolve(
             },
         );
         resolution.result.records.push(ResolvedDocument {
+            source_ranges: match &context.identity {
+                DocumentIdentity::Page { page } => sources
+                    .prepared_pages()
+                    .get(page)
+                    .map(|p| p.source_ranges.clone())
+                    .unwrap_or_default(),
+                _ => Vec::new(),
+            },
             collection_path: match &context.identity {
                 DocumentIdentity::Page { page } => sources
                     .prepared_pages()

@@ -12,6 +12,7 @@ use crate::validation::{
 
 mod documenter;
 mod links;
+mod source_maps;
 
 pub(super) fn require(condition: bool, message: &'static str) -> Result<(), SnapshotError> {
     condition
@@ -296,6 +297,7 @@ impl Snapshot {
                 record.collection_path.is_some() == authored,
                 "collection-relative document path",
             )?;
+            source_maps::validate(record, document, authored)?;
             require(
                 record.anchors == document_anchors(&document.document.blocks),
                 "document anchors",
