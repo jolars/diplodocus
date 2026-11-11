@@ -1567,6 +1567,13 @@ test("page TOC stays close to content when the window narrows", async ({ page },
   });
   await page.setViewportSize({ width: 1280, height: 1400 });
   await page.goto("/getting-started/installation.html");
+  for (const width of [1280, 1100]) {
+    await page.setViewportSize({ width, height: 1400 });
+    await expect(page.locator(".toc-disclosure")).toHaveJSProperty("open", true);
+    await expect(page.getByRole("navigation", { name: "On this page" })).toBeVisible();
+    await expect(page.locator(".toc-back-to-top")).toBeHidden();
+    await capture(page, info, `sidebar-page-toc-${width}`, true, false);
+  }
   for (const width of [1099, 1000, 761, 760]) {
     await page.setViewportSize({ width, height: 1400 });
     await expect(page.locator(".toc-disclosure")).toHaveJSProperty("open", false);
@@ -1652,6 +1659,7 @@ test("compact page TOC overlays content and dismisses after use", async ({ page 
     await summary.click();
     await expect(list).toBeVisible();
     await expect(list.getByRole("link").first()).toHaveText("Back to top");
+    await expect(list.getByRole("link", { name: "Back to top", exact: true })).toBeVisible();
     const after = (await page.getByRole("main").boundingBox())!;
     expect(after.y).toBeCloseTo(before.y, 1);
     expect(await page.evaluate(() => scrollY)).toBe(scroll);
