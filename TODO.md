@@ -299,10 +299,19 @@ implemented as an optional `serve --live-reload` feature.
     identify the included source and its include chain.
   - [ ] Resolve relative links and images from the included file's location,
     including files outside the including page's directory.
-  - [ ] Track included files as build and preview dependencies. Rebuild affected
-    pages when an included file changes, is created, or is removed.
-  - [ ] Preserve expanded content, source locations, and referenced assets in
-    portable snapshots so `generate` works without the original source tree.
+  - [x] Fingerprint successfully resolved includes as build inputs, revalidate
+    their contents, and expose their paths to the existing preview watcher.
+  - [ ] Retain watch dependencies after failed include resolution so creating or
+    restoring a missing partial triggers another build. Add preview tests
+    for editing, creating, deleting, and restoring nested partials,
+    including files outside the collection directory.
+  - [x] Retain expanded Markdown and parsed content in the document records
+    consumed by portable snapshots.
+  - [ ] Retain original source maps and included-file-relative assets in
+    portable snapshots. Add a regression test that removes the source tree
+    before loading a snapshot and generating a site with nested includes.
+  - [x] Reject executable QMD pages with includes explicitly while expanded
+    input verification is unsupported.
   - [ ] Integrate expanded QMD with execution identity, input verification,
     caching, and execution diagnostics before enabling executable pages with
     includes. Static expansion must not bypass the engine's source checks.
@@ -312,9 +321,14 @@ implemented as an optional `serve --live-reload` feature.
   - [ ] Support verbatim includes inside code fences, preserving indentation and
     allowing line-range selection without parsing the included code as
     Markdown.
-  - [ ] Document the supported syntax and differences from VitePress and Quarto,
-    and add integration coverage for nested includes, source-relative
-    resources, preview updates, and generation from portable snapshots.
+  - [x] Document the syntax and compatibility decisions in the include contract,
+    and add integration tests for nested and repeated includes, cycle
+    detection, source attribution, invalid targets, and repository
+    boundaries.
+  - [ ] Add authoring documentation once relative resources, preview recovery,
+    and portable snapshots work. Document supported syntax and differences
+    from VitePress and Quarto, and cover source-relative resources in
+    integration tests alongside the preview and snapshot tests above.
 
 Change this page when a release gate changes. Keep detailed validation evidence
 in tests and CI results rather than adding another dated ledger.
