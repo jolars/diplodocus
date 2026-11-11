@@ -269,6 +269,56 @@ fn rejects_missing_or_malformed_presentation_even_with_valid_fingerprints() {
 }
 
 #[test]
+fn rejects_forged_public_assets_and_icons_with_valid_fingerprints() {
+    let root = support::TestWorkspace::new();
+    root.write("diplodocus.yaml", "project:\n  name: Public files\npresentation:\n  assets: [{ repository: docs, path: icon.svg, publish: favicon.svg }]\n  icons: [{ path: favicon.svg }]\nrepositories:\n  - id: docs\n    path: .\n");
+    root.write("icon.svg", "<svg xmlns='http://www.w3.org/2000/svg'/>");
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
+    let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+    for case in [
+        "declaration",
+        "mapping",
+        "repository",
+        "source-path",
+        "publication-path",
+        "digest",
+        "bytes",
+        "extra",
+        "icon",
+        "type",
+        "sizes",
+    ] {
+        let result = changed(&snapshot, |export| {
+            let presentation = record(export, "presentation");
+            match case {
+                "declaration" => {
+                    presentation.as_object_mut().unwrap().remove("assets");
+                }
+                "mapping" => {
+                    presentation
+                        .as_object_mut()
+                        .unwrap()
+                        .remove("public-assets");
+                }
+                "repository" => presentation["assets"][0]["repository"] = "missing".into(),
+                "source-path" => presentation["assets"][0]["path"] = "../icon.svg".into(),
+                "publication-path" => {
+                    presentation["assets"][0]["publish"] = "../favicon.svg".into()
+                }
+                "digest" => presentation["public-assets"]["favicon.svg"] = "0".repeat(64).into(),
+                "bytes" => export["assets"] = json!([]),
+                "extra" => presentation["public-assets"]["extra.svg"] = "0".repeat(64).into(),
+                "icon" => presentation["icons"][0]["path"] = "missing.svg".into(),
+                "type" => presentation["icons"][0]["type"] = "image/png".into(),
+                "sizes" => presentation["icons"][0]["sizes"] = "invalid".into(),
+                _ => unreachable!(),
+            }
+        });
+        assert!(result.is_err(), "accepted {case}");
+    }
+}
+
+#[test]
 fn rejects_incomplete_or_forged_logo_evidence_with_valid_fingerprints() {
     let root = support::TestWorkspace::new();
     root.write(

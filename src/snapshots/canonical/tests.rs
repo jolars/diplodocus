@@ -25,6 +25,7 @@ fn fixture() -> Snapshot {
             ..PresentationDefaults::default()
         },
         documents: Vec::new(),
+        public_assets: BTreeMap::new(),
         logo: None,
         open_graph: None,
         components: BTreeMap::new(),

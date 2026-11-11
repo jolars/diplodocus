@@ -235,6 +235,8 @@ or HTML.
 | `home` | mapping | Unset | Full-width homepage content. |
 | `sections` | list | `[]` | Additional project navbar sections after Guide. |
 | `sidebar` | list or mapping | Automatic directory grouping | Authored navigation order and groups. |
+| `assets` | list | `[]` | Public files retained at explicit publication paths. |
+| `icons` | list | `[]` | Icon and manifest links on every complete HTML page. |
 | `logo` | mapping | Unset | Image beside the site title. |
 | `open-graph` | mapping | Unset | Shared social preview image. Requires `site-url`. |
 | `redirects` | mapping | `{}` | Permanent redirects from old URL paths to generated pages. |
@@ -315,6 +317,37 @@ and source Markdown paths are invalid. The current page's ancestors open
 automatically. Explicit sidebars replace automatic authored and shared-concept
 groups; package API trees still appear. See
 [navigation](../guide/navigation.md) for examples.
+
+### Public assets and icons
+
+Fields in each `presentation.assets` entry:
+
+| Option | Type | Default | Purpose |
+| --- | --- | --- | --- |
+| `repository` | string | Required | Declared repository containing the file. |
+| `path` | path | Required | Normalized repository-relative source file path. |
+| `publish` | path | Required | Normalized site-relative publication path, without a hosting prefix. |
+
+Paths cannot contain empty or dot segments, backslashes, percent escapes,
+colons, query parameters, or fragments. Files cannot collide with one another,
+generated pages and their Markdown companions, clean URLs, redirects, or
+reserved outputs: `assets/`, `__diplodocus/`, `.diplodocus-site`, `_redirects`,
+`sitemap.xml`, `robots.txt`, and `documents.json`.
+
+Fields in each `presentation.icons` entry:
+
+| Option | Type | Default | Purpose |
+| --- | --- | --- | --- |
+| `path` | path | Required | A publication path declared in `presentation.assets`. |
+| `rel` | string | `icon` | `icon`, `apple-touch-icon`, or `manifest`. |
+| `type` | string | Unset | MIME type hint matching the publication extension. |
+| `sizes` | string | Unset | `any` or space-separated positive dimensions, such as `16x16 32x32`. Not allowed for manifests. |
+
+Icon links require an image extension: `.svg`, `.ico`, `.png`, `.jpg`, `.jpeg`,
+`.webp`, `.gif`, or `.avif`. Manifest links require `.webmanifest` or `.json`.
+Response MIME types follow publication extensions. Other public files may use
+any extension; unknown extensions use `application/octet-stream`. Files retain
+their original bytes. See [public assets and icons](../guide/presentation.md#public-assets-and-icons).
 
 ### Logo
 

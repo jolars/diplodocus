@@ -220,6 +220,11 @@ impl Observer {
         {
             observe(&root.join(image.path.as_str()), &mut observed);
         }
+        for asset in &config.presentation.assets {
+            if let Some(root) = roots.get(asset.repository.as_str()) {
+                observe(&root.join(asset.path.as_str()), &mut observed);
+            }
+        }
         for component in &config.components {
             if let Some(root) = roots.get(component.repository.as_str()) {
                 fn bundle(path: &Path, observed: &mut Observation) {

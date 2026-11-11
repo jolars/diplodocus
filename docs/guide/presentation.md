@@ -30,6 +30,65 @@ toggle in the header, or in the navigation menu on phones. The browser remembers
 their light or dark choice across visits. With JavaScript disabled, the theme
 follows the system preference.
 
+## Public assets and icons {#public-assets-and-icons}
+
+Declare files that must appear at stable public paths, including files that no
+authored page links to:
+
+```yaml
+presentation:
+  assets:
+    - repository: docs
+      path: web/static/favicon.svg
+      publish: favicon.svg
+    - repository: docs
+      path: web/static/favicon.ico
+      publish: favicon.ico
+    - repository: docs
+      path: web/static/apple-touch-icon.png
+      publish: apple-touch-icon.png
+    - repository: docs
+      path: web/static/site.webmanifest
+      publish: site.webmanifest
+    - repository: docs
+      path: web/static/llms.txt
+      publish: llms.txt
+  icons:
+    - path: favicon.svg
+      type: image/svg+xml
+      sizes: any
+    - path: favicon.ico
+    - path: apple-touch-icon.png
+      rel: apple-touch-icon
+    - path: site.webmanifest
+      rel: manifest
+```
+
+Each source file must stay inside its declared repository. `publish` names a
+file relative to the site root, without a leading slash or hosting prefix.
+Declare individual files; directories and globs are not supported. Generated
+pages, Markdown companions, clean URLs, redirects, and reserved output paths
+cannot be replaced by public files. Public files may share a directory with
+generated pages.
+
+Icon paths refer to publication paths in `assets`. Diplodocus checks the link
+relationship, file extension, optional MIME type, and optional sizes, then adds
+escaped links to every complete HTML page. Links resolve correctly from nested
+pages, clean URLs, and sites hosted below a prefix. Fragment bundles retain the
+files and leave head links to their frontend.
+
+Public files are explicit, trusted site inputs, like browser component bundles.
+Diplodocus copies their bytes unchanged, including SVGs, manifests, and text.
+Declare manifest icons and other dependent files separately. Relative URLs
+inside those files resolve from their publication paths; root-relative URLs
+still refer to the origin root. Diplodocus does not rewrite their contents.
+
+Snapshots retain declarations, publication paths, and deduplicated file bytes.
+`build`, detached `generate`, and native `serve` use the same files and icon
+links. Preview watches declared source files outside content collections and
+rebuilds after edits, removal, and recreation. A failed rebuild keeps serving
+the preceding complete site.
+
 ## Landing page
 
 Add `presentation.home` to give the site root a full-width landing page. It

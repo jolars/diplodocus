@@ -19,5 +19,6 @@ pub mod paths;
 pub mod provenance;
 pub mod rendering;
 pub mod site;
+mod site_assets;
 pub mod snapshots;
 pub mod validation;

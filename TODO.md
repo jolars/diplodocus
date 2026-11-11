@@ -244,7 +244,7 @@ features through declarations shared by `build`, `generate`, and `serve`, with
 settings and asset bytes retained in portable snapshots. Keep widget compilation
 with external tools such as Vite, following the browser component contract.
 
-- [ ] Declare public site assets and icons in configuration. Retain files such
+- [x] Declare public site assets and icons in configuration. Retain files such
   as favicons, web manifests, and `llms.txt` even when no authored page
   references them. Preserve their publication paths, watch source changes
   during `serve`, and validate icon references and collisions with generated

@@ -205,6 +205,7 @@ fn decode(
 ) -> Result<Snapshot, SnapshotError> {
     let mut workspace = None;
     let mut presentation = None;
+    let mut public_assets = BTreeMap::new();
     let mut logo = None;
     let mut open_graph = None;
     let mut components = BTreeMap::new();
@@ -220,6 +221,9 @@ fn decode(
                 let object = content
                     .as_object_mut()
                     .ok_or(SnapshotError::Invalid("presentation shape"))?;
+                if let Some(assets) = object.remove("public-assets") {
+                    public_assets = serde_json::from_value(assets)?;
+                }
                 if let Some(asset) = object.remove("logo-asset") {
                     logo = Some(serde_json::from_value(asset)?);
                 }
@@ -329,6 +333,7 @@ fn decode(
     Ok(Snapshot {
         workspace: serde_json::from_value(workspace)?,
         presentation: presentation.ok_or(SnapshotError::Invalid("missing presentation"))?,
+        public_assets,
         logo,
         open_graph,
         components,

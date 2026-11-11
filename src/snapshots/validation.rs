@@ -172,6 +172,28 @@ impl Snapshot {
             "document record set",
         )?;
         let mut used_assets = BTreeSet::new();
+        crate::site_assets::validate_declarations(&self.presentation)
+            .map_err(|_| SnapshotError::Invalid("public asset declarations"))?;
+        require(
+            self.public_assets.len() == self.presentation.assets.len(),
+            "public asset set",
+        )?;
+        for declaration in &self.presentation.assets {
+            require(
+                workspace.repositories.contains_key(&declaration.repository),
+                "public asset repository",
+            )?;
+            let digest = self
+                .public_assets
+                .get(declaration.publish.as_str())
+                .ok_or(SnapshotError::Invalid("missing public asset"))?;
+            require(
+                self.assets.contains_key(digest),
+                "missing public asset bytes",
+            )?;
+            used_assets.insert(digest.clone());
+        }
+
         let known_components = self.components.keys().map(String::as_str).collect();
         for (id, bundle) in &self.components {
             require(

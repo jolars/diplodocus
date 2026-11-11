@@ -30,6 +30,8 @@ test.beforeAll(async () => {
     writeFile(join(workspace, "r/NAMESPACE"), "export(equation)\n"),
     writeFile(join(workspace, "r/man/equation.Rd"), "\\name{equation}\n\\alias{equation}\n\\title{Mathematics}\n\\usage{equation(x)}\n\\arguments{\\item{x}{A value.}}\n\\description{A mathematical equation.}\n\\details{\\deqn{x^2 + y^2 = z^2}}\n\\value{A value.}\n"),
     copyFile("assets/brand/favicon-96x96.png", join(workspace, "logo.png")),
+    writeFile(join(workspace, "site.webmanifest"), '{"name":"URL navigation","icons":[{"src":"public/icon.png","sizes":"96x96","type":"image/png"}]}'),
+    writeFile(join(workspace, "llms.txt"), "# Public documentation\n"),
   ]);
   for (const style of ["file", "clean"]) {
     const configuration = join(workspace, "diplodocus.yaml");
@@ -39,6 +41,14 @@ presentation:
   site-url: "${publicRoot}"
   canonical-url-style: "${style}"
   description: "Nested documentation"
+  assets:
+    - { repository: docs, path: logo.png, publish: public/icon.png }
+    - { repository: docs, path: site.webmanifest, publish: site.webmanifest }
+    - { repository: docs, path: llms.txt, publish: llms.txt }
+  icons:
+    - { path: public/icon.png, type: image/png, sizes: 96x96 }
+    - { path: public/icon.png, rel: apple-touch-icon }
+    - { path: site.webmanifest, rel: manifest }
   sections:
     - label: "Reference"
       path: "reference/index.html"
@@ -125,6 +135,7 @@ for (const style of ["file", "clean"]) {
       const contentTypes: Record<string, string> = {
         ".html": "text/html", ".css": "text/css", ".js": "text/javascript",
         ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png",
+        ".webmanifest": "application/manifest+json", ".txt": "text/plain",
         ".woff2": "font/woff2", ".woff": "font/woff", ".ttf": "font/ttf",
       };
       try {
@@ -151,7 +162,13 @@ for (const style of ["file", "clean"]) {
         const { x, y, width, height } = element.getBoundingClientRect();
         return { x, y, width, height };
       }));
+      const checkIcons = async () => {
+        await expect(page.locator('link[rel="icon"]')).toHaveAttribute("href", `${origin}${prefix}public/icon.png`);
+        await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveAttribute("href", `${origin}${prefix}public/icon.png`);
+        await expect(page.locator('link[rel="manifest"]')).toHaveAttribute("href", `${origin}${prefix}site.webmanifest`);
+      };
       const stableNavbar = async () => {
+        await checkIcons();
         expect(await identity.evaluate(value => value.document === document && value.elements.every(element => element.isConnected))).toBe(true);
         const boxes = await navbar.evaluateAll(elements => elements.map(element => {
           const { x, y, width, height } = element.getBoundingClientRect();
@@ -223,6 +240,13 @@ for (const style of ["file", "clean"]) {
       await expect(page.locator("body")).toHaveAttribute("data-layout", "home");
       await page.reload();
       await expect(page.locator("body")).toHaveAttribute("data-layout", "home");
+      await checkIcons();
+      const manifest = await page.evaluate(async () => {
+        const link = document.querySelector<HTMLLinkElement>('link[rel="manifest"]')!;
+        return (await fetch(link.href)).json();
+      });
+      expect(manifest.icons[0].src).toBe("public/icon.png");
+      expect(await page.evaluate(async () => (await fetch(new URL("llms.txt", document.querySelector<HTMLLinkElement>('link[rel="manifest"]')!.href))).text())).toBe("# Public documentation\n");
       expect(missing, "Generated assets resolve within the hosting prefix").toEqual([]);
       expect(errors, "Client navigation JavaScript errors").toEqual([]);
     } finally {

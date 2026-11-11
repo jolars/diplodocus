@@ -32,6 +32,25 @@ pub fn render_fragments(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
     render(site, false)
 }
 
+fn render_public_links(html: &mut String, site: &Site<'_>, route: &str) {
+    for icon in &site.presentation.icons {
+        write!(
+            html,
+            "<link rel=\"{}\" href=\"{}\"",
+            icon.rel.as_str(),
+            escape(&site.url(route, icon.path.as_str()))
+        )
+        .unwrap();
+        if let Some(media) = &icon.media_type {
+            write!(html, " type=\"{}\"", escape(media)).unwrap();
+        }
+        if let Some(sizes) = &icon.sizes {
+            write!(html, " sizes=\"{}\"", escape(sizes)).unwrap();
+        }
+        html.push('>');
+    }
+}
+
 fn brand(
     html: &mut String,
     site: &Site<'_>,
@@ -82,6 +101,7 @@ fn navigation_shell_fingerprint(
     super::navigation::repositories(&mut shell, site);
     super::navigation::theme_control(&mut shell);
     brand(&mut shell, site, "index.html", images)?;
+    render_public_links(&mut shell, site, "index.html");
     super::footer::render(&mut shell, site);
     // A retained document must not combine runtimes or styles from different builds.
     let syntax_style = super::highlighting::stylesheet();
@@ -221,6 +241,7 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                 write!(html, "<link rel=\"canonical\" href=\"{}\">", escape(url)).unwrap();
             }
             super::social::render(&mut html, site, route, &page.title)?;
+            render_public_links(&mut html, site, route);
             write!(html, "<title>{} · {}</title><link rel=\"stylesheet\" href=\"{}\"><script defer src=\"{}\"></script><script defer src=\"{}\"></script><script defer src=\"{}\"></script><script defer src=\"{}\"></script>", escape(&page.title), escape(site.title()), escape(&site.url(route, "assets/site.css")), escape(&site.url(route, "assets/search.js")), escape(&site.url(route, "assets/nav.js")), escape(&site.url(route, "assets/code.js")), escape(&site.url(route, "assets/tabsets.js"))).unwrap();
             if page_math {
                 write!(
@@ -951,6 +972,18 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                 .map_err(|_| SiteError::Evidence)?,
                 "application/json",
             ),
+        );
+    }
+    for (path, digest) in site.public_assets {
+        if files.contains_key(path) {
+            return Err(SiteError::Presentation(format!(
+                "public asset {path:?} conflicts with generated output"
+            )));
+        }
+        let asset = site.assets.get(digest).ok_or(SiteError::Evidence)?;
+        files.insert(
+            path.clone(),
+            file(asset.bytes.clone(), crate::site_assets::media_type(path)),
         );
     }
     if let Some(map) = &site.url_map {

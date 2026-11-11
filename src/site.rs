@@ -47,6 +47,7 @@ pub enum SiteError {
 
 /// Complete generation inputs, independent of databases and source checkouts.
 pub struct Site<'a> {
+    pub(crate) public_assets: &'a BTreeMap<String, String>,
     pub(crate) components: &'a BTreeMap<String, crate::components::ComponentBundle>,
     pub(crate) components_enabled: bool,
     pub(crate) workspace: &'a Workspace,
@@ -65,6 +66,7 @@ pub struct Site<'a> {
 }
 
 struct SiteInputs<'a> {
+    public_assets: &'a BTreeMap<String, String>,
     workspace: &'a Workspace,
     presentation: &'a PresentationDefaults,
     logo: Option<&'a AssetReference>,
@@ -140,6 +142,7 @@ impl<'a> Site<'a> {
                 presentation: snapshot.presentation(),
                 logo: snapshot.logo(),
                 open_graph: snapshot.open_graph(),
+                public_assets: snapshot.public_assets(),
                 components: snapshot.components(),
                 documents: snapshot.documents(),
                 assets: snapshot.assets(),
@@ -159,6 +162,7 @@ impl<'a> Site<'a> {
                 presentation: &sources.configuration().presentation,
                 logo: resolved.logo(),
                 open_graph: resolved.open_graph(),
+                public_assets: &resolved.public_assets,
                 components: &resolved.components,
                 documents: resolved.records(),
                 assets: resolved.assets(),
@@ -175,6 +179,7 @@ impl<'a> Site<'a> {
         let workspace = inputs.workspace;
         let mut site = Self {
             workspace,
+            public_assets: inputs.public_assets,
             components: inputs.components,
             components_enabled: false,
             presentation: inputs.presentation,
@@ -557,6 +562,7 @@ impl<'a> Site<'a> {
         }
         site.assign_canonical_urls()?;
         site.assign_redirects()?;
+        crate::site_assets::validate_routes(&site)?;
         let mut section_prefixes: Vec<&str> = Vec::new();
         for section in &site.presentation.sections {
             let prefix = section.prefix();
@@ -783,7 +789,7 @@ impl<'a> Site<'a> {
     }
 }
 
-fn clean_route(route: &str) -> &str {
+pub(crate) fn clean_route(route: &str) -> &str {
     if route == "index.html" {
         ""
     } else if route.ends_with("/index.html") {

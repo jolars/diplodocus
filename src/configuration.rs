@@ -66,6 +66,12 @@ pub struct ProjectConfiguration {
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, rename_all = "kebab-case", deny_unknown_fields)]
 pub struct PresentationDefaults {
+    /// Public files retained even when no authored document references them.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub assets: Vec<SiteAsset>,
+    /// Icon and web manifest links included in every complete HTML page.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub icons: Vec<SiteIcon>,
     /// Site title and branding; `None` uses the workspace's project name.
     pub title: Option<String>,
     /// Site-wide HTML description; `None` omits the description metadata.
@@ -101,6 +107,58 @@ pub struct PresentationDefaults {
     /// Optional notices and links shown at the bottom of every page.
     #[serde(skip_serializing_if = "FooterDefaults::is_default")]
     pub footer: FooterDefaults,
+}
+
+/// A public file copied from a declared repository to an explicit site path.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+pub struct SiteAsset {
+    /// Repository containing the source file.
+    pub repository: String,
+    /// Repository-relative source file path.
+    pub path: DiagnosticPath,
+    /// Site-relative publication path, independent of the hosting prefix.
+    pub publish: DiagnosticPath,
+}
+
+/// A link to a declared public icon or web manifest.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+pub struct SiteIcon {
+    /// Publication path of a file in `presentation.assets`.
+    pub path: DiagnosticPath,
+    /// Link relationship; omission selects `icon`.
+    #[serde(default)]
+    pub rel: SiteIconRel,
+    /// Optional MIME type hint, checked against the publication extension.
+    #[serde(default, rename = "type", skip_serializing_if = "Option::is_none")]
+    pub media_type: Option<String>,
+    /// Optional icon dimensions, such as `any` or `180x180`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sizes: Option<String>,
+}
+
+/// Supported public icon and manifest link relationships.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum SiteIconRel {
+    /// Browser tab or shortcut icon.
+    #[default]
+    Icon,
+    /// Home screen icon on Apple devices.
+    AppleTouchIcon,
+    /// Web application manifest.
+    Manifest,
+}
+
+impl SiteIconRel {
+    pub(crate) fn as_str(self) -> &'static str {
+        match self {
+            Self::Icon => "icon",
+            Self::AppleTouchIcon => "apple-touch-icon",
+            Self::Manifest => "manifest",
+        }
+    }
 }
 
 /// An explicit sidebar for every page, or sidebars selected by URL directory.

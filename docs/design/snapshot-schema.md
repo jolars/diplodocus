@@ -184,7 +184,7 @@ The `records` kinds are:
   | Kind         | Owner      | ID                            | Content                                                                                                                                              |
   | ---          | ---        | ---                           | ---                                                                                                                                                  |
   | `workspace`  | Empty      | Empty                         | `schema_version`, `name`, `relationships`, `diagnostics`, `provenance`                                                                               |
-  | `presentation` | Empty    | Empty                         | `title`, `description`, optional `logo`, `logo-asset`, `open-graph`, `open-graph-asset`, `site-url`, `canonical-url-style`, `redirects`, and `footer`                     |
+  | `presentation` | Empty    | Empty                         | `title`, `description`, optional `assets`, `public-assets`, `icons`, `logo`, `logo-asset`, `open-graph`, `open-graph-asset`, `site-url`, `canonical-url-style`, `redirects`, and `footer` |
   | `repository` | Empty      | Repository ID                 | `canonical_url`, `source_link_template`, `revision`, `dirty`, `declared_input_fingerprint`                                                           |
   | `package`    | Empty      | Package ID                    | `slug`, `name`, `ecosystem`, `version`, optional `metadata`, `repository`, `path`, `metadata_path`, `kind`, `visibility`                             |
   | `target`     | Package ID | Target ID                     | `extractor`, `path`, `role`                                                                                                                          |
@@ -330,6 +330,26 @@ actions, and features. Each action contains a plain-text `label`, a generated
 `download`, or `terminal`. Writers omit an absent icon, preserving existing
 action records and their fingerprints. Generation renders icons from built-in
 SVGs and needs no source files or external assets. Unknown icon names are rejected.
+
+Optional `assets` and `icons` arrays retain public-file and head-link
+declarations from the presentation configuration. Each asset declares a
+repository ID, a repository-relative `path`, and a site-relative `publish` path.
+Each icon declares its publication `path`, a `rel` (`icon`, `apple-touch-icon`,
+or `manifest`), and optional `type` and `sizes` fields. Writers omit empty arrays
+and absent optional fields. The default icon relationship serializes as `icon`.
+
+When public files exist, `public-assets` maps each publication path to a SHA-256
+digest in the snapshot's `assets` table. Readers require exactly the declared
+publication paths and existing, fingerprint-checked asset bytes. Repository IDs,
+safe paths, icon references, MIME hints, and sizes are validated without opening
+source files. The generator checks collisions with pages, Markdown companions,
+clean URLs, redirects, and reserved output paths. Empty maps are omitted, so
+snapshots without public assets retain their previous encoding.
+
+Public bytes normally use `application/octet-stream` in storage, like component
+bundles. Public responses select MIME types from publication paths. The same
+digest may also belong to a validated document image. Files are copied unchanged
+and do not acquire authored-image validation evidence merely by being public.
 
 An optional `sections` array retains additional project navbar tabs in declaration
 order. Each entry contains a plain-text `label` and a generated `path` ending in

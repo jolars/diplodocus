@@ -82,6 +82,27 @@ pub fn validate_configuration(configuration: &WorkspaceConfiguration) -> Vec<Dia
             &mut diagnostics,
         );
     }
+    for (index, asset) in configuration.presentation.assets.iter().enumerate() {
+        let field = format!("presentation.assets[{index}].repository");
+        check_repository(
+            &repositories,
+            &asset.repository,
+            &field,
+            DiagnosticEntity::ConfigurationField {
+                path: field.clone(),
+            },
+            &mut diagnostics,
+        );
+    }
+    if let Err(message) = crate::site_assets::validate_declarations(&configuration.presentation) {
+        diagnostics.push(error(
+            DiagnosticCode::InvalidConfiguration,
+            message,
+            DiagnosticEntity::ConfigurationField {
+                path: "presentation.assets".into(),
+            },
+        ));
+    }
     if let Some(image) = &configuration.presentation.open_graph {
         for (invalid, field, message) in [
             (

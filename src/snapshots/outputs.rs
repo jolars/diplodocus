@@ -115,6 +115,7 @@ impl Snapshot {
         let mut snapshot = Self {
             workspace,
             presentation: executed.sources().configuration().presentation.clone(),
+            public_assets: resolved.public_assets.clone(),
             logo: resolved.logo().cloned(),
             open_graph: resolved.open_graph().cloned(),
             components: resolved.components.clone(),

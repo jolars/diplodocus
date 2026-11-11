@@ -181,6 +181,7 @@ pub struct ContentAsset {
 pub struct ResolvedWorkspace {
     records: Vec<ResolvedDocument>,
     pub(crate) components: BTreeMap<String, crate::components::ComponentBundle>,
+    pub(crate) public_assets: BTreeMap<String, String>,
     logo: Option<AssetReference>,
     open_graph: Option<AssetReference>,
     assets: BTreeMap<String, ContentAsset>,
@@ -460,6 +461,7 @@ fn resolve(
         result: ResolvedWorkspace {
             records: vec![],
             components: BTreeMap::new(),
+            public_assets: BTreeMap::new(),
             logo: None,
             open_graph: None,
             assets: BTreeMap::new(),
@@ -541,6 +543,55 @@ fn resolve(
                     .with_entity(DiagnosticEntity::ConfigurationField { path: field.into() }),
                 );
             }
+        }
+    }
+    for declaration in &presentation.assets {
+        let root = &sources
+            .paths()
+            .repositories
+            .iter()
+            .find(|r| r.id == declaration.repository)
+            .expect("validated public asset repository")
+            .path;
+        let selected = root.join(declaration.path.as_str());
+        let path = crate::paths::resolve_input_file(
+            root,
+            "presentation.assets.path",
+            Path::new(declaration.path.as_str()),
+            root,
+        )
+        .map_err(AssemblyError::from)?;
+        let bytes = fs::read(&path).map_err(AssemblyError::from)?;
+        let fingerprint = fingerprint_bytes(&bytes);
+        resolution.result.public_assets.insert(
+            declaration.publish.as_str().into(),
+            fingerprint.value.clone(),
+        );
+        resolution
+            .result
+            .assets
+            .entry(fingerprint.value.clone())
+            .or_insert(ContentAsset {
+                fingerprint: fingerprint.clone(),
+                media_type: "application/octet-stream".into(),
+                bytes,
+            });
+        let observation = AssetObservation {
+            path,
+            boundary: root.clone(),
+            fingerprint,
+        };
+        if let Some(previous) = resolution.result.inputs.get_mut(&selected) {
+            if previous.path != observation.path || previous.fingerprint != observation.fingerprint
+            {
+                return Err(AssemblyError::InputsChanged.into());
+            }
+            // Shared branding and public files must retain the narrower read boundary.
+            if observation.boundary.starts_with(&previous.boundary) {
+                *previous = observation;
+            }
+        } else {
+            resolution.result.inputs.insert(selected, observation);
         }
     }
     for context in documents {

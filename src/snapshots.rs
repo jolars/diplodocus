@@ -30,6 +30,7 @@ pub const RECORD_ENCODING_VERSION: u32 = 1;
 pub struct Snapshot {
     workspace: Workspace,
     presentation: PresentationDefaults,
+    pub(crate) public_assets: BTreeMap<String, String>,
     logo: Option<AssetReference>,
     open_graph: Option<AssetReference>,
     components: BTreeMap<String, crate::components::ComponentBundle>,
@@ -79,6 +80,7 @@ impl Snapshot {
         let mut snapshot = Self {
             workspace,
             presentation: sources.configuration().presentation.clone(),
+            public_assets: resolved.public_assets.clone(),
             logo: resolved.logo().cloned(),
             open_graph: resolved.open_graph().cloned(),
             components: resolved.components.clone(),
@@ -103,6 +105,10 @@ impl Snapshot {
     /// Retained browser component bundles, inert until generation enables them.
     pub fn components(&self) -> &BTreeMap<String, crate::components::ComponentBundle> {
         &self.components
+    }
+    /// Public files indexed by publication path, with values naming asset digests.
+    pub fn public_assets(&self) -> &BTreeMap<String, String> {
+        &self.public_assets
     }
     /// Portable navbar image, available without the original repository.
     pub fn logo(&self) -> Option<&AssetReference> {

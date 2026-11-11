@@ -41,7 +41,9 @@ impl UrlMap {
             }
         }
         for path in self.assets.keys() {
-            if !path.starts_with("assets/") || !valid_artifact(path) {
+            if (!path.starts_with("assets/") && !site.public_assets.contains_key(path))
+                || !valid_artifact(path)
+            {
                 return Err(SiteError::Route(format!(
                     "invalid asset in URL map: {path}"
                 )));
