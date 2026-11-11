@@ -72,6 +72,10 @@ diplodocus check
 diplodocus serve --live-reload
 ```
 
+Add `--open` to open your browser after the first successful build. The preview
+continues running if the browser launcher is unavailable, including in
+noninteractive sessions.
+
 Open the local URL printed in the terminal, normally
 `http://127.0.0.1:8000/`. Edit `docs/tutorial.md` and save it. Diplodocus
 rebuilds the site and refreshes the browser after a successful build. Stop the

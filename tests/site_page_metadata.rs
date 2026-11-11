@@ -335,6 +335,7 @@ async fn native_preview_matches_snapshot_metadata_and_rebuilds_configuration_edi
             host: std::net::Ipv4Addr::LOCALHOST.into(),
             port,
             live_reload: false,
+            open: false,
         },
         ExecutionDeadlines::default(),
         Box::pin(async {

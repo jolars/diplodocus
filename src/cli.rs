@@ -96,6 +96,9 @@ pub(super) struct ServeArgs {
     /// Refresh open browser pages after successful rebuilds.
     #[arg(long)]
     pub(super) live_reload: bool,
+    /// Open the local preview in a browser after the first successful build.
+    #[arg(long)]
+    pub(super) open: bool,
 }
 
 #[cfg(test)]
@@ -143,5 +146,16 @@ mod tests {
         assert_eq!(args.host, IpAddr::from([127, 0, 0, 1]));
         assert_eq!(args.port, 8000);
         assert!(!args.live_reload);
+        assert!(!args.open);
+    }
+
+    #[test]
+    fn serve_accepts_browser_opening_with_live_reload() {
+        let cli = Cli::try_parse_from(["diplodocus", "serve", "--open", "--live-reload"]).unwrap();
+        let Command::Serve(args) = cli.command else {
+            panic!("expected the serve command");
+        };
+        assert!(args.open);
+        assert!(args.live_reload);
     }
 }

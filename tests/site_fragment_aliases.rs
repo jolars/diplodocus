@@ -358,6 +358,7 @@ async fn native_preview_keeps_aliases_and_the_last_successful_generation() {
         host: std::net::Ipv4Addr::LOCALHOST.into(),
         port,
         live_reload: false,
+        open: false,
     };
     let server = tokio::spawn(commands::serve_with(
         options,

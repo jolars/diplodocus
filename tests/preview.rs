@@ -100,6 +100,7 @@ async fn watched_timeout_keeps_serving_the_complete_site_and_recovers() {
         host: std::net::Ipv4Addr::LOCALHOST.into(),
         port,
         live_reload: false,
+        open: false,
     };
     let deadlines = ExecutionDeadlines {
         cell: 1500,
@@ -231,6 +232,7 @@ async fn preview_tracks_missing_assets_and_configuration_changes() {
         host: std::net::Ipv4Addr::LOCALHOST.into(),
         port,
         live_reload: true,
+        open: false,
     };
     let task = tokio::spawn(serve_with(
         options.clone(),

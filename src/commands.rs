@@ -46,6 +46,8 @@ pub struct ServeOptions {
     pub port: u16,
     /// Refresh open browser pages after successful rebuilds.
     pub live_reload: bool,
+    /// Open the local preview in a browser after the first successful build.
+    pub open: bool,
 }
 
 /// An error returned by a Diplodocus command operation.

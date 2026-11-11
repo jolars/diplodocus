@@ -263,7 +263,7 @@ with external tools such as Vite, following the browser component contract.
   `web/legacy-routes.json` and Qualpal's `docs/site-contract.json` as
   compatibility fixtures, and verify aliases in detached generation and
   native preview.
-- [ ] Add optional browser opening to `serve`, for example through `--open`.
+- [x] Add optional browser opening to `serve`, for example through `--open`.
   Open the actual local URL after the first successful build and server
   readiness, and avoid opening a browser when startup fails. Keep the
   command usable in noninteractive sessions, and test browser invocation

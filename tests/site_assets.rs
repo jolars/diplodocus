@@ -276,6 +276,7 @@ async fn native_preview_serves_identical_assets_and_rebuilds_after_edits_and_rec
             host: std::net::Ipv4Addr::LOCALHOST.into(),
             port,
             live_reload: false,
+            open: false,
         },
         ExecutionDeadlines::default(),
         Box::pin(async {

@@ -74,6 +74,7 @@ fn dispatch(cli: Cli) -> Result<(), CommandError> {
             host: args.host,
             port: args.port,
             live_reload: args.live_reload,
+            open: args.open,
         }),
     }
 }

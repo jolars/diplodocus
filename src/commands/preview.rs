@@ -1,5 +1,7 @@
 use super::*;
 use std::borrow::Cow;
+use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr};
+use std::process::Stdio;
 use std::sync::{Arc, RwLock};
 use std::time::Duration;
 
@@ -51,6 +53,9 @@ async fn run(
         Err(error) if *stop.borrow() && clean_cancellation(&error) => return Ok(()),
         Err(error) => return Err(error),
     };
+    if *stop.borrow() {
+        return Ok(());
+    }
     let current = Arc::new(RwLock::new(Arc::new(ServedGeneration {
         site: initial,
         // Open pages must also detect a new server after the generator recompiles.
@@ -63,7 +68,15 @@ async fn run(
         stop.clone(),
     ));
     let mut http = AbortOnDrop(http);
-    eprintln!("Serving http://{address}");
+    let url = preview_url(address);
+    eprintln!("Serving {url}");
+    let _browser = options.open.then(|| {
+        AbortOnDrop(tokio::spawn(async move {
+            if let Err(error) = open_browser(&url).await {
+                eprintln!("Warning: could not open browser for {url}: {error}");
+            }
+        }))
+    });
     let mut http_finished = false;
     let result = loop {
         tokio::select! {
@@ -102,6 +115,48 @@ async fn run(
     }
     result
 }
+
+fn preview_url(mut address: SocketAddr) -> String {
+    // Wildcard addresses bind every interface but are not browser destinations.
+    if address.ip().is_unspecified() {
+        address.set_ip(match address {
+            SocketAddr::V4(_) => Ipv4Addr::LOCALHOST.into(),
+            SocketAddr::V6(_) => Ipv6Addr::LOCALHOST.into(),
+        });
+    }
+    format!("http://{address}/")
+}
+
+async fn open_browser(url: &str) -> std::io::Result<()> {
+    #[cfg(target_os = "macos")]
+    let mut command = tokio::process::Command::new("open");
+    #[cfg(target_os = "windows")]
+    let mut command = {
+        let mut command = tokio::process::Command::new("rundll32.exe");
+        command.arg("url.dll,FileProtocolHandler");
+        command
+    };
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    let mut command = tokio::process::Command::new("xdg-open");
+
+    // Launchers must not consume terminal input or block the preview loop.
+    // Leave the browser running when the preview shuts down.
+    let status = command
+        .arg(url)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .await?;
+    if status.success() {
+        Ok(())
+    } else {
+        Err(std::io::Error::other(format!(
+            "browser launcher exited with {status}"
+        )))
+    }
+}
+
 struct AbortOnDrop<T>(tokio::task::JoinHandle<T>);
 struct ServedGeneration {
     site: RenderedSite,
@@ -296,6 +351,19 @@ const LIVE_RELOAD: &str = r#"<script>(()=>{const served='__REVISION__';async fun
 mod tests {
     use super::*;
     use std::fs;
+
+    #[test]
+    fn browser_urls_use_bound_ports_loopback_and_ipv6_brackets() {
+        for (address, expected) in [
+            ("127.0.0.1:12345", "http://127.0.0.1:12345/"),
+            ("0.0.0.0:45678", "http://127.0.0.1:45678/"),
+            ("[::]:12345", "http://[::1]:12345/"),
+            ("[::1]:45678", "http://[::1]:45678/"),
+            ("192.0.2.1:12345", "http://192.0.2.1:12345/"),
+        ] {
+            assert_eq!(preview_url(address.parse().unwrap()), expected);
+        }
+    }
 
     #[tokio::test]
     async fn http_negotiates_markdown_and_preserves_head_and_assets() {

@@ -39,8 +39,14 @@ connects these events to an existing frontend's development server.
 
 `serve` listens on `127.0.0.1:8000` by default. Use `--host` and `--port` to
 change the address, and `--live-reload` to refresh open pages after a successful
-rebuild. A failed rebuild prints diagnostics and keeps serving the last
-successful site. Warnings permit a successful exit; errors cause a nonzero exit
+rebuild. Add `--open` to open the local URL in your default browser once the first
+build succeeds and the server is ready. With `--port 0`, the URL uses the assigned
+port; wildcard hosts (`0.0.0.0` or `::`) open through the corresponding loopback
+address. Browser opening is opt-in, requires no terminal input, and uses the
+system launcher (`xdg-open` on Linux, `open` on macOS, or `rundll32.exe` on Windows).
+A launcher failure prints a warning and leaves preview running. Startup failures
+do not open a browser. A failed rebuild prints diagnostics and keeps serving the
+last successful site. Warnings permit a successful exit; errors cause a nonzero exit
 status. Output destinations cannot replace declared inputs. The [diagnostics
 guide](../guide/diagnostics.md) explains reported codes and failed builds.
 
