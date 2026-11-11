@@ -180,10 +180,11 @@ before it can build in full.
   requiring callable formals. Qualpalr's `man/autopal-deprecated.Rd` retains
   its arguments, return values, prose, and help links through snapshot
   rendering. Maintained functions still require matching formals.
-- [x] Preserve native `HAVE_DOT` during XML-only extraction so existing Doxyfiles
-  with `WARN_AS_ERROR=YES` accept `@dot` blocks without invoking Graphviz. Cover
-  the generated `build/Doxyfile.docs`, retain genuine extraction diagnostics,
-  and document a headers-only Doxyfile as an alternative.
+- [x] Preserve native `HAVE_DOT` during XML-only extraction so existing
+  Doxyfiles with `WARN_AS_ERROR=YES` accept `@dot` blocks without invoking
+  Graphviz. Cover the generated `build/Doxyfile.docs`, retain genuine
+  extraction diagnostics, and document a headers-only Doxyfile as an
+  alternative.
 - [x] Support qualpal's static Matplotlib SVGs through a documented PNG
   conversion path. The converter retains styles, definitions, references,
   and clipping without scripts or external resource loading. All 15 guide
@@ -191,11 +192,11 @@ before it can build in full.
   detached generation retains the figures. Image validation failures now
   identify the asset and conversion remedy at the authored reference's
   source location.
-- [x] Handle `LINE_PREFIX` as parser layout in authored Markdown. Wrapped
-  list text in qualpalr's `NEWS.md`, `CONDUCT.md`, and qualpal's guides
-  retains continuation spacing and nested structure without warnings,
-  unsupported HTML spans, or whitespace-only code in Markdown exports.
-  Regression tests cover GFM, QMD, R Markdown, CRLF, fragments, and rendering.
+- [x] Handle `LINE_PREFIX` as parser layout in authored Markdown. Wrapped list
+  text in qualpalr's `NEWS.md`, `CONDUCT.md`, and qualpal's guides retains
+  continuation spacing and nested structure without warnings, unsupported
+  HTML spans, or whitespace-only code in Markdown exports. Regression tests
+  cover GFM, QMD, R Markdown, CRLF, fragments, and rendering.
 - [ ] Add a complete qualpal/qualpalr acceptance recipe. Cover C++ namespaces,
   types, templates, overloads, R help topics and S3 methods, executed Rd
   examples and articles, explicit API associations, and retained figures.
@@ -235,126 +236,38 @@ before it can build in full.
   `README.Rmd` generation as a separate knitr step while needed, and
   validate links, assets, and legacy URLs before deployment.
 
-## Eunoia.jl documentation integration
+## Eunoia site and native preview integration
 
-Use the local checkouts at `/home/jola/projects/Eunoia.jl` and
-`/home/jola/projects/eunoia` as the acceptance case. Keep Julia docstrings and
-guides in Eunoia.jl, and import their generated HTML and Markdown into Eunoia's
-SvelteKit site. The existing integration is documented in [Eunoia's Python docs
-guide](../eunoia/web/PYTHON-DOCS.md) and implemented in
-[`python-docs.mjs`](../eunoia/web/scripts/python-docs.mjs).
+Use Eunoia's `web/scripts/site-output.mjs` as the acceptance case for site
+features that currently require rewriting generated output. Support these
+features through declarations shared by `build`, `generate`, and `serve`, with
+settings and asset bytes retained in portable snapshots. Keep widget compilation
+with external tools such as Vite, following the browser component contract.
 
-The initial trial with Diplodocus 0.11.0 and Eunoia.jl 1.0.1 extracted all 23
-exported Julia bindings. Fragment generation and host URL mapping worked after
-isolating the authored-page reference failures. Complete documentation still
-needs the work below; successful API extraction does not establish gallery or
-Documenter compatibility.
-
-### Diplodocus work
-
-- [x] Add a real Eunoia.jl API acceptance recipe alongside
-  `examples/eunoia/rust.py`. Cover all 23 exported bindings, `eunoiaplot!`,
-  result types, fields, API references, and matching HTML and Markdown
-  anchors. Verify generation from a relocated snapshot without the staged
-  source checkout, configuration, or Julia runtime. Use disposable source
-  copies for destructive portability checks.
-
-- [x] Extend the Eunoia.jl acceptance recipe to authored Documenter guides,
-  gallery execution, and retained figures. Verify figure bytes and links in
-  detached HTML and Markdown output after removing the disposable sources.
-
-- [x] Fix Julia Markdown list conversion in
-  `src/extractors/julia/docstrings.rs`. Convert inline markup once, preserve
-  spaces in wrapped prose, and retain nested blocks in source order. Cover
-  inline code, emphasis, links, API references, and exact source attribution
-  with focused extraction and fragment regressions.
-
-- [x] Support fenced code nested in Julia Markdown list items. Pin
-  `fatou-parser` 0.9.0 for the upstream parser fixes, preserve separate code
-  tokens and exact source attribution, and retain indented code blocks.
-  Extraction and detached-fragment regressions run normally. The Eunoia
-  recipe requires both examples to render as code in HTML and Markdown, with
-  no literal fences in HTML list items.
-
-- [x] Support the Documenter page syntax used in Eunoia.jl's `docs/src/`. Add
-  `format: documenter` for Julia Markdown with implicit and explicit API,
-  page, and heading `@ref` links and named heading anchors. Expand `@index`
-  and `@autodocs`, including literal `Modules` and `Private = false`. Retain
-  embedded API context and anchors in detached HTML and Markdown. Verify
-  Eunoia's three pages, 23 public bindings, and mapped local links.
-
-- [x] Execute Documenter `@example` blocks with prepared Julia dependencies. Add
-  `engine: julia` and an explicit `julia-project`, with page-local named
-  sessions, isolated anonymous examples, `# hide`, and native text and
-  images. Retain validated figures, execution observations, and environment
-  fingerprints in portable snapshots. The Eunoia.jl acceptance recipe
-  verifies all 30 gallery blocks and the homepage example, 30 retained
-  figures, and detached HTML and Markdown generation after removing
-  disposable sources and configuration.
-
-- [x] Extend the supported Documenter authoring subset for existing Julia pages.
-  Add explicit `@docs` selection and the `@autodocs` `Pages` filter, using a
-  representative page such as SLOPE's grouped API reference as an acceptance
-  case. Preserve authored organization, explicitly selected private items,
-  references, and anchors in snapshot-backed HTML and Markdown. Document the
-  supported subset and diagnose unsupported syntax; keep directive selection
-  separate from automatic API discovery.
-
-- [x] Define Julia API discovery for generated navigation, search, and fragment
-  consumers. `Package::discoverable_items` includes exported and `public`
-  bindings, canonical aliases, required module containers, and public
-  callable members. Keep methods and constructors grouped; omit fields and
-  documented private helpers from automatic indexes. Share page visibility
-  across generated indexes and fragments while preserving private routes and
-  direct references. Keep authored `@docs`, `@autodocs`, and `@index`
-  selection independent.
-
-- [x] Improve Julia type presentation. Group fields under their owning type in
-  declaration order, with stable anchors, annotations, and documentation.
-  Keep HTML, Markdown, navigation, search, fragment identities, and host URL
-  mapping consistent without separate field pages.
-
-- [x] Support explicitly supplied Julia package extensions through target-level
-  `julia.extensions` entry files. Assemble their static methods with core
-  generics, preserving generic documentation and fallback methods without
-  inventing dependency methods. The Eunoia acceptance recipe verifies all
-  three Makie plotting implementations and detached HTML and Markdown.
-
-- [x] Use Eunoia.jl's authored `docs/src/index.md` as the package overview in
-  the full Documenter recipe. Keep overview precedence: authored package
-  index, configured `overview`, README, then package description. Preserve
-  authored HTTP and HTTPS image URLs, including README badges, in snapshots
-  and detached HTML and Markdown without fetching their bytes during
-  extraction or generation. Use local assets when images must remain fixed
-  or work offline. Generated execution output still requires validated local
-  image assets.
-
-- [x] Support Eunoia.jl's paired `@raw html` disclosure wrappers. Reject
-  unsupported authored syntax in the full acceptance recipe and check the
-  BibLaTeX disclosure in detached HTML and Markdown.
-
-### Eunoia integration follow-up
-
-- [ ] Upgrade the existing Python integration when advancing the Diplodocus pin.
-  Eunoia pins 0.2.0 and generates TOML with singular collection keys;
-  current Diplodocus requires YAML with plural keys. Regenerate snapshots as
-  part of the upgrade: the existing Python snapshot uses IR version 5, while
-  0.11.0 uses version 9 and rejects that snapshot.
-- [ ] Prepare both package environments in local builds and CI. Fresh Python
-  extraction now imports the checkout and fails without the built
-  `eunoia._eunoia` extension. Julia extraction requires its package
-  dependencies and native library; gallery execution additionally needs the
-  environment in Eunoia.jl's `docs/Project.toml`, including CairoMakie.
-  Supply the native library through a matching artifact or
-  `EUNOIA_CAPI_LIB`.
-- [ ] Generalize Eunoia's Python generator for pinned Julia sources, snapshots,
-  assets, and routes. Its API selection currently assumes top-level Python
-  names; support Julia's `!` names and type/member relationships. Preserve
-  generated-directory ownership, atomic replacement, caching, and link
-  checks. Add Julia navigation and update the reference overview, quickstart
-  links, and `web/static/llms.txt`. Existing concrete-route sitemap
-  discovery and `reference.md` export can include the generated pages
-  automatically.
+- [ ] Declare public site assets and icons in configuration. Retain files such
+  as favicons, web manifests, and `llms.txt` even when no authored page
+  references them. Preserve their publication paths, watch source changes
+  during `serve`, and validate icon references and collisions with generated
+  output. Verify equivalent assets in native preview and generation from a
+  relocated snapshot without the source checkout.
+- [ ] Add per-page descriptions and title overrides for generated package and
+  API pages. Define precedence with site defaults and existing authored
+  titles, and apply resolved metadata consistently to HTML, Open Graph, and
+  Twitter cards. Define how title overrides affect headings, navigation, and
+  search. Verify that detached generation and native preview use the same
+  metadata.
+- [ ] Support explicit legacy fragment aliases attached to maintained headings
+  or API targets. Combine aliases with existing route redirects, preserve
+  canonical anchors, and retain aliases in HTML and Markdown output.
+  Diagnose missing targets and duplicate IDs. Use Eunoia's
+  `web/legacy-routes.json` and Qualpal's `docs/site-contract.json` as
+  compatibility fixtures, and verify aliases in detached generation and
+  native preview.
+- [ ] Add optional browser opening to `serve`, for example through `--open`.
+  Open the actual local URL after the first successful build and server
+  readiness, and avoid opening a browser when startup fails. Keep the
+  command usable in noninteractive sessions, and test browser invocation
+  without launching a desktop browser.
 
 ## Scope held for later
 
