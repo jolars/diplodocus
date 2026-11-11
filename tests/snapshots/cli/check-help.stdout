@@ -3,5 +3,8 @@ Check documentation without writing a site
 Usage: diplodocus check [OPTIONS]
 
 Options:
+      --color <COLOR>  Control terminal colors in help, diagnostics, and status output [default: auto] [possible values: auto, always, never]
       --config <PATH>  Path to the workspace configuration file [default: ./diplodocus.yaml]
+      --no-progress    Print stage summaries instead of animated progress bars
+  -q, --quiet          Suppress routine status output while retaining warnings and errors
   -h, --help           Print help

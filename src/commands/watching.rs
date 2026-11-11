@@ -10,6 +10,7 @@ use tokio::time::Instant;
 use crate::configuration::{ContentConfiguration, WorkspaceConfiguration};
 use crate::execution::{ExecutionCancellation, ExecutionDeadlines};
 use crate::provenance::fingerprint_bytes;
+use crate::reporting::{Event, Reporting};
 
 /// Extract on startup and after debounced changes to declared inputs.
 ///
@@ -23,8 +24,20 @@ pub async fn watch_extract_with(
     cancellation: ExecutionCancellation<'_>,
     on_snapshot: impl FnMut(&Path) -> std::io::Result<()>,
 ) -> Result<(), CommandError> {
+    CommandRunner::default()
+        .watch_extract_with(options, deadlines, cancellation, on_snapshot)
+        .await
+}
+
+pub(super) async fn watch_extract_reported(
+    options: ExtractOptions,
+    deadlines: ExecutionDeadlines,
+    cancellation: ExecutionCancellation<'_>,
+    on_snapshot: impl FnMut(&Path) -> std::io::Result<()>,
+    reporting: &Reporting,
+) -> Result<(), CommandError> {
     let (stop, receiver) = watch::channel(false);
-    let worker = extract_loop(options, deadlines, receiver, on_snapshot);
+    let worker = extract_loop(options, deadlines, receiver, on_snapshot, reporting);
     tokio::pin!(worker);
     tokio::select! {
         result = &mut worker => result,
@@ -40,6 +53,7 @@ async fn extract_loop(
     deadlines: ExecutionDeadlines,
     stop: watch::Receiver<bool>,
     mut on_snapshot: impl FnMut(&Path) -> std::io::Result<()>,
+    reporting: &Reporting,
 ) -> Result<(), CommandError> {
     let output = options.output.clone().unwrap_or_else(|| {
         options
@@ -57,31 +71,35 @@ async fn extract_loop(
                 _ = watcher.next_change() => {},
             }
         }
+        let command = reporting.command("extract");
         let result = pipeline::extract_attempt(
             options.clone(),
             None,
             deadlines,
             Box::pin(cancelled(stop.clone())),
+            reporting,
         )
         .await;
-        match result {
-            Ok(path) => on_snapshot(&pipeline::absolute(&path)?)?,
-            Err(error) if *stop.borrow() && clean_cancellation(&error) => return Ok(()),
-            Err(error) if initial || *stop.borrow() => return Err(error),
-            Err(error) => report_rebuild_error(&error),
-        }
+        let retained_previous = match result {
+            Ok(path) => {
+                on_snapshot(&pipeline::absolute(&path)?)?;
+                command.finish(Some(&path), None);
+                false
+            }
+            Err(error) => {
+                drop(command);
+                if *stop.borrow() && clean_cancellation(&error) {
+                    return Ok(());
+                }
+                if initial || *stop.borrow() {
+                    return Err(error);
+                }
+                reporting.error(&error);
+                true
+            }
+        };
+        reporting.emit(Event::Watching { retained_previous });
         initial = false;
-    }
-}
-
-pub(super) fn report_rebuild_error(error: &CommandError) {
-    eprintln!("error: {error}");
-    for diagnostic in error
-        .diagnostics()
-        .iter()
-        .chain(error.cleanup_diagnostics())
-    {
-        eprintln!("{}", format_diagnostic(diagnostic));
     }
 }
 

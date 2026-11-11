@@ -4,8 +4,11 @@ Usage: diplodocus generate [OPTIONS] --input <PATH>
 
 Options:
       --allow-components  Emit executable browser bundles retained in this trusted snapshot
+      --color <COLOR>     Control terminal colors in help, diagnostics, and status output [default: auto] [possible values: auto, always, never]
       --input <PATH>      Completed SQLite documentation snapshot
+      --no-progress       Print stage summaries instead of animated progress bars
       --output <PATH>     Directory in which to write the generated site [default: ./site]
+  -q, --quiet             Suppress routine status output while retaining warnings and errors
       --format <FORMAT>   Output complete site pages or embeddable HTML and Markdown fragments [default: site] [possible values: site, fragments]
       --url-map <PATH>    Public document and asset URL map (requires --format fragments)
   -h, --help              Print help

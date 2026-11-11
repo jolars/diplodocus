@@ -12,9 +12,11 @@ use crate::validation::{ResolutionError, resolve_workspace};
 
 mod pipeline;
 mod preview;
+mod runner;
 mod watching;
 pub use pipeline::extract_with;
 pub use preview::serve_with;
+pub use runner::CommandRunner;
 pub use watching::watch_extract_with;
 
 /// Options for checking a documentation workspace.
@@ -111,30 +113,12 @@ pub struct CheckReport {
 
 /// Build a static documentation site.
 pub fn build(options: BuildOptions) -> Result<(), CommandError> {
-    pipeline::runtime()?.block_on(pipeline::build_attempt(
-        &options,
-        crate::execution::ExecutionDeadlines::default(),
-        Box::pin(watching::termination()),
-    ))?;
-    Ok(())
+    CommandRunner::default().build(options)
 }
 
 /// Check a documentation workspace without writing a site.
 pub fn check(options: CheckOptions) -> Result<CheckReport, CommandError> {
-    let sources = pipeline::runtime()?.block_on(async {
-        let mut cancellation: ExecutionCancellation<'_> = Box::pin(watching::termination());
-        crate::assembly::assemble_for_check(
-            &options.config,
-            ExecutionDeadlines::default(),
-            &mut cancellation,
-        )
-        .await
-    })?;
-    let resolved = resolve_workspace(&sources)?;
-    let mut diagnostics: Vec<_> = resolved.diagnostics().iter().cloned().collect();
-    diagnostics.extend(crate::site::Site::check_presentation(&sources, &resolved)?);
-    diagnostics.sort();
-    Ok(CheckReport { diagnostics })
+    pipeline::check_attempt(options, &crate::reporting::Reporting::default())
 }
 
 /// Format a source diagnostic on one terminal-safe line.
@@ -159,24 +143,12 @@ pub fn format_diagnostic(diagnostic: &Diagnostic) -> String {
         diagnostic.code.as_str(),
         diagnostic.message
     );
-    line.chars()
-        .flat_map(|ch| {
-            if ch.is_control() {
-                ch.escape_default().collect::<Vec<_>>()
-            } else {
-                vec![ch]
-            }
-        })
-        .collect()
+    crate::reporting::terminal_safe(&line)
 }
 
 /// Build and serve a documentation site locally.
 pub fn serve(options: ServeOptions) -> Result<(), CommandError> {
-    pipeline::runtime()?.block_on(serve_with(
-        options,
-        crate::execution::ExecutionDeadlines::default(),
-        Box::pin(watching::termination()),
-    ))
+    CommandRunner::default().serve(options)
 }
 
 /// Options for extracting a portable SQLite snapshot.
@@ -197,12 +169,7 @@ pub struct GenerateOptions {
 }
 /// Execute configured extraction and atomically publish its snapshot.
 pub fn extract(options: ExtractOptions) -> Result<(), CommandError> {
-    pipeline::runtime()?.block_on(extract_with(
-        options,
-        crate::execution::ExecutionDeadlines::default(),
-        Box::pin(watching::termination()),
-    ))?;
-    Ok(())
+    CommandRunner::default().extract(options)
 }
 
 /// Watch declared inputs and emit a flushed JSON line for each completed snapshot.
@@ -211,19 +178,7 @@ pub fn extract(options: ExtractOptions) -> Result<(), CommandError> {
 /// snapshot `path`. Diagnostics go to stderr. The initial extraction must
 /// succeed; later failures retain the previous snapshot and keep watching.
 pub fn watch_extract(options: ExtractOptions) -> Result<(), CommandError> {
-    use std::io::Write;
-
-    pipeline::runtime()?.block_on(watch_extract_with(
-        options,
-        crate::execution::ExecutionDeadlines::default(),
-        Box::pin(watching::termination()),
-        |path| {
-            let event = serde_json::json!({"format_version": 1, "event": "snapshot", "path": path});
-            let mut output = std::io::stdout().lock();
-            writeln!(output, "{event}")?;
-            output.flush()
-        },
-    ))
+    CommandRunner::default().watch_extract(options)
 }
 
 /// Generate and atomically publish a site using only a completed snapshot.
@@ -236,8 +191,7 @@ pub fn generate_with_components(
     options: GenerateOptions,
     allow_components: bool,
 ) -> Result<(), CommandError> {
-    pipeline::generate_attempt(&options.input, &options.output, true, allow_components)?;
-    Ok(())
+    CommandRunner::default().generate_with_components(options, allow_components)
 }
 
 /// Generate embeddable HTML and Markdown from a completed snapshot.
@@ -248,8 +202,7 @@ pub fn generate_fragments(
     options: GenerateOptions,
     url_map: Option<PathBuf>,
 ) -> Result<(), CommandError> {
-    pipeline::generate_fragments_attempt(&options.input, &options.output, url_map.as_deref())?;
-    Ok(())
+    CommandRunner::default().generate_fragments(options, url_map)
 }
 
 fn assembly_diagnostics(error: &AssemblyError) -> &[Diagnostic] {

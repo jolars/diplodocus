@@ -13,10 +13,16 @@ pub struct RenderedFile {
 /// One complete output tree. A server can retain it while the next build runs.
 #[derive(Debug)]
 pub struct RenderedSite {
+    pub(super) page_count: usize,
     pub(super) files: BTreeMap<String, RenderedFile>,
     pub(super) redirects: BTreeMap<String, String>,
 }
 impl RenderedSite {
+    /// Number of rendered documentation pages, excluding assets and redirects.
+    pub fn page_count(&self) -> usize {
+        self.page_count
+    }
+
     /// Files keyed by validated relative output path.
     pub fn files(&self) -> &BTreeMap<String, RenderedFile> {
         &self.files
@@ -30,7 +36,16 @@ impl RenderedSite {
     /// Stage a sibling tree and publish it only after every file is written.
     /// Existing sites are replaced in one filesystem operation on Linux.
     pub fn publish(&self, output: &Path) -> Result<(), crate::site::SiteError> {
+        self.publish_reported(output, &crate::reporting::Reporting::default())
+    }
+
+    pub(crate) fn publish_reported(
+        &self,
+        output: &Path,
+        reporting: &crate::reporting::Reporting,
+    ) -> Result<(), crate::site::SiteError> {
         use crate::site::SiteError;
+        let mut progress = reporting.stage("Publishing site", Some(self.files.len()));
         let parent = output
             .parent()
             .filter(|p| !p.as_os_str().is_empty())
@@ -49,11 +64,13 @@ impl RenderedSite {
             .prefix(".diplodocus-site-")
             .tempdir_in(parent)?;
         for (path, file) in &self.files {
+            progress.item(path);
             let path = stage.path().join(path);
             if let Some(parent) = path.parent() {
                 fs::create_dir_all(parent)?;
             }
             fs::write(path, &file.bytes)?;
+            progress.advance();
         }
         fs::write(
             stage.path().join(".diplodocus-site"),
@@ -84,6 +101,7 @@ impl RenderedSite {
         } else {
             fs::rename(stage.path(), output)?;
         }
+        progress.finish();
         Ok(())
     }
 }

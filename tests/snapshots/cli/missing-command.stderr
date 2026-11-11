@@ -1,6 +1,6 @@
 Build coherent documentation websites for polyglot software projects.
 
-Usage: diplodocus <COMMAND>
+Usage: diplodocus [OPTIONS] <COMMAND>
 
 Commands:
   build     Build a static documentation site
@@ -11,5 +11,8 @@ Commands:
   help      Print this message or the help of the given subcommand(s)
 
 Options:
-  -h, --help     Print help
-  -V, --version  Print version
+      --color <COLOR>  Control terminal colors in help, diagnostics, and status output [default: auto] [possible values: auto, always, never]
+      --no-progress    Print stage summaries instead of animated progress bars
+  -q, --quiet          Suppress routine status output while retaining warnings and errors
+  -h, --help           Print help
+  -V, --version        Print version

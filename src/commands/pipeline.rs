@@ -4,7 +4,8 @@ use std::path::{Component, Path};
 
 use crate::assembly::WorkspaceExecution;
 use crate::execution::{ExecutionCancellation, ExecutionDeadlines};
-use crate::rendering::{RenderedSite, render_fragments, render_site};
+use crate::rendering::RenderedSite;
+use crate::reporting::{Event, Reporting};
 use crate::site::Site;
 use crate::snapshots::Snapshot;
 use crate::validation::resolve_executed_workspace;
@@ -16,6 +17,29 @@ pub(super) fn runtime() -> Result<tokio::runtime::Runtime, CommandError> {
         .build()?)
 }
 
+pub(super) fn check_attempt(
+    options: CheckOptions,
+    reporting: &Reporting,
+) -> Result<CheckReport, CommandError> {
+    let sources = runtime()?.block_on(async {
+        let mut cancellation: ExecutionCancellation<'_> = Box::pin(super::watching::termination());
+        crate::assembly::assemble_for_check(
+            &options.config,
+            ExecutionDeadlines::default(),
+            &mut cancellation,
+            reporting,
+        )
+        .await
+    })?;
+    reporting.run("Validating documentation", || {
+        let resolved = resolve_workspace(&sources)?;
+        let mut diagnostics: Vec<_> = resolved.diagnostics().iter().cloned().collect();
+        diagnostics.extend(Site::check_presentation(&sources, &resolved)?);
+        diagnostics.sort();
+        Ok(CheckReport { diagnostics })
+    })
+}
+
 /// Extract a snapshot with explicit execution limits and cooperative cancellation.
 /// Cancellation is awaited through kernel cleanup before returning an error.
 pub async fn extract_with(
@@ -23,7 +47,9 @@ pub async fn extract_with(
     deadlines: ExecutionDeadlines,
     cancellation: ExecutionCancellation<'_>,
 ) -> Result<PathBuf, CommandError> {
-    extract_attempt(options, None, deadlines, cancellation).await
+    CommandRunner::default()
+        .extract_with(options, deadlines, cancellation)
+        .await
 }
 
 pub(super) async fn extract_attempt(
@@ -31,11 +57,16 @@ pub(super) async fn extract_attempt(
     site_output: Option<&Path>,
     deadlines: ExecutionDeadlines,
     mut cancellation: ExecutionCancellation<'_>,
+    reporting: &Reporting,
 ) -> Result<PathBuf, CommandError> {
-    let mut sources =
-        crate::assembly::assemble_for_extraction(&options.config, deadlines, &mut cancellation)
-            .await?;
-    let resolved = resolve_workspace(&sources)?;
+    let mut sources = crate::assembly::assemble_for_extraction(
+        &options.config,
+        deadlines,
+        &mut cancellation,
+        reporting,
+    )
+    .await?;
+    let resolved = reporting.run("Validating documentation", || resolve_workspace(&sources))?;
     let output = options.output.unwrap_or_else(|| {
         sources
             .paths()
@@ -73,12 +104,16 @@ pub(super) async fn extract_attempt(
                 cancellation,
             })
             .await?;
-        let resolved = resolve_executed_workspace(&executed)?;
+        let resolved = reporting.run("Validating executed documentation", || {
+            resolve_executed_workspace(&executed)
+        })?;
         protect_sources(executed.sources(), &resolved, &options.config, &output)?;
         if let Some(site) = site_output {
             protect_sources(executed.sources(), &resolved, &options.config, site)?;
         }
-        let snapshot = Snapshot::from_executed(&executed, &resolved)?;
+        let snapshot = reporting.run("Preparing snapshot", || {
+            Snapshot::from_executed(&executed, &resolved)
+        })?;
         executed.discard()?;
         snapshot
     };
@@ -93,11 +128,13 @@ pub(super) async fn extract_attempt(
             return Err(CommandError::UnsupportedExecution);
         }
         let resolved = resolve_workspace(&sources)?;
-        Snapshot::from_sources(&sources, &resolved)?
+        reporting.run("Preparing snapshot", || {
+            Snapshot::from_sources(&sources, &resolved)
+        })?
     };
-    snapshot.publish(&output)?;
+    reporting.run("Publishing snapshot", || snapshot.publish(&output))?;
     for diagnostic in &snapshot.workspace().diagnostics {
-        eprintln!("{}", format_diagnostic(diagnostic));
+        reporting.emit(Event::Diagnostic(diagnostic));
     }
     Ok(output)
 }
@@ -106,6 +143,7 @@ pub(super) async fn build_attempt(
     options: &BuildOptions,
     deadlines: ExecutionDeadlines,
     cancellation: ExecutionCancellation<'_>,
+    reporting: &Reporting,
 ) -> Result<RenderedSite, CommandError> {
     let input = extract_attempt(
         ExtractOptions {
@@ -115,26 +153,30 @@ pub(super) async fn build_attempt(
         Some(&options.output),
         deadlines,
         cancellation,
+        reporting,
     )
     .await?;
-    generate_attempt(&input, &options.output, false, true)
+    generate_attempt(&input, &options.output, false, true, reporting)
 }
 pub(super) fn generate_attempt(
     input: &Path,
     output: &Path,
     report_diagnostics: bool,
     allow_components: bool,
+    reporting: &Reporting,
 ) -> Result<RenderedSite, CommandError> {
     reject_overlap(output, input)?;
-    let snapshot = Snapshot::load(input)?;
+    let snapshot = reporting.run("Loading snapshot", || Snapshot::load(input))?;
     if report_diagnostics {
         for diagnostic in &snapshot.workspace().diagnostics {
-            eprintln!("{}", format_diagnostic(diagnostic));
+            reporting.emit(Event::Diagnostic(diagnostic));
         }
     }
-    let site = Site::new(&snapshot)?.with_components(allow_components);
-    let rendered = render_site(&site)?;
-    rendered.publish(output)?;
+    let site = reporting
+        .run("Preparing site", || Site::new(&snapshot))?
+        .with_components(allow_components);
+    let rendered = crate::rendering::render_reported(&site, true, reporting)?;
+    rendered.publish_reported(output, reporting)?;
     Ok(rendered)
 }
 
@@ -142,18 +184,19 @@ pub(super) fn generate_fragments_attempt(
     input: &Path,
     output: &Path,
     map: Option<&Path>,
+    reporting: &Reporting,
 ) -> Result<RenderedSite, CommandError> {
     reject_overlap(output, input)?;
-    let snapshot = Snapshot::load(input)?;
-    let mut site = Site::new(&snapshot)?;
+    let snapshot = reporting.run("Loading snapshot", || Snapshot::load(input))?;
+    let mut site = reporting.run("Preparing site", || Site::new(&snapshot))?;
     if let Some(path) = map {
         reject_overlap(output, path)?;
         let urls = serde_json::from_slice(&fs::read(path)?)
             .map_err(|error| crate::site::SiteError::Route(format!("invalid URL map: {error}")))?;
         site = site.with_url_map(urls)?;
     }
-    let rendered = render_fragments(&site)?;
-    rendered.publish(output)?;
+    let rendered = crate::rendering::render_reported(&site, false, reporting)?;
+    rendered.publish_reported(output, reporting)?;
     Ok(rendered)
 }
 

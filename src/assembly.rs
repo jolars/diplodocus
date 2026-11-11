@@ -26,6 +26,7 @@ use crate::provenance::{
     DeclaredSourceInputs, ProvenanceError, StaticProvenance, collect_static_provenance,
     fingerprint_bytes,
 };
+use crate::reporting::Reporting;
 
 mod api_examples;
 mod authored;
@@ -127,6 +128,7 @@ impl PreparedPage {
 /// Static source assembly; local paths and original inputs never serialize.
 #[derive(Debug)]
 pub struct WorkspaceSources {
+    reporting: Reporting,
     workspace: Workspace,
     configuration: WorkspaceConfiguration,
     configuration_path: PathBuf,
@@ -293,6 +295,7 @@ impl ExecutedWorkspace {
 /// unresolved concepts, source diagnostics, I/O, or changed input observations.
 pub fn assemble_workspace(path: impl AsRef<Path>) -> Result<WorkspaceSources, AssemblyError> {
     let path = path.as_ref();
+    let reporting = Reporting::default();
     let configuration = crate::configuration::load_configuration(path)?;
     if !configuration.packages.iter().any(|package| {
         package
@@ -300,7 +303,13 @@ pub fn assemble_workspace(path: impl AsRef<Path>) -> Result<WorkspaceSources, As
             .iter()
             .any(|target| matches!(target.extractor.as_str(), "rust" | "doxygen"))
     }) {
-        return assemble_with_native(path, BTreeMap::new(), BTreeMap::new(), BTreeMap::new());
+        return assemble_with_native(
+            path,
+            BTreeMap::new(),
+            BTreeMap::new(),
+            BTreeMap::new(),
+            &reporting,
+        );
     }
     // Callers may already own a Tokio runtime; a separate thread keeps this
     // synchronous API usable from both synchronous and asynchronous hosts.
@@ -318,12 +327,18 @@ pub fn assemble_workspace(path: impl AsRef<Path>) -> Result<WorkspaceSources, As
                     false,
                     ExecutionDeadlines::default(),
                     &mut cancellation,
+                    &reporting,
+                    false,
                 )
                 .await?;
-                let doxygen =
-                    doxygen_results(&path, ExecutionDeadlines::default(), &mut cancellation)
-                        .await?;
-                assemble_with_native(&path, BTreeMap::new(), results, doxygen)
+                let doxygen = doxygen_results(
+                    &path,
+                    ExecutionDeadlines::default(),
+                    &mut cancellation,
+                    &reporting,
+                )
+                .await?;
+                assemble_with_native(&path, BTreeMap::new(), results, doxygen, &reporting)
             })
         })?
         .join()
@@ -339,7 +354,10 @@ async fn rust_results(
     run_examples: bool,
     deadlines: ExecutionDeadlines,
     cancellation: &mut ExecutionCancellation<'_>,
+    reporting: &Reporting,
+    report_loading: bool,
 ) -> Result<BTreeMap<(String, String), rust_native::RustNativeExtraction>, AssemblyError> {
+    let loading = report_loading.then(|| reporting.stage("Loading workspace", None));
     let configuration_source = fs::read(path)?;
     let configuration = crate::configuration::load_configuration(path)?;
     reject_errors(validate_configuration_with_source(
@@ -347,12 +365,20 @@ async fn rust_results(
         "diplodocus.yaml".try_into().unwrap(),
     ))?;
     let paths = resolve_workspace_paths(path, &configuration)?;
+    if let Some(loading) = loading {
+        loading.finish();
+    }
+    let mut progress = reporting.stage(
+        "Extracting Rust APIs",
+        Some(target_count(&configuration, "rust")),
+    );
     let cache = paths.configuration_directory.join(".diplodocus/cache");
     let mut results = BTreeMap::new();
     for (declaration, package) in configuration.packages.iter().zip(&paths.packages) {
         let repository = &paths.repositories[package.repository_index];
         for (target, selected) in declaration.targets.iter().zip(&package.targets) {
             if target.extractor == "rust" {
+                progress.item(&format!("{}:{}", package.id, target.id));
                 let result = rust_native::extract_target(
                     repository,
                     package,
@@ -365,12 +391,14 @@ async fn rust_results(
                 )
                 .await?;
                 results.insert((package.id.clone(), target.id.clone()), result);
+                progress.advance();
             }
         }
     }
     if fs::read(path)? != configuration_source {
         return Err(AssemblyError::InputsChanged);
     }
+    progress.finish();
     Ok(results)
 }
 
@@ -378,16 +406,18 @@ pub(crate) async fn assemble_for_check(
     path: &Path,
     deadlines: ExecutionDeadlines,
     cancellation: &mut ExecutionCancellation<'_>,
+    reporting: &Reporting,
 ) -> Result<WorkspaceSources, AssemblyError> {
-    let rust = rust_results(path, false, deadlines, cancellation).await?;
-    let doxygen = doxygen_results(path, deadlines, cancellation).await?;
-    assemble_with_native(path, BTreeMap::new(), rust, doxygen)
+    let rust = rust_results(path, false, deadlines, cancellation, reporting, true).await?;
+    let doxygen = doxygen_results(path, deadlines, cancellation, reporting).await?;
+    assemble_with_native(path, BTreeMap::new(), rust, doxygen, reporting)
 }
 
 async fn doxygen_results(
     path: &Path,
     deadlines: ExecutionDeadlines,
     cancellation: &mut ExecutionCancellation<'_>,
+    reporting: &Reporting,
 ) -> Result<BTreeMap<(String, String), doxygen_native::DoxygenNativeExtraction>, AssemblyError> {
     let before = fs::read(path)?;
     let configuration = crate::configuration::load_configuration(path)?;
@@ -396,11 +426,16 @@ async fn doxygen_results(
         "diplodocus.yaml".try_into().unwrap(),
     ))?;
     let paths = resolve_workspace_paths(path, &configuration)?;
+    let mut progress = reporting.stage(
+        "Extracting C++ APIs",
+        Some(target_count(&configuration, "doxygen")),
+    );
     let mut results = BTreeMap::new();
     for (declaration, package) in configuration.packages.iter().zip(&paths.packages) {
         let repository = &paths.repositories[package.repository_index];
         for (target, selected) in declaration.targets.iter().zip(&package.targets) {
             if target.extractor == "doxygen" {
+                progress.item(&format!("{}:{}", package.id, target.id));
                 results.insert(
                     (package.id.clone(), target.id.clone()),
                     doxygen_native::extract_target(
@@ -412,12 +447,14 @@ async fn doxygen_results(
                     )
                     .await?,
                 );
+                progress.advance();
             }
         }
     }
     if fs::read(path)? != before {
         return Err(AssemblyError::InputsChanged);
     }
+    progress.finish();
     Ok(results)
 }
 
@@ -432,6 +469,7 @@ fn assemble_with_native(
     julia_results: BTreeMap<(String, String), crate::extractors::julia::JuliaExtraction>,
     rust_results: BTreeMap<(String, String), rust_native::RustNativeExtraction>,
     doxygen_results: BTreeMap<(String, String), doxygen_native::DoxygenNativeExtraction>,
+    reporting: &Reporting,
 ) -> Result<WorkspaceSources, AssemblyError> {
     let text = fs::read_to_string(path).map_err(|source| ConfigurationError::Read {
         path: path.to_owned(),
@@ -499,6 +537,7 @@ fn assemble_with_native(
         &mut selections,
         &mut observed,
         &mut native,
+        reporting,
     )?;
     let prepared_pages = authored::assemble(
         &configuration,
@@ -506,6 +545,7 @@ fn assemble_with_native(
         &mut workspace,
         &mut selections,
         &mut observed,
+        reporting,
     )?;
     documenter::assemble(&mut workspace, &prepared_pages);
     let package_files = package_docs::assemble(
@@ -530,6 +570,7 @@ fn assemble_with_native(
     }
     workspace.repositories = evidence.repositories.clone();
     let result = WorkspaceSources {
+        reporting: reporting.clone(),
         workspace,
         configuration,
         // Configuration-relative declarations retain the caller's directory,
@@ -547,6 +588,15 @@ fn assemble_with_native(
     };
     result.revalidate()?;
     Ok(result)
+}
+
+fn target_count(configuration: &WorkspaceConfiguration, extractor: &str) -> usize {
+    configuration
+        .packages
+        .iter()
+        .flat_map(|package| &package.targets)
+        .filter(|target| target.extractor == extractor)
+        .count()
 }
 
 type ObservedInputs = BTreeMap<(String, DiagnosticPath), Fingerprint>;

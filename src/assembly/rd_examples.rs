@@ -110,7 +110,11 @@ pub(super) async fn execute(
                     .or_insert_with(|| location.clone());
             }
         }
+        let mut progress = sources
+            .reporting
+            .stage("Executing R help examples", Some(topics.len()));
         for location in topics.into_values() {
+            progress.item(&format!("{}:{}", package.id, location.path.as_str()));
             sources.revalidate()?;
             let document = sources.workspace.packages[&package.id]
                 .items
@@ -235,7 +239,9 @@ pub(super) async fn execute(
                 }
             }
             staging.close()?;
+            progress.advance();
         }
+        progress.finish();
     }
     sources.revalidate()?;
     Ok(assets)

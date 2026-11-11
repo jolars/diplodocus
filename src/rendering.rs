@@ -23,6 +23,7 @@ mod signatures;
 mod sitemap;
 mod social;
 pub use fragments::{FragmentDocument, FragmentIndex};
+pub(crate) use html::render_reported;
 pub use html::{render_fragments, render_site};
 pub use publish::{RenderedFile, RenderedSite};
 

@@ -37,7 +37,7 @@ fn check_reports_reference_failures_repeatedly_without_publishing() {
     for _ in 0..2 {
         let result = std::process::Command::new(cargo_bin("diplodocus"))
             .current_dir(root.path())
-            .args(["check", "--config", "workspace/diplodocus.yaml"])
+            .args(["check", "--quiet", "--config", "workspace/diplodocus.yaml"])
             .output()
             .unwrap();
         assert_eq!(result.status.code(), Some(1));

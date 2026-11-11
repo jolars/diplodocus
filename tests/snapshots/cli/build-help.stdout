@@ -3,6 +3,9 @@ Build a static documentation site
 Usage: diplodocus build [OPTIONS]
 
 Options:
+      --color <COLOR>  Control terminal colors in help, diagnostics, and status output [default: auto] [possible values: auto, always, never]
       --config <PATH>  Path to the workspace configuration file [default: ./diplodocus.yaml]
+      --no-progress    Print stage summaries instead of animated progress bars
       --output <PATH>  Directory in which to write the generated site [default: ./site]
+  -q, --quiet          Suppress routine status output while retaining warnings and errors
   -h, --help           Print help

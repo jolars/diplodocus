@@ -18,6 +18,7 @@ pub mod ir;
 pub mod paths;
 pub mod provenance;
 pub mod rendering;
+pub mod reporting;
 pub mod site;
 mod site_assets;
 pub mod snapshots;

@@ -128,7 +128,14 @@ impl WorkspaceSources {
                     selected.insert(0, (None, name, None, Some(location)));
                 }
             }
+            let label = if language == "python" {
+                "Checking Python APIs and examples"
+            } else {
+                "Executing Julia API examples"
+            };
+            let mut progress = self.reporting.stage(label, Some(selected.len()));
             for (id, qualified_name, document, location) in selected {
+                progress.item(&format!("{}:{qualified_name}", package.id));
                 self.revalidate()?;
                 let operation = if id.is_none() {
                     "checkout validation"
@@ -270,6 +277,7 @@ impl WorkspaceSources {
                 self.revalidate()?;
                 let Some(id) = id else {
                     staging.close()?;
+                    progress.advance();
                     continue;
                 };
                 let activity = ProvenanceActivity::ApiExamples {
@@ -311,7 +319,9 @@ impl WorkspaceSources {
                     });
                 staging.close()?;
                 self.revalidate()?;
+                progress.advance();
             }
+            progress.finish();
         }
         Ok(())
     }

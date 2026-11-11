@@ -417,7 +417,7 @@ fn never_extract_build_and_watched_serve_leave_execution_untouched() {
             };
             await_line(&mut child, "Serving http://");
             fixture.root.write("guide/index.qmd", source("Rebuilt"));
-            await_line(&mut child, "Rebuilt documentation.");
+            await_line(&mut child, "Rebuilt ");
             rustix::process::kill_process(
                 rustix::process::Pid::from_raw(child.id() as i32).unwrap(),
                 rustix::process::Signal::TERM,

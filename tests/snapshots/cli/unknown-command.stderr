@@ -1,5 +1,5 @@
 error: unrecognized subcommand 'unknown'
 
-Usage: diplodocus <COMMAND>
+Usage: diplodocus [OPTIONS] <COMMAND>
 
 For more information, try '--help'.

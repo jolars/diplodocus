@@ -4,10 +4,31 @@ use std::path::PathBuf;
 use clap::{Args, Parser, Subcommand};
 
 #[derive(Debug, Parser)]
-#[command(name = "diplodocus", version, about = env!("CARGO_PKG_DESCRIPTION"))]
+#[command(name = "diplodocus", version, about = env!("CARGO_PKG_DESCRIPTION"), styles = terminal_styles())]
 pub(super) struct Cli {
+    /// Control terminal colors in help, diagnostics, and status output.
+    #[arg(long, global = true, value_enum, default_value_t = clap::ColorChoice::Auto)]
+    pub(super) color: clap::ColorChoice,
+    /// Print stage summaries instead of animated progress bars.
+    #[arg(long, global = true)]
+    pub(super) no_progress: bool,
+    /// Suppress routine status output while retaining warnings and errors.
+    #[arg(short, long, global = true)]
+    pub(super) quiet: bool,
     #[command(subcommand)]
     pub(super) command: Command,
+}
+
+const fn terminal_styles() -> clap::builder::styling::Styles {
+    use clap::builder::styling::{AnsiColor, Styles};
+    Styles::styled()
+        .header(AnsiColor::Cyan.on_default().bold())
+        .usage(AnsiColor::Cyan.on_default().bold())
+        .literal(AnsiColor::Green.on_default().bold())
+        .placeholder(AnsiColor::Cyan.on_default())
+        .error(AnsiColor::Red.on_default().bold())
+        .invalid(AnsiColor::Red.on_default())
+        .valid(AnsiColor::Green.on_default())
 }
 
 #[derive(Debug, Subcommand)]

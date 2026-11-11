@@ -12,7 +12,8 @@ use tokio::sync::watch;
 use crate::execution::{ExecutionCancellation, ExecutionDeadlines};
 use crate::rendering::RenderedSite;
 
-use super::watching::{Watcher, cancelled, clean_cancellation, report_rebuild_error};
+use super::watching::{Watcher, cancelled, clean_cancellation};
+use crate::reporting::{Event, Reporting};
 
 /// Run the production preview loop with explicit deadlines and shutdown signal.
 /// A failed rebuild retains both the published tree and the served generation.
@@ -22,8 +23,19 @@ pub async fn serve_with(
     deadlines: ExecutionDeadlines,
     cancellation: ExecutionCancellation<'_>,
 ) -> Result<(), CommandError> {
+    CommandRunner::default()
+        .serve_with(options, deadlines, cancellation)
+        .await
+}
+
+pub(super) async fn serve_reported(
+    options: ServeOptions,
+    deadlines: ExecutionDeadlines,
+    cancellation: ExecutionCancellation<'_>,
+    reporting: &Reporting,
+) -> Result<(), CommandError> {
     let (stop, receiver) = watch::channel(false);
-    let worker = run(options, deadlines, receiver);
+    let worker = run(options, deadlines, receiver, reporting);
     tokio::pin!(worker);
     tokio::select! {
         result = &mut worker => result,
@@ -38,7 +50,9 @@ async fn run(
     options: ServeOptions,
     deadlines: ExecutionDeadlines,
     stop: watch::Receiver<bool>,
+    reporting: &Reporting,
 ) -> Result<(), CommandError> {
+    let setup = reporting.stage("Starting preview", None);
     let listener = TcpListener::bind((options.host, options.port)).await?;
     let address = listener.local_addr()?;
     let build = BuildOptions {
@@ -46,8 +60,15 @@ async fn run(
         output: options.output.clone(),
     };
     let mut watcher = Watcher::new(&options.config, &options.output)?;
-    let initial =
-        pipeline::build_attempt(&build, deadlines, Box::pin(cancelled(stop.clone()))).await;
+    setup.finish();
+    let command = reporting.command("build");
+    let initial = pipeline::build_attempt(
+        &build,
+        deadlines,
+        Box::pin(cancelled(stop.clone())),
+        reporting,
+    )
+    .await;
     let initial = match initial {
         Ok(site) => site,
         Err(error) if *stop.borrow() && clean_cancellation(&error) => return Ok(()),
@@ -56,6 +77,7 @@ async fn run(
     if *stop.borrow() {
         return Ok(());
     }
+    command.finish(Some(&build.output), Some(initial.page_count()));
     let current = Arc::new(RwLock::new(Arc::new(ServedGeneration {
         site: initial,
         // Open pages must also detect a new server after the generator recompiles.
@@ -69,11 +91,17 @@ async fn run(
     ));
     let mut http = AbortOnDrop(http);
     let url = preview_url(address);
-    eprintln!("Serving {url}");
+    reporting.emit(Event::Serving { url: &url });
+    reporting.emit(Event::Watching {
+        retained_previous: false,
+    });
+    let browser_reporting = reporting.clone();
     let _browser = options.open.then(|| {
         AbortOnDrop(tokio::spawn(async move {
             if let Err(error) = open_browser(&url).await {
-                eprintln!("Warning: could not open browser for {url}: {error}");
+                browser_reporting.emit(Event::Warning(&format!(
+                    "could not open browser for {url}: {error}"
+                )));
             }
         }))
     });
@@ -89,20 +117,28 @@ async fn run(
                 };
             }
             _ = watcher.next_change() => {
-                let result = pipeline::build_attempt(&build, deadlines, Box::pin(cancelled(stop.clone()))).await;
+                let command = reporting.command("rebuild");
+                let result = pipeline::build_attempt(&build, deadlines, Box::pin(cancelled(stop.clone())), reporting).await;
                 match result {
                     Ok(site) => {
-                        let mut current = current.write().expect("preview generation lock");
-                        *current = Arc::new(ServedGeneration {
-                            site,
-                            revision: current.revision.wrapping_add(1),
-                        });
-                        eprintln!("Rebuilt documentation.");
+                        let pages = site.page_count();
+                        {
+                            let mut current = current.write().expect("preview generation lock");
+                            *current = Arc::new(ServedGeneration {
+                                site,
+                                revision: current.revision.wrapping_add(1),
+                            });
+                        }
+                        command.finish(Some(&build.output), Some(pages));
+                        reporting.emit(Event::Rebuilt);
+                        reporting.emit(Event::Watching { retained_previous: false });
                     }
                     Err(error) => {
+                        drop(command);
                         if *stop.borrow() && clean_cancellation(&error) { break Ok(()); }
-                        report_rebuild_error(&error);
+                        reporting.error(&error);
                         if *stop.borrow() { break Err(error); }
+                        reporting.emit(Event::Watching { retained_previous: true });
                     }
                 }
             }

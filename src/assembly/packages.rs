@@ -10,7 +10,14 @@ pub(super) fn assemble(
     selections: &mut DeclaredSourceInputs,
     observed: &mut ObservedInputs,
     native: &mut super::NativeExtractions,
+    reporting: &Reporting,
 ) -> Result<(), AssemblyError> {
+    let total = configuration
+        .packages
+        .iter()
+        .map(|package| package.targets.len())
+        .sum();
+    let mut progress = reporting.stage("Assembling API documentation", Some(total));
     for (index, declaration) in configuration.packages.iter().enumerate() {
         let resolved = &paths.packages[index];
         let repository = &paths.repositories[resolved.repository_index];
@@ -30,6 +37,10 @@ pub(super) fn assemble(
             items: BTreeMap::new(),
         };
         for (target, selected) in declaration.targets.iter().zip(&resolved.targets) {
+            progress.item(&format!(
+                "{}:{} ({})",
+                declaration.id, target.id, target.extractor
+            ));
             package.extraction_targets.insert(
                 target.id.clone(),
                 ExtractionTarget {
@@ -247,9 +258,11 @@ pub(super) fn assemble(
                     .insert(reference.clone(), selected_inputs);
             }
             workspace.provenance.push(fragment.provenance);
+            progress.advance();
         }
         workspace.packages.insert(declaration.id.clone(), package);
     }
+    progress.finish();
     Ok(())
 }
 

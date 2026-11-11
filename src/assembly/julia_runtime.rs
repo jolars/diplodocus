@@ -9,13 +9,20 @@ pub(crate) async fn assemble_for_extraction(
     path: &Path,
     deadlines: ExecutionDeadlines,
     cancellation: &mut ExecutionCancellation<'_>,
+    reporting: &Reporting,
 ) -> Result<WorkspaceSources, AssemblyError> {
+    let loading = reporting.stage("Loading workspace", None);
     let configuration = crate::configuration::load_configuration(path)?;
     reject_errors(validate_configuration_with_source(
         &configuration,
         "diplodocus.yaml".try_into().unwrap(),
     ))?;
     let paths = resolve_workspace_paths(path, &configuration)?;
+    loading.finish();
+    let mut progress = reporting.stage(
+        "Extracting Julia APIs",
+        Some(target_count(&configuration, "julia")),
+    );
     let mut results = BTreeMap::new();
     for package in &paths.packages {
         let repository = &paths.repositories[package.repository_index];
@@ -28,6 +35,7 @@ pub(crate) async fn assemble_for_extraction(
             if target.extractor != "julia" {
                 continue;
             }
+            progress.item(&format!("{}:{}", package.id, target.id));
             let mut result = julia::extract_target(repository, package, selected);
             reject_errors(
                 result
@@ -121,9 +129,11 @@ pub(crate) async fn assemble_for_extraction(
             julia::runtime::reconcile(&mut result, observation).map_err(failure)?;
             reject_errors(result.diagnostics.clone())?;
             results.insert((package.id.clone(), target.id.clone()), result);
+            progress.advance();
         }
     }
-    let rust = super::rust_results(path, true, deadlines, cancellation).await?;
-    let doxygen = super::doxygen_results(path, deadlines, cancellation).await?;
-    super::assemble_with_native(path, results, rust, doxygen)
+    progress.finish();
+    let rust = super::rust_results(path, true, deadlines, cancellation, reporting, false).await?;
+    let doxygen = super::doxygen_results(path, deadlines, cancellation, reporting).await?;
+    super::assemble_with_native(path, results, rust, doxygen, reporting)
 }

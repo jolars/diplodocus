@@ -810,6 +810,19 @@ impl WorkspaceSources {
         cancellation: &mut crate::execution::ExecutionCancellation<'_>,
     ) -> Result<(), AssemblyError> {
         self.revalidate()?;
+        let total = self
+            .package_files
+            .keys()
+            .filter(|id| {
+                matches!(
+                    &self.workspace.packages[*id].metadata,
+                    Some(PackageMetadata::R(_))
+                )
+            })
+            .count();
+        let mut progress = self
+            .reporting
+            .stage("Completing R package metadata", Some(total));
         for (id, files) in self.package_files.clone() {
             let package = self
                 .paths
@@ -820,6 +833,7 @@ impl WorkspaceSources {
             let Some(PackageMetadata::R(metadata)) = &self.workspace.packages[&id].metadata else {
                 continue;
             };
+            progress.item(&id);
             let news = files.news.as_ref().filter(|path| {
                 path.extension().is_some_and(|extension| extension == "Rd")
                     && self
@@ -948,8 +962,10 @@ impl WorkspaceSources {
                 metadata.runtime = Some(result.runtime);
             }
             self.workspace.provenance.push(provenance);
+            progress.advance();
         }
         self.revalidate()?;
+        progress.finish();
         Ok(())
     }
 }

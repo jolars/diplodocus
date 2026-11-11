@@ -85,7 +85,11 @@ fn cli_paths_and_completed_snapshot_match_the_contract() {
     let static_packages = expected.workspace().packages.clone();
     drop((sources, resolved));
 
-    let result = extract(root.path(), None, false);
+    let result = Command::new(env!("CARGO_BIN_EXE_diplodocus"))
+        .current_dir(root.path())
+        .args(["extract", "--quiet", "--config", CONFIG])
+        .output()
+        .unwrap();
     success(&result);
     assert_eq!(String::from_utf8(result.stderr).unwrap(), warnings);
     let default = root.path().join(DEFAULT_OUTPUT);

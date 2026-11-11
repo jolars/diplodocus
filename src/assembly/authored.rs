@@ -13,6 +13,7 @@ pub(super) fn assemble(
     workspace: &mut Workspace,
     selections: &mut DeclaredSourceInputs,
     observed: &mut ObservedInputs,
+    reporting: &Reporting,
 ) -> Result<BTreeMap<String, PreparedPage>, AssemblyError> {
     let mut pages = BTreeMap::new();
     let mut seen = std::collections::BTreeSet::new();
@@ -78,6 +79,7 @@ pub(super) fn assemble(
             },
         );
         let files = discover(&resolved.path, collection.format, repository)?;
+        let mut selected = Vec::new();
         for relative in &files {
             let declared = resolved.source_root.join(relative);
             let location = repository.source_location(&declared, None)?;
@@ -96,6 +98,15 @@ pub(super) fn assemble(
                 continue;
             }
             seen.insert(key);
+            selected.push((relative, path, location));
+        }
+        let mut progress = reporting.stage("Reading documentation", Some(selected.len()));
+        for (relative, path, location) in selected {
+            progress.item(&format!(
+                "{}:{}",
+                location.repository,
+                location.path.as_str()
+            ));
             let text = fs::read_to_string(&path)?;
             observe(observed, &location, fingerprint_bytes(text.as_bytes()))?;
             let expanded = super::includes::expand(
@@ -239,7 +250,9 @@ pub(super) fn assemble(
                     preparation: prepared.preparation,
                 },
             );
+            progress.advance();
         }
+        progress.finish();
         selections.content.insert(collection.id.clone(), files);
     }
     Ok(pages)

@@ -10,6 +10,7 @@ use crate::documents::PageLayout;
 use crate::execution::ValidatedRepresentationRef;
 use crate::execution::output_safety::{HtmlAttribute, HtmlNode};
 use crate::ir::*;
+use crate::reporting::Reporting;
 use crate::site::{PageModel, Site, SiteError};
 use crate::validation::{DocumentIdentity, ReferenceKind};
 
@@ -21,7 +22,7 @@ const FRAGMENT: &percent_encoding::AsciiSet = &percent_encoding::NON_ALPHANUMERI
 
 /// Render one complete site from its prepared model, with no source or database I/O.
 pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
-    render(site, true)
+    render_reported(site, true, &Reporting::default())
 }
 
 /// Render document bodies, assets, and a JSON index for an existing website.
@@ -30,7 +31,7 @@ pub fn render_site(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
 /// Markdown artifacts, public names, semantic identities, and heading anchors.
 /// Apply [`crate::site::UrlMap`] to the site to mount links on another website.
 pub fn render_fragments(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
-    render(site, false)
+    render_reported(site, false, &Reporting::default())
 }
 
 fn render_public_links(html: &mut String, site: &Site<'_>, route: &str) {
@@ -123,7 +124,12 @@ fn navigation_shell_fingerprint(
     Ok(crate::provenance::fingerprint_bytes(shell.as_bytes()).value)
 }
 
-fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> {
+pub(crate) fn render_reported(
+    site: &Site<'_>,
+    standalone: bool,
+    reporting: &Reporting,
+) -> Result<RenderedSite, SiteError> {
+    let mut progress = reporting.stage("Rendering pages", Some(site.pages.len()));
     let mut files = BTreeMap::new();
     let images = super::images::Images::default();
     let shell_fingerprint = standalone
@@ -144,6 +150,7 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
     let math_context = katex::KatexContext::default();
     let highlighter = super::highlighting::Highlighter::new();
     for (route, page) in &site.pages {
+        progress.item(route);
         let metadata = site.page_metadata(route, page);
         let home = site.home(route);
         let layout = page.layout();
@@ -886,19 +893,25 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
             route.clone(),
             file(html.into_bytes(), "text/html; charset=utf-8"),
         );
+        progress.advance();
     }
+    progress.finish();
+    let assets = reporting.stage("Preparing site assets", None);
     if uses_math {
         for (path, bytes, media_type) in super::katex_assets::ASSETS {
+            assets.item(path);
             files.insert((*path).into(), file(bytes.to_vec(), media_type));
         }
     }
     files.extend(images.into_files());
     for (digest, asset) in site.assets {
+        assets.item(digest);
         files.insert(
             site.asset_route(digest)?,
             file(asset.bytes.clone(), &asset.media_type),
         );
     }
+    assets.item("stylesheets and browser scripts");
     let style = if standalone {
         format!("{STYLE}\n{}", super::highlighting::stylesheet())
     } else {
@@ -922,6 +935,7 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
             ),
         );
         for (id, bundle) in site.components {
+            assets.item(id);
             let prefix = bundle.prefix(id);
             for (path, digest) in &bundle.files {
                 files.insert(
@@ -993,6 +1007,7 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
         );
     }
     for (path, digest) in site.public_assets {
+        assets.item(path);
         if files.contains_key(path) {
             return Err(SiteError::Presentation(format!(
                 "public asset {path:?} conflicts with generated output"
@@ -1007,7 +1022,9 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
     if let Some(map) = &site.url_map {
         map.validate_assets(&files)?;
     }
+    assets.finish();
     Ok(RenderedSite {
+        page_count: site.pages.len(),
         files,
         redirects: if standalone {
             site.redirects.clone()

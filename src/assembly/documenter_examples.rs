@@ -108,6 +108,7 @@ impl WorkspaceSources {
             .map(|(id, page)| (page.collection, page.relative.clone(), id.clone()))
             .collect();
         order.sort();
+        let mut reporting_stage = None;
         for (_, _, id) in order {
             self.revalidate()?;
             let page = &self.prepared_pages[&id];
@@ -117,6 +118,13 @@ impl WorkspaceSources {
             if examples.is_empty() {
                 continue;
             }
+            let stage = reporting_stage
+                .get_or_insert_with(|| self.reporting.stage("Executing Documenter examples", None));
+            stage.item(&format!(
+                "{}:{}",
+                page.location.repository,
+                page.relative.as_str()
+            ));
             if self.workspace.pages[&id]
                 .document
                 .provenance
@@ -306,8 +314,13 @@ impl WorkspaceSources {
             });
             self.native_assets.extend(assets);
             staging.close()?;
+            stage.advance();
         }
-        self.revalidate()
+        self.revalidate()?;
+        if let Some(stage) = reporting_stage {
+            stage.finish();
+        }
+        Ok(())
     }
 }
 

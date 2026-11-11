@@ -32,14 +32,30 @@ impl WorkspaceSources {
                 .iter()
                 .map(|r| (r.id.clone(), r.path.clone()))
                 .collect();
-            let mut order: Vec<_> = self.prepared_pages.iter().collect();
+            let mut order: Vec<_> = self
+                .prepared_pages
+                .iter()
+                .filter(|(_, page)| {
+                    page.preparation
+                        .as_ref()
+                        .is_some_and(|p| p.execution_eligible)
+                })
+                .collect();
             order.sort_by_key(|(_, page)| (page.collection, &page.relative));
+            let mut progress = self
+                .reporting
+                .stage("Executing QMD pages", Some(order.len()));
             for (id, page) in order {
                 check_cancellation(&mut options.cancellation).await?;
                 let Some(preparation) = page.preparation.as_ref().filter(|p| p.execution_eligible)
                 else {
                     continue;
                 };
+                progress.item(&format!(
+                    "{}:{}",
+                    page.location.repository,
+                    page.relative.as_str()
+                ));
                 let collection = &self.configuration.content[page.collection];
                 let repository_root = &repositories[&collection.repository];
                 let declared = collection
@@ -114,9 +130,11 @@ impl WorkspaceSources {
                     .diagnostics
                     .extend(record.diagnostics.iter().cloned());
                 pages.insert(id.clone(), result);
+                progress.advance();
             }
             self.revalidate()?;
             check_cancellation(&mut options.cancellation).await?;
+            progress.finish();
             Ok::<(), AssemblyError>(())
         }
         .await;

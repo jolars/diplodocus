@@ -153,9 +153,17 @@ impl WorkspaceSources {
             .map(|(id, p)| (p.collection, p.relative.clone(), id.clone()))
             .collect();
         order.sort();
+        let mut progress = self
+            .reporting
+            .stage("Rendering R Markdown articles", Some(order.len()));
         for (_, _, id) in order {
             self.revalidate()?;
             let page = &self.prepared_pages[&id];
+            progress.item(&format!(
+                "{}:{}",
+                page.location.repository,
+                page.relative.as_str()
+            ));
             if self.workspace.pages[&id]
                 .document
                 .generated_source
@@ -286,8 +294,11 @@ impl WorkspaceSources {
             }
             self.native_assets.extend(assets);
             staging.close()?;
+            progress.advance();
         }
-        self.revalidate()
+        self.revalidate()?;
+        progress.finish();
+        Ok(())
     }
 }
 
