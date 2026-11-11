@@ -736,7 +736,7 @@ test("client navigation cancels stale responses when another link or Back wins",
     await expect.poll(() => pending.length).toBe(2);
     await page.goBack();
     await expect(page).toHaveURL(/\/overview\.html$/);
-    await expect(page).toHaveTitle("Tiny Stats · Tiny Stats");
+    await expect(page).toHaveTitle("Tiny Stats");
     pending[1].release();
     await pending[1].finished;
     await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
@@ -781,7 +781,7 @@ test("client navigation leaves modified, external, download, and new-window link
     });
   });
   expect(prevented).toEqual(Array(10).fill(false));
-  await expect(page).toHaveTitle("Tiny Stats · Tiny Stats");
+  await expect(page).toHaveTitle("Tiny Stats");
 });
 
 test("client navigation falls back to document navigation for incompatible and non-HTML responses", async ({ page }) => {
