@@ -29,6 +29,7 @@ mod rmarkdown;
 
 pub use fragments::{MarkdownFragmentOrigin, MarkdownFragmentParse, parse_markdown_fragment};
 pub(crate) use layout::PageLayout;
+pub(crate) use preparation::prepare_collection_document_with_resources;
 pub use preparation::{PreparedDocument, QmdPreparation, prepare_collection_document};
 pub use rmarkdown::{RmdPreparation, parse_evaluated_rmd, prepare_rmd_document};
 
@@ -102,6 +103,15 @@ enum ParseMode {
 }
 
 fn parse_document(source: &str, format: AuthoredFormat, mode: ParseMode) -> DocumentParse {
+    parse_document_with_resources(source, format, mode, &|target, _| target.to_owned())
+}
+
+fn parse_document_with_resources(
+    source: &str,
+    format: AuthoredFormat,
+    mode: ParseMode,
+    resource_target: &dyn Fn(&str, SourceSpan) -> String,
+) -> DocumentParse {
     if format == AuthoredFormat::Documenter {
         return crate::extractors::julia::docstrings::parse_documenter(source);
     }
@@ -145,7 +155,10 @@ fn parse_document(source: &str, format: AuthoredFormat, mode: ParseMode) -> Docu
             let url = definition.url()?;
             Some((
                 normalize_reference_label(&definition.label()),
-                (url, definition.title()),
+                (
+                    resource_target(&url, span(definition.syntax().text_range())),
+                    definition.title(),
+                ),
             ))
         })
         .collect();
@@ -159,6 +172,7 @@ fn parse_document(source: &str, format: AuthoredFormat, mode: ParseMode) -> Docu
         .collect();
     let mut context = AdapterContext {
         format,
+        resource_target,
         fragment,
         fragment_sources,
         references,
@@ -251,7 +265,8 @@ pub fn parse_collection_document(
     Ok(prepare_collection_document(source, collection)?.parsed)
 }
 
-struct AdapterContext {
+struct AdapterContext<'a> {
+    resource_target: &'a dyn Fn(&str, SourceSpan) -> String,
     format: AuthoredFormat,
     fragment: bool,
     fragment_sources: HashMap<TextRange, Vec<SourceSegment>>,
@@ -264,7 +279,7 @@ struct AdapterContext {
     math_delimiters: Vec<SourceSpan>,
 }
 
-impl AdapterContext {
+impl AdapterContext<'_> {
     fn block(&mut self, block: BlockNode) -> Option<Block> {
         let fallback_kind = format!("{:?}", block.syntax_kind());
         let fallback_raw = block.source_text();
@@ -847,8 +862,15 @@ impl AdapterContext {
 
     fn link(&mut self, link: panache_parser::syntax::Link) -> Inline {
         let (target, title) = self.link_target(
-            link.dest()
-                .map(|destination| (destination.url_content(), destination.title())),
+            link.dest().map(|destination| {
+                (
+                    (self.resource_target)(
+                        &destination.url_content(),
+                        span(destination.syntax().text_range()),
+                    ),
+                    destination.title(),
+                )
+            }),
             link.reference().map(|reference| reference.label()),
             link.text().map(|text| text.raw_label()),
         );
@@ -863,9 +885,15 @@ impl AdapterContext {
 
     fn image(&mut self, image: panache_parser::syntax::ImageLink) -> Inline {
         let (target, title) = self.link_target(
-            image
-                .dest()
-                .map(|destination| (destination.url_content(), destination.title())),
+            image.dest().map(|destination| {
+                (
+                    (self.resource_target)(
+                        &destination.url_content(),
+                        span(destination.syntax().text_range()),
+                    ),
+                    destination.title(),
+                )
+            }),
             image.reference().map(|reference| reference.label()),
             image.alt().map(|alt| alt.syntax().text().to_string()),
         );

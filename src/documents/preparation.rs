@@ -12,7 +12,7 @@ use crate::execution::{EffectiveOption, ExecutionDefaults, OptionOrigin, Prepare
 use crate::ir::{Attributes, Block, CodeCell, Inline, SourceSpan};
 use crate::validation::validate_document_execution;
 
-use super::{AuthoredFormat, DocumentParse, ParseMode, parse_document, span};
+use super::{AuthoredFormat, DocumentParse, ParseMode, parse_document_with_resources, span};
 
 mod options;
 mod scalars;
@@ -64,8 +64,23 @@ pub fn prepare_collection_document(
     source: &str,
     collection: &ContentConfiguration,
 ) -> Result<PreparedDocument, ExecutionConfigurationError> {
+    prepare_collection_document_with_resources(source, collection, &|target, _| target.to_owned())
+}
+
+// Resolve each destination while its syntax range is available. Reference
+// definitions supply their own range rather than the range of a later use.
+pub(crate) fn prepare_collection_document_with_resources(
+    source: &str,
+    collection: &ContentConfiguration,
+    resource_target: &dyn Fn(&str, SourceSpan) -> String,
+) -> Result<PreparedDocument, ExecutionConfigurationError> {
     collection.validate_execution()?;
-    let mut parsed = parse_document(source, collection.format, ParseMode::Collection);
+    let mut parsed = parse_document_with_resources(
+        source,
+        collection.format,
+        ParseMode::Collection,
+        resource_target,
+    );
     if collection.format == AuthoredFormat::Documenter
         && collection.execution.mode == ExecutionMode::Execute
         && let Err(diagnostics) = super::documenter::examples(source)

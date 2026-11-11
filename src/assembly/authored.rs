@@ -1,6 +1,6 @@
 use super::*;
 use crate::diagnostics::DiagnosticEntity;
-use crate::documents::{AuthoredFormat, prepare_collection_document};
+use crate::documents::{AuthoredFormat, prepare_collection_document_with_resources};
 use crate::ir::{
     Block, ContentCollection, ContentOwner, Document, DocumentFormat, MetadataValue, Page,
     PageKind, Provenance, ProvenanceActivity, SourcedDocument,
@@ -114,9 +114,24 @@ pub(super) fn assemble(
                     .push(PathBuf::from(input.path.as_str()));
             }
             let text = expanded.text;
-            let prepared = prepare_collection_document(&text, collection).map_err(|error| {
-                AssemblyError::Diagnostics(vec![error.to_diagnostic(&collection.id)])
-            })?;
+            let included_resource_targets =
+                std::cell::RefCell::new(std::collections::BTreeSet::new());
+            let prepared =
+                prepare_collection_document_with_resources(&text, collection, &|target, span| {
+                    if let Some(rebased) =
+                        super::includes::resource_target(target, span, &location, &expanded.ranges)
+                    {
+                        included_resource_targets
+                            .borrow_mut()
+                            .insert(rebased.clone());
+                        rebased
+                    } else {
+                        target.to_owned()
+                    }
+                })
+                .map_err(|error| {
+                    AssemblyError::Diagnostics(vec![error.to_diagnostic(&collection.id)])
+                })?;
             if prepared
                 .preparation
                 .as_ref()
@@ -215,6 +230,7 @@ pub(super) fn assemble(
                 id,
                 PreparedPage {
                     source_ranges: expanded.ranges,
+                    included_resource_targets: included_resource_targets.into_inner(),
                     source: text,
                     path,
                     relative,

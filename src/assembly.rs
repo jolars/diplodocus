@@ -45,6 +45,7 @@ mod rmarkdown;
 mod rust_native;
 
 pub use includes::IncludeSourceRange;
+pub(crate) use includes::remap as remap_include_diagnostic;
 
 /// Conventional license inputs shared by package discovery and preview watching.
 pub(crate) const PACKAGE_LICENSE_FILENAMES: &[&str] = &[
@@ -99,6 +100,7 @@ pub enum AssemblyError {
 #[derive(Debug)]
 pub struct PreparedPage {
     pub(crate) source_ranges: Vec<IncludeSourceRange>,
+    pub(crate) included_resource_targets: std::collections::BTreeSet<String>,
     pub(crate) source: String,
     pub(crate) path: PathBuf,
     pub(crate) relative: DiagnosticPath,

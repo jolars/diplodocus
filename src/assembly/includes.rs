@@ -243,7 +243,50 @@ fn append_chain(diagnostic: &mut Diagnostic, chain: &[SourceLocation]) {
     }
 }
 
-pub(super) fn remap(diagnostic: &mut Diagnostic, ranges: &[IncludeSourceRange]) {
+pub(super) fn resource_target(
+    target: &str,
+    span: SourceSpan,
+    page: &SourceLocation,
+    ranges: &[IncludeSourceRange],
+) -> Option<String> {
+    if target.is_empty() || target.starts_with(['#', '/']) || url::Url::parse(target).is_ok() {
+        return None;
+    }
+    let range = ranges
+        .iter()
+        .find(|range| range.expanded.start <= span.start && span.start < range.expanded.end)?;
+    if range.include_chain.is_empty() {
+        return None;
+    }
+    let page_directory = Path::new(page.path.as_str()).parent().unwrap();
+    let origin_directory = Path::new(range.original.path.as_str()).parent().unwrap();
+    let common = page_directory
+        .components()
+        .zip(origin_directory.components())
+        .take_while(|(left, right)| left == right)
+        .count();
+    let mut prefix = "../".repeat(page_directory.components().count() - common);
+    // Encode only the new prefix. The authored target retains its escaping and
+    // traversal so the resolver can validate its original meaning.
+    const SEGMENT: &percent_encoding::AsciiSet = &percent_encoding::NON_ALPHANUMERIC
+        .remove(b'-')
+        .remove(b'_')
+        .remove(b'.')
+        .remove(b'~');
+    for component in origin_directory.components().skip(common) {
+        prefix.push_str(
+            &percent_encoding::utf8_percent_encode(
+                component.as_os_str().to_str().unwrap(),
+                SEGMENT,
+            )
+            .to_string(),
+        );
+        prefix.push('/');
+    }
+    Some(format!("{prefix}{target}"))
+}
+
+pub(crate) fn remap(diagnostic: &mut Diagnostic, ranges: &[IncludeSourceRange]) {
     let Some(span) = diagnostic.span else {
         return;
     };

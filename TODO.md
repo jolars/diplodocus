@@ -297,7 +297,7 @@ implemented as an optional `serve --live-reload` feature.
   - [x] Implement whole-file and nested includes with cycle detection. Retain
     each included file's source path and line locations so diagnostics can
     identify the included source and its include chain.
-  - [ ] Resolve relative links and images from the included file's location,
+  - [x] Resolve relative links and images from the included file's location,
     including files outside the including page's directory.
   - [x] Fingerprint successfully resolved includes as build inputs, revalidate
     their contents, and expose their paths to the existing preview watcher.

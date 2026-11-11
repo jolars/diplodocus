@@ -3,10 +3,11 @@
 This document defines the include contract. Whole-file and nested expansion,
 cycle detection, and parser diagnostic attribution are implemented for static
 GFM and QMD collections. Prepared pages retain source ranges and include chains.
-Relative resource resolution and portable source-map retention remain pending,
-so includes are not yet documented as a complete authoring feature. Executable
-QMD pages with includes produce an explicit error until the execution engine can
-verify expanded inputs. The remaining slices are tracked in
+Relative links and images resolve from their original source files, including
+partials outside the collection directory. Portable source-map retention remains
+pending, so includes are not yet documented as a complete authoring feature.
+Executable QMD pages with includes produce an explicit error until the execution
+engine can verify expanded inputs. The remaining slices are tracked in
 [TODO.md](../../TODO.md).
 
 ## Authoring syntax
@@ -43,8 +44,11 @@ produce errors rather than silently disappearing as HTML comments.
 
 Relative include paths resolve from the file containing the directive. Relative
 links, images, and nested includes inside a partial resolve from that partial's
-directory, regardless of which page includes it. This rule applies to both GFM
-and QMD.
+directory, regardless of which page includes it. Reference-style links and images
+use the directory containing their reference definition, even when the reference
+appears in another file. Fragment-only links refer to anchors in the composed
+page. This rule applies to both GFM and QMD. Local resources may be outside the
+collection directory but must remain inside the declared repository.
 
 GFM's `@/parts/basics.md` and QMD's `/parts/basics.qmd` resolve from the content
 collection's source root. For a directory collection, that root is its declared

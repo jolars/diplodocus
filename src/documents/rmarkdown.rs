@@ -158,7 +158,7 @@ pub fn parse_evaluated_rmd(source: &str) -> DocumentParse {
     parse_document(source, AuthoredFormat::Rmd, ParseMode::Evaluated)
 }
 
-impl AdapterContext {
+impl AdapterContext<'_> {
     pub(super) fn rmd_table(&mut self, table: PanacheTable) -> Block {
         let range = span(table.syntax().text_range());
         let caption = table

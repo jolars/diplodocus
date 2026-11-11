@@ -3,6 +3,11 @@ mod support;
 use diplodocus::{
     assembly::{AssemblyError, assemble_workspace},
     diagnostics::DiagnosticCode,
+    provenance::fingerprint_bytes,
+    rendering::{render_fragments, render_site},
+    site::Site,
+    snapshots::Snapshot,
+    validation::{ReferenceTarget, resolve_workspace},
 };
 
 fn workspace(format: &str) -> support::TestWorkspace {
@@ -220,4 +225,166 @@ fn invalid_utf8_extensions_and_generated_storage_produce_include_errors() {
         };
         assert_eq!(diagnostics[0].code, DiagnosticCode::InvalidMarkdownInclude);
     }
+}
+
+#[test]
+fn included_resources_resolve_from_their_sources_in_html_and_markdown() {
+    for format in ["gfm", "qmd"] {
+        let root = workspace(format);
+        let extension = if format == "gfm" { "md" } else { "qmd" };
+        let configuration = root.read("diplodocus.yaml");
+        root.write(
+            "diplodocus.yaml",
+            configuration.replace(&format!("pages/index.{extension}"), "pages"),
+        );
+        let directive = |path: &str| {
+            if format == "gfm" {
+                format!("<!--@include: \"{path}\"-->")
+            } else {
+                format!("{{{{< include \"{path}\" >}}}}")
+            }
+        };
+        root.write(format!("pages/index.{extension}"), format!(
+            "# Main\n\n[Main download](data.txt) ![Main image](chart.svg)\n\n[Defined in partial][partial-data]\n\n{}\n\n[main-data]: data.txt\n",
+            directive(&format!("../shared % space/first.{extension}"))
+        ));
+        root.write(format!("shared % space/first.{extension}"), format!(
+            "## Included\n\n- **[Included download](data.txt)** ![Included image](chart.svg)\n- [Main definition][main-data]\n\n{}\n",
+            directive(&format!("nested/second.{extension}"))
+        ));
+        let nested = "## Nested {#nested}\n\n> [Nested download](data.txt) ![Nested image][nested-image]\n\n[Page](../../pages/target.EXT#target) [Local](#nested) [External](https://example.com/a%2Fb)\n\n[partial-data]: data%23file.txt#section\n[nested-image]: chart.svg\n".replace("EXT", extension);
+        root.write(format!("shared % space/nested/second.{extension}"), &nested);
+        root.write(format!("pages/target.{extension}"), "# Target {#target}\n");
+        let mut destinations = Vec::new();
+        for (directory, label) in [
+            ("pages", "Main"),
+            ("shared % space", "Included"),
+            ("shared % space/nested", "Nested"),
+        ] {
+            root.write(format!("{directory}/data.txt"), label);
+            let svg =
+                format!("<svg xmlns='http://www.w3.org/2000/svg'><title>{label}</title></svg>");
+            root.write(format!("{directory}/chart.svg"), &svg);
+            destinations.push((
+                label,
+                fingerprint_bytes(label.as_bytes()).value,
+                fingerprint_bytes(svg.as_bytes()).value,
+            ));
+        }
+        root.write(
+            "shared % space/nested/data#file.txt",
+            "Reference definition",
+        );
+        let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
+        let prepared = sources
+            .prepared_pages()
+            .values()
+            .find(|p| p.source().contains("# Main"))
+            .unwrap();
+        assert!(prepared.source().contains("[Included download](data.txt)"));
+        let resolved = resolve_workspace(&sources).unwrap();
+        assert_eq!(resolved.assets().len(), 7);
+        assert!(resolved.records().iter().flat_map(|record| &record.references).any(|reference|
+            matches!(&reference.target, ReferenceTarget::Page { fragment: Some(fragment), .. } if fragment == "target")));
+        let snapshot = Snapshot::from_sources(&sources, &resolved).unwrap();
+        let site = Site::new(&snapshot).unwrap();
+        for rendered in [
+            render_site(&site).unwrap(),
+            render_fragments(&site).unwrap(),
+        ] {
+            let html = std::str::from_utf8(&rendered.files()["index.html"].bytes).unwrap();
+            let markdown = std::str::from_utf8(&rendered.files()["index.md"].bytes).unwrap();
+            for (label, download, image) in &destinations {
+                assert!(
+                    html.contains(&format!("href=\"assets/{download}.bin\"")),
+                    "{label}: {html}"
+                );
+                assert!(
+                    html.contains(&format!("src=\"assets/{image}.svg\"")),
+                    "{label}: {html}"
+                );
+                assert!(markdown.contains(download), "{label}: {markdown}");
+                assert!(markdown.contains(image), "{label}: {markdown}");
+            }
+            let main_download = &destinations[0].1;
+            assert!(html.contains(&format!(
+                "href=\"assets/{main_download}.bin\">Main definition</a>"
+            )));
+            let defined_download = fingerprint_bytes(b"Reference definition").value;
+            assert!(html.contains(&format!(
+                "href=\"assets/{defined_download}.bin#section\">Defined in partial</a>"
+            )));
+            assert!(html.contains("href=\"target.html#target\""));
+            assert!(html.contains("href=\"#nested\""));
+            assert!(html.contains("href=\"https://example.com/a%2Fb\""));
+            assert!(markdown.contains("target.html#target"));
+        }
+    }
+}
+
+#[test]
+fn same_directory_partials_can_reference_assets_outside_the_collection() {
+    let root = workspace("gfm");
+    root.write("pages/index.md", "<!--@include: partial.md-->\n");
+    root.write("pages/partial.md", "[Download](../assets/data.txt)\n");
+    root.write("assets/data.txt", "Original");
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
+    let resolved = resolve_workspace(&sources).unwrap();
+    assert_eq!(resolved.assets().len(), 1);
+    assert!(
+        resolved
+            .input_paths()
+            .any(|path| path.ends_with("assets/data.txt"))
+    );
+    resolved.revalidate().unwrap();
+    root.write("assets/data.txt", "Changed");
+    assert!(resolved.revalidate().is_err());
+}
+
+#[test]
+fn included_resource_errors_identify_the_partial_and_include_chain() {
+    for target in ["missing.svg", "invalid.svg", "../.diplodocus/hidden.svg"] {
+        let root = workspace("gfm");
+        root.write(
+            "pages/index.md",
+            "# Main\n\n<!--@include: ../parts/first.md-->\n",
+        );
+        root.write("parts/first.md", "First.\n\n<!--@include: nested.md-->\n");
+        let partial = format!("Nested.\n\n![Broken]({target})\n");
+        root.write("parts/nested.md", &partial);
+        root.write("parts/invalid.svg", "Not an image");
+        root.write(".diplodocus/hidden.svg", "<svg/>");
+        let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
+        let error = resolve_workspace(&sources).unwrap_err();
+        let diagnostic = &error.diagnostics()[0];
+        assert!(
+            matches!(&diagnostic.source, Some(diplodocus::diagnostics::DiagnosticSource::Repository { path, .. }) if path.as_str() == "parts/nested.md")
+        );
+        assert_eq!(
+            diagnostic.span.unwrap().start,
+            partial.find("![Broken]").unwrap()
+        );
+        assert!(diagnostic.message.contains("Included from pages/index.md"));
+        assert!(diagnostic.message.contains("Included from parts/first.md"));
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn included_resources_reject_symlinks_outside_the_repository() {
+    use std::os::unix::fs::symlink;
+    let root = workspace("gfm");
+    let outside = support::TestWorkspace::new();
+    outside.write("secret.txt", "Outside");
+    root.write("pages/index.md", "<!--@include: ../parts/first.md-->\n");
+    root.write("parts/first.md", "[Escape](outside/secret.txt)\n");
+    symlink(outside.path(), root.path().join("parts/outside")).unwrap();
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
+    assert!(resolve_workspace(&sources).is_err());
+    // Reentering the repository must not hide the escaped intermediate path.
+    symlink(root.path().join("parts"), outside.path().join("back")).unwrap();
+    root.write("parts/first.md", "[Escape](outside/back/data.txt)\n");
+    root.write("parts/data.txt", "Inside");
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
+    assert!(resolve_workspace(&sources).is_err());
 }

@@ -641,6 +641,15 @@ fn resolve(
                             path: s.path.clone(),
                         }
                     });
+                    if !generated
+                        && let DocumentIdentity::Page { page } = &context.identity
+                        && let Some(prepared) = sources.prepared_pages().get(page)
+                    {
+                        crate::assembly::remap_include_diagnostic(
+                            &mut diagnostic,
+                            &prepared.source_ranges,
+                        );
+                    }
                     resolution.result.diagnostics.insert(diagnostic);
                 }
             },
@@ -827,7 +836,38 @@ impl Resolver<'_> {
         }
         let source = context.path.as_ref().ok_or(invalid)?;
         let candidate = source.parent().ok_or(invalid)?.join(file.as_ref());
-        let canonical = fs::canonicalize(&candidate).map_err(|_| invalid)?;
+        let included_repository = match &context.identity {
+            DocumentIdentity::Page { page } => self
+                .sources
+                .prepared_pages()
+                .get(page)
+                .filter(|prepared| prepared.included_resource_targets.contains(spelling))
+                .and_then(|prepared| {
+                    self.sources
+                        .paths()
+                        .repositories
+                        .iter()
+                        .find(|repository| repository.id == prepared.location.repository)
+                }),
+            _ => None,
+        };
+        let canonical = if let Some(repository) = included_repository {
+            // Validate the authored traversal before canonicalization can hide a
+            // symlink that leaves and reenters the repository.
+            let path = crate::paths::resolve_repository_target(
+                candidate
+                    .strip_prefix(&repository.path)
+                    .map_err(|_| invalid)?,
+                &repository.path,
+            )
+            .map_err(|_| invalid)?;
+            if crate::generated_storage::is_reserved(&path) {
+                return Err(invalid);
+            }
+            path
+        } else {
+            fs::canonicalize(&candidate).map_err(|_| invalid)?
+        };
         if kind != ReferenceKind::Image
             && let Some(ids) = self.pages.get(&canonical)
         {
@@ -855,6 +895,7 @@ impl Resolver<'_> {
             .iter()
             .map(|c| &c.source_root)
             .chain(self.sources.paths().packages.iter().map(|p| &p.path))
+            .chain(included_repository.map(|repository| &repository.path))
             .filter(|root| canonical.starts_with(root))
             .max_by_key(|root| root.components().count());
         // Unselected documents remain source links rather than downloadable pages.
