@@ -1,7 +1,13 @@
 # Markdown include contract
 
-This document defines the planned include behavior. Includes are not yet
-implemented. The implementation slices are tracked in [TODO.md](../../TODO.md).
+This document defines the include contract. Whole-file and nested expansion,
+cycle detection, and parser diagnostic attribution are implemented for static
+GFM and QMD collections. Prepared pages retain source ranges and include chains.
+Relative resource resolution and portable source-map retention remain pending,
+so includes are not yet documented as a complete authoring feature. Executable
+QMD pages with includes produce an explicit error until the execution engine can
+verify expanded inputs. The remaining slices are tracked in
+[TODO.md](../../TODO.md).
 
 ## Authoring syntax
 

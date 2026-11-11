@@ -294,7 +294,7 @@ implemented as an optional `serve --live-reload` feature.
     VitePress syntax for GFM, Quarto syntax for QMD, paths relative to each
     included file, collection-root paths, repository boundaries, and errors
     for missing or invalid inputs.
-  - [ ] Implement whole-file and nested includes with cycle detection. Retain
+  - [x] Implement whole-file and nested includes with cycle detection. Retain
     each included file's source path and line locations so diagnostics can
     identify the included source and its include chain.
   - [ ] Resolve relative links and images from the included file's location,
@@ -303,6 +303,9 @@ implemented as an optional `serve --live-reload` feature.
     pages when an included file changes, is created, or is removed.
   - [ ] Preserve expanded content, source locations, and referenced assets in
     portable snapshots so `generate` works without the original source tree.
+  - [ ] Integrate expanded QMD with execution identity, input verification,
+    caching, and execution diagnostics before enabling executable pages with
+    includes. Static expansion must not bypass the engine's source checks.
   - [ ] Add partial-file selection after whole-file inclusion works: line
     ranges, named regions, and heading anchors, with diagnostics for invalid
     or missing selections and source locations retained after selection.

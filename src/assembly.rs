@@ -32,6 +32,7 @@ mod authored;
 mod documenter;
 mod documenter_examples;
 mod doxygen_native;
+mod includes;
 mod julia_runtime;
 pub(crate) use julia_runtime::assemble_for_extraction;
 #[cfg(target_os = "linux")]
@@ -42,6 +43,8 @@ mod rd_examples;
 mod references;
 mod rmarkdown;
 mod rust_native;
+
+pub use includes::IncludeSourceRange;
 
 /// Conventional license inputs shared by package discovery and preview watching.
 pub(crate) const PACKAGE_LICENSE_FILENAMES: &[&str] = &[
@@ -95,6 +98,7 @@ pub enum AssemblyError {
 /// One original authored page and its optional QMD preparation.
 #[derive(Debug)]
 pub struct PreparedPage {
+    pub(crate) source_ranges: Vec<IncludeSourceRange>,
     pub(crate) source: String,
     pub(crate) path: PathBuf,
     pub(crate) relative: DiagnosticPath,
@@ -103,7 +107,11 @@ pub struct PreparedPage {
     pub(crate) preparation: Option<QmdPreparation>,
 }
 impl PreparedPage {
-    /// Exact original UTF-8 source used for parsing and execution identity.
+    /// Original file ranges and include chains for the expanded source.
+    pub fn source_ranges(&self) -> &[IncludeSourceRange] {
+        &self.source_ranges
+    }
+    /// Expanded UTF-8 source used for parsing and execution identity.
     pub fn source(&self) -> &str {
         &self.source
     }

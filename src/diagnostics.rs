@@ -10,6 +10,9 @@ use crate::ir::SourceSpan;
 /// Stable diagnostic identifier.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DiagnosticCode {
+    /// An authored Markdown include cannot be expanded.
+    #[serde(rename = "invalid-markdown-include")]
+    InvalidMarkdownInclude,
     /// A local image exists but fails image format or inert SVG validation.
     #[serde(rename = "invalid-content-image")]
     InvalidContentImage,
@@ -394,6 +397,7 @@ impl DiagnosticCode {
             Self::RRdInformationLoss => "r-rd-information-loss",
             Self::RRdSourceAttribution => "r-rd-source-attribution",
             Self::UnsupportedRd => "unsupported-rd",
+            Self::InvalidMarkdownInclude => "invalid-markdown-include",
             Self::InvalidComponent => "invalid-component",
             Self::UnsupportedAuthoredSyntax => "unsupported-authored-syntax",
             Self::InvalidEmbeddedYaml => "invalid-embedded-yaml",

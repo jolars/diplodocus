@@ -98,9 +98,43 @@ pub(super) fn assemble(
             seen.insert(key);
             let text = fs::read_to_string(&path)?;
             observe(observed, &location, fingerprint_bytes(text.as_bytes()))?;
+            let expanded = super::includes::expand(
+                &text,
+                &path,
+                &resolved.source_root,
+                repository,
+                collection.format,
+            )?;
+            for (input, content) in &expanded.inputs {
+                observe(observed, input, fingerprint_bytes(content.as_bytes()))?;
+                selections
+                    .package_documentation
+                    .entry(repository.id.clone())
+                    .or_default()
+                    .push(PathBuf::from(input.path.as_str()));
+            }
+            let text = expanded.text;
             let prepared = prepare_collection_document(&text, collection).map_err(|error| {
                 AssemblyError::Diagnostics(vec![error.to_diagnostic(&collection.id)])
             })?;
+            if prepared
+                .preparation
+                .as_ref()
+                .is_some_and(|p| p.execution_eligible)
+                && let Some(directive) = expanded
+                    .ranges
+                    .iter()
+                    .find_map(|range| range.include_chain.first())
+            {
+                let mut diagnostic = Diagnostic::new(
+                    DiagnosticCode::InvalidMarkdownInclude,
+                    Severity::Error,
+                    "Executable QMD pages with includes are not supported yet.",
+                );
+                diagnostic.source = Some(source(directive));
+                diagnostic.span = directive.span;
+                return Err(AssemblyError::Diagnostics(vec![diagnostic]));
+            }
             let relative = portable(relative)?;
             let mut parsed = prepared.parsed.with_context(
                 source(&location),
@@ -131,6 +165,9 @@ pub(super) fn assemble(
                         .push(PathBuf::from(location.path.as_str()));
                 }
                 super::rmarkdown::citations::resolve(&mut parsed.document, &path, repository)?;
+            }
+            for diagnostic in &mut parsed.diagnostics {
+                super::includes::remap(diagnostic, &expanded.ranges);
             }
             workspace.diagnostics.extend(parsed.diagnostics);
             // Length prefixes keep collection/path punctuation from aliasing another page.
@@ -177,6 +214,7 @@ pub(super) fn assemble(
             pages.insert(
                 id,
                 PreparedPage {
+                    source_ranges: expanded.ranges,
                     source: text,
                     path,
                     relative,
