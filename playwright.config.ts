@@ -30,7 +30,8 @@ export default defineConfig({
     command: "node scripts/site.mjs serve-test",
     wait: { stderr: /Serving http:\/\/127\.0\.0\.1:(?<DIPLODOCUS_PREVIEW_PORT>\d+)/ },
     reuseExistingServer: false,
-    timeout: 60_000,
+    // Fresh workspaces run native extraction and examples before the server listens.
+    timeout: 180_000,
     gracefulShutdown: { signal: "SIGTERM", timeout: 10_000 },
   },
 });
