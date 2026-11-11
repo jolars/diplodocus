@@ -41,6 +41,10 @@ presentation:
   site-url: "${publicRoot}"
   canonical-url-style: "${style}"
   description: "Nested documentation"
+  pages:
+    guides/nested.html:
+      title: "Explore diagrams · URL navigation"
+      description: 'Fit circles & "ellipses".'
   assets:
     - { repository: docs, path: logo.png, publish: public/icon.png }
     - { repository: docs, path: site.webmanifest, publish: site.webmanifest }
@@ -184,17 +188,24 @@ for (const style of ["file", "clean"]) {
       await expect(page).toHaveURL(`${origin}${nestedPath}`);
       await expect(page.locator("body")).toHaveAttribute("data-layout", "docs");
       await stableNavbar();
-      await expect(page).toHaveTitle("Nested guide · URL navigation");
+      await expect(page).toHaveTitle("Explore diagrams · URL navigation");
       await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", `${publicRoot}guides/nested${suffix}`);
       await expect(page.locator('link[rel="alternate"][type="text/markdown"]')).toHaveAttribute("href", `${origin}${prefix}guides/nested.md`);
       await expect(page.locator('meta[property="og:url"]')).toHaveAttribute("content", `${publicRoot}guides/nested${suffix}`);
-      await expect(page.locator('meta[property="og:title"]')).toHaveAttribute("content", "Nested guide · URL navigation");
-      await expect(page.locator('meta[name="twitter:title"]')).toHaveAttribute("content", "Nested guide · URL navigation");
+      await expect(page.locator('meta[property="og:title"]')).toHaveAttribute("content", "Explore diagrams · URL navigation");
+      await expect(page.locator('meta[name="twitter:title"]')).toHaveAttribute("content", "Explore diagrams · URL navigation");
+      for (const selector of ['meta[name="description"]', 'meta[property="og:description"]', 'meta[name="twitter:description"]']) {
+        await expect(page.locator(selector)).toHaveAttribute("content", 'Fit circles & "ellipses".');
+      }
       await expect(page.locator(".brand")).toHaveAttribute("href", `${origin}${homePath}`);
       await expect(page.locator(".brand-logo")).toHaveAttribute("src", logoSource!);
       await expect(page.locator(".contextual-nav").getByRole("link", { name: "Overview", exact: true, includeHidden: true })).toHaveAttribute("href", `${origin}${nestedPath}`);
       await openSection("Reference");
       await expect(page.getByRole("heading", { level: 1 })).toHaveText("Reference");
+      await expect(page).toHaveTitle("Reference · URL navigation");
+      for (const selector of ['meta[name="description"]', 'meta[property="og:description"]', 'meta[name="twitter:description"]']) {
+        await expect(page.locator(selector)).toHaveAttribute("content", "Nested documentation");
+      }
       await expect(page.locator('.desktop-sections [aria-current="true"]')).toHaveText("Reference");
       await expect(page.locator(".contextual-nav a")).toHaveText(["Overview", "Commands"]);
       await page.getByRole("main").getByRole("link", { name: "Commands", exact: true }).click();

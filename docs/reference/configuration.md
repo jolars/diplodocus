@@ -230,6 +230,7 @@ or HTML.
 | --- | --- | --- | --- |
 | `title` | string | `project.name` | Site title and branding. |
 | `description` | string | Unset | Site-wide HTML description and social preview description. |
+| `pages` | mapping | `{}` | Head metadata overrides keyed by generated site-relative HTML path. |
 | `site-url` | URL | Unset | Public site root, including any hosting prefix. Enables canonical links, `sitemap.xml`, and `robots.txt`. |
 | `canonical-url-style` | string | `file` | `file` preserves HTML filenames; `clean` uses directory URLs for indexes and removes other `.html` suffixes from links. |
 | `home` | mapping | Unset | Full-width homepage content. |
@@ -247,6 +248,23 @@ parameters, fragments, or whitespace. Diplodocus treats it as a directory root.
 Clean URLs require hosting support; output filenames keep their `.html`
 extensions. Ambiguous clean routes fail generation. See
 [site appearance](../guide/presentation.md) for examples and deployment details.
+
+### Page metadata
+
+Each entry in `presentation.pages` names a generated HTML path, such as
+`packages/python/index.html`, without a leading slash or hosting prefix. The
+path includes `.html` with either URL style and must name an existing page.
+
+| Option | Type | Default | Purpose |
+| --- | --- | --- | --- |
+| `title` | string | Page title with site suffix | Complete HTML and social card title. No suffix is added to overrides. Must not be blank. |
+| `description` | string | `presentation.description` | HTML and social card description. An empty string emits empty description tags. |
+
+Overrides affect head metadata. Headings, navigation, search, and Markdown keep
+their existing titles. Without an override, matching page and site titles appear
+once. See [page titles and
+descriptions](../guide/presentation.md#page-titles-and-descriptions) for
+precedence and examples.
 
 ### Homepage
 

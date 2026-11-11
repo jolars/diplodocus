@@ -30,6 +30,49 @@ toggle in the header, or in the navigation menu on phones. The browser remembers
 their light or dark choice across visits. With JavaScript disabled, the theme
 follows the system preference.
 
+## Page titles and descriptions {#page-titles-and-descriptions}
+
+Use `presentation.pages` to override head metadata for individual pages,
+including generated package overviews, license pages, and API references:
+
+```yaml
+presentation:
+  title: Eunoia
+  description: Area-proportional Euler and Venn diagrams.
+  pages:
+    index.html:
+      title: Eunoia
+    packages/julia/index.html:
+      title: Eunoia for Julia · Eunoia
+      description: Fit Euler diagrams with the Eunoia.jl package.
+    packages/python/license.html:
+      title: Python license · Eunoia
+```
+
+Keys name generated HTML paths relative to the site root, including `.html`.
+They omit a leading slash and any hosting prefix, even with clean URLs. Use the
+generated reference page's HTML path for an API override. Redirect sources,
+fragments, and paths that do not name generated pages are rejected.
+
+An explicit `title` supplies the complete browser tab and social card title.
+Diplodocus does not append the site title to an override. Without an override,
+the title uses the existing authored or generated page title followed by ` · `
+and the site title. If both titles match, the title appears once. Title
+overrides must not be empty or contain only whitespace. They do not change
+headings, navigation labels, search titles, Markdown companions, or API names.
+Duplicate HTML title diagnostics use the resolved titles.
+
+A page `description` takes precedence over `presentation.description`. Omitting
+it inherits the site description; if neither is set, description tags are
+omitted. An empty string clears the description by emitting empty tags. Titles
+and descriptions are plain text and are escaped for HTML. The resolved values
+supply the HTML title and description, Open Graph, and Twitter cards. Social
+cards still require `presentation.open-graph`.
+
+Snapshots retain these declarations. `build`, detached `generate`, and native
+`serve` resolve the same metadata. Preview rebuilds after configuration edits.
+Fragment bundles leave head metadata to their frontend.
+
 ## Public assets and icons {#public-assets-and-icons}
 
 Declare files that must appear at stable public paths, including files that no
@@ -174,8 +217,9 @@ well for a wide preview. The image can live outside content collections and
 follows the same path and symlink rules as the navbar logo.
 
 Every generated HTML page receives Open Graph metadata and a large-image
-Twitter card. The preview uses that page's title and canonical URL, the site
-name and description, and the shared image with its dimensions and alt text.
+Twitter card. The preview uses that page's resolved title, description, and
+canonical URL, the site name, and the shared image with its dimensions and alt
+text.
 Image URLs are absolute and include any hosting prefix from `site-url`.
 Diplodocus validates and stores the image in the snapshot, so `generate` needs
 no source checkout. `serve` watches the image for changes. Omitting the mapping

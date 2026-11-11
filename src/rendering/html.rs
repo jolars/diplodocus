@@ -143,6 +143,7 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
     let math_context = katex::KatexContext::default();
     let highlighter = super::highlighting::Highlighter::new();
     for (route, page) in &site.pages {
+        let metadata = site.page_metadata(route, page);
         let home = site.home(route);
         let full_layout = page.has_full_layout();
         let markdown_path = format!(
@@ -229,7 +230,7 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
             html = format!(
                 "<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><script>{THEME_SCRIPT}</script>",
             );
-            if let Some(description) = &site.presentation.description {
+            if let Some(description) = metadata.description {
                 write!(
                     html,
                     "<meta name=\"description\" content=\"{}\">",
@@ -240,9 +241,9 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
             if let Some(url) = site.canonical_urls.get(route) {
                 write!(html, "<link rel=\"canonical\" href=\"{}\">", escape(url)).unwrap();
             }
-            super::social::render(&mut html, site, route, &page.title)?;
+            super::social::render(&mut html, site, route, &metadata)?;
             render_public_links(&mut html, site, route);
-            write!(html, "<title>{} · {}</title><link rel=\"stylesheet\" href=\"{}\"><script defer src=\"{}\"></script><script defer src=\"{}\"></script><script defer src=\"{}\"></script><script defer src=\"{}\"></script>", escape(&page.title), escape(site.title()), escape(&site.url(route, "assets/site.css")), escape(&site.url(route, "assets/search.js")), escape(&site.url(route, "assets/nav.js")), escape(&site.url(route, "assets/code.js")), escape(&site.url(route, "assets/tabsets.js"))).unwrap();
+            write!(html, "<title>{}</title><link rel=\"stylesheet\" href=\"{}\"><script defer src=\"{}\"></script><script defer src=\"{}\"></script><script defer src=\"{}\"></script><script defer src=\"{}\"></script>", escape(&metadata.title), escape(&site.url(route, "assets/site.css")), escape(&site.url(route, "assets/search.js")), escape(&site.url(route, "assets/nav.js")), escape(&site.url(route, "assets/code.js")), escape(&site.url(route, "assets/tabsets.js"))).unwrap();
             if page_math {
                 write!(
                     html,

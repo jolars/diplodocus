@@ -74,8 +74,11 @@ pub struct PresentationDefaults {
     pub icons: Vec<SiteIcon>,
     /// Site title and branding; `None` uses the workspace's project name.
     pub title: Option<String>,
-    /// Site-wide HTML description; `None` omits the description metadata.
+    /// Default HTML and social description, overridden by page metadata.
     pub description: Option<String>,
+    /// Metadata overrides keyed by generated site-relative HTML path.
+    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
+    pub pages: BTreeMap<String, PageMetadata>,
     /// Optional full-width homepage, with the same navbar as documentation pages.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub home: Option<HomeDefaults>,
@@ -107,6 +110,18 @@ pub struct PresentationDefaults {
     /// Optional notices and links shown at the bottom of every page.
     #[serde(skip_serializing_if = "FooterDefaults::is_default")]
     pub footer: FooterDefaults,
+}
+
+/// Head metadata for a generated page, independent of its visible content.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, rename_all = "kebab-case", deny_unknown_fields)]
+pub struct PageMetadata {
+    /// Complete browser and social card title, without an automatic site suffix.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    /// Page description; omission inherits the site description.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
 }
 
 /// A public file copied from a declared repository to an explicit site path.

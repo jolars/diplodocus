@@ -250,7 +250,7 @@ with external tools such as Vite, following the browser component contract.
   during `serve`, and validate icon references and collisions with generated
   output. Verify equivalent assets in native preview and generation from a
   relocated snapshot without the source checkout.
-- [ ] Add per-page descriptions and title overrides for generated package and
+- [x] Add per-page descriptions and title overrides for generated package and
   API pages. Define precedence with site defaults and existing authored
   titles, and apply resolved metadata consistently to HTML, Open Graph, and
   Twitter cards. Define how title overrides affect headings, navigation, and

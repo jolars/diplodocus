@@ -62,7 +62,7 @@ fn presentation_defaults_are_explicit_even_when_omitted_in_configuration() {
     );
     let rendered = render_site(&Site::new(&snapshot).unwrap()).unwrap();
     let html = std::str::from_utf8(&rendered.files()["index.html"].bytes).unwrap();
-    assert!(html.contains("<title>Foo · Foo</title>"));
+    assert!(html.contains("<title>Foo</title>"));
     assert!(!html.contains("<meta name=\"description\""));
 }
 
@@ -136,7 +136,7 @@ fn metadata_survives_relocation_and_loading_without_source_checkouts() {
 
     let rendered = render_site(&Site::new(&loaded).unwrap()).unwrap();
     let html = std::str::from_utf8(&rendered.files()["index.html"].bytes).unwrap();
-    assert!(html.contains("<title>Foo &amp; friends · Foo &amp; friends</title>"));
+    assert!(html.contains("<title>Foo &amp; friends</title>"));
     assert!(
         html.contains(
             "<meta name=\"description\" content=\"A &quot;portable&quot; &lt;guide&gt;\">"

@@ -1,7 +1,7 @@
 use std::fmt::Write;
 use std::io::Cursor;
 
-use crate::site::{Site, SiteError};
+use crate::site::{ResolvedPageMetadata, Site, SiteError};
 
 use super::html::escape;
 
@@ -9,7 +9,7 @@ pub(super) fn render(
     html: &mut String,
     site: &Site<'_>,
     route: &str,
-    page_title: &str,
+    metadata: &ResolvedPageMetadata<'_>,
 ) -> Result<(), SiteError> {
     let (Some(declaration), Some(image)) = (&site.presentation.open_graph, site.open_graph) else {
         return Ok(());
@@ -30,11 +30,7 @@ pub(super) fn render(
         .map_err(|_| SiteError::Evidence)?
         .into_dimensions()
         .map_err(|_| SiteError::Evidence)?;
-    let title = if page_title == site.title() {
-        page_title.to_owned()
-    } else {
-        format!("{page_title} · {}", site.title())
-    };
+    let title = &metadata.title;
     for (property, content) in [
         ("og:type", "website"),
         ("og:title", title.as_str()),
@@ -59,7 +55,7 @@ pub(super) fn render(
         )
         .unwrap();
     }
-    if let Some(description) = &site.presentation.description {
+    if let Some(description) = metadata.description {
         write!(
             html,
             "<meta property=\"og:description\" content=\"{}\">",

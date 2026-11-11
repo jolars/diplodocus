@@ -95,6 +95,12 @@ pub(crate) struct PageModel<'a> {
     pub api_page: Option<crate::rendering::members::ApiPage<'a>>,
     pub julia_sections: Vec<crate::rendering::julia::JuliaSection>,
 }
+
+pub(crate) struct ResolvedPageMetadata<'a> {
+    pub title: String,
+    pub description: Option<&'a str>,
+}
+
 impl PageModel<'_> {
     pub(crate) fn has_full_layout(&self) -> bool {
         self.item.is_none()
@@ -560,6 +566,22 @@ impl<'a> Site<'a> {
                 ));
             }
         }
+        for (route, metadata) in &site.presentation.pages {
+            if !site.pages.contains_key(route) {
+                return Err(SiteError::Presentation(format!(
+                    "presentation.pages key must name a generated site-relative HTML path: {route:?}"
+                )));
+            }
+            if metadata
+                .title
+                .as_ref()
+                .is_some_and(|title| title.trim().is_empty())
+            {
+                return Err(SiteError::Presentation(format!(
+                    "presentation.pages[{route:?}].title must not be empty"
+                )));
+            }
+        }
         site.assign_canonical_urls()?;
         site.assign_redirects()?;
         crate::site_assets::validate_routes(&site)?;
@@ -667,6 +689,27 @@ impl<'a> Site<'a> {
             .unwrap_or(&self.workspace.name)
     }
 
+    pub(crate) fn page_metadata<'s>(
+        &'s self,
+        route: &str,
+        page: &PageModel<'_>,
+    ) -> ResolvedPageMetadata<'s> {
+        let metadata = self.presentation.pages.get(route);
+        let title = metadata
+            .and_then(|metadata| metadata.title.clone())
+            .unwrap_or_else(|| {
+                if page.title == self.title() {
+                    page.title.clone()
+                } else {
+                    format!("{} · {}", page.title, self.title())
+                }
+            });
+        let description = metadata
+            .and_then(|metadata| metadata.description.as_deref())
+            .or(self.presentation.description.as_deref());
+        ResolvedPageMetadata { title, description }
+    }
+
     /// Warn when multiple visible pages have the same rendered HTML title.
     /// Warnings name generated paths and do not alter page titles or visibility.
     pub fn title_diagnostics(&self) -> Vec<crate::diagnostics::Diagnostic> {
@@ -675,7 +718,13 @@ impl<'a> Site<'a> {
         for (route, page) in &self.pages {
             if page.visible {
                 titles
-                    .entry(page.title.split_whitespace().collect::<Vec<_>>().join(" "))
+                    .entry(
+                        self.page_metadata(route, page)
+                            .title
+                            .split_whitespace()
+                            .collect::<Vec<_>>()
+                            .join(" "),
+                    )
                     .or_default()
                     .push(route);
             }
@@ -684,7 +733,6 @@ impl<'a> Site<'a> {
             .into_iter()
             .filter(|(_, routes)| routes.len() > 1)
             .map(|(title, routes)| {
-                let title = format!("{title} · {}", self.title());
                 Diagnostic::new(
                     DiagnosticCode::DuplicatePageTitle,
                     Severity::Warning,
