@@ -3,23 +3,41 @@
 use panache_parser::syntax::BlockNode;
 use panache_parser::{Flavor, ParserOptions};
 
-use super::*;
-use crate::documents::AuthoredFormat;
-use crate::ir::SourceSpan;
+use std::fs;
+use std::path::{Path, PathBuf};
 
-pub(super) struct Expanded {
+use crate::diagnostics::{Diagnostic, DiagnosticCode, DiagnosticSource, Severity};
+use crate::documents::AuthoredFormat;
+use crate::ir::{IncludeSourceRange, SourceLocation, SourceSpan};
+
+#[derive(Debug, thiserror::Error)]
+pub(crate) enum IncludeError {
+    #[error(transparent)]
+    Path(#[from] crate::paths::PathResolutionError),
+    #[error("Markdown include expansion failed")]
+    Diagnostics(Vec<Diagnostic>),
+}
+
+fn source(location: &SourceLocation) -> DiagnosticSource {
+    DiagnosticSource::Repository {
+        repository: location.repository.clone(),
+        path: location.path.clone(),
+    }
+}
+
+pub(crate) struct Expanded {
     pub text: String,
     pub ranges: Vec<IncludeSourceRange>,
     pub inputs: Vec<(SourceLocation, String)>,
 }
 
-pub(super) fn expand(
+pub(crate) fn expand(
     text: &str,
     path: &Path,
     root: &Path,
     repository: &crate::paths::ResolvedRepositoryPaths,
     format: AuthoredFormat,
-) -> Result<Expanded, AssemblyError> {
+) -> Result<Expanded, IncludeError> {
     expand_with_inputs(text, path, root, repository, format, &mut |_| {})
 }
 
@@ -45,7 +63,7 @@ fn expand_with_inputs(
     repository: &crate::paths::ResolvedRepositoryPaths,
     format: AuthoredFormat,
     on_input: &mut dyn FnMut(&Path),
-) -> Result<Expanded, AssemblyError> {
+) -> Result<Expanded, IncludeError> {
     let mut expanded = Expanded {
         text: String::new(),
         ranges: Vec::new(),
@@ -79,7 +97,7 @@ struct Context<'a> {
 }
 
 impl Context<'_> {
-    fn error(&self, location: &SourceLocation, message: &str) -> AssemblyError {
+    fn error(&self, location: &SourceLocation, message: &str) -> IncludeError {
         let mut diagnostic = Diagnostic::new(
             DiagnosticCode::InvalidMarkdownInclude,
             Severity::Error,
@@ -88,10 +106,10 @@ impl Context<'_> {
         diagnostic.source = Some(source(location));
         diagnostic.span = location.span;
         append_chain(&mut diagnostic, &self.chain);
-        AssemblyError::Diagnostics(vec![diagnostic])
+        IncludeError::Diagnostics(vec![diagnostic])
     }
 
-    fn file(&mut self, path: &Path, text: &str) -> Result<(), AssemblyError> {
+    fn file(&mut self, path: &Path, text: &str) -> Result<(), IncludeError> {
         (self.on_input)(path);
         let location = self.repository.source_location(path, None)?;
         let canonical = self.repository.path.join(location.path.as_str());
@@ -260,7 +278,7 @@ fn append_chain(diagnostic: &mut Diagnostic, chain: &[SourceLocation]) {
     }
 }
 
-pub(super) fn resource_target(
+pub(crate) fn resource_target(
     target: &str,
     span: SourceSpan,
     page: &SourceLocation,

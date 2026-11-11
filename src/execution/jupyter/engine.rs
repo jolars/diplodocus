@@ -17,7 +17,7 @@ use crate::execution::assets::PageAssetStore;
 use crate::execution::cache::{self, Lookup};
 use crate::execution::identity::{
     BuildObservation, IdentityInputs, LaunchIdentityInput, RepositoryFile, RuntimeObservation,
-    snapshot_inputs, validate_prepared,
+    SourceSnapshot, snapshot_source_inputs, validate_prepared,
 };
 use crate::execution::output_safety::AuthoredOutputContext;
 use crate::execution::validated::DiagnosticEvidence;
@@ -41,6 +41,7 @@ pub struct JupyterEngine {
     declared_files: Vec<RepositoryFile>,
     environment: Option<SearchEnvironment>,
     cache_root: Option<PathBuf>,
+    source_root: Option<PathBuf>,
 }
 
 impl std::fmt::Debug for JupyterEngine {
@@ -60,12 +61,22 @@ impl JupyterEngine {
             declared_files,
             environment: None,
             cache_root: None,
+            source_root: None,
         }
     }
 
     /// Enable the private local page cache at the supplied root, without I/O.
     pub fn with_cache_root(mut self, root: PathBuf) -> Self {
         self.cache_root = Some(root);
+        self
+    }
+
+    /// Expand QMD includes from this configured collection's canonical source root.
+    ///
+    /// The engine rereads and expands the source itself before checking the
+    /// request. All original inputs are rechecked after execution or cache use.
+    pub fn with_source_root(mut self, root: PathBuf) -> Self {
+        self.source_root = Some(root);
         self
     }
 
@@ -106,7 +117,7 @@ impl JupyterEngine {
             request,
             &source,
         );
-        let prepared = tokio::select! {
+        let (prepared, source_snapshot) = tokio::select! {
             biased;
             _ = &mut context.cancellation => return Err(cancelled(&source)),
             result = preparing => result?,
@@ -169,16 +180,15 @@ impl JupyterEngine {
                 let reduced = reducer
                     .finish()
                     .map_err(|failure| with_discovery(failure, &before))?;
-                let reading = self.read_source(
-                    &context.repository_root, &context.page_path, request, &source,
-                );
-                let current = tokio::select! {
+                let file = RepositoryFile {
+                    repository: request.page.source.repository.clone(),
+                    path: request.page.source.path.clone(),
+                };
+                let checking = source_snapshot.revalidate(&self.repositories, &file);
+                tokio::select! {
                     biased;
                     _ = &mut context.cancellation => return Err(with_discovery(cancelled(&source), &before)),
-                    result = reading => result.map_err(|failure| with_discovery(failure, &before))?,
-                };
-                if current != prepared.source() {
-                    return Err(with_discovery(changed(&source), &before));
+                    result = checking => result.map_err(|_| with_discovery(changed(&source), &before))?,
                 }
                 return finalize(&prepared, reduced, before, None, &mut assets, &source);
             }
@@ -199,7 +209,7 @@ impl JupyterEngine {
                 let build = BuildObservation::observe()
                     .await
                     .map_err(|_| changed(&source))?;
-                let snapshot = snapshot_inputs(
+                let snapshot = snapshot_source_inputs(
                     IdentityInputs {
                         repositories: self.repositories.clone(),
                         page: RepositoryFile {
@@ -211,7 +221,7 @@ impl JupyterEngine {
                         launch: launch.clone(),
                     },
                     request,
-                    prepared.source(),
+                    source_snapshot,
                 )
                 .await?;
                 Ok::<_, ExecutionFailure>((build, snapshot))
@@ -366,15 +376,19 @@ impl JupyterEngine {
         page: &Path,
         request: &PageExecutionRequest,
         source: &FailureSource,
-    ) -> Result<PreparedExecution, ExecutionFailure> {
-        let bytes = self.read_source(root, page, request, source).await?;
-        let preparation = validate_prepared(request, &bytes).map_err(|_| changed(source))?;
+    ) -> Result<(PreparedExecution, SourceSnapshot), ExecutionFailure> {
+        let snapshot = self.read_source(root, page, request, source).await?;
+        let preparation =
+            validate_prepared(request, &snapshot.bytes).map_err(|_| changed(source))?;
         let authored = AuthoredOutputContext::new(
             request.page.source.clone(),
             request.page.collection.clone(),
             preparation.authored_anchors,
         );
-        PreparedExecution::checked(request.clone(), bytes, authored).map_err(|_| changed(source))
+        let prepared =
+            PreparedExecution::checked(request.clone(), snapshot.bytes.clone(), authored)
+                .map_err(|_| changed(source))?;
+        Ok((prepared, snapshot))
     }
 
     async fn read_source(
@@ -383,7 +397,7 @@ impl JupyterEngine {
         page: &Path,
         request: &PageExecutionRequest,
         source: &FailureSource,
-    ) -> Result<Vec<u8>, ExecutionFailure> {
+    ) -> Result<SourceSnapshot, ExecutionFailure> {
         if self
             .repositories
             .get(&request.page.source.repository)
@@ -408,7 +422,16 @@ impl JupyterEngine {
         {
             return Err(changed(source));
         }
-        tokio::fs::read(page).await.map_err(|_| changed(source))
+        SourceSnapshot::read(
+            &self.repositories,
+            &RepositoryFile {
+                repository: request.page.source.repository.clone(),
+                path: request.page.source.path.clone(),
+            },
+            self.source_root.as_deref(),
+        )
+        .await
+        .map_err(|_| changed(source))
     }
 }
 

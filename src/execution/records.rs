@@ -25,7 +25,7 @@ pub struct ExecutionPage {
     pub collection: String,
     /// Repository-relative page parent; `None` denotes the repository root.
     pub working_directory: Option<DiagnosticPath>,
-    /// Fingerprint of the entire original authored source, including prose.
+    /// Fingerprint of the entire prepared authored source, including prose and expanded includes.
     pub source_fingerprint: Fingerprint,
     /// Authored format; engine requests must use QMD.
     pub format: AuthoredFormat,
@@ -74,9 +74,9 @@ pub struct CellExecutionResult {
     pub ordinal: usize,
     /// Normalized authored language, when provided.
     pub language: Option<String>,
-    /// Full authored fence range.
+    /// Full authored fence range in the expanded source.
     pub span: SourceSpan,
-    /// Exact authored segments, preserving their original ranges.
+    /// Exact authored segments, preserving their ranges in the expanded source.
     pub source_segments: Vec<SourceSegment>,
     /// Exact submitted-byte fingerprint; absent for skipped cells.
     pub submitted_source_fingerprint: Option<Fingerprint>,

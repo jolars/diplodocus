@@ -143,24 +143,6 @@ pub(super) fn assemble(
                 .map_err(|error| {
                     AssemblyError::Diagnostics(vec![error.to_diagnostic(&collection.id)])
                 })?;
-            if prepared
-                .preparation
-                .as_ref()
-                .is_some_and(|p| p.execution_eligible)
-                && let Some(directive) = expanded
-                    .ranges
-                    .iter()
-                    .find_map(|range| range.include_chain.first())
-            {
-                let mut diagnostic = Diagnostic::new(
-                    DiagnosticCode::InvalidMarkdownInclude,
-                    Severity::Error,
-                    "Executable QMD pages with includes are not supported yet.",
-                );
-                diagnostic.source = Some(source(directive));
-                diagnostic.span = directive.span;
-                return Err(AssemblyError::Diagnostics(vec![diagnostic]));
-            }
             let relative = portable(relative)?;
             let mut parsed = prepared.parsed.with_context(
                 source(&location),

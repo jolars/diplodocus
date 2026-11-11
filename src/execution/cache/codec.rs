@@ -21,13 +21,7 @@ pub(super) fn envelope(bytes: &[u8], key: &CanonicalValue) -> Result<Value, Cano
     identity::validate_key_input(&fields["key_input"])?;
     require(fields["key_input"] == *key)?;
     require(fields["schema"] == CanonicalValue::String(SCHEMA.into()))?;
-    require(
-        fields["key"]
-            == CanonicalValue::String(identity::domain_digest(
-                "diplodocus/page-execution-key-v1",
-                key,
-            )?),
-    )?;
+    require(fields["key"] == CanonicalValue::String(identity::key_digest(key)?))?;
     require(
         fields["result_digest"]
             == CanonicalValue::String(identity::domain_digest(RESULT_DOMAIN, &fields["result"])?),
@@ -263,7 +257,7 @@ pub(super) fn encode(
         json!({"ir_schema":"execution-result-v1","provenance":provenance,"cells":cells,"diagnostics":diagnostics,"assets":page.record().assets.iter().map(asset).collect::<Vec<_>>()}),
     )?;
     let key_input = CanonicalValue::from_json(key.clone())?;
-    CanonicalValue::from_json(json!({"schema":SCHEMA,"key":identity::domain_digest("diplodocus/page-execution-key-v1", &key_input)?,"key_input":key,"result_digest":identity::domain_digest(RESULT_DOMAIN, &result)?,"result":json_value(&result)?}))?.encode()
+    CanonicalValue::from_json(json!({"schema":SCHEMA,"key":identity::key_digest(&key_input)?,"key_input":key,"result_digest":identity::domain_digest(RESULT_DOMAIN, &result)?,"result":json_value(&result)?}))?.encode()
 }
 
 pub(super) fn producing_provenance(

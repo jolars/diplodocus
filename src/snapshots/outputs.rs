@@ -2,7 +2,7 @@ use super::*;
 use serde::{Deserialize, Serialize};
 
 use crate::assembly::ExecutedWorkspace;
-use crate::documents::prepare_collection_document;
+use crate::documents::{includes, prepare_collection_document_with_resources};
 use crate::execution::output_safety::*;
 use crate::execution::validated::{
     DiagnosticEvidence, OutputProducer, OwnedRepresentation, SlotEvidence,
@@ -141,6 +141,16 @@ impl Snapshot {
     pub(super) fn restore_outputs(&self) -> Result<BTreeMap<String, ValidatedPage>, SnapshotError> {
         use super::validation::require;
         let mut restored = BTreeMap::new();
+        let source_maps: BTreeMap<_, _> = self
+            .documents
+            .iter()
+            .filter_map(|record| match &record.document {
+                crate::validation::DocumentIdentity::Page { page } => {
+                    Some((page, record.source_ranges.as_slice()))
+                }
+                _ => None,
+            })
+            .collect();
         for (id, stored) in &self.executions {
             let page = self
                 .workspace
@@ -187,7 +197,12 @@ impl Snapshot {
                     declared_environment_inputs: Vec::new(),
                 },
             };
-            let parsed = prepare_collection_document(raw, &configuration)
+            let ranges = source_maps.get(id).copied().unwrap_or_default();
+            let parsed =
+                prepare_collection_document_with_resources(raw, &configuration, &|target, span| {
+                    includes::resource_target(target, span, &stored.record.page.source, ranges)
+                        .unwrap_or_else(|| target.to_owned())
+                })
                 .map_err(|_| SnapshotError::Invalid("execution configuration"))?;
             let preparation = parsed
                 .preparation

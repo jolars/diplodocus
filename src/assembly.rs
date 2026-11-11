@@ -16,7 +16,7 @@ use std::path::{Path, PathBuf};
 use crate::configuration::{ConfigurationError, WorkspaceConfiguration, parse_configuration};
 use crate::configuration_validation::validate_configuration_with_source;
 use crate::diagnostics::{Diagnostic, DiagnosticCode, DiagnosticPath, DiagnosticSource, Severity};
-use crate::documents::QmdPreparation;
+use crate::documents::{QmdPreparation, includes};
 use crate::execution::{
     ExecutionCancellation, ExecutionDeadlines, ExecutionFailure, PageExecutionResult,
 };
@@ -33,7 +33,6 @@ mod authored;
 mod documenter;
 mod documenter_examples;
 mod doxygen_native;
-mod includes;
 mod julia_runtime;
 pub(crate) use julia_runtime::assemble_for_extraction;
 #[cfg(target_os = "linux")]
@@ -96,6 +95,15 @@ pub enum AssemblyError {
         /// Staging cleanup error.
         source: std::io::Error,
     },
+}
+
+impl From<includes::IncludeError> for AssemblyError {
+    fn from(error: includes::IncludeError) -> Self {
+        match error {
+            includes::IncludeError::Path(error) => Self::Path(error),
+            includes::IncludeError::Diagnostics(diagnostics) => Self::Diagnostics(diagnostics),
+        }
+    }
 }
 
 /// One original authored page and its optional QMD preparation.

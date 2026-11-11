@@ -18,7 +18,10 @@ pub fn validate_key_input(value: &CanonicalValue) -> Result<(), CanonicalError> 
         "deadlines_ms",
         "environment_inputs",
     ])?;
-    literal(&key["schema"], "page-execution-key-v1")?;
+    let schema = one_of(
+        &key["schema"],
+        &["page-execution-key-v1", "page-execution-key-v2"],
+    )?;
     let schemas = key["schemas"].fields(&["encoding", "artifact", "ir"])?;
     for (field, expected) in [
         ("encoding", "execution-json-v1"),
@@ -27,20 +30,48 @@ pub fn validate_key_input(value: &CanonicalValue) -> Result<(), CanonicalError> 
     ] {
         literal(&schemas[field], expected)?;
     }
-    let page = key["page"].fields(&[
+    let mut page_fields = vec![
         "repository",
         "collection",
         "path",
         "working_directory",
         "format",
         "source_digest",
-    ])?;
+    ];
+    if schema == "page-execution-key-v2" {
+        page_fields.extend(["collection_root", "source_inputs"]);
+    }
+    let page = key["page"].fields(&page_fields)?;
     nonempty(&page["repository"])?;
     nonempty(&page["collection"])?;
     path(&page["path"], false)?;
     path(&page["working_directory"], true)?;
     literal(&page["format"], "qmd")?;
     digest(&page["source_digest"])?;
+    if schema == "page-execution-key-v2" {
+        path(&page["collection_root"], true)?;
+        let mut last = None;
+        let mut main = false;
+        let inputs = array(&page["source_inputs"])?;
+        if inputs.len() < 2 {
+            return Err(CanonicalError);
+        }
+        for input in inputs {
+            let input = input.fields(&["repository", "path", "digest"])?;
+            let name = path(&input["path"], false)?;
+            if input["repository"] != page["repository"]
+                || last.is_some_and(|previous| previous >= name)
+            {
+                return Err(CanonicalError);
+            }
+            main |= input["path"] == page["path"];
+            digest(&input["digest"])?;
+            last = Some(name);
+        }
+        if !main {
+            return Err(CanonicalError);
+        }
+    }
     let options = key["options"].fields(&["mode", "page_veto", "defaults", "cells"])?;
     literal(&options["mode"], "execute")?;
     if options["page_veto"] != V::Bool(false) {
@@ -213,6 +244,22 @@ pub fn validate_key_input(value: &CanonicalValue) -> Result<(), CanonicalError> 
         last = Some(entry);
     }
     Ok(())
+}
+
+pub(crate) fn key_digest(value: &CanonicalValue) -> Result<String, CanonicalError> {
+    let V::Object(fields) = value else {
+        return Err(CanonicalError);
+    };
+    let domain = match fields.get("schema") {
+        Some(V::String(schema)) if schema == "page-execution-key-v1" => {
+            "diplodocus/page-execution-key-v1"
+        }
+        Some(V::String(schema)) if schema == "page-execution-key-v2" => {
+            "diplodocus/page-execution-key-v2"
+        }
+        _ => return Err(CanonicalError),
+    };
+    super::domain_digest(domain, value)
 }
 fn validate_options(value: &V, cell: bool) -> Result<(), CanonicalError> {
     let fields = if cell {

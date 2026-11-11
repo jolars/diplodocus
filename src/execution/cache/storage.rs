@@ -77,8 +77,7 @@ fn names(path: &Path, expected: BTreeSet<String>) -> io::Result<()> {
 }
 
 fn entry_path(root: &Path, key: &CanonicalValue) -> io::Result<PathBuf> {
-    let digest =
-        identity::domain_digest("diplodocus/page-execution-key-v1", key).map_err(|_| invalid())?;
+    let digest = identity::key_digest(key).map_err(|_| invalid())?;
     Ok(root.join("v1/sha256").join(&digest[7..]))
 }
 
@@ -103,7 +102,10 @@ fn load_entry(
     let value = codec::json_value(&canonical).map_err(|_| invalid())?;
     if value["schema"] != codec::SCHEMA
         || value["result"]["ir_schema"] != "execution-result-v1"
-        || value["key_input"]["schema"] != "page-execution-key-v1"
+        || !matches!(
+            value["key_input"]["schema"].as_str(),
+            Some("page-execution-key-v1" | "page-execution-key-v2")
+        )
         || value["key_input"]["schemas"]["encoding"] != "execution-json-v1"
         || value["key_input"]["schemas"]["artifact"] != codec::SCHEMA
         || value["key_input"]["schemas"]["ir"] != "execution-result-v1"

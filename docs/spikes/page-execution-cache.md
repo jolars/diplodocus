@@ -14,7 +14,8 @@ cleanup rules apply on hits as well as misses. Milestone 6 implemented storage
 and restore through the public Jupyter engine and executing commands; see the
 [implementation map](../design/execution.md).
 
-Use key schema `page-execution-key-v1`, artifact schema
+Pages without includes use key schema `page-execution-key-v1`. Composed QMD
+pages use the [v2 extension](#composed-qmd-pages). Both use artifact schema
 `page-execution-artifact-v1`, and canonical encoding `execution-json-v1`.
 Changes to field meanings, normalization, or encoding require a new schema.
 There is no migration, partial reuse, stale-result fallback, or shared/remote
@@ -104,6 +105,34 @@ before hashing. Source ranges, declaration origins, and overridden declarations
 belong to result provenance; the original source digest already covers them.
 Equivalent configuration defaults produce the same key, but edits to the page
 bytes invalidate it even when effective options are unchanged.
+
+### Composed QMD pages
+
+`page-execution-key-v2` extends the v1 key for pages with Markdown includes.
+Its domain is `diplodocus/page-execution-key-v2`; the artifact envelope and result
+digest keep their v1 schemas and domains. The closed key shape differs only in
+`schema` and the following `page` fields:
+
+- `source_digest` hashes the complete expanded QMD, including prose, frontmatter,
+  comments, and line endings.
+- `collection_root` is the repository-relative directory used for rooted include
+  paths, or `"."` for the repository root.
+- `source_inputs` lists `{repository, path, digest}` for the main file and every
+  included file. Entries use canonical repository-relative paths, sort by path,
+  and occur once per file, including empty files. Every entry belongs to the
+  page's repository. Digests hash each file's original bytes before expansion.
+
+The engine derives these facts by expanding the configured source itself. It
+checks repeated reads for agreement and re-expands before startup and after
+cleanup on both execution and cache restoration. The input paths, bytes, and
+source map must still match. Source inputs are distinct from explicitly declared
+environment inputs. Include directives and their targets therefore affect the
+key even when expanded bytes are unchanged. Paths contain no checkout prefix,
+so moving the same sources and cache together preserves identity.
+
+Cells, option origins, and result ranges refer to expanded source. Workspace
+diagnostics project authored ranges through the retained include source map;
+generated-fragment ranges keep their own coordinate system.
 
 ### Paths and declared files
 

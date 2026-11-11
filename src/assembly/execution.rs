@@ -67,11 +67,13 @@ impl WorkspaceSources {
                             .map_err(|_| AssemblyError::InputsChanged)
                     })
                     .collect::<Result<Vec<_>, _>>()?;
-                let engine = JupyterEngine::new(repositories.clone(), declared).with_cache_root(
-                    self.paths
-                        .configuration_directory
-                        .join(".diplodocus/cache/execution"),
-                );
+                let engine = JupyterEngine::new(repositories.clone(), declared)
+                    .with_source_root(self.paths.content[page.collection].source_root.clone())
+                    .with_cache_root(
+                        self.paths
+                            .configuration_directory
+                            .join(".diplodocus/cache/execution"),
+                    );
                 let request = PageExecutionRequest {
                     page: ExecutionPage {
                         source: page.location.clone(),
@@ -112,7 +114,20 @@ impl WorkspaceSources {
                     deadlines: options.deadlines,
                     cancellation: Box::pin(&mut options.cancellation),
                 };
-                let result = engine.execute_page(context, &request).await?;
+                let result =
+                    engine
+                        .execute_page(context, &request)
+                        .await
+                        .map_err(|mut failure| {
+                            for diagnostic in failure
+                                .diagnostics
+                                .iter_mut()
+                                .chain(&mut failure.cleanup_diagnostics)
+                            {
+                                remap_diagnostic(diagnostic, page);
+                            }
+                            failure
+                        })?;
                 let record = result.validated().record();
                 let document = &mut self
                     .workspace
@@ -128,7 +143,10 @@ impl WorkspaceSources {
                 }
                 self.workspace
                     .diagnostics
-                    .extend(record.diagnostics.iter().cloned());
+                    .extend(record.diagnostics.iter().cloned().map(|mut diagnostic| {
+                        remap_diagnostic(&mut diagnostic, page);
+                        diagnostic
+                    }));
                 pages.insert(id.clone(), result);
                 progress.advance();
             }
@@ -162,6 +180,12 @@ impl WorkspaceSources {
                 Err(error)
             }
         }
+    }
+}
+
+fn remap_diagnostic(diagnostic: &mut Diagnostic, page: &PreparedPage) {
+    if diagnostic.source == Some(source(&page.location)) {
+        super::includes::remap(diagnostic, &page.source_ranges);
     }
 }
 

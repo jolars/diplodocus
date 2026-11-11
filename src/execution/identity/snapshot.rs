@@ -6,7 +6,7 @@ use super::local::{
 };
 use super::{
     BuildObservation, CanonicalValue, IdentityError, LaunchIdentityInput, RepositoryFile,
-    content_digest, domain_digest,
+    SourceSnapshot, content_digest,
 };
 use crate::configuration::{
     ContentConfiguration, ExecutionConfiguration, ExecutionEngine, ExecutionMode,
@@ -62,7 +62,7 @@ pub struct RuntimeObservation {
 pub struct InputSnapshot {
     inputs: IdentityInputs,
     request: PageExecutionRequest,
-    source: Vec<u8>,
+    source: SourceSnapshot,
     files: Vec<(RepositoryFile, Vec<u8>)>,
     environment: Vec<InputFingerprint>,
 }
@@ -104,14 +104,28 @@ pub async fn snapshot_inputs(
     request: &PageExecutionRequest,
     prepared_source: &[u8],
 ) -> Result<InputSnapshot, ExecutionFailure> {
-    capture(inputs, request, prepared_source)
+    let source = SourceSnapshot::read(&inputs.repositories, &inputs.page, None)
+        .await
+        .map_err(|_| failure(request))?;
+    if source.bytes != prepared_source {
+        return Err(failure(request));
+    }
+    snapshot_source_inputs(inputs, request, source).await
+}
+
+pub(crate) async fn snapshot_source_inputs(
+    inputs: IdentityInputs,
+    request: &PageExecutionRequest,
+    source: SourceSnapshot,
+) -> Result<InputSnapshot, ExecutionFailure> {
+    capture(inputs, request, source)
         .await
         .map_err(|_| failure(request))
 }
 async fn capture(
     inputs: IdentityInputs,
     request: &PageExecutionRequest,
-    prepared_source: &[u8],
+    source: SourceSnapshot,
 ) -> Result<InputSnapshot, IdentityError> {
     roots(&inputs.repositories).await?;
     validate_build(&inputs.build)?;
@@ -138,13 +152,13 @@ async fn capture(
     {
         return Err(IdentityError);
     }
-    let source = read_declared(&inputs.repositories, &inputs.page).await?;
-    if source != prepared_source
-        || digest(&request.page.source_fingerprint)? != content_digest(&source)
-    {
+    source
+        .revalidate(&inputs.repositories, &inputs.page)
+        .await?;
+    if digest(&request.page.source_fingerprint)? != content_digest(&source.bytes) {
         return Err(IdentityError);
     }
-    validate_prepared(request, &source)?;
+    validate_prepared(request, &source.bytes)?;
     inputs.launch.revalidate().await?;
     let mut declarations = inputs.declared_files.clone();
     declarations.sort();
@@ -324,7 +338,7 @@ impl InputSnapshot {
             .collect();
         let environment:Vec<_>=self.environment.iter().map(|e|Ok(json!({"repository":e.source.repository,"path":e.source.path,"digest":digest(&e.fingerprint)?}))).collect::<Result<_,IdentityError>>()?;
         let policies = ExecutionPolicies::default();
-        let value = canonical(json!({
+        let mut value = json!({
             "schema":"page-execution-key-v1","schemas":{"encoding":"execution-json-v1","artifact":"page-execution-artifact-v1","ir":"execution-result-v1"},
             "page":{"repository":request.page.source.repository,"collection":request.page.collection,"path":request.page.source.path,"working_directory":request.page.working_directory.as_ref().map_or(".",|p|p.as_str()),"format":"qmd","source_digest":digest(&request.page.source_fingerprint)?},
             "options":{"mode":"execute","page_veto":false,"defaults":defaults(&request.defaults),"cells":cells},
@@ -332,8 +346,21 @@ impl InputSnapshot {
             "policies":{"qmd":request.page.qmd_policy,"execution":policies.execution,"mime":policies.mime,"html":policies.html,"svg":policies.svg},
             "components":components,"platform":build.platform,"deadlines_ms":deadlines,"environment_inputs":environment,
             "kernel":{"name":self.inputs.launch.selector(),"spec_digest":self.inputs.launch.spec_digest(),"launch_digest":self.inputs.launch.launch_digest(),"search":self.inputs.launch.search(),"interrupt_mode":self.inputs.launch.interrupt_mode(),"runtime":{"implementation":runtime.implementation,"implementation_version":runtime.implementation_version,"language":normalize_language(&runtime.language),"language_version":runtime.language_version,"protocol_version":runtime.protocol_version}}
-        }))?;
-        let key = domain_digest("diplodocus/page-execution-key-v1", &value)?;
+        });
+        if self.source.has_includes() {
+            value["schema"] = json!("page-execution-key-v2");
+            value["page"]["collection_root"] = json!(
+                self.source
+                    .collection_root(&self.inputs.repositories[&self.inputs.page.repository],)?
+                    .as_ref()
+                    .map_or(".", |path| path.as_str())
+            );
+            value["page"]["source_inputs"] = json!(self.source.inputs.iter().map(|(file, bytes)| {
+                json!({"repository":file.repository,"path":file.path,"digest":content_digest(bytes)})
+            }).collect::<Vec<_>>());
+        }
+        let value = canonical(value)?;
+        let key = super::key_digest(&value).map_err(|_| IdentityError)?;
         Ok(ExecutionIdentity { value, key })
     }
     /// Read-only observed environment evidence for the final prepared request.
@@ -348,9 +375,9 @@ impl InputSnapshot {
     }
     async fn recheck(&self, launch: &LaunchIdentityInput) -> Result<(), IdentityError> {
         roots(&self.inputs.repositories).await?;
-        if read_declared(&self.inputs.repositories, &self.inputs.page).await? != self.source {
-            return Err(IdentityError);
-        }
+        self.source
+            .revalidate(&self.inputs.repositories, &self.inputs.page)
+            .await?;
         for (file, bytes) in &self.files {
             if read_declared(&self.inputs.repositories, file).await? != *bytes {
                 return Err(IdentityError);

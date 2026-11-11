@@ -183,7 +183,7 @@ fn includes_reject_repository_escapes_and_detect_symlink_cycles() {
 }
 
 #[test]
-fn executable_includes_fail_explicitly_before_kernel_startup() {
+fn executable_includes_prepare_expanded_cells_without_starting_a_kernel() {
     let root = workspace("qmd");
     let configuration = std::fs::read_to_string(root.path().join("diplodocus.yaml")).unwrap();
     root.write(
@@ -197,17 +197,12 @@ fn executable_includes_fail_explicitly_before_kernel_startup() {
     );
     // Empty partials still count as includes for execution authority.
     root.write("pages/partial.qmd", "");
-    let Err(AssemblyError::Diagnostics(diagnostics)) =
-        assemble_workspace(root.path().join("diplodocus.yaml"))
-    else {
-        panic!("expected explicit execution limitation");
-    };
-    assert_eq!(diagnostics[0].code, DiagnosticCode::InvalidMarkdownInclude);
-    assert!(
-        diagnostics[0]
-            .message
-            .contains("Executable QMD pages with includes")
-    );
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
+    let page = sources.prepared_pages().values().next().unwrap();
+    assert!(page.preparation().unwrap().execution_eligible);
+    assert_eq!(page.preparation().unwrap().cells.len(), 1);
+    assert!(!page.source().contains("{{< include"));
+    assert!(!root.path().join(".diplodocus").exists());
 }
 
 #[test]

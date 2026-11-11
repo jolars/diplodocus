@@ -1043,6 +1043,38 @@ async fn key_projection_retains_nested_skipped_cells_and_all_effective_options()
     diplodocus::execution::identity::validate_key_input(identity.key_input()).unwrap();
 }
 
+#[test]
+fn composed_key_schema_requires_sorted_contained_original_inputs() {
+    use diplodocus::execution::identity::validate_key_input;
+    use serde_json::json;
+
+    let mut input = fixture()["key_input"].clone();
+    input["schema"] = json!("page-execution-key-v2");
+    input["page"]["collection_root"] = json!("docs");
+    input["page"]["source_inputs"] = json!([
+        {"repository": input["page"]["repository"], "path": input["page"]["path"], "digest": content_digest(b"main")},
+        {"repository": input["page"]["repository"], "path": "parts/cells.qmd", "digest": content_digest(b"partial")},
+    ]);
+    validate_key_input(&CanonicalValue::from_json(input.clone()).unwrap()).unwrap();
+    for (path, value) in [
+        ("/page/collection_root", json!("../outside")),
+        ("/page/source_inputs", json!([])),
+        ("/page/source_inputs/0/path", json!("other.qmd")),
+        ("/page/source_inputs/1/path", input["page"]["path"].clone()),
+        ("/page/source_inputs/1/repository", json!("other")),
+        ("/page/source_inputs/1/digest", json!("sha256:INVALID")),
+    ] {
+        let mut changed = input.clone();
+        *changed.pointer_mut(path).unwrap() = value;
+        assert!(
+            validate_key_input(&CanonicalValue::from_json(changed).unwrap()).is_err(),
+            "{path}"
+        );
+    }
+    input["schema"] = json!("page-execution-key-v1");
+    assert!(validate_key_input(&CanonicalValue::from_json(input).unwrap()).is_err());
+}
+
 #[tokio::test]
 async fn root_slash_preserves_argv_environment_and_revalidation_identity() {
     use diplodocus::execution::identity::{LaunchIdentityInput, LaunchResolverInput};

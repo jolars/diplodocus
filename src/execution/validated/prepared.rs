@@ -1,10 +1,11 @@
 use super::*;
 
-/// Bound original source, prepared request, and authored output context.
+/// Bound expanded authored source, prepared request, and authored output context.
 ///
 /// This token proves source/request agreement, not command authorization. The
-/// original source is prepared again to check the request and complete authored
-/// anchor set. Generated output cannot introduce additional targets.
+/// expanded source is prepared again to check the request and complete authored
+/// anchor set. The engine separately verifies the original input files.
+/// Generated output cannot introduce additional targets.
 ///
 /// ```compile_fail
 /// use diplodocus::execution::{PreparedExecution, PageExecutionRequest};
@@ -33,11 +34,11 @@ pub struct PreparedExecution {
     context: AuthoredOutputContext,
 }
 impl PreparedExecution {
-    /// Borrow the request that was checked against the original bytes.
+    /// Borrow the request that was checked against the expanded authored bytes.
     pub fn request(&self) -> &PageExecutionRequest {
         &self.request
     }
-    /// Original authored bytes, including prose and option declarations.
+    /// Expanded authored bytes, including prose and option declarations.
     pub fn source(&self) -> &[u8] {
         &self.source
     }

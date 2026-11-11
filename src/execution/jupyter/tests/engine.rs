@@ -10,6 +10,7 @@ use crate::provenance::{PANACHE_VERSION, fingerprint_bytes};
 use std::collections::BTreeMap;
 
 mod acceptance;
+mod includes;
 
 const SOURCE: &str = "```{python}\ndefine\n```\n\n```{python}\nuse\n```\n";
 

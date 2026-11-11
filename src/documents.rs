@@ -23,6 +23,7 @@ use crate::ir::{
 };
 pub(crate) mod documenter;
 mod fragments;
+pub(crate) mod includes;
 mod layout;
 mod preparation;
 mod rmarkdown;

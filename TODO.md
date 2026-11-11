@@ -310,9 +310,9 @@ implemented as an optional `serve --live-reload` feature.
   - [x] Retain original source maps and included-file-relative assets in
     portable snapshots. Add a regression test that removes the source tree
     before loading a snapshot and generating a site with nested includes.
-  - [x] Reject executable QMD pages with includes explicitly while expanded
-    input verification is unsupported.
-  - [ ] Integrate expanded QMD with execution identity, input verification,
+  - [x] Preserve collection execution authority and document vetoes for included
+    QMD cells.
+  - [x] Integrate expanded QMD with execution identity, input verification,
     caching, and execution diagnostics before enabling executable pages with
     includes. Static expansion must not bypass the engine's source checks.
   - [ ] Add partial-file selection after whole-file inclusion works: line

@@ -1,15 +1,16 @@
 # Markdown include contract
 
 This document defines the include contract. Whole-file and nested expansion,
-cycle detection, and parser diagnostic attribution are implemented for static
-GFM and QMD collections. Prepared pages retain source ranges and include chains.
+cycle detection, and parser diagnostic attribution are implemented for GFM and
+QMD collections. Prepared pages retain source ranges and include chains.
 Relative links and images resolve from their original source files, including
 partials outside the collection directory. Preview watching tracks nested
 partials even after failed resolution and retries when missing files appear.
 Portable snapshots retain these source maps and referenced asset bytes, so
 generation works after the source tree has been removed.
-Executable QMD pages with includes produce an explicit error until the execution
-engine can verify expanded inputs. The remaining slices are tracked in
+Executable QMD pages use the same expansion under the collection's execution
+authority and the main page's options and working directory. The remaining
+slices are tracked in
 [TODO.md](../../TODO.md).
 
 ## Authoring syntax
@@ -112,8 +113,37 @@ and include-chain structure without reopening source files. Integration tests
 remove the source tree before loading and generating GFM and static QMD sites
 with nested includes, images, downloads, and reference definitions outside the
 collection directory.
-Included content must participate in execution cache invalidation just as main
-page content does before executable includes can be enabled.
+
+## Executable QMD
+
+The Jupyter engine independently rereads and expands the configured page before
+checking its prepared cells, defaults, anchors, and expanded-source fingerprint.
+Supplying expanded text cannot bypass source verification. The resolver applies
+the same repository boundaries, cycle checks, and partial-frontmatter rejection
+as static assembly. The main page owns the execution session and working
+directory; including a partial does not change where its code runs.
+
+Pages with includes use `page-execution-key-v2`, as specified in the
+[cache contract](../spikes/page-execution-cache.md#composed-qmd-pages). The key
+covers the expanded source, the collection root, and the paths and exact bytes
+of the main file and every included file. Empty and repeated partials participate
+in verification. Prose edits and retargeting an include invalidate the cache
+even when the submitted code or expanded text remains identical. These source
+inputs remain separate from declared environment files.
+
+The engine expands the inputs again before kernel startup and after kernel
+cleanup, including on cache hits. Edits, deletions, and symlink retargeting reject
+the attempt and discard its staged assets. Workspace validation also rechecks all
+selected inputs after the final page, catching a later page changing a partial
+consumed by an earlier page.
+
+Execution warnings and failures shown by workspace commands identify the
+original file and byte range and retain the include chain. Generated-fragment
+offsets remain relative to the generated fragment. Execution records retain
+expanded offsets for request and output association; portable document records
+retain the source map used for diagnostic projection. Snapshot restoration
+checks execution against the expanded text and rebases authored resources from
+that map without reopening the source files.
 
 ## Compatibility
 

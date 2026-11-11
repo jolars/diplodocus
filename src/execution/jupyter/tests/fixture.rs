@@ -145,6 +145,18 @@ fn kernel_process() {
                         }
                         JupyterMessageContent::ShutdownRequest(_) => {
                             event(observation, "shutdown");
+                            if let Ok(change) = std::fs::read_to_string(observation.with_file_name("mutate-include-on-shutdown")) {
+                                let partial = observation.with_file_name("parts").join("cells.qmd");
+                                match change.as_str() {
+                                    "edit" => std::fs::write(partial, "Changed during cleanup.\n").unwrap(),
+                                    "delete" => std::fs::remove_file(partial).unwrap(),
+                                    "retarget" => {
+                                        std::fs::remove_file(&partial).unwrap();
+                                        std::os::unix::fs::symlink("replacement.qmd", partial).unwrap();
+                                    }
+                                    _ => panic!("unknown include mutation"),
+                                }
+                            }
                             if observation.with_file_name("mutate-on-shutdown").exists() {
                                 let page = observation.with_file_name("guide").join("example.qmd");
                                 let mut file = std::fs::OpenOptions::new().append(true).open(page).unwrap();
