@@ -428,6 +428,32 @@ impl Observer {
         let Ok(text) = fs::read_to_string(path) else {
             return;
         };
+        let repository = crate::paths::ResolvedRepositoryPaths {
+            id: content.repository.clone(),
+            path: root.to_owned(),
+        };
+        if let Ok(collection) = pipeline::absolute(&root.join(&content.path)) {
+            let source_root = if collection.is_file() {
+                collection.parent().expect("absolute collection")
+            } else {
+                &collection
+            };
+            for input in crate::assembly::include_watch_inputs(
+                &text,
+                path,
+                source_root,
+                &repository,
+                content.format,
+            ) {
+                if let Ok(input) = pipeline::absolute(&input)
+                    && input.starts_with(root)
+                    && !input.starts_with(&self.output)
+                    && !crate::generated_storage::is_generated_file(&input)
+                {
+                    observe(&input, observed);
+                }
+            }
+        }
         let Ok(prepared) = crate::documents::prepare_collection_document(&text, content) else {
             return;
         };
@@ -592,6 +618,50 @@ fn discover(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn watches_nested_include_targets_even_when_assembly_fails() {
+        for (format, extension, include) in [
+            ("gfm", "md", "<!--@include: ../parts/first.md-->\n"),
+            ("qmd", "qmd", "{{< include ../parts/first.md >}}\n"),
+        ] {
+            let root = tempfile::tempdir().unwrap();
+            let config = root.path().join("diplodocus.yaml");
+            fs::write(&config, format!("project:\n  name: Includes\nrepositories:\n  - id: repo\n    path: .\ncontent:\n  - id: guide\n    owner: project\n    repository: repo\n    path: guide/index.{extension}\n    mount: \"\"\n    format: {format}\n")).unwrap();
+            fs::create_dir(root.path().join("guide")).unwrap();
+            fs::create_dir(root.path().join("parts")).unwrap();
+            fs::write(
+                root.path().join(format!("guide/index.{extension}")),
+                include,
+            )
+            .unwrap();
+            let first = root.path().join("parts/first.md");
+            let nested = root.path().join("parts/new/nested.md");
+            let directive = if format == "gfm" {
+                "<!--@include: new/nested.md-->\n"
+            } else {
+                "{{< include new/nested.md >}}\n"
+            };
+            fs::write(&first, directive).unwrap();
+            assert!(assemble_workspace(&config).is_err());
+
+            let mut observer = Observer::new(&config, &root.path().join("site")).unwrap();
+            let missing = observer.capture();
+            assert!(missing.contains_key(&first));
+            assert_eq!(missing.get(&nested).map(String::as_str), Some("NotFound"));
+            fs::create_dir(root.path().join("parts/new")).unwrap();
+            fs::write(&nested, "Nested content.\n").unwrap();
+            let created = observer.capture();
+            assert_ne!(created, missing);
+            fs::write(&nested, "Edited content.\n").unwrap();
+            assert_ne!(observer.capture(), created);
+            fs::remove_file(&nested).unwrap();
+            observer.refresh_assets();
+            assert_eq!(observer.capture(), missing);
+            fs::write(&nested, "Nested content.\n").unwrap();
+            assert_eq!(observer.capture(), created);
+        }
+    }
 
     #[test]
     fn watches_single_file_collections_and_their_assets_without_selecting_siblings() {

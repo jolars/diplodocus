@@ -33,6 +33,32 @@ pub(super) fn expand(
     repository: &crate::paths::ResolvedRepositoryPaths,
     format: AuthoredFormat,
 ) -> Result<Expanded, AssemblyError> {
+    expand_with_inputs(text, path, root, repository, format, &mut |_| {})
+}
+
+/// Retain attempted paths even when a missing nested target prevents expansion.
+pub(crate) fn watch_inputs(
+    text: &str,
+    path: &Path,
+    root: &Path,
+    repository: &crate::paths::ResolvedRepositoryPaths,
+    format: AuthoredFormat,
+) -> Vec<PathBuf> {
+    let mut inputs = Vec::new();
+    let _ = expand_with_inputs(text, path, root, repository, format, &mut |input| {
+        inputs.push(input.to_owned());
+    });
+    inputs
+}
+
+fn expand_with_inputs(
+    text: &str,
+    path: &Path,
+    root: &Path,
+    repository: &crate::paths::ResolvedRepositoryPaths,
+    format: AuthoredFormat,
+    on_input: &mut dyn FnMut(&Path),
+) -> Result<Expanded, AssemblyError> {
     let mut expanded = Expanded {
         text: String::new(),
         ranges: Vec::new(),
@@ -49,6 +75,7 @@ pub(super) fn expand(
         active: Vec::new(),
         chain: Vec::new(),
         expanded: &mut expanded,
+        on_input,
     };
     context.file(path, text)?;
     Ok(expanded)
@@ -61,6 +88,7 @@ struct Context<'a> {
     active: Vec<PathBuf>,
     chain: Vec<SourceLocation>,
     expanded: &'a mut Expanded,
+    on_input: &'a mut dyn FnMut(&Path),
 }
 
 impl Context<'_> {
@@ -77,6 +105,7 @@ impl Context<'_> {
     }
 
     fn file(&mut self, path: &Path, text: &str) -> Result<(), AssemblyError> {
+        (self.on_input)(path);
         let location = self.repository.source_location(path, None)?;
         let canonical = self.repository.path.join(location.path.as_str());
         self.active.push(canonical.clone());
@@ -148,6 +177,7 @@ impl Context<'_> {
                 Some(relative) => self.root.join(relative),
                 None => canonical.parent().unwrap().join(&target),
             };
+            (self.on_input)(&requested);
             let included = self
                 .repository
                 .source_location(&requested, None)

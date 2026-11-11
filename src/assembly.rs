@@ -46,6 +46,7 @@ mod rust_native;
 
 pub use includes::IncludeSourceRange;
 pub(crate) use includes::remap as remap_include_diagnostic;
+pub(crate) use includes::watch_inputs as include_watch_inputs;
 
 /// Conventional license inputs shared by package discovery and preview watching.
 pub(crate) const PACKAGE_LICENSE_FILENAMES: &[&str] = &[

@@ -82,6 +82,157 @@ fn gone(process: &(u32, PathBuf)) -> bool {
     !PathBuf::from(format!("/proc/{}", process.0)).exists() && !process.1.parent().unwrap().exists()
 }
 
+async fn preview_recovers_from_missing_nested_partials(format: &str) {
+    for partials in ["guide/parts", "parts"] {
+        let root = support::TestWorkspace::new();
+        let extension = if format == "gfm" { "md" } else { "qmd" };
+        let collection = if format == "gfm" {
+            "guide".to_owned()
+        } else {
+            format!("guide/index.{extension}")
+        };
+        let include = |target: &str| {
+            if format == "gfm" {
+                format!("<!--@include: \"{target}\"-->\n")
+            } else {
+                format!("{{{{< include \"{target}\" >}}}}\n")
+            }
+        };
+        root.write("diplodocus.yaml", format!("project:\n  name: Include preview\nrepositories:\n  - id: docs\n    path: .\ncontent:\n  - id: guide\n    owner: project\n    repository: docs\n    path: {collection}\n    mount: \"\"\n    format: {format}\n"));
+        let first_target = if partials.starts_with("guide/") {
+            "parts/first.md"
+        } else {
+            "../parts/first.md"
+        };
+        root.write(
+            format!("guide/index.{extension}"),
+            format!("# Includes\n\n{}", include(first_target)),
+        );
+        root.write(format!("{partials}/first.md"), include("nested.md"));
+        root.write(format!("{partials}/nested.md"), "Initial nested partial.\n");
+        let port = std::net::TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0))
+            .unwrap()
+            .local_addr()
+            .unwrap()
+            .port();
+        let (stop, stopped) = tokio::sync::oneshot::channel();
+        let task = tokio::spawn(serve_with(
+            ServeOptions {
+                config: root.path().join("diplodocus.yaml"),
+                output: root.path().join("site"),
+                host: std::net::Ipv4Addr::LOCALHOST.into(),
+                port,
+                live_reload: true,
+                open: false,
+            },
+            ExecutionDeadlines::default(),
+            Box::pin(async {
+                let _ = stopped.await;
+            }),
+        ));
+        until(async || {
+            request(port, "/")
+                .await
+                .is_some_and(|s| s.contains("Initial nested partial."))
+        })
+        .await;
+        let initial_revision = revision(port).await;
+        root.write(format!("{partials}/nested.md"), "Edited nested partial.\n");
+        until(async || {
+            request(port, "/")
+                .await
+                .is_some_and(|s| s.contains("Edited nested partial."))
+        })
+        .await;
+        assert_eq!(revision(port).await, initial_revision.wrapping_add(1));
+        let previous = files(&root.path().join("site"));
+        let snapshot = std::fs::read(root.path().join(".diplodocus/documentation.sqlite")).unwrap();
+        let previous_revision = revision(port).await;
+
+        root.write(
+            format!("{partials}/nested.md"),
+            include("new/created partial.md"),
+        );
+        tokio::time::sleep(Duration::from_millis(700)).await;
+        assert!(
+            request(port, "/")
+                .await
+                .unwrap()
+                .contains("Edited nested partial.")
+        );
+        assert_eq!(revision(port).await, previous_revision);
+        assert_eq!(files(&root.path().join("site")), previous);
+        assert_eq!(
+            std::fs::read(root.path().join(".diplodocus/documentation.sqlite")).unwrap(),
+            snapshot
+        );
+
+        // Recovery must discover a second missing target without a successful build in between.
+        root.write(
+            format!("{partials}/new/created partial.md"),
+            include("deeper.md"),
+        );
+        tokio::time::sleep(Duration::from_millis(700)).await;
+        assert_eq!(revision(port).await, previous_revision);
+        root.write(
+            format!("{partials}/new/deeper.md"),
+            "Created nested partial.\n",
+        );
+        until(async || {
+            request(port, "/")
+                .await
+                .is_some_and(|s| s.contains("Created nested partial."))
+        })
+        .await;
+        assert_eq!(revision(port).await, previous_revision.wrapping_add(1));
+
+        let previous = files(&root.path().join("site"));
+        let snapshot = std::fs::read(root.path().join(".diplodocus/documentation.sqlite")).unwrap();
+        let previous_revision = revision(port).await;
+        root.remove(format!("{partials}/new/deeper.md"));
+        tokio::time::sleep(Duration::from_millis(700)).await;
+        assert!(
+            request(port, "/")
+                .await
+                .unwrap()
+                .contains("Created nested partial.")
+        );
+        assert_eq!(revision(port).await, previous_revision);
+        assert_eq!(files(&root.path().join("site")), previous);
+        assert_eq!(
+            std::fs::read(root.path().join(".diplodocus/documentation.sqlite")).unwrap(),
+            snapshot
+        );
+        root.write(
+            format!("{partials}/new/deeper.md"),
+            "Restored nested partial.\n",
+        );
+        until(async || {
+            request(port, "/")
+                .await
+                .is_some_and(|s| s.contains("Restored nested partial."))
+        })
+        .await;
+        assert_eq!(revision(port).await, previous_revision.wrapping_add(1));
+        stop.send(()).unwrap();
+        tokio::time::timeout(Duration::from_secs(5), task)
+            .await
+            .unwrap()
+            .unwrap()
+            .unwrap();
+    }
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn gfm_preview_recovers_from_missing_nested_partials() {
+    preview_recovers_from_missing_nested_partials("gfm").await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn qmd_preview_recovers_from_missing_nested_partials() {
+    preview_recovers_from_missing_nested_partials("qmd").await;
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn watched_timeout_keeps_serving_the_complete_site_and_recovers() {
     let root = support::TestWorkspace::new();

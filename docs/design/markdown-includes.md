@@ -4,8 +4,10 @@ This document defines the include contract. Whole-file and nested expansion,
 cycle detection, and parser diagnostic attribution are implemented for static
 GFM and QMD collections. Prepared pages retain source ranges and include chains.
 Relative links and images resolve from their original source files, including
-partials outside the collection directory. Portable source-map retention remains
-pending, so includes are not yet documented as a complete authoring feature.
+partials outside the collection directory. Preview watching tracks nested
+partials even after failed resolution and retries when missing files appear.
+Portable source-map retention remains pending, so includes are not yet
+documented as a complete authoring feature.
 Executable QMD pages with includes produce an explicit error until the execution
 engine can verify expanded inputs. The remaining slices are tracked in
 [TODO.md](../../TODO.md).

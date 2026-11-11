@@ -301,7 +301,7 @@ implemented as an optional `serve --live-reload` feature.
     including files outside the including page's directory.
   - [x] Fingerprint successfully resolved includes as build inputs, revalidate
     their contents, and expose their paths to the existing preview watcher.
-  - [ ] Retain watch dependencies after failed include resolution so creating or
+  - [x] Retain watch dependencies after failed include resolution so creating or
     restoring a missing partial triggers another build. Add preview tests
     for editing, creating, deleting, and restoring nested partials,
     including files outside the collection directory.
