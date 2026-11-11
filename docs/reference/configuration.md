@@ -235,6 +235,7 @@ or HTML.
 | `canonical-url-style` | string | `file` | `file` preserves HTML filenames; `clean` uses directory URLs for indexes and removes other `.html` suffixes from links. |
 | `home` | mapping | Unset | Full-width homepage content. |
 | `sections` | list | `[]` | Additional project navbar sections after Guide. |
+| `header` | mapping | All public repositories | Repository links in the navbar. |
 | `sidebar` | list or mapping | Automatic directory grouping | Authored navigation order and groups. |
 | `assets` | list | `[]` | Public files retained at explicit publication paths. |
 | `icons` | list | `[]` | Icon and manifest links on every complete HTML page. |
@@ -249,6 +250,18 @@ parameters, fragments, or whitespace. Diplodocus treats it as a directory root.
 Clean URLs require hosting support; output filenames keep their `.html`
 extensions. Ambiguous clean routes fail generation. See
 [site appearance](../guide/presentation.md) for examples and deployment details.
+
+### Header
+
+`presentation.header.repositories` accepts a list of declared repository IDs in
+display order. Omit it to include all repositories with public HTTP or HTTPS
+URLs, set `[main]` to link only the repository named `main`, or set `[]` to hide
+repository links. Repositories without public URLs are omitted, and repeated
+URLs appear once.
+
+One repository appears as a direct link, using the GitHub icon for GitHub URLs.
+Multiple repositories appear in a **Repositories** dropdown with named links.
+On phones, those links appear inside the navigation menu.
 
 ### Page metadata
 

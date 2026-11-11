@@ -15,6 +15,21 @@
   });
   narrow.addEventListener('change', closeMenu);
   document.addEventListener('diplodocus:page-change', closeMenu);
+  const repositories = document.querySelector('.repository-menu');
+  if (repositories) {
+    const closeRepositories = () => { repositories.open = false; };
+    document.addEventListener('click', event => {
+      if (!repositories.contains(event.target) || event.target.closest('a[href]')) closeRepositories();
+    });
+    document.addEventListener('keydown', event => {
+      if (event.key !== 'Escape' || !repositories.open) return;
+      event.preventDefault();
+      closeRepositories();
+      repositories.querySelector('summary').focus({ preventScroll: true });
+    });
+    narrow.addEventListener('change', closeRepositories);
+    document.addEventListener('diplodocus:page-change', closeRepositories);
+  }
   const initializeToc = () => {
     const toc = document.querySelector('.toc-disclosure');
     if (!toc) return;

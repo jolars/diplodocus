@@ -7,6 +7,7 @@ use super::html::escape;
 
 pub(super) fn render(html: &mut String, site: &Site<'_>) {
     let footer = &site.presentation.footer;
+    let repositories = super::navigation::repository_links(site);
     let mut rows = Vec::new();
     let mut project = Vec::new();
     if let Some(version) = &footer.docs_version {
@@ -17,10 +18,8 @@ pub(super) fn render(html: &mut String, site: &Site<'_>) {
             .links
             .iter()
             .filter(|link| {
-                !site.workspace.repositories.values().any(|repository| {
-                    repository.canonical_url.as_deref().is_some_and(|url| {
-                        url.trim_end_matches('/') == link.url.trim_end_matches('/')
-                    })
+                !repositories.iter().any(|repository| {
+                    repository.url.trim_end_matches('/') == link.url.trim_end_matches('/')
                 })
             })
             .map(link),

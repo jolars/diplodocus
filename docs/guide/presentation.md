@@ -132,6 +132,27 @@ links. Preview watches declared source files outside content collections and
 rebuilds after edits, removal, and recreation. A failed rebuild keeps serving
 the preceding complete site.
 
+## Repository links
+
+The navbar includes repositories with public HTTP or HTTPS URLs. One repository
+appears as a direct link, using the GitHub icon for GitHub URLs. Multiple
+repositories appear in a **Repositories** dropdown with names such as
+`owner/repo`. On phones, the navigation menu lists the repositories directly.
+
+To show only one repository, select its declared ID:
+
+```yaml
+presentation:
+  header:
+    repositories: [main]
+```
+
+List several IDs to choose their order, omit `header.repositories` to include
+all public repositories, or set it to `[]` to hide repository links in the
+navbar. Repositories without public URLs are omitted, and repeated URLs appear
+once. Explicit footer links remain in the footer unless the same destination
+already appears in the navbar.
+
 ## Landing page
 
 Add `presentation.home` to give the site root a full-width landing page. It

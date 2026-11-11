@@ -90,6 +90,11 @@ repository links on phones. Browser tests check identical header positions and
 retained elements when moving between layouts, including clean URLs under a hosting
 prefix.
 
+When several repositories have public URLs, a **Repositories** dropdown replaces
+the direct header link. Its named links appear directly in the phone navigation
+menu. `presentation.header.repositories` can select one repository, order a
+subset, or hide the links with an empty list.
+
 On phones, the staggered-lines **Menu** control and the right-aligned
 **On this page** control share a row below the navbar. As the upper navbar
 scrolls away, this row stays at the top with a divider beneath it. **Menu** opens a

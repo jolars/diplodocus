@@ -62,6 +62,20 @@ fn logo_requires_a_declared_repository() {
 }
 
 #[test]
+fn header_repository_selection_requires_declared_ids() {
+    let mut config = configuration();
+    config.presentation.header.repositories = Some(vec!["python".into()]);
+    assert!(validate_configuration(&config).is_empty());
+    config.presentation.header.repositories = Some(vec!["missing".into()]);
+    let diagnostic = only_diagnostic(&config, DiagnosticCode::InvalidRepositoryReference);
+    assert!(
+        diagnostic
+            .message
+            .contains("presentation.header.repositories[0]")
+    );
+}
+
+#[test]
 fn duplicate_repository_ids_have_repository_context() {
     let mut config = configuration();
     config.repositories.push(config.repositories[0].clone());

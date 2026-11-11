@@ -31,6 +31,14 @@ impl Snapshot {
         documenter::validate(self)?;
         let outputs = self.restore_outputs()?;
         let workspace = &self.workspace;
+        if let Some(selected) = &self.presentation.header.repositories {
+            require(
+                selected
+                    .iter()
+                    .all(|id| workspace.repositories.contains_key(id)),
+                "header repository reference",
+            )?;
+        }
         require(!self.producer.is_empty(), "missing producer")?;
         require(
             !workspace

@@ -13,6 +13,30 @@ const COMPLETE: &str = include_str!("fixtures/configuration/complete.yaml");
 const ACCEPTANCE: &str = include_str!("fixtures/acceptance/workspace/diplodocus.yaml");
 
 #[test]
+fn header_repository_selection_preserves_defaults_and_round_trips() {
+    let minimal = "project:\n  name: Docs\n";
+    let config = parse_configuration(minimal).unwrap();
+    assert!(config.presentation.header.repositories.is_none());
+    assert!(
+        serde_json::to_value(config)
+            .unwrap()
+            .get("presentation")
+            .is_none()
+    );
+    for ids in ["[]", "[main]", "[second, main]"] {
+        let source = format!("{minimal}presentation:\n  header:\n    repositories: {ids}\n");
+        let config = parse_configuration(&source).unwrap();
+        assert!(config.presentation.header.repositories.is_some());
+        let serialized = serde_saphyr::to_string(&config).unwrap();
+        assert_eq!(parse_configuration(&serialized).unwrap(), config);
+    }
+    for invalid in ["main", "false", "42", "{}", "[{}]"] {
+        let source = format!("{minimal}presentation:\n  header:\n    repositories: {invalid}\n");
+        assert!(parse_configuration(&source).is_err(), "{invalid}");
+    }
+}
+
+#[test]
 fn content_navigation_defaults_to_all_and_round_trips_explicit_policies() {
     use diplodocus::configuration::ContentNavigation;
 

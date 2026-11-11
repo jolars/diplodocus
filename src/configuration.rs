@@ -85,6 +85,9 @@ pub struct PresentationDefaults {
     /// Additional project sections shown after Guide in the navbar.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub sections: Vec<NavigationSection>,
+    /// Repository links shown in the navbar.
+    #[serde(skip_serializing_if = "HeaderDefaults::is_default")]
+    pub header: HeaderDefaults,
     /// Authored navigation trees; omission keeps automatic directory grouping.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sidebar: Option<SidebarConfiguration>,
@@ -113,6 +116,22 @@ pub struct PresentationDefaults {
     /// Optional notices and links shown at the bottom of every page.
     #[serde(skip_serializing_if = "FooterDefaults::is_default")]
     pub footer: FooterDefaults,
+}
+
+/// Portable header navigation settings.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, rename_all = "kebab-case", deny_unknown_fields)]
+pub struct HeaderDefaults {
+    /// Repository IDs in display order; omission includes all public repositories.
+    /// An empty list hides repository links.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub repositories: Option<Vec<String>>,
+}
+
+impl HeaderDefaults {
+    fn is_default(&self) -> bool {
+        self == &Self::default()
+    }
 }
 
 /// A maintained destination for a legacy fragment ID.

@@ -276,7 +276,7 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
             html.push_str("<details class=\"mobile-menu\"><summary aria-label=\"Navigation menu\"><svg aria-hidden=\"true\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M4 6h16M4 12h16M4 18h16\"></path></svg></summary><div class=\"mobile-menu-panel\">");
             super::navigation::sections(&mut html, site, route, "mobile-sections");
             super::navigation::theme_control(&mut html);
-            super::navigation::repositories(&mut html, site);
+            super::navigation::mobile_repositories(&mut html, site);
             html.push_str("</div></details></div>");
             html.push_str("</header><div class=\"layout\"><nav aria-label=\"Documentation\">");
             html.push_str(

@@ -53,6 +53,20 @@ pub fn validate_configuration(configuration: &WorkspaceConfiguration) -> Vec<Dia
             &mut diagnostics,
         );
     }
+    if let Some(selected) = &configuration.presentation.header.repositories {
+        for (index, repository) in selected.iter().enumerate() {
+            let field = format!("presentation.header.repositories[{index}]");
+            check_repository(
+                &repositories,
+                repository,
+                &field,
+                DiagnosticEntity::ConfigurationField {
+                    path: field.clone(),
+                },
+                &mut diagnostics,
+            );
+        }
+    }
     for (field, repository) in [
         (
             "presentation.logo.repository",

@@ -252,6 +252,86 @@ nav [aria-current=page] {
   color: var(--link);
 }
 
+.repository-menu {
+  position: relative;
+  flex: none;
+  color: var(--muted);
+  font-size: .8rem;
+}
+
+.repository-menu > summary {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  min-height: 44px;
+  padding: 0 .5rem;
+  border-radius: .5rem;
+  list-style: none;
+  cursor: pointer;
+}
+
+.repository-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.repository-menu > summary:hover,
+.repository-menu[open] > summary {
+  color: var(--ink);
+  background: var(--selected);
+}
+
+.repository-menu > summary:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+.repository-menu[open] > summary svg {
+  transform: rotate(180deg);
+}
+
+.repository-menu-panel {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: max-content;
+  max-width: min(24rem, calc(100vw - 2rem));
+  max-height: min(60dvh, 24rem);
+  overflow-y: auto;
+  padding: .5rem;
+  border: 1px solid var(--border);
+  border-radius: .65rem;
+  background: var(--background);
+  box-shadow: 0 8px 24px var(--popup-shadow-color);
+}
+
+.repository-menu-panel .repository-link {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .65rem .75rem;
+}
+
+.repository-link svg {
+  flex: none;
+}
+
+.mobile-repositories {
+  border-top: 1px solid var(--border);
+}
+
+.mobile-repositories > strong {
+  display: block;
+  padding: .65rem .75rem .25rem;
+  color: var(--muted);
+  font-size: .8rem;
+  font-weight: 600;
+}
+
+.mobile-menu .mobile-repositories .repository-link {
+  justify-content: space-between;
+  border-top: 0;
+}
+
 @media (min-width: 761px) {
   header > .brand {
     position: fixed;
@@ -275,7 +355,8 @@ nav [aria-current=page] {
     font-size: .95rem;
   }
 
-  .header-actions > .repository-link {
+  .header-actions > .repository-link,
+  .header-actions > .repository-menu {
     display: none;
   }
 
