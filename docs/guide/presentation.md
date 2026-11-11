@@ -312,6 +312,42 @@ rules without source files. They do not create duplicate pages or entries in
 search or the sitemap. Fragment generation leaves redirects to the external
 frontend and does not write `_redirects`.
 
+## Preserving old fragments {#preserving-old-fragments}
+
+Declare fragment aliases when a heading or API anchor changes. Attach each old
+ID to its maintained heading or canonical anchor:
+
+```yaml
+presentation:
+  redirects:
+    /old-guide.html: guide/start.html
+  fragment-aliases:
+    guide/start.html:
+      Getting-Started: { heading: Getting started }
+      autotoc_md0: { anchor: installation }
+```
+
+With this example, `/old-guide.html#Getting-Started` redirects to the current
+page and reaches its Getting started heading. The current heading keeps its
+canonical ID. Several aliases can point to the same heading, including a title
+heading without a canonical ID.
+
+Use exact plain-text heading labels, omitting Markdown formatting. Whitespace is
+collapsed when matching. If a page repeats a heading, select its unique
+canonical ID with `anchor`. API member and section IDs appear in generated HTML
+and the fragment bundle's `documents.json`. Aliases on embedded fields and
+methods belong to the HTML page that contains those targets.
+
+Write literal IDs in configuration, including any spaces or punctuation in old
+Julia signatures. Percent-encode those characters in links. Diplodocus rejects
+missing targets and conflicting IDs instead of silently losing old links. TOCs
+and search continue to use canonical links.
+
+Aliases remain in HTML, Markdown exports, portable snapshots, and native
+preview. A relocated snapshot recreates them without the source checkout. Native
+preview rebuilds after configuration edits and keeps the preceding complete site
+if an alias becomes invalid.
+
 ## Crawler discovery
 
 The generated `robots.txt` allows crawling and advertises the sitemap's full

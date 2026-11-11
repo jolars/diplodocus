@@ -241,6 +241,7 @@ or HTML.
 | `logo` | mapping | Unset | Image beside the site title. |
 | `open-graph` | mapping | Unset | Shared social preview image. Requires `site-url`. |
 | `redirects` | mapping | `{}` | Permanent redirects from old URL paths to generated pages. |
+| `fragment-aliases` | mapping | `{}` | Legacy fragment IDs attached to maintained headings and API targets, keyed by generated HTML path. |
 | `footer` | mapping | No footer | Documentation version, notices, and links. |
 
 `site-url` must be an absolute HTTP or HTTPS URL without credentials, query
@@ -409,6 +410,44 @@ control characters, or dot segments. Destinations follow
 2,000 rules and 1,000 characters per rule. `serve` applies the same HTTP 301
 redirects locally. Other hosts may need equivalent server configuration. See
 [redirect examples](../guide/presentation.md#redirects-after-moving-pages).
+
+### Fragment aliases
+
+`presentation.fragment-aliases` maps generated site-relative HTML paths to
+legacy fragment IDs and their maintained targets. Paths include `.html` and omit
+the leading slash and hosting prefix, including for clean URLs:
+
+```yaml
+presentation:
+  fragment-aliases:
+    guide/start.html:
+      Getting-Started: { heading: Getting started }
+      autotoc_md0: { anchor: installation }
+```
+
+Each target contains exactly one field: `heading` or `anchor`. `heading` matches
+the visible plain text of an authored or generated title, section, or API member
+heading. Inline formatting is removed, and whitespace is collapsed before
+matching. Matching is case-sensitive. Repeated heading text is ambiguous; use
+`anchor` to select its canonical heading or API ID instead. UI labels and
+headings in generated execution output are not maintained targets.
+
+IDs are literal strings, without URL encoding. Preserve their case, Unicode,
+punctuation, and spaces, including spaces in legacy Julia method signatures.
+Empty IDs and control characters are rejected. Encode IDs when constructing
+URLs, such as `%20` for a space. Multiple aliases may select one target.
+
+Missing pages or targets, ambiguous headings, duplicate IDs, and collisions with
+existing document, API, or site-shell IDs are errors. An alias identical to its
+target's canonical ID already works and emits no additional marker. Aliases
+never replace canonical IDs or change generated heading slugs, TOCs, search, or
+fragment-manifest heading entries.
+
+HTML retains aliases inside their targets, and Markdown exports retain an anchor
+before each target. Aliases work with route redirects, native preview, and
+fragment generation. Snapshots retain the declarations, so detached generation
+needs no source checkout. See the [migration
+example](../guide/presentation.md#preserving-old-fragments).
 
 ### Footer
 

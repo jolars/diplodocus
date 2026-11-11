@@ -86,6 +86,10 @@
     let target;
     try { target = document.getElementById(decodeURIComponent(location.hash.slice(1))); } catch { return; }
     if (!target) return;
+    if (target.classList.contains('fragment-alias')) {
+      const owner = target.parentElement;
+      target = owner.querySelector(':scope > h1, :scope > h2, :scope > h3, :scope > h4, :scope > h5, :scope > h6') || owner;
+    }
     reveal(target);
     const headingPanel = target.classList.contains('tabset-heading') ? target.parentElement : target;
     headingPanel.scrollIntoView();

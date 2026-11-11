@@ -343,7 +343,7 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
             } else {
                 escape(&page.title)
             };
-            write!(html, "<h1>{title}</h1>").unwrap();
+            write!(html, "<h1>{}{title}</h1>", site.title_aliases(route, false)).unwrap();
         } else {
             let document = page.document.expect("authored title");
             html.push_str(&renderer.blocks(&document.document.blocks[..1])?);
@@ -484,7 +484,13 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                         .map(|member| crate::site::python_overload_anchor(&member.item));
                     if let Some(anchor) = &anchor {
                         renderer.identifiers.insert(anchor.clone());
-                        write!(html, "<div id=\"{}\">", escape(anchor)).unwrap();
+                        write!(
+                            html,
+                            "<div id=\"{}\">{}",
+                            escape(anchor),
+                            site.heading_aliases(route, Some(anchor), "", false)
+                        )
+                        .unwrap();
                     }
                     html.push_str(&highlighter.render_signature(
                         &super::signatures::signature_for_site(
@@ -521,6 +527,7 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                 }
                 if !class.constructors.is_empty() {
                     html.push_str("<div id=\"constructor\">");
+                    html.push_str(&site.heading_aliases(route, Some("constructor"), "", false));
                 }
                 for signature in &class.constructors {
                     html.push_str(&highlighter.render_signature(
@@ -562,7 +569,14 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
             html.push_str(&renderer.blocks(blocks)?);
         }
         for section in &page.julia_sections {
-            write!(html, "<h2 id=\"{}\">{}</h2>", section.anchor, section.title).unwrap();
+            write!(
+                html,
+                "<h2 id=\"{}\">{}{}</h2>",
+                section.anchor,
+                site.heading_aliases(route, Some(section.anchor), section.title, false),
+                section.title
+            )
+            .unwrap();
             renderer
                 .headings
                 .push((2, section.anchor.into(), section.title.into()));
@@ -574,8 +588,9 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                 renderer.headings.push((3, anchor.clone(), title.clone()));
                 write!(
                     html,
-                    "<section id=\"{}\"><h3><code>{}</code></h3>",
+                    "<section id=\"{}\">{}<h3><code>{}</code></h3>",
                     escape(anchor),
+                    site.heading_aliases(route, Some(anchor), &title, false),
                     escape(&title)
                 )
                 .unwrap();
@@ -865,6 +880,7 @@ fn render(site: &Site<'_>, standalone: bool) -> Result<RenderedSite, SiteError> 
                 .map_or(page.title.as_str(), |item| item.qualified_name.as_str());
             search.push(serde_json::json!({"title": search_title, "path": site.url("index.html",route), "package": package.map(|p| &p.name), "ecosystem": package.map(|p| &p.ecosystem), "api": page.item.is_some(), "text": search_text}));
         }
+        super::anchors::validate_html(site, route, &html)?;
         files.insert(
             route.clone(),
             file(html.into_bytes(), "text/html; charset=utf-8"),
@@ -1041,7 +1057,10 @@ fn concept_links(site: &Site<'_>, route: &str, concept: &Concept) -> Result<Stri
     } else {
         "Related API"
     };
-    let mut html = format!("<section><h2>{label}</h2><ul>");
+    let mut html = format!(
+        "<section><h2>{}{label}</h2><ul>",
+        site.heading_aliases(route, None, label, false)
+    );
     for item in &concept.members {
         let target = site
             .routes
@@ -1099,8 +1118,10 @@ impl Renderer<'_, '_> {
             },
         )?;
         let mut html = format!(
-            "<section id=\"{}\"><h{level}><a href=\"{}\"><code>{}</code></a></h{level}>",
+            "<section id=\"{}\">{}<h{level}><a href=\"{}\"><code>{}</code></a></h{level}>",
             escape(identifier),
+            self.site
+                .heading_aliases(self.route, Some(identifier), &item.qualified_name, false),
             escape(&target),
             escape(&item.qualified_name)
         );
@@ -1172,8 +1193,10 @@ impl Renderer<'_, '_> {
             };
             write!(
                 html,
-                "<section class=\"rust-members\"><h2 id=\"{}\">{}</h2>",
+                "<section class=\"rust-members\"><h2 id=\"{}\">{}{}</h2>",
                 escape(&section.anchor),
+                self.site
+                    .heading_aliases(self.route, Some(&section.anchor), &section.title, false),
                 title
             )
             .unwrap();
@@ -1210,8 +1233,10 @@ impl Renderer<'_, '_> {
         self.headings
             .push((level, member.anchor.clone(), member.item.name.clone()));
         let mut html = format!(
-            "<section id=\"{}\"><h{level}><code>{}</code></h{level}>",
+            "<section id=\"{}\">{}<h{level}><code>{}</code></h{level}>",
             escape(&member.anchor),
+            self.site
+                .heading_aliases(self.route, Some(&member.anchor), &member.item.name, false),
             escape(&member.item.name)
         );
         html.push_str(&super::r_topics::source_links(self.site, member.item));
@@ -1275,8 +1300,14 @@ impl Renderer<'_, '_> {
                 .push((2, member.anchor.clone(), member.item.name.clone()));
             write!(
                 html,
-                "<section><h2 id=\"{}\"><code>{}</code></h2>",
+                "<section><h2 id=\"{}\">{}<code>{}</code></h2>",
                 escape(&member.anchor),
+                self.site.heading_aliases(
+                    self.route,
+                    Some(&member.anchor),
+                    &member.item.name,
+                    false
+                ),
                 escape(&member.item.name)
             )
             .unwrap();
@@ -1299,7 +1330,14 @@ impl Renderer<'_, '_> {
                     .get(index)
                     .map(|overload| crate::site::python_overload_anchor(&overload.item));
                 if let Some(anchor) = &anchor {
-                    write!(html, "<div id=\"{}\">", escape(anchor)).unwrap();
+                    write!(
+                        html,
+                        "<div id=\"{}\">{}",
+                        escape(anchor),
+                        self.site
+                            .heading_aliases(self.route, Some(anchor), "", false)
+                    )
+                    .unwrap();
                 }
                 html.push_str(&self.highlighter.render_signature(
                     &super::signatures::signature_for_site(
@@ -1363,30 +1401,12 @@ impl Renderer<'_, '_> {
         Ok(html)
     }
     fn heading_id(&mut self, attributes: &Attributes, label: &str) -> String {
-        let prefix = self
-            .page
-            .anchor_prefix
-            .as_ref()
-            .map(|anchor| format!("{anchor}-"))
-            .unwrap_or_default();
-        if let Some(identifier) = &attributes.identifier {
-            return format!("{prefix}{}", identifier.value);
-        }
-        let slug = label
-            .to_lowercase()
-            .split(|c: char| !c.is_alphanumeric())
-            .filter(|part| !part.is_empty())
-            .collect::<Vec<_>>()
-            .join("-");
-        let base = if slug.is_empty() { "section" } else { &slug };
-        let base = format!("{prefix}{base}");
-        let mut identifier = base.clone();
-        let mut suffix = 2;
-        while !self.identifiers.insert(identifier.clone()) {
-            identifier = format!("{base}-{suffix}");
-            suffix += 1;
-        }
-        identifier
+        super::anchors::heading_id(
+            &mut self.identifiers,
+            self.page.anchor_prefix.as_deref(),
+            attributes,
+            label,
+        )
     }
 
     fn page_navigation(&self) -> String {
@@ -1630,7 +1650,7 @@ impl Renderer<'_, '_> {
                 .iter()
                 .any(|class| class.value == "active");
             let heading_level = (*heading_level + self.heading_offset).clamp(1, 6);
-            write!(html, "<section class=\"tabset-panel\"><h{heading_level} class=\"tabset-heading\" id=\"{}\" data-tab-active=\"{active}\">{}</h{heading_level}>", escape(&identifier), self.inlines(inlines)?).unwrap();
+            write!(html, "<section class=\"tabset-panel\"><h{heading_level} class=\"tabset-heading\" id=\"{}\" data-tab-active=\"{active}\">{}{}</h{heading_level}>", escape(&identifier), self.site.heading_aliases(self.route, Some(&identifier), &label, false), self.inlines(inlines)?).unwrap();
             panel_open = true;
             start = index + 1;
         }
@@ -1814,18 +1834,29 @@ impl Renderer<'_, '_> {
                     authored_heading = *level;
                     let level = (*level + self.heading_offset).clamp(1, 6);
                     let label = plain(inlines);
-                    let identifier = if self.document_navigation && level > 1 {
+                    let anchor = if self.document_navigation && level > 1 {
                         let identifier = self.heading_id(attributes, &label);
-                        self.headings.push((level, identifier.clone(), label));
-                        format!(" id=\"{}\"", escape(&identifier))
+                        self.headings
+                            .push((level, identifier.clone(), label.clone()));
+                        Some(identifier)
                     } else if self.document_navigation {
-                        id(attributes)
+                        attributes.identifier.as_ref().map(|id| id.value.clone())
+                    } else {
+                        None
+                    };
+                    let identifier = anchor
+                        .as_ref()
+                        .map(|id| format!(" id=\"{}\"", escape(id)))
+                        .unwrap_or_default();
+                    let aliases = if self.document_navigation {
+                        self.site
+                            .heading_aliases(self.route, anchor.as_deref(), &label, false)
                     } else {
                         String::new()
                     };
                     write!(
                         html,
-                        "<h{level}{identifier}>{}</h{level}>",
+                        "<h{level}{identifier}>{aliases}{}</h{level}>",
                         self.inlines(inlines)?
                     )
                     .unwrap();

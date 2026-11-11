@@ -256,7 +256,7 @@ with external tools such as Vite, following the browser component contract.
   Twitter cards. Define how title overrides affect headings, navigation, and
   search. Verify that detached generation and native preview use the same
   metadata.
-- [ ] Support explicit legacy fragment aliases attached to maintained headings
+- [x] Support explicit legacy fragment aliases attached to maintained headings
   or API targets. Combine aliases with existing route redirects, preserve
   canonical anchors, and retain aliases in HTML and Markdown output.
   Diagnose missing targets and duplicate IDs. Use Eunoia's

@@ -62,6 +62,7 @@ pub struct Site<'a> {
     pub(crate) base_url: Option<url::Url>,
     pub(crate) canonical_urls: BTreeMap<String, String>,
     pub(crate) redirects: BTreeMap<String, String>,
+    pub(crate) fragment_aliases: BTreeMap<String, crate::rendering::anchors::PageAliases>,
     pub(crate) url_map: Option<UrlMap>,
 }
 
@@ -202,6 +203,7 @@ impl<'a> Site<'a> {
                 .map_err(|message| SiteError::CrawlerMetadata(message.into()))?,
             canonical_urls: BTreeMap::new(),
             redirects: BTreeMap::new(),
+            fragment_aliases: BTreeMap::new(),
             url_map: None,
         };
         let records: BTreeMap<_, _> = inputs.documents.iter().map(|r| (&r.document, r)).collect();
@@ -584,6 +586,7 @@ impl<'a> Site<'a> {
         }
         site.assign_canonical_urls()?;
         site.assign_redirects()?;
+        site.fragment_aliases = crate::rendering::anchors::resolve(&site)?;
         crate::site_assets::validate_routes(&site)?;
         let mut section_prefixes: Vec<&str> = Vec::new();
         for section in &site.presentation.sections {

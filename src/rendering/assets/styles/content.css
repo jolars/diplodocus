@@ -7,6 +7,12 @@ h4 {
   scroll-margin-top: calc(var(--header-height) + 1rem);
 }
 
+.fragment-alias {
+  display: block;
+  height: 0;
+  scroll-margin-top: calc(var(--header-height) + 1rem);
+}
+
 h1 {
   margin-top: 0;
   font-size: 2rem;
@@ -49,7 +55,8 @@ main a {
   h1,
   h2,
   h3,
-  h4 {
+  h4,
+  .fragment-alias {
     scroll-margin-top: calc(44px + 1rem);
   }
 }

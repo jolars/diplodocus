@@ -226,6 +226,10 @@
     let target;
     try { target = document.getElementById(decodeURIComponent(url.hash.slice(1))); } catch { return; }
     if (!target) return;
+    if (target.classList.contains('fragment-alias')) {
+      const owner = target.parentElement;
+      target = owner.querySelector(':scope > h1, :scope > h2, :scope > h3, :scope > h4, :scope > h5, :scope > h6') || owner;
+    }
     emit('reveal-fragment', { target });
     return target.classList.contains('tabset-heading') ? target.parentElement : target;
   };
@@ -376,7 +380,15 @@
     cancelPosition();
     controller?.abort();
     writeEntry(newEntry(), destination.href);
-    positionPage(destination, undefined, false);
+    let marker;
+    try { marker = document.getElementById(decodeURIComponent(destination.hash.slice(1))); } catch {}
+    if (marker?.classList.contains('fragment-alias')) {
+      // Native navigation focuses the marker after popstate; restore its owner's focus afterward.
+      const request = sequence;
+      requestAnimationFrame(() => {
+        if (request === sequence && location.href === destination.href) positionPage(destination, undefined, false);
+      });
+    } else positionPage(destination, undefined, false);
   };
   window.addEventListener('popstate', event => {
     const destination = new URL(location.href);

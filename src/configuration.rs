@@ -107,9 +107,22 @@ pub struct PresentationDefaults {
     /// Destinations follow `canonical_url_style`; sources omit the hosting prefix.
     #[serde(skip_serializing_if = "BTreeMap::is_empty")]
     pub redirects: BTreeMap<String, DiagnosticPath>,
+    /// Legacy fragment IDs attached to headings or API targets on generated HTML pages.
+    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
+    pub fragment_aliases: BTreeMap<String, BTreeMap<String, FragmentAliasTarget>>,
     /// Optional notices and links shown at the bottom of every page.
     #[serde(skip_serializing_if = "FooterDefaults::is_default")]
     pub footer: FooterDefaults,
+}
+
+/// A maintained destination for a legacy fragment ID.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+pub enum FragmentAliasTarget {
+    /// Exact plain-text heading, with whitespace collapsed.
+    Heading(String),
+    /// Existing canonical heading or API anchor, without URL encoding.
+    Anchor(String),
 }
 
 /// Head metadata for a generated page, independent of its visible content.

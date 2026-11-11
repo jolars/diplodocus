@@ -1,0 +1,43 @@
+{
+  "/docs/reference/julia/": {
+    "artifact": "packages/julia/index.html",
+    "headings": {
+      "eunoia": "Eunoia",
+      "installation": "Installation",
+      "quick-start": "Quick start",
+      "plotting": "Plotting",
+      "citation": "Citation"
+    },
+    "aliases": {
+      "Eunoia": "Eunoia",
+      "Installation": "Installation",
+      "Quick-start": "Quick start",
+      "Plotting": "Plotting"
+    }
+  },
+  "/docs/reference/julia/BoundingBox/": {
+    "artifact": "packages/julia/reference/9f7f709918b54780f3fc0f5043b77fa14a9b8a50b9ee8cc8b77e2b99d8176885.html",
+    "headings": {
+      "fields": "Fields",
+      "methods": "Methods"
+    },
+    "aliases": {
+      "Eunoia.BoundingBox": "Eunoia.BoundingBox",
+      "field-center": "center::Point",
+      "field-width": "width::Float64",
+      "field-height": "height::Float64",
+      "method-0b2eabdaf271be9c2476dd149b0a7b7b73862aeb100ca1c28440ccd047e93557": "BoundingBox(x::Real, y::Real, width::Real, height::Real)"
+    }
+  },
+  "/docs/reference/julia/label_boxes/": {
+    "artifact": "packages/julia/reference/d77d2d4d9d5c50a1ac3c9ea6a01fbb808e7a5f246b88b8218e47475fd19e9b40.html",
+    "headings": {
+      "methods": "Methods"
+    },
+    "aliases": {
+      "Eunoia.label_boxes": "Eunoia.label_boxes",
+      "Eunoia.label_boxes-Tuple{AbstractDict, AbstractDict}": "Eunoia.label_boxes",
+      "method-9d718112f723a9f361bacb7afa4f22941863b4a004ede9a014cc7e536b6662d0": "label_boxes(placements::AbstractDict, sizes::AbstractDict; padding::Real = 0)"
+    }
+  }
+}

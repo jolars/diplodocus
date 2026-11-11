@@ -60,6 +60,9 @@ pub(super) fn page(
             matches!(d.document.blocks.first(),
             Some(Block::Heading {level:1,inlines,..}) if super::html::plain(inlines)==page.title)
         });
+    if !authored_title || site.home(route).is_some() {
+        output.push_str(&site.title_aliases(route, true));
+    }
     if !authored_title {
         writeln!(output, "# {}\n", escape(&page.title)).unwrap();
     } else if package_overview {
@@ -86,6 +89,7 @@ pub(super) fn page(
         }
         output.push('\n');
         for feature in &home.features {
+            output.push_str(&site.heading_aliases(route, None, &feature.title, true));
             writeln!(
                 output,
                 "## {}\n\n{}\n\n[Read more]({})\n",
@@ -138,6 +142,12 @@ pub(super) fn page(
         };
         for (index, signature) in item.signatures.iter().enumerate() {
             if let Some(member) = overloads.get(index) {
+                output.push_str(&site.heading_aliases(
+                    route,
+                    Some(&crate::site::python_overload_anchor(&member.item)),
+                    "",
+                    true,
+                ));
                 anchor(
                     &mut output,
                     &crate::site::python_overload_anchor(&member.item),
@@ -166,6 +176,7 @@ pub(super) fn page(
             .unwrap();
         }
         if !class.constructors.is_empty() {
+            output.push_str(&site.heading_aliases(route, Some("constructor"), "", true));
             anchor(&mut output, "constructor");
         }
         for signature in &class.constructors {
@@ -201,11 +212,18 @@ pub(super) fn page(
         output.push_str(&renderer.blocks(&document.document.blocks[start..])?);
     }
     for section in &page.julia_sections {
+        output.push_str(&site.heading_aliases(route, Some(section.anchor), section.title, true));
         anchor(&mut output, section.anchor);
         writeln!(output, "## {}\n", section.title).unwrap();
         for member in &section.members {
             let member_page = &site.embedded_pages[member];
             let item = member_page.item.expect("embedded Julia member");
+            output.push_str(&site.heading_aliases(
+                route,
+                Some(&site.overload_anchors[member]),
+                &super::julia::member_title(item),
+                true,
+            ));
             anchor(&mut output, &site.overload_anchors[member]);
             writeln!(output, "### {}\n", code(&super::julia::member_title(item))).unwrap();
             output.push_str(&sources(site, item));
@@ -243,6 +261,12 @@ pub(super) fn page(
                 .unwrap();
                 continue;
             }
+            output.push_str(&site.heading_aliases(
+                route,
+                Some(&member.anchor),
+                &member.item.name,
+                true,
+            ));
             anchor(&mut output, &member.anchor);
             writeln!(output, "## {}\n", code(&member.item.name)).unwrap();
             let overloads = match &member.item.language_data {
@@ -260,6 +284,12 @@ pub(super) fn page(
                 .enumerate()
             {
                 if let Some(overload) = overloads.get(index) {
+                    output.push_str(&site.heading_aliases(
+                        route,
+                        Some(&crate::site::python_overload_anchor(&overload.item)),
+                        "",
+                        true,
+                    ));
                     anchor(
                         &mut output,
                         &crate::site::python_overload_anchor(&overload.item),
@@ -294,6 +324,12 @@ pub(super) fn page(
     }
     if let Some(rust) = &page.api_page {
         for section in &rust.sections {
+            output.push_str(&site.heading_aliases(
+                route,
+                Some(&section.anchor),
+                &section.title,
+                true,
+            ));
             anchor(&mut output, &section.anchor);
             let title = if let Some(target) = section
                 .implementation
@@ -383,6 +419,7 @@ fn api_member(
     level: usize,
 ) -> Result<String, SiteError> {
     let mut output = String::new();
+    output.push_str(&site.heading_aliases(route, Some(&member.anchor), &member.item.name, true));
     anchor(&mut output, &member.anchor);
     writeln!(
         output,
@@ -441,7 +478,10 @@ fn concept_links(site: &Site<'_>, route: &str, concept: &Concept) -> Result<Stri
     } else {
         "Related API"
     };
-    let mut output = format!("## {label}\n\n");
+    let mut output = format!(
+        "{}## {label}\n\n",
+        site.heading_aliases(route, None, label, true)
+    );
     for item in &concept.members {
         let target = site
             .routes
@@ -482,6 +522,77 @@ struct Markdown<'a, 'b> {
 }
 
 impl Markdown<'_, '_> {
+    fn heading(
+        &mut self,
+        level: usize,
+        attributes: &Attributes,
+        inlines: &[Inline],
+        panel: bool,
+    ) -> Result<String, SiteError> {
+        let mut output = String::new();
+        if self.headings || panel {
+            let label = super::html::plain(inlines);
+            let identifier = if panel || level + self.heading_offset > 1 {
+                Some(super::anchors::heading_id(
+                    &mut self.identifiers,
+                    self.page.anchor_prefix.as_deref(),
+                    attributes,
+                    &label,
+                ))
+            } else {
+                attributes.identifier.as_ref().map(|id| id.value.clone())
+            };
+            output.push_str(&self.site.heading_aliases(
+                self.route,
+                identifier.as_deref(),
+                &label,
+                true,
+            ));
+            if let Some(identifier) = &identifier {
+                anchor(&mut output, identifier);
+            }
+        }
+        writeln!(
+            output,
+            "{} {}\n",
+            "#".repeat((level + self.heading_offset).clamp(1, 6)),
+            self.inlines(inlines)?
+        )
+        .unwrap();
+        Ok(output)
+    }
+
+    fn tabset(&mut self, attributes: &Attributes, blocks: &[Block]) -> Result<String, SiteError> {
+        let mut output = String::new();
+        if let Some(id) = &attributes.identifier {
+            anchor(&mut output, &id.value);
+        }
+        let level = blocks
+            .iter()
+            .filter_map(|block| match block {
+                Block::Heading { level, .. } => Some(*level),
+                _ => None,
+            })
+            .min();
+        let mut start = 0;
+        for (index, block) in blocks.iter().enumerate() {
+            if let Block::Heading {
+                level: heading_level,
+                attributes,
+                inlines,
+                ..
+            } = block
+                && Some(*heading_level) == level
+            {
+                output.push_str(&self.blocks(&blocks[start..index])?);
+                output.push_str(&self.heading(*heading_level, attributes, inlines, true)?);
+                start = index + 1;
+            }
+        }
+        output.push_str(&self.blocks(&blocks[start..])?);
+        Ok(output)
+    }
+
     fn api_documentation(
         &self,
         reference: &ItemReference,
@@ -497,6 +608,12 @@ impl Markdown<'_, '_> {
             },
         )?;
         let mut output = String::new();
+        output.push_str(&self.site.heading_aliases(
+            self.route,
+            Some(identifier),
+            &item.qualified_name,
+            true,
+        ));
         anchor(&mut output, identifier);
         writeln!(
             output,
@@ -657,15 +774,15 @@ impl Markdown<'_, '_> {
                 }
                 Block::Component {
                     attributes, blocks, ..
-                }
-                | Block::Tabset {
-                    attributes, blocks, ..
                 } => {
                     if let Some(identifier) = &attributes.identifier {
                         anchor(&mut output, &identifier.value);
                     }
                     output.push_str(&self.blocks(blocks)?);
                 }
+                Block::Tabset {
+                    attributes, blocks, ..
+                } => output.push_str(&self.tabset(attributes, blocks)?),
                 Block::Container {
                     kind: DocumentContainerKind::GeneratedOutput,
                     blocks,
@@ -698,43 +815,7 @@ impl Markdown<'_, '_> {
                     ..
                 } => {
                     authored_heading = *level;
-                    if self.headings
-                        && (attributes.identifier.is_some() || *level + self.heading_offset > 1)
-                    {
-                        let identifier = if let Some(id) = &attributes.identifier {
-                            id.value.clone()
-                        } else {
-                            let label = super::html::plain(inlines);
-                            let slug = label
-                                .to_lowercase()
-                                .split(|ch: char| !ch.is_alphanumeric())
-                                .filter(|part| !part.is_empty())
-                                .collect::<Vec<_>>()
-                                .join("-");
-                            let base = if slug.is_empty() { "section" } else { &slug };
-                            let mut id = base.to_owned();
-                            let mut suffix = 2;
-                            while !self.identifiers.insert(id.clone()) {
-                                id = format!("{base}-{suffix}");
-                                suffix += 1;
-                            }
-                            id
-                        };
-                        let identifier = self
-                            .page
-                            .anchor_prefix
-                            .as_ref()
-                            .map(|prefix| format!("{prefix}-{identifier}"))
-                            .unwrap_or(identifier);
-                        anchor(&mut output, &identifier);
-                    }
-                    writeln!(
-                        output,
-                        "{} {}\n",
-                        "#".repeat((*level + self.heading_offset).clamp(1, 6)),
-                        self.inlines(inlines)?
-                    )
-                    .unwrap();
+                    output.push_str(&self.heading(*level, attributes, inlines, false)?);
                 }
                 Block::BlockQuote { blocks, .. } | Block::Callout { blocks, .. } => {
                     for line in self.blocks(blocks)?.trim_end().lines() {

@@ -1,0 +1,61 @@
+{
+  "source": "https://jolars.github.io/qualpal/",
+  "paths": [
+    "index.html",
+    "algorithm.html",
+    "classqualpal_1_1Qualpal.html"
+  ],
+  "anchors": {
+    "index.html": [
+      "mainpage"
+    ],
+    "algorithm.html": [
+      "autotoc_md0",
+      "autotoc_md1",
+      "autotoc_md2",
+      "autotoc_md3",
+      "autotoc_md4",
+      "autotoc_md5",
+      "autotoc_md6"
+    ],
+    "classqualpal_1_1Qualpal.html": [
+      "a0402fee651217ef54e8e7e4547fa96e4",
+      "a26c61634710816cb9f9af59a3acb8bf1",
+      "a2882403dd79030ea8f3fc70d9ff2f4dd",
+      "a3946d06890606337569f964f082bee66",
+      "a421afdae9b08a808967fbdf017002f1f",
+      "a6284c387585ea09ad49af260078d20e3",
+      "a67b623ef9fcaec50be8b547b0bfe6792",
+      "a687e7a868549cb42c3e4b6dc0635018c",
+      "a6943da5abfcb65269d2e02d713718956",
+      "a72c6000f9e9e0343f43d8f792e475ea5",
+      "a7f0eaddd375ecaa811d4c4ee212dd962",
+      "a992c391556945358adb4c95625efee71",
+      "ab5b20f4585b6b607cc56a73bf8aa9aff",
+      "abcc1f45f81267379c589d06cacd053da",
+      "abdfc00d9f4caeab52a099c09df7c6e8c",
+      "aclassqualpal_1_1Qualpal_html",
+      "aclassqualpal_1_1Qualpal_html_a6284c387585ea09ad49af260078d20e3",
+      "aclassqualpal_1_1Qualpal_html_ab5b20f4585b6b607cc56a73bf8aa9aff",
+      "af0c71327eb6a45749438c26e266e8af8",
+      "details",
+      "pub-methods",
+      "r_a0402fee651217ef54e8e7e4547fa96e4",
+      "r_a26c61634710816cb9f9af59a3acb8bf1",
+      "r_a2882403dd79030ea8f3fc70d9ff2f4dd",
+      "r_a3946d06890606337569f964f082bee66",
+      "r_a421afdae9b08a808967fbdf017002f1f",
+      "r_a6284c387585ea09ad49af260078d20e3",
+      "r_a67b623ef9fcaec50be8b547b0bfe6792",
+      "r_a687e7a868549cb42c3e4b6dc0635018c",
+      "r_a6943da5abfcb65269d2e02d713718956",
+      "r_a72c6000f9e9e0343f43d8f792e475ea5",
+      "r_a7f0eaddd375ecaa811d4c4ee212dd962",
+      "r_a992c391556945358adb4c95625efee71",
+      "r_ab5b20f4585b6b607cc56a73bf8aa9aff",
+      "r_abcc1f45f81267379c589d06cacd053da",
+      "r_abdfc00d9f4caeab52a099c09df7c6e8c",
+      "r_af0c71327eb6a45749438c26e266e8af8"
+    ]
+  }
+}

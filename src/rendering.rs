@@ -1,5 +1,6 @@
 //! Rendering of validated site models into static output.
 
+pub(crate) mod anchors;
 pub(crate) mod cpp;
 mod footer;
 mod fragments;
