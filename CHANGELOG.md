@@ -1,5 +1,38 @@
 # Changelog
 
+## [0.14.0](https://github.com/jolars/diplodocus/compare/v0.13.1...v0.14.0) (2026-11-11)
+
+### Breaking changes
+
+- distinguish wide and full page layouts ([`5626179`](https://github.com/jolars/diplodocus/commit/5626179a5c662ad157d99e80e7711b4f58d4cb82))
+
+### Features
+
+- enable executable QMD includes ([`68d5159`](https://github.com/jolars/diplodocus/commit/68d5159e7a79bdf6ca2c8fad384dbf7b51ba2f66))
+- **cli:** add progress reporting and terminal styling ([`9dac697`](https://github.com/jolars/diplodocus/commit/9dac697a74afe5051316b0a6a9079afcef24a317))
+- **ui:** remove back-to-top on larger screens ([`e3fb562`](https://github.com/jolars/diplodocus/commit/e3fb562a559b0db7d548c6cf034c5c9775fb627a))
+- distinguish wide and full page layouts ([`5626179`](https://github.com/jolars/diplodocus/commit/5626179a5c662ad157d99e80e7711b4f58d4cb82))
+- add repository dropdown and header selection ([`8bec8f9`](https://github.com/jolars/diplodocus/commit/8bec8f9208bc71acbc332cc30c01cfe23e317d71))
+- expand authored Markdown includes ([`abee604`](https://github.com/jolars/diplodocus/commit/abee60483e2d1802a83c40c71032c59d69720ddc))
+- add optional browser opening to serve ([`42abf3d`](https://github.com/jolars/diplodocus/commit/42abf3d6490bf067ddda249b6851c6eb99fbb862))
+- support legacy fragment aliases ([`f981d15`](https://github.com/jolars/diplodocus/commit/f981d15f22f96afc5f8a0ddfe1ad09c0e2563a76))
+- support per-page site metadata ([`0d51c29`](https://github.com/jolars/diplodocus/commit/0d51c290d3d8ff0ecc722f2abb17b10a01be8b31))
+- declare public site assets and icons ([`dcf1bcb`](https://github.com/jolars/diplodocus/commit/dcf1bcb74d7ee4b3a0c7c7d8f410d16dce4ee49e))
+- add Doxygen C++ extractor ([`5d4eddd`](https://github.com/jolars/diplodocus/commit/5d4eddd697e74ce23623471ef42c61f180b8ca4c))
+
+### Bug Fixes
+
+- **tests:** disambiguate repository navigation heading ([`1c104c4`](https://github.com/jolars/diplodocus/commit/1c104c414a23d48cd51d4ddeefc58d448f377bab))
+- allow more time for browser server startup ([`7e1a8d6`](https://github.com/jolars/diplodocus/commit/7e1a8d650ff886d0f6fa8fd8601d8452f960ee9c))
+- retain Markdown include source maps in snapshots ([`8851f08`](https://github.com/jolars/diplodocus/commit/8851f089560aa4e091f3991a5c949e1770d23a63))
+- watch unresolved Markdown includes ([`04a80f9`](https://github.com/jolars/diplodocus/commit/04a80f9dc3b9a2d3dd5fb55bc04982f4363938c9))
+- resolve resources relative to Markdown includes ([`01a3e3e`](https://github.com/jolars/diplodocus/commit/01a3e3efc139d326d4b07a813ef798aa7d7cc849))
+- handle Markdown continuation prefixes ([`1469f66`](https://github.com/jolars/diplodocus/commit/1469f66262b4b662c3b190d14775e859454bc12a))
+- support static SVG figures through conversion ([`64f326f`](https://github.com/jolars/diplodocus/commit/64f326f05e7e63d0fc5b097f1906839c991d40b0))
+- preserve Doxygen diagram settings ([`22a79ff`](https://github.com/jolars/diplodocus/commit/22a79ffc55a8d9ce3947dd6d77835defd987fe8c))
+- preserve arguments in deprecated Rd topics ([`1360f50`](https://github.com/jolars/diplodocus/commit/1360f50b2d5d7a25c81a69e1ca86ed108347a9f8))
+- accept ellipsis in Rd argument labels ([`b835e61`](https://github.com/jolars/diplodocus/commit/b835e613ef59b1a3b952ed0fb152dad4669a44d7))
+
 ## [0.13.1](https://github.com/jolars/diplodocus/compare/v0.13.0...v0.13.1) (2026-11-10)
 
 ### Bug Fixes
