@@ -79,7 +79,6 @@ fn acceptance_registry_covers_snapshot_and_separate_command_contracts() {
 
 fn validate_registry(registry: &AcceptanceRegistry) {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"));
-    let roadmap = fs::read_to_string(root.join("TODO.md")).unwrap();
     let matrix = support::load_fixture("acceptance/MATRIX.md");
     assert_eq!(registry.criteria.len(), 11);
     let cases = registry
@@ -97,7 +96,6 @@ fn validate_registry(registry: &AcceptanceRegistry) {
     let mut covered_scenarios = BTreeSet::new();
     for number in 1..=11 {
         let id = format!("MVP-{number:02}");
-        assert!(roadmap.contains(&format!("**{id}:**")));
         assert!(matrix.contains(&format!("| `{id}`:")));
         let ids = &registry.criteria[&id];
         assert!(!ids.is_empty(), "uncovered {id}");

@@ -193,7 +193,8 @@ describes the engine boundary and its related tests.
 
 ## MVP completion coverage
 
-Every criterion in `TODO.md` has a stable ID and maps to concrete scenarios.
+Every criterion below has a stable ID and maps to concrete scenarios in
+[`CASES.json`](CASES.json).
 Registry entries specify expected behavior; the release gate requires scenario
 checks against the current implementation.
 
