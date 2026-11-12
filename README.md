@@ -59,6 +59,7 @@ before building. C++ API extraction uses Doxygen and an explicit Doxyfile. See t
 - [Configuration](docs/guide/configuration.md)
 - [Writing documentation](docs/guide/authoring.md)
 - [Command reference](docs/reference/cli.md)
+- [Development](docs/development/index.md)
 
 ## License
 

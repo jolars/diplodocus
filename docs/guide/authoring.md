@@ -283,6 +283,39 @@ Code fences in GFM and API documentation are always display-only. R Markdown chu
 only when their collection explicitly authorizes execution; see [executable examples](execution.md) before enabling them.
 
 
+## Include shared content
+
+GFM and QMD pages can include whole local files, including nested partials.
+For GFM, put this directive on its own unindented line, separated from other
+content by blank lines:
+
+```markdown
+<!--@include: ./parts/basics.md-->
+```
+
+QMD uses Quarto's include syntax:
+
+```markdown
+{{< include ./parts/basics.qmd >}}
+```
+
+Paths resolve from the file containing the directive. Links, images, and nested
+includes inside a partial resolve from that partial's directory. Use `@/` in
+GFM or `/` in QMD for paths relative to the collection's source root. Targets
+must stay inside the declared repository. GFM accepts `.md`; QMD accepts
+`.md` and `.qmd`. Double-quote paths containing spaces.
+
+Partials cannot declare frontmatter. The main page owns metadata, execution
+settings, and the working directory for included cells. Including a file does
+not change whether it also appears as a standalone page; keep partials outside
+the collection directory when they should have no route. Missing files and
+include cycles fail validation, with diagnostics pointing to the original
+source and include chain.
+
+Line ranges, named regions, heading selection, and verbatim code inclusion are
+not supported. Directives inside code fences, lists, and block quotes remain
+literal content. Includes currently apply only to GFM and QMD collections.
+
 ## R Markdown articles
 
 Use R Markdown for articles that evaluate R chunks and inline expressions with

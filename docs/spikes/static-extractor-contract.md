@@ -1,11 +1,9 @@
 # Static-extractor implementation reference
 
-The [prepared-environment decision](../decisions/0003-prepared-environment.md)
-supersedes the static-only extraction and inert-example requirements below.
-This reference describes current adapter behavior, manifests, and parser pins;
-it does not constrain the replacement contract to static extraction. Runtime
-assistance and required example execution follow the prepared-environment
-contract.
+This reference describes the source adapters, their manifests, and parser pins.
+The extraction pipeline also uses runtime assistance and executes examples;
+see the [design overview](../development/design.md) and
+[extraction guide](../guide/extraction.md) for the complete build behavior.
 
 ## Outcome
 
@@ -238,7 +236,6 @@ of effective export sets and known-generic coordinates as parser settings.
 ## Evidence
 
 The selected Python stack and its represented surface are recorded in the
-[accepted decision](../decisions/0001-static-extraction.md) and the
 [Python extractor reference](../ir/python-extraction.md). The production
 [Python source tests](../../tests/python_source.rs),
 [Python extraction tests](../../tests/milestone_four.rs), and

@@ -1,6 +1,6 @@
 # Browser development
 
-The browser workflow uses the small [four-language monorepo](../../examples/monorepo/README.md).
+The browser workflow uses the small [four-language monorepo](https://github.com/jolars/diplodocus/tree/main/examples/monorepo).
 Its R extraction uses the R installation supplied by devenv for library
 discovery. Rust extraction uses the separate pinned nightly supplied by devenv
 and verifies native doctests. Python and Julia API doctests use their native
@@ -149,7 +149,7 @@ appearance in this environment.
 
 ## Interactive agent inspection
 
-The official [Playwright CLI skill](../../.agents/skills/playwright-cli/SKILL.md)
+The official [Playwright CLI skill](https://github.com/jolars/diplodocus/blob/main/.agents/skills/playwright-cli/SKILL.md)
 is installed in the repository and is available to agents on their next turn.
 With `site-dev` running in another terminal:
 
@@ -174,7 +174,7 @@ browser environment supplied by devenv.
 
 ## External frontend example
 
-The [VitePress example](../../examples/vitepress/README.md) combines watched
+The [VitePress example](https://github.com/jolars/diplodocus/tree/main/examples/vitepress) combines watched
 package extraction with VitePress's own guide updates. Run `npm run vitepress-dev`
 for interactive development or `npm run vitepress-test` for isolated browser
 checks. Its temporary workspace includes the VitePress site and a small
@@ -212,4 +212,4 @@ The thin `@playwright/cli` launcher is pinned separately. Its npm overrides use
 the same stable `playwright` and `playwright-core` as the test runner instead of
 the launcher's prerelease dependencies. When updating it, verify `open`,
 `snapshot`, and `close`, and refresh the vendored skill from the matching
-upstream commit. See [skill provenance](../../.agents/skills/UPSTREAM.md).
+upstream commit. See [skill provenance](https://github.com/jolars/diplodocus/blob/main/.agents/skills/UPSTREAM.md).

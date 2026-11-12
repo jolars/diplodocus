@@ -19,8 +19,9 @@ must name that package's library source file. All invocations use `--offline
 --locked`, explicit package selection, and the host target. Feature defaults and
 additional features come from the target's optional `rust` settings.
 
-Rust targets permit local compilation and build scripts under the prepared
-environment decision. Compilation artifacts live in generated cache storage.
+Rust targets permit local compilation and build scripts in the
+[prepared environment](../development/design.md#extraction-works-in-a-prepared-environment).
+Compilation artifacts live in generated cache storage.
 Native preparation has a ten-minute deadline. Cancellation and timeout terminate
 the supervised process group, and incomplete cleanup prevents publication.
 

@@ -95,7 +95,7 @@ implemented as an optional `serve --live-reload` feature.
   documentation examples as motivating cases, with a small browser runtime
   or adapters where useful.
 - [ ] Add Markdown includes for composing authored pages from existing files.
-  - [x] Define the [authoring contract](docs/design/markdown-includes.md):
+  - [x] Define the [include behavior](docs/guide/authoring.md#include-shared-content):
     VitePress syntax for GFM, Quarto syntax for QMD, paths relative to each
     included file, collection-root paths, repository boundaries, and errors
     for missing or invalid inputs.

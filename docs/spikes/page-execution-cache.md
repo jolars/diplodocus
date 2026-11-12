@@ -12,7 +12,7 @@ This is the Milestone 2 cache decision. It extends the [authored-execution
 contract](authored-execution-contract.md), whose authority, output-safety, and
 cleanup rules apply on hits as well as misses. Milestone 6 implemented storage
 and restore through the public Jupyter engine and executing commands; see the
-[implementation map](../design/execution.md).
+[design overview](../development/design.md).
 
 Pages without includes use key schema `page-execution-key-v1`. Composed QMD
 pages use the [v2 extension](#composed-qmd-pages). Both use artifact schema

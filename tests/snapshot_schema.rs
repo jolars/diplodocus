@@ -1,14 +1,12 @@
 mod support;
 
 use diplodocus::assembly::assemble_workspace;
-use diplodocus::ir::{ItemLanguageData, SourcedDocument, SourcedSignature};
 use diplodocus::snapshots::Snapshot;
 use diplodocus::validation::{DocumentIdentity, resolve_workspace};
 use rusqlite::{Connection, params};
-use serde::{Serialize, de::DeserializeOwned};
 use serde_json::{Value, json};
 
-const CONTRACT: &str = include_str!("../docs/design/snapshot-schema.md");
+const CONTRACT: &str = include_str!("../docs/reference/snapshots.md");
 
 fn example(heading: &str, language: &str) -> &'static str {
     CONTRACT
@@ -220,19 +218,4 @@ fn documented_sql_examples_query_published_records() {
                 .collect::<Vec<_>>()
         );
     });
-}
-
-fn assert_json_example<T: DeserializeOwned + Serialize>(heading: &str) {
-    let value: Value = serde_json::from_str(example(heading, "json")).unwrap();
-    let decoded: T = serde_json::from_value(value.clone()).unwrap();
-    assert_eq!(serde_json::to_value(decoded).unwrap(), value);
-}
-
-#[test]
-fn documented_nested_json_preserves_the_typed_ir_shapes() {
-    assert_json_example::<diplodocus::configuration::PresentationDefaults>("Presentation defaults");
-    assert_json_example::<SourcedDocument>("Sourced document example");
-    assert_json_example::<SourcedSignature>("Sourced signature example");
-    assert_json_example::<ItemLanguageData>("Python language extension example");
-    assert_json_example::<ItemLanguageData>("R language extension example");
 }

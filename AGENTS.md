@@ -11,7 +11,7 @@ Julia, Rust, and C++ packages.
   branding.
 - `tests/` contains Rust integration tests, `fixtures/`, golden files in
   `snapshots/`, and Playwright tests in `browser/`.
-- `docs/` contains guides, architecture decisions, and contracts.
+- `docs/` contains guides, reference documentation, and development documentation.
   `examples/monorepo/` exercises all four languages; `examples/vitepress/`
   demonstrates an external frontend.
 

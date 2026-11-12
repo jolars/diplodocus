@@ -1,10 +1,9 @@
 # Authored-execution contract
 
-The [prepared-environment decision](../decisions/0003-prepared-environment.md)
-supersedes the opt-in execution and inert API-example requirements below. This
-document describes the current QMD policy. Its output validation, session
-lifecycle, and source-attribution rules remain applicable; execution selection
-and policy identifiers must change when the replacement contract is implemented.
+This document describes the QMD execution policy. API examples and native
+articles have separate execution paths, described in the
+[execution guide](../guide/execution.md). The
+[design overview](../development/design.md) explains the shared boundaries.
 
 ## Outcome
 
@@ -18,8 +17,7 @@ This is the logical contract for the Milestone 2 policy decision and the
 [page execution-cache contract](page-execution-cache.md) specifies key encoding
 and artifact layout; this document defines the information those artifacts must
 preserve. The [Rust execution interface](../ir/authored-execution.md) describes
-the public engine boundary, and the [implementation map](../design/execution.md)
-points to the current command path and tests.
+the public engine boundary.
 
 Policy identifiers are `qmd-mvp-v1`, `mime-mvp-v1`, `html-mvp-v1`, `svg-mvp-v1`,
 and `execution-mvp-v1`. Changing a default, supported value, selection order, or

@@ -1,9 +1,7 @@
 # Static R extraction
 
-This page describes the current source adapter. The [prepared-environment
-decision](../decisions/0003-prepared-environment.md) supersedes its
-package-loading prohibition and inert-example contract. Source assembly remains
-static; extraction now loads the checkout and executes Rd examples through a
+This page describes the source adapter. Source assembly remains
+static; extraction loads the checkout and executes Rd examples through a
 separate native completion step.
 
 `extractors::r::extract_target(repository, package, target)` reads a resolved R
@@ -11,7 +9,7 @@ package directory and returns a portable `RExtraction`. The API adapter never
 installs, attaches, loads, or sources a package, or evaluates documentation. R must be
 available on `PATH` for an isolated library-discovery probe.
 Workspace assembly, reference resolution, and CLI commands consume this fragment;
-their boundaries are described in the [implementation map](../design/execution.md).
+their boundaries are described in the [design overview](../development/design.md).
 
 The result contains validated `DESCRIPTION` metadata, canonical items with
 independent signatures and documentation, ordered diagnostics, and extraction

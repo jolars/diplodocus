@@ -3,11 +3,13 @@
 Use the reference to look up exact commands and configuration fields:
 
 - [CLI Reference](cli.md) lists commands, flags, and command-line defaults.
-- [Configuration](configuration.md) lists every `diplodocus.yaml` option, including required fields, defaults, and accepted values.
+- [Configuration](configuration.md) lists every `diplodocus.yaml` option,
+  including required fields, defaults, and accepted values.
+- [Snapshot format](snapshots.md) describes the SQLite records and SQL queries
+  for direct consumers.
 
 For a walkthrough, start with [getting started](../guide/quick-start.md) or the
 [configuration guide](../guide/configuration.md).
 
-The [changelog](../../CHANGELOG.md) lists released changes. See
-[contributing](../../CONTRIBUTING.md) for the development environment, checks,
-and pull request guidelines.
+The [development section](../development/index.md) covers the design,
+contributing, browser workflows, and changelog.

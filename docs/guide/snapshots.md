@@ -18,9 +18,8 @@ Extraction replaces the complete snapshot. It keeps stable semantic IDs for
 retained entities and drops removed entities and unused assets. A failed
 extraction or publication leaves the previous completed snapshot in place. Treat
 a copied snapshot as a build artifact; do not edit its records by hand. The
-[storage
-schema](https://github.com/jolars/diplodocus/blob/main/docs/design/snapshot-schema.md)
-in the source repository describes its tables and validation rules.
+[snapshot format reference](../reference/snapshots.md) describes its tables
+and validation rules.
 
 ## Use a snapshot in an existing site
 

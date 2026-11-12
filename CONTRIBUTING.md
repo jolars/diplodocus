@@ -1,9 +1,10 @@
 # Contributing
 
 Diplodocus is a Rust CLI that builds documentation sites for Python, R, Julia,
-and Rust packages. The [configuration guide](docs/guide/configuration.md) and
-[authoring guide](docs/guide/authoring.md) describe its current behavior. See
-the [changelog](CHANGELOG.md) for released changes.
+Rust, and C++ packages. The [configuration guide](docs/guide/configuration.md)
+and [authoring guide](docs/guide/authoring.md) describe its current behavior.
+See the [changelog](CHANGELOG.md) for released changes and the
+[design](docs/development/design.md) for an overview of the architecture.
 
 ## Development environment
 
@@ -34,9 +35,8 @@ cargo clippy --locked --all-targets --all-features -- -D warnings
 For presentation changes, install browser tools with `npm ci --ignore-scripts`,
 run `npm run site-test`, and inspect screenshots from `npm run site-capture`.
 Run `npm run vitepress-test` for changes to the external frontend integration.
-The repository's [browser development
-guide](https://github.com/jolars/diplodocus/blob/main/docs/development/browser.md)
-describes these workflows.
+The [browser development guide](docs/development/browser.md) describes these
+workflows.
 
 ## Pull requests
 

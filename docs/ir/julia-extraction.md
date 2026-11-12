@@ -1,9 +1,9 @@
 # Julia extraction contract
 
 This page describes the source adapter and its runtime type completion. The
-[prepared-environment decision](../decisions/0003-prepared-environment.md)
-also requires Julia example execution, implemented by the native doctest adapter
-in the extraction command pipeline.
+extraction command pipeline also runs Julia examples through a native doctest
+adapter. The [design overview](../development/design.md) explains how source
+analysis and runtime assistance fit together.
 
 The `julia` adapter reads an explicit `.jl` entry file and `Project.toml` with
 Rust libraries. Fatou provides Julia syntax, documentation attachments, string

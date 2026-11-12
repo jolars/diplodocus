@@ -423,26 +423,6 @@ fn serialization_preserves_the_configuration_shape() {
 }
 
 #[test]
-fn parses_design_examples() {
-    let design = include_str!("../DESIGN.md");
-    let mut examples = 0;
-    for block in design.split("```yaml\n").skip(1) {
-        let source = block.split_once("```").unwrap().0;
-        let source = if source.starts_with("concepts:") {
-            format!("project:\n  name: \"Concept example\"\n{source}")
-        } else {
-            source.to_owned()
-        };
-        parse_configuration(&source).unwrap();
-        examples += 1;
-    }
-    assert!(
-        examples > 0,
-        "DESIGN.md should contain a YAML configuration example"
-    );
-}
-
-#[test]
 fn parses_acceptance_workspace_variants() {
     let config = parse_configuration(ACCEPTANCE).unwrap();
     assert_eq!(

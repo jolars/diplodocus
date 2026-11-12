@@ -6,8 +6,7 @@ with supervised kernel sessions, validated outputs, and a whole-page cache. The
 `diplodocus::documents` module validates QMD options and prepares cells without
 I/O. Commands authorize execution, publish snapshots, and render sites. The
 [authored-execution policy](../spikes/authored-execution-contract.md) defines the
-rules; the [implementation map](../design/execution.md) points to the current
-pipeline and tests.
+rules; the [design overview](../development/design.md) explains the pipeline.
 
 ## Engine and caller responsibilities
 

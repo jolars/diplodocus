@@ -1,8 +1,6 @@
 # Static Python extraction
 
-This page describes the current source adapter. The [prepared-environment
-decision](../decisions/0003-prepared-environment.md) supersedes its runtime
-prohibition and inert-example contract. The source adapter stays static, while
+This page describes the source adapter. The source adapter stays static, while
 the extraction command pipeline always loads the Python checkout and verifies its
 source path and version, then executes any Python doctests. Packages without
 doctests still require an interpreter and prepared dependencies. `check` uses only
@@ -13,7 +11,7 @@ and extraction target. It returns a schema-versioned `PythonExtraction`
 fragment containing metadata, canonical items, diagnostics, and provenance.
 The caller must reject error-bearing fragments before building a site. Workspace
 assembly, reference resolution, routes, and CLI commands consume this fragment;
-their boundaries are described in the [implementation map](../design/execution.md).
+their boundaries are described in the [design overview](../development/design.md).
 
 The implementation composes three independently testable passes:
 

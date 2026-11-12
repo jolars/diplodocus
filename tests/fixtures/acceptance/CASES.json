@@ -895,7 +895,7 @@
       "cases": [],
       "inputs": [
         "tests/snapshot_validation.rs",
-        "docs/design/snapshot-schema.md"
+        "docs/reference/snapshots.md"
       ],
       "action": "Load copies with independently unsupported storage, IR, and canonical encoding versions, including copies whose record tables cannot be decoded; also load a read-only valid database and a missing path.",
       "expected": "Reject unsupported versions before decoding records, without migration or mutation. Loading a valid snapshot leaves its bytes and modification time unchanged; loading a missing path fails without creating a database or sidecars.",
@@ -986,7 +986,7 @@
         "tests/snapshot_validation.rs",
         "tests/snapshots_storage.rs",
         "tests/commands.rs",
-        "docs/design/snapshots.md"
+        "docs/development/design.md"
       ],
       "action": "Run generate --input on missing, unsupported-version, malformed-record, dangling-reference, and corrupt-asset snapshots, first without a site and then with a successful site; try an output overlapping the input and stored HTML that violates the active sanitizer policy.",
       "expected": "Generation validates before publication, rejects invalid inputs with a nonzero exit, and creates no partial site. The input database and prior site remain unchanged; stored HTML receives no trust from deserialization and only markup accepted by the active policy can render.",
