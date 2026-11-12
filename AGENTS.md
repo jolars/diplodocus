@@ -2,8 +2,8 @@
 
 ## Project Structure & Module Organization
 
-Diplodocus is a Rust 2024 CLI that builds documentation sites for Python, R,
-Julia, Rust, and C++ packages.
+Diplodocus is a Rust 2024 CLI that builds documentation sites for multi-language
+monorepos or linked repositories.
 
 - `src/` contains the CLI, extractors, documentation IR, assembly, execution,
   snapshots, and rendering modules.
@@ -11,15 +11,15 @@ Julia, Rust, and C++ packages.
   branding.
 - `tests/` contains Rust integration tests, `fixtures/`, golden files in
   `snapshots/`, and Playwright tests in `browser/`.
-- `docs/` contains guides, reference documentation, and development documentation.
-  `examples/monorepo/` exercises all four languages; `examples/vitepress/`
-  demonstrates an external frontend.
+- `docs/` contains guides, reference documentation, and development
+  documentation. `examples/monorepo/` exercises all four languages;
+  `examples/vitepress/` demonstrates an external frontend.
 
 ## Build, Test, and Development Commands
 
-Run commands from the repository root. Enter `devenv shell` for the pinned Rust
-toolchain, language runtimes, Jupyter kernels, Node, and Chromium. Install
-browser tools with `npm ci --ignore-scripts`.
+Run commands from the repository root. If devenv isn't already active, enter
+`devenv shell` to activate the development environment. Install browser tools
+with `npm ci --ignore-scripts`.
 
 - `cargo build --locked`: compile the library and CLI.
 - `cargo test --locked`: run Rust unit, integration, and documentation tests.
@@ -41,23 +41,7 @@ GFM, as configured in `panache.toml`.
 
 ## Testing Guidelines
 
-Use descriptive `snake_case` Rust test names and shared helpers in
-`tests/support.rs`. Add focused regression tests for behavior changes; review
-Snapbox golden-file changes in `tests/snapshots/`. No numeric coverage threshold
-is enforced.
-
 Run `cargo test --locked --test rust_extraction` to target one integration
 suite. For presentation changes, run `npm run site-test` and inspect
 `npm run site-capture` screenshots. Use `npm run vitepress-test` for external
 frontend integration changes. See `docs/development/browser.md` for details.
-
-## Commit & Pull Request Guidelines
-
-Follow the history's Conventional Commits, such as
-`fix: validate Python checkouts` or `refactor(ui): fix sidebar spacing`. Keep
-titles short and ASCII. Reference applicable issues with `Fixes #123`,
-`Closes #123`, or `Refs #123`.
-
-PRs should describe the resulting behavior, link relevant issues, report
-validation, and include screenshots for visual changes. Keep generated sites and
-browser artifacts out of commits.
