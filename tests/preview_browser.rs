@@ -133,6 +133,30 @@ fn browser_launcher_probe() {
 }
 
 #[tokio::test]
+async fn preview_shuts_down_cleanly_on_interrupt_and_termination() {
+    for signal in [rustix::process::Signal::INT, rustix::process::Signal::TERM] {
+        let root = workspace();
+        let (mut child, mut lines, url) = start(&mut command(&root, 0)).await;
+        line_containing(&mut lines, "Watching for changes").await;
+        assert!(request(&url).contains("First generation"));
+
+        rustix::process::kill_process(
+            rustix::process::Pid::from_raw(child.id().unwrap() as i32).unwrap(),
+            signal,
+        )
+        .unwrap();
+        let status = tokio::time::timeout(Duration::from_secs(5), child.wait())
+            .await
+            .expect("preview did not shut down after a signal")
+            .unwrap();
+        assert!(
+            status.success(),
+            "preview failed after {signal:?}: {status}"
+        );
+    }
+}
+
+#[tokio::test]
 async fn opens_ready_local_url_once_with_assigned_port_and_live_reload() {
     let root = workspace();
     let (mut child, _lines, url) =

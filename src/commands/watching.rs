@@ -128,6 +128,9 @@ impl Watcher {
         loop {
             self.interval.tick().await;
             let observed = self.observer.capture();
+            // Wait a full period after scanning. A build or a slow scan can
+            // leave ticks perpetually overdue and starve shutdown in select!.
+            self.interval.reset();
             if observed != self.pending {
                 self.pending = observed;
                 self.changed = Instant::now();
@@ -636,6 +639,40 @@ fn discover(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test(start_paused = true)]
+    async fn overdue_watcher_waits_between_scans() {
+        async fn poll_change_once(watcher: &mut Watcher) {
+            let mut change = std::pin::pin!(watcher.next_change());
+            std::future::poll_fn(|context| {
+                assert!(std::future::Future::poll(change.as_mut(), context).is_pending());
+                std::task::Poll::Ready(())
+            })
+            .await;
+        }
+
+        let root = tempfile::tempdir().unwrap();
+        let config = root.path().join("diplodocus.yaml");
+        fs::write(&config, "project:\n  name: Initial\n").unwrap();
+        let mut watcher = Watcher::new(&config, &root.path().join("site")).unwrap();
+
+        // A build can leave hundreds of polling ticks overdue. Scans must still
+        // wait between observations so other select branches can handle shutdown.
+        tokio::time::advance(Duration::from_secs(60)).await;
+        fs::write(&config, "project:\n  name: First edit\n").unwrap();
+        poll_change_once(&mut watcher).await;
+        let first = watcher.pending.clone();
+        assert_ne!(first, watcher.attempted);
+
+        fs::write(&config, "project:\n  name: Second edit\n").unwrap();
+        tokio::task::yield_now().await;
+        poll_change_once(&mut watcher).await;
+        assert_eq!(watcher.pending, first);
+
+        tokio::time::advance(Duration::from_millis(100)).await;
+        poll_change_once(&mut watcher).await;
+        assert_ne!(watcher.pending, first);
+    }
 
     #[test]
     fn watches_nested_include_targets_even_when_assembly_fails() {
