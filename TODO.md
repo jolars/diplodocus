@@ -1,5 +1,144 @@
 # Project status and remaining work
 
+## Native API extraction roadmap
+
+Use established language tooling as the authority for API semantics. Diplodocus
+owns the common documentation model, cross-language references, snapshots,
+navigation, search, rendering, and development loop. Keep Rust parsers for
+source locations, change detection, and supported supplemental analysis rather
+than reimplementing every language's runtime and documentation conventions.
+
+The intended workflow is one command: `diplodocus serve`. For a package using
+roxygen2, saving R source should make Diplodocus invoke roxygen2, consume the
+generated documentation, rebuild affected pages, and refresh the browser. The
+caller supplies the language tools, dependencies, and compiled extensions;
+Diplodocus orchestrates them without installing dependencies.
+
+This is planned work. Today R extraction reads existing Rd files without running
+roxygen2, Python and Julia primarily use static source adapters with runtime
+assistance, and Rust and C++ already consume native rustdoc JSON and Doxygen XML.
+The current watcher reruns extraction; it is not yet an incremental API engine.
+Keep the existing Rust and C++ integrations and use the [current
+design](docs/development/design.md) as the migration baseline. Preserve native
+execution engines such as knitr for authored documents; this roadmap does not
+require replacing Quarto, MyST, or R Markdown in full.
+
+### 1. Define the adapter boundary and measure the current pipeline
+
+- [ ] Define a common native adapter contract for package metadata, API items,
+  signatures, documentation, symbolic references, source evidence,
+  diagnostics, tool versions, and observed inputs. Keep site routing and
+  rendering outside the language tools.
+- [ ] Specify prerequisites and command behavior for each adapter. `check` may
+  load packages and invoke native extraction but must not execute
+  documentation examples. `extract`, `build`, and `serve` must use the same
+  API discovery rules and retain completed execution evidence before
+  publication.
+- [ ] Inventory existing static capabilities and gaps against representative
+  packages. Reuse Qualpal and qualpalr for R/C++ integration and add Python
+  and Julia cases with generated APIs. Preserve supported identities,
+  signatures, links, and source evidence during migration.
+- [ ] Measure startup and warm saves separately, including package loading,
+  documentation generation, extraction, examples, reference resolution, and
+  rendering. Compare baseline and candidate in one `compute bench` window
+  and choose measurable preview targets from the results.
+
+### 2. Deliver the R workflow with roxygen2
+
+- [ ] Select roxygen2 generation or maintained Rd input per package. Respect the
+  package's supported roxygen options, roclets, and loading strategy, and
+  document the supported versions and extension surface.
+- [ ] Invoke roxygen2 from the normal command pipeline when its inputs change.
+  Users must not need a separate `devtools::document()` command before
+  running `check`, `extract`, `build`, or `serve`.
+- [ ] Define where generated Rd and namespace metadata live and how they map
+  back to maintained R sources. Document any checkout writes, prevent
+  generated output from triggering watch loops, and reject stale output
+  after generation fails.
+- [ ] Combine generated Rd with native exports, formals, and dispatch evidence.
+  Stop requiring every documented declaration to be reconstructible from a
+  direct static source definition. Retain source parsers for attribution and
+  supported supplemental evidence.
+- [ ] Reuse native process supervision, checkout verification, cancellation,
+  deadlines, diagnostics, and preservation of the previous successful site.
+  Keep Rd example execution and portable snapshots working with generated
+  input.
+- [ ] Add acceptance cases for roxygen prose, changed formals and exports,
+  inherited documentation, shared topics, and generated declarations. In the
+  qualpalr recipe, verify that plain `diplodocus serve` updates
+  documentation after a source edit without manually regenerating Rd, and
+  recovers after a generation error is fixed.
+
+### 3. Make the development loop incremental
+
+- [ ] Make watching, native regeneration, and browser refresh work together
+  through plain `diplodocus serve`, with documented defaults and overrides.
+  Build on the existing watcher and optional live reload.
+- [ ] Start with package-level invalidation. Track source, documentation
+  inheritance, configuration, tool versions, dependencies, and declared
+  environment inputs; invalidate the whole affected package when
+  dependencies are uncertain. Avoid re-extracting unrelated packages.
+- [ ] Reuse extraction or execution results only when their tracked inputs and
+  environment justify it. Define separate policies for documentation
+  generation and example execution; a comment-only edit is not proof that
+  evaluated documentation or inherited topics are unchanged.
+- [ ] Rebuild affected documents and update references, navigation, and search
+  when their dependencies change. Remove deleted items and assets, and
+  compare incremental results with a clean build.
+- [ ] Measure representative R saves against the baseline before adding finer
+  invalidation or persistent workers. If native extraction dominates,
+  evaluate upstream improvements or an explicitly provisional preview with
+  pending validation visible; keep completed snapshots and published builds
+  verified.
+
+### 4. Migrate Python and Julia through supported native interfaces
+
+- [ ] Prototype a Python exporter using the prepared package and Sphinx/autodoc.
+  Identify the smallest supported interface that returns structured API
+  records, including signatures and docstrings, rather than importing a
+  separately rendered site. Define supported docstring formats, extension
+  behavior, and precedence for maintained stubs.
+- [ ] Prototype Julia extraction from the loaded package's documentation and
+  method systems, using Documenter where needed. Define the supported export
+  interface and compatibility policy before relying on Documenter internals.
+  Cover generated declarations, attached documentation, and method
+  identities.
+- [ ] Migrate one adapter at a time with acceptance cases for existing public
+  APIs and runtime-derived declarations. Preserve aliases, overloads or
+  methods, source evidence, doctests, and detached generation. Keep
+  unsupported behavior explicit rather than silently switching to a
+  different API interpretation.
+- [ ] Update environment requirements, CI, configuration guidance, and extractor
+  contracts alongside each migration. Remove superseded static semantic
+  rules after the native path covers their acceptance cases; retain useful
+  parsers.
+
+### 5. Compose documentation produced in separate repositories
+
+- [ ] Define a versioned package API bundle built on the existing IR and
+  snapshot machinery. Retain semantic identities, symbolic references,
+  assets, execution evidence, tool versions, and source revisions before
+  final site routing. Distinguish bundles from completed workspace
+  snapshots.
+- [ ] Import local bundles alongside locally extracted packages. Resolve
+  cross-package references and choose routes after composition, with
+  diagnostics for conflicting identities, incompatible formats, or missing
+  dependencies. Verify relocation and generation without producer checkouts
+  or runtimes.
+- [ ] Add producer CI recipes that export revision-pinned bundles in each
+  repository's own environment. Use Qualpal and qualpalr to demonstrate a
+  shared site whose final assembly does not require the C++ producer's
+  toolchain in the R repository.
+- [ ] Add explicit remote bundle retrieval, caching, and mounting under a chosen
+  site path, starting with one documented artifact source. Pin revisions and
+  artifact digests and allow a local checkout to replace a published bundle
+  during development. Repository shorthand must explain the producer
+  artifact requirement; arbitrary source repositories still need extraction
+  somewhere.
+- [ ] Document and test both workflows: prepared local checkouts for active
+  development, and independently published bundles for site assembly. Keep
+  existing cross-repository configuration working throughout the migration.
+
 ## Qualpal and qualpalr documentation integration
 
 Use the local checkouts at `../qualpal` and `../qualpalr` as the acceptance case
@@ -76,12 +215,13 @@ before it can build in full.
 
 ## Scope held for later
 
-Incremental extraction and rendering; older snapshot migrations; historical
-release assembly; additional language extractors; automatic repository
-discovery; external extractor, renderer, or execution plugins; whole-document
-notebooks; cell-level caching; arbitrary themes and Quarto compatibility; and a
-hosted service are outside the first release. Browser live reload is already
-implemented as an optional `serve --live-reload` feature.
+The roadmap above sets implementation order; it does not make every stage a
+first-release gate. Older snapshot migrations; historical release assembly;
+additional language extractors; automatic repository discovery; external
+extractor, renderer, or execution plugins; whole-document notebooks; cell-level
+caching; arbitrary themes and full Quarto compatibility; and a hosted service
+remain outside the first release. Browser live reload is already implemented as
+an optional `serve --live-reload` feature.
 
 - [ ] Add first-class interactive component embedding for authored pages.
   Diplodocus should provide authoring syntax for declaring a component and
@@ -95,10 +235,11 @@ implemented as an optional `serve --live-reload` feature.
   documentation examples as motivating cases, with a small browser runtime
   or adapters where useful.
 - [ ] Add Markdown includes for composing authored pages from existing files.
-  - [x] Define the [include behavior](docs/guide/authoring.md#include-shared-content):
-    VitePress syntax for GFM, Quarto syntax for QMD, paths relative to each
-    included file, collection-root paths, repository boundaries, and errors
-    for missing or invalid inputs.
+  - [x] Define the [include
+    behavior](docs/guide/authoring.md#include-shared-content): VitePress
+    syntax for GFM, Quarto syntax for QMD, paths relative to each included
+    file, collection-root paths, repository boundaries, and errors for
+    missing or invalid inputs.
   - [x] Implement whole-file and nested includes with cycle detection. Retain
     each included file's source path and line locations so diagnostics can
     identify the included source and its include chain.
