@@ -25,23 +25,28 @@ require replacing Quarto, MyST, or R Markdown in full.
 
 ### 1. Define the adapter boundary and measure the current pipeline
 
-- [ ] Define a common native adapter contract for package metadata, API items,
+- [x] Define a common native adapter contract for package metadata, API items,
   signatures, documentation, symbolic references, source evidence,
   diagnostics, tool versions, and observed inputs. Keep site routing and
   rendering outside the language tools.
-- [ ] Specify prerequisites and command behavior for each adapter. `check` may
+- [x] Specify prerequisites and command behavior for each adapter. `check` may
   load packages and invoke native extraction but must not execute
   documentation examples. `extract`, `build`, and `serve` must use the same
   API discovery rules and retain completed execution evidence before
   publication.
-- [ ] Inventory existing static capabilities and gaps against representative
+- [x] Inventory existing static capabilities and gaps against representative
   packages. Reuse Qualpal and qualpalr for R/C++ integration and add Python
   and Julia cases with generated APIs. Preserve supported identities,
   signatures, links, and source evidence during migration.
-- [ ] Measure startup and warm saves separately, including package loading,
+- [x] Measure startup and warm saves separately, including package loading,
   documentation generation, extraction, examples, reference resolution, and
   rendering. Compare baseline and candidate in one `compute bench` window
   and choose measurable preview targets from the results.
+
+The [adapter contract and capability inventory](docs/development/native-adapters.md)
+record the shared boundary and migration gaps. The
+[pipeline baseline](docs/development/pipeline-baseline.md) describes the
+developer measurement workflow.
 
 ### 2. Deliver the R workflow with roxygen2
 

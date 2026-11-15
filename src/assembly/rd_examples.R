@@ -8,9 +8,14 @@ local({
   if (!requireNamespace("pkgload", quietly = TRUE) || !requireNamespace("evaluate", quietly = TRUE)) {
     stop("Rd example execution requires pkgload and evaluate")
   }
+  timings <- paste0(tools::file_path_sans_ext(args[[3L]]), ".timings")
+  started <- proc.time()[["elapsed"]]
   checkout <- load_checkout(args[[1L]], args[[4L]], args[[5L]])
   name <- checkout$name
   verify_checkout <- checkout$verify
+  cat("package-loading", proc.time()[["elapsed"]] - started, sep = "\t", file = timings)
+  cat("\n", file = timings, append = TRUE)
+  started <- proc.time()[["elapsed"]]
   rd <- tools::parse_Rd(args[[2L]], encoding = "UTF-8")
   codefile <- file.path(dirname(args[[3L]]), "examples.R")
   tools::Rd2ex(rd, out = codefile, commentDontrun = TRUE, commentDonttest = FALSE)
@@ -77,6 +82,8 @@ local({
       else if (is.character(result)) emit("text", result)
       else stop("Unsupported Rd example output")
   }
+  cat("examples", proc.time()[["elapsed"]] - started, sep = "\t", file = timings, append = TRUE)
+  cat("\n", file = timings, append = TRUE)
   verify_checkout()
   emit("r-version", as.character(getRversion()))
   emit("package-version", as.character(utils::packageVersion(name)))

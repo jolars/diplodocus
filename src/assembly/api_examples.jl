@@ -99,6 +99,8 @@ function expressions(lines, first, last, offsets)
 end
 
 function run(request_path, output_path)
+    timings = splitext(output_path)[1] * ".timings"
+    started = time_ns()
     request = TOML.parsefile(request_path)
     root = request["package_root"]
     project = TOML.parsefile(joinpath(root, "Project.toml"))
@@ -109,6 +111,8 @@ function run(request_path, output_path)
         error("Loaded package does not match the supplied checkout.")
     string(Base.pkgversion(loaded)) == project["version"] ||
         error("Loaded package version conflicts with checkout metadata.")
+    write(timings, "package-loading\t$(Float64(time_ns() - started) / 1e9)\n")
+    started = time_ns()
     source = request["source"]
     occursin(r"(?m)^\s*[`~]{3,}@meta", source) &&
         error("Doctest @meta setup is unsupported; use block-level setup and teardown.")
@@ -172,6 +176,9 @@ function run(request_path, output_path)
             setup(scope, settings, :teardown)
         end
         index += 1
+    end
+    open(timings, "a") do io
+        println(io, "examples\t$(Float64(time_ns() - started) / 1e9)")
     end
     dependencies = Dict{String,String}()
     for (id, dependency) in Base.loaded_modules

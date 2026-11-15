@@ -137,6 +137,7 @@ pub(super) async fn extract_target(
     repository: &ResolvedRepositoryPaths,
     package: &ResolvedPackagePaths,
     target: &ResolvedTargetPath,
+    reporting: &Reporting,
     deadlines: ExecutionDeadlines,
     cancellation: &mut ExecutionCancellation<'_>,
 ) -> Result<DoxygenNativeExtraction, AssemblyError> {
@@ -248,7 +249,14 @@ pub(super) async fn extract_target(
     }
     fs::write(&wrapper, configuration)?;
     let (version, _) = native.run(&["--version".as_ref()], cancellation).await?;
+    let generation = reporting.phase(
+        Phase::DocumentationGeneration,
+        Some(&package.id),
+        Some(&target.id),
+    );
     let (_, warnings) = native.run(&[wrapper.as_os_str()], cancellation).await?;
+    generation.finish();
+    let timing = reporting.phase(Phase::Extraction, Some(&package.id), Some(&target.id));
     let xml = staging.path().join("xml");
     let index = fs::read_to_string(xml.join("index.xml"))
         .map_err(|_| native.failure("Doxygen did not produce XML index.xml."))?;
@@ -292,6 +300,7 @@ pub(super) async fn extract_target(
         );
     }
     reject_errors(extraction.diagnostics.clone())?;
+    timing.finish();
     let observation = DoxygenObservation {
         repository: repository.clone(),
         roots,

@@ -841,6 +841,9 @@ impl WorkspaceSources {
                         .pages
                         .contains_key(&page_id(&id, PackagePageRole::News))
             });
+            let timing = self
+                .reporting
+                .phase(Phase::PackageMetadata, Some(&id), None);
             let result = native::complete(
                 &id,
                 package,
@@ -851,6 +854,7 @@ impl WorkspaceSources {
                 cancellation,
             )
             .await?;
+            timing.finish();
             let mut blocks = vec![];
             if !result.runtime.authors.is_empty() {
                 blocks.push(heading("Authors"));

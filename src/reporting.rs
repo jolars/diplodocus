@@ -7,6 +7,9 @@ use std::time::{Duration, Instant};
 
 use crate::diagnostics::Diagnostic;
 
+mod timing;
+pub use timing::Phase;
+
 /// Receives synchronous notifications without taking ownership of pipeline work.
 ///
 /// Implementations should return promptly. Events may arrive from different
@@ -20,6 +23,40 @@ pub trait Reporter: Send + Sync {
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum Event<'a> {
+    /// A timed pipeline phase began. Independent of human-facing progress stages.
+    PhaseStarted {
+        /// Identifier paired with exactly one `PhaseFinished` event.
+        id: u64,
+        /// Stable activity classification.
+        phase: Phase,
+        /// Owning package, absent for workspace-wide work.
+        package: Option<&'a str>,
+        /// Package-scoped extraction target, when applicable.
+        target: Option<&'a str>,
+    },
+    /// A timed phase finished, including failure, cancellation, and unwinding.
+    PhaseFinished {
+        /// Identifier from `PhaseStarted`.
+        id: u64,
+        /// Inclusive wall time; nested phases must not be added to this duration.
+        elapsed: Duration,
+        /// Whether the phase completed successfully.
+        success: bool,
+    },
+    /// A completed subphase measured inside a native helper process.
+    ///
+    /// These durations are contained in the enclosing native-process phase.
+    /// They exclude interpreter startup and must not be added to host durations.
+    NativeTiming {
+        /// Activity measured by the helper.
+        phase: Phase,
+        /// Owning package.
+        package: &'a str,
+        /// Package-scoped extraction target, when applicable.
+        target: Option<&'a str>,
+        /// Helper's monotonic elapsed time.
+        elapsed: Duration,
+    },
     /// A finite command or one watch attempt began.
     CommandStarted {
         /// Command name, such as `build` or `extract`.

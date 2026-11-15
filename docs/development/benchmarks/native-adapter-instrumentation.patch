@@ -1,0 +1,968 @@
+diff --git a/src/assembly.rs b/src/assembly.rs
+index b5a4fd5..e643389 100644
+--- a/src/assembly.rs
++++ b/src/assembly.rs
+@@ -26,7 +26,7 @@ use crate::provenance::{
+     DeclaredSourceInputs, ProvenanceError, StaticProvenance, collect_static_provenance,
+     fingerprint_bytes,
+ };
+-use crate::reporting::Reporting;
++use crate::reporting::{Phase, Reporting};
+ 
+ mod api_examples;
+ mod authored;
+@@ -394,6 +394,7 @@ async fn rust_results(
+                     &target.rust.clone().unwrap_or_default(),
+                     &cache,
+                     run_examples,
++                    reporting,
+                     deadlines,
+                     cancellation,
+                 )
+@@ -450,6 +451,7 @@ async fn doxygen_results(
+                         repository,
+                         package,
+                         selected,
++                        reporting,
+                         deadlines,
+                         cancellation,
+                     )
+diff --git a/src/assembly/api_examples.jl b/src/assembly/api_examples.jl
+index e35ba00..f8ce02d 100644
+--- a/src/assembly/api_examples.jl
++++ b/src/assembly/api_examples.jl
+@@ -99,6 +99,8 @@ function expressions(lines, first, last, offsets)
+ end
+ 
+ function run(request_path, output_path)
++    timings = splitext(output_path)[1] * ".timings"
++    started = time_ns()
+     request = TOML.parsefile(request_path)
+     root = request["package_root"]
+     project = TOML.parsefile(joinpath(root, "Project.toml"))
+@@ -109,6 +111,8 @@ function run(request_path, output_path)
+         error("Loaded package does not match the supplied checkout.")
+     string(Base.pkgversion(loaded)) == project["version"] ||
+         error("Loaded package version conflicts with checkout metadata.")
++    write(timings, "package-loading\t$(Float64(time_ns() - started) / 1e9)\n")
++    started = time_ns()
+     source = request["source"]
+     occursin(r"(?m)^\s*[`~]{3,}@meta", source) &&
+         error("Doctest @meta setup is unsupported; use block-level setup and teardown.")
+@@ -173,6 +177,9 @@ function run(request_path, output_path)
+         end
+         index += 1
+     end
++    open(timings, "a") do io
++        println(io, "examples\t$(Float64(time_ns() - started) / 1e9)")
++    end
+     dependencies = Dict{String,String}()
+     for (id, dependency) in Base.loaded_modules
+         version = Base.pkgversion(dependency)
+diff --git a/src/assembly/api_examples.py b/src/assembly/api_examples.py
+index 1bbada1..6b5320e 100644
+--- a/src/assembly/api_examples.py
++++ b/src/assembly/api_examples.py
+@@ -9,6 +9,7 @@ import json
+ import pathlib
+ import platform
+ import sys
++import time
+ 
+ import tomllib
+ 
+@@ -16,6 +17,8 @@ import tomllib
+ def run(request_path, output_path):
+     with open(request_path, "rb") as stream:
+         request = tomllib.load(stream)
++    timings = pathlib.Path(output_path).with_suffix(".timings")
++    started = time.monotonic()
+     root = pathlib.Path(request["package_root"]).resolve()
+     project = tomllib.loads(pathlib.Path(request["metadata_path"]).read_text())[
+         "project"
+@@ -49,6 +52,8 @@ def run(request_path, output_path):
+             components.pop()
+     if not pathlib.Path(module.__file__).resolve().is_relative_to(root):
+         raise ValueError("Example module does not match the supplied checkout.")
++    timings.write_text(f"package-loading\t{time.monotonic() - started}\n")
++    started = time.monotonic()
+     source = request["source"]
+     test = doctest.DocTestParser().get_doctest(
+         source, vars(module).copy(), request["qualified_name"], "<api-document>", 0
+@@ -117,6 +122,8 @@ def run(request_path, output_path):
+         result = runner.run(test, out=messages.write)
+     if result.failed:
+         raise ValueError(messages.getvalue())
++    with timings.open("a") as stream:
++        stream.write(f"examples\t{time.monotonic() - started}\n")
+     dependencies = {}
+     distributions = importlib.metadata.packages_distributions()
+     for name in sorted({name.split(".")[0] for name in sys.modules}):
+diff --git a/src/assembly/api_examples.rs b/src/assembly/api_examples.rs
+index f76ed7e..e05610a 100644
+--- a/src/assembly/api_examples.rs
++++ b/src/assembly/api_examples.rs
+@@ -213,6 +213,7 @@ impl WorkspaceSources {
+                     .kill_on_drop(true);
+                 #[cfg(target_os = "linux")]
+                 command.process_group(0);
++                let timing = self.reporting.phase(Phase::NativeProcess, Some(&package.id), None);
+                 let child = command.spawn().map_err(|_| failure(&package.id, location, format!("{language} API examples require the interpreter and prepared checkout dependencies.")))?;
+                 #[cfg(target_os = "linux")]
+                 let group = child
+@@ -238,6 +239,7 @@ impl WorkspaceSources {
+                         return Err(AssemblyError::Cancelled);
+                     }
+                 };
++                self.reporting.native_timings(&output.with_extension("timings"), &package.id, None);
+                 if !status.success() {
+                     let message = fs::read_to_string(&errors)
+                         .unwrap_or_default()
+@@ -249,6 +251,7 @@ impl WorkspaceSources {
+                         format!("{language} {operation} failed: {}", message.trim()),
+                     ));
+                 }
++                timing.finish();
+                 let result = fs::read_to_string(&output)?;
+                 let mut results: Results = if language == "python" {
+                     serde_json::from_str(&result).map_err(|_| ())
+diff --git a/src/assembly/documenter_examples.rs b/src/assembly/documenter_examples.rs
+index ce67985..510e60c 100644
+--- a/src/assembly/documenter_examples.rs
++++ b/src/assembly/documenter_examples.rs
+@@ -97,6 +97,7 @@ impl WorkspaceSources {
+         deadlines: ExecutionDeadlines,
+         cancellation: &mut ExecutionCancellation<'_>,
+     ) -> Result<(), AssemblyError> {
++        let timing = self.reporting.phase(Phase::Examples, None, None);
+         let mut order: Vec<_> = self
+             .prepared_pages
+             .iter()
+@@ -320,6 +321,7 @@ impl WorkspaceSources {
+         if let Some(stage) = reporting_stage {
+             stage.finish();
+         }
++        timing.finish();
+         Ok(())
+     }
+ }
+diff --git a/src/assembly/doxygen_native.rs b/src/assembly/doxygen_native.rs
+index 4704255..a492f5a 100644
+--- a/src/assembly/doxygen_native.rs
++++ b/src/assembly/doxygen_native.rs
+@@ -137,6 +137,7 @@ pub(super) async fn extract_target(
+     repository: &ResolvedRepositoryPaths,
+     package: &ResolvedPackagePaths,
+     target: &ResolvedTargetPath,
++    reporting: &Reporting,
+     deadlines: ExecutionDeadlines,
+     cancellation: &mut ExecutionCancellation<'_>,
+ ) -> Result<DoxygenNativeExtraction, AssemblyError> {
+@@ -248,7 +249,10 @@ pub(super) async fn extract_target(
+     }
+     fs::write(&wrapper, configuration)?;
+     let (version, _) = native.run(&["--version".as_ref()], cancellation).await?;
++    let generation = reporting.phase(Phase::DocumentationGeneration, Some(&package.id), Some(&target.id));
+     let (_, warnings) = native.run(&[wrapper.as_os_str()], cancellation).await?;
++    generation.finish();
++    let timing = reporting.phase(Phase::Extraction, Some(&package.id), Some(&target.id));
+     let xml = staging.path().join("xml");
+     let index = fs::read_to_string(xml.join("index.xml"))
+         .map_err(|_| native.failure("Doxygen did not produce XML index.xml."))?;
+@@ -292,6 +296,7 @@ pub(super) async fn extract_target(
+         );
+     }
+     reject_errors(extraction.diagnostics.clone())?;
++    timing.finish();
+     let observation = DoxygenObservation {
+         repository: repository.clone(),
+         roots,
+diff --git a/src/assembly/execution.rs b/src/assembly/execution.rs
+index a6f2c72..84a34d4 100644
+--- a/src/assembly/execution.rs
++++ b/src/assembly/execution.rs
+@@ -25,6 +25,7 @@ impl WorkspaceSources {
+         self.revalidate()?;
+         let mut staging: Option<tempfile::TempDir> = None;
+         let mut pages = BTreeMap::new();
++        let timing = self.reporting.phase(Phase::Examples, None, None);
+         let result = async {
+             let repositories: BTreeMap<_, _> = self
+                 .paths
+@@ -157,11 +158,10 @@ impl WorkspaceSources {
+         }
+         .await;
+         match result {
+-            Ok(()) => Ok(ExecutedWorkspace {
+-                sources: self,
+-                pages,
+-                staging,
+-            }),
++            Ok(()) => {
++                timing.finish();
++                Ok(ExecutedWorkspace { sources: self, pages, staging })
++            },
+             Err(mut error) => {
+                 if let AssemblyError::Execution(failure) = &mut error {
+                     failure
+diff --git a/src/assembly/julia_runtime.rs b/src/assembly/julia_runtime.rs
+index b0e7db7..145dad3 100644
+--- a/src/assembly/julia_runtime.rs
++++ b/src/assembly/julia_runtime.rs
+@@ -36,6 +36,7 @@ pub(crate) async fn assemble_for_extraction(
+                 continue;
+             }
+             progress.item(&format!("{}:{}", package.id, target.id));
++            let timing = reporting.phase(Phase::Extraction, Some(&package.id), Some(&target.id));
+             let mut result = julia::extract_target(repository, package, selected);
+             reject_errors(
+                 result
+@@ -45,6 +46,7 @@ pub(crate) async fn assemble_for_extraction(
+                     .cloned()
+                     .collect(),
+             )?;
++            timing.finish();
+             let reflect = result
+                 .diagnostics
+                 .iter()
+@@ -85,6 +87,7 @@ pub(crate) async fn assemble_for_extraction(
+                 .kill_on_drop(true);
+             #[cfg(target_os = "linux")]
+             command.process_group(0);
++            let timing = reporting.phase(Phase::NativeProcess, Some(&package.id), Some(&target.id));
+             let child = command.spawn().map_err(|_| {
+                 failure(
+                     "Julia extraction requires Julia and the prepared checkout dependencies."
+@@ -115,6 +118,7 @@ pub(crate) async fn assemble_for_extraction(
+                     return Err(AssemblyError::Cancelled);
+                 }
+             };
++            reporting.native_timings(&output.with_extension("timings"), &package.id, Some(&target.id));
+             if !status.success() {
+                 let message = fs::read_to_string(errors)?
+                     .replace(repository.path.to_string_lossy().as_ref(), "<repository>")
+@@ -124,6 +128,7 @@ pub(crate) async fn assemble_for_extraction(
+                     message.trim()
+                 )));
+             }
++            timing.finish();
+             let observation = toml::from_str(&fs::read_to_string(output)?)
+                 .map_err(|e| failure(format!("Invalid Julia runtime observations: {e}")))?;
+             julia::runtime::reconcile(&mut result, observation).map_err(failure)?;
+diff --git a/src/assembly/package_docs.rs b/src/assembly/package_docs.rs
+index e557bd5..839c3ee 100644
+--- a/src/assembly/package_docs.rs
++++ b/src/assembly/package_docs.rs
+@@ -841,6 +841,7 @@ impl WorkspaceSources {
+                         .pages
+                         .contains_key(&page_id(&id, PackagePageRole::News))
+             });
++            let timing = self.reporting.phase(Phase::PackageMetadata, Some(&id), None);
+             let result = native::complete(
+                 &id,
+                 package,
+@@ -851,6 +852,7 @@ impl WorkspaceSources {
+                 cancellation,
+             )
+             .await?;
++            timing.finish();
+             let mut blocks = vec![];
+             if !result.runtime.authors.is_empty() {
+                 blocks.push(heading("Authors"));
+diff --git a/src/assembly/packages.rs b/src/assembly/packages.rs
+index 5441c91..df0b018 100644
+--- a/src/assembly/packages.rs
++++ b/src/assembly/packages.rs
+@@ -83,7 +83,12 @@ pub(super) fn assemble(
+                     let result = native
+                         .julia
+                         .remove(&(declaration.id.clone(), target.id.clone()))
+-                        .unwrap_or_else(|| julia::extract_target(repository, resolved, selected));
++                        .unwrap_or_else(|| {
++                            let timing = reporting.phase(Phase::Extraction, Some(&declaration.id), Some(&target.id));
++                            let result = julia::extract_target(repository, resolved, selected);
++                            timing.finish();
++                            result
++                        });
+                     Fragment {
+                         version: result
+                             .metadata
+@@ -96,7 +101,9 @@ pub(super) fn assemble(
+                     }
+                 }
+                 "python" => {
++                    let timing = reporting.phase(Phase::Extraction, Some(&declaration.id), Some(&target.id));
+                     let result = python::extract_target(repository, resolved, selected);
++                    timing.finish();
+                     Fragment {
+                         version: result
+                             .metadata
+@@ -109,7 +116,9 @@ pub(super) fn assemble(
+                     }
+                 }
+                 "r" => {
++                    let timing = reporting.phase(Phase::Extraction, Some(&declaration.id), Some(&target.id));
+                     let result = r::extract_target(repository, resolved, selected);
++                    timing.finish();
+                     Fragment {
+                         version: result.metadata.as_ref().map(|m| m.version.clone()),
+                         metadata: result.metadata.map(|description| {
+diff --git a/src/assembly/rd_examples.R b/src/assembly/rd_examples.R
+index 565723b..dcae034 100644
+--- a/src/assembly/rd_examples.R
++++ b/src/assembly/rd_examples.R
+@@ -8,9 +8,14 @@ local({
+   if (!requireNamespace("pkgload", quietly = TRUE) || !requireNamespace("evaluate", quietly = TRUE)) {
+     stop("Rd example execution requires pkgload and evaluate")
+   }
++  timings <- paste0(tools::file_path_sans_ext(args[[3L]]), ".timings")
++  started <- proc.time()[["elapsed"]]
+   checkout <- load_checkout(args[[1L]], args[[4L]], args[[5L]])
+   name <- checkout$name
+   verify_checkout <- checkout$verify
++  cat("package-loading", proc.time()[["elapsed"]] - started, sep = "\t", file = timings)
++  cat("\n", file = timings, append = TRUE)
++  started <- proc.time()[["elapsed"]]
+   rd <- tools::parse_Rd(args[[2L]], encoding = "UTF-8")
+   codefile <- file.path(dirname(args[[3L]]), "examples.R")
+   tools::Rd2ex(rd, out = codefile, commentDontrun = TRUE, commentDonttest = FALSE)
+@@ -77,6 +82,8 @@ local({
+       else if (is.character(result)) emit("text", result)
+       else stop("Unsupported Rd example output")
+   }
++  cat("examples", proc.time()[["elapsed"]] - started, sep = "\t", file = timings, append = TRUE)
++  cat("\n", file = timings, append = TRUE)
+   verify_checkout()
+   emit("r-version", as.character(getRversion()))
+   emit("package-version", as.character(utils::packageVersion(name)))
+diff --git a/src/assembly/rd_examples.rs b/src/assembly/rd_examples.rs
+index e16993a..19f3ccb 100644
+--- a/src/assembly/rd_examples.rs
++++ b/src/assembly/rd_examples.rs
+@@ -151,6 +151,7 @@ pub(super) async fn execute(
+                 .kill_on_drop(true);
+             #[cfg(target_os = "linux")]
+             command.process_group(0);
++            let timing = sources.reporting.phase(Phase::NativeProcess, Some(&package.id), None);
+             let child = command.spawn().map_err(|_| {
+                 failure(
+                     &package.id,
+@@ -182,6 +183,7 @@ pub(super) async fn execute(
+                     return Err(AssemblyError::Cancelled);
+                 }
+             };
++            sources.reporting.native_timings(&output.with_extension("timings"), &package.id, None);
+             if !status.success() {
+                 let message = fs::read_to_string(errors)
+                     .unwrap_or_default()
+@@ -193,6 +195,7 @@ pub(super) async fn execute(
+                     format!("Rd example execution failed: {}", message.trim()),
+                 ));
+             }
++            timing.finish();
+             let (blocks, activity, generated) = decode(
+                 &fs::read_to_string(output)?,
+                 &package.id,
+diff --git a/src/assembly/rmarkdown.rs b/src/assembly/rmarkdown.rs
+index a9119e3..fbf1263 100644
+--- a/src/assembly/rmarkdown.rs
++++ b/src/assembly/rmarkdown.rs
+@@ -146,6 +146,7 @@ impl WorkspaceSources {
+         deadlines: ExecutionDeadlines,
+         cancellation: &mut ExecutionCancellation<'_>,
+     ) -> Result<(), AssemblyError> {
++        let timing = self.reporting.phase(Phase::Examples, None, None);
+         let mut order: Vec<_> = self
+             .prepared_pages
+             .iter()
+@@ -298,6 +299,7 @@ impl WorkspaceSources {
+         }
+         self.revalidate()?;
+         progress.finish();
++        timing.finish();
+         Ok(())
+     }
+ }
+diff --git a/src/assembly/rust_native.rs b/src/assembly/rust_native.rs
+index 4650c66..9850590 100644
+--- a/src/assembly/rust_native.rs
++++ b/src/assembly/rust_native.rs
+@@ -258,9 +258,11 @@ pub(super) async fn extract_target(
+     settings: &RustTargetConfiguration,
+     cache_root: &Path,
+     run_examples: bool,
++    reporting: &Reporting,
+     deadlines: ExecutionDeadlines,
+     cancellation: &mut ExecutionCancellation<'_>,
+ ) -> Result<RustNativeExtraction, AssemblyError> {
++    let timing = reporting.phase(Phase::Extraction, Some(&package.id), Some(&target.id));
+     let toolchain = std::env::var_os("DIPLODOCUS_RUST_TOOLCHAIN")
+         .map(PathBuf::from)
+         .ok_or_else(|| AssemblyError::Diagnostics(vec![Diagnostic::new(
+@@ -631,11 +633,14 @@ pub(super) async fn extract_target(
+             ("diplodocus".into(), env!("CARGO_PKG_VERSION").into()),
+         ]),
+     };
++    timing.finish();
+     let doctests = if run_examples {
++        let timing = reporting.phase(Phase::Examples, Some(&package.id), Some(&target.id));
+         let examples = execute_doctests(&native, selected, host, cancellation).await?;
+         if inventory(repository, &roots, &extra, &native.build)? != inputs {
+             return Err(AssemblyError::InputsChanged);
+         }
++        timing.finish();
+         Some(Provenance {
+             activity: ProvenanceActivity::RustDoctests {
+                 target: TargetReference {
+@@ -1417,6 +1422,7 @@ mod tests {
+             &RustTargetConfiguration::default(),
+             cache.path(),
+             true,
++            &Reporting::default(),
+             ExecutionDeadlines::default(),
+             &mut cancellation,
+         )
+@@ -1498,6 +1504,7 @@ mod tests {
+             &RustTargetConfiguration::default(),
+             cache.path(),
+             true,
++            &Reporting::default(),
+             ExecutionDeadlines::default(),
+             &mut cancellation,
+         )
+@@ -1532,6 +1539,7 @@ mod tests {
+             &RustTargetConfiguration::default(),
+             cache.path(),
+             true,
++            &Reporting::default(),
+             deadlines,
+             &mut cancellation,
+         )
+@@ -1561,6 +1569,7 @@ mod tests {
+             &RustTargetConfiguration::default(),
+             cache.path(),
+             false,
++            &Reporting::default(),
+             ExecutionDeadlines::default(),
+             &mut cancellation,
+         )
+diff --git a/src/commands/pipeline.rs b/src/commands/pipeline.rs
+index 5bd34d1..1bb66a2 100644
+--- a/src/commands/pipeline.rs
++++ b/src/commands/pipeline.rs
+@@ -5,7 +5,7 @@ use std::path::{Component, Path};
+ use crate::assembly::WorkspaceExecution;
+ use crate::execution::{ExecutionCancellation, ExecutionDeadlines};
+ use crate::rendering::RenderedSite;
+-use crate::reporting::{Event, Reporting};
++use crate::reporting::{Event, Phase, Reporting};
+ use crate::site::Site;
+ use crate::snapshots::Snapshot;
+ use crate::validation::resolve_executed_workspace;
+@@ -31,7 +31,7 @@ pub(super) fn check_attempt(
+         )
+         .await
+     })?;
+-    reporting.run("Validating documentation", || {
++    reporting.run_phase(Phase::ReferenceResolution, "Validating documentation", || {
+         let resolved = resolve_workspace(&sources)?;
+         let mut diagnostics: Vec<_> = resolved.diagnostics().iter().cloned().collect();
+         diagnostics.extend(Site::check_presentation(&sources, &resolved)?);
+@@ -66,7 +66,7 @@ pub(super) async fn extract_attempt(
+         reporting,
+     )
+     .await?;
+-    let resolved = reporting.run("Validating documentation", || resolve_workspace(&sources))?;
++    let resolved = reporting.run_phase(Phase::ReferenceResolution, "Validating documentation", || resolve_workspace(&sources))?;
+     let output = options.output.unwrap_or_else(|| {
+         sources
+             .paths()
+@@ -104,7 +104,7 @@ pub(super) async fn extract_attempt(
+                 cancellation,
+             })
+             .await?;
+-        let resolved = reporting.run("Validating executed documentation", || {
++        let resolved = reporting.run_phase(Phase::ReferenceResolution, "Validating executed documentation", || {
+             resolve_executed_workspace(&executed)
+         })?;
+         protect_sources(executed.sources(), &resolved, &options.config, &output)?;
+@@ -132,7 +132,7 @@ pub(super) async fn extract_attempt(
+             Snapshot::from_sources(&sources, &resolved)
+         })?
+     };
+-    reporting.run("Publishing snapshot", || snapshot.publish(&output))?;
++    reporting.run_phase(Phase::Publication, "Publishing snapshot", || snapshot.publish(&output))?;
+     for diagnostic in &snapshot.workspace().diagnostics {
+         reporting.emit(Event::Diagnostic(diagnostic));
+     }
+@@ -173,10 +173,14 @@ pub(super) fn generate_attempt(
+         }
+     }
+     let site = reporting
+-        .run("Preparing site", || Site::new(&snapshot))?
++        .run_phase(Phase::SitePreparation, "Preparing site", || Site::new(&snapshot))?
+         .with_components(allow_components);
++    let rendering = reporting.phase(Phase::Rendering, None, None);
+     let rendered = crate::rendering::render_reported(&site, true, reporting)?;
++    rendering.finish();
++    let publication = reporting.phase(Phase::Publication, None, None);
+     rendered.publish_reported(output, reporting)?;
++    publication.finish();
+     Ok(rendered)
+ }
+ 
+@@ -188,15 +192,19 @@ pub(super) fn generate_fragments_attempt(
+ ) -> Result<RenderedSite, CommandError> {
+     reject_overlap(output, input)?;
+     let snapshot = reporting.run("Loading snapshot", || Snapshot::load(input))?;
+-    let mut site = reporting.run("Preparing site", || Site::new(&snapshot))?;
++    let mut site = reporting.run_phase(Phase::SitePreparation, "Preparing site", || Site::new(&snapshot))?;
+     if let Some(path) = map {
+         reject_overlap(output, path)?;
+         let urls = serde_json::from_slice(&fs::read(path)?)
+             .map_err(|error| crate::site::SiteError::Route(format!("invalid URL map: {error}")))?;
+         site = site.with_url_map(urls)?;
+     }
++    let rendering = reporting.phase(Phase::Rendering, None, None);
+     let rendered = crate::rendering::render_reported(&site, false, reporting)?;
++    rendering.finish();
++    let publication = reporting.phase(Phase::Publication, None, None);
+     rendered.publish_reported(output, reporting)?;
++    publication.finish();
+     Ok(rendered)
+ }
+ 
+diff --git a/src/extractors/julia/runtime.jl b/src/extractors/julia/runtime.jl
+index 824e89f..398874d 100644
+--- a/src/extractors/julia/runtime.jl
++++ b/src/extractors/julia/runtime.jl
+@@ -3,6 +3,8 @@ using TOML
+ # Loading by package identity lets Julia resolve dependencies in the caller's
+ # prepared environment. Verify the checkout before reflecting on its bindings.
+ function observe_checkout(package_path, entry_path, output_path, reflect="true")
++    timings = splitext(output_path)[1] * ".timings"
++    started = time_ns()
+     project = TOML.parsefile(joinpath(package_path, "Project.toml"))
+     identity = Base.PkgId(Base.UUID(project["uuid"]), project["name"])
+     loaded = Base.require(identity)
+@@ -19,6 +21,8 @@ function observe_checkout(package_path, entry_path, output_path, reflect="true")
+     realpath(loaded_entry) == realpath(entry_path) ||
+         error("Loaded package does not match the supplied checkout.")
+ 
++    write(timings, "package-loading\t$(Float64(time_ns() - started) / 1e9)\n")
++    started = time_ns()
+     bindings = []
+     for name in (reflect == "true" ? sort!(names(loaded; all=false, imported=false); by=string) : Symbol[])
+         isdefined(loaded, name) || error("Public binding is undefined: $name")
+@@ -51,6 +55,9 @@ function observe_checkout(package_path, entry_path, output_path, reflect="true")
+         "dependencies" => dependencies,
+         "types" => bindings,
+     )
++    open(timings, "a") do io
++        println(io, "extraction\t$(Float64(time_ns() - started) / 1e9)")
++    end
+     open(output_path, "w") do io
+         TOML.print(io, result; sorted=true)
+     end
+diff --git a/src/reporting.rs b/src/reporting.rs
+index 0a9fd2e..b223ccd 100644
+--- a/src/reporting.rs
++++ b/src/reporting.rs
+@@ -7,6 +7,9 @@ use std::time::{Duration, Instant};
+ 
+ use crate::diagnostics::Diagnostic;
+ 
++mod timing;
++pub use timing::Phase;
++
+ /// Receives synchronous notifications without taking ownership of pipeline work.
+ ///
+ /// Implementations should return promptly. Events may arrive from different
+@@ -20,6 +23,40 @@ pub trait Reporter: Send + Sync {
+ #[derive(Debug)]
+ #[non_exhaustive]
+ pub enum Event<'a> {
++    /// A timed pipeline phase began. Independent of human-facing progress stages.
++    PhaseStarted {
++        /// Identifier paired with exactly one `PhaseFinished` event.
++        id: u64,
++        /// Stable activity classification.
++        phase: Phase,
++        /// Owning package, absent for workspace-wide work.
++        package: Option<&'a str>,
++        /// Package-scoped extraction target, when applicable.
++        target: Option<&'a str>,
++    },
++    /// A timed phase finished, including failure, cancellation, and unwinding.
++    PhaseFinished {
++        /// Identifier from `PhaseStarted`.
++        id: u64,
++        /// Inclusive wall time; nested phases must not be added to this duration.
++        elapsed: Duration,
++        /// Whether the phase completed successfully.
++        success: bool,
++    },
++    /// A completed subphase measured inside a native helper process.
++    ///
++    /// These durations are contained in the enclosing native-process phase.
++    /// They exclude interpreter startup and must not be added to host durations.
++    NativeTiming {
++        /// Activity measured by the helper.
++        phase: Phase,
++        /// Owning package.
++        package: &'a str,
++        /// Package-scoped extraction target, when applicable.
++        target: Option<&'a str>,
++        /// Helper's monotonic elapsed time.
++        elapsed: Duration,
++    },
+     /// A finite command or one watch attempt began.
+     CommandStarted {
+         /// Command name, such as `build` or `extract`.
+diff --git a/tests/reporting.rs b/tests/reporting.rs
+index 2f3947c..b1d4d3c 100644
+--- a/tests/reporting.rs
++++ b/tests/reporting.rs
+@@ -6,11 +6,14 @@ use std::time::Duration;
+ 
+ use diplodocus::commands::{BuildOptions, CommandRunner, ExtractOptions};
+ use diplodocus::execution::ExecutionDeadlines;
+-use diplodocus::reporting::{Event, Reporter};
++use diplodocus::reporting::{Event, Phase, Reporter};
+ use tokio::sync::mpsc;
+ 
+ #[derive(Debug, Clone)]
+ enum Recorded {
++    PhaseStarted(u64, Phase, Option<String>, Option<String>),
++    PhaseFinished(u64, bool),
++    NativeTiming(Phase),
+     CommandStarted,
+     CommandFinished(bool),
+     Started(u64, &'static str, Option<usize>),
+@@ -29,6 +32,13 @@ struct Recording {
+ impl Reporter for Recording {
+     fn report(&self, event: Event<'_>) {
+         let event = match event {
++            Event::PhaseStarted { id, phase, package, target } => Recorded::PhaseStarted(
++                id, phase, package.map(str::to_owned), target.map(str::to_owned)),
++            Event::PhaseFinished { id, success, .. } => Recorded::PhaseFinished(id, success),
++            Event::NativeTiming { phase, elapsed, .. } => {
++                assert!(elapsed.as_secs_f64().is_finite());
++                Recorded::NativeTiming(phase)
++            }
+             Event::CommandStarted { .. } => Recorded::CommandStarted,
+             Event::CommandFinished {
+                 success, output, ..
+@@ -66,8 +76,18 @@ fn workspace() -> support::TestWorkspace {
+ 
+ fn balanced_stages(events: &[Recorded]) {
+     let mut active = BTreeMap::new();
++    let mut phases = BTreeMap::new();
+     for event in events {
+         match event {
++            Recorded::PhaseStarted(id, phase, package, target) => {
++                assert!(target.is_none() || package.is_some());
++                assert!(phases.insert(id, phase).is_none());
++            }
++            Recorded::PhaseFinished(id, _success) => {
++                assert!(phases.remove(id).is_some());
++            }
++            Recorded::NativeTiming(phase) => assert!(matches!(phase,
++                Phase::PackageLoading | Phase::Extraction | Phase::Examples)),
+             Recorded::Started(id, _, total) => {
+                 assert_ne!(*total, Some(0));
+                 assert!(active.insert(id, (*total, 0)).is_none());
+@@ -86,11 +106,15 @@ fn balanced_stages(events: &[Recorded]) {
+                     assert_eq!(completed, total);
+                 }
+             }
+-            Recorded::CommandFinished(_) => assert!(active.is_empty()),
++            Recorded::CommandFinished(_) => {
++                assert!(active.is_empty());
++                assert!(phases.is_empty());
++            }
+             _ => {}
+         }
+     }
+     assert!(active.is_empty());
++    assert!(phases.is_empty());
+ }
+ 
+ #[test]
+diff --git a/src/reporting/timing.rs b/src/reporting/timing.rs
+new file mode 100644
+index 0000000..7f05d81
+--- /dev/null
++++ b/src/reporting/timing.rs
+@@ -0,0 +1,169 @@
++//! Transient timing observations, never semantic or execution evidence.
++
++use super::*;
++
++/// Stable phase names for developer measurements, independent of progress labels.
++#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
++#[serde(rename_all = "kebab-case")]
++#[non_exhaustive]
++pub enum Phase {
++    /// Importing or loading a prepared package in a native helper.
++    PackageLoading,
++    /// Producing native documentation input, such as Doxygen XML.
++    DocumentationGeneration,
++    /// Translating API declarations and documentation into the shared IR.
++    Extraction,
++    /// Native process lifetime, including startup, loading, work, and shutdown.
++    NativeProcess,
++    /// Completing package metadata in the native environment.
++    PackageMetadata,
++    /// Executing documentation examples or authored documents.
++    Examples,
++    /// Resolving documentation references and validating relationships.
++    ReferenceResolution,
++    /// Constructing routes, navigation, and presentation.
++    SitePreparation,
++    /// Rendering documents and assets.
++    Rendering,
++    /// Storing a completed snapshot or publishing a site.
++    Publication,
++}
++
++pub(crate) struct PhaseTiming {
++    reporting: Reporting,
++    id: u64,
++    started: Instant,
++    finished: bool,
++}
++
++impl Reporting {
++    pub(crate) fn phase(
++        &self,
++        phase: Phase,
++        package: Option<&str>,
++        target: Option<&str>,
++    ) -> PhaseTiming {
++        static NEXT_ID: AtomicU64 = AtomicU64::new(0);
++        let id = NEXT_ID.fetch_add(1, Ordering::Relaxed);
++        self.emit(Event::PhaseStarted {
++            id,
++            phase,
++            package,
++            target,
++        });
++        PhaseTiming {
++            reporting: self.clone(),
++            id,
++            started: Instant::now(),
++            finished: false,
++        }
++    }
++
++    pub(crate) fn run_phase<T, E>(
++        &self,
++        phase: Phase,
++        label: &'static str,
++        work: impl FnOnce() -> Result<T, E>,
++    ) -> Result<T, E> {
++        let timing = self.phase(phase, None, None);
++        let result = self.run(label, work)?;
++        timing.finish();
++        Ok(result)
++    }
++
++    /// Read optional helper telemetry from private staging, outside the result protocol.
++    /// Telemetry cannot make successful semantic work fail or enter a snapshot.
++    pub(crate) fn native_timings(&self, path: &Path, package: &str, target: Option<&str>) {
++        let Ok(text) = std::fs::read_to_string(path) else {
++            return;
++        };
++        for line in text.lines() {
++            let Some((name, seconds)) = line.split_once('\t') else {
++                continue;
++            };
++            let phase = match name {
++                "package-loading" => Phase::PackageLoading,
++                "extraction" => Phase::Extraction,
++                "examples" => Phase::Examples,
++                _ => continue,
++            };
++            if let Ok(seconds) = seconds.parse::<f64>()
++                && let Ok(elapsed) = Duration::try_from_secs_f64(seconds)
++            {
++                self.emit(Event::NativeTiming {
++                    phase,
++                    package,
++                    target,
++                    elapsed,
++                });
++            }
++        }
++    }
++}
++
++impl PhaseTiming {
++    pub(crate) fn finish(mut self) {
++        self.end(true);
++    }
++
++    fn end(&mut self, success: bool) {
++        if !self.finished {
++            self.finished = true;
++            self.reporting.emit(Event::PhaseFinished {
++                id: self.id,
++                elapsed: self.started.elapsed(),
++                success,
++            });
++        }
++    }
++}
++
++impl Drop for PhaseTiming {
++    fn drop(&mut self) {
++        self.end(false);
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use std::sync::Mutex;
++
++    #[derive(Default)]
++    struct Recording(Mutex<Vec<String>>);
++    impl Reporter for Recording {
++        fn report(&self, event: Event<'_>) {
++            self.0.lock().unwrap().push(format!("{event:?}"));
++        }
++    }
++
++    #[test]
++    fn native_telemetry_is_optional_and_rejects_invalid_durations() {
++        let recording = Arc::new(Recording::default());
++        let reporting = Reporting::new(recording.clone());
++        let root = tempfile::tempdir().unwrap();
++        let path = root.path().join("timings");
++        reporting.native_timings(&path, "demo", None);
++        std::fs::write(&path, "examples\tNaN\nexamples\t-1\nexamples\tinf\nunknown\t2\ninvalid\npackage-loading\t0.25\n").unwrap();
++        reporting.native_timings(&path, "demo", None);
++        let events = recording.0.lock().unwrap();
++        assert_eq!(events.len(), 1);
++        assert!(events[0].contains("PackageLoading"));
++    }
++
++    #[test]
++    fn failed_and_unwound_phases_finish_once_before_the_command() {
++        let recording = Arc::new(Recording::default());
++        let reporting = Reporting::new(recording.clone());
++        let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
++            let _command = reporting.command("build");
++            let _timing = reporting.phase(Phase::Extraction, Some("demo"), Some("api"));
++            panic!("test unwind");
++        }));
++        let events = recording.0.lock().unwrap();
++        assert_eq!(events.len(), 4);
++        assert!(events[2].starts_with("PhaseFinished"));
++        assert!(events[2].contains("success: false"));
++        assert!(events[3].starts_with("CommandFinished"));
++    }
++}
+diff --git a/examples/pipeline_bench.rs b/examples/pipeline_bench.rs
+new file mode 100644
+index 0000000..d261fec
+--- /dev/null
++++ b/examples/pipeline_bench.rs
+@@ -0,0 +1,96 @@
++//! Developer-only worker for scripts/bench-pipeline.py. Uses the real preview loop.
++
++use std::io::Write;
++use std::path::PathBuf;
++use std::sync::{Arc, Mutex};
++
++use clap::Parser;
++use diplodocus::commands::{CommandRunner, ServeOptions};
++use diplodocus::reporting::{Event, Reporter};
++use serde_json::json;
++
++#[derive(Parser)]
++struct Options {
++    #[arg(long)]
++    config: PathBuf,
++    #[arg(long)]
++    output: PathBuf,
++}
++
++struct JsonReporter(Mutex<std::io::Stdout>);
++
++impl Reporter for JsonReporter {
++    fn report(&self, event: Event<'_>) {
++        let value = match event {
++            Event::CommandStarted { command } => {
++                json!({"event": "command-started", "command": command})
++            }
++            Event::CommandFinished {
++                command,
++                elapsed,
++                success,
++                ..
++            } => json!({
++                "event": "command-finished", "command": command,
++                "seconds": elapsed.as_secs_f64(), "success": success,
++            }),
++            Event::PhaseStarted {
++                id,
++                phase,
++                package,
++                target,
++            } => json!({
++                "event": "phase-started", "id": id, "phase": phase,
++                "package": package, "target": target,
++            }),
++            Event::PhaseFinished {
++                id,
++                elapsed,
++                success,
++            } => json!({
++                "event": "phase-finished", "id": id,
++                "seconds": elapsed.as_secs_f64(), "success": success,
++            }),
++            Event::NativeTiming {
++                phase,
++                package,
++                target,
++                elapsed,
++            } => json!({
++                "event": "native-timing", "phase": phase, "package": package,
++                "target": target, "seconds": elapsed.as_secs_f64(),
++            }),
++            Event::Serving { .. } => json!({"event": "ready"}),
++            Event::Rebuilt => json!({"event": "rebuilt"}),
++            Event::Watching { retained_previous } => {
++                json!({"event": "watching", "retained_previous": retained_previous})
++            }
++            Event::Error(message) => json!({"event": "error", "message": message}),
++            Event::Diagnostic(diagnostic) => json!({
++                "event": "diagnostic", "code": diagnostic.code.as_str(),
++                "severity": format!("{:?}", diagnostic.severity),
++                "message": diagnostic.message,
++            }),
++            _ => return,
++        };
++        let mut output = self.0.lock().expect("benchmark stdout");
++        // A disconnected driver still shuts the worker down through SIGTERM.
++        let _ = writeln!(output, "{value}");
++        let _ = output.flush();
++    }
++}
++
++fn main() -> Result<(), Box<dyn std::error::Error>> {
++    let options = Options::parse();
++    CommandRunner::with_reporter(Arc::new(JsonReporter(Mutex::new(std::io::stdout())))).serve(
++        ServeOptions {
++            config: options.config,
++            output: options.output,
++            host: std::net::Ipv4Addr::LOCALHOST.into(),
++            port: 0,
++            live_reload: true,
++            open: false,
++        },
++    )?;
++    Ok(())
++}

@@ -36,6 +36,7 @@ pub(crate) async fn assemble_for_extraction(
                 continue;
             }
             progress.item(&format!("{}:{}", package.id, target.id));
+            let timing = reporting.phase(Phase::Extraction, Some(&package.id), Some(&target.id));
             let mut result = julia::extract_target(repository, package, selected);
             reject_errors(
                 result
@@ -45,6 +46,7 @@ pub(crate) async fn assemble_for_extraction(
                     .cloned()
                     .collect(),
             )?;
+            timing.finish();
             let reflect = result
                 .diagnostics
                 .iter()
@@ -85,6 +87,7 @@ pub(crate) async fn assemble_for_extraction(
                 .kill_on_drop(true);
             #[cfg(target_os = "linux")]
             command.process_group(0);
+            let timing = reporting.phase(Phase::NativeProcess, Some(&package.id), Some(&target.id));
             let child = command.spawn().map_err(|_| {
                 failure(
                     "Julia extraction requires Julia and the prepared checkout dependencies."
@@ -115,6 +118,11 @@ pub(crate) async fn assemble_for_extraction(
                     return Err(AssemblyError::Cancelled);
                 }
             };
+            reporting.native_timings(
+                &output.with_extension("timings"),
+                &package.id,
+                Some(&target.id),
+            );
             if !status.success() {
                 let message = fs::read_to_string(errors)?
                     .replace(repository.path.to_string_lossy().as_ref(), "<repository>")
@@ -124,6 +132,7 @@ pub(crate) async fn assemble_for_extraction(
                     message.trim()
                 )));
             }
+            timing.finish();
             let observation = toml::from_str(&fs::read_to_string(output)?)
                 .map_err(|e| failure(format!("Invalid Julia runtime observations: {e}")))?;
             julia::runtime::reconcile(&mut result, observation).map_err(failure)?;

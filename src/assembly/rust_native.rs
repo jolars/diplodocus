@@ -258,9 +258,11 @@ pub(super) async fn extract_target(
     settings: &RustTargetConfiguration,
     cache_root: &Path,
     run_examples: bool,
+    reporting: &Reporting,
     deadlines: ExecutionDeadlines,
     cancellation: &mut ExecutionCancellation<'_>,
 ) -> Result<RustNativeExtraction, AssemblyError> {
+    let timing = reporting.phase(Phase::Extraction, Some(&package.id), Some(&target.id));
     let toolchain = std::env::var_os("DIPLODOCUS_RUST_TOOLCHAIN")
         .map(PathBuf::from)
         .ok_or_else(|| AssemblyError::Diagnostics(vec![Diagnostic::new(
@@ -631,11 +633,14 @@ pub(super) async fn extract_target(
             ("diplodocus".into(), env!("CARGO_PKG_VERSION").into()),
         ]),
     };
+    timing.finish();
     let doctests = if run_examples {
+        let timing = reporting.phase(Phase::Examples, Some(&package.id), Some(&target.id));
         let examples = execute_doctests(&native, selected, host, cancellation).await?;
         if inventory(repository, &roots, &extra, &native.build)? != inputs {
             return Err(AssemblyError::InputsChanged);
         }
+        timing.finish();
         Some(Provenance {
             activity: ProvenanceActivity::RustDoctests {
                 target: TargetReference {
@@ -1417,6 +1422,7 @@ mod tests {
             &RustTargetConfiguration::default(),
             cache.path(),
             true,
+            &Reporting::default(),
             ExecutionDeadlines::default(),
             &mut cancellation,
         )
@@ -1498,6 +1504,7 @@ mod tests {
             &RustTargetConfiguration::default(),
             cache.path(),
             true,
+            &Reporting::default(),
             ExecutionDeadlines::default(),
             &mut cancellation,
         )
@@ -1532,6 +1539,7 @@ mod tests {
             &RustTargetConfiguration::default(),
             cache.path(),
             true,
+            &Reporting::default(),
             deadlines,
             &mut cancellation,
         )
@@ -1561,6 +1569,7 @@ mod tests {
             &RustTargetConfiguration::default(),
             cache.path(),
             false,
+            &Reporting::default(),
             ExecutionDeadlines::default(),
             &mut cancellation,
         )

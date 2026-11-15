@@ -1,0 +1,18 @@
+project:
+  name: Generated Python API
+repositories:
+  - id: repo
+    path: .
+packages:
+  - id: demo
+    name: Generated demo
+    slug: python
+    ecosystem: python
+    repository: repo
+    path: .
+    metadata-path: pyproject.toml
+    targets:
+      - id: api
+        extractor: python
+        path: generated_demo
+        role: public-api

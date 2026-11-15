@@ -25,6 +25,7 @@ impl WorkspaceSources {
         self.revalidate()?;
         let mut staging: Option<tempfile::TempDir> = None;
         let mut pages = BTreeMap::new();
+        let timing = self.reporting.phase(Phase::Examples, None, None);
         let result = async {
             let repositories: BTreeMap<_, _> = self
                 .paths
@@ -157,11 +158,14 @@ impl WorkspaceSources {
         }
         .await;
         match result {
-            Ok(()) => Ok(ExecutedWorkspace {
-                sources: self,
-                pages,
-                staging,
-            }),
+            Ok(()) => {
+                timing.finish();
+                Ok(ExecutedWorkspace {
+                    sources: self,
+                    pages,
+                    staging,
+                })
+            }
             Err(mut error) => {
                 if let AssemblyError::Execution(failure) = &mut error {
                     failure

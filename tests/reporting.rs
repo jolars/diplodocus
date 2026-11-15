@@ -6,11 +6,14 @@ use std::time::Duration;
 
 use diplodocus::commands::{BuildOptions, CommandRunner, ExtractOptions};
 use diplodocus::execution::ExecutionDeadlines;
-use diplodocus::reporting::{Event, Reporter};
+use diplodocus::reporting::{Event, Phase, Reporter};
 use tokio::sync::mpsc;
 
 #[derive(Debug, Clone)]
 enum Recorded {
+    PhaseStarted(u64, Phase, Option<String>, Option<String>),
+    PhaseFinished(u64, bool),
+    NativeTiming(Phase),
     CommandStarted,
     CommandFinished(bool),
     Started(u64, &'static str, Option<usize>),
@@ -29,6 +32,22 @@ struct Recording {
 impl Reporter for Recording {
     fn report(&self, event: Event<'_>) {
         let event = match event {
+            Event::PhaseStarted {
+                id,
+                phase,
+                package,
+                target,
+            } => Recorded::PhaseStarted(
+                id,
+                phase,
+                package.map(str::to_owned),
+                target.map(str::to_owned),
+            ),
+            Event::PhaseFinished { id, success, .. } => Recorded::PhaseFinished(id, success),
+            Event::NativeTiming { phase, elapsed, .. } => {
+                assert!(elapsed.as_secs_f64().is_finite());
+                Recorded::NativeTiming(phase)
+            }
             Event::CommandStarted { .. } => Recorded::CommandStarted,
             Event::CommandFinished {
                 success, output, ..
@@ -66,8 +85,20 @@ fn workspace() -> support::TestWorkspace {
 
 fn balanced_stages(events: &[Recorded]) {
     let mut active = BTreeMap::new();
+    let mut phases = BTreeMap::new();
     for event in events {
         match event {
+            Recorded::PhaseStarted(id, phase, package, target) => {
+                assert!(target.is_none() || package.is_some());
+                assert!(phases.insert(id, phase).is_none());
+            }
+            Recorded::PhaseFinished(id, _success) => {
+                assert!(phases.remove(id).is_some());
+            }
+            Recorded::NativeTiming(phase) => assert!(matches!(
+                phase,
+                Phase::PackageLoading | Phase::Extraction | Phase::Examples
+            )),
             Recorded::Started(id, _, total) => {
                 assert_ne!(*total, Some(0));
                 assert!(active.insert(id, (*total, 0)).is_none());
@@ -86,11 +117,15 @@ fn balanced_stages(events: &[Recorded]) {
                     assert_eq!(completed, total);
                 }
             }
-            Recorded::CommandFinished(_) => assert!(active.is_empty()),
+            Recorded::CommandFinished(_) => {
+                assert!(active.is_empty());
+                assert!(phases.is_empty());
+            }
             _ => {}
         }
     }
     assert!(active.is_empty());
+    assert!(phases.is_empty());
 }
 
 #[test]

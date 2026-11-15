@@ -26,8 +26,9 @@ use crate::provenance::{
     DeclaredSourceInputs, ProvenanceError, StaticProvenance, collect_static_provenance,
     fingerprint_bytes,
 };
-use crate::reporting::Reporting;
+use crate::reporting::{Phase, Reporting};
 
+mod adapters;
 mod api_examples;
 mod authored;
 mod documenter;
@@ -394,6 +395,7 @@ async fn rust_results(
                     &target.rust.clone().unwrap_or_default(),
                     &cache,
                     run_examples,
+                    reporting,
                     deadlines,
                     cancellation,
                 )
@@ -450,6 +452,7 @@ async fn doxygen_results(
                         repository,
                         package,
                         selected,
+                        reporting,
                         deadlines,
                         cancellation,
                     )

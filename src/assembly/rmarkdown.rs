@@ -146,6 +146,7 @@ impl WorkspaceSources {
         deadlines: ExecutionDeadlines,
         cancellation: &mut ExecutionCancellation<'_>,
     ) -> Result<(), AssemblyError> {
+        let timing = self.reporting.phase(Phase::Examples, None, None);
         let mut order: Vec<_> = self
             .prepared_pages
             .iter()
@@ -298,6 +299,7 @@ impl WorkspaceSources {
         }
         self.revalidate()?;
         progress.finish();
+        timing.finish();
         Ok(())
     }
 }

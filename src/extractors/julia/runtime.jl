@@ -3,6 +3,8 @@ using TOML
 # Loading by package identity lets Julia resolve dependencies in the caller's
 # prepared environment. Verify the checkout before reflecting on its bindings.
 function observe_checkout(package_path, entry_path, output_path, reflect="true")
+    timings = splitext(output_path)[1] * ".timings"
+    started = time_ns()
     project = TOML.parsefile(joinpath(package_path, "Project.toml"))
     identity = Base.PkgId(Base.UUID(project["uuid"]), project["name"])
     loaded = Base.require(identity)
@@ -19,6 +21,8 @@ function observe_checkout(package_path, entry_path, output_path, reflect="true")
     realpath(loaded_entry) == realpath(entry_path) ||
         error("Loaded package does not match the supplied checkout.")
 
+    write(timings, "package-loading\t$(Float64(time_ns() - started) / 1e9)\n")
+    started = time_ns()
     bindings = []
     for name in (reflect == "true" ? sort!(names(loaded; all=false, imported=false); by=string) : Symbol[])
         isdefined(loaded, name) || error("Public binding is undefined: $name")
@@ -51,6 +55,9 @@ function observe_checkout(package_path, entry_path, output_path, reflect="true")
         "dependencies" => dependencies,
         "types" => bindings,
     )
+    open(timings, "a") do io
+        println(io, "extraction\t$(Float64(time_ns() - started) / 1e9)")
+    end
     open(output_path, "w") do io
         TOML.print(io, result; sorted=true)
     end

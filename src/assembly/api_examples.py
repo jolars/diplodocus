@@ -9,6 +9,7 @@ import json
 import pathlib
 import platform
 import sys
+import time
 
 import tomllib
 
@@ -16,6 +17,8 @@ import tomllib
 def run(request_path, output_path):
     with open(request_path, "rb") as stream:
         request = tomllib.load(stream)
+    timings = pathlib.Path(output_path).with_suffix(".timings")
+    started = time.monotonic()
     root = pathlib.Path(request["package_root"]).resolve()
     project = tomllib.loads(pathlib.Path(request["metadata_path"]).read_text())[
         "project"
@@ -49,6 +52,8 @@ def run(request_path, output_path):
             components.pop()
     if not pathlib.Path(module.__file__).resolve().is_relative_to(root):
         raise ValueError("Example module does not match the supplied checkout.")
+    timings.write_text(f"package-loading\t{time.monotonic() - started}\n")
+    started = time.monotonic()
     source = request["source"]
     test = doctest.DocTestParser().get_doctest(
         source, vars(module).copy(), request["qualified_name"], "<api-document>", 0
@@ -117,6 +122,8 @@ def run(request_path, output_path):
         result = runner.run(test, out=messages.write)
     if result.failed:
         raise ValueError(messages.getvalue())
+    with timings.open("a") as stream:
+        stream.write(f"examples\t{time.monotonic() - started}\n")
     dependencies = {}
     distributions = importlib.metadata.packages_distributions()
     for name in sorted({name.split(".")[0] for name in sys.modules}):

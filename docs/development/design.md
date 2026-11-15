@@ -70,6 +70,9 @@ Rustdoc and Doxygen supply API structure; their HTML does not become the site.
 Parser and native-tool details stay inside adapters that return Diplodocus-owned
 records and diagnostics.
 
+The [native adapter contract](native-adapters.md) defines that common handoff,
+including command behavior, observed inputs, and current migration gaps.
+
 Diplodocus does not install dependencies or kernels. Rust is an exception to the
 usual requirement for prepared build artifacts: its native documentation tools
 may compile dependencies and run build scripts, using a prepared nightly

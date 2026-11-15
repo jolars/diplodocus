@@ -1,7 +1,7 @@
 use super::*;
 use crate::diagnostics::DiagnosticEntity;
-use crate::extractors::{julia, python, r};
-use crate::ir::{ExtractionTarget, Item, Package, Provenance, ProvenanceActivity, SourceLocation};
+use crate::extractors::{adapter::AdapterOutput, julia, python, r};
+use crate::ir::{ExtractionTarget, Package, SourceLocation};
 
 pub(super) fn assemble(
     configuration: &WorkspaceConfiguration,
@@ -49,80 +49,48 @@ pub(super) fn assemble(
                     role: target.role.clone(),
                 },
             );
-            let fragment = match target.extractor.as_str() {
+            let fragment: AdapterOutput = match target.extractor.as_str() {
                 "doxygen" => {
                     let result = native
                         .doxygen
                         .remove(&(declaration.id.clone(), target.id.clone()))
                         .ok_or(AssemblyError::InputsChanged)?;
-                    Fragment {
-                        version: result.metadata.version.clone(),
-                        metadata: Some(crate::ir::PackageMetadata::Cpp(result.metadata)),
-                        items: result.extraction.items,
-                        diagnostics: result.extraction.diagnostics,
-                        provenance: result.provenance,
-                    }
+                    result.into()
                 }
-                "rust" => {
-                    let result = native
-                        .rust
-                        .remove(&(declaration.id.clone(), target.id.clone()))
-                        .ok_or(AssemblyError::InputsChanged)?;
-                    if let Some(doctests) = result.doctests {
-                        workspace.provenance.push(doctests);
-                    }
-                    Fragment {
-                        metadata: Some(crate::ir::PackageMetadata::Rust(result.metadata)),
-                        version: result.extraction.version,
-                        items: result.extraction.items,
-                        diagnostics: result.extraction.diagnostics,
-                        provenance: result.provenance,
-                    }
-                }
+                "rust" => native
+                    .rust
+                    .remove(&(declaration.id.clone(), target.id.clone()))
+                    .ok_or(AssemblyError::InputsChanged)?
+                    .into(),
                 "julia" => {
                     let result = native
                         .julia
                         .remove(&(declaration.id.clone(), target.id.clone()))
-                        .unwrap_or_else(|| julia::extract_target(repository, resolved, selected));
-                    Fragment {
-                        version: result
-                            .metadata
-                            .as_ref()
-                            .and_then(|metadata| metadata.version.clone()),
-                        metadata: result.metadata.map(crate::ir::PackageMetadata::Julia),
-                        items: result.items,
-                        diagnostics: result.diagnostics,
-                        provenance: result.provenance,
-                    }
+                        .unwrap_or_else(|| {
+                            let timing = reporting.phase(
+                                Phase::Extraction,
+                                Some(&declaration.id),
+                                Some(&target.id),
+                            );
+                            let result = julia::extract_target(repository, resolved, selected);
+                            timing.finish();
+                            result
+                        });
+                    result.into()
                 }
                 "python" => {
+                    let timing =
+                        reporting.phase(Phase::Extraction, Some(&declaration.id), Some(&target.id));
                     let result = python::extract_target(repository, resolved, selected);
-                    Fragment {
-                        version: result
-                            .metadata
-                            .as_ref()
-                            .map(|metadata| metadata.version.clone()),
-                        metadata: result.metadata.map(crate::ir::PackageMetadata::Python),
-                        items: result.items,
-                        diagnostics: result.diagnostics,
-                        provenance: result.provenance,
-                    }
+                    timing.finish();
+                    result.into()
                 }
                 "r" => {
+                    let timing =
+                        reporting.phase(Phase::Extraction, Some(&declaration.id), Some(&target.id));
                     let result = r::extract_target(repository, resolved, selected);
-                    Fragment {
-                        version: result.metadata.as_ref().map(|m| m.version.clone()),
-                        metadata: result.metadata.map(|description| {
-                            crate::ir::PackageMetadata::R(crate::ir::RPackageMetadata {
-                                description,
-                                help_links: result.help_links,
-                                runtime: None,
-                            })
-                        }),
-                        items: result.items,
-                        diagnostics: result.diagnostics,
-                        provenance: result.provenance,
-                    }
+                    timing.finish();
+                    result.into()
                 }
                 _ => {
                     workspace.diagnostics.insert(
@@ -141,6 +109,10 @@ pub(super) fn assemble(
                     continue;
                 }
             };
+            let reference = fragment.evidence.target();
+            if reference.package != declaration.id || reference.target != target.id {
+                return Err(AssemblyError::InputsChanged);
+            }
             workspace.diagnostics.extend(fragment.diagnostics);
             if let Some(mut metadata) = fragment.metadata {
                 if let (
@@ -221,12 +193,9 @@ pub(super) fn assemble(
                     );
                 }
             }
-            if let ProvenanceActivity::Extraction {
-                target: reference,
-                inputs,
-                ..
-            } = &fragment.provenance.activity
             {
+                let reference = fragment.evidence.target();
+                let inputs = fragment.evidence.inputs();
                 let mut selected_inputs = vec![];
                 for (repository_id, inputs) in inputs {
                     if repository_id != &repository.id {
@@ -257,19 +226,12 @@ pub(super) fn assemble(
                     .extraction
                     .insert(reference.clone(), selected_inputs);
             }
-            workspace.provenance.push(fragment.provenance);
+            workspace.provenance.extend(fragment.evidence.completed);
+            workspace.provenance.push(fragment.evidence.extraction);
             progress.advance();
         }
         workspace.packages.insert(declaration.id.clone(), package);
     }
     progress.finish();
     Ok(())
-}
-
-struct Fragment {
-    metadata: Option<crate::ir::PackageMetadata>,
-    version: Option<String>,
-    items: BTreeMap<String, Item>,
-    diagnostics: Vec<Diagnostic>,
-    provenance: Provenance,
 }

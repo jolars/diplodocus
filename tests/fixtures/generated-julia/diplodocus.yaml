@@ -1,0 +1,18 @@
+project:
+  name: Generated Julia methods
+repositories:
+  - id: repo
+    path: .
+packages:
+  - id: demo
+    name: Generated demo
+    slug: julia
+    ecosystem: julia
+    repository: repo
+    path: .
+    metadata-path: Project.toml
+    targets:
+      - id: api
+        extractor: julia
+        path: src/GeneratedDemo.jl
+        role: public-api

@@ -213,6 +213,9 @@ impl WorkspaceSources {
                     .kill_on_drop(true);
                 #[cfg(target_os = "linux")]
                 command.process_group(0);
+                let timing = self
+                    .reporting
+                    .phase(Phase::NativeProcess, Some(&package.id), None);
                 let child = command.spawn().map_err(|_| failure(&package.id, location, format!("{language} API examples require the interpreter and prepared checkout dependencies.")))?;
                 #[cfg(target_os = "linux")]
                 let group = child
@@ -238,6 +241,8 @@ impl WorkspaceSources {
                         return Err(AssemblyError::Cancelled);
                     }
                 };
+                self.reporting
+                    .native_timings(&output.with_extension("timings"), &package.id, None);
                 if !status.success() {
                     let message = fs::read_to_string(&errors)
                         .unwrap_or_default()
@@ -249,6 +254,7 @@ impl WorkspaceSources {
                         format!("{language} {operation} failed: {}", message.trim()),
                     ));
                 }
+                timing.finish();
                 let result = fs::read_to_string(&output)?;
                 let mut results: Results = if language == "python" {
                     serde_json::from_str(&result).map_err(|_| ())

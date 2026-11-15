@@ -151,6 +151,9 @@ pub(super) async fn execute(
                 .kill_on_drop(true);
             #[cfg(target_os = "linux")]
             command.process_group(0);
+            let timing = sources
+                .reporting
+                .phase(Phase::NativeProcess, Some(&package.id), None);
             let child = command.spawn().map_err(|_| {
                 failure(
                     &package.id,
@@ -182,6 +185,9 @@ pub(super) async fn execute(
                     return Err(AssemblyError::Cancelled);
                 }
             };
+            sources
+                .reporting
+                .native_timings(&output.with_extension("timings"), &package.id, None);
             if !status.success() {
                 let message = fs::read_to_string(errors)
                     .unwrap_or_default()
@@ -193,6 +199,7 @@ pub(super) async fn execute(
                     format!("Rd example execution failed: {}", message.trim()),
                 ));
             }
+            timing.finish();
             let (blocks, activity, generated) = decode(
                 &fs::read_to_string(output)?,
                 &package.id,
