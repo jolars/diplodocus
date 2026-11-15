@@ -188,11 +188,7 @@ pub(super) fn validate_html(site: &Site<'_>, route: &str, html: &str) -> Result<
     let mut ids = BTreeMap::<String, usize>::new();
     while let Some(node) = nodes.pop() {
         if let NodeData::Element { attrs, .. } = &node.data {
-            for attribute in attrs
-                .borrow()
-                .iter()
-                .filter(|a| a.name.local.as_ref() == "id")
-            {
+            for attribute in attrs.borrow().iter().filter(|a| &*a.name.local == "id") {
                 *ids.entry(attribute.value.to_string()).or_default() += 1;
             }
         }

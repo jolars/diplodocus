@@ -47,23 +47,21 @@ fn inlines(
                 span,
             }),
             Token::TagToken(tag) if tag.attrs.is_empty() && !tag.had_duplicate_attributes => {
-                if tag.kind == TagKind::EndTag && tag.name.as_ref() == end && !tag.self_closing {
+                if tag.kind == TagKind::EndTag && &*tag.name == end && !tag.self_closing {
                     return Some(result);
                 }
                 if tag.kind != TagKind::StartTag {
                     return None;
                 }
-                if tag.name.as_ref() == "br" {
+                if &*tag.name == "br" {
                     result.push(Inline::HardBreak { span });
                     continue;
                 }
-                if tag.self_closing
-                    || !matches!(tag.name.as_ref(), "b" | "strong" | "i" | "em" | "code")
-                {
+                if tag.self_closing || !matches!(&*tag.name, "b" | "strong" | "i" | "em" | "code") {
                     return None;
                 }
                 let children = inlines(tokens, &tag.name, span, depth + 1)?;
-                result.push(match tag.name.as_ref() {
+                result.push(match &*tag.name {
                     "b" | "strong" => Inline::Strong {
                         inlines: children,
                         span,
@@ -101,10 +99,7 @@ fn wrapper(markup: &str, span: SourceSpan) -> Option<Wrapper> {
     let Token::TagToken(details) = next_non_space(&mut tokens)? else {
         return None;
     };
-    if details.name.as_ref() != "details"
-        || details.self_closing
-        || details.had_duplicate_attributes
-    {
+    if &*details.name != "details" || details.self_closing || details.had_duplicate_attributes {
         return None;
     }
     if details.kind == TagKind::EndTag {
@@ -112,8 +107,8 @@ fn wrapper(markup: &str, span: SourceSpan) -> Option<Wrapper> {
             .then_some(Wrapper::Close);
     }
     if details.attrs.iter().any(|attribute| {
-        attribute.name.local.as_ref() != "open"
-            || !attribute.name.ns.as_ref().is_empty()
+        &*attribute.name.local != "open"
+            || !attribute.name.ns.is_empty()
             || attribute.name.prefix.is_some()
     }) {
         return None;
@@ -122,7 +117,7 @@ fn wrapper(markup: &str, span: SourceSpan) -> Option<Wrapper> {
         return None;
     };
     if summary.kind != TagKind::StartTag
-        || summary.name.as_ref() != "summary"
+        || &*summary.name != "summary"
         || summary.self_closing
         || !summary.attrs.is_empty()
     {

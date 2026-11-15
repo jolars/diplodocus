@@ -280,7 +280,7 @@ fn children(
                     }
                     let key = attr.name.local.to_string();
                     if let Some(value) = attribute(&name.local, &key, &attr.value)? {
-                        let value = if name.local.as_ref() == "img" && key == "src" {
+                        let value = if &*name.local == "img" && key == "src" {
                             let asset = images.resolve(&value, context)?;
                             assets.push(asset.clone());
                             HtmlAttribute::Asset(asset)
@@ -294,7 +294,7 @@ fn children(
                         attributes.insert(key, value);
                     }
                 }
-                if name.local.as_ref() == "img" && !attributes.contains_key("src") {
+                if &*name.local == "img" && !attributes.contains_key("src") {
                     return Err(HtmlRejectionReason::Structure.into());
                 }
                 output.push(HtmlNode::Element {

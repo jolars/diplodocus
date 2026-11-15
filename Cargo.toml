@@ -30,7 +30,7 @@ console = "0.16"
 fatou-parser = "=0.9.0"
 getrandom = "0.4"
 # RcDom implements TreeSink only for this html5ever release line.
-html5ever = "=0.39.0"
+html5ever = "=0.40.1"
 hayagriva = "=0.10.1"
 image = { version = "=0.25.10", default-features = false, features = ["jpeg", "png"] }
 indicatif = "0.18"

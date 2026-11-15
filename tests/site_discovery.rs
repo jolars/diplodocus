@@ -50,15 +50,15 @@ fn locations(rendered: &RenderedSite) -> Vec<String> {
 fn canonical(node: &Handle, urls: &mut Vec<String>) {
     if let NodeData::Element { name, attrs, .. } = &node.data {
         let attrs = attrs.borrow();
-        if name.local.as_ref() == "link"
+        if &*name.local == "link"
             && attrs
                 .iter()
-                .any(|attr| attr.name.local.as_ref() == "rel" && attr.value.as_ref() == "canonical")
+                .any(|attr| &*attr.name.local == "rel" && attr.value.as_ref() == "canonical")
         {
             urls.push(
                 attrs
                     .iter()
-                    .find(|attr| attr.name.local.as_ref() == "href")
+                    .find(|attr| &*attr.name.local == "href")
                     .unwrap()
                     .value
                     .to_string(),
@@ -263,7 +263,7 @@ fn page_links_and_search_resolve_directly_to_public_urls() {
                     attrs
                         .borrow()
                         .iter()
-                        .filter(|a| a.name.local.as_ref() == attribute)
+                        .filter(|a| &*a.name.local == attribute)
                         .map(|a| a.value.to_string()),
                 );
             }

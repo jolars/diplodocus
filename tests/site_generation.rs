@@ -17,10 +17,10 @@ fn code_blocks(html: &str) -> Vec<(bool, String)> {
 
     fn visit(node: &Handle, blocks: &mut Vec<(bool, String)>) {
         if let NodeData::Element { name, attrs, .. } = &node.data
-            && name.local.as_ref() == "pre"
+            && &*name.local == "pre"
         {
             let highlighted = attrs.borrow().iter().any(|attribute| {
-                attribute.name.local.as_ref() == "class"
+                &*attribute.name.local == "class"
                     && attribute
                         .value
                         .split_whitespace()
