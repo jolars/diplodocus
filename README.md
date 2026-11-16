@@ -53,6 +53,12 @@ Install the language runtimes and package dependencies your documentation needs
 before building. C++ API extraction uses Doxygen and an explicit Doxyfile. See the
 [quick start](docs/guide/quick-start.md) for a complete example.
 
+R packages using roxygen2 regenerate documentation during normal commands and
+source changes in `diplodocus serve`. Supply roxygen2 and the package's prepared
+dependencies; generation writes Rd, NAMESPACE, and roxygen metadata in the
+checkout. Packages with maintained Rd can select `r: {documentation: rd}`. See
+the [R workflow](docs/guide/extraction/r.md) for package options and prerequisites.
+
 ## Documentation
 
 - [Diplodocus documentation](https://diplodocus.cc/)

@@ -83,6 +83,7 @@ impl Reporting {
             };
             let phase = match name {
                 "package-loading" => Phase::PackageLoading,
+                "documentation-generation" => Phase::DocumentationGeneration,
                 "extraction" => Phase::Extraction,
                 "examples" => Phase::Examples,
                 _ => continue,

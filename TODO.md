@@ -14,9 +14,10 @@ generated documentation, rebuild affected pages, and refresh the browser. The
 caller supplies the language tools, dependencies, and compiled extensions;
 Diplodocus orchestrates them without installing dependencies.
 
-This is planned work. Today R extraction reads existing Rd files without running
-roxygen2, Python and Julia primarily use static source adapters with runtime
-assistance, and Rust and C++ already consume native rustdoc JSON and Doxygen XML.
+R extraction now selects roxygen2 generation or maintained Rd and combines
+documentation with native checkout discovery. Python and Julia primarily use
+static source adapters with runtime assistance, and Rust and C++ consume native
+rustdoc JSON and Doxygen XML.
 The current watcher reruns extraction; it is not yet an incremental API engine.
 Keep the existing Rust and C++ integrations and use the [current
 design](docs/development/design.md) as the migration baseline. Preserve native
@@ -50,29 +51,33 @@ developer measurement workflow.
 
 ### 2. Deliver the R workflow with roxygen2
 
-- [ ] Select roxygen2 generation or maintained Rd input per package. Respect the
+- [x] Select roxygen2 generation or maintained Rd input per package. Respect the
   package's supported roxygen options, roclets, and loading strategy, and
   document the supported versions and extension surface.
-- [ ] Invoke roxygen2 from the normal command pipeline when its inputs change.
+- [x] Invoke roxygen2 from the normal command pipeline when its inputs change.
   Users must not need a separate `devtools::document()` command before
   running `check`, `extract`, `build`, or `serve`.
-- [ ] Define where generated Rd and namespace metadata live and how they map
+- [x] Define where generated Rd and namespace metadata live and how they map
   back to maintained R sources. Document any checkout writes, prevent
   generated output from triggering watch loops, and reject stale output
   after generation fails.
-- [ ] Combine generated Rd with native exports, formals, and dispatch evidence.
+- [x] Combine generated Rd with native exports, formals, and dispatch evidence.
   Stop requiring every documented declaration to be reconstructible from a
   direct static source definition. Retain source parsers for attribution and
   supported supplemental evidence.
-- [ ] Reuse native process supervision, checkout verification, cancellation,
+- [x] Reuse native process supervision, checkout verification, cancellation,
   deadlines, diagnostics, and preservation of the previous successful site.
   Keep Rd example execution and portable snapshots working with generated
   input.
-- [ ] Add acceptance cases for roxygen prose, changed formals and exports,
+- [x] Add acceptance cases for roxygen prose, changed formals and exports,
   inherited documentation, shared topics, and generated declarations. In the
   qualpalr recipe, verify that plain `diplodocus serve` updates
   documentation after a source edit without manually regenerating Rd, and
   recovers after a generation error is fixed.
+
+The [R workflow](docs/guide/extraction/r.md) documents configuration and native
+prerequisites. The [qualpalr comparison](docs/development/pipeline-baseline.md#roxygen2-workflow-results)
+records source-only preview updates, failure recovery, and current latency.
 
 ### 3. Make the development loop incremental
 

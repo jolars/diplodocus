@@ -1355,16 +1355,232 @@ fn same_parameters(left: &[Parameter], right: &[Parameter]) -> bool {
     normalize(left) == normalize(right)
 }
 
+pub(super) fn same_signature(left: &Signature, right: &Signature) -> bool {
+    match (left, right) {
+        (
+            Signature::Callable {
+                parameters: left,
+                returns: left_returns,
+            },
+            Signature::Callable {
+                parameters: right,
+                returns: right_returns,
+            },
+        ) => {
+            same_parameters(left, right)
+                && left_returns.clone().map(normalize_expression)
+                    == right_returns.clone().map(normalize_expression)
+        }
+        _ => left == right,
+    }
+}
+
+fn hexadecimal_number(text: &str) -> Option<f64> {
+    let text = text
+        .strip_prefix("0x")
+        .or_else(|| text.strip_prefix("0X"))?;
+    let (mantissa, exponent) =
+        text.split_once(['p', 'P'])
+            .map_or(Some((text, 0)), |(mantissa, exponent)| {
+                exponent
+                    .parse::<i32>()
+                    .ok()
+                    .map(|exponent| (mantissa, exponent))
+            })?;
+    let fraction = mantissa
+        .split_once('.')
+        .map_or(0, |(_, fraction)| fraction.len());
+    let digits = mantissa.replace('.', "");
+    let value = u128::from_str_radix(digits.trim_start_matches('0'), 16)
+        .ok()
+        .or_else(|| digits.chars().all(|digit| digit == '0').then_some(0))?;
+    if value == 0 {
+        return Some(0.0);
+    }
+    let exponent = exponent.checked_sub(i32::try_from(fraction).ok()?.checked_mul(4)?)?;
+    let highest = 127 - value.leading_zeros();
+    let mut binary_exponent = i64::from(highest) + i64::from(exponent);
+    if binary_exponent > 1023 {
+        return Some(f64::INFINITY);
+    }
+    // Round the exact hexadecimal significand once, including subnormal values.
+    // Accumulating through floating-point arithmetic can round it twice.
+    let bits = if binary_exponent < -1022 {
+        let shift = i64::from(exponent) + 1074;
+        if shift >= 0 {
+            value.checked_shl(u32::try_from(shift).ok()?)?
+        } else {
+            round_binary(value, u32::try_from(-shift).ok()?)
+        }
+    } else {
+        let mut significand = if highest > 52 {
+            round_binary(value, highest - 52)
+        } else {
+            value << (52 - highest)
+        };
+        if significand == 1 << 53 {
+            significand >>= 1;
+            binary_exponent += 1;
+        }
+        if binary_exponent > 1023 {
+            return Some(f64::INFINITY);
+        }
+        (((binary_exponent + 1023) as u128) << 52) | (significand & ((1 << 52) - 1))
+    };
+    Some(f64::from_bits(u64::try_from(bits).ok()?))
+}
+
+fn round_binary(value: u128, shift: u32) -> u128 {
+    if shift > 128 {
+        return 0;
+    }
+    if shift == 128 {
+        return u128::from(value > 1 << 127);
+    }
+    if shift == 0 {
+        return value;
+    }
+    let rounded = value >> shift;
+    let remainder = value & ((1 << shift) - 1);
+    let halfway = 1 << (shift - 1);
+    rounded + u128::from(remainder > halfway || (remainder == halfway && rounded & 1 == 1))
+}
+
+fn normalized_number(text: &str, kind: &str) -> Option<String> {
+    let text = text.strip_suffix(['L', 'i']).unwrap_or(text);
+    let value = if text == "Inf" {
+        f64::INFINITY
+    } else if text.starts_with("0x") || text.starts_with("0X") {
+        hexadecimal_number(text)?
+    } else {
+        text.parse::<f64>().ok()?
+    };
+    Some(format!("r-{kind}:{:016x}", value.to_bits()))
+}
+
+fn string_escape_digits(
+    chars: &mut std::iter::Peekable<std::str::Chars<'_>>,
+    radix: u32,
+    limit: usize,
+) -> Option<u32> {
+    let mut value = None;
+    for _ in 0..limit {
+        let Some(digit) = chars.peek().and_then(|ch| ch.to_digit(radix)) else {
+            break;
+        };
+        chars.next();
+        value = Some(value.unwrap_or(0) * radix + digit);
+    }
+    value
+}
+
+fn string_unicode_escape(
+    chars: &mut std::iter::Peekable<std::str::Chars<'_>>,
+    limit: usize,
+) -> Option<u32> {
+    let braced = chars.next_if_eq(&'{').is_some();
+    let value = string_escape_digits(chars, 16, limit)?;
+    if braced && chars.next()? != '}' {
+        return None;
+    }
+    Some(value)
+}
+
+fn decoded_string(text: &str) -> Option<Vec<u8>> {
+    let mut chars = text.chars().peekable();
+    let mut bytes = vec![];
+    let mut unicode_escape = false;
+    let mut byte_escape = false;
+    while let Some(ch) = chars.next() {
+        if ch != '\\' {
+            bytes.extend_from_slice(ch.encode_utf8(&mut [0; 4]).as_bytes());
+            continue;
+        }
+        let escaped = chars.next()?;
+        let byte = match escaped {
+            'a' => b'\x07',
+            'b' => b'\x08',
+            'f' => b'\x0c',
+            'n' | '\n' => b'\n',
+            'r' => b'\r',
+            't' => b'\t',
+            'v' => b'\x0b',
+            '\\' | '\'' | '"' | '`' => escaped as u8,
+            'x' => {
+                byte_escape = true;
+                u8::try_from(string_escape_digits(&mut chars, 16, 2)?).ok()?
+            }
+            '0'..='7' => {
+                byte_escape = true;
+                let mut value = escaped.to_digit(8)?;
+                for _ in 0..2 {
+                    let Some(digit) = chars.peek().and_then(|ch| ch.to_digit(8)) else {
+                        break;
+                    };
+                    chars.next();
+                    value = value * 8 + digit;
+                }
+                u8::try_from(value).ok()?
+            }
+            'u' | 'U' => {
+                unicode_escape = true;
+                let mut value =
+                    string_unicode_escape(&mut chars, if escaped == 'u' { 4 } else { 8 })?;
+                if (0xd800..=0xdbff).contains(&value) {
+                    if chars.next()? != '\\' || chars.next()? != 'u' {
+                        return None;
+                    }
+                    let low = string_unicode_escape(&mut chars, 4)?;
+                    if !(0xdc00..=0xdfff).contains(&low) {
+                        return None;
+                    }
+                    value = 0x10000 + ((value - 0xd800) << 10) + (low - 0xdc00);
+                }
+                bytes.extend_from_slice(char::from_u32(value)?.encode_utf8(&mut [0; 4]).as_bytes());
+                continue;
+            }
+            _ => return None,
+        };
+        bytes.push(byte);
+    }
+    // R forbids NULs and mixing Unicode escapes with byte escapes.
+    if bytes.contains(&0) || (unicode_escape && byte_escape) {
+        return None;
+    }
+    Some(bytes)
+}
+
 fn normalize_expression(mut expression: SignatureExpression) -> SignatureExpression {
     match &mut expression {
         SignatureExpression::Literal { text } => {
             let parsed = parser::parse(text);
-            if let Some(Expr::StringLiteral(string)) =
-                parsed.cst.children_with_tokens().find_map(Expr::cast)
-                && let Some(value) = string.unquote()
-                && !value.contains('\\')
-            {
-                *text = format!("{value:?}");
+            match parsed.cst.children_with_tokens().find_map(Expr::cast) {
+                Some(Expr::StringLiteral(string)) => {
+                    if let Some(value) = string.inner().and_then(decoded_string) {
+                        *text = format!("r-string:{value:?}");
+                    }
+                }
+                Some(Expr::FloatLiteral(_) | Expr::IntLiteral(_)) => {
+                    let kind = if text.ends_with('L') {
+                        "integer"
+                    } else {
+                        "double"
+                    };
+                    if let Some(number) = normalized_number(text, kind) {
+                        *text = number;
+                    }
+                }
+                Some(Expr::ComplexLiteral(_)) => {
+                    if let Some(number) = normalized_number(text, "complex") {
+                        *text = number;
+                    }
+                }
+                Some(Expr::Name(name)) if name.name() == "Inf" => {
+                    if let Some(number) = normalized_number(text, "double") {
+                        *text = number;
+                    }
+                }
+                _ => {}
             }
         }
         SignatureExpression::Apply {
@@ -1472,5 +1688,64 @@ fn r_name(name: &str) -> String {
         name.into()
     } else {
         format!("`{}`", name.replace('`', "\\`"))
+    }
+}
+
+#[cfg(test)]
+mod comparison_tests {
+    use super::*;
+
+    fn literal(text: &str) -> SignatureExpression {
+        normalize_expression(SignatureExpression::Literal { text: text.into() })
+    }
+
+    #[test]
+    fn string_comparison_decodes_r_escapes_without_changing_values() {
+        for (left, right) in [
+            (r#""\u0041""#, "\"A\""),
+            (r#""\u41""#, "\"A\""),
+            (r#""\u{41}""#, "\"A\""),
+            (r#""\U0001f600""#, "\"😀\""),
+            (r#""\uD83D\uDE00""#, "\"😀\""),
+            (r#""\x41""#, "\"A\""),
+            (r#""\101""#, "\"A\""),
+            (r#""\xc3\xa9""#, "\"é\""),
+            (r#""\xff""#, r#""\377""#),
+            (r#""\a\b\f\n\r\t\v""#, "\"\x07\x08\x0c\n\r\t\x0b\""),
+            (r#"'\"'"#, r#""\"""#),
+            (r#"'\\'"#, r#""\\""#),
+        ] {
+            assert_eq!(literal(left), literal(right), "{left} and {right}");
+        }
+        for (left, right) in [
+            (r#""\u0041""#, "\"B\""),
+            (r#""\\u0041""#, "\"A\""),
+            (r#""\\n""#, r#""\n""#),
+            (r#""\q""#, "\"q\""),
+        ] {
+            assert_ne!(literal(left), literal(right), "{left} and {right}");
+        }
+        for invalid in [r"\u{}", r"\u{41", r"\x", r"\777", r"\0", r"\u0041\101"] {
+            assert_eq!(decoded_string(invalid), None, "{invalid}");
+        }
+    }
+
+    #[test]
+    fn numeric_comparison_accepts_equivalent_spellings_and_preserves_types() {
+        for (left, right) in [
+            ("1e-8", "0.00000001"),
+            ("1.0", "1"),
+            ("0xff", "255"),
+            ("0x1.8p1", "3"),
+            ("0x0.0000000000001p-1022", "5e-324"),
+            ("0x1.fffffffffffffp1023", "1.7976931348623157e308"),
+            ("0x100000000000008", "72057594037927940"),
+        ] {
+            assert_eq!(literal(left), literal(right), "{left} and {right}");
+        }
+        assert_ne!(literal("1L"), literal("1.0"));
+        assert_ne!(literal("1i"), literal("1"));
+        assert_ne!(literal("NULL"), literal("0"));
+        assert_ne!(literal("\"1\""), literal("1"));
     }
 }

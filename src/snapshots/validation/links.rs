@@ -11,7 +11,7 @@ pub(super) fn validate(workspace: &Workspace) -> Result {
     for id in workspace.repositories.keys() {
         require(!id.is_empty(), "empty repository identity")?;
     }
-    links.provenance(&workspace.provenance)?;
+    links.provenance(&workspace.provenance, true)?;
     for diagnostic in &workspace.diagnostics {
         if let Some(source) = &diagnostic.source {
             links.diagnostic_source(source)?;
@@ -373,7 +373,7 @@ pub(super) fn validate(workspace: &Workspace) -> Result {
             if let Some(data) = &item.language_data {
                 links.language(data)?;
             }
-            links.provenance(&item.provenance)?;
+            links.provenance(&item.provenance, false)?;
             if let Some(document) = &item.documentation {
                 links.document(document, false)?;
             }
@@ -385,7 +385,7 @@ pub(super) fn validate(workspace: &Workspace) -> Result {
         }
     }
     for relationship in &workspace.relationships {
-        links.provenance(&relationship.provenance)?;
+        links.provenance(&relationship.provenance, false)?;
     }
     for page in workspace.pages.values() {
         let allow_api = matches!(&page.kind, PageKind::Authored { collection }
@@ -520,12 +520,16 @@ impl Links<'_> {
         Ok(())
     }
 
-    fn provenance(&self, records: &[Provenance]) -> Result {
+    fn provenance(&self, records: &[Provenance], workspace: bool) -> Result {
         for record in records {
             if let Some(source) = &record.source {
                 self.diagnostic_source(source)?;
             }
             match &record.activity {
+                ProvenanceActivity::RDocumentation { .. } | ProvenanceActivity::RRuntime { .. } => {
+                    require(workspace, "native R provenance placement")?;
+                    super::r::provenance(self.0, record)?;
+                }
                 ProvenanceActivity::DocumenterExamples {
                     collection,
                     policy,
@@ -964,7 +968,7 @@ impl Links<'_> {
     }
 
     fn document(&self, document: &SourcedDocument, allow_api: bool) -> Result {
-        self.provenance(&document.provenance)?;
+        self.provenance(&document.provenance, false)?;
         if matches!(
             document.source_format,
             DocumentFormat::Authored {
@@ -1206,7 +1210,7 @@ impl Links<'_> {
                         )?;
                     }
                     for output in &cell.outputs {
-                        self.provenance(&output.provenance)?;
+                        self.provenance(&output.provenance, false)?;
                         for representation in &output.representations {
                             if let OutputRepresentation::MarkdownBlocks { blocks, .. } =
                                 representation

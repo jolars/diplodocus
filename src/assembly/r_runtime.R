@@ -1,4 +1,4 @@
-load_checkout <- function(root, expected_name, expected_version) {
+load_checkout <- function(root, expected_name, expected_version, export_all = FALSE) {
   if (!requireNamespace("pkgload", quietly = TRUE)) stop("Native R execution requires pkgload")
   root <- normalizePath(root, mustWork = TRUE)
   meta <- read.dcf(file.path(root, "DESCRIPTION"))[1L, ]
@@ -6,7 +6,7 @@ load_checkout <- function(root, expected_name, expected_version) {
   if (!identical(name, expected_name) || !isTRUE(base::package_version(meta[["Version"]]) == base::package_version(expected_version))) {
     stop("Supplied checkout package identity does not match the configured DESCRIPTION")
   }
-  pkgload::load_all(root, compile = FALSE, quiet = TRUE, export_all = FALSE, helpers = FALSE, attach_testthat = FALSE)
+  pkgload::load_all(root, compile = FALSE, quiet = TRUE, export_all = export_all, helpers = FALSE, attach_testthat = FALSE)
   verify <- function() {
     ns <- asNamespace(name)
     if (!identical(normalizePath(getNamespaceInfo(ns, "path"), mustWork = TRUE), root)) stop("Loaded R package does not match the supplied checkout")

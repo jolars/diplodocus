@@ -120,6 +120,42 @@ pub enum ProvenanceActivity {
         /// Loaded dependency UUIDs and versions, without library paths.
         dependencies: BTreeMap<String, String>,
     },
+    /// Completed roxygen2 generation in the supplied R checkout.
+    RDocumentation {
+        /// Owning workspace package.
+        package: String,
+        /// Versioned generation contract.
+        policy: String,
+        /// Observed R interpreter version.
+        r_version: String,
+        /// Observed roxygen2 version.
+        roxygen2_version: String,
+        /// Effective package loader, either `pkgload` or `source`.
+        loader: String,
+        /// Effective roclets in their configured execution order.
+        roclets: Vec<String>,
+        /// Loaded namespace versions without local library paths.
+        dependencies: BTreeMap<String, String>,
+        /// Maintained source and declared supplemental inputs before generation.
+        inputs: Vec<InputFingerprint>,
+        /// Generated checkout files observed after successful generation.
+        outputs: Vec<InputFingerprint>,
+    },
+    /// Native R API discovery in the verified supplied checkout.
+    RRuntime {
+        /// Owning workspace package.
+        package: String,
+        /// Versioned discovery contract.
+        policy: String,
+        /// Observed R interpreter version.
+        r_version: String,
+        /// Verified checkout version from DESCRIPTION.
+        package_version: String,
+        /// Loaded namespace versions without local library paths.
+        dependencies: BTreeMap<String, String>,
+        /// Source, metadata, and documentation supplied to native discovery.
+        inputs: Vec<InputFingerprint>,
+    },
     /// Completed native R Markdown execution in the prepared checkout.
     RMarkdown {
         /// Owning workspace package.
@@ -307,6 +343,8 @@ pub enum ExtractionMode {
     Static,
     /// Resolve declarations with native compiler tooling, allowing local builds.
     Compiler,
+    /// Discover declarations by loading the supplied package with native tooling.
+    Native,
 }
 
 /// One Rust example discovered and checked by the native doctest runner.

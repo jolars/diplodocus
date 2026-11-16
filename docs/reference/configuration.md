@@ -88,6 +88,7 @@ boundaries.
 | `overview` | path | `README.md`, then package description | Optional `.md` file relative to the package root. An authored package index takes precedence. |
 | `kind` | string | `package` | `package` for a distribution or `component` for an internal component. |
 | `visibility` | string | `public` | Navigation and search visibility, described below. |
+| `r` | mapping | Automatic documentation selection | R generation settings; valid only for an R package. |
 | `targets` | list | Required | Explicit extraction targets. Use `[]` for no API extraction. |
 
 `visibility` accepts:
@@ -100,6 +101,23 @@ The conventional metadata files are `pyproject.toml`, `DESCRIPTION`,
 `Project.toml`, `Cargo.toml`, and `Doxyfile`. See [API
 extraction](../guide/extraction.md) for language-specific setup and [package landing
 pages](../guide/authoring.md#package-landing-pages) for overview precedence.
+
+### R package settings
+
+Fields in `packages[].r`:
+
+| Option | Type | Default | Purpose |
+| --- | --- | --- | --- |
+| `documentation` | string | `auto` | `auto`, `roxygen2`, or `rd`. Automatic selection uses roxygen DESCRIPTION fields or `man/roxygen/meta.R`. |
+| `extra-inputs` | list of paths | `[]` | Supplemental inputs for generation and native discovery, relative to the package root. |
+| `generated-outputs` | list of paths | `[]` | Exclusively generated files or directories written by custom roclets, relative to the package root. |
+
+Generation writes standard Rd, NAMESPACE, and roxygen DESCRIPTION metadata in
+the checkout. Custom output paths must not overlap maintained inputs or another
+package's declared paths. Missing optional generated outputs are allowed; failed
+generation prevents extraction from using stale output. See the
+[R workflow](../guide/extraction/r.md#roxygen2-or-maintained-rd) for prerequisites,
+package options, supported loaders, and the roxygen2 version range.
 
 ### Extraction targets
 
@@ -115,8 +133,11 @@ IDs must be unique within their package.
 | `rust` | mapping | Default Cargo features | Optional Rust feature selection; valid only for a Rust target in a Rust package. |
 | `julia` | mapping | No extension sources | Optional Julia source selection; valid only for a Julia target in a Julia package. |
 
-Python targets select maintained source files or directories; R targets select
-the package source directory, usually `.`. Julia and Rust targets must name an
+Python targets select maintained source files or directories. Normal R commands
+require every R target to select the package root (`.`), and the native checkout
+must contain DESCRIPTION even when `metadata-path` selects another metadata
+file. The two files must agree on package identity and version.
+Julia and Rust targets must name an
 explicit entry file, such as `src/MyPackage.jl` or `src/lib.rs`.
 
 C++ packages use `ecosystem: cpp` and `extractor: doxygen`. Both

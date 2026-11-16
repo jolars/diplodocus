@@ -20,10 +20,11 @@ foreground reservation:
 
 ```sh
 compute run -- cargo build --locked --release --example pipeline_bench
+cp target/release/examples/pipeline_bench artifacts/native-adapters/candidate
 compute bench --reason "native adapter baseline and candidate" -- \
   python scripts/bench-pipeline.py \
   --worker baseline=artifacts/native-adapters/baseline \
-  --worker candidate=target/release/examples/pipeline_bench \
+  --worker candidate=artifacts/native-adapters/candidate \
   --output artifacts/native-adapters/comparison.json
 ```
 
@@ -31,6 +32,8 @@ For the initial boundary refactor, the baseline is the parent implementation
 with the measurement instrumentation and worker added. Future comparisons can
 use the worker available in both revisions. Archive executable digests, source
 revisions, and any instrumentation-only patch with the measurement artifacts.
+Keep both executables outside `target/` so cache cleanup cannot remove a worker
+partway through the comparison.
 
 The default cases are the four-language monorepo example, Qualpal public
 headers, and qualpalr API documentation. Supply different producer checkouts
@@ -46,19 +49,68 @@ vignettes. The original producer checkouts are never edited. Missing tools,
 dependencies, incompatible compiled extensions, or failed builds produce
 explicit blocked cases rather than substitute packages or successful timings.
 
+An optional `--qualpalr-patch PATH` applies a prepared input correction to each
+temporary package before measurement. The report retains the patch and its
+digest. The recorded roxygen comparison uses
+[`qualpalr-description.patch`](https://github.com/jolars/diplodocus/blob/main/docs/development/benchmarks/qualpalr-description.patch) to separate
+a deprecated topic's description from its explicit title. Without that source
+correction, roxygen2 rejects the producer's multiparagraph `@title`. Both workers
+receive the same correction. If the prepared extension needs an OpenMP library
+outside its recorded search paths, expose that library through `LD_LIBRARY_PATH`.
+The report records the runtime library path and thread settings.
+
+The shared library must match the selected R source and native interface. A stale
+Rcpp-built `src/qualpalr.so` cannot serve the current cpp11 sources, even if the
+library loads. Compile the current extension in a temporary package with the
+caller's prepared dependencies, then pass `--qualpalr-dll PATH/qualpalr.so`.
+For the recorded comparison, preparation used
+`pkgbuild::compile_dll(path, force = TRUE, compile_attributes = FALSE, debug = FALSE)`
+in that copy, keeping the existing generated cpp11 registration code.
+The harness copies it into each temporary package's `src/` after applying any
+input patch and before measurement. The report retains its path and SHA-256
+digest. The original producer checkout stays unchanged; the harness never
+compiles the extension. The DLL override and input patch can be used separately
+or together.
+
 The harness performs one unreported warmup, five fresh-workspace startup runs,
 and two saves of each mutation kind per startup. That gives ten warm-save
 observations per kind. Startup has fresh Diplodocus caches but shares warmed OS
 and native runtime caches. It is not a machine-cold boot measurement. Warm saves
 reuse the same running server and its workspace caches.
 
-Mutations cover authored prose, API prose, and signatures. R signature edits
-update source formals and maintained Rd usage together because the current
-adapter rejects disagreement. The qualpalr case
-also edits maintained roxygen prose and verifies that Rd and the rendered site
-remain unchanged: that is today's generation gap, not a successful roxygen
-preview update. Each change is restored before the next mutation category.
+Mutations cover authored prose, API prose, and signatures. The harness detects
+completed roxygen2 generation from the startup snapshot's `RDocumentation`
+provenance. For that worker, qualpalr API prose and signature saves edit only
+`R/qualpal.R`; the harness requires regenerated Rd and changed rendered output.
+An additional export case appends a documented helper and requires both Rd and
+NAMESPACE to change. It never patches generated Rd by hand.
+
+Workers without generation retain the original maintained-Rd cases: signature
+edits update source and usage together, and `roxygen-gap` requires a roxygen prose
+edit to leave Rd and rendered output unchanged. That row measures the old gap,
+not successful native preview behavior. The report records each worker's
+generation mode and mutation inputs. Initial maintained-input hashes remain
+comparable, but native discovery, regenerated output, and provenance can change
+snapshot fingerprints. Do not require identical fingerprints across this
+migration. Each change is restored before the next mutation category.
 `--scenario authored --samples 1 --saves 2` provides a small harness smoke test.
+
+For a focused R comparison, add `--scenario qualpalr --samples 1 --saves 2` to
+the command above. The candidate also performs an unmeasured failure/recovery
+check through the production serve loop: introduce invalid maintained R source,
+await the generation error, verify the previous snapshot and site remain byte
+identical, correct the source, and await a successful rebuild. Both states must
+settle without a generated-write rebuild loop. The result appears under
+`generation_recovery`; its events are excluded from performance summaries.
+The candidate must also remain idle after startup and every source save.
+
+For a manual check, use the same focused qualpalr API copy with its prepared
+extension and dependencies, and run plain `diplodocus serve`. Change a roxygen
+title in `R/qualpal.R` without touching `man/`, then verify the generated Rd and
+served title update. Introduce an unmatched parenthesis in the R source, verify
+the previous page remains available, and correct it to verify recovery. Browser
+refresh is optional through `--live-reload`. The complete upstream qualpalr
+vignettes remain outside this API-only recipe.
 
 ## Interpreting timings
 
@@ -73,7 +125,10 @@ Julia reflection. They use monotonic elapsed clocks and live only in private
 staging. A native-process duration also includes interpreter startup, loading,
 execution, and shutdown. Native subphase durations overlap the host duration;
 do not add them together. Empty authored execution stages can have small host
-durations without starting a runtime. Absent roxygen generation has no timing.
+durations without starting a runtime. Native R workers report generation
+separately from package loading; workers without roxygen generation have no
+generation timing. This implementation generates on every command attempt.
+It does not claim incremental extraction or generation-cache performance.
 
 Reports include raw samples, phase events, input hashes, executable hashes,
 source revisions, and observed tool versions. Summary values use the median and
@@ -128,8 +183,8 @@ change whose documentation remains unchanged, not a completed native preview.
 Use these rounded baseline p95 values as the initial local preview budgets:
 monorepo startup **10.35 s** and warm saves **10.25 s**; Qualpal startup **0.38 s**
 and warm saves **0.71 s**; qualpalr API startup **4.81 s** and maintained-Rd saves
-**5.05 s**. Roxygen generation needs its own completed-preview budget once step 2
-exists. These are measured comparison points, not CI gates or performance
+**5.05 s**. Roxygen generation needs its own completed-preview budget measured
+with the native worker. These are measured comparison points, not CI gates or performance
 improvements delivered by this refactor.
 
 On monorepo authored saves, baseline native-process medians were 1.64 s for
@@ -147,3 +202,58 @@ comparison does not establish a causal performance regression or speedup.
 thermal state, or unrelated system activity. Keep the measured breakdown as the
 baseline for native orchestration and package invalidation work.
 
+
+## Roxygen2 workflow results
+
+Recorded on November 16, 2026, on an Intel Core Ultra 7 155U (14 logical CPUs),
+Linux 6.18.60, with R 4.6.1, roxygen2 8.0.0, pkgload 1.5.3, and Rust 1.98.0.
+Both workers used optimized builds in one exclusive window, with the candidate
+followed by the baseline. This host differs from the initial results above;
+compare workers within this window.
+
+All 90 samples completed, with identical initial input hashes. The API-only
+qualpalr copy used the title correction and rebuilt cpp11 extension described
+above. Both workers received those preparations, and the producer checkout
+remained unchanged. The retained
+[measurements](https://github.com/jolars/diplodocus/blob/main/docs/development/benchmarks/roxygen-workflow.json)
+include every sample, phase durations, diagnostics, tool observations, input
+hashes, and executable hashes. The full event trace, optimized executables,
+prepared extension, and implementation patch remain in local
+`artifacts/native-adapters/`.
+
+Native prose, formal, and export saves changed only maintained R source. Each
+save regenerated Rd and changed the rendered site; export saves also changed
+NAMESPACE. Every measured native command generated exactly once and settled
+without a watch loop. An unmeasured generation error retained the snapshot and
+site byte for byte. Correcting the source restored the site and returned the
+server to its idle state.
+
+Times below are **median / p95 in seconds**. Baseline API prose edits modify Rd,
+and baseline formal edits modify R and Rd together. Native API edits modify R
+source only. The baseline `roxygen-gap` row leaves documentation unchanged.
+
+| Action | Baseline | Native roxygen2 |
+| --- | --- | --- |
+| startup | 6.249 / 6.269 | 7.919 / 8.256 |
+| authored prose | 6.439 / 7.084 | 7.965 / 8.189 |
+| API prose | 6.416 / 6.764 | 8.112 / 10.214 |
+| formals | 6.449 / 6.637 | 8.157 / 13.685 |
+| exports | — | 8.123 / 8.393 |
+| roxygen-gap | 6.378 / 6.555 | — |
+
+The baseline starts with maintained Rd ready to consume; its timings omit any
+separate documentation-generation command. The native workflow includes
+roxygen2 generation and checkout reflection on every command attempt, including
+authored saves. Package invalidation and extraction caching remain future work.
+
+On native API prose saves, generation took a median 0.563 s, native package
+loading across preparation and examples totaled 1.424 s, rendering took 0.152 s,
+and reference resolution took 0.047 s. Native processes totaled a median
+7.121 s. Helper durations overlap their host process durations. The longest
+formal save took 13.685 s and contained one generation with longer native
+process durations across several stages. The report retains that observation.
+
+Use **8.3 s startup** and **13.7 s source-save p95** as initial completed-preview
+comparison points on this host. Native source-save medians were about **8.1 s**.
+These measurements guide the next invalidation work; they are not CI gates or
+portable latency guarantees.

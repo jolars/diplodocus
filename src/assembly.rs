@@ -1,8 +1,8 @@
 //! Assemble explicitly declared sources before reference validation and storage.
 //!
 //! Loading prepares authored content and resolves API declarations. Rust targets
-//! use native compiler tooling, and C++ targets invoke Doxygen. Other check
-//! adapters use source analysis.
+//! use native compiler tooling, and C++ targets invoke Doxygen. R command
+//! adapters generate documentation when configured and discover native APIs.
 //! Extraction also completes native semantics and examples before publication.
 //! These operations require current command authority from their caller and do
 //! not publish a snapshot or site. The resulting IR still
@@ -40,6 +40,7 @@ pub(crate) use julia_runtime::assemble_for_extraction;
 mod execution;
 mod package_docs;
 mod packages;
+pub(crate) mod r_native;
 mod rd_examples;
 mod references;
 mod rmarkdown;
@@ -147,6 +148,7 @@ pub struct WorkspaceSources {
     package_files: BTreeMap<String, package_docs::PackageFiles>,
     rmd_inputs: BTreeMap<String, Vec<PathBuf>>,
     doxygen_observations: Vec<doxygen_native::DoxygenObservation>,
+    r_observations: Vec<r_native::RObservation>,
     selections: DeclaredSourceInputs,
     evidence: StaticProvenance,
     pub(crate) native_assets: BTreeMap<DiagnosticPath, crate::validation::ContentAsset>,
@@ -172,16 +174,24 @@ impl WorkspaceSources {
     /// Exact selected source files, metadata, and declared environment inputs.
     /// These local paths are used for output protection and preview watching.
     pub fn input_paths(&self) -> impl Iterator<Item = PathBuf> + '_ {
-        self.evidence.inputs.iter().flat_map(|(repository, files)| {
-            let root = &self
-                .paths
-                .repositories
-                .iter()
-                .find(|r| &r.id == repository)
-                .expect("observed repository")
-                .path;
-            files.keys().map(move |path| root.join(path.as_str()))
-        })
+        self.evidence
+            .inputs
+            .iter()
+            .flat_map(|(repository, files)| {
+                let root = &self
+                    .paths
+                    .repositories
+                    .iter()
+                    .find(|r| &r.id == repository)
+                    .expect("observed repository")
+                    .path;
+                files.keys().map(move |path| root.join(path.as_str()))
+            })
+            .chain(
+                self.r_observations
+                    .iter()
+                    .flat_map(|observation| observation.paths().cloned()),
+            )
     }
 
     pub(crate) fn doxygen_watch_roots(&self) -> impl Iterator<Item = &PathBuf> {
@@ -195,6 +205,9 @@ impl WorkspaceSources {
     /// This detects ordinary edits, including a later page changing an earlier
     /// page. It cannot snapshot undeclared reads or changes after this check.
     pub fn revalidate(&self) -> Result<(), AssemblyError> {
+        for observation in &self.r_observations {
+            observation.verify()?;
+        }
         for observation in &self.doxygen_observations {
             observation.verify()?;
         }
@@ -317,6 +330,7 @@ pub fn assemble_workspace(path: impl AsRef<Path>) -> Result<WorkspaceSources, As
             BTreeMap::new(),
             BTreeMap::new(),
             BTreeMap::new(),
+            BTreeMap::new(),
             &reporting,
         );
     }
@@ -347,7 +361,14 @@ pub fn assemble_workspace(path: impl AsRef<Path>) -> Result<WorkspaceSources, As
                     &reporting,
                 )
                 .await?;
-                assemble_with_native(&path, BTreeMap::new(), results, doxygen, &reporting)
+                assemble_with_native(
+                    &path,
+                    BTreeMap::new(),
+                    results,
+                    doxygen,
+                    BTreeMap::new(),
+                    &reporting,
+                )
             })
         })?
         .join()
@@ -420,7 +441,15 @@ pub(crate) async fn assemble_for_check(
 ) -> Result<WorkspaceSources, AssemblyError> {
     let rust = rust_results(path, false, deadlines, cancellation, reporting, true).await?;
     let doxygen = doxygen_results(path, deadlines, cancellation, reporting).await?;
-    assemble_with_native(path, BTreeMap::new(), rust, doxygen, reporting)
+    let r = r_results(
+        path,
+        deadlines,
+        cancellation,
+        reporting,
+        &mut r_native::GeneratedWrites::default(),
+    )
+    .await?;
+    assemble_with_native(path, BTreeMap::new(), rust, doxygen, r, reporting)
 }
 
 async fn doxygen_results(
@@ -469,10 +498,78 @@ async fn doxygen_results(
     Ok(results)
 }
 
+async fn r_results(
+    path: &Path,
+    deadlines: ExecutionDeadlines,
+    cancellation: &mut ExecutionCancellation<'_>,
+    reporting: &Reporting,
+    journal: &mut r_native::GeneratedWrites,
+) -> Result<BTreeMap<(String, String), r_native::RNativeExtraction>, AssemblyError> {
+    let before = fs::read(path)?;
+    let configuration = crate::configuration::load_configuration(path)?;
+    reject_errors(validate_configuration_with_source(
+        &configuration,
+        "diplodocus.yaml".try_into().unwrap(),
+    ))?;
+    let paths = resolve_workspace_paths(path, &configuration)?;
+    let configuration_path = fs::canonicalize(path)?;
+    for (declaration, package) in configuration.packages.iter().zip(&paths.packages) {
+        if let Some(settings) = &declaration.r {
+            for output in &settings.generated_outputs {
+                let output = r_native::resolved_output(package, output)?;
+                if configuration_path.starts_with(&output)
+                    || output.starts_with(&configuration_path)
+                    || paths.packages.iter().zip(&configuration.packages).any(
+                        |(other, declaration)| {
+                            other.id != package.id
+                                && (other.path.starts_with(&output)
+                                    || (!package.path.starts_with(&other.path)
+                                        && output.starts_with(&other.path))
+                                    || other.metadata_path.starts_with(&output)
+                                    || output.starts_with(&other.metadata_path)
+                                    || declaration.r.as_ref().is_some_and(|settings| {
+                                        settings
+                                            .generated_outputs
+                                            .iter()
+                                            .chain(&settings.extra_inputs)
+                                            .any(|path| {
+                                                let path = other.path.join(path);
+                                                path.starts_with(&output)
+                                                    || output.starts_with(&path)
+                                            })
+                                    }))
+                        },
+                    )
+                {
+                    return Err(AssemblyError::Diagnostics(vec![Diagnostic::new(
+                        DiagnosticCode::InvalidConfiguration,
+                        Severity::Error,
+                        "Generated R outputs must not overlap workspace configuration or another package.",
+                    )]));
+                }
+            }
+        }
+    }
+    let results = r_native::results(
+        &configuration,
+        &paths,
+        deadlines,
+        cancellation,
+        reporting,
+        journal,
+    )
+    .await?;
+    if fs::read(path)? != before {
+        return Err(AssemblyError::InputsChanged);
+    }
+    Ok(results)
+}
+
 struct NativeExtractions {
     julia: BTreeMap<(String, String), crate::extractors::julia::JuliaExtraction>,
     rust: BTreeMap<(String, String), rust_native::RustNativeExtraction>,
     doxygen: BTreeMap<(String, String), doxygen_native::DoxygenNativeExtraction>,
+    r: BTreeMap<(String, String), r_native::RNativeExtraction>,
 }
 
 fn assemble_with_native(
@@ -480,6 +577,7 @@ fn assemble_with_native(
     julia_results: BTreeMap<(String, String), crate::extractors::julia::JuliaExtraction>,
     rust_results: BTreeMap<(String, String), rust_native::RustNativeExtraction>,
     doxygen_results: BTreeMap<(String, String), doxygen_native::DoxygenNativeExtraction>,
+    r_results: BTreeMap<(String, String), r_native::RNativeExtraction>,
     reporting: &Reporting,
 ) -> Result<WorkspaceSources, AssemblyError> {
     let text = fs::read_to_string(path).map_err(|source| ConfigurationError::Read {
@@ -517,10 +615,15 @@ fn assemble_with_native(
         .values()
         .map(|result| result.observation.clone())
         .collect();
+    let r_observations = r_results
+        .values()
+        .map(|result| result.observation.clone())
+        .collect();
     let mut native = NativeExtractions {
         julia: julia_results,
         rust: rust_results,
         doxygen: doxygen_results,
+        r: r_results,
     };
     let rmd_inputs = rmarkdown::inputs(&paths, &configuration)?;
     for (collection, resolved) in configuration.content.iter().zip(&paths.content) {
@@ -593,6 +696,7 @@ fn assemble_with_native(
         package_files,
         rmd_inputs,
         doxygen_observations,
+        r_observations,
         selections,
         evidence,
         native_assets: BTreeMap::new(),

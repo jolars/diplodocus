@@ -107,6 +107,293 @@ fn changed(
     result
 }
 
+fn native_r_snapshot() -> Snapshot {
+    let snapshot = snapshot();
+    changed(&snapshot, |export| {
+        let provenance = record(export, "workspace")["provenance"].as_array_mut().unwrap();
+        let extraction = provenance.iter_mut().find(|record| {
+            record["activity"]["kind"] == "extraction"
+                && record["activity"]["target"]["package"] == "rfoo"
+        }).unwrap();
+        extraction["activity"]["mode"] = "native".into();
+        for (name, version) in [("R", "4.6.1"), ("pkgload", "1.4.1")] {
+            extraction["tools"][name] = version.into();
+            extraction["activity"]["parsers"][name] = json!({
+                "version": version, "role": "r-native-discovery", "settings": {},
+            });
+        }
+        let inputs = extraction["activity"]["inputs"].as_object().unwrap().iter()
+            .flat_map(|(repository, files)| files.as_object().unwrap().iter().map(move |(path, input)| {
+                json!({"source": {"repository": repository, "path": path, "span": null}, "fingerprint": input["fingerprint"]})
+            })).collect::<Vec<_>>();
+        let dependencies = json!({"foo": "1.8.0", "pkgload": "1.4.1", "roxygen2": "7.3.2"});
+        let tools = json!({"r": "4.6.1", "pkgload": "1.4.1", "roxygen2": "7.3.2"});
+        provenance.push(json!({
+            "activity": {"kind": "r-documentation", "package": "rfoo", "policy": "r-roxygen2-v1", "r_version": "4.6.1", "roxygen2_version": "7.3.2", "loader": "pkgload", "roclets": ["collate", "namespace", "rd"], "dependencies": dependencies, "inputs": inputs, "outputs": inputs},
+            "source": null, "span": null, "tools": tools,
+        }));
+        provenance.push(json!({
+            "activity": {"kind": "r-runtime", "package": "rfoo", "policy": "r-runtime-v1", "r_version": "4.6.1", "package_version": "1.8.0", "dependencies": dependencies, "inputs": inputs},
+            "source": null, "span": null, "tools": tools,
+        }));
+    }).unwrap()
+}
+
+#[test]
+fn native_r_snapshots_validate_generation_discovery_and_portable_evidence() {
+    let snapshot = native_r_snapshot();
+    changed(&snapshot, |_| {}).unwrap();
+    changed(&snapshot, |export| {
+        record(export, "workspace")["provenance"]
+            .as_array_mut()
+            .unwrap()
+            .retain(|record| record["activity"]["kind"] != "r-documentation");
+    })
+    .unwrap();
+    for case in [
+        "generation-policy",
+        "runtime-policy",
+        "loader",
+        "roxygen-range",
+        "r-version",
+        "tool-version",
+        "roxygen-dependency",
+        "package-version",
+        "package-dependency",
+        "foreign-package",
+        "foreign-repository",
+        "fingerprint",
+        "input-span",
+        "duplicate-input",
+        "missing-input",
+        "stale-output",
+        "duplicate-runtime",
+        "duplicate-generation",
+        "missing-runtime",
+        "missing-native-mode",
+        "missing-extraction-inputs",
+        "missing-extraction-metadata",
+        "missing-native-parser",
+        "native-parser-version",
+        "native-parser-role",
+        "native-tool-version",
+    ] {
+        let result = changed(&snapshot, |export| {
+            let provenance = record(export, "workspace")["provenance"]
+                .as_array_mut()
+                .unwrap();
+            let runtime = provenance
+                .iter()
+                .position(|record| record["activity"]["kind"] == "r-runtime")
+                .unwrap();
+            let generation = provenance
+                .iter()
+                .position(|record| record["activity"]["kind"] == "r-documentation")
+                .unwrap();
+            let extraction = provenance
+                .iter()
+                .position(|record| {
+                    record["activity"]["kind"] == "extraction"
+                        && record["activity"]["target"]["package"] == "rfoo"
+                })
+                .unwrap();
+            match case {
+                "missing-extraction-inputs" => {
+                    provenance[extraction]["activity"]["inputs"] = json!({})
+                }
+                "missing-extraction-metadata" => {
+                    provenance[extraction]["activity"]["inputs"]["r"]
+                        .as_object_mut()
+                        .unwrap()
+                        .remove("DESCRIPTION");
+                }
+                "missing-native-parser" => {
+                    provenance[extraction]["activity"]["parsers"]
+                        .as_object_mut()
+                        .unwrap()
+                        .remove("R");
+                }
+                "native-parser-version" => {
+                    provenance[extraction]["activity"]["parsers"]["R"]["version"] = "99.0.0".into()
+                }
+                "native-parser-role" => {
+                    provenance[extraction]["activity"]["parsers"]["R"]["role"] =
+                        "source-parser".into()
+                }
+                "native-tool-version" => provenance[extraction]["tools"]["R"] = "99.0.0".into(),
+                "generation-policy" => {
+                    provenance[generation]["activity"]["policy"] = "unknown".into()
+                }
+                "runtime-policy" => provenance[runtime]["activity"]["policy"] = "unknown".into(),
+                "loader" => provenance[generation]["activity"]["loader"] = "installed".into(),
+                "roxygen-range" => {
+                    provenance[generation]["activity"]["roxygen2_version"] = "9.0.0".into()
+                }
+                "r-version" => provenance[runtime]["activity"]["r_version"] = "".into(),
+                "tool-version" => provenance[generation]["tools"]["roxygen2"] = "8.0.0".into(),
+                "roxygen-dependency" => {
+                    provenance[generation]["activity"]["dependencies"]["roxygen2"] = "8.0.0".into()
+                }
+                "package-version" => {
+                    provenance[runtime]["activity"]["package_version"] = "2.0.0".into()
+                }
+                "package-dependency" => {
+                    provenance[runtime]["activity"]["dependencies"]["foo"] = "2.0.0".into()
+                }
+                "foreign-package" => provenance[runtime]["activity"]["package"] = "pyfoo".into(),
+                "foreign-repository" => {
+                    provenance[runtime]["activity"]["inputs"][0]["source"]["repository"] =
+                        "core".into()
+                }
+                "fingerprint" => {
+                    provenance[runtime]["activity"]["inputs"][0]["fingerprint"]["value"] =
+                        "invalid".into()
+                }
+                "input-span" => {
+                    provenance[runtime]["activity"]["inputs"][0]["source"]["span"] =
+                        json!({"start": 0, "end": 1})
+                }
+                "duplicate-input" => {
+                    let input = provenance[runtime]["activity"]["inputs"][0].clone();
+                    provenance[runtime]["activity"]["inputs"]
+                        .as_array_mut()
+                        .unwrap()
+                        .push(input);
+                }
+                "missing-input" => provenance[runtime]["activity"]["inputs"] = json!([]),
+                "stale-output" => {
+                    provenance[generation]["activity"]["outputs"][0]["fingerprint"]["value"] =
+                        "0".repeat(64).into()
+                }
+                "duplicate-runtime" => provenance.push(provenance[runtime].clone()),
+                "duplicate-generation" => provenance.push(provenance[generation].clone()),
+                "missing-runtime" => {
+                    provenance.remove(runtime);
+                }
+                "missing-native-mode" => {
+                    for record in provenance {
+                        if record["activity"]["kind"] == "extraction"
+                            && record["activity"]["target"]["package"] == "rfoo"
+                        {
+                            record["activity"]["mode"] = "static".into();
+                        }
+                    }
+                }
+                _ => unreachable!(),
+            }
+        });
+        assert!(result.is_err(), "accepted {case}");
+    }
+    assert!(
+        changed(&snapshot, |export| {
+            let runtime = record(export, "workspace")["provenance"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|record| record["activity"]["kind"] == "r-runtime")
+                .unwrap()
+                .clone();
+            record(export, "item")["provenance"]
+                .as_array_mut()
+                .unwrap()
+                .push(runtime);
+        })
+        .is_err()
+    );
+}
+
+#[test]
+fn native_r_rd_source_text_matches_observed_documentation_bytes() {
+    let snapshot = native_r_snapshot();
+    for field in ["raw_source", "source_location"] {
+        let result = changed(&snapshot, |export| {
+            let document = &mut export["records"]
+                .as_array_mut()
+                .unwrap()
+                .iter_mut()
+                .find(|record| {
+                    record["kind"] == "item"
+                        && record["owner"] == "rfoo"
+                        && record["content"]["documentation"]["source_format"]["name"] == "rd"
+                })
+                .unwrap()["content"]["documentation"];
+            match field {
+                "raw_source" => {
+                    let original = document["raw_source"].as_str().unwrap();
+                    document["raw_source"] =
+                        format!("{original}\n% Unobserved documentation change.\n").into();
+                }
+                "source_location" => {
+                    document["source_location"]["path"] = "man/unobserved.Rd".into()
+                }
+                _ => unreachable!(),
+            }
+        });
+        assert!(
+            matches!(
+                result,
+                Err(SnapshotError::Invalid(
+                    "native R documentation input evidence"
+                ))
+            ),
+            "{field}: {result:?}"
+        );
+    }
+}
+
+#[test]
+fn native_r_discovery_applies_to_every_package_target() {
+    let snapshot = native_r_snapshot();
+    let multiple = changed(&snapshot, |export| {
+        let records = export["records"].as_array_mut().unwrap();
+        let mut target = records
+            .iter()
+            .find(|record| record["kind"] == "target" && record["owner"] == "rfoo")
+            .unwrap()
+            .clone();
+        target["id"] = "second".into();
+        records.push(target);
+        // The logical snapshot digest binds the canonical semantic key order.
+        records.sort_by(|left, right| {
+            ["kind", "owner", "id"]
+                .map(|field| left[field].as_str().unwrap())
+                .cmp(&["kind", "owner", "id"].map(|field| right[field].as_str().unwrap()))
+        });
+        let provenance = record(export, "workspace")["provenance"]
+            .as_array_mut()
+            .unwrap();
+        let mut extraction = provenance
+            .iter()
+            .find(|record| {
+                record["activity"]["kind"] == "extraction"
+                    && record["activity"]["target"]["package"] == "rfoo"
+            })
+            .unwrap()
+            .clone();
+        extraction["activity"]["target"]["target"] = "second".into();
+        provenance.push(extraction);
+    })
+    .unwrap();
+    let result = changed(&multiple, |export| {
+        let provenance = record(export, "workspace")["provenance"]
+            .as_array_mut()
+            .unwrap();
+        let extraction = provenance
+            .iter_mut()
+            .find(|record| {
+                record["activity"]["kind"] == "extraction"
+                    && record["activity"]["target"]["package"] == "rfoo"
+                    && record["activity"]["target"]["target"] == "second"
+            })
+            .unwrap();
+        extraction["activity"]["mode"] = "static".into();
+    });
+    assert!(matches!(
+        result,
+        Err(SnapshotError::Invalid("R target requires native discovery"))
+    ));
+}
+
 #[test]
 fn include_source_maps_are_validated_without_original_files() {
     let root = support::TestWorkspace::new();

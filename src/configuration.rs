@@ -601,6 +601,9 @@ pub struct PackageConfiguration {
     /// GFM overview file, relative to the package root; omission discovers README.md.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub overview: Option<PathBuf>,
+    /// Native R documentation generation and supplemental watched inputs.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub r: Option<RPackageConfiguration>,
     /// Distribution or component classification; defaults to `package`.
     #[serde(default)]
     pub kind: PackageKind,
@@ -611,6 +614,31 @@ pub struct PackageConfiguration {
     /// An empty list disables API extraction for this package. Targets are never
     /// inferred from the ecosystem or files.
     pub targets: Vec<ExtractionTargetConfiguration>,
+}
+
+/// Documentation preparation for an R package, shared by its targets.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, rename_all = "kebab-case", deny_unknown_fields)]
+pub struct RPackageConfiguration {
+    /// Select roxygen2 automatically from package metadata unless overridden.
+    pub documentation: RDocumentationMode,
+    /// Additional maintained inputs, relative to the package root.
+    pub extra_inputs: Vec<PathBuf>,
+    /// Exclusively generated custom outputs, relative to the package root.
+    pub generated_outputs: Vec<PathBuf>,
+}
+
+/// Authority for a package's Rd and namespace documentation inputs.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum RDocumentationMode {
+    /// Use roxygen2 when the package declares roxygen configuration.
+    #[default]
+    Auto,
+    /// Generate documentation with the prepared roxygen2 installation.
+    Roxygen2,
+    /// Consume maintained Rd and namespace files without generation.
+    Rd,
 }
 
 /// Whether a documentation unit represents a package or an internal component.

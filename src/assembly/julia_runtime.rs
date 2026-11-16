@@ -10,6 +10,7 @@ pub(crate) async fn assemble_for_extraction(
     deadlines: ExecutionDeadlines,
     cancellation: &mut ExecutionCancellation<'_>,
     reporting: &Reporting,
+    journal: &mut super::r_native::GeneratedWrites,
 ) -> Result<WorkspaceSources, AssemblyError> {
     let loading = reporting.stage("Loading workspace", None);
     let configuration = crate::configuration::load_configuration(path)?;
@@ -144,5 +145,6 @@ pub(crate) async fn assemble_for_extraction(
     progress.finish();
     let rust = super::rust_results(path, true, deadlines, cancellation, reporting, false).await?;
     let doxygen = super::doxygen_results(path, deadlines, cancellation, reporting).await?;
-    super::assemble_with_native(path, results, rust, doxygen, reporting)
+    let r = super::r_results(path, deadlines, cancellation, reporting, journal).await?;
+    super::assemble_with_native(path, results, rust, doxygen, r, reporting)
 }

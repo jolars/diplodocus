@@ -62,13 +62,16 @@ async fn run(
     let mut watcher = Watcher::new(&options.config, &options.output)?;
     setup.finish();
     let command = reporting.command("build");
-    let initial = pipeline::build_attempt(
+    let mut attempt = pipeline::AttemptState::default();
+    let initial = pipeline::build_attempt_observed(
         &build,
         deadlines,
         Box::pin(cancelled(stop.clone())),
         reporting,
+        &mut attempt,
     )
     .await;
+    watcher.acknowledge(attempt);
     let initial = match initial {
         Ok(site) => site,
         Err(error) if *stop.borrow() && clean_cancellation(&error) => return Ok(()),
@@ -118,7 +121,9 @@ async fn run(
             }
             _ = watcher.next_change() => {
                 let command = reporting.command("rebuild");
-                let result = pipeline::build_attempt(&build, deadlines, Box::pin(cancelled(stop.clone())), reporting).await;
+                let mut attempt = pipeline::AttemptState::default();
+                let result = pipeline::build_attempt_observed(&build, deadlines, Box::pin(cancelled(stop.clone())), reporting, &mut attempt).await;
+                watcher.acknowledge(attempt);
                 match result {
                     Ok(site) => {
                         let pages = site.page_count();

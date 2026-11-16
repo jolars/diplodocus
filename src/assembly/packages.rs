@@ -88,9 +88,18 @@ pub(super) fn assemble(
                 "r" => {
                     let timing =
                         reporting.phase(Phase::Extraction, Some(&declaration.id), Some(&target.id));
-                    let result = r::extract_target(repository, resolved, selected);
+                    let fragment = if let Some(result) = native
+                        .r
+                        .remove(&(declaration.id.clone(), target.id.clone()))
+                    {
+                        let mut fragment = AdapterOutput::from(result.extraction);
+                        fragment.evidence.completed = result.completed;
+                        fragment
+                    } else {
+                        r::extract_target(repository, resolved, selected).into()
+                    };
                     timing.finish();
-                    result.into()
+                    fragment
                 }
                 _ => {
                     workspace.diagnostics.insert(

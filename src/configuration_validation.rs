@@ -140,6 +140,26 @@ pub fn validate_configuration(configuration: &WorkspaceConfiguration) -> Vec<Dia
         }
     }
     for (index, package) in configuration.packages.iter().enumerate() {
+        if let Some(settings) = &package.r {
+            let mut invalid = package.ecosystem != "r";
+            for path in settings
+                .extra_inputs
+                .iter()
+                .chain(&settings.generated_outputs)
+            {
+                invalid |= path.as_os_str().is_empty()
+                    || path
+                        .components()
+                        .any(|component| !matches!(component, std::path::Component::Normal(_)));
+            }
+            if invalid {
+                diagnostics.push(error(
+                    DiagnosticCode::InvalidConfiguration,
+                    "R package settings require ecosystem `r` and nonempty package-relative input and output paths without `.` or `..` components.".into(),
+                    DiagnosticEntity::ConfigurationField { path: format!("packages[{index}].r") },
+                ));
+            }
+        }
         let entity = DiagnosticEntity::Package {
             id: package.id.clone(),
         };
@@ -165,6 +185,16 @@ pub fn validate_configuration(configuration: &WorkspaceConfiguration) -> Vec<Dia
 
         let mut targets = Names::new(DiagnosticCode::DuplicateTargetId);
         for (target_index, target) in package.targets.iter().enumerate() {
+            if target.extractor == "r" && package.ecosystem != "r" {
+                diagnostics.push(error(
+                    DiagnosticCode::InvalidConfiguration,
+                    "R targets require ecosystem `r`.".into(),
+                    DiagnosticEntity::Target {
+                        package: package.id.clone(),
+                        id: target.id.clone(),
+                    },
+                ));
+            }
             if target.extractor == "doxygen" && package.ecosystem != "cpp" {
                 diagnostics.push(error(
                     DiagnosticCode::InvalidConfiguration,

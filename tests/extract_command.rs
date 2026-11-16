@@ -61,7 +61,7 @@ fn static_workspace() -> support::TestWorkspace {
 #[test]
 fn missing_r_prevents_snapshot_publication() {
     let root = static_workspace();
-    failure(&extract(root.path(), None, true), "r-library-unavailable");
+    failure(&extract(root.path(), None, true), "r-metadata");
     assert!(!root.path().join(DEFAULT_OUTPUT).exists());
 }
 
@@ -170,7 +170,8 @@ fn generated_snapshots_never_become_sources_or_change_input_fingerprints() {
         Snapshot::from_sources(&original, &resolve_workspace(&original).unwrap()).unwrap();
     let expected = snapshot.canonical_export().unwrap();
 
-    // Output names are unrestricted, including extensions understood by extractors.
+    // Low-level publication is path-agnostic; static inspection recognizes
+    // generated storage independently of its filename extension.
     for output in [
         DEFAULT_OUTPUT,
         "core/docs/export.md",
@@ -205,7 +206,20 @@ fn generated_snapshots_never_become_sources_or_change_input_fingerprints() {
         .args(["check", "--config", CONFIG])
         .output()
         .unwrap();
-    success(&result);
+    failure(&result, "r-metadata");
+    let stderr = String::from_utf8_lossy(&result.stderr);
+    assert!(stderr.contains("native inputs"), "{stderr}");
+    assert!(stderr.contains(".diplodocus"), "{stderr}");
+}
+
+#[test]
+fn cli_snapshot_outputs_cannot_create_native_r_inputs() {
+    let root = static_workspace();
+    let output = Path::new("r/R/future-snapshot.R");
+    assert!(!root.path().join(output).exists());
+    failure(&extract(root.path(), Some(output), false), "r-metadata");
+    assert!(!root.path().join(output).exists());
+    assert!(!root.path().join(DEFAULT_OUTPUT).exists());
 }
 
 #[test]

@@ -10,6 +10,12 @@ use crate::site::Site;
 use crate::snapshots::Snapshot;
 use crate::validation::resolve_executed_workspace;
 
+#[derive(Default)]
+pub(super) struct AttemptState {
+    pub writes: crate::assembly::r_native::GeneratedWrites,
+    pub watch_inputs: Option<super::watching::SourceWatchInputs>,
+}
+
 pub(super) fn runtime() -> Result<tokio::runtime::Runtime, CommandError> {
     Ok(tokio::runtime::Builder::new_multi_thread()
         .worker_threads(2)
@@ -60,14 +66,34 @@ pub(super) async fn extract_attempt(
     options: ExtractOptions,
     site_output: Option<&Path>,
     deadlines: ExecutionDeadlines,
+    cancellation: ExecutionCancellation<'_>,
+    reporting: &Reporting,
+) -> Result<PathBuf, CommandError> {
+    extract_attempt_observed(
+        options,
+        site_output,
+        deadlines,
+        cancellation,
+        reporting,
+        &mut AttemptState::default(),
+    )
+    .await
+}
+
+pub(super) async fn extract_attempt_observed(
+    options: ExtractOptions,
+    site_output: Option<&Path>,
+    deadlines: ExecutionDeadlines,
     mut cancellation: ExecutionCancellation<'_>,
     reporting: &Reporting,
+    attempt: &mut AttemptState,
 ) -> Result<PathBuf, CommandError> {
     let mut sources = crate::assembly::assemble_for_extraction(
         &options.config,
         deadlines,
         &mut cancellation,
         reporting,
+        &mut attempt.writes,
     )
     .await?;
     let resolved = reporting.run_phase(
@@ -81,6 +107,10 @@ pub(super) async fn extract_attempt(
             .configuration_directory
             .join(".diplodocus/documentation.sqlite")
     });
+    attempt.watch_inputs = Some(super::watching::SourceWatchInputs::capture(
+        &sources,
+        &absolute(site_output.unwrap_or(&output))?,
+    ));
     protect_sources(&sources, &resolved, &options.config, &output)?;
     if let Some(site) = site_output {
         protect_sources(&sources, &resolved, &options.config, site)?;
@@ -157,7 +187,24 @@ pub(super) async fn build_attempt(
     cancellation: ExecutionCancellation<'_>,
     reporting: &Reporting,
 ) -> Result<RenderedSite, CommandError> {
-    let input = extract_attempt(
+    build_attempt_observed(
+        options,
+        deadlines,
+        cancellation,
+        reporting,
+        &mut AttemptState::default(),
+    )
+    .await
+}
+
+pub(super) async fn build_attempt_observed(
+    options: &BuildOptions,
+    deadlines: ExecutionDeadlines,
+    cancellation: ExecutionCancellation<'_>,
+    reporting: &Reporting,
+    attempt: &mut AttemptState,
+) -> Result<RenderedSite, CommandError> {
+    let input = extract_attempt_observed(
         ExtractOptions {
             config: options.config.clone(),
             output: None,
@@ -166,6 +213,7 @@ pub(super) async fn build_attempt(
         deadlines,
         cancellation,
         reporting,
+        attempt,
     )
     .await?;
     generate_attempt(&input, &options.output, false, true, reporting)
@@ -280,6 +328,24 @@ fn protect_sources(
         .chain(resolved.input_paths().map(Path::to_owned))
     {
         reject_overlap(output, &input)?;
+    }
+    for (declaration, package) in sources
+        .configuration()
+        .packages
+        .iter()
+        .zip(&sources.paths().packages)
+    {
+        if declaration.ecosystem == "r"
+            && crate::assembly::r_native::native_source_path(&package.path, &destination)
+        {
+            return Err(crate::assembly::AssemblyError::Diagnostics(vec![
+                crate::diagnostics::Diagnostic::new(
+                    crate::diagnostics::DiagnosticCode::RMetadata,
+                    crate::diagnostics::Severity::Error,
+                    "Output must be outside native R input trees. Keep snapshots in a location such as `.diplodocus/documentation.sqlite`.",
+                ),
+            ]).into());
+        }
     }
     // Reject replacement of a discovery root even if it is currently empty.
     for root in sources.paths().content.iter().map(|c| &c.path).chain(

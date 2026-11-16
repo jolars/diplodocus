@@ -72,7 +72,7 @@ def mutation(root, path, kind, old=None, new=None, append=None):
     return {"path": path, "kind": kind, "original": original, "changed": changed}
 
 
-def prepare(root, scenario, qualpal, qualpalr):
+def prepare(root, scenario, qualpal, qualpalr, qualpalr_patch=None, qualpalr_dll=None):
     """Explicit, focused cases. Missing real inputs are failures, never substitutions."""
     if scenario == "monorepo":
         copy_source(ROOT / "examples/monorepo", root / "workspace")
@@ -116,9 +116,20 @@ def prepare(root, scenario, qualpal, qualpalr):
         for name in ("R", "man", "src", "inst", "data"):
             if (qualpalr / name).is_dir():
                 copy_source(qualpalr / name, root / "package" / name)
-        for name in ("DESCRIPTION", "NAMESPACE", "NEWS.md", "NEWS.Rd", "NEWS", "LICENSE", "LICENCE"):
+        for name in ("DESCRIPTION", "NAMESPACE", ".Rbuildignore", "renv.lock", "NEWS.md", "NEWS.Rd", "NEWS", "LICENSE", "LICENCE"):
             if (qualpalr / name).is_file():
                 shutil.copyfile(qualpalr / name, root / "package" / name)
+        if qualpalr_patch is not None:
+            applied = subprocess.run(
+                ["git", "apply", str(qualpalr_patch)], cwd=root / "package",
+                capture_output=True, text=True, check=False,
+            )
+            if applied.returncode:
+                raise ValueError(f"Unable to prepare qualpalr input patch: {applied.stderr.strip()}")
+        if qualpalr_dll is not None:
+            destination = root / "package/src" / qualpalr_dll.name
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(qualpalr_dll, destination)
         (root / "package/BENCHMARK.md").write_text("# Qualpalr\nFocused API benchmark.\n")
         config["packages"] = [package("qualpalr", "r", "DESCRIPTION", "r", ".")]
         config["packages"][0]["overview"] = "BENCHMARK.md"
@@ -168,7 +179,7 @@ class Worker:
         finally:
             self.lines.put((time.monotonic(), None))
 
-    def until(self, name, timeout):
+    def until(self, name, timeout, allow_failure=False):
         deadline = time.monotonic() + timeout
         while True:
             arrived, event = self.lines.get(timeout=max(0, deadline - time.monotonic()))
@@ -176,7 +187,7 @@ class Worker:
                 self.errors.seek(0)
                 raise RuntimeError(self.errors.read() or "Benchmark worker exited")
             self.events.append(event)
-            if event["event"] == "watching" and event["retained_previous"]:
+            if event["event"] == "watching" and event["retained_previous"] and not allow_failure:
                 raise RuntimeError(f"Rebuild failed; previous site retained: {self.events[-8:]}")
             if event["event"] == name:
                 return arrived
@@ -199,10 +210,16 @@ def snapshot_info(root):
     with sqlite3.connect(root / ".diplodocus/documentation.sqlite") as connection:
         fingerprint, = connection.execute("SELECT content_fingerprint FROM manifest").fetchone()
         tools = {}
+        observations = {}
+        activities = set()
         def collect(value):
             if isinstance(value, dict):
+                if isinstance(value.get("activity"), dict):
+                    activities.add(value["activity"].get("kind", ""))
                 if isinstance(value.get("tools"), dict):
                     tools.update(value["tools"])
+                    for identity, version in value["tools"].items():
+                        observations.setdefault(identity, set()).add(version)
                 for key, item in value.items():
                     if key in ("r_version", "julia_version", "runtime_version"):
                         tools[key] = item
@@ -212,7 +229,63 @@ def snapshot_info(root):
                     collect(item)
         for content, in connection.execute("SELECT content FROM records"):
             collect(json.loads(content))
-    return {"fingerprint": fingerprint, "tools": tools}
+    return {"fingerprint": fingerprint, "tools": tools, "activities": sorted(activities),
+            "tool_observations": {identity: sorted(versions)
+                                  for identity, versions in sorted(observations.items())}}
+
+
+def generation_edits(root):
+    """Native generation consumes maintained R only; never patch its Rd outputs."""
+    return [
+        mutation(root, "docs/index.md", "authored", append=f"\n{MARKER}\n"),
+        mutation(root, "package/R/qualpal.R", "api-prose",
+                 "Generate qualitative color palettes", MARKER),
+        mutation(root, "package/R/qualpal.R", "signature",
+                 "refinement_starts = 5L", "refinement_starts = 5"),
+        mutation(root, "package/R/qualpal.R", "exports", append=(
+            "\n#' Pipeline benchmark export\n#' @export\n"
+            "diplodocus_bench_export <- function() invisible(NULL)\n"
+        )),
+    ]
+
+
+def assert_idle(worker, timeout=.6):
+    """A generated checkout write must not queue another command by itself."""
+    try:
+        _, event = worker.lines.get(timeout=timeout)
+    except queue.Empty:
+        return
+    if event is not None:
+        worker.events.append(event)
+    raise RuntimeError(f"Preview did not remain idle after generation: {event}")
+
+
+def generation_recovery(worker, root, args):
+    """Exercise the real serve loop without including failure time in measurements."""
+    source = root / "package/R/qualpal.R"
+    original = source.read_bytes()
+    before_site = inventory(root / "site")
+    before_snapshot = digest(root / ".diplodocus/documentation.sqlite")
+    offset = len(worker.events)
+    try:
+        source.write_bytes(original + b"\n.diplodocus_benchmark_failure <- (\n")
+        worker.until("error", args.timeout, allow_failure=True)
+        worker.until("watching", args.timeout, allow_failure=True)
+        if not worker.events[-1]["retained_previous"]:
+            raise RuntimeError("Generation error did not retain the previous site")
+        if before_site != inventory(root / "site") or before_snapshot != digest(root / ".diplodocus/documentation.sqlite"):
+            raise RuntimeError("Generation error changed the published site or snapshot")
+        assert_idle(worker)
+        source.write_bytes(original)
+        worker.until("rebuilt", args.timeout)
+        worker.until("watching", args.timeout)
+        if before_site != inventory(root / "site"):
+            raise RuntimeError("Correcting the generation error did not restore the site")
+        assert_idle(worker)
+        return {"status": "ok", "retained_previous": True, "recovered": True,
+                "events": worker.events[offset:]}
+    finally:
+        source.write_bytes(original)
 
 
 def measure(binary, scenario, args, result):
@@ -220,7 +293,8 @@ def measure(binary, scenario, args, result):
     # runtime caches are shared. One unreported run prepares those caches equally.
     for sample in range(-1, args.samples):
         with tempfile.TemporaryDirectory(prefix="diplodocus-bench-") as directory:
-            root, config, edits = prepare(Path(directory), scenario, args.qualpal, args.qualpalr)
+            root, config, edits = prepare(Path(directory), scenario, args.qualpal, args.qualpalr,
+                                          args.qualpalr_patch, args.qualpalr_dll)
             if sample == -1:
                 inputs = inventory(root)
                 result["inputs_sha256"] = hashlib.sha256(json.dumps(inputs, sort_keys=True).encode()).hexdigest()
@@ -231,6 +305,22 @@ def measure(binary, scenario, args, result):
                 worker.until("watching", args.timeout)
                 startup = {"kind": "startup", "seconds": ready - worker.started,
                            "events": list(worker.events), **snapshot_info(root)}
+                generated = scenario == "qualpalr" and "r-documentation" in startup["activities"]
+                if scenario == "qualpalr":
+                    result["api_generation"] = "roxygen2" if generated else "maintained-rd"
+                    if generated:
+                        edits = generation_edits(root)
+                    result["mutations"] = [{"kind": edit["kind"], "inputs": [
+                        change["path"].relative_to(root).as_posix()
+                        for change in [edit, *edit.get("companions", [])]
+                    ]} for edit in edits]
+                    result["comparison"] = (
+                        "Equivalent initial maintained inputs; native API semantics, generated output, "
+                        "and provenance can differ. Candidate generation saves edit R sources only; "
+                        "maintained-Rd workers retain the roxygen-gap case."
+                    )
+                if generated:
+                    assert_idle(worker)
                 if sample >= 0:
                     result["samples"].append(startup)
                     print(f"  Startup {sample + 1}/{args.samples}: {startup['seconds']:.3f}s", flush=True)
@@ -240,7 +330,8 @@ def measure(binary, scenario, args, result):
                     for save in range(args.saves):
                         offset = len(worker.events)
                         before = inventory(root / "site")
-                        rd_before = inventory(root / "package/man") if edit["kind"] == "roxygen-gap" else None
+                        rd_before = inventory(root / "package/man") if scenario == "qualpalr" else None
+                        namespace_before = digest(root / "package/NAMESPACE") if generated and edit["kind"] == "exports" else None
                         started = time.monotonic()
                         # Alternate the changed and original bytes. Every save is real.
                         for change in [edit, *edit.get("companions", [])]:
@@ -250,13 +341,23 @@ def measure(binary, scenario, args, result):
                         record = {"kind": edit["kind"], "seconds": rebuilt - started,
                                   "events": worker.events[offset:], **snapshot_info(root)}
                         record["rendered_changed"] = before != inventory(root / "site")
-                        if rd_before is not None:
+                        if edit["kind"] == "roxygen-gap":
                             record["rd_unchanged"] = rd_before == inventory(root / "package/man")
                             record["known_gap"] = "Roxygen source edits do not regenerate maintained Rd."
                             if not record["rd_unchanged"] or record["rendered_changed"]:
                                 raise RuntimeError("Roxygen baseline behavior changed; update the gap case")
                         elif not record["rendered_changed"]:
                             raise RuntimeError(f"{edit['kind']} edit did not change the rendered site")
+                        if generated and edit["kind"] in ("api-prose", "signature", "exports"):
+                            record["rd_changed"] = rd_before != inventory(root / "package/man")
+                            if not record["rd_changed"]:
+                                raise RuntimeError(f"{edit['kind']} source edit did not regenerate Rd")
+                        if namespace_before is not None:
+                            record["namespace_changed"] = namespace_before != digest(root / "package/NAMESPACE")
+                            if not record["namespace_changed"]:
+                                raise RuntimeError("Export source edit did not regenerate NAMESPACE")
+                        if generated:
+                            assert_idle(worker)
                         result["samples"].append(record)
                     # Restore between mutation categories, and await its build if needed.
                     if args.saves % 2:
@@ -264,6 +365,10 @@ def measure(binary, scenario, args, result):
                             change["path"].write_bytes(change["original"])
                         worker.until("rebuilt", args.timeout)
                         worker.until("watching", args.timeout)
+                        if generated:
+                            assert_idle(worker)
+                if generated and sample == 0:
+                    result["generation_recovery"] = generation_recovery(worker, root, args)
             finally:
                 worker.close()
     result["summary"] = summarize(result["samples"])
@@ -319,7 +424,7 @@ def host_info():
 
 def command_versions():
     versions = {}
-    for name in ("python", "R", "julia", "doxygen"):
+    for name in ("python", "R", "julia", "doxygen", "rustc"):
         try:
             result = subprocess.run([name, "--version"], capture_output=True, text=True, timeout=10)
             versions[name] = (result.stdout or result.stderr).strip() if result.returncode == 0 else "unavailable"
@@ -334,19 +439,45 @@ def main():
     parser.add_argument("--scenario", action="append", choices=["authored", "monorepo", "qualpal", "qualpalr"])
     parser.add_argument("--qualpal", type=Path, default=ROOT.parent / "qualpal")
     parser.add_argument("--qualpalr", type=Path, default=ROOT.parent / "qualpalr")
+    parser.add_argument("--qualpalr-patch", type=Path,
+                        help="apply a prepared input patch only in temporary qualpalr copies")
+    parser.add_argument("--qualpalr-dll", type=Path,
+                        help="copy this prepared shared library into temporary qualpalr src/ before measuring")
     parser.add_argument("--samples", type=int, default=5)
     parser.add_argument("--saves", type=int, default=2)
     parser.add_argument("--timeout", type=float, default=600)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
+    if args.qualpalr_patch is not None:
+        args.qualpalr_patch = args.qualpalr_patch.resolve(strict=True)
+    if args.qualpalr_dll is not None:
+        args.qualpalr_dll = args.qualpalr_dll.resolve(strict=True)
     if args.samples < 1 or args.saves < 1 or args.timeout <= 0:
         parser.error("samples, saves, and timeout must be positive")
     report = {"format_version": 1, "revision": revision(ROOT), "runtime_versions": command_versions(), "host": host_info(),
+              "runtime_environment": {name: os.environ.get(name) for name in (
+                  "LD_LIBRARY_PATH", "OMP_NUM_THREADS", "OMP_DYNAMIC", "OMP_PROC_BIND",
+                  "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS")},
               "producer_revisions": {"qualpal": revision(args.qualpal), "qualpalr": revision(args.qualpalr)},
               "protocol": {"startup_samples": args.samples, "saves_per_startup_per_kind": args.saves,
                            "startup_cache": "fresh Diplodocus cache; shared warmed OS/runtime caches",
                            "timings": "inclusive host phases; native subphases overlap host durations"},
               "workers": {}}
+    if args.qualpalr_patch is not None or args.qualpalr_dll is not None:
+        report["input_preparation"] = {
+            "scope": "Applied identically to temporary copies; producer checkout is unchanged.",
+        }
+        if args.qualpalr_patch is not None:
+            report["input_preparation"].update(
+                qualpalr_patch_path=str(args.qualpalr_patch),
+                qualpalr_patch_sha256=digest(args.qualpalr_patch),
+                qualpalr_patch=args.qualpalr_patch.read_text(),
+            )
+        if args.qualpalr_dll is not None:
+            report["input_preparation"].update(
+                qualpalr_dll_path=str(args.qualpalr_dll),
+                qualpalr_dll_sha256=digest(args.qualpalr_dll),
+            )
     for declaration in args.worker:
         label, binary = declaration.split("=", 1)
         binary = Path(binary).resolve(strict=True)

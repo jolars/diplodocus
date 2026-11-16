@@ -13,13 +13,18 @@ Read the single `manifest` row before interpreting records:
   | Field              | Current value | Meaning                                            |
   | ------------------ | ------------- | -------------------------------------------------- |
   | `storage_version`  | `2`           | Tables, keys, record kinds, and storage envelopes. |
-  | `ir_version`       | `14`          | Documentation records and their semantic meaning.  |
+  | `ir_version`       | `15`          | Documentation records and their semantic meaning.  |
   | `encoding_version` | `1`           | Canonical encoding, fingerprints, and text export. |
 
 The reader accepts only these versions and does not migrate older snapshots. The
 workspace record's `schema_version` agrees with `ir_version`. Nested JSON
 inherits the manifest versions. `producer` records the Diplodocus package
 version; it is not the compatibility discriminator.
+
+IR version 15 adds native R extraction mode and completed roxygen2 generation
+and R discovery provenance. Generation and discovery records retain portable
+inputs, outputs, and tool versions; they do not require the original checkout
+when loading or generating from a snapshot.
 
 ## Tables
 

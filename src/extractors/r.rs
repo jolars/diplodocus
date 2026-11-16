@@ -24,12 +24,22 @@ use crate::provenance::{BuiltinExtractor, ExtractionObservation, fingerprint_byt
 mod libraries;
 mod metadata;
 mod namespace;
+mod native;
 mod rd;
 mod source;
 mod surface;
 
 pub(crate) use metadata::license_files;
 pub use metadata::{RDependency, RMetadata, RMetadataField, RVersionConstraint};
+pub(crate) use native::NativeObservation;
+
+pub(crate) fn validate_metadata(
+    text: &str,
+    source: &SourceLocation,
+    diagnostics: &mut Vec<Diagnostic>,
+) -> Option<RMetadata> {
+    metadata::parse(text, source, diagnostics)
+}
 
 /// Portable extraction result ready for later workspace merging.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -81,6 +91,24 @@ pub fn extract_target(
     repository: &ResolvedRepositoryPaths,
     package: &ResolvedPackagePaths,
     target: &ResolvedTargetPath,
+) -> RExtraction {
+    extract(repository, package, target, None)
+}
+
+pub(crate) fn extract_native_target(
+    repository: &ResolvedRepositoryPaths,
+    package: &ResolvedPackagePaths,
+    target: &ResolvedTargetPath,
+    observation: &NativeObservation,
+) -> RExtraction {
+    extract(repository, package, target, Some(observation))
+}
+
+fn extract(
+    repository: &ResolvedRepositoryPaths,
+    package: &ResolvedPackagePaths,
+    target: &ResolvedTargetPath,
+    native: Option<&NativeObservation>,
 ) -> RExtraction {
     let reference = TargetReference {
         package: package.id.clone(),
@@ -155,10 +183,21 @@ pub fn extract_target(
                 result.metadata = metadata::parse(text, &input.source, &mut result.diagnostics)
             }
             "namespace" => {
-                namespace = namespace::parse(text, &input.source, &mut result.diagnostics)
+                let mut diagnostics = vec![];
+                namespace = namespace::parse(text, &input.source, &mut diagnostics);
+                if native.is_none() {
+                    result.diagnostics.extend(diagnostics);
+                }
             }
             "r-source" => {
-                definitions.extend(source::parse(text, &input.source, &mut result.diagnostics))
+                let mut diagnostics = vec![];
+                definitions.extend(source::parse(text, &input.source, &mut diagnostics));
+                if native.is_some() {
+                    for diagnostic in &mut diagnostics {
+                        diagnostic.severity = Severity::Warning;
+                    }
+                }
+                result.diagnostics.extend(diagnostics);
             }
             "rd" => {
                 if let Some(topic) =
@@ -212,7 +251,11 @@ pub fn extract_target(
                 namespace.unknown_imports.insert(package.clone());
                 result.diagnostics.push(diagnostic(
                     DiagnosticCode::RLibraryUnavailable,
-                    Severity::Error,
+                    if native.is_some() {
+                        Severity::Warning
+                    } else {
+                        Severity::Error
+                    },
                     message,
                     &sources[0],
                 ));
@@ -232,14 +275,25 @@ pub fn extract_target(
                 .map(String::from),
         );
     source::reject_shadowed_builtins(&mut definitions, imported_names);
-    result.items = surface::reconcile(
-        &package.id,
-        &definitions,
-        &namespace,
-        &topics,
-        &libraries,
-        &mut result.diagnostics,
-    );
+    result.items = if let Some(observation) = native {
+        native::reconcile(
+            &mut result,
+            &definitions,
+            &mut namespace,
+            &topics,
+            &libraries,
+            observation,
+        )
+    } else {
+        surface::reconcile(
+            &package.id,
+            &definitions,
+            &namespace,
+            &topics,
+            &libraries,
+            &mut result.diagnostics,
+        )
+    };
     rd::attach(
         &package.id,
         &mut result.items,
@@ -247,6 +301,9 @@ pub fn extract_target(
         &namespace,
         &mut result.diagnostics,
     );
+    if native.is_some() {
+        native::retain_generated_sources(&mut result, repository, target);
+    }
     let mut requested = BTreeSet::new();
     for item in result.items.values() {
         if let Some(document) = &item.documentation {

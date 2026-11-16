@@ -116,7 +116,9 @@ and vignette chunks, and collects author and citation information. This example
 needs Python and Julia on `PATH` to verify API doctests, alongside R. It needs
 no package installation or Jupyter kernel. Python
 documentation comes from NumPy-style docstrings. R documentation comes from
-the checked-in `man/*.Rd` files; Diplodocus does not run roxygen2. Julia documentation comes from Julia Markdown
+the maintained `man/*.Rd` files because this package does not opt into roxygen2.
+Packages with roxygen metadata regenerate automatically, or can select
+`r: {documentation: roxygen2}` explicitly. Julia documentation comes from Julia Markdown
 docstrings. Function pages include method signatures and prose, with anchors for
 links to individual methods. Extraction verifies Python and Julia doctest output.
 

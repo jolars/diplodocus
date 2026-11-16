@@ -1,21 +1,94 @@
 # R API extraction
 
-R extraction reads `DESCRIPTION`, `NAMESPACE`, maintained `R/` source, and
-checked-in `man/` Rd files. Supported static namespace declarations include
-`export`, `import`, `importFrom`, `S3method`, and literal `useDynLib`
-declarations. It connects exports and S3 registrations to direct source
-definitions, then attaches supported Rd topics, aliases, usage, arguments, and
-prose. `extract`, `build`, and `serve` execute Rd examples as a required step.
-`check` reads their source without loading the package or executing examples.
+R extraction combines native exports, function formals, and S3 registrations
+from the configured checkout with `DESCRIPTION`, `NAMESPACE`, maintained `R/`
+source, and `man/` Rd topics. Native discovery includes generated declarations;
+source parsers retain attribution and supported supplemental evidence.
+`check`, `extract`, `build`, and `serve` use the same API discovery rules and may
+load the package. `extract`, `build`, and `serve` also execute Rd examples as a
+required step. `check` never executes documentation examples.
 R Markdown vignettes are also discovered and executed; see
 [authored articles](../authoring/rmarkdown.md).
 
-Prepare a working checkout with R, `pkgload`, `evaluate`, the package dependencies,
+Prepare a working checkout with R, `pkgload`, `jsonlite`, `evaluate`, the package dependencies,
 and the dependencies used by its examples. Compile native extensions beforehand;
 Diplodocus never compiles or installs the package. Each help topic runs once in a
 fresh R process, including topics shared by several declarations. Expressions
 within a topic share state and a graphics device. The package loads from the
 configured checkout, and extraction verifies its namespace path and version.
+Native helpers use `R --vanilla`, which skips `.Rprofile` and automatic renv
+activation. Expose prepared libraries through `R_LIBS`, `R_LIBS_USER`, or the R
+launcher on `PATH`.
+
+Keep snapshots and generated sites in `.diplodocus/` or outside the package's
+`R/`, `man/`, and `data/` trees. CLI publication rejects output in those trees
+regardless of filename extension, and also protects `DESCRIPTION`, `NAMESPACE`,
+and `.Rbuildignore`. If a recognized snapshot already occupies a native input
+location, native commands report the conflict before loading the package. Move
+the artifact before retrying. Static source inspection still excludes
+recognized Diplodocus storage artifacts regardless of their filename extension.
+
+## Roxygen2 or maintained Rd
+
+By default, packages with `Roxygen`, `RoxygenNote`, or `Config/roxygen2/*`
+DESCRIPTION fields, or `man/roxygen/meta.R`, use roxygen2. Other packages use
+maintained Rd files. Override this choice on the package:
+
+```yaml
+r:
+  documentation: roxygen2 # auto (the default), roxygen2, or rd
+  extra-inputs: [tools/documentation.R]
+  generated-outputs: [generated-help]
+```
+
+Normal commands run generation automatically. Saving roxygen prose, inherited
+documentation, formals, or export tags during `diplodocus serve` regenerates the
+documentation and rebuilds the site. Use `--live-reload` to refresh open browser
+pages. A generation error keeps the previous successful site; correcting the
+source lets the next rebuild recover. No separate `devtools::document()` call
+is needed.
+
+Generation can evaluate `@evalRd`, `@evalNamespace`, included R Markdown, custom
+roclets, and package loading hooks. `check` permits this native preparation but
+does not run Rd examples or authored articles. Generation warnings and roxygen
+diagnostics about dropped or incomplete documentation prevent publication.
+
+Generation writes to the supplied checkout. Roxygen2 owns generated `man/*.Rd`,
+`NAMESPACE`, and its DESCRIPTION version and `Collate` fields. These writes are
+not rolled back after a later failure. Diplodocus acknowledges its generated
+changes without hiding concurrent edits to maintained sources. A failed
+generation never falls back to existing Rd files.
+
+The supported roxygen2 range is `>= 7.3.2, < 9`. Compatibility checks pass with
+7.3.2, 8.0.0, and 8.1.1 using both supported loaders. Run
+`compute run -- python scripts/test-roxygen-compat.py` to repeat these checks
+with the prepared R environment. Add `--profile VERSION=LIBRARY` for each
+separately prepared version's R library.
+
+Diplodocus respects package options from DESCRIPTION and
+`man/roxygen/meta.R`, including Markdown, roclets, and the `pkgload` or `source`
+loader. Generation requires the `rd` roclet. The `installed` loader is rejected
+because it cannot establish the configured checkout as the documentation
+authority. See roxygen2's
+[generation reference](https://roxygen2.r-lib.org/reference/roxygenize.html) and
+[option reference](https://roxygen2.r-lib.org/reference/load_options.html).
+
+Custom roclets run in the caller's prepared environment. Declare their
+supplemental input files and exclusively generated output paths with
+`extra-inputs` and `generated-outputs`, relative to the package root. Declared
+paths must remain inside the package and cannot overlap maintained inputs.
+Custom outputs cannot occupy `R/`, `src/`, `inst/`, `data/`, DESCRIPTION,
+NAMESPACE, or roxygen's maintained configuration, templates, and macros.
+Diplodocus does not install extensions or sandbox their side effects.
+
+Generation and native discovery run on every command attempt. Their observed
+inputs, outputs, and exact tool versions travel with the snapshot, but they do
+not form an extraction cache. `documentation: rd` skips generation while keeping
+native API discovery.
+
+The current API model supports functions, constants, datasets, and S3 dispatch.
+Selected S4, R6, and S7 declarations receive explicit unsupported-surface
+diagnostics.
 
 `\dontrun` regions remain explicitly illustrative. `\donttest` regions execute.
 False `if` conditions without an `else`, including `interactive()` and platform
@@ -63,9 +136,9 @@ inventing a callable signature. Nested Rd lists and prose between described
 entries retain their content and order.
 
 Standard S3 generics from default R packages resolve without explicit imports.
-R must be available on `PATH`. Package-wide imports use the installed
-dependencies' metadata without loading their namespaces. Documented helpers
-retain their maintained signatures without requiring exports. Topics marked
+R must be available on `PATH`. Native discovery loads the checkout and its
+dependencies; supplemental import analysis uses installed metadata. Documented helpers
+receive native signatures without requiring exports. Topics marked
 `\keyword{internal}` have addressable pages but stay out of navigation and search.
 See the R extraction contract below for discovery and import limits.
 
@@ -120,8 +193,8 @@ Local images still require asset validation; authored HTTP and HTTPS images
 retain their external URLs. Explicitly authored pages, including package
 overrides and R Markdown articles, keep the usual link rules.
 
-Computed names, conditional namespace directives, dynamic construction, roxygen
-generation, and unsupported Rd markup are not evaluated. Unsupported markup
+Unsupported static supplemental analysis remains diagnostic rather than
+inventing source declarations for runtime objects. Unsupported Rd markup
 stays visible with a diagnostic. For exact parser and identity rules, see the
 [R extraction
 contract](https://github.com/jolars/diplodocus/blob/main/docs/ir/r-extraction.md)

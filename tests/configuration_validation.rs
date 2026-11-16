@@ -429,3 +429,22 @@ fn semantic_diagnostic_codes_have_stable_serialized_spellings() {
         );
     }
 }
+
+#[test]
+fn r_settings_require_an_r_package_and_contained_relative_paths() {
+    let base = "project:\n  name: Native R\nrepositories:\n  - id: repo\n    path: .\npackages:\n  - id: demo\n    name: Demo\n    slug: demo\n    ecosystem: r\n    repository: repo\n    path: .\n    metadata-path: DESCRIPTION\n    r:\n      documentation: auto\n      extra-inputs: [tools/template.txt]\n      generated-outputs: [generated/help]\n    targets:\n      - id: api\n        extractor: r\n        path: .\n        role: public-api\n";
+    let valid = diplodocus::configuration::parse_configuration(base).unwrap();
+    assert!(diplodocus::configuration_validation::validate_configuration(&valid).is_empty());
+    for invalid in [
+        base.replace("ecosystem: r", "ecosystem: python"),
+        base.replace("tools/template.txt", "../template.txt"),
+        base.replace("generated/help", "/tmp/help"),
+    ] {
+        let config = diplodocus::configuration::parse_configuration(&invalid).unwrap();
+        assert!(
+            diplodocus::configuration_validation::validate_configuration(&config)
+                .iter()
+                .any(|diagnostic| diagnostic.severity == diplodocus::diagnostics::Severity::Error)
+        );
+    }
+}

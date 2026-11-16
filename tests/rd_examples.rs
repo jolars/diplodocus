@@ -233,7 +233,10 @@ fn loading_requires_prebuilt_extensions_and_never_compiles_them() {
     );
     let output = extract(&root);
     assert!(!output.status.success());
-    assert!(String::from_utf8_lossy(&output.stderr).contains("Rd example execution failed"));
+    assert!(
+        String::from_utf8_lossy(&output.stderr)
+            .contains("Native R documentation generation or discovery failed")
+    );
     assert!(!root.path().join("r/src/native.o").exists());
     assert!(
         !root

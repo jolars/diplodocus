@@ -1,15 +1,53 @@
-# Static R extraction
+# R extraction
 
-This page describes the source adapter. Source assembly remains
-static; extraction loads the checkout and executes Rd examples through a
-separate native completion step.
+Normal commands use native package discovery. `check`, `extract`, `build`, and
+`serve` share package-level documentation selection, optional roxygen2
+generation, and verified checkout loading. Only extraction commands execute
+documentation examples. The [R workflow](../guide/extraction/r.md) describes
+configuration and checkout writes.
+
+## Native command discovery
+
+The loaded checkout supplies exports, function formals, and S3 registration
+evidence. Documented generated functions no longer need a direct static source
+assignment. Rd topics still supply prose, aliases, shared usage, and argument
+documentation. Source parsers retain proven locations and supported supplemental
+facts; runtime observations do not invent source declarations.
+
+Completed generation records `RDocumentation` with the effective loader,
+roclets, R and roxygen2 versions, dependency versions, and portable input/output
+fingerprints. Native discovery records `RRuntime` with the verified package
+version, R and dependency versions, and observed inputs. These package-level
+records accompany target extraction in `native` mode. They contain no checkout
+paths, process IDs, timestamps, or execution claims. Maintained Rd mode omits
+generation evidence. Snapshots use IR version 15; storage remains version 2 and
+record encoding remains version 1.
+
+Generation errors, changed maintained inputs, invalid helper results, timeout,
+cancellation, or failed cleanup reject the attempt. The adapter never accepts
+preexisting generated Rd after generation fails. Generation and discovery are
+fresh on every command attempt; their evidence does not authorize cache reuse.
+
+The package's complete `R/`, `man/`, and `data/` trees are native input
+locations, regardless of filename extension. Normal commands reject recognized
+Diplodocus storage there, and CLI publication rejects snapshots and generated
+sites in those trees. `DESCRIPTION`, `NAMESPACE`, and `.Rbuildignore` are also
+protected native inputs. Store outputs in reserved `.diplodocus/` paths or
+outside those locations so language tools consume their normal package inputs.
+
+## Supplemental source adapter
+
+The following source-only interface remains available independently of native
+command orchestration.
 
 `extractors::r::extract_target(repository, package, target)` reads a resolved R
 package directory and returns a portable `RExtraction`. The API adapter never
 installs, attaches, loads, or sources a package, or evaluates documentation. R must be
 available on `PATH` for an isolated library-discovery probe.
-Workspace assembly, reference resolution, and CLI commands consume this fragment;
-their boundaries are described in the [design overview](../development/design.md).
+The public `assembly::assemble_workspace` source-inspection API consumes this
+fragment. Normal CLI commands use native discovery and reconcile its observations
+with source evidence instead; their boundaries are described in the
+[design overview](../development/design.md).
 
 The result contains validated `DESCRIPTION` metadata, canonical items with
 independent signatures and documentation, ordered diagnostics, and extraction
@@ -32,6 +70,12 @@ reads `.R` and `.Rd` files, ignoring hidden paths. Missing source and manual
 directories are allowed. Reads stay within the package and target boundaries,
 and directory symlinks are rejected. Portable output contains repository IDs
 and relative paths, never checkout roots.
+
+Static discovery excludes `.diplodocus/`, reserved temporary snapshot paths,
+and recognized snapshot databases and their recovery files, even when their
+extensions resemble R source or Rd documentation. This exclusion applies to
+source inspection; native commands also enforce the requirements for native inputs
+described above.
 
 `DESCRIPTION` must contain one DCF record with nonempty Package, Version, and
 Title fields. Metadata retains all fields, including unevaluated `Authors@R`,
@@ -89,8 +133,8 @@ S3 generic. A terminal `structure` call with a literal class, or literal vector
 of classes, establishes a constructor. The adapter checks for local, package,
 and explicit import bindings that shadow these unqualified builtins. Qualified
 `base::` calls also work. Nested closures do not establish their enclosing
-function's dispatch. Other class systems, roxygen generation, and dynamic
-construction remain outside this subset.
+function's dispatch. Other class systems and dynamic construction remain outside
+this supplemental subset; native discovery handles supported generated bindings.
 
 ## Reconciliation and identity
 
@@ -230,9 +274,10 @@ Filesystem boundary failures use the shared source-path diagnostic codes.
 Diagnostics sort in the common deterministic order and retain exact ranges
 only when a parser supplies them.
 
-Provenance records static mode, the seven implemented R capabilities, content
-fingerprints, and actual parser use. `arity-parser` 0.6.1 handles DCF, namespace,
-R source, and supported Rd usage calls. `rd-source` 0.5.0 handles Rd syntax, and
+Supplemental provenance records static mode, the seven implemented R capabilities, content
+fingerprints, and actual parser use. The build uses `arity-parser` 0.8.0 for DCF,
+namespace, R source, and supported Rd usage calls; legacy parser evidence still
+records 0.6.1. `rd-source` 0.5.0 handles Rd syntax, and
 `rd-ast` 0.5.0 supplies strict semantic views with default features disabled.
 Parser records are present only when used; undecodable input claims no parser
 use. See the [extractor contract](../spikes/static-extractor-contract.md) for

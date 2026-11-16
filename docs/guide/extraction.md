@@ -187,17 +187,20 @@ errors prevent publication. Ordinary code fences remain illustrative.
 
 ## R
 
-R extraction reads `DESCRIPTION`, `NAMESPACE`, maintained `R/` source, and
-checked-in `man/` Rd files. Supported static namespace declarations include
-`export`, `import`, `importFrom`, `S3method`, and literal `useDynLib`
-declarations. It connects exports and S3 registrations to direct source
-definitions, then attaches supported Rd topics, aliases, usage, arguments, and
-prose. `extract`, `build`, and `serve` execute Rd examples as a required step.
-`check` reads their source without loading the package or executing examples.
+R extraction combines native checkout exports, formals, and S3 registrations
+with `DESCRIPTION`, `NAMESPACE`, source attribution, and Rd documentation.
+Packages with roxygen metadata regenerate Rd and namespace metadata during
+normal commands. Select `r: {documentation: rd}` for maintained Rd or
+`r: {documentation: roxygen2}` to require generation. See the
+[R workflow](extraction/r.md#roxygen2-or-maintained-rd) for options, custom
+roclets, supported versions, and checkout writes.
+`check` loads the package for the same API discovery as other commands, without
+executing documentation examples. `extract`, `build`, and `serve` execute Rd
+examples as a required step.
 R Markdown vignettes are also discovered and executed; see
 [authored articles](authoring.md).
 
-Prepare a working checkout with R, `pkgload`, `evaluate`, the package dependencies,
+Prepare a working checkout with R, `pkgload`, `jsonlite`, `evaluate`, the package dependencies,
 and the dependencies used by its examples. Compile native extensions beforehand;
 Diplodocus never compiles or installs the package. Each help topic runs once in a
 fresh R process, including topics shared by several declarations. Expressions
@@ -250,9 +253,9 @@ inventing a callable signature. Nested Rd lists and prose between described
 entries retain their content and order.
 
 Standard S3 generics from default R packages resolve without explicit imports.
-R must be available on `PATH`. Package-wide imports use the installed
-dependencies' metadata without loading their namespaces. Documented helpers
-retain their maintained signatures without requiring exports. Topics marked
+R must be available on `PATH`. Native discovery loads the checkout and its
+dependencies; supplemental import analysis uses installed metadata. Documented helpers
+receive native signatures without requiring exports. Topics marked
 `\keyword{internal}` have addressable pages but stay out of navigation and search.
 See the R extraction contract below for discovery and import limits.
 
@@ -307,8 +310,8 @@ Local images still require asset validation; authored HTTP and HTTPS images
 retain their external URLs. Explicitly authored pages, including package
 overrides and R Markdown articles, keep the usual link rules.
 
-Computed names, conditional namespace directives, dynamic construction, roxygen
-generation, and unsupported Rd markup are not evaluated. Unsupported markup
+Source parsers retain supported supplemental evidence, while native discovery
+handles supported generated bindings. Unsupported Rd markup
 stays visible with a diagnostic. For exact parser and identity rules, see the
 [Python extraction
 contract](https://github.com/jolars/diplodocus/blob/main/docs/ir/python-extraction.md)

@@ -7176,7 +7176,7 @@
       "ruff_text_size": "[TOOL_VERSION]"
     }
   },
-  "schema_version": 14,
+  "schema_version": 15,
   "target": {
     "package": "pyfoo",
     "target": "api"

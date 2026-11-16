@@ -72,14 +72,17 @@ async fn extract_loop(
             }
         }
         let command = reporting.command("extract");
-        let result = pipeline::extract_attempt(
+        let mut attempt = pipeline::AttemptState::default();
+        let result = pipeline::extract_attempt_observed(
             options.clone(),
             None,
             deadlines,
             Box::pin(cancelled(stop.clone())),
             reporting,
+            &mut attempt,
         )
         .await;
+        watcher.acknowledge(attempt);
         let retained_previous = match result {
             Ok(path) => {
                 on_snapshot(&pipeline::absolute(&path)?)?;
@@ -122,6 +125,59 @@ impl Watcher {
             changed: Instant::now(),
             interval: tokio::time::interval(Duration::from_millis(100)),
         })
+    }
+
+    pub(super) fn acknowledge(&mut self, attempt: pipeline::AttemptState) {
+        let previous_assets = self.observer.assets.clone();
+        if let Some(inputs) = attempt.watch_inputs {
+            // New subscriptions use the bytes observed during assembly, so an
+            // edit after that observation still schedules another attempt.
+            for (path, value) in &inputs.assets {
+                self.attempted
+                    .entry(path.clone())
+                    .or_insert_with(|| value.clone());
+            }
+            self.observer.assets = inputs.assets.into_keys().collect();
+            self.observer.native_roots = inputs.native_roots;
+        }
+        let observed = self.observer.capture();
+        for path in previous_assets.difference(&self.observer.assets) {
+            if !observed.contains_key(path) {
+                self.attempted.remove(path);
+            }
+        }
+        self.attempted.retain(|path, value| {
+            !(value == "NotFound"
+                && path.is_dir()
+                && attempt.writes.keys().any(|output| output.starts_with(path)))
+        });
+        for (path, value) in &observed {
+            if value == "NotFound"
+                && attempt
+                    .writes
+                    .iter()
+                    .any(|(output, fingerprint)| fingerprint.is_none() && output.starts_with(path))
+            {
+                self.attempted
+                    .entry(path.clone())
+                    .or_insert_with(|| value.clone());
+            }
+        }
+        for (path, fingerprint) in attempt.writes {
+            match fingerprint {
+                Some(fingerprint) => {
+                    self.attempted.insert(path, fingerprint.value);
+                }
+                None => {
+                    if observed.contains_key(&path) {
+                        self.attempted.insert(path, "NotFound".into());
+                    } else {
+                        self.attempted.remove(&path);
+                    }
+                }
+            }
+        }
+        self.pending = self.attempted.clone();
     }
 
     pub(super) async fn next_change(&mut self) {
@@ -266,7 +322,9 @@ impl Observer {
             let Some(root) = roots.get(package.repository.as_str()) else {
                 continue;
             };
-            let root = root.join(&package.path);
+            let Ok(root) = pipeline::absolute(&root.join(&package.path)) else {
+                continue;
+            };
             observe(&root.join(&package.metadata_path), &mut observed);
             observe(&root.join("README.md"), &mut observed);
             if let Some(overview) = &package.overview {
@@ -277,6 +335,37 @@ impl Observer {
             }
             if package.ecosystem == "r" {
                 observe(&root.join("NAMESPACE"), &mut observed);
+                for name in ["DESCRIPTION", ".Rbuildignore", "renv.lock"] {
+                    observe(&root.join(name), &mut observed);
+                }
+                let mut native_inputs = Vec::new();
+                for directory in ["man", "src", "inst", "data"] {
+                    discover(
+                        &root.join(directory),
+                        &self.output,
+                        &mut observed,
+                        &mut native_inputs,
+                        &|_| true,
+                    );
+                }
+                if let Some(settings) = &package.r {
+                    for input in settings
+                        .extra_inputs
+                        .iter()
+                        .chain(&settings.generated_outputs)
+                    {
+                        let input = root.join(input);
+                        let input = fs::canonicalize(&input).unwrap_or(input);
+                        discover(
+                            &input,
+                            &self.output,
+                            &mut observed,
+                            &mut native_inputs,
+                            &|_| true,
+                        );
+                    }
+                }
+
                 let mut vignettes = Vec::new();
                 discover(
                     &root.join("vignettes"),
@@ -393,48 +482,9 @@ impl Observer {
         let Ok(sources) = assemble_workspace(&self.config) else {
             return;
         };
-        let workspace = sources.workspace();
-        self.native_roots = sources.doxygen_watch_roots().cloned().collect();
-        let mut assets = Observation::new();
-        for path in sources.input_paths() {
-            observe(&path, &mut assets);
-        }
-        let documents = workspace
-            .pages
-            .values()
-            .map(|p| &p.document)
-            .chain(
-                workspace
-                    .packages
-                    .values()
-                    .flat_map(|p| p.items.values().filter_map(|i| i.documentation.as_ref())),
-            )
-            .chain(
-                workspace
-                    .concepts
-                    .values()
-                    .filter_map(|c| c.documentation.as_ref()),
-            );
-        for document in documents {
-            let Some(source) = &document.source_location else {
-                continue;
-            };
-            let Some(root) = sources
-                .paths()
-                .repositories
-                .iter()
-                .find(|r| r.id == source.repository)
-            else {
-                continue;
-            };
-            self.document_assets(
-                &root.path.join(source.path.as_str()),
-                &document.document,
-                &root.path,
-                &mut assets,
-            );
-        }
-        self.assets = assets.into_keys().collect();
+        let inputs = SourceWatchInputs::capture(&sources, &self.output);
+        self.assets = inputs.assets.into_keys().collect();
+        self.native_roots = inputs.native_roots;
     }
     fn authored_assets(
         &self,
@@ -522,6 +572,67 @@ impl Observer {
         );
     }
 }
+pub(super) struct SourceWatchInputs {
+    assets: Observation,
+    native_roots: Vec<PathBuf>,
+}
+impl SourceWatchInputs {
+    pub(super) fn capture(sources: &crate::assembly::WorkspaceSources, output: &Path) -> Self {
+        let observer = Observer {
+            config: PathBuf::new(),
+            output: output.to_owned(),
+            configuration: None,
+            assets: BTreeSet::new(),
+            native_roots: Vec::new(),
+        };
+        let workspace = sources.workspace();
+        let native_roots = sources.doxygen_watch_roots().cloned().collect();
+        let mut assets = Observation::new();
+        for path in sources.input_paths() {
+            observe(&path, &mut assets);
+        }
+        let documents = workspace
+            .pages
+            .values()
+            .map(|p| &p.document)
+            .chain(
+                workspace
+                    .packages
+                    .values()
+                    .flat_map(|p| p.items.values().filter_map(|i| i.documentation.as_ref())),
+            )
+            .chain(
+                workspace
+                    .concepts
+                    .values()
+                    .filter_map(|c| c.documentation.as_ref()),
+            );
+        for document in documents {
+            let Some(source) = &document.source_location else {
+                continue;
+            };
+            let Some(root) = sources
+                .paths()
+                .repositories
+                .iter()
+                .find(|r| r.id == source.repository)
+            else {
+                continue;
+            };
+            observer.document_assets(
+                &root.path.join(source.path.as_str()),
+                &document.document,
+                &root.path,
+                &mut assets,
+            );
+        }
+        Self {
+            assets,
+            native_roots,
+        }
+    }
+}
+
 fn observe(path: &Path, observed: &mut Observation) {
     let value = match fs::metadata(path).and_then(|metadata| {
         if metadata.is_file() {
@@ -639,6 +750,248 @@ fn discover(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn journal_watcher(root: &Path, assets: &[&str]) -> Watcher {
+        let config = root.join("diplodocus.yaml");
+        fs::write(&config, "project:\n  name: Initial\nrepositories:\n  - id: repo\n    path: .\npackages:\n  - id: r\n    name: R\n    slug: r\n    ecosystem: r\n    repository: repo\n    path: .\n    metadata-path: DESCRIPTION\n    targets:\n      - id: api\n        extractor: r\n        path: .\n        role: public-api\n").unwrap();
+        fs::create_dir_all(root.join("R")).unwrap();
+        fs::write(root.join("R/source.R"), "f <- function() 1L\n").unwrap();
+        fs::write(
+            root.join("DESCRIPTION"),
+            "Package: journaltest\nTitle: Journal test\nVersion: 1.0.0\n",
+        )
+        .unwrap();
+        // Build the observer directly so these bookkeeping tests never load a package.
+        let mut observer = Observer {
+            config,
+            output: root.join("site"),
+            configuration: None,
+            assets: assets.iter().map(|path| root.join(path)).collect(),
+            native_roots: Vec::new(),
+        };
+        let attempted = observer.capture();
+        Watcher {
+            observer,
+            pending: attempted.clone(),
+            attempted,
+            changed: Instant::now(),
+            interval: tokio::time::interval(Duration::from_millis(100)),
+        }
+    }
+
+    fn generated_attempt(root: &Path, paths: &[&str]) -> pipeline::AttemptState {
+        pipeline::AttemptState {
+            writes: paths
+                .iter()
+                .map(|path| {
+                    let path = root.join(path);
+                    let fingerprint = fs::read(&path).ok().map(|bytes| fingerprint_bytes(&bytes));
+                    (path, fingerprint)
+                })
+                .collect(),
+            watch_inputs: None,
+        }
+    }
+
+    fn subscribed_inputs(root: &Path, paths: &[&str]) -> SourceWatchInputs {
+        let mut assets = BTreeMap::new();
+        for path in paths {
+            observe(&root.join(path), &mut assets);
+        }
+        SourceWatchInputs {
+            assets,
+            native_roots: Vec::new(),
+        }
+    }
+
+    #[tokio::test]
+    async fn generated_creation_acknowledges_missing_directories_without_rebuilding() {
+        let root = tempfile::tempdir().unwrap();
+        let mut watcher = journal_watcher(root.path(), &[]);
+        assert_eq!(watcher.attempted[&root.path().join("man")], "NotFound");
+        fs::create_dir(root.path().join("man")).unwrap();
+        fs::write(
+            root.path().join("man/generated.Rd"),
+            "% Generated by roxygen2:\n",
+        )
+        .unwrap();
+        fs::write(
+            root.path().join("NAMESPACE"),
+            "# Generated by roxygen2:\nexport(f)\n",
+        )
+        .unwrap();
+        let mut attempt = generated_attempt(root.path(), &["man/generated.Rd", "NAMESPACE"]);
+        attempt.watch_inputs = Some(subscribed_inputs(root.path(), &["man/generated.Rd"]));
+        watcher.acknowledge(attempt);
+        assert_eq!(watcher.observer.capture(), watcher.attempted);
+    }
+
+    #[tokio::test]
+    async fn generated_acknowledgment_preserves_concurrent_maintained_edits() {
+        let root = tempfile::tempdir().unwrap();
+        fs::create_dir(root.path().join("man")).unwrap();
+        fs::write(root.path().join("man/maintained.Rd"), "Maintained topic.\n").unwrap();
+        let mut watcher = journal_watcher(root.path(), &[]);
+        let before = watcher.attempted.clone();
+        fs::write(
+            root.path().join("man/generated.Rd"),
+            "% Generated by roxygen2:\n",
+        )
+        .unwrap();
+        let attempt = generated_attempt(root.path(), &["man/generated.Rd"]);
+        fs::write(root.path().join("R/source.R"), "f <- function() 2L\n").unwrap();
+        fs::write(
+            root.path().join("man/maintained.Rd"),
+            "Changed maintained topic.\n",
+        )
+        .unwrap();
+        let config = root.path().join("diplodocus.yaml");
+        fs::write(
+            &config,
+            fs::read_to_string(&config)
+                .unwrap()
+                .replace("Initial", "Changed"),
+        )
+        .unwrap();
+        watcher.acknowledge(attempt);
+        let observed = watcher.observer.capture();
+        for path in ["R/source.R", "man/maintained.Rd", "diplodocus.yaml"] {
+            let path = root.path().join(path);
+            assert_eq!(watcher.attempted[&path], before[&path]);
+            assert_ne!(observed[&path], watcher.attempted[&path]);
+        }
+        let generated = root.path().join("man/generated.Rd");
+        assert_eq!(observed[&generated], watcher.attempted[&generated]);
+    }
+
+    #[tokio::test]
+    async fn generated_deletion_acknowledges_success_and_failure_subscriptions() {
+        for successful in [false, true] {
+            let root = tempfile::tempdir().unwrap();
+            fs::create_dir(root.path().join("man")).unwrap();
+            fs::write(
+                root.path().join("man/deleted.Rd"),
+                "% Generated by roxygen2:\n",
+            )
+            .unwrap();
+            let mut watcher = journal_watcher(root.path(), &["man/deleted.Rd"]);
+            fs::remove_file(root.path().join("man/deleted.Rd")).unwrap();
+            let mut attempt = generated_attempt(root.path(), &["man/deleted.Rd"]);
+            if successful {
+                attempt.watch_inputs = Some(subscribed_inputs(root.path(), &[]));
+            }
+            watcher.acknowledge(attempt);
+            assert_eq!(
+                watcher.observer.capture(),
+                watcher.attempted,
+                "successful={successful}"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn generated_directory_deletion_acknowledges_missing_ancestor() {
+        let root = tempfile::tempdir().unwrap();
+        fs::create_dir(root.path().join("man")).unwrap();
+        fs::write(
+            root.path().join("man/deleted.Rd"),
+            "% Generated by roxygen2:\n",
+        )
+        .unwrap();
+        let mut watcher = journal_watcher(root.path(), &["man/deleted.Rd"]);
+        fs::remove_dir_all(root.path().join("man")).unwrap();
+        let attempt = generated_attempt(root.path(), &["man/deleted.Rd"]);
+        watcher.acknowledge(attempt);
+        assert_eq!(watcher.observer.capture(), watcher.attempted);
+    }
+
+    #[tokio::test]
+    async fn generated_edits_after_journaling_remain_pending() {
+        let root = tempfile::tempdir().unwrap();
+        let mut watcher = journal_watcher(root.path(), &[]);
+        fs::create_dir(root.path().join("man")).unwrap();
+        let generated = root.path().join("man/generated.Rd");
+        fs::write(&generated, "% Generated by roxygen2:\n").unwrap();
+        let attempt = generated_attempt(root.path(), &["man/generated.Rd"]);
+        fs::write(&generated, "% Generated by roxygen2:\nConcurrent edit.\n").unwrap();
+        watcher.acknowledge(attempt);
+        assert_ne!(
+            watcher.observer.capture()[&generated],
+            watcher.attempted[&generated]
+        );
+    }
+
+    #[tokio::test]
+    async fn new_asset_subscriptions_acknowledge_the_consumed_observation() {
+        let root = tempfile::tempdir().unwrap();
+        let mut watcher = journal_watcher(root.path(), &[]);
+        let asset = root.path().join("figure.png");
+        fs::write(&asset, "Figure bytes observed by assembly.").unwrap();
+        let attempt = pipeline::AttemptState {
+            writes: BTreeMap::new(),
+            watch_inputs: Some(subscribed_inputs(root.path(), &["figure.png"])),
+        };
+        watcher.acknowledge(attempt);
+        assert_eq!(watcher.observer.capture(), watcher.attempted);
+    }
+
+    #[tokio::test]
+    async fn new_asset_edits_after_observation_remain_pending() {
+        let root = tempfile::tempdir().unwrap();
+        let mut watcher = journal_watcher(root.path(), &[]);
+        let asset = root.path().join("figure.png");
+        fs::write(&asset, "Consumed image bytes.").unwrap();
+        let attempt = pipeline::AttemptState {
+            writes: BTreeMap::new(),
+            watch_inputs: Some(subscribed_inputs(root.path(), &["figure.png"])),
+        };
+        fs::write(&asset, "Concurrent image edit.").unwrap();
+        watcher.acknowledge(attempt);
+        assert_ne!(
+            watcher.observer.capture()[&asset],
+            watcher.attempted[&asset]
+        );
+    }
+
+    #[tokio::test]
+    async fn retired_asset_subscriptions_do_not_trigger_another_attempt() {
+        let root = tempfile::tempdir().unwrap();
+        let asset = root.path().join("figure.png");
+        fs::write(&asset, "Formerly referenced image.").unwrap();
+        let mut watcher = journal_watcher(root.path(), &["figure.png"]);
+        watcher.acknowledge(pipeline::AttemptState {
+            writes: BTreeMap::new(),
+            watch_inputs: Some(subscribed_inputs(root.path(), &[])),
+        });
+        assert_eq!(watcher.observer.capture(), watcher.attempted);
+        assert!(!watcher.attempted.contains_key(&asset));
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn package_symlink_aliases_use_canonical_generated_write_keys() {
+        let root = tempfile::tempdir().unwrap();
+        let package = root.path().join("package");
+        fs::create_dir(&package).unwrap();
+        let mut watcher = journal_watcher(&package, &[]);
+        std::os::unix::fs::symlink(&package, root.path().join("alias")).unwrap();
+        fs::write(&watcher.observer.config, "project:\n  name: Alias\nrepositories:\n  - id: repo\n    path: ..\npackages:\n  - id: r\n    name: R\n    slug: r\n    ecosystem: r\n    repository: repo\n    path: alias\n    metadata-path: DESCRIPTION\n    targets:\n      - id: api\n        extractor: r\n        path: .\n        role: public-api\n").unwrap();
+        watcher.attempted = watcher.observer.capture();
+        fs::create_dir(package.join("man")).unwrap();
+        fs::write(
+            package.join("man/generated.Rd"),
+            "% Generated by roxygen2:\n",
+        )
+        .unwrap();
+        watcher.acknowledge(generated_attempt(&package, &["man/generated.Rd"]));
+        assert_eq!(watcher.observer.capture(), watcher.attempted);
+        assert!(
+            !watcher
+                .attempted
+                .keys()
+                .any(|path| path.starts_with(root.path().join("alias")))
+        );
+    }
 
     #[tokio::test(start_paused = true)]
     async fn overdue_watcher_waits_between_scans() {

@@ -1,0 +1,10 @@
+diff --git a/R/qualpal-deprecated.R b/R/qualpal-deprecated.R
+--- a/R/qualpal-deprecated.R
++++ b/R/qualpal-deprecated.R
+@@ -1,5 +1,6 @@
+ #' @title Deprecated functions in package \pkg{qualpal}.
+ #'
++#' @description
+ #' The functions listed below are deprecated and will be defunct in the next
+ #' major version future. When possible, alternative functions with similar
+ #' functionality are also mentioned. Help pages for deprecated functions are

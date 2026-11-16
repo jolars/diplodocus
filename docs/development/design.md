@@ -60,8 +60,9 @@ The caller prepares the runtimes, dependencies, and build artifacts needed to
 use the documented packages. Diplodocus combines source analysis with native
 tools where they help establish API semantics or check examples. Python source
 and stubs supply declarations and documentation; native Python verifies the
-loaded checkout and doctests. R combines maintained source and Rd with native
-package loading and example execution. Julia combines source parsing with
+loaded checkout and doctests. R combines roxygen2 generation or maintained Rd
+with native exports, formals, and dispatch evidence, supplemental source
+attribution, and example execution. Julia combines source parsing with
 runtime type completion and doctests. Rust uses rustdoc JSON, and C++ uses
 Doxygen XML.
 
@@ -158,7 +159,8 @@ failed rebuild. Publication cannot undo side effects from executed code.
 
 `check` validates sources and references without running documentation examples
 or publishing artifacts. It can still invoke native extraction tools, including
-Rust compilation and Doxygen filters. It does not prove that example execution
+roxygen2 generation and package loading, Rust compilation, and Doxygen filters.
+It does not prove that example execution
 will succeed.
 
 The boundaries between adapters, assembly, snapshots, the site model, and

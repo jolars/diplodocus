@@ -9,8 +9,9 @@ R Markdown uses native knitr execution with no kernel or execution opt-in.
 Prepare R, pkgload, evaluate, knitr, package dependencies, and prebuilt native
 extensions before building. Each article loads the supplied checkout in a fresh
 R process. Chunks and inline R share state within that article. Relative data
-paths resolve from the article's directory. `check` validates sources and links
-without loading the package or evaluating R.
+paths resolve from the article's directory. `check` validates article sources and
+links without evaluating article code. Its separate R API discovery may load
+the package and run roxygen2.
 
 Fence options and `#|` options retain knitr semantics, including setup defaults,
 computed `eval`, hidden chunks, `results = "asis"`, `knitr::kable()`, warnings,

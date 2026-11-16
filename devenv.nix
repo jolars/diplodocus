@@ -36,7 +36,7 @@ let
     pythonPackages.ipykernel
   ]);
   r = pkgs.rWrapper.override {
-    packages = with pkgs.rPackages; [ IRkernel pkgload evaluate knitr ];
+    packages = with pkgs.rPackages; [ IRkernel pkgload evaluate knitr roxygen2 jsonlite ];
   };
   jupyterKernels = pkgs.symlinkJoin {
     name = "diplodocus-jupyter-kernels";
