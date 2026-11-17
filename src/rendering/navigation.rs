@@ -4,7 +4,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write;
 
 use super::html::escape;
-use crate::configuration::SidebarItem;
+use crate::configuration::{ApiNavigation, SidebarItem};
 use crate::ir::{ItemReference, Package};
 use crate::site::Site;
 use crate::validation::DocumentIdentity;
@@ -157,6 +157,15 @@ pub(super) fn sections(html: &mut String, site: &Site<'_>, route: &str, class: &
         };
         (language, &package.name, *id)
     });
+    let grouped = site.presentation.header.api == ApiNavigation::Dropdown && packages.len() > 1;
+    if grouped {
+        if class == "desktop-sections" {
+            // Keep the popup outside the list that scrolls when project tabs overflow.
+            html.push_str("</ul><details class=\"api-menu\"><summary>API<svg aria-hidden=\"true\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"m6 9 6 6 6-6\"></path></svg></summary><ul class=\"api-menu-panel\">");
+        } else {
+            html.push_str("<li class=\"mobile-api\"><strong>API</strong><ul>");
+        }
+    }
     for (id, package) in packages {
         section_link(
             html,
@@ -166,6 +175,14 @@ pub(super) fn sections(html: &mut String, site: &Site<'_>, route: &str, class: &
             package_label(site, package),
             owner == Some(id.as_str()),
         );
+    }
+    if grouped {
+        html.push_str(if class == "desktop-sections" {
+            "</ul></details></nav>"
+        } else {
+            "</ul></li></ul></nav>"
+        });
+        return;
     }
     html.push_str("</ul></nav>");
 }

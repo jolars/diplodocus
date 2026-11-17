@@ -122,6 +122,9 @@ pub struct PresentationDefaults {
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, rename_all = "kebab-case", deny_unknown_fields)]
 pub struct HeaderDefaults {
+    /// Group multiple packages under API by default, or show separate links.
+    #[serde(skip_serializing_if = "ApiNavigation::is_default")]
+    pub api: ApiNavigation,
     /// Repository IDs in display order; omission includes all public repositories.
     /// An empty list hides repository links.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -131,6 +134,23 @@ pub struct HeaderDefaults {
 impl HeaderDefaults {
     fn is_default(&self) -> bool {
         self == &Self::default()
+    }
+}
+
+/// How the built-in navbar displays package API links.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ApiNavigation {
+    /// Show each visible package as a separate navbar link.
+    Links,
+    /// Group multiple visible packages in an API dropdown.
+    #[default]
+    Dropdown,
+}
+
+impl ApiNavigation {
+    fn is_default(&self) -> bool {
+        *self == Self::default()
     }
 }
 

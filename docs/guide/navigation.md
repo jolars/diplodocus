@@ -66,7 +66,33 @@ presentation:
 The path names a generated, visible project `index.html` page. All project pages
 under that directory belong to the section and leave the Guide sidebar.
 Section directories must be distinct and cannot contain the Guide landing page.
-Tabs appear after Guide in declaration order, before package tabs.
+Tabs appear after Guide in declaration order, before API navigation.
+
+## Group API links in a dropdown {#group-api-links-in-a-dropdown}
+
+Sites with several visible API packages group their navbar links under **API**
+by default. To show separate package tabs instead, set:
+
+```yaml
+presentation:
+  header:
+    api: links
+```
+
+The dropdown keeps the existing package destinations and sidebars. It uses
+language names such as **R**, **Julia**, and **Rust** when each language has one
+visible package, and package names when several packages share a language.
+Hidden packages stay out of the menu. Guide and project sections remain separate
+navbar links.
+
+The **API** button highlights while readers visit a package. Readers can open it
+with Enter, tab through its links, and dismiss it with Escape. On phones, the
+navigation menu lists the links directly under **API**. The links also work
+without JavaScript.
+
+One visible package keeps a direct navbar link. With no visible packages, the
+API menu is omitted. Omit `header.api` or set it to `dropdown` to use the default
+grouping. The setting is retained in snapshots for detached generation.
 
 ## Sidebar groups and nesting
 

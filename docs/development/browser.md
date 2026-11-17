@@ -95,6 +95,13 @@ the direct header link. Its named links appear directly in the phone navigation
 menu. `presentation.header.repositories` can select one repository, order a
 subset, or hide the links with an empty list.
 
+By default, multiple package links appear under **API** on desktop and an API
+heading in the phone navigation menu. Set `presentation.header.api: links` to
+show separate package tabs. Browser tests cover keyboard and pointer dismissal,
+active package selection, retained headers, package sidebars, clean URLs under a
+hosting prefix, and links without JavaScript. Capture includes the open API menu
+in light and dark themes.
+
 On phones, the staggered-lines **Menu** control and the right-aligned
 **On this page** control share a row below the navbar. As the upper navbar
 scrolls away, this row stays at the top with a divider beneath it. **Menu** opens a
@@ -103,7 +110,7 @@ keeps keyboard focus inside it and closes through its close button, Escape,
 a tap on the backdrop, or navigation.
 
 The homepage's **Get started** action opens the quick start, and **Guide** opens
-`overview.html`. The remaining navbar links open the four language sections.
+`overview.html`. The **API** dropdown opens the four language sections.
 `site-capture` includes both the landing page and its guide overview.
 
 Standalone sites use client-side navigation for ordinary internal page links,

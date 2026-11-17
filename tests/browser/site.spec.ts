@@ -47,6 +47,10 @@ async function fitsViewport(page: Page) {
   )).toBe(true);
 }
 
+function navbarControls(page: Page) {
+  return page.locator("header > .brand, header .desktop-sections:visible > ul > li > a, header .api-menu > summary:visible, #search, .header-actions > .repository-link:visible");
+}
+
 async function chooseTheme(page: Page, info: TestInfo, value: string) {
   if (info.project.name === "mobile") await page.locator(".mobile-menu > summary").click();
   const toggle = page.getByRole("switch", { name: "Dark mode" });
@@ -503,17 +507,20 @@ test("homepage action icons preserve accessible labels and navigation", async ({
 test("navbar links stay in place when switching sections", async ({ page }, info) => {
   test.skip(info.project.name !== "desktop", "The top navbar is shown on desktop.");
   await page.goto("/overview.html");
-  const links = page.locator("header .global-nav:visible a");
-  const positions = await links.evaluateAll(elements => elements.map(element => {
+  const links = page.locator("header .desktop-sections a");
+  const controls = navbarControls(page);
+  const positions = await controls.evaluateAll(elements => elements.map(element => {
     const { x, width } = element.getBoundingClientRect();
     return { x, width };
   }));
-  for (let selected = 1; selected <= positions.length; selected++) {
-    const index = selected % positions.length;
+  const count = await links.count();
+  for (let selected = 1; selected <= count; selected++) {
+    const index = selected % count;
+    await openSections(page, info);
     await links.nth(index).click();
     await expect(links.nth(index)).toHaveAttribute("aria-current", "true");
     for (let link = 0; link < positions.length; link++) {
-      const bounds = (await links.nth(link).boundingBox())!;
+      const bounds = (await controls.nth(link).boundingBox())!;
       expect(bounds.x).toBeCloseTo(positions[link].x, 1);
       expect(bounds.width).toBeCloseTo(positions[link].width, 1);
     }
@@ -560,7 +567,7 @@ test("landing page shares the navbar with guides and all language sections", asy
     document,
     elements: [...document.querySelectorAll("header, header a, .brand-logo, #search")],
   }));
-  const geometry = () => page.locator("header > .brand, header .desktop-sections:visible a, #search, .header-actions > .repository-link:visible")
+  const geometry = () => navbarControls(page)
     .evaluateAll(elements => elements.map(element => element.getBoundingClientRect().toJSON()));
   const positions = await geometry();
   const stableNavbar = async () => {
@@ -1388,11 +1395,11 @@ async function closeNavigation(page: Page, info: TestInfo) {
 }
 
 async function openSections(page: Page, info: TestInfo) {
-  if (info.project.name !== "mobile") return;
-  await closeNavigation(page, info);
-  const menu = page.locator(".mobile-menu");
-  if (!await menu.evaluate((element: HTMLDetailsElement) => element.open)) {
-    await menu.locator("summary").click();
+  const mobile = info.project.name === "mobile";
+  if (mobile) await closeNavigation(page, info);
+  const menu = page.locator(mobile ? ".mobile-menu" : ".api-menu");
+  if (await menu.count() && !await menu.evaluate((element: HTMLDetailsElement) => element.open)) {
+    await menu.locator(":scope > summary").click();
   }
 }
 
@@ -1495,8 +1502,8 @@ test("search and result navigation work with the keyboard", async ({ page }) => 
   await page.goto("/");
   await page.keyboard.press("Tab");
   await expect(page.getByRole("link", { name: "Skip to content" })).toBeFocused();
-  // Section links are also reachable before search on desktop.
-  const headerStops = await page.locator("header a:visible").count() + 1;
+  // Section links and the API disclosure are reachable before search on desktop.
+  const headerStops = await page.locator("header a:visible, header summary:visible").count() + 1;
   for (let step = 0; step < headerStops; step++) {
     await page.keyboard.press("Tab");
     if (await page.getByRole("searchbox").evaluate(element => element === document.activeElement)) break;

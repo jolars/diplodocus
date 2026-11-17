@@ -15,8 +15,8 @@ single score cannot tell you everything about a model's predictions.
 ## Follow a calculation across languages
 
 The Python, R, Julia, and Rust packages expose the same six operations. Choose a
-language in the navigation bar to explore its API, then follow **Same API in**
-to compare a function with its counterparts.
+language under **API** in the navigation bar to explore its reference, then
+follow **Same API in** to compare a function with its counterparts.
 
 These packages are small, working examples for Diplodocus. The [guide
 overview](overview.md) connects the shared explanations, installation

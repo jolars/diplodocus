@@ -15,20 +15,19 @@
   });
   narrow.addEventListener('change', closeMenu);
   document.addEventListener('diplodocus:page-change', closeMenu);
-  const repositories = document.querySelector('.repository-menu');
-  if (repositories) {
-    const closeRepositories = () => { repositories.open = false; };
+  for (const dropdown of document.querySelectorAll('.repository-menu, .api-menu')) {
+    const closeDropdown = () => { dropdown.open = false; };
     document.addEventListener('click', event => {
-      if (!repositories.contains(event.target) || event.target.closest('a[href]')) closeRepositories();
+      if (!dropdown.contains(event.target) || event.target.closest('a[href]')) closeDropdown();
     });
     document.addEventListener('keydown', event => {
-      if (event.key !== 'Escape' || !repositories.open) return;
+      if (event.key !== 'Escape' || !dropdown.open) return;
       event.preventDefault();
-      closeRepositories();
-      repositories.querySelector('summary').focus({ preventScroll: true });
+      closeDropdown();
+      dropdown.querySelector('summary').focus({ preventScroll: true });
     });
-    narrow.addEventListener('change', closeRepositories);
-    document.addEventListener('diplodocus:page-change', closeRepositories);
+    narrow.addEventListener('change', closeDropdown);
+    document.addEventListener('diplodocus:page-change', closeDropdown);
   }
   const initializeToc = () => {
     const toc = document.querySelector('.toc-disclosure');

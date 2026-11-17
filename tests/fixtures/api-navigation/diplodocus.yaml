@@ -1,0 +1,54 @@
+project:
+  name: API navigation
+presentation:
+  sections:
+    - label: Reference
+      path: reference/index.html
+repositories:
+  - id: docs
+    path: .
+    url: https://github.com/example/main
+  - id: other
+    path: .
+    url: https://github.com/example/other
+packages:
+  - id: rust
+    name: Rust tools
+    slug: rust
+    ecosystem: rust
+    repository: docs
+    path: rust
+    metadata-path: Cargo.toml
+    targets: []
+  - id: julia
+    name: Julia tools
+    slug: julia
+    ecosystem: julia
+    repository: docs
+    path: julia
+    metadata-path: Project.toml
+    targets: []
+  - id: r
+    name: R tools
+    slug: r
+    ecosystem: r
+    repository: docs
+    path: r
+    metadata-path: DESCRIPTION
+    targets: []
+  - id: hidden
+    name: Hidden Rust tools
+    slug: hidden
+    ecosystem: rust
+    repository: docs
+    path: rust
+    metadata-path: Cargo.toml
+    visibility: hidden
+    targets: []
+content:
+  - id: guide
+    owner: project
+    repository: docs
+    path: docs
+    mount: ''
+    format: gfm

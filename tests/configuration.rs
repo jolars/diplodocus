@@ -13,6 +13,30 @@ const COMPLETE: &str = include_str!("fixtures/configuration/complete.yaml");
 const ACCEPTANCE: &str = include_str!("fixtures/acceptance/workspace/diplodocus.yaml");
 
 #[test]
+fn header_api_navigation_defaults_to_dropdown_and_round_trips() {
+    use diplodocus::configuration::ApiNavigation;
+
+    let minimal = "project:\n  name: Docs\n";
+    let config = parse_configuration(minimal).unwrap();
+    assert_eq!(config.presentation.header.api, ApiNavigation::Dropdown);
+    for (value, mode) in [
+        ("links", ApiNavigation::Links),
+        ("dropdown", ApiNavigation::Dropdown),
+    ] {
+        let source = format!("{minimal}presentation:\n  header:\n    api: {value}\n");
+        let config = parse_configuration(&source).unwrap();
+        assert_eq!(config.presentation.header.api, mode);
+        let serialized = serde_saphyr::to_string(&config).unwrap();
+        assert_eq!(parse_configuration(&serialized).unwrap(), config);
+        assert_eq!(serialized.contains("api:"), mode == ApiNavigation::Links);
+    }
+    for value in ["auto", "false", "42", "null", "[]", "{}"] {
+        let source = format!("{minimal}presentation:\n  header:\n    api: {value}\n");
+        assert!(parse_configuration(&source).is_err(), "{value}");
+    }
+}
+
+#[test]
 fn header_repository_selection_preserves_defaults_and_round_trips() {
     let minimal = "project:\n  name: Docs\n";
     let config = parse_configuration(minimal).unwrap();

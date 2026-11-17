@@ -5,11 +5,11 @@ packages. All four expose six operations: mean squared error, mean absolute erro
 root mean squared error, mean error, R squared, and residuals.
 
 The site opens with a landing page linking to the quick start, shared guides,
-and API references. The navbar keeps the logo, **Guide**, all four languages,
-search, and GitHub in place when moving into the documentation. The **Guide**
-link opens `overview.html`, with installation and quick-start pages and three
-shared guides in the sidebar. Each language has its own sidebar, including a
-Python-specific workflow and an executable R vignette.
+and API references. The navbar keeps the logo, **Guide**, an **API** dropdown
+for all four languages, search, and GitHub in place when moving into the
+documentation. The **Guide** link opens `overview.html`, with installation and
+quick-start pages and three shared guides in the sidebar. Each language has its
+own sidebar, including a Python-specific workflow and an executable R vignette.
 Python functions nest under their module; the current package and API ancestors
 open automatically. A separate **On this page** area follows the page's headings.
 Each operation links to its equivalent in the other languages.

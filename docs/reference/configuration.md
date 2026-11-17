@@ -235,7 +235,7 @@ or HTML.
 | `canonical-url-style` | string | `file` | `file` preserves HTML filenames; `clean` uses directory URLs for indexes and removes other `.html` suffixes from links. |
 | `home` | mapping | Unset | Wide, centered homepage content. |
 | `sections` | list | `[]` | Additional project navbar sections after Guide. |
-| `header` | mapping | All public repositories | Repository links in the navbar. |
+| `header` | mapping | `{}` | API navigation and repository links in the navbar. |
 | `sidebar` | list or mapping | Automatic directory grouping | Authored navigation order and groups. |
 | `assets` | list | `[]` | Public files retained at explicit publication paths. |
 | `icons` | list | `[]` | Icon and manifest links on every complete HTML page. |
@@ -252,6 +252,21 @@ extensions. Ambiguous clean routes fail generation. See
 [site appearance](../guide/presentation.md) for examples and deployment details.
 
 ### Header
+
+  | Option         | Type   | Default                 | Purpose                                                                                     |
+  | -------------- | ------ | ----------------------- | ------------------------------------------------------------------------------------------- |
+  | `api`          | string | `dropdown`              | `dropdown` groups multiple visible packages under API; `links` shows separate package tabs. |
+  | `repositories` | list   | All public repositories | Declared repository IDs to show, in display order. `[]` hides repository links.             |
+
+API links use a dropdown by default. Set `presentation.header.api: links` to
+show separate package tabs. Guide and project sections remain separate links.
+API entries retain their package destinations and sidebars, language or
+package labels, and existing order. The API button highlights on package pages.
+One visible package stays a direct link. With no visible packages, the API menu
+is omitted. On phones, API links appear directly under an API heading in the
+navigation menu. The dropdown works without JavaScript. See [API
+navigation](../guide/navigation.md#group-api-links-in-a-dropdown) for an
+example.
 
 `presentation.header.repositories` accepts a list of declared repository IDs in
 display order. Omit it to include all repositories with public HTTP or HTTPS
@@ -323,7 +338,7 @@ Each `presentation.sections` entry accepts:
 
 All project pages under that directory belong to the section. Section
 directories must be distinct and cannot contain the Guide landing page. Entries
-appear in declaration order, before package tabs.
+appear in declaration order, before API navigation.
 
 ### Sidebar {#sidebar}
 
