@@ -4,7 +4,7 @@ use std::fmt::Write;
 
 use super::html::escape;
 use super::images::{ImageRole, Images};
-use crate::configuration::{HomeActionIcon, HomeDefaults};
+use crate::configuration::{HomeActionIcon, HomeActionTarget, HomeDefaults};
 use crate::ir::Block;
 use crate::site::{Site, SiteError};
 
@@ -45,7 +45,7 @@ pub(super) fn render(
             write!(
                 html,
                 "<a class=\"home-action\" href=\"{}\">",
-                escape(&site.url(route, action.path.as_str())),
+                escape(&action_url(site, route, &action.target)),
             )
             .unwrap();
             if let Some(icon) = action.icon {
@@ -82,6 +82,13 @@ pub(super) fn render(
         html.push_str("</section>");
     }
     Ok(())
+}
+
+pub(super) fn action_url(site: &Site<'_>, route: &str, target: &HomeActionTarget) -> String {
+    match target {
+        HomeActionTarget::Path(path) => site.url(route, path.as_str()),
+        HomeActionTarget::Url(url) => url.clone(),
+    }
 }
 
 fn render_action_icon(html: &mut String, icon: HomeActionIcon) {

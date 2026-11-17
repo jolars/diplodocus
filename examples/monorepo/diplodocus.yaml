@@ -13,6 +13,9 @@ presentation:
       - label: "Explore the guide"
         path: "overview.html"
         icon: "book-open"
+      - label: "Source code"
+        url: "https://github.com/jolars/diplodocus"
+        icon: "code"
     features:
       - title: "One API, four languages"
         description: "Use the same six operations in Python, R, Julia, and Rust. Each reference links to its counterparts in the other languages."

@@ -112,6 +112,68 @@ presentation:
 "#;
 
 #[test]
+fn homepage_action_destinations_round_trip_and_reject_invalid_declarations() {
+    use diplodocus::configuration::HomeActionTarget;
+
+    let configuration = |destination: &str| {
+        format!(
+            "project:\n  name: Docs\npresentation:\n  home:\n    tagline: Welcome\n    description: Read the docs.\n    guide: guide/index.html\n    actions:\n      - label: Source code\n{destination}"
+        )
+    };
+    for url in [
+        "https://github.com/example/project",
+        "http://example.test/source?q=a&lang=en#readme",
+    ] {
+        let config = parse_configuration(&configuration(&format!("        url: {url}\n"))).unwrap();
+        let action = &config.presentation.home.as_ref().unwrap().actions[0];
+        assert_eq!(action.target, HomeActionTarget::Url(url.into()));
+        let serialized = serde_saphyr::to_string(&config).unwrap();
+        assert_eq!(parse_configuration(&serialized).unwrap(), config);
+        let json = serde_json::to_value(&config).unwrap();
+        let action = &json["presentation"]["home"]["actions"][0];
+        assert_eq!(action["url"], url);
+        assert!(action.get("path").is_none());
+        assert!(action.get("target").is_none());
+        assert_eq!(
+            serde_json::from_value::<diplodocus::configuration::WorkspaceConfiguration>(json)
+                .unwrap(),
+            config
+        );
+    }
+    for destination in [
+        "",
+        "        path: guide/index.html\n        url: https://example.test/\n",
+        "        url: null\n",
+        "        url: https://example.test/\n        typo: true\n",
+    ] {
+        assert!(
+            parse_configuration(&configuration(destination)).is_err(),
+            "{destination}"
+        );
+    }
+    for url in [
+        "javascript:alert(1)",
+        "data:text/html,hello",
+        "file:///tmp/source",
+        "//example.test/source",
+        "source.html",
+        "https:example.test",
+        "https:///example.test",
+        "https://user:pass@example.test/",
+        "https://@example.test/",
+        " https://example.test/",
+        "https://example.test/a b",
+        "https://example.test/\n",
+    ] {
+        let destination = format!("        url: {}\n", serde_json::Value::String(url.into()));
+        assert!(
+            parse_configuration(&configuration(&destination)).is_err(),
+            "{url:?}"
+        );
+    }
+}
+
+#[test]
 fn homepage_action_icons_parse_and_serialize_as_named_icons() {
     for (name, icon) in [
         ("arrow-right", HomeActionIcon::ArrowRight),

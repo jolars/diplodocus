@@ -548,7 +548,14 @@ impl<'a> Site<'a> {
         }
         if let Some(home) = &site.presentation.home {
             for path in std::iter::once(&home.guide)
-                .chain(home.actions.iter().map(|action| &action.path))
+                .chain(
+                    home.actions
+                        .iter()
+                        .filter_map(|action| match &action.target {
+                            crate::configuration::HomeActionTarget::Path(path) => Some(path),
+                            crate::configuration::HomeActionTarget::Url(_) => None,
+                        }),
+                )
                 .chain(home.features.iter().map(|feature| &feature.path))
             {
                 if path.as_str() == "index.html"

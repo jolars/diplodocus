@@ -174,6 +174,9 @@ presentation:
       - label: "Read the guide"
         path: "guide/index.html"
         icon: "book-open"
+      - label: "Source code"
+        url: "https://github.com/example/project"
+        icon: "code"
     features:
       - title: "Shared documentation"
         description: "Link across your packages."
@@ -185,6 +188,11 @@ Mount your guide collection at `guide` to keep it separate from the homepage.
 visible generated HTML pages, including `.html`, even when the site uses clean
 URLs. Diplodocus checks these destinations and renders links using the site's
 URL settings. The first action receives the primary button style.
+
+For an external action, use `url` instead of `path`. Each action requires exactly
+one destination. External URLs must be absolute HTTP or HTTPS URLs without
+credentials or whitespace. They remain unchanged in HTML and Markdown output,
+including when the site uses a hosting prefix or clean URLs.
 
 Actions accept an optional `icon`: `arrow-right`, `book-open`, `code`, `download`,
 or `terminal`. The built-in SVG appears before the label and inherits the

@@ -303,17 +303,60 @@ pub struct HomeDefaults {
     pub features: Vec<HomeFeature>,
 }
 
-/// A homepage action pointing to a generated documentation page.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+/// A homepage action pointing to a generated page or an external website.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "kebab-case")]
 pub struct HomeAction {
     /// Visible link text, without HTML or Markdown.
     pub label: String,
-    /// Normalized site-relative HTML artifact path, including its extension.
-    pub path: DiagnosticPath,
+    /// Exactly one generated page path or absolute HTTP or HTTPS URL.
+    #[serde(flatten)]
+    pub target: HomeActionTarget,
     /// Optional decorative icon shown before the link text.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub icon: Option<HomeActionIcon>,
+}
+
+/// The destination of a homepage action.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum HomeActionTarget {
+    /// Normalized site-relative HTML artifact path, including its extension.
+    Path(DiagnosticPath),
+    /// Absolute HTTP or HTTPS destination without credentials or whitespace.
+    Url(#[serde(deserialize_with = "deserialize_external_url")] String),
+}
+
+impl<'de> Deserialize<'de> for HomeAction {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        #[derive(Deserialize)]
+        #[serde(rename_all = "kebab-case", deny_unknown_fields)]
+        struct Declaration {
+            label: String,
+            path: Option<DiagnosticPath>,
+            url: Option<String>,
+            icon: Option<HomeActionIcon>,
+        }
+
+        let declaration = Declaration::deserialize(deserializer)?;
+        let target = match (declaration.path, declaration.url) {
+            (Some(path), None) => HomeActionTarget::Path(path),
+            (None, Some(url)) => {
+                validate_external_url(&url).map_err(D::Error::custom)?;
+                HomeActionTarget::Url(url)
+            }
+            _ => {
+                return Err(D::Error::custom(
+                    "homepage actions require exactly one of path or url",
+                ));
+            }
+        };
+        Ok(Self {
+            label: declaration.label,
+            target,
+            icon: declaration.icon,
+        })
+    }
 }
 
 /// A built-in SVG icon for a homepage action.
@@ -429,19 +472,26 @@ pub struct FooterLink {
     /// Link text, rendered without Markdown or HTML parsing.
     pub label: String,
     /// Absolute HTTP or HTTPS destination.
-    #[serde(deserialize_with = "deserialize_footer_url")]
+    #[serde(deserialize_with = "deserialize_external_url")]
     pub url: String,
 }
 
-fn deserialize_footer_url<'de, D: Deserializer<'de>>(deserializer: D) -> Result<String, D::Error> {
+fn deserialize_external_url<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<String, D::Error> {
     let value = String::deserialize(deserializer)?;
+    validate_external_url(&value).map_err(D::Error::custom)?;
+    Ok(value)
+}
+
+fn validate_external_url(value: &str) -> Result<(), &'static str> {
     let invalid =
-        "footer links must use absolute HTTP or HTTPS URLs without credentials or whitespace";
-    let url = url::Url::parse(&value).map_err(|_| D::Error::custom(invalid))?;
+        "external links must use absolute HTTP or HTTPS URLs without credentials or whitespace";
+    let url = url::Url::parse(value).map_err(|_| invalid)?;
     let authority = value
         .split_once("://")
         .map(|(_, rest)| rest.split(['/', '?', '#']).next().unwrap_or_default())
-        .ok_or_else(|| D::Error::custom(invalid))?;
+        .ok_or(invalid)?;
     if !matches!(url.scheme(), "http" | "https")
         || url.host_str().is_none()
         || authority.is_empty()
@@ -450,9 +500,9 @@ fn deserialize_footer_url<'de, D: Deserializer<'de>>(deserializer: D) -> Result<
             .chars()
             .any(|ch| ch.is_whitespace() || ch.is_control())
     {
-        return Err(D::Error::custom(invalid));
+        return Err(invalid);
     }
-    Ok(value)
+    Ok(())
 }
 
 /// How a host exposes the generated HTML files.

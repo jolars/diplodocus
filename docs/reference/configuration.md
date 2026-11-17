@@ -312,8 +312,12 @@ Each `presentation.home.actions` entry accepts:
 | Option | Type | Default | Purpose |
 | --- | --- | --- | --- |
 | `label` | string | Required | Visible action text. |
-| `path` | HTML route | Required | Visible generated page. |
+| `path` | HTML route | Unset | Visible generated page; required unless `url` is set. |
+| `url` | string | Unset | Absolute HTTP or HTTPS destination; required unless `path` is set. |
 | `icon` | string | Unset | `arrow-right`, `book-open`, `code`, `download`, or `terminal`. |
+
+Set exactly one of `path` and `url`. External URLs cannot contain credentials or
+whitespace and remain unchanged in HTML and Markdown output.
 
 Each `presentation.home.features` entry accepts:
 

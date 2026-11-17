@@ -96,6 +96,54 @@ fn homepage_survives_snapshot_round_trip_and_respects_url_style() {
 }
 
 #[test]
+fn external_homepage_actions_survive_portable_snapshots_and_keep_their_urls() {
+    for style in ["file", "clean"] {
+        let root = workspace(style);
+        let url = "https://github.com/example/source?q=a&lang=en#readme";
+        root.write(
+            "diplodocus.yaml",
+            root.read("diplodocus.yaml")
+                .replace("presentation:\n", "presentation:\n  site-url: https://docs.example.test/manual/\n")
+                .replace("    actions:\n", &format!("    actions:\n      - label: Source & code\n        url: {url}\n        icon: code\n")),
+        );
+        let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
+        let snapshot =
+            Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+        let portable = support::TestWorkspace::new();
+        let path = portable.path().join("snapshot.sqlite");
+        snapshot.publish(&path).unwrap();
+        drop(root);
+        let loaded = Snapshot::load(&path).unwrap();
+        assert_eq!(loaded.presentation(), snapshot.presentation());
+        let rendered = render_site(&Site::new(&loaded).unwrap()).unwrap();
+        let home = std::str::from_utf8(&rendered.files()["index.html"].bytes).unwrap();
+        let action = home
+            .split("<a class=\"home-action\"")
+            .nth(1)
+            .unwrap()
+            .split_once("</a>")
+            .unwrap()
+            .0;
+        assert!(
+            action
+                .starts_with(" href=\"https://github.com/example/source?q=a&amp;lang=en#readme\">")
+        );
+        assert!(action.contains("aria-hidden=\"true\""));
+        assert!(action.ends_with("</svg>Source &amp; code"));
+        let quick_start = if style == "file" {
+            "quick-start.html"
+        } else {
+            "quick-start"
+        };
+        assert!(home.contains(&format!(
+            "href=\"guide/{quick_start}\">Start &lt;here&gt;</a>"
+        )));
+        let markdown = std::str::from_utf8(&rendered.files()["index.md"].bytes).unwrap();
+        assert!(markdown.contains(&format!("- [Source & code](<{url}>)")));
+    }
+}
+
+#[test]
 fn homepage_action_icons_survive_snapshot_round_trip_without_sources() {
     let root = workspace("file");
     let icons = ["arrow-right", "book-open", "code", "download", "terminal"];

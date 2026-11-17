@@ -83,7 +83,7 @@ pub(super) fn page(
                 output,
                 "- [{}]({})",
                 escape(&action.label),
-                link_url(&site.url(route, action.path.as_str())),
+                link_url(&super::home::action_url(site, route, &action.target)),
             )
             .unwrap();
         }

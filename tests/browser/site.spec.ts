@@ -504,6 +504,22 @@ test("homepage action icons preserve accessible labels and navigation", async ({
   }
 });
 
+test("external homepage actions support keyboard navigation", async ({ page }, info) => {
+  await page.goto("/");
+  const url = "https://github.com/jolars/diplodocus";
+  const action = page.locator(".home-actions").getByRole("link", { name: "Source code", exact: true });
+  await expect(action).toHaveAttribute("href", url);
+  await expect(action).toHaveAccessibleName("Source code");
+  await fitsViewport(page);
+  await capture(page, info, "external-homepage-action");
+  await page.route(url, route => route.fulfill({ contentType: "text/html", body: "<h1>Source repository</h1>" }));
+  await action.focus();
+  await expect(action).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(url);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Source repository");
+});
+
 test("navbar links stay in place when switching sections", async ({ page }, info) => {
   test.skip(info.project.name !== "desktop", "The top navbar is shown on desktop.");
   await page.goto("/overview.html");
