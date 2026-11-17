@@ -3,7 +3,7 @@
 use std::collections::BTreeMap;
 use std::collections::btree_map::Entry;
 
-use crate::configuration::WorkspaceConfiguration;
+use crate::configuration::{IncrementalConfiguration, WorkspaceConfiguration};
 use crate::diagnostics::{
     Diagnostic, DiagnosticCode, DiagnosticEntity, DiagnosticPath, DiagnosticSource, Severity,
 };
@@ -282,6 +282,22 @@ pub fn validate_configuration(configuration: &WorkspaceConfiguration) -> Vec<Dia
             ));
         }
     }
+    for (index, package) in configuration.packages.iter().enumerate() {
+        validate_incremental(
+            &package.incremental,
+            &format!("packages[{index}].incremental"),
+            &packages,
+            &mut diagnostics,
+        );
+    }
+    for (index, collection) in configuration.content.iter().enumerate() {
+        validate_incremental(
+            &collection.incremental,
+            &format!("content[{index}].incremental"),
+            &packages,
+            &mut diagnostics,
+        );
+    }
     for (index, concept) in configuration.concepts.iter().enumerate() {
         let entity = DiagnosticEntity::Concept {
             id: concept.id.clone(),
@@ -335,6 +351,55 @@ pub fn validate_configuration(configuration: &WorkspaceConfiguration) -> Vec<Dia
 
     diagnostics.sort();
     diagnostics
+}
+
+fn validate_incremental(
+    settings: &IncrementalConfiguration,
+    field: &str,
+    packages: &Names<'_>,
+    diagnostics: &mut Vec<Diagnostic>,
+) {
+    for dependency in &settings.depends_on {
+        if !packages.contains(dependency) {
+            diagnostics.push(error(
+                DiagnosticCode::InvalidConfiguration,
+                format!("{field}.depends-on: unknown workspace package `{dependency}`"),
+                DiagnosticEntity::ConfigurationField {
+                    path: format!("{field}.depends-on"),
+                },
+            ));
+        }
+    }
+    if settings.extra_inputs.iter().any(|path| {
+        path.as_os_str().is_empty()
+            || path.components().any(|component| {
+                !matches!(
+                    component,
+                    std::path::Component::Normal(_) | std::path::Component::CurDir
+                )
+            })
+    }) {
+        diagnostics.push(error(
+            DiagnosticCode::InvalidConfiguration,
+            format!("{field}.extra-inputs must contain nonempty repository-relative paths without `..` components"),
+            DiagnosticEntity::ConfigurationField {
+                path: format!("{field}.extra-inputs"),
+            },
+        ));
+    }
+    if settings
+        .environment_variables
+        .iter()
+        .any(|name| name.is_empty() || name.contains(['=', '\0']))
+    {
+        diagnostics.push(error(
+            DiagnosticCode::InvalidConfiguration,
+            format!("{field}.environment-variables must contain nonempty variable names without `=` or null bytes"),
+            DiagnosticEntity::ConfigurationField {
+                path: format!("{field}.environment-variables"),
+            },
+        ));
+    }
 }
 
 /// Validate identities and references with a caller-supplied configuration path.

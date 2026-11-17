@@ -32,7 +32,7 @@ Return to the [overview](index.md).
 
 The page appears at `guide/tutorial.html`. Code fences display source without
 running it. Run `diplodocus check` to catch broken links, then use
-`diplodocus serve --live-reload` to preview edits. See
+`diplodocus serve` to preview edits. See
 [executable examples](execution.md) when you want evaluated code and results.
 
 ## Package landing pages {#package-landing-pages}

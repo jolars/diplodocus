@@ -90,6 +90,7 @@ local({
   emit("knitr-version", as.character(utils::packageVersion("knitr")))
   emit("package-version", as.character(utils::packageVersion(checkout$name)))
   for (dependency in sort(loadedNamespaces())) emit("dependency", paste(dependency, as.character(utils::packageVersion(dependency)), sep = "="))
+  write_native_environment(args[[3L]], args[[1L]])
   withCallingHandlers(pkgload::unload(checkout$name), warning = function(w) stop(conditionMessage(w)))
   emit("complete", "rmd-knitr-v1")
   close(output)

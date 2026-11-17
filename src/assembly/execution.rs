@@ -68,13 +68,31 @@ impl WorkspaceSources {
                             .map_err(|_| AssemblyError::InputsChanged)
                     })
                     .collect::<Result<Vec<_>, _>>()?;
-                let engine = JupyterEngine::new(repositories.clone(), declared)
-                    .with_source_root(self.paths.content[page.collection].source_root.clone())
-                    .with_cache_root(
-                        self.paths
-                            .configuration_directory
-                            .join(".diplodocus/cache/execution"),
-                    );
+                let mut engine = JupyterEngine::new(repositories.clone(), declared)
+                    .with_source_root(self.paths.content[page.collection].source_root.clone());
+                let cache_context = crate::incremental::content_context(
+                    &self.configuration,
+                    &self.paths,
+                    page.collection,
+                );
+                if !crate::incremental::bypassed()
+                    && collection.incremental.cache != crate::configuration::IncrementalCache::Off
+                    && (!crate::incremental::enabled() || cache_context.is_some())
+                {
+                    let mut root = self
+                        .paths
+                        .configuration_directory
+                        .join(".diplodocus/cache/execution");
+                    if let Some((_, build, inputs)) = cache_context {
+                        if collection.owner != "project"
+                            || collection.incremental != Default::default()
+                        {
+                            root = root.join(crate::incremental::key(&(build, &inputs)).value);
+                        }
+                        self.cache_observations.push(inputs);
+                    }
+                    engine = engine.with_cache_root(root);
+                }
                 let request = PageExecutionRequest {
                     page: ExecutionPage {
                         source: page.location.clone(),

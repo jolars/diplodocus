@@ -37,6 +37,35 @@ fn header_api_navigation_defaults_to_dropdown_and_round_trips() {
 }
 
 #[test]
+fn incremental_settings_round_trip_for_packages_and_content() {
+    use diplodocus::configuration::IncrementalCache;
+
+    let mut config = parse_configuration(COMPLETE).unwrap();
+    assert!(
+        serde_json::to_value(&config).unwrap()["packages"][0]
+            .get("incremental")
+            .is_none()
+    );
+    let settings = "cache: off\ndepends-on: [core]\nextra-inputs: [shared, environment.lock]\nenvironment-variables: [DOCS_VARIANT]\n";
+    config.packages[0].incremental = serde_saphyr::from_str(settings).unwrap();
+    config.content[0].incremental = config.packages[0].incremental.clone();
+    assert_eq!(config.content[0].incremental.cache, IncrementalCache::Off);
+    assert_eq!(
+        parse_configuration(&serde_saphyr::to_string(&config).unwrap()).unwrap(),
+        config
+    );
+    for value in ["false", "always", "42", "null"] {
+        assert!(
+            serde_saphyr::from_str::<diplodocus::configuration::IncrementalConfiguration>(
+                &format!("cache: {value}\n")
+            )
+            .is_err(),
+            "{value}"
+        );
+    }
+}
+
+#[test]
 fn header_repository_selection_preserves_defaults_and_round_trips() {
     let minimal = "project:\n  name: Docs\n";
     let config = parse_configuration(minimal).unwrap();

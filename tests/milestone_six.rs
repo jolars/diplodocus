@@ -406,9 +406,16 @@ fn missing_kernel_fails_cli_builds_without_publication() {
             "guide/process.txt",
             "guide/next-cell",
             "site",
-            ".diplodocus",
+            ".diplodocus/documentation.sqlite",
         ] {
             assert!(!root.path().join(path).exists(), "unexpected {path}");
         }
+        let generated = support::files_under(&root.path().join(".diplodocus"));
+        assert!(
+            generated
+                .iter()
+                .all(|path| path.starts_with("cache/incremental")),
+            "unexpected generated files: {generated:?}"
+        );
     }
 }

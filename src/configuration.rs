@@ -601,6 +601,9 @@ pub struct PackageConfiguration {
     /// GFM overview file, relative to the package root; omission discovers README.md.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub overview: Option<PathBuf>,
+    /// Tracked dependencies and reuse policy for incremental extraction.
+    #[serde(default, skip_serializing_if = "IncrementalConfiguration::is_default")]
+    pub incremental: IncrementalConfiguration,
     /// Native R documentation generation and supplemental watched inputs.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub r: Option<RPackageConfiguration>,
@@ -639,6 +642,37 @@ pub enum RDocumentationMode {
     Roxygen2,
     /// Consume maintained Rd and namespace files without generation.
     Rd,
+}
+
+/// Declared inputs and dependencies for package or content preparation.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, rename_all = "kebab-case", deny_unknown_fields)]
+pub struct IncrementalConfiguration {
+    /// Reuse completed results when tracked inputs still match.
+    pub cache: IncrementalCache,
+    /// Workspace package IDs whose inputs affect this unit.
+    pub depends_on: Vec<String>,
+    /// Additional files or directories, relative to the unit's repository.
+    pub extra_inputs: Vec<PathBuf>,
+    /// Environment variable names whose values affect this unit.
+    pub environment_variables: Vec<String>,
+}
+
+impl IncrementalConfiguration {
+    pub(crate) fn is_default(&self) -> bool {
+        self == &Self::default()
+    }
+}
+
+/// Whether a unit permits reuse of completed preparation results.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum IncrementalCache {
+    /// Reuse results after checking their recorded inputs.
+    #[default]
+    Auto,
+    /// Prepare the unit afresh on each command attempt.
+    Off,
 }
 
 /// Whether a documentation unit represents a package or an internal component.
@@ -751,6 +785,9 @@ pub struct ContentConfiguration {
     /// Sidebar inclusion; does not affect rendering, search, or sitemaps.
     #[serde(default, skip_serializing_if = "ContentNavigation::is_default")]
     pub navigation: ContentNavigation,
+    /// Tracked dependencies and reuse policy for authored preparation.
+    #[serde(default, skip_serializing_if = "IncrementalConfiguration::is_default")]
+    pub incremental: IncrementalConfiguration,
     /// Execution defaults to native knitr for Rmd and `never` for other formats.
     #[serde(default)]
     pub execution: ExecutionConfiguration,
@@ -782,6 +819,8 @@ impl<'de> Deserialize<'de> for ContentConfiguration {
             #[serde(default)]
             navigation: ContentNavigation,
             #[serde(default)]
+            incremental: IncrementalConfiguration,
+            #[serde(default)]
             execution: Option<ExecutionDeclaration>,
         }
 
@@ -794,6 +833,7 @@ impl<'de> Deserialize<'de> for ContentConfiguration {
             mount: declaration.mount,
             format: declaration.format,
             navigation: declaration.navigation,
+            incremental: declaration.incremental,
             execution: {
                 let execution = declaration.execution.unwrap_or_default();
                 let rmd = declaration.format == AuthoredFormat::Rmd;

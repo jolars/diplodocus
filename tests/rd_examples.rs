@@ -177,7 +177,11 @@ warning("example warning")
     );
     let portable = snapshot.canonical_export().unwrap();
     assert!(!portable.contains(root.path().to_str().unwrap()));
-    assert!(!root.path().join(".diplodocus/cache").exists());
+    assert!(!root.path().join(".diplodocus/cache/execution").exists());
+    let cache = root.path().join(".diplodocus/cache");
+    if cache.is_dir() {
+        fs::remove_dir_all(cache).unwrap();
+    }
     fs::remove_dir_all(root.path().join("r")).unwrap();
     let result = Command::new(env!("CARGO_BIN_EXE_diplodocus"))
         .current_dir(root.path())

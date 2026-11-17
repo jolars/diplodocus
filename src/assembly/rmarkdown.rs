@@ -46,6 +46,7 @@ pub(super) fn collections(
             mount: "vignettes".into(),
             format: AuthoredFormat::Rmd,
             navigation: Default::default(),
+            incremental: Default::default(),
             execution: ExecutionConfiguration {
                 mode: ExecutionMode::Execute,
                 engine: Some(Engine::Knitr),
@@ -186,17 +187,87 @@ impl WorkspaceSources {
                     "R Markdown requires package metadata from an R extraction target.",
                 ));
             };
+            let content_inputs = crate::incremental::content_context(
+                &self.configuration,
+                &self.paths,
+                page.collection,
+            );
+            let repository =
+                &self.paths.repositories[self.paths.content[page.collection].repository_index];
+            let mut resources = self
+                .rmd_inputs
+                .get(&collection.id)
+                .map(|files| {
+                    files
+                        .iter()
+                        .map(|p| repository.path.join(p))
+                        .collect::<Vec<_>>()
+                })
+                .unwrap_or_default();
+            resources.extend(citations::inputs(
+                &self.workspace.pages[&id].document.document,
+                &page.path,
+                repository,
+            )?);
+            let resources = crate::incremental::Manifest::capture(&resources, &[])?;
+            let semantic = (
+                &self.workspace.pages[&id],
+                &page.source,
+                collection,
+                content_inputs.as_ref().map(|(_, _, inputs)| inputs),
+                &resources,
+            );
+            let cache = if content_inputs.is_some() {
+                reuse::r_context(
+                    self,
+                    &package.id,
+                    "rmd-execution",
+                    &semantic,
+                    &["knitr", "evaluate"],
+                    deadlines,
+                    cancellation,
+                )
+                .await?
+            } else {
+                None
+            };
+            if let Some(context) = &cache
+                && let Some((page, assets, references)) =
+                    context.load_with::<reuse::PageResult, _>(&self.reporting, |cached| {
+                        if !cached.references.verify() {
+                            return None;
+                        }
+                        reuse::Asset::restore(cached.assets)
+                            .map(|assets| (cached.page, assets, cached.references))
+                    })
+            {
+                self.workspace.pages.insert(id.clone(), page);
+                self.native_assets.extend(assets);
+                if let Some((_, _, inputs)) = &content_inputs {
+                    self.cache_observations.push(inputs.clone());
+                }
+                self.cache_observations.push(resources);
+                self.cache_observations.push(references);
+                context.retain(self);
+                progress.advance();
+                continue;
+            }
             let staging = tempfile::tempdir()?;
             let output = staging.path().join("results");
             let errors = staging.path().join("errors");
             let helper = format!(
-                "{}\n{}",
+                "{}\n{}\n{}",
                 include_str!("r_runtime.R"),
+                include_str!("r_environment.R"),
                 include_str!("rmarkdown.R")
             );
+            let helper_path = staging.path().join("article.R");
+            fs::write(&helper_path, helper)?;
             let mut command = tokio::process::Command::new("R");
             command
-                .args(["--vanilla", "--slave", "-e", &helper, "--args"])
+                .args(["--vanilla", "--slave", "-f"])
+                .arg(&helper_path)
+                .arg("--args")
                 .arg(&package.path)
                 .arg(&page.path)
                 .arg(&output)
@@ -268,11 +339,14 @@ impl WorkspaceSources {
                 diagnostic.message = format!("Generated figure caption: {}", diagnostic.message);
             }
             reject_errors(diagnostics)?;
-            citations::resolve(
-                &mut parsed.document,
-                &page.path,
-                &self.paths.repositories[package.repository_index],
+            let references = crate::incremental::Manifest::capture(
+                &citations::inputs(&parsed.document, &page.path, repository)?,
+                &[],
             )?;
+            citations::resolve(&mut parsed.document, &page.path, repository)?;
+            if !references.verify() {
+                return Err(AssemblyError::InputsChanged);
+            }
             self.revalidate()?;
             let document = &mut self.workspace.pages.get_mut(&id).expect("article").document;
             let page_title =
@@ -293,8 +367,33 @@ impl WorkspaceSources {
             if let Some(title) = page_title {
                 self.workspace.pages.get_mut(&id).expect("article").title = title;
             }
+            let retained_assets = reuse::Asset::capture(&assets);
             self.native_assets.extend(assets);
+            let native_environment = r_native::completed_environment_manifest(&output);
             staging.close()?;
+            if let Some(context) = cache {
+                let result = reuse::PageResult {
+                    page: self.workspace.pages[&id].clone(),
+                    assets: retained_assets,
+                    references: references.clone(),
+                };
+                let dependencies = reuse::document_dependencies([&result.page.document]);
+                context
+                    .save_execution(
+                        &result,
+                        &dependencies,
+                        native_environment.unwrap_or_default(),
+                        deadlines,
+                        cancellation,
+                        self,
+                    )
+                    .await?;
+            }
+            if let Some((_, _, inputs)) = content_inputs {
+                self.cache_observations.push(inputs);
+            }
+            self.cache_observations.push(resources);
+            self.cache_observations.push(references);
             progress.advance();
         }
         self.revalidate()?;

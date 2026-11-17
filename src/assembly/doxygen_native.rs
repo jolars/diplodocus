@@ -18,20 +18,39 @@ pub(super) struct DoxygenNativeExtraction {
     pub observation: DoxygenObservation,
 }
 
+#[derive(serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CachedDoxygen {
+    extraction: DoxygenExtraction,
+    metadata: CppMetadata,
+    provenance: Provenance,
+}
+
 #[derive(Debug, Clone)]
 pub(super) struct DoxygenObservation {
     repository: ResolvedRepositoryPaths,
     roots: Vec<PathBuf>,
     configuration: BTreeSet<PathBuf>,
     inputs: Vec<InputFingerprint>,
+    cache_inputs: Vec<crate::incremental::Manifest>,
+    working: PathBuf,
+    executable: Option<PathBuf>,
 }
 
 impl DoxygenObservation {
     pub(super) fn roots(&self) -> impl Iterator<Item = &PathBuf> {
-        self.roots.iter()
+        self.roots
+            .iter()
+            .chain(self.cache_inputs.iter().flat_map(|inputs| inputs.paths()))
     }
     pub(super) fn verify(&self) -> Result<(), AssemblyError> {
         if inventory(&self.repository, &self.roots, &self.configuration)? != self.inputs {
+            return Err(AssemblyError::InputsChanged);
+        }
+        if self.cache_inputs.iter().any(|inputs| !inputs.verify()) {
+            return Err(AssemblyError::InputsChanged);
+        }
+        if self.executable.is_some() && executable(&self.working) != self.executable {
             return Err(AssemblyError::InputsChanged);
         }
         Ok(())
@@ -45,6 +64,7 @@ struct Native<'a> {
     staging: &'a Path,
     deadlines: ExecutionDeadlines,
     preparation_limit: Duration,
+    executable: Option<PathBuf>,
 }
 
 impl Native<'_> {
@@ -74,7 +94,9 @@ impl Native<'_> {
     ) -> Result<(String, String), AssemblyError> {
         let output = self.staging.join("stdout");
         let errors = self.staging.join("stderr");
-        let mut command = tokio::process::Command::new("doxygen");
+        let mut command = tokio::process::Command::new(
+            self.executable.as_deref().unwrap_or(Path::new("doxygen")),
+        );
         command
             .args(arguments)
             .current_dir(&self.package.path)
@@ -140,6 +162,11 @@ pub(super) async fn extract_target(
     reporting: &Reporting,
     deadlines: ExecutionDeadlines,
     cancellation: &mut ExecutionCancellation<'_>,
+    cache: Option<&(
+        crate::incremental::Store,
+        String,
+        crate::incremental::Manifest,
+    )>,
 ) -> Result<DoxygenNativeExtraction, AssemblyError> {
     let staging = tempfile::tempdir()?;
     let native = Native {
@@ -149,6 +176,7 @@ pub(super) async fn extract_target(
         staging: staging.path(),
         deadlines,
         preparation_limit: Duration::from_secs(600),
+        executable: executable(&package.path),
     };
     if !target.path.is_file() {
         return Err(native.failure("Doxygen targets must identify regular Doxyfiles."));
@@ -219,6 +247,98 @@ pub(super) async fn extract_target(
     if inventory(repository, &[], &config_files)? != config_before {
         return Err(AssemblyError::InputsChanged);
     }
+    let eligible = cache_eligible(&settings);
+    if cache.is_some() && !eligible {
+        reporting.cache(
+            "doxygen",
+            &package.id,
+            false,
+            Some("External filters or Clang dependencies cannot be verified."),
+        );
+    }
+    let tool_inputs = native.executable.as_ref().and_then(|path| {
+        let mut inputs = Vec::new();
+        if let Some(search) = std::env::var_os("PATH") {
+            for directory in std::env::split_paths(&search) {
+                let candidate = package.path.join(directory).join("doxygen");
+                let selected = fs::canonicalize(&candidate).ok().as_ref() == Some(path);
+                inputs.push(candidate);
+                if selected {
+                    break;
+                }
+            }
+        }
+        inputs.push(path.clone());
+        crate::incremental::Manifest::capture(
+            &inputs,
+            &[
+                "PATH".into(),
+                "LANG".into(),
+                "LC_ALL".into(),
+                "LD_LIBRARY_PATH".into(),
+            ],
+        )
+        .ok()
+    });
+    let cache = cache.filter(|_| eligible && tool_inputs.is_some());
+    let (version, _) = native.run(&["--version".as_ref()], cancellation).await?;
+    let cache_key = cache.map(|(_, build, supplemental)| {
+        crate::incremental::key(&(
+            "doxygen-v1",
+            build,
+            &repository.id,
+            &package.id,
+            &target.id,
+            &settings.values,
+            &metadata_settings.values,
+            &before,
+            supplemental,
+            &tool_inputs,
+            version.trim(),
+        ))
+    });
+    let cache_inputs: Vec<_> = cache
+        .map(|(_, _, supplemental)| supplemental.clone())
+        .into_iter()
+        .chain(tool_inputs)
+        .collect();
+    if let Some(((store, _, _), key)) = cache.zip(cache_key.as_ref()) {
+        let candidate: Option<CachedDoxygen> = store.load("doxygen", key);
+        if let Some(candidate) = candidate
+            && !candidate
+                .extraction
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.severity == Severity::Error)
+            && cache_inputs.iter().all(|inputs| inputs.verify())
+            && executable(&package.path) == native.executable
+        {
+            let observation = DoxygenObservation {
+                repository: repository.clone(),
+                roots,
+                configuration: config_files,
+                inputs: before,
+                cache_inputs,
+                working: package.path.clone(),
+                executable: native.executable.clone(),
+            };
+            observation.verify()?;
+            staging.close()?;
+            reporting.cache("doxygen", &package.id, true, None);
+            return Ok(DoxygenNativeExtraction {
+                extraction: candidate.extraction,
+                metadata: candidate.metadata,
+                provenance: candidate.provenance,
+                observation,
+            });
+        }
+        reporting.cache(
+            "doxygen",
+            &package.id,
+            false,
+            Some("Source, configuration, or native tool inputs changed."),
+        );
+    }
     let wrapper = staging.path().join("Doxyfile");
     let quoted = |path: &Path| {
         format!(
@@ -248,7 +368,6 @@ pub(super) async fn extract_target(
         configuration.push_str(&format!("GENERATE_{format} = NO\n"));
     }
     fs::write(&wrapper, configuration)?;
-    let (version, _) = native.run(&["--version".as_ref()], cancellation).await?;
     let generation = reporting.phase(
         Phase::DocumentationGeneration,
         Some(&package.id),
@@ -306,6 +425,9 @@ pub(super) async fn extract_target(
         roots,
         configuration: config_files,
         inputs: before,
+        cache_inputs,
+        working: package.path.clone(),
+        executable: native.executable.clone(),
     };
     observation.verify()?;
     let mut current_configs = BTreeSet::new();
@@ -376,12 +498,61 @@ pub(super) async fn extract_target(
             ("roxmltree".into(), "0.21.2".into()),
         ]),
     };
+    let cache_valid = observation
+        .cache_inputs
+        .iter()
+        .all(|inputs| inputs.verify())
+        && executable(&package.path) == native.executable;
     staging.close()?;
+    if let Some(((store, _, _), key)) = cache.zip(cache_key.as_ref())
+        && cache_valid
+    {
+        let candidate = CachedDoxygen {
+            extraction,
+            metadata,
+            provenance,
+        };
+        let _ = store.save("doxygen", key, &candidate);
+        return Ok(DoxygenNativeExtraction {
+            extraction: candidate.extraction,
+            metadata: candidate.metadata,
+            provenance: candidate.provenance,
+            observation,
+        });
+    }
     Ok(DoxygenNativeExtraction {
         extraction,
         metadata,
         provenance,
         observation,
+    })
+}
+
+fn cache_eligible(settings: &DoxygenConfiguration) -> bool {
+    !settings.enabled("CLANG_ASSISTED_PARSING")
+        && ["INPUT_FILTER", "FILTER_PATTERNS", "FILTER_SOURCE_PATTERNS"]
+            .iter()
+            .all(|key| {
+                settings
+                    .values
+                    .get(*key)
+                    .is_none_or(|values| values.iter().all(String::is_empty))
+            })
+}
+
+fn executable(working: &Path) -> Option<PathBuf> {
+    let search = std::env::var_os("PATH")?;
+    std::env::split_paths(&search).find_map(|directory| {
+        let path = fs::canonicalize(working.join(directory).join("doxygen")).ok()?;
+        let metadata = fs::metadata(&path).ok()?;
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            if metadata.permissions().mode() & 0o111 == 0 {
+                return None;
+            }
+        }
+        metadata.is_file().then_some(path)
     })
 }
 
@@ -489,6 +660,21 @@ fn inventory(
 mod tests {
     use super::*;
 
+    #[test]
+    fn opaque_native_dependencies_disable_result_reuse() {
+        assert!(cache_eligible(&DoxygenConfiguration::parse(
+            "INPUT = include\nINPUT_FILTER =\nCLANG_ASSISTED_PARSING = NO\n"
+        )));
+        for setting in [
+            "INPUT_FILTER = ./filter.sh",
+            "FILTER_PATTERNS = *.hpp=./filter.sh",
+            "FILTER_SOURCE_PATTERNS = *.hpp=./filter.sh",
+            "CLANG_ASSISTED_PARSING = YES",
+        ] {
+            assert!(!cache_eligible(&DoxygenConfiguration::parse(setting)));
+        }
+    }
+
     #[tokio::test]
     async fn native_timeout_and_cancellation_stop_input_filters() {
         let root = tempfile::tempdir().unwrap();
@@ -516,6 +702,7 @@ mod tests {
             staging: root.path(),
             deadlines: ExecutionDeadlines::default(),
             preparation_limit: Duration::from_millis(100),
+            executable: executable(&package.path),
         };
         let mut cancellation: ExecutionCancellation<'_> = Box::pin(std::future::pending());
         let failed = native

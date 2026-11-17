@@ -7,6 +7,14 @@ use super::*;
 #[serde(rename_all = "kebab-case")]
 #[non_exhaustive]
 pub enum Phase {
+    /// Fingerprint current inputs and dependencies before reusing a result.
+    CacheValidation,
+    /// Recheck selected sources and completed dependency observations.
+    SourceVerification,
+    /// Capture source and dependency subscriptions for a completed attempt.
+    WatchCapture,
+    /// Scan watched inputs without including the idle polling interval.
+    WatchPoll,
     /// Importing or loading a prepared package in a native helper.
     PackageLoading,
     /// Producing native documentation input, such as Doxygen XML.

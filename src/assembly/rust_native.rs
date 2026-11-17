@@ -6,7 +6,7 @@ use crate::diagnostics::DiagnosticEntity;
 use crate::extractors::rust::{RustExtraction, extract_rustdoc};
 use crate::ir::*;
 use crate::paths::{ResolvedPackagePaths, ResolvedRepositoryPaths, ResolvedTargetPath};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::BTreeSet;
 use std::process::Stdio;
@@ -21,6 +21,17 @@ pub(crate) struct RustNativeExtraction {
     pub metadata: RustMetadata,
     pub provenance: Provenance,
     pub doctests: Option<Provenance>,
+    pub observation: Option<crate::incremental::Manifest>,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CachedDiscovery {
+    extraction: RustExtraction,
+    provenance: Provenance,
+    inputs: Vec<InputFingerprint>,
+    extra: BTreeSet<PathBuf>,
+    observation: crate::incremental::Manifest,
 }
 
 #[derive(Deserialize)]
@@ -30,7 +41,7 @@ struct Metadata {
     resolve: Option<Resolve>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 struct CargoPackage {
     id: String,
     name: String,
@@ -47,7 +58,7 @@ struct CargoPackage {
     targets: Vec<CargoTarget>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 struct CargoTarget {
     name: String,
     kind: Vec<String>,
@@ -59,7 +70,7 @@ struct Resolve {
     nodes: Vec<ResolveNode>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 struct ResolveNode {
     id: String,
     features: Vec<String>,
@@ -250,6 +261,7 @@ impl Native<'_> {
 }
 
 /// Compile the explicitly declared library and retain portable compiler evidence.
+#[cfg(test)]
 #[allow(clippy::too_many_arguments)]
 pub(super) async fn extract_target(
     repository: &ResolvedRepositoryPaths,
@@ -261,6 +273,38 @@ pub(super) async fn extract_target(
     reporting: &Reporting,
     deadlines: ExecutionDeadlines,
     cancellation: &mut ExecutionCancellation<'_>,
+) -> Result<RustNativeExtraction, AssemblyError> {
+    extract_target_cached(
+        repository,
+        package,
+        target,
+        settings,
+        cache_root,
+        run_examples,
+        reporting,
+        deadlines,
+        cancellation,
+        None,
+    )
+    .await
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(super) async fn extract_target_cached(
+    repository: &ResolvedRepositoryPaths,
+    package: &ResolvedPackagePaths,
+    target: &ResolvedTargetPath,
+    settings: &RustTargetConfiguration,
+    cache_root: &Path,
+    run_examples: bool,
+    reporting: &Reporting,
+    deadlines: ExecutionDeadlines,
+    cancellation: &mut ExecutionCancellation<'_>,
+    cache: Option<&(
+        crate::incremental::Store,
+        String,
+        crate::incremental::Manifest,
+    )>,
 ) -> Result<RustNativeExtraction, AssemblyError> {
     let timing = reporting.phase(Phase::Extraction, Some(&package.id), Some(&target.id));
     let toolchain = std::env::var_os("DIPLODOCUS_RUST_TOOLCHAIN")
@@ -463,93 +507,16 @@ pub(super) async fn extract_target(
     }) {
         return Err(native.failure(DiagnosticCode::RustMetadata, "Local Cargo dependencies must stay inside the declared repository so their source inputs can be fingerprinted."));
     }
+    let cache_timing = reporting.phase(Phase::CacheValidation, Some(&package.id), Some(&target.id));
+    let reached = reachable(&metadata, selected);
     let roots: Vec<_> = metadata
         .packages
         .iter()
+        .filter(|package| reached.contains(package.id.as_str()))
         .filter(|p| p.source.is_none())
         .filter_map(|p| p.manifest_path.parent())
         .filter(|p| p.starts_with(&repository.path))
         .map(Path::to_owned)
-        .collect();
-    let mut extra = BTreeSet::new();
-    let before = inventory(repository, &roots, &extra, &native.build)?;
-    let dep_info = native.build.join("rustdoc-inputs.d");
-    let mut dep_command = native.cargo("rustdoc", selected, host);
-    dep_command
-        .arg("--")
-        .args(["-Zunstable-options", "--document-private-items"])
-        .arg(format!("--emit=dep-info={}", dep_info.display()));
-    native
-        .run(
-            dep_command,
-            DiagnosticCode::RustExtraction,
-            "Rustdoc input discovery",
-            false,
-            cancellation,
-        )
-        .await?;
-    if inventory(repository, &roots, &extra, &native.build)? != before {
-        return Err(AssemblyError::InputsChanged);
-    }
-    for path in dependency_paths(&fs::read_to_string(&dep_info)?) {
-        let absolute = if path.is_absolute() {
-            path
-        } else {
-            package.path.join(path)
-        };
-        if absolute.is_file() {
-            let canonical = fs::canonicalize(&absolute)?;
-            if (absolute.starts_with(&repository.path) || canonical.starts_with(&repository.path))
-                && !canonical.starts_with(&native.build)
-            {
-                let source = repository.source_location(&absolute, None)?;
-                extra.insert(repository.path.join(source.path.as_str()));
-            }
-        }
-    }
-    let inputs = inventory(repository, &roots, &extra, &native.build)?;
-    let mut extract_command = native.cargo("rustdoc", selected, host);
-    extract_command.arg("--").args([
-        "-Zunstable-options",
-        "--output-format=json",
-        "--document-private-items",
-    ]);
-    native
-        .run(
-            extract_command,
-            DiagnosticCode::RustExtraction,
-            "Rustdoc API extraction",
-            false,
-            cancellation,
-        )
-        .await?;
-    if inventory(repository, &roots, &extra, &native.build)? != inputs {
-        return Err(AssemblyError::InputsChanged);
-    }
-    let json_path = native
-        .build
-        .join(host)
-        .join("doc")
-        .join(format!("{}.json", library.name.replace('-', "_")));
-    let json = dependency_documentation_urls(&metadata, &fs::read(&json_path)?)?;
-    let extraction = extract_rustdoc(repository, package, target, &json);
-    let parser = "rustdoc-json".to_owned();
-    let input_records = inputs
-        .iter()
-        .map(|input| {
-            (
-                input.source.path.clone(),
-                ExtractionInput {
-                    kind: "rust-compiler-input".into(),
-                    fingerprint: input.fingerprint.clone(),
-                    parsers: BTreeSet::from([
-                        parser.clone(),
-                        "panache-parser".into(),
-                        "rustdoc-types".into(),
-                    ]),
-                },
-            )
-        })
         .collect();
     let features = metadata
         .resolve
@@ -557,113 +524,338 @@ pub(super) async fn extract_target(
         .and_then(|resolve| resolve.nodes.iter().find(|node| node.id == selected.id))
         .map(|node| node.features.clone())
         .unwrap_or_default();
-    let provenance = Provenance {
-        activity: ProvenanceActivity::Extraction {
-            target: TargetReference {
-                package: package.id.clone(),
-                target: target.id.clone(),
-            },
-            mode: ExtractionMode::Compiler,
-            capabilities: BTreeSet::from([
-                "rust-public-api".into(),
-                "rustdoc-links".into(),
-                "rust-implementations".into(),
-            ]),
-            parsers: BTreeMap::from([
-                (
-                    "rustdoc-types".into(),
-                    ParserProvenance {
-                        version: "0.61.0".into(),
-                        role: "rustdoc-json-schema".into(),
-                        settings: BTreeMap::from([(
-                            "format-version".into(),
-                            rustdoc_types::FORMAT_VERSION.to_string(),
-                        )]),
-                    },
-                ),
-                (
-                    "panache-parser".into(),
-                    ParserProvenance {
-                        version: crate::provenance::PANACHE_VERSION.into(),
-                        role: "rustdoc-markdown".into(),
-                        settings: BTreeMap::from([("format".into(), "gfm".into())]),
-                    },
-                ),
-                (
-                    parser,
-                    ParserProvenance {
-                        version: "61".into(),
-                        role: "rust-public-api".into(),
-                        settings: BTreeMap::from([
-                            ("toolchain".into(), "nightly-2026-09-28".into()),
-                            ("host".into(), (*host).into()),
-                            ("features".into(), features.join(",")),
-                            ("native-preparation-ms".into(), "600000".into()),
-                            ("doctest-cell-ms".into(), deadlines.cell.max(1).to_string()),
-                            (
-                                "rustdoc-flags-sha256".into(),
-                                fingerprint_bytes(native.rustdoc_flags.join("\u{1f}").as_bytes())
-                                    .value,
-                            ),
-                            (
-                                "default-features".into(),
-                                settings.default_features.to_string(),
-                            ),
-                        ]),
-                    },
-                ),
-            ]),
-            inputs: BTreeMap::from([(repository.id.clone(), input_records)]),
-        },
-        source: Some(DiagnosticSource::Repository {
-            repository: repository.id.clone(),
-            path: repository.source_location(&target.path, None)?.path,
-        }),
-        span: None,
-        tools: BTreeMap::from([
-            (
-                "cargo".into(),
-                cargo_version.lines().next().unwrap_or_default().into(),
-            ),
-            ("rustc".into(), compiler_version.clone()),
-            (
-                "rustdoc".into(),
-                rustdoc_version.lines().next().unwrap_or_default().into(),
-            ),
-            ("diplodocus".into(), env!("CARGO_PKG_VERSION").into()),
-        ]),
-    };
-    timing.finish();
-    let doctests = if run_examples {
-        let timing = reporting.phase(Phase::Examples, Some(&package.id), Some(&target.id));
-        let examples = execute_doctests(&native, selected, host, cancellation).await?;
+    let cache = cache.filter(|_| {
+        metadata
+            .packages
+            .iter()
+            .filter(|package| reached.contains(package.id.as_str()))
+            .all(|package| {
+                package.targets.iter().all(|target| {
+                    !target
+                        .kind
+                        .iter()
+                        .any(|kind| matches!(kind.as_str(), "custom-build" | "proc-macro"))
+                })
+            })
+    });
+    let cache_observation =
+        cache.and_then(|_| cache_manifest(&native, &metadata, &reached, &[]).ok());
+    let cache_key =
+        cache
+            .zip(cache_observation.as_ref())
+            .map(|((_, build, supplemental), observation)| {
+                crate::incremental::key(&(
+                    "rust-native-v1",
+                    &package.id,
+                    &target.id,
+                    &target.path,
+                    settings,
+                    build,
+                    supplemental,
+                    observation,
+                    &compiler_version,
+                    &rustdoc_version,
+                    &cargo_version,
+                    &cargo_configuration,
+                    metadata
+                        .packages
+                        .iter()
+                        .filter(|package| reached.contains(package.id.as_str()))
+                        .collect::<Vec<_>>(),
+                    &features,
+                    deadlines.cell,
+                ))
+            });
+    let cached = cache
+        .zip(cache_key.as_ref())
+        .and_then(|((store, _, _), key)| store.load::<CachedDiscovery>("rust-discovery", key))
+        .filter(|cached| {
+            let valid = cached.observation.verify()
+                && inventory(repository, &roots, &cached.extra, &native.build)
+                    .is_ok_and(|inputs| inputs == cached.inputs);
+            if !valid && let Some(((store, _, _), key)) = cache.zip(cache_key.as_ref()) {
+                let _ = store.discard("rust-discovery", key);
+            }
+            valid
+        });
+    reporting.cache(
+        "rust-discovery",
+        &package.id,
+        cached.is_some(),
+        cache
+            .is_none()
+            .then_some("dependency coverage is incomplete"),
+    );
+    cache_timing.finish();
+    let (extraction, provenance, inputs, extra, observation) = if let Some(cached) = cached {
+        (
+            cached.extraction,
+            cached.provenance,
+            cached.inputs,
+            cached.extra,
+            Some(cached.observation),
+        )
+    } else {
+        let mut extra = BTreeSet::new();
+        let mut cache_extra = Vec::new();
+        let before = inventory(repository, &roots, &extra, &native.build)?;
+        let dep_info = native.build.join("rustdoc-inputs.d");
+        let mut dep_command = native.cargo("rustdoc", selected, host);
+        dep_command
+            .arg("--")
+            .args(["-Zunstable-options", "--document-private-items"])
+            .arg(format!("--emit=dep-info={}", dep_info.display()));
+        native
+            .run(
+                dep_command,
+                DiagnosticCode::RustExtraction,
+                "Rustdoc input discovery",
+                false,
+                cancellation,
+            )
+            .await?;
+        if inventory(repository, &roots, &extra, &native.build)? != before {
+            return Err(AssemblyError::InputsChanged);
+        }
+        for path in dependency_paths(&fs::read_to_string(&dep_info)?) {
+            let absolute = if path.is_absolute() {
+                path
+            } else {
+                package.path.join(path)
+            };
+            if absolute.is_file() {
+                let canonical = fs::canonicalize(&absolute)?;
+                if !canonical.starts_with(&native.build) {
+                    cache_extra.push(absolute.clone());
+                }
+                if (absolute.starts_with(&repository.path)
+                    || canonical.starts_with(&repository.path))
+                    && !canonical.starts_with(&native.build)
+                {
+                    let source = repository.source_location(&absolute, None)?;
+                    extra.insert(repository.path.join(source.path.as_str()));
+                }
+            }
+        }
+        let inputs = inventory(repository, &roots, &extra, &native.build)?;
+        let observation =
+            cache.and_then(|_| cache_manifest(&native, &metadata, &reached, &cache_extra).ok());
+        let mut extract_command = native.cargo("rustdoc", selected, host);
+        extract_command.arg("--").args([
+            "-Zunstable-options",
+            "--output-format=json",
+            "--document-private-items",
+        ]);
+        native
+            .run(
+                extract_command,
+                DiagnosticCode::RustExtraction,
+                "Rustdoc API extraction",
+                false,
+                cancellation,
+            )
+            .await?;
         if inventory(repository, &roots, &extra, &native.build)? != inputs {
             return Err(AssemblyError::InputsChanged);
         }
-        timing.finish();
-        Some(Provenance {
-            activity: ProvenanceActivity::RustDoctests {
+        let json_path = native
+            .build
+            .join(host)
+            .join("doc")
+            .join(format!("{}.json", library.name.replace('-', "_")));
+        let json = dependency_documentation_urls(&metadata, &fs::read(&json_path)?)?;
+        let extraction = extract_rustdoc(repository, package, target, &json);
+        let parser = "rustdoc-json".to_owned();
+        let input_records = inputs
+            .iter()
+            .map(|input| {
+                (
+                    input.source.path.clone(),
+                    ExtractionInput {
+                        kind: "rust-compiler-input".into(),
+                        fingerprint: input.fingerprint.clone(),
+                        parsers: BTreeSet::from([
+                            parser.clone(),
+                            "panache-parser".into(),
+                            "rustdoc-types".into(),
+                        ]),
+                    },
+                )
+            })
+            .collect();
+        let provenance = Provenance {
+            activity: ProvenanceActivity::Extraction {
                 target: TargetReference {
                     package: package.id.clone(),
                     target: target.id.clone(),
                 },
-                policy: "rustdoc-doctest-v1".into(),
-                package_name: selected.name.clone(),
-                package_version: selected.version.clone(),
-                compiler_version,
-                dependencies: dependencies(&metadata, selected),
-                features,
-                host: (*host).into(),
-                inputs,
-                examples,
+                mode: ExtractionMode::Compiler,
+                capabilities: BTreeSet::from([
+                    "rust-public-api".into(),
+                    "rustdoc-links".into(),
+                    "rust-implementations".into(),
+                ]),
+                parsers: BTreeMap::from([
+                    (
+                        "rustdoc-types".into(),
+                        ParserProvenance {
+                            version: "0.61.0".into(),
+                            role: "rustdoc-json-schema".into(),
+                            settings: BTreeMap::from([(
+                                "format-version".into(),
+                                rustdoc_types::FORMAT_VERSION.to_string(),
+                            )]),
+                        },
+                    ),
+                    (
+                        "panache-parser".into(),
+                        ParserProvenance {
+                            version: crate::provenance::PANACHE_VERSION.into(),
+                            role: "rustdoc-markdown".into(),
+                            settings: BTreeMap::from([("format".into(), "gfm".into())]),
+                        },
+                    ),
+                    (
+                        parser,
+                        ParserProvenance {
+                            version: "61".into(),
+                            role: "rust-public-api".into(),
+                            settings: BTreeMap::from([
+                                ("toolchain".into(), "nightly-2026-09-28".into()),
+                                ("host".into(), (*host).into()),
+                                ("features".into(), features.join(",")),
+                                ("native-preparation-ms".into(), "600000".into()),
+                                ("doctest-cell-ms".into(), deadlines.cell.max(1).to_string()),
+                                (
+                                    "rustdoc-flags-sha256".into(),
+                                    fingerprint_bytes(
+                                        native.rustdoc_flags.join("\u{1f}").as_bytes(),
+                                    )
+                                    .value,
+                                ),
+                                (
+                                    "default-features".into(),
+                                    settings.default_features.to_string(),
+                                ),
+                            ]),
+                        },
+                    ),
+                ]),
+                inputs: BTreeMap::from([(repository.id.clone(), input_records)]),
             },
-            source: None,
+            source: Some(DiagnosticSource::Repository {
+                repository: repository.id.clone(),
+                path: repository.source_location(&target.path, None)?.path,
+            }),
             span: None,
-            tools: provenance.tools.clone(),
-        })
+            tools: BTreeMap::from([
+                (
+                    "cargo".into(),
+                    cargo_version.lines().next().unwrap_or_default().into(),
+                ),
+                ("rustc".into(), compiler_version.clone()),
+                (
+                    "rustdoc".into(),
+                    rustdoc_version.lines().next().unwrap_or_default().into(),
+                ),
+                ("diplodocus".into(), env!("CARGO_PKG_VERSION").into()),
+            ]),
+        };
+        if observation
+            .as_ref()
+            .is_some_and(|manifest| !manifest.verify())
+        {
+            return Err(AssemblyError::InputsChanged);
+        }
+        if let (Some((store, _, supplemental)), Some(key), Some(observation)) =
+            (cache, &cache_key, &observation)
+            && supplemental.verify()
+            && observation.verify()
+            && extraction
+                .diagnostics
+                .iter()
+                .all(|diagnostic| diagnostic.severity != Severity::Error)
+            && store
+                .save(
+                    "rust-discovery",
+                    key,
+                    &CachedDiscovery {
+                        extraction: extraction.clone(),
+                        provenance: provenance.clone(),
+                        inputs: inputs.clone(),
+                        extra: extra.clone(),
+                        observation: observation.clone(),
+                    },
+                )
+                .is_err()
+        {
+            reporting.emit(crate::reporting::Event::Warning(
+                "The completed Rust extraction could not be cached.",
+            ));
+        }
+        (extraction, provenance, inputs, extra, observation)
+    };
+    timing.finish();
+    let execution_key = cache_key
+        .as_ref()
+        .map(|key| crate::incremental::key(&(key, &observation, &inputs)));
+    let doctests = if run_examples {
+        let cached = cache
+            .zip(execution_key.as_ref())
+            .and_then(|((store, _, _), key)| store.load::<Provenance>("rust-doctests", key));
+        reporting.cache("rust-doctests", &package.id, cached.is_some(), None);
+        if let Some(cached) = cached {
+            Some(cached)
+        } else {
+            let timing = reporting.phase(Phase::Examples, Some(&package.id), Some(&target.id));
+            let examples = execute_doctests(&native, selected, host, cancellation).await?;
+            if inventory(repository, &roots, &extra, &native.build)? != inputs {
+                return Err(AssemblyError::InputsChanged);
+            }
+            timing.finish();
+            let completed = Provenance {
+                activity: ProvenanceActivity::RustDoctests {
+                    target: TargetReference {
+                        package: package.id.clone(),
+                        target: target.id.clone(),
+                    },
+                    policy: "rustdoc-doctest-v1".into(),
+                    package_name: selected.name.clone(),
+                    package_version: selected.version.clone(),
+                    compiler_version,
+                    dependencies: dependencies(&metadata, selected),
+                    features,
+                    host: (*host).into(),
+                    inputs: inputs.clone(),
+                    examples,
+                },
+                source: None,
+                span: None,
+                tools: provenance.tools.clone(),
+            };
+            if let (Some((store, _, supplemental)), Some(key), Some(observation)) =
+                (cache, &execution_key, &observation)
+                && supplemental.verify()
+                && observation.verify()
+                && store.save("rust-doctests", key, &completed).is_err()
+            {
+                reporting.emit(crate::reporting::Event::Warning(
+                    "The completed Rust examples could not be cached.",
+                ));
+            }
+            Some(completed)
+        }
     } else {
         None
     };
+    if inventory(repository, &roots, &extra, &native.build)? != inputs
+        || observation
+            .as_ref()
+            .is_some_and(|manifest| !manifest.verify())
+        || cache.is_some_and(|(_, _, supplemental)| !supplemental.verify())
+    {
+        return Err(AssemblyError::InputsChanged);
+    }
     Ok(RustNativeExtraction {
         extraction,
         metadata: RustMetadata {
@@ -684,6 +876,7 @@ pub(super) async fn extract_target(
         },
         provenance,
         doctests,
+        observation,
     })
 }
 
@@ -792,6 +985,16 @@ fn dependency_documentation_urls(
 }
 
 fn dependencies(metadata: &Metadata, package: &CargoPackage) -> BTreeMap<String, String> {
+    let reached = reachable(metadata, package);
+    metadata
+        .packages
+        .iter()
+        .filter(|p| p.id != package.id && reached.contains(p.id.as_str()))
+        .map(|p| (format!("{}@{}", p.name, p.version), p.version.clone()))
+        .collect()
+}
+
+fn reachable<'a>(metadata: &'a Metadata, package: &'a CargoPackage) -> BTreeSet<&'a str> {
     let mut pending = vec![package.id.as_str()];
     let mut reached = BTreeSet::new();
     while let Some(id) = pending.pop() {
@@ -806,12 +1009,60 @@ fn dependencies(metadata: &Metadata, package: &CargoPackage) -> BTreeMap<String,
             pending.extend(node.dependencies.iter().map(String::as_str));
         }
     }
-    metadata
+    reached
+}
+
+fn cache_manifest(
+    native: &Native<'_>,
+    metadata: &Metadata,
+    reached: &BTreeSet<&str>,
+    extra: &[PathBuf],
+) -> std::io::Result<crate::incremental::Manifest> {
+    let mut roots: Vec<_> = metadata
         .packages
         .iter()
-        .filter(|p| p.id != package.id && reached.contains(p.id.as_str()))
-        .map(|p| (format!("{}@{}", p.name, p.version), p.version.clone()))
-        .collect()
+        .filter(|package| reached.contains(package.id.as_str()))
+        .filter_map(|package| package.manifest_path.parent().map(Path::to_owned))
+        .collect();
+    roots.extend(extra.iter().cloned());
+    roots.extend([native.toolchain.join("bin"), native.toolchain.join("lib")]);
+    let cargo_home = std::env::var_os("CARGO_HOME")
+        .map(PathBuf::from)
+        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".cargo")));
+    if let Some(home) = cargo_home {
+        roots.extend([home.join("config"), home.join("config.toml")]);
+    }
+    let mut environment: Vec<_> = std::env::vars_os()
+        .filter_map(|(name, _)| name.into_string().ok())
+        .filter(|name| {
+            name.starts_with("CARGO_")
+                || name.starts_with("RUST")
+                || name.starts_with("LD_")
+                || name.starts_with("DYLD_")
+                || name.starts_with("CC_")
+                || name.starts_with("CXX_")
+        })
+        .collect();
+    environment.extend(
+        [
+            "PATH",
+            "LANG",
+            "LC_ALL",
+            "TZ",
+            "CC",
+            "CXX",
+            "AR",
+            "DIPLODOCUS_RUST_TOOLCHAIN",
+        ]
+        .map(str::to_owned),
+    );
+    environment.sort();
+    environment.dedup();
+    crate::incremental::Manifest::capture_excluding(
+        &roots,
+        &environment,
+        std::slice::from_ref(&native.build),
+    )
 }
 
 fn effective_rustdoc_flags(configuration: &Value) -> Vec<String> {
@@ -1242,6 +1493,108 @@ mod tests {
                 target,
             }
         }
+    }
+
+    #[tokio::test]
+    async fn persistent_discovery_and_doctests_have_independent_cache_entries() {
+        if std::env::var_os("DIPLODOCUS_RUST_TOOLCHAIN").is_none() {
+            return;
+        }
+        use std::sync::{Arc, Mutex};
+        struct Events(Mutex<Vec<(&'static str, bool)>>);
+        impl crate::reporting::Reporter for Events {
+            fn report(&self, event: crate::reporting::Event<'_>) {
+                if let crate::reporting::Event::Cache { stage, hit, .. } = event {
+                    self.0.lock().unwrap().push((stage, hit));
+                }
+            }
+        }
+        crate::incremental::scope_async(crate::incremental::CachePolicy::Auto, async {
+            let evidence = tempfile::tempdir().unwrap();
+            let marker = evidence.path().join("example-ran");
+            let fixture = Fixture::new(&format!(
+                "//! ```\n//! std::fs::write({:?}, \"ran\").unwrap();\n//! ```",
+                marker
+            ));
+            let compiler_cache = tempfile::tempdir().unwrap();
+            let store = crate::incremental::Store::new(fixture.directory.path()).unwrap();
+            let context = (
+                store,
+                "test-producer".into(),
+                crate::incremental::Manifest::capture(&[], &[]).unwrap(),
+            );
+            let events = Arc::new(Events(Mutex::new(Vec::new())));
+            let reporting = Reporting::new(events.clone());
+            let mut cancellation: ExecutionCancellation<'_> = Box::pin(std::future::pending());
+            let mut previous = None;
+            for run_examples in [false, true, true] {
+                let result = extract_target_cached(
+                    &fixture.repository,
+                    &fixture.package,
+                    &fixture.target,
+                    &RustTargetConfiguration::default(),
+                    compiler_cache.path(),
+                    run_examples,
+                    &reporting,
+                    ExecutionDeadlines::default(),
+                    &mut cancellation,
+                    Some(&context),
+                )
+                .await
+                .unwrap();
+                if let Some(previous) = previous {
+                    assert_eq!(previous, result.extraction);
+                }
+                previous = Some(result.extraction);
+                assert!(result.observation.unwrap().verify());
+                if marker.exists() {
+                    fs::remove_file(&marker).unwrap();
+                }
+            }
+            assert!(!marker.exists());
+            assert_eq!(
+                *events.0.lock().unwrap(),
+                [
+                    ("rust-discovery", false),
+                    ("rust-discovery", true),
+                    ("rust-doctests", false),
+                    ("rust-discovery", true),
+                    ("rust-doctests", true),
+                ]
+            );
+            let source = fixture.package.path.join("src/lib.rs");
+            fs::write(
+                &source,
+                format!(
+                    "{}\n// Changed source invalidates example execution.\n",
+                    fs::read_to_string(&source).unwrap()
+                ),
+            )
+            .unwrap();
+            extract_target_cached(
+                &fixture.repository,
+                &fixture.package,
+                &fixture.target,
+                &RustTargetConfiguration::default(),
+                compiler_cache.path(),
+                true,
+                &reporting,
+                ExecutionDeadlines::default(),
+                &mut cancellation,
+                Some(&context),
+            )
+            .await
+            .unwrap();
+            assert!(marker.exists());
+            assert!(
+                events
+                    .0
+                    .lock()
+                    .unwrap()
+                    .ends_with(&[("rust-discovery", false), ("rust-doctests", false)])
+            );
+        })
+        .await;
     }
 
     #[test]

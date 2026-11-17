@@ -23,6 +23,17 @@ pub trait Reporter: Send + Sync {
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum Event<'a> {
+    /// A result cache was consulted for a package or document.
+    Cache {
+        /// Pipeline stage whose result may be reused.
+        stage: &'static str,
+        /// Owning package or document identifier.
+        owner: &'a str,
+        /// Whether a verified result was restored.
+        hit: bool,
+        /// Explanation for a miss or ineligible stage, without local secrets.
+        reason: Option<&'a str>,
+    },
     /// A timed pipeline phase began. Independent of human-facing progress stages.
     PhaseStarted {
         /// Identifier paired with exactly one `PhaseFinished` event.
@@ -138,6 +149,14 @@ impl Default for Reporting {
 }
 
 impl Reporting {
+    pub(crate) fn cache(&self, stage: &'static str, owner: &str, hit: bool, reason: Option<&str>) {
+        self.emit(Event::Cache {
+            stage,
+            owner,
+            hit,
+            reason,
+        });
+    }
     pub(crate) fn new(reporter: Arc<dyn Reporter>) -> Self {
         Self(reporter)
     }

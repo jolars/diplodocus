@@ -173,11 +173,27 @@ class Worker:
         self.reader.start()
 
     def read(self):
+        polls = {}
         try:
             for line in self.process.stdout:
-                self.lines.put((time.monotonic(), json.loads(line)))
+                event = json.loads(line)
+                if event["event"] == "phase-started" and event["phase"] == "watch-poll":
+                    polls[event["id"]] = event
+                    continue
+                if event["event"] == "phase-finished" and event["id"] in polls:
+                    # Idle polling can cross a sample boundary. Queue its phase pair
+                    # together so every recorded sample retains balanced telemetry.
+                    event = {"event": "watch-poll", "events": [polls.pop(event["id"]), event]}
+                self.lines.put((time.monotonic(), event))
         finally:
             self.lines.put((time.monotonic(), None))
+
+    def record_event(self, event):
+        if event["event"] == "watch-poll":
+            self.events.extend(event["events"])
+            return False
+        self.events.append(event)
+        return True
 
     def until(self, name, timeout, allow_failure=False):
         deadline = time.monotonic() + timeout
@@ -186,7 +202,8 @@ class Worker:
             if event is None:
                 self.errors.seek(0)
                 raise RuntimeError(self.errors.read() or "Benchmark worker exited")
-            self.events.append(event)
+            if not self.record_event(event):
+                continue
             if event["event"] == "watching" and event["retained_previous"] and not allow_failure:
                 raise RuntimeError(f"Rebuild failed; previous site retained: {self.events[-8:]}")
             if event["event"] == name:
@@ -251,13 +268,15 @@ def generation_edits(root):
 
 def assert_idle(worker, timeout=.6):
     """A generated checkout write must not queue another command by itself."""
-    try:
-        _, event = worker.lines.get(timeout=timeout)
-    except queue.Empty:
-        return
-    if event is not None:
-        worker.events.append(event)
-    raise RuntimeError(f"Preview did not remain idle after generation: {event}")
+    deadline = time.monotonic() + timeout
+    while True:
+        try:
+            _, event = worker.lines.get(timeout=max(0, deadline - time.monotonic()))
+        except queue.Empty:
+            return
+        if event is not None and not worker.record_event(event):
+            continue
+        raise RuntimeError(f"Preview did not remain idle after generation: {event}")
 
 
 def generation_recovery(worker, root, args):
@@ -359,6 +378,7 @@ def measure(binary, scenario, args, result):
                         if generated:
                             assert_idle(worker)
                         result["samples"].append(record)
+                        print(f"  {edit['kind']} {save + 1}/{args.saves}: {record['seconds']:.3f}s", flush=True)
                     # Restore between mutation categories, and await its build if needed.
                     if args.saves % 2:
                         for change in [edit, *edit.get("companions", [])]:
@@ -369,6 +389,21 @@ def measure(binary, scenario, args, result):
                             assert_idle(worker)
                 if generated and sample == 0:
                     result["generation_recovery"] = generation_recovery(worker, root, args)
+                if args.warm_restart:
+                    expected_files = inventory(root / "site")
+                    expected_snapshot = snapshot_info(root)["fingerprint"]
+                    worker.close()
+                    worker = Worker(binary, config, root / "site")
+                    ready = worker.until("ready", args.timeout)
+                    worker.until("watching", args.timeout)
+                    record = {"kind": "warm-startup", "seconds": ready - worker.started,
+                              "events": list(worker.events), **snapshot_info(root)}
+                    if expected_files != inventory(root / "site") or expected_snapshot != record["fingerprint"]:
+                        raise RuntimeError("Restarting with retained caches changed the completed site or snapshot")
+                    if generated:
+                        assert_idle(worker)
+                    result["samples"].append(record)
+                    print(f"  Warm restart {sample + 1}/{args.samples}: {record['seconds']:.3f}s", flush=True)
             finally:
                 worker.close()
     result["summary"] = summarize(result["samples"])
@@ -382,6 +417,19 @@ def summarize(samples):
     return {kind: {"count": len(values), "median_seconds": statistics.median(values),
                    "p95_seconds": sorted(values)[math.ceil(len(values) * .95) - 1]}
             for kind, values in groups.items()}
+
+
+def cache_summary(samples):
+    groups = {}
+    for sample in samples:
+        for event in sample["events"]:
+            if event["event"] != "cache":
+                continue
+            key = (sample["kind"], event["stage"], event["owner"])
+            counts = groups.setdefault(key, {"hits": 0, "misses": 0})
+            counts["hits" if event["hit"] else "misses"] += 1
+    return [{"kind": kind, "stage": stage, "owner": owner, **counts}
+            for (kind, stage, owner), counts in sorted(groups.items())]
 
 
 def phase_summary(samples):
@@ -445,6 +493,8 @@ def main():
                         help="copy this prepared shared library into temporary qualpalr src/ before measuring")
     parser.add_argument("--samples", type=int, default=5)
     parser.add_argument("--saves", type=int, default=2)
+    parser.add_argument("--warm-restart", action="store_true",
+                        help="measure one restart per workspace with completed caches retained")
     parser.add_argument("--timeout", type=float, default=600)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
@@ -461,6 +511,7 @@ def main():
               "producer_revisions": {"qualpal": revision(args.qualpal), "qualpalr": revision(args.qualpalr)},
               "protocol": {"startup_samples": args.samples, "saves_per_startup_per_kind": args.saves,
                            "startup_cache": "fresh Diplodocus cache; shared warmed OS/runtime caches",
+                           "warm_restart": args.warm_restart,
                            "timings": "inclusive host phases; native subphases overlap host durations"},
               "workers": {}}
     if args.qualpalr_patch is not None or args.qualpalr_dll is not None:
@@ -494,6 +545,7 @@ def main():
                 result.update(status="blocked", error=str(error) or "Worker timed out")
             result["summary"] = summarize(result["samples"])
             result["phase_summary"] = phase_summary(result["samples"])
+            result["cache_summary"] = cache_summary(result["samples"])
             results["scenarios"].append(result)
             args.output.parent.mkdir(parents=True, exist_ok=True)
             args.output.write_text(json.dumps(report, indent=2) + "\n")

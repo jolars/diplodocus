@@ -31,7 +31,7 @@ pub struct PreparedDocument {
 /// Valid disabled pages retain their cells and options. This record is not an
 /// execution request or proof of authorization; callers still gate dispatch on
 /// the command being run. In particular, checks must never dispatch execution.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct QmdPreparation {
     /// Effective inheritable options with winning declaration origins.
     pub defaults: ExecutionDefaults,

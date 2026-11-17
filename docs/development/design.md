@@ -113,6 +113,60 @@ toolchain identity, validation policy, and declared environment inputs. A hit
 still verifies kernel readiness and revalidates the retained outputs. The cache
 is disposable local state, separate from the portable snapshot.
 
+## Incremental work retains verified results {#incremental-work-retains-verified-results}
+
+Normal source commands keep disposable results in
+`.diplodocus/cache/incremental/` beside the workspace configuration. Each adapter
+invalidates at package granularity. Authored preparation has a separate page
+cache, and documentation generation and example execution have separate entries.
+These caches persist across commands and server restarts. `--no-cache` bypasses
+reads and writes; package and collection `incremental.cache: off` disables reuse
+for that unit.
+
+A cache identity includes the executable build, relevant configuration, source
+bytes and directory membership, native environment evidence, dependencies, and
+declared extra inputs and environment variables. Declared package dependencies
+propagate transitively. Adapters decline reuse when dependency coverage is
+uncertain. An edit to a comment still changes package inputs because inheritance,
+loaders, and evaluated documentation can read source text.
+
+Restored records remain candidates. Assembly reconstructs local paths and
+observations, resolves references again, and applies the normal semantic and
+output validators. Generated assets retain owned, digest-checked bytes; cache
+records cannot borrow a previous attempt's temporary staging. Failed native work
+does not produce a successful cache entry or replace completed execution evidence.
+
+The watcher polls every 100 ms and debounces saves for 200 ms. It discovers
+configured inputs without running an extra assembly, then extends subscriptions
+with inputs observed during the attempted build. Generated writes are
+acknowledged by their exact fingerprints so concurrent source edits remain
+pending. Missing includes and assets remain subscribed for recovery.
+
+Maintained checkout files are hashed on each scan. For external dependency files,
+the watcher reuses hashes while file and symlink metadata match. On Unix the
+signature includes inode, size, modification time, and change time. The memo is
+limited to current subscriptions, and directory observations detect membership
+changes. Dynamic library search directories inspect matching libraries one level
+deep. Verification also reuses digests and snapshot classifications for canonical
+Nix store files when their complete metadata signatures still match. Mutable
+checkout inputs retain exact content hashing at the build boundary.
+
+Each verification boundary shares current file observations and directory
+inventories across overlapping dependency manifests. Assembly compares every
+retained manifest against those observations, including conflicting earlier
+observations, then drops the shared state before the next native operation.
+Ordinary paths reuse their resolved parent within that boundary; symlinks retain
+normal target resolution. Watcher captures also deduplicate paths before reading
+them and share metadata-guarded hashes between an attempt's subscription captures.
+These local optimizations preserve separate symlink bindings, missing paths, and
+directory membership checks. Commands without watching skip subscription capture.
+
+Every build recomputes workspace references, routes, navigation, and search, and
+renders a complete site. Atomic output replacement removes deleted pages and
+unused assets. Browser refresh is enabled by default for `serve` and occurs only
+after successful publication; `--no-live-reload` disables it. No provisional
+execution evidence or persistent language worker is introduced.
+
 ## A snapshot separates extraction from generation
 
 `extract` assembles and validates the documentation, completes execution, and
@@ -166,6 +220,6 @@ will succeed.
 The boundaries between adapters, assembly, snapshots, the site model, and
 rendering also organize the code in `src/`. They allow changes to one language
 or frontend without making every other part understand its implementation.
-External plugin interfaces, incremental generation, and historical release
+External plugin interfaces, selective page rendering, and historical release
 assembly remain future work; the current design centers on one complete
 documentation snapshot of the supplied sources.

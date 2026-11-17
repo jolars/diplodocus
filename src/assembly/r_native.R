@@ -210,6 +210,7 @@ local({
                       package_name = expected_name, package_version = expected_version,
                       dependencies = dependencies, exports = I(exports),
                       bindings = bindings, methods = methods)
+  write_native_environment(output, root)
   strict(pkgload::unload(expected_name))
   writeLines(jsonlite::toJSON(list(complete = "r-native-v1", observation = observation,
                                   generation = generation, warnings = I(unique(runtime_warnings))), auto_unbox = TRUE, null = "null"),

@@ -582,7 +582,7 @@ fn finish_provenance(result: &mut RExtraction) {
         parsers.insert(
             "arity-parser".into(),
             ParserProvenance {
-                version: "0.6.1".into(),
+                version: env!("DIPLODOCUS_ARITY_VERSION").into(),
                 role: "r-metadata-namespace-source".into(),
                 settings: grammars,
             },
@@ -674,7 +674,10 @@ fn provenance(source: &SourceLocation, rd: bool) -> Provenance {
             ("rd-ast".into(), "0.5.0".into()),
         ]);
     } else {
-        tools.insert("arity-parser".into(), "0.6.1".into());
+        tools.insert(
+            "arity-parser".into(),
+            env!("DIPLODOCUS_ARITY_VERSION").into(),
+        );
     }
     Provenance {
         activity: ProvenanceActivity::Declaration,

@@ -6,7 +6,7 @@ use crate::diagnostics::DiagnosticEntity;
 use crate::extractors::r::{self, NativeObservation, RExtraction};
 use crate::ir::{InputFingerprint, Provenance, ProvenanceActivity, RMetadata};
 use crate::paths::{ResolvedPackagePaths, ResolvedRepositoryPaths};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 use std::process::Stdio;
 use std::time::Duration;
@@ -50,15 +50,32 @@ pub(super) struct RObservation {
     root: PathBuf,
     extra_roots: Vec<PathBuf>,
     inputs: BTreeMap<PathBuf, Fingerprint>,
+    dependencies: Vec<crate::incremental::Manifest>,
 }
 
 impl RObservation {
+    pub(super) fn dependency_roots(&self) -> impl Iterator<Item = &PathBuf> {
+        self.dependencies
+            .iter()
+            .flat_map(|manifest| manifest.roots())
+    }
+    pub(super) fn dependency_library_roots(&self) -> impl Iterator<Item = &PathBuf> {
+        self.dependencies
+            .iter()
+            .flat_map(|manifest| manifest.native_library_roots())
+    }
     pub(super) fn paths(&self) -> impl Iterator<Item = &PathBuf> {
-        self.inputs.keys()
+        self.inputs.keys().chain(
+            self.dependencies
+                .iter()
+                .flat_map(|manifest| manifest.paths()),
+        )
     }
 
     pub(super) fn verify(&self) -> Result<(), AssemblyError> {
-        if inventory(&self.repository, &self.root, &self.extra_roots)? != self.inputs {
+        if inventory(&self.repository, &self.root, &self.extra_roots)? != self.inputs
+            || self.dependencies.iter().any(|manifest| !manifest.verify())
+        {
             return Err(AssemblyError::InputsChanged);
         }
         Ok(())
@@ -73,6 +90,10 @@ struct NativeResult {
     generation: Option<Generation>,
     #[serde(default)]
     warnings: Vec<String>,
+    #[serde(skip)]
+    environment: Option<Vec<crate::incremental::Manifest>>,
+    #[serde(skip)]
+    cache_refusal: Option<String>,
 }
 
 #[derive(Clone, Deserialize)]
@@ -81,6 +102,48 @@ struct Generation {
     roxygen2_version: String,
     loader: String,
     roclets: Vec<String>,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CacheEnvironment {
+    version: String,
+    home: PathBuf,
+    launcher: PathBuf,
+    libraries: Vec<PathBuf>,
+    packages: BTreeMap<String, PathBuf>,
+    native: NativeEnvironment,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct NativeEnvironment {
+    complete: bool,
+    #[serde(default)]
+    reasons: Vec<String>,
+    mapped: Vec<PathBuf>,
+    loader_paths: Vec<PathBuf>,
+    libraries: Vec<PathBuf>,
+    namespaces: BTreeMap<String, PathBuf>,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CachedGeneration {
+    dependencies: crate::incremental::Manifest,
+    resolutions: BTreeMap<String, Option<PathBuf>>,
+    native: Vec<crate::incremental::Manifest>,
+    provenance: Provenance,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CachedDiscovery {
+    dependencies: crate::incremental::Manifest,
+    resolutions: BTreeMap<String, Option<PathBuf>>,
+    native: Vec<crate::incremental::Manifest>,
+    extractions: BTreeMap<String, RExtraction>,
+    runtime: Provenance,
 }
 
 fn failure(package: &str, message: impl Into<String>) -> AssemblyError {
@@ -99,7 +162,9 @@ pub(super) async fn results(
     journal: &mut GeneratedWrites,
 ) -> Result<BTreeMap<(String, String), RNativeExtraction>, AssemblyError> {
     let mut results = BTreeMap::new();
-    for (declared, package) in configuration.packages.iter().zip(&paths.packages) {
+    for index in crate::incremental::package_order(configuration, paths) {
+        let declared = &configuration.packages[index];
+        let package = &paths.packages[index];
         let targets: Vec<_> = declared
             .targets
             .iter()
@@ -202,12 +267,144 @@ pub(super) async fn results(
             RDocumentationMode::Roxygen2 => true,
             RDocumentationMode::Rd => false,
         };
+        let cache_timing = reporting.phase(Phase::CacheValidation, Some(&package.id), None);
+        let store = (declared.incremental.cache != crate::configuration::IncrementalCache::Off)
+            .then(|| crate::incremental::Store::new(&paths.configuration_directory))
+            .flatten();
+        let supplemental = store.as_ref().and_then(|_| {
+            crate::incremental::supplemental_manifest(configuration, paths, declared).ok()
+        });
+        let build = store
+            .as_ref()
+            .and_then(|_| crate::incremental::BuildIdentity::observe().ok());
+        let environment = if store.is_some() && supplemental.is_some() && build.is_some() {
+            cache_environment(package, deadlines, cancellation).await?
+        } else {
+            None
+        };
+        let identity = |inputs: &BTreeMap<PathBuf, Fingerprint>| {
+            Some(crate::incremental::key(&(
+                "r-package-preparation-v1",
+                &package.path,
+                declared,
+                build.as_ref()?,
+                supplemental.as_ref()?,
+                environment.as_ref()?.identity(),
+                deadlines.cell,
+                inputs,
+            )))
+        };
+        let cached_generation = if generate {
+            store
+                .as_ref()
+                .zip(identity(&before))
+                .and_then(|(store, key)| store.load::<CachedGeneration>("r-generation", &key))
+                .filter(|cached| {
+                    let valid = cached.dependencies.verify()
+                        && cached.native.iter().all(|inputs| inputs.verify())
+                        && environment
+                            .as_ref()
+                            .is_some_and(|environment| environment.resolves(&cached.resolutions));
+                    if !valid && let Some((store, key)) = store.as_ref().zip(identity(&before)) {
+                        let _ = store.discard("r-generation", &key);
+                    }
+                    valid
+                })
+        } else {
+            None
+        };
+        if generate {
+            reporting.cache(
+                "r-generation",
+                &package.id,
+                cached_generation.is_some(),
+                cached_generation
+                    .is_none()
+                    .then_some("inputs changed or no valid completed entry"),
+            );
+        }
+        if (!generate || cached_generation.is_some())
+            && let Some(cached) = store
+                .as_ref()
+                .zip(identity(&before))
+                .and_then(|(store, key)| store.load::<CachedDiscovery>("r-discovery", &key))
+                .filter(|cached| {
+                    let valid = cached.dependencies.verify()
+                        && cached.native.iter().all(|inputs| inputs.verify())
+                        && environment
+                            .as_ref()
+                            .is_some_and(|environment| environment.resolves(&cached.resolutions))
+                        && cached.extractions.len() == targets.len()
+                        && targets
+                            .iter()
+                            .all(|target| cached.extractions.contains_key(&target.id));
+                    if !valid && let Some((store, key)) = store.as_ref().zip(identity(&before)) {
+                        let _ = store.discard("r-discovery", &key);
+                    }
+                    valid
+                })
+        {
+            let mut dependencies = vec![cached.dependencies];
+            dependencies.extend(cached.native);
+            if let Some(generated) = &cached_generation
+                && !dependencies.contains(&generated.dependencies)
+            {
+                dependencies.push(generated.dependencies.clone());
+            }
+            if let Some(generated) = &cached_generation {
+                for manifest in &generated.native {
+                    if !dependencies.contains(manifest) {
+                        dependencies.push(manifest.clone());
+                    }
+                }
+            }
+            let observation = RObservation {
+                repository: repository.clone(),
+                root: package.path.clone(),
+                extra_roots,
+                inputs: before,
+                dependencies,
+            };
+            observation.verify()?;
+            if supplemental
+                .as_ref()
+                .is_some_and(|manifest| !manifest.verify())
+            {
+                return Err(AssemblyError::InputsChanged);
+            }
+            reporting.cache("r-discovery", &package.id, true, None);
+            cache_timing.finish();
+            let mut completed = cached_generation
+                .into_iter()
+                .map(|cached| cached.provenance)
+                .chain(std::iter::once(cached.runtime))
+                .collect();
+            for (target, extraction) in cached.extractions {
+                results.insert(
+                    (package.id.clone(), target),
+                    RNativeExtraction {
+                        extraction,
+                        completed: std::mem::take(&mut completed),
+                        observation: observation.clone(),
+                    },
+                );
+            }
+            continue;
+        }
+        reporting.cache(
+            "r-discovery",
+            &package.id,
+            false,
+            Some("inputs changed or no valid completed entry"),
+        );
+        cache_timing.finish();
+        let run_generation = generate && cached_generation.is_none();
         let mut intent = None;
         let native = run(
             package,
             repository,
             &descriptor,
-            generate,
+            run_generation,
             deadlines,
             cancellation,
             reporting,
@@ -226,7 +423,7 @@ pub(super) async fn results(
             &descriptor,
             &before,
             &after,
-            generate,
+            run_generation,
             collate,
             &owned,
             journal,
@@ -241,18 +438,47 @@ pub(super) async fn results(
                 &native.observation.package_version,
                 &metadata.version,
             )
-            || native.generation.is_some() != generate
+            || native.generation.is_some() != run_generation
         {
             return Err(failure(
                 &package.id,
                 "Native R helper returned inconsistent completion evidence.",
             ));
         }
+        let mut dependencies = environment
+            .as_ref()
+            .and_then(|environment| {
+                dependency_manifest(
+                    environment,
+                    &metadata,
+                    &native.observation,
+                    &BTreeMap::new(),
+                )
+            })
+            .map(|(manifest, _)| manifest)
+            .into_iter()
+            .collect::<Vec<_>>();
+        if let Some(native) = &native.environment {
+            dependencies.extend(native.iter().cloned());
+        }
+        if let Some(generated) = &cached_generation
+            && !dependencies.contains(&generated.dependencies)
+        {
+            dependencies.push(generated.dependencies.clone());
+        }
+        if let Some(generated) = &cached_generation {
+            for manifest in &generated.native {
+                if !dependencies.contains(manifest) {
+                    dependencies.push(manifest.clone());
+                }
+            }
+        }
         let observation = RObservation {
             repository: repository.clone(),
             root: package.path.clone(),
             extra_roots,
             inputs: after.clone(),
+            dependencies,
         };
         let runtime_inputs = fingerprints(repository, &after)?;
         let mut tools = BTreeMap::from([
@@ -260,7 +486,10 @@ pub(super) async fn results(
             ("r".into(), native.observation.r_version.clone()),
             ("pkgload".into(), native.observation.pkgload_version.clone()),
         ]);
-        let mut completed = vec![];
+        let mut completed: Vec<_> = cached_generation
+            .into_iter()
+            .map(|cached| cached.provenance)
+            .collect();
         if let Some(generation) = native.generation {
             tools.insert("roxygen2".into(), generation.roxygen2_version.clone());
             let outputs = after
@@ -307,6 +536,7 @@ pub(super) async fn results(
             span: None,
             tools,
         });
+        let mut extractions = BTreeMap::new();
         for target in targets {
             observation.verify()?;
             let timing = reporting.phase(Phase::Extraction, Some(&package.id), Some(&target.id));
@@ -321,6 +551,7 @@ pub(super) async fn results(
                         })
                 }));
             timing.finish();
+            extractions.insert(target.id.clone(), extraction.clone());
             results.insert(
                 (package.id.clone(), target.id.clone()),
                 RNativeExtraction {
@@ -331,8 +562,423 @@ pub(super) async fn results(
             );
         }
         observation.verify()?;
+        if supplemental
+            .as_ref()
+            .is_some_and(|manifest| !manifest.verify())
+        {
+            return Err(AssemblyError::InputsChanged);
+        }
+        if let (Some(store), Some(key), Some(environment)) =
+            (&store, identity(&after), &environment)
+            && supplemental.as_ref().is_some_and(|inputs| inputs.verify())
+            && extractions.values().all(|result| {
+                result
+                    .diagnostics
+                    .iter()
+                    .all(|diagnostic| diagnostic.severity != Severity::Error)
+            })
+            && let Some((dependencies, resolutions)) =
+                dependency_manifest(environment, &metadata, &native.observation, &extractions)
+            && let Some(native_inputs) = &native.environment
+            && native_inputs.iter().all(|inputs| inputs.verify())
+        {
+            if run_generation
+                && let Some(provenance) = results
+                    .values()
+                    .filter(|result| result.extraction.package == package.id)
+                    .flat_map(|result| &result.completed)
+                    .find(|record| {
+                        matches!(record.activity, ProvenanceActivity::RDocumentation { .. })
+                    })
+            {
+                save_cache(
+                    store,
+                    "r-generation",
+                    &key,
+                    &CachedGeneration {
+                        dependencies: dependencies.clone(),
+                        resolutions: resolutions.clone(),
+                        native: native_inputs.clone(),
+                        provenance: provenance.clone(),
+                    },
+                    reporting,
+                );
+            }
+            if let Some(runtime) = results
+                .values()
+                .filter(|result| result.extraction.package == package.id)
+                .flat_map(|result| &result.completed)
+                .find(|record| matches!(record.activity, ProvenanceActivity::RRuntime { .. }))
+            {
+                save_cache(
+                    store,
+                    "r-discovery",
+                    &key,
+                    &CachedDiscovery {
+                        dependencies,
+                        resolutions,
+                        native: native_inputs.clone(),
+                        extractions,
+                        runtime: runtime.clone(),
+                    },
+                    reporting,
+                );
+            }
+        } else if store.is_some() {
+            let reason = native
+                .cache_refusal
+                .as_deref()
+                .unwrap_or("native dependency coverage could not be verified");
+            reporting.emit(crate::reporting::Event::Warning(&format!(
+                "R preparation for `{}` could not be cached: {reason}.",
+                package.id
+            )));
+        }
     }
     Ok(results)
+}
+
+fn save_cache<T: Serialize>(
+    store: &crate::incremental::Store,
+    stage: &str,
+    key: &Fingerprint,
+    value: &T,
+    reporting: &Reporting,
+) {
+    if store.save(stage, key, value).is_err() {
+        reporting.emit(crate::reporting::Event::Warning(
+            "The completed R preparation could not be cached; continuing with its verified result.",
+        ));
+    }
+}
+
+fn dependency_manifest(
+    environment: &CacheEnvironment,
+    metadata: &RMetadata,
+    observation: &NativeObservation,
+    extractions: &BTreeMap<String, RExtraction>,
+) -> Option<(
+    crate::incremental::Manifest,
+    BTreeMap<String, Option<PathBuf>>,
+)> {
+    let mut names: BTreeSet<_> = observation.dependencies.keys().cloned().collect();
+    for dependencies in metadata.dependencies.values() {
+        names.extend(
+            dependencies
+                .iter()
+                .map(|dependency| dependency.name.clone()),
+        );
+    }
+    for extraction in extractions.values() {
+        if let ProvenanceActivity::Extraction { parsers, .. } = &extraction.provenance.activity {
+            for parser in parsers.values() {
+                names.extend(parser.settings.keys().filter_map(|key| {
+                    key.strip_prefix("help:")
+                        .or_else(|| key.strip_prefix("exports:"))
+                        .map(str::to_owned)
+                }));
+            }
+        }
+    }
+    installed_manifest(
+        environment,
+        names,
+        &metadata.name,
+        &observation.dependencies.keys().cloned().collect(),
+    )
+}
+
+fn installed_manifest(
+    environment: &CacheEnvironment,
+    mut pending: BTreeSet<String>,
+    own_name: &str,
+    required: &BTreeSet<String>,
+) -> Option<(
+    crate::incremental::Manifest,
+    BTreeMap<String, Option<PathBuf>>,
+)> {
+    let mut seen = BTreeSet::new();
+    let mut resolutions = BTreeMap::new();
+    let mut paths = vec![environment.launcher.clone()];
+    paths.extend(native_inputs(&environment.native)?);
+    while let Some(name) = pending.pop_first() {
+        if name == own_name || name == "R" || !seen.insert(name.clone()) {
+            continue;
+        }
+        // A new installation in an earlier library can shadow an unchanged dependency.
+        paths.extend(
+            environment
+                .libraries
+                .iter()
+                .map(|library| library.join(&name)),
+        );
+        resolutions.insert(name.clone(), environment.packages.get(&name).cloned());
+        let Some(path) = environment.packages.get(&name) else {
+            if required.contains(&name) {
+                return None;
+            }
+            continue;
+        };
+        let source = SourceLocation {
+            repository: "environment".into(),
+            path: "DESCRIPTION".try_into().ok()?,
+            span: None,
+        };
+        let metadata = r::validate_metadata(
+            &fs::read_to_string(path.join("DESCRIPTION")).ok()?,
+            &source,
+            &mut Vec::new(),
+        )?;
+        for field in ["Depends", "Imports", "LinkingTo"] {
+            if let Some(dependencies) = metadata.dependencies.get(field) {
+                pending.extend(
+                    dependencies
+                        .iter()
+                        .map(|dependency| dependency.name.clone()),
+                );
+            }
+        }
+        paths.push(path.clone());
+    }
+    for directory in ["bin", "lib", "etc", "modules"] {
+        let path = environment.home.join(directory);
+        if path.exists() {
+            paths.push(path);
+        }
+    }
+    crate::incremental::Manifest::capture(
+        &paths,
+        &[
+            "PATH",
+            "R_LIBS",
+            "R_LIBS_USER",
+            "R_LIBS_SITE",
+            "R_HOME",
+            "R_DEFAULT_PACKAGES",
+            "LANG",
+            "LC_ALL",
+            "LC_COLLATE",
+            "LC_CTYPE",
+            "LC_MESSAGES",
+            "LC_TIME",
+            "TZ",
+            "LD_LIBRARY_PATH",
+            "LD_PRELOAD",
+            "LD_AUDIT",
+            "DYLD_LIBRARY_PATH",
+            "OMP_NUM_THREADS",
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+        ]
+        .map(str::to_owned),
+    )
+    .ok()
+    .map(|manifest| (manifest, resolutions))
+}
+
+fn native_inputs(environment: &NativeEnvironment) -> Option<Vec<PathBuf>> {
+    if !environment.complete {
+        return None;
+    }
+    let mut paths = environment.mapped.clone();
+    paths.extend(environment.namespaces.values().cloned());
+    for name in environment.namespaces.keys() {
+        paths.extend(
+            environment
+                .libraries
+                .iter()
+                .map(|library| library.join(name)),
+        );
+    }
+    paths.extend(["/etc/ld.so.cache", "/etc/ld.so.conf", "/etc/ld.so.conf.d"].map(PathBuf::from));
+    let mapped: BTreeSet<_> = environment.mapped.iter().cloned().collect();
+    let directories: BTreeSet<_> = environment
+        .mapped
+        .iter()
+        .filter_map(|path| path.parent())
+        .collect();
+    for directory in directories {
+        for entry in fs::read_dir(directory).ok()? {
+            let entry = entry.ok()?;
+            if entry.file_type().ok()?.is_symlink()
+                && fs::canonicalize(entry.path()).is_ok_and(|target| mapped.contains(&target))
+            {
+                paths.push(entry.path());
+            }
+        }
+    }
+    Some(paths)
+}
+
+pub(crate) fn completed_environment_manifest(
+    output: &Path,
+) -> Option<Vec<crate::incremental::Manifest>> {
+    completed_environment_receipt(output).ok()
+}
+
+fn completed_environment_receipt(
+    output: &Path,
+) -> Result<Vec<crate::incremental::Manifest>, String> {
+    let mut path = output.as_os_str().to_os_string();
+    path.push(".environment");
+    let environment: NativeEnvironment = serde_json::from_slice(
+        &fs::read(PathBuf::from(path))
+            .map_err(|_| "native completion receipt is unavailable".to_owned())?,
+    )
+    .map_err(|_| "native completion receipt is malformed".to_owned())?;
+    if !environment.complete {
+        return Err(environment
+            .reasons
+            .first()
+            .cloned()
+            .unwrap_or_else(|| "native dependency coverage is uncertain".to_owned()));
+    }
+    let paths = native_inputs(&environment)
+        .ok_or_else(|| "native dependency paths could not be observed".to_owned())?;
+    Ok(vec![
+        crate::incremental::Manifest::capture(&paths, &[])
+            .map_err(|_| "native dependency files could not be observed".to_owned())?,
+        crate::incremental::Manifest::capture_native_libraries(&environment.loader_paths, &[])
+            .map_err(|_| "native loader paths could not be observed".to_owned())?,
+    ])
+}
+
+pub(crate) async fn environment_manifest(
+    package: &ResolvedPackagePaths,
+    dependency_names: &[String],
+    deadlines: ExecutionDeadlines,
+    cancellation: &mut ExecutionCancellation<'_>,
+) -> Result<Option<(Fingerprint, Vec<crate::incremental::Manifest>)>, AssemblyError> {
+    let Some(environment) = cache_environment(package, deadlines, cancellation).await? else {
+        return Ok(None);
+    };
+    let source = SourceLocation {
+        repository: "environment".into(),
+        path: "DESCRIPTION".try_into().unwrap(),
+        span: None,
+    };
+    let Some(metadata) = r::validate_metadata(
+        &fs::read_to_string(package.path.join("DESCRIPTION"))?,
+        &source,
+        &mut Vec::new(),
+    ) else {
+        return Ok(None);
+    };
+    let mut required: BTreeSet<_> = dependency_names.iter().cloned().collect();
+    required.extend(["pkgload".into(), "jsonlite".into()]);
+    let mut names = required.clone();
+    for dependencies in metadata.dependencies.values() {
+        names.extend(
+            dependencies
+                .iter()
+                .map(|dependency| dependency.name.clone()),
+        );
+    }
+    Ok(
+        installed_manifest(&environment, names, &metadata.name, &required).and_then(
+            |(manifest, resolutions)| {
+                Some((
+                    crate::incremental::key(&(environment.identity(), resolutions)),
+                    vec![
+                        manifest,
+                        crate::incremental::Manifest::capture_native_libraries(
+                            &environment.native.loader_paths,
+                            &[],
+                        )
+                        .ok()?,
+                    ],
+                ))
+            },
+        ),
+    )
+}
+
+impl CacheEnvironment {
+    fn identity(&self) -> (&str, &Path, &Path, &[PathBuf], &NativeEnvironment) {
+        (
+            &self.version,
+            &self.home,
+            &self.launcher,
+            &self.libraries,
+            &self.native,
+        )
+    }
+
+    fn resolves(&self, dependencies: &BTreeMap<String, Option<PathBuf>>) -> bool {
+        dependencies
+            .iter()
+            .all(|(name, path)| self.packages.get(name) == path.as_ref())
+    }
+}
+
+async fn cache_environment(
+    package: &ResolvedPackagePaths,
+    deadlines: ExecutionDeadlines,
+    cancellation: &mut ExecutionCancellation<'_>,
+) -> Result<Option<CacheEnvironment>, AssemblyError> {
+    let staging = tempfile::tempdir()?;
+    let output = staging.path().join("environment.json");
+    let helper = staging.path().join("environment.R");
+    fs::write(
+        &helper,
+        format!(
+            "{}\nobserve_cache_environment(commandArgs(trailingOnly = TRUE)[[1L]])\n",
+            include_str!("r_environment.R")
+        ),
+    )?;
+    let mut command = tokio::process::Command::new("R");
+    command
+        .args(["--vanilla", "--slave", "-f"])
+        .arg(&helper)
+        .arg("--args")
+        .arg(&output)
+        .current_dir(&package.path)
+        .env("R_DEFAULT_PACKAGES", "NULL")
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .kill_on_drop(true);
+    #[cfg(target_os = "linux")]
+    command.process_group(0);
+    let Ok(child) = command.spawn() else {
+        return Ok(None);
+    };
+    #[cfg(target_os = "linux")]
+    let group = child
+        .id()
+        .and_then(|pid| rustix::process::Pid::from_raw(pid as i32));
+    let mut process = rd_examples::Process {
+        child,
+        #[cfg(target_os = "linux")]
+        group,
+    };
+    let status = tokio::select! {
+        result = tokio::time::timeout(Duration::from_millis(deadlines.cell.max(1)), process.child.wait()) => {
+            match result {
+                Ok(status) => status.ok(),
+                Err(_) => {
+                    rd_examples::terminate(&mut process, deadlines).await?;
+                    None
+                }
+            }
+        },
+        () = cancellation.as_mut() => {
+            rd_examples::terminate(&mut process, deadlines).await?;
+            return Err(AssemblyError::Cancelled);
+        }
+    };
+    process.kill();
+    #[cfg(target_os = "linux")]
+    {
+        process.group = None;
+    }
+    let environment = status
+        .filter(|status| status.success())
+        .and_then(|_| fs::read(output).ok())
+        .and_then(|bytes| serde_json::from_slice::<CacheEnvironment>(&bytes).ok())
+        .filter(|environment| environment.native.complete);
+    staging.close()?;
+    Ok(environment)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -354,8 +1000,9 @@ async fn run(
         fs::write(
             &helper,
             format!(
-                "{}\n{}",
+                "{}\n{}\n{}",
                 include_str!("r_runtime.R"),
+                include_str!("r_environment.R"),
                 include_str!("r_native.R")
             ),
         )?;
@@ -430,6 +1077,10 @@ async fn run(
                 "Native R helper returned malformed completion evidence.",
             )
         })?;
+        match completed_environment_receipt(&output) {
+            Ok(environment) => result.environment = Some(environment),
+            Err(reason) => result.cache_refusal = Some(reason),
+        }
         for message in result.warnings.iter_mut().chain(
             result
                 .observation

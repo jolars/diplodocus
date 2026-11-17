@@ -88,6 +88,7 @@ local({
   emit("r-version", as.character(getRversion()))
   emit("package-version", as.character(utils::packageVersion(name)))
   for (dependency in sort(loadedNamespaces())) emit("dependency", paste(dependency, as.character(utils::packageVersion(dependency)), sep = "="))
+  write_native_environment(args[[3L]], args[[1L]])
   withCallingHandlers(pkgload::unload(name), warning = function(w) stop(conditionMessage(w)))
   emit("complete", "rd-examples-v1")
   close(output)

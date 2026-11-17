@@ -8,7 +8,9 @@ import io
 import json
 import pathlib
 import platform
+import shutil
 import sys
+import sysconfig
 import time
 
 import tomllib
@@ -129,14 +131,95 @@ def run(request_path, output_path):
     for name in sorted({name.split(".")[0] for name in sys.modules}):
         for distribution in distributions.get(name, []):
             dependencies[distribution] = importlib.metadata.version(distribution)
+    try:
+        environment = observe_environment(
+            request_path,
+            root,
+            pathlib.Path(request.get("repository_root", root)).resolve(),
+            request.get("tracked_source_paths", []),
+        )
+    except (OSError, RuntimeError, TypeError, ValueError):
+        environment = {"search_paths": [], "runtime_paths": [], "flags": [], "eligible": False}
     result = {
         "runtime_version": platform.python_version(),
         "package_name": request["package_name"],
         "package_version": str(project["version"]),
         "dependencies": dependencies,
         "examples": outcomes,
+        "environment": environment,
     }
     pathlib.Path(output_path).write_text(json.dumps(result, ensure_ascii=False))
+
+
+def observe_environment(request_path, root, repository_root, tracked_source_paths):
+    staging_root = pathlib.Path(request_path).parent.resolve()
+    search_paths = [
+        str(pathlib.Path(path or root).resolve())
+        for path in sys.path
+        if pathlib.Path(path or root).resolve() != staging_root
+    ]
+    # Native library replacements must invalidate results even at the same version.
+    maps_path = pathlib.Path("/proc/self/maps")
+    mapped_libraries = []
+    if maps_path.is_file():
+        mapped_libraries = [
+            line.split(maxsplit=5)[5]
+            for line in maps_path.read_text().splitlines()
+            if len(line.split(maxsplit=5)) == 6
+            and line.split(maxsplit=5)[5].startswith("/")
+        ]
+    runtime_paths = sorted(
+        {
+            str(pathlib.Path(path).resolve())
+            for path in [
+                sys.executable,
+                shutil.which("python"),
+                sysconfig.get_path("stdlib"),
+                sysconfig.get_path("platstdlib"),
+                sysconfig.get_config_var("LIBDIR"),
+                *search_paths,
+                *mapped_libraries,
+            ]
+            if path
+            and not pathlib.Path(path).resolve().is_relative_to(repository_root)
+            and not repository_root.is_relative_to(pathlib.Path(path).resolve())
+        }
+    )
+    runtime_paths = [
+        path
+        for path in runtime_paths
+        if not any(
+            path != parent
+            and pathlib.Path(parent).is_dir()
+            and pathlib.Path(path).is_relative_to(parent)
+            for parent in runtime_paths
+        )
+    ]
+    covered_roots = [
+        root,
+        staging_root,
+        *map(pathlib.Path, runtime_paths),
+        *[pathlib.Path(path).resolve() for path in tracked_source_paths],
+    ]
+    eligible = maps_path.is_file() and all(
+        pathlib.Path(path).is_file() for path in mapped_libraries
+    )
+    for module in list(sys.modules.values()):
+        module_path = getattr(module, "__file__", None)
+        if module_path is not None:
+            module_path = pathlib.Path(module_path).resolve()
+            if not any(module_path.is_relative_to(base) for base in covered_roots):
+                eligible = False
+        elif getattr(getattr(module, "__spec__", None), "origin", None) not in (
+            "built-in", "frozen", None
+        ):
+            eligible = False
+    return {
+        "search_paths": search_paths,
+        "runtime_paths": runtime_paths,
+        "flags": [int(flag) for flag in sys.flags],
+        "eligible": eligible,
+    }
 
 
 if __name__ == "__main__":

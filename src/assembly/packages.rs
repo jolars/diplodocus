@@ -21,6 +21,7 @@ pub(super) fn assemble(
     for (index, declaration) in configuration.packages.iter().enumerate() {
         let resolved = &paths.packages[index];
         let repository = &paths.repositories[resolved.repository_index];
+        let extraction_cache = crate::incremental::package_context(configuration, paths, index);
         let mut package = Package {
             slug: declaration.slug.clone(),
             name: declaration.name.clone(),
@@ -72,7 +73,20 @@ pub(super) fn assemble(
                                 Some(&declaration.id),
                                 Some(&target.id),
                             );
-                            let result = julia::extract_target(repository, resolved, selected);
+                            let result =
+                                cached_fragment(
+                                    extraction_cache.as_ref(),
+                                    "static-julia",
+                                    &declaration.id,
+                                    reporting,
+                                    &(declaration, target),
+                                    |result: &julia::JuliaExtraction| {
+                                        !result.diagnostics.iter().any(|diagnostic| {
+                                            diagnostic.severity == Severity::Error
+                                        }) && evidence_current(&result.provenance, repository)
+                                    },
+                                    || julia::extract_target(repository, resolved, selected),
+                                );
                             timing.finish();
                             result
                         });
@@ -81,7 +95,21 @@ pub(super) fn assemble(
                 "python" => {
                     let timing =
                         reporting.phase(Phase::Extraction, Some(&declaration.id), Some(&target.id));
-                    let result = python::extract_target(repository, resolved, selected);
+                    let result = cached_fragment(
+                        extraction_cache.as_ref(),
+                        "static-python",
+                        &declaration.id,
+                        reporting,
+                        &(declaration, target),
+                        |result: &python::PythonExtraction| {
+                            !result
+                                .diagnostics
+                                .iter()
+                                .any(|diagnostic| diagnostic.severity == Severity::Error)
+                                && evidence_current(&result.provenance, repository)
+                        },
+                        || python::extract_target(repository, resolved, selected),
+                    );
                     timing.finish();
                     result.into()
                 }
@@ -243,4 +271,58 @@ pub(super) fn assemble(
     }
     progress.finish();
     Ok(())
+}
+
+pub(super) fn cached_fragment<T: serde::Serialize + serde::de::DeserializeOwned>(
+    cache: Option<&(
+        crate::incremental::Store,
+        String,
+        crate::incremental::Manifest,
+    )>,
+    stage: &'static str,
+    owner: &str,
+    reporting: &Reporting,
+    selection: &impl serde::Serialize,
+    valid: impl Fn(&T) -> bool,
+    extract: impl FnOnce() -> T,
+) -> T {
+    let Some((store, build, inputs)) = cache else {
+        return extract();
+    };
+    let key = crate::incremental::key(&(stage, build, selection, inputs));
+    if let Some(result) = store.load(stage, &key)
+        && valid(&result)
+        && inputs.verify()
+    {
+        reporting.cache(stage, owner, true, None);
+        return result;
+    }
+    reporting.cache(
+        stage,
+        owner,
+        false,
+        Some("Source or extraction inputs changed."),
+    );
+    let _ = store.discard(stage, &key);
+    let result = extract();
+    if valid(&result) && inputs.verify() {
+        let _ = store.save(stage, &key, &result);
+    }
+    result
+}
+
+pub(super) fn evidence_current(
+    provenance: &crate::ir::Provenance,
+    repository: &crate::paths::ResolvedRepositoryPaths,
+) -> bool {
+    let crate::ir::ProvenanceActivity::Extraction { inputs, .. } = &provenance.activity else {
+        return false;
+    };
+    inputs.iter().all(|(id, inputs)| {
+        id == &repository.id
+            && inputs.iter().all(|(path, input)| {
+                fs::read(repository.path.join(path.as_str()))
+                    .is_ok_and(|bytes| fingerprint_bytes(&bytes) == input.fingerprint)
+            })
+    })
 }

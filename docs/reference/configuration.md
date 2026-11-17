@@ -89,6 +89,7 @@ boundaries.
 | `kind` | string | `package` | `package` for a distribution or `component` for an internal component. |
 | `visibility` | string | `public` | Navigation and search visibility, described below. |
 | `r` | mapping | Automatic documentation selection | R generation settings; valid only for an R package. |
+| `incremental` | mapping | Automatic reuse | Tracked dependencies and extra inputs, described below. |
 | `targets` | list | Required | Explicit extraction targets. Use `[]` for no API extraction. |
 
 `visibility` accepts:
@@ -101,6 +102,36 @@ The conventional metadata files are `pyproject.toml`, `DESCRIPTION`,
 `Project.toml`, `Cargo.toml`, and `Doxyfile`. See [API
 extraction](../guide/extraction.md) for language-specific setup and [package landing
 pages](../guide/authoring.md#package-landing-pages) for overview precedence.
+
+### Incremental preparation {#incremental-preparation}
+
+Both `packages[]` and `content[]` accept an `incremental` mapping:
+
+| Option | Type | Default | Purpose |
+| --- | --- | --- | --- |
+| `cache` | string | `auto` | Reuse completed results when inputs match, or use `off` to prepare this unit afresh. |
+| `depends-on` | list of package IDs | `[]` | Additional workspace packages whose inputs affect this unit. |
+| `extra-inputs` | list of paths | `[]` | Additional files or directories, relative to this unit's repository root. |
+| `environment-variables` | list of strings | `[]` | Environment variable names whose values affect this unit. |
+
+Declare dependencies used by documentation inheritance, generated declarations,
+or other reads that the adapter cannot discover. Extra input directories include
+contained files, additions, and deletions. Paths must stay inside the declared
+repository. These paths differ from `r.extra-inputs`, which resolves from the
+package root and feeds native R generation.
+
+```yaml
+incremental:
+  cache: auto
+  depends-on: [core]
+  extra-inputs: [shared/documentation, environment.lock]
+  environment-variables: [DOCS_VARIANT]
+```
+
+`--no-cache` bypasses incremental caches for the whole command. Neither setting
+changes whether a command may execute examples. Generation and execution retain
+separate reuse policies; an edit to a source comment does not prove that inherited
+or evaluated documentation is unchanged.
 
 ### R package settings
 
@@ -188,6 +219,7 @@ be unique.
 | `mount` | string | Required | URL directory beneath the owner's documentation root. `""` uses that root. |
 | `format` | string | Required | `gfm`, `qmd`, `rmd`, or `documenter`. |
 | `navigation` | string | `all` | `all`, `index`, or `none` for automatic sidebar inclusion. |
+| `incremental` | mapping | Automatic reuse | Tracked dependencies and extra inputs; see [incremental preparation](#incremental-preparation). |
 | `execution` | mapping | Depends on format | Collection execution settings, described below. |
 
 Formats select `.md` files for `gfm` and `documenter`, `.qmd` for `qmd`, and

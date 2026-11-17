@@ -1,8 +1,11 @@
 """Run with python scripts/bench-pipeline.test.py."""
 
 import importlib.util
+import json
 from pathlib import Path
+import queue
 import tempfile
+from types import SimpleNamespace
 import unittest
 
 spec = importlib.util.spec_from_file_location("pipeline_bench", Path(__file__).with_name("bench-pipeline.py"))
@@ -11,6 +14,33 @@ spec.loader.exec_module(bench)
 
 
 class BenchmarkTests(unittest.TestCase):
+    def test_idle_poll_phases_stay_balanced_at_sample_boundaries(self):
+        worker = bench.Worker.__new__(bench.Worker)
+        worker.events = []
+        worker.lines = queue.Queue()
+        started = {"event": "phase-started", "id": 7, "phase": "watch-poll",
+                   "package": None, "target": None}
+        finished = {"event": "phase-finished", "id": 7, "seconds": .2}
+        worker.process = SimpleNamespace(stdout=iter(map(json.dumps, [started, finished])))
+        worker.read()
+        _, batch = worker.lines.get_nowait()
+        self.assertEqual(batch["events"], [started, finished])
+        worker.lines.get_nowait()  # Consume the simulated worker exit.
+        worker.lines.put((0, batch))
+        bench.assert_idle(worker, timeout=0)
+        summary = bench.phase_summary([{"kind": "authored", "events": worker.events}])
+        self.assertEqual(summary[0]["phase"], "watch-poll")
+        self.assertEqual(summary[0]["median_seconds"], .2)
+
+    def test_idle_check_still_rejects_commands_after_poll_telemetry(self):
+        worker = bench.Worker.__new__(bench.Worker)
+        worker.events = []
+        worker.lines = queue.Queue()
+        worker.lines.put((0, {"event": "watch-poll", "events": []}))
+        worker.lines.put((0, {"event": "command-started", "command": "rebuild"}))
+        with self.assertRaisesRegex(RuntimeError, "command-started"):
+            bench.assert_idle(worker, timeout=0)
+
     def test_mutations_preserve_source_and_restore_bytes_including_crlf(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

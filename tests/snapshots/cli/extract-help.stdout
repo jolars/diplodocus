@@ -4,6 +4,7 @@ Usage: diplodocus extract [OPTIONS]
 
 Options:
       --color <COLOR>  Control terminal colors in help, diagnostics, and status output [default: auto] [possible values: auto, always, never]
+      --no-cache       Recompute results without reading or writing incremental caches
       --config <PATH>  Path to the workspace configuration file [default: ./diplodocus.yaml]
       --no-progress    Print stage summaries instead of animated progress bars
       --output <PATH>  Snapshot destination (defaults to .diplodocus/documentation.sqlite beside the configuration)

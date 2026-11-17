@@ -18,6 +18,11 @@ help, diagnostics, and status messages. Automatic colors honor a nonempty
 Explicit `--color always` also enables colors in redirected output. Global
 options work before or after the subcommand.
 
+`check`, `extract`, `build`, and `serve` reuse completed results when tracked
+inputs still match. Add `--no-cache` to bypass incremental cache reads and writes
+for the command, including every attempt in a watch session. Package and content
+`incremental` settings declare additional inputs and dependencies.
+
 For example, extract once and generate from the completed snapshot:
 
 ```console
@@ -52,8 +57,9 @@ connects these events to an existing frontend's development server.
 
 `serve` listens on `127.0.0.1:8000` by default. Use `--host` and `--port` to
 change the address. The ready message shows a clickable URL in terminals that
-support hyperlinks and a plain URL elsewhere. Use `--live-reload` to refresh
-open pages after a successful rebuild. Add `--open` to open the local URL in
+support hyperlinks and a plain URL elsewhere. Open pages refresh after each
+successful rebuild. Use `--no-live-reload` to disable refresh; `--live-reload`
+remains accepted. Add `--open` to open the local URL in
 your default browser once the first build succeeds and the server is ready.
 With `--port 0`, the URL uses the assigned
 port; wildcard hosts (`0.0.0.0` or `::`) open through the corresponding loopback

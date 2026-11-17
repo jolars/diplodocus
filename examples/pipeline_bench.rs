@@ -22,6 +22,15 @@ struct JsonReporter(Mutex<std::io::Stdout>);
 impl Reporter for JsonReporter {
     fn report(&self, event: Event<'_>) {
         let value = match event {
+            Event::Cache {
+                stage,
+                owner,
+                hit,
+                reason,
+            } => json!({
+                "event": "cache", "stage": stage, "owner": owner,
+                "hit": hit, "reason": reason,
+            }),
             Event::CommandStarted { command } => {
                 json!({"event": "command-started", "command": command})
             }

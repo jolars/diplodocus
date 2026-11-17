@@ -133,6 +133,8 @@ fn output_cannot_replace_or_enter_the_execution_cache() {
     for relative in [
         ".diplodocus/cache/execution",
         ".diplodocus/cache/execution/site",
+        ".diplodocus/cache/incremental",
+        ".diplodocus/cache/incremental/site",
     ] {
         let output = root.path().join(relative);
         assert!(

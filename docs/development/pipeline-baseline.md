@@ -78,6 +78,19 @@ observations per kind. Startup has fresh Diplodocus caches but shares warmed OS
 and native runtime caches. It is not a machine-cold boot measurement. Warm saves
 reuse the same running server and its workspace caches.
 
+Add `--warm-restart` to measure one restart in each measured workspace after its
+save cases, keeping completed caches. The harness verifies that restarting leaves
+the completed snapshot fingerprint and every site file unchanged. These samples
+use the `warm-startup` kind, separate from startup in a fresh workspace. Updated
+workers also emit cache hits and misses; reports aggregate them by action, stage,
+and owner. Older workers remain usable and simply have no cache events.
+
+Keep startup and save comparisons separate from this optional restart gate when
+the baseline regenerates documentation on every attempt. A fresh generation can
+legitimately record different historical inputs after removing a generated
+topic, even when the completed site is identical. Validate strict restart parity
+for the incremental worker when its completed generation entry is reused.
+
 Mutations cover authored prose, API prose, and signatures. The harness detects
 completed roxygen2 generation from the startup snapshot's `RDocumentation`
 provenance. For that worker, qualpalr API prose and signature saves edit only
@@ -109,7 +122,7 @@ extension and dependencies, and run plain `diplodocus serve`. Change a roxygen
 title in `R/qualpal.R` without touching `man/`, then verify the generated Rd and
 served title update. Introduce an unmatched parenthesis in the R source, verify
 the previous page remains available, and correct it to verify recovery. Browser
-refresh is optional through `--live-reload`. The complete upstream qualpalr
+refresh is enabled by default; use `--no-live-reload` to disable it. The complete upstream qualpalr
 vignettes remain outside this API-only recipe.
 
 ## Interpreting timings
@@ -127,8 +140,16 @@ execution, and shutdown. Native subphase durations overlap the host duration;
 do not add them together. Empty authored execution stages can have small host
 durations without starting a runtime. Native R workers report generation
 separately from package loading; workers without roxygen generation have no
-generation timing. This implementation generates on every command attempt.
-It does not claim incremental extraction or generation-cache performance.
+generation timing. Historical baseline workers generate on every command
+attempt. Incremental workers report `cache-validation` for native environment
+probes, dependency fingerprinting, and cache validation. These timings describe
+verification work; a hit does not imply a zero-cost build.
+
+Incremental workers also report `source-verification` for each fresh input guard,
+`watch-capture` for subscription snapshots, and `watch-poll` for synchronous
+polling scans. Poll durations exclude the idle interval. Source verification can
+be nested inside other host phases, so these durations also overlap. Use the
+per-sample event boundaries when accounting for end-to-end latency.
 
 Reports include raw samples, phase events, input hashes, executable hashes,
 source revisions, and observed tool versions. Summary values use the median and
@@ -242,9 +263,10 @@ source only. The baseline `roxygen-gap` row leaves documentation unchanged.
 | roxygen-gap | 6.378 / 6.555 | — |
 
 The baseline starts with maintained Rd ready to consume; its timings omit any
-separate documentation-generation command. The native workflow includes
-roxygen2 generation and checkout reflection on every command attempt, including
-authored saves. Package invalidation and extraction caching remain future work.
+separate documentation-generation command. The native workflow worker in this
+comparison ran roxygen2 generation and checkout reflection on every command
+attempt, including authored saves. These measurements predate package
+invalidation and extraction caching.
 
 On native API prose saves, generation took a median 0.563 s, native package
 loading across preparation and examples totaled 1.424 s, rendering took 0.152 s,
@@ -257,3 +279,63 @@ Use **8.3 s startup** and **13.7 s source-save p95** as initial completed-previe
 comparison points on this host. Native source-save medians were about **8.1 s**.
 These measurements guide the next invalidation work; they are not CI gates or
 portable latency guarantees.
+
+## Incremental workflow results {#incremental-workflow-results}
+
+Recorded on November 17, 2026, on the Intel Core Ultra 7 155U host described
+above. Both optimized workers ran in one exclusive `compute bench` window,
+baseline first. The baseline includes native roxygen2 generation and reruns the
+pipeline on each save. The candidate retains verified package results between
+saves and commands. Both workers received identical prepared inputs.
+
+All 96 main samples passed: three fresh workspaces per worker and profile, with
+two saves of each change type in every workspace. The retained
+[measurements](https://github.com/jolars/diplodocus/blob/main/docs/development/benchmarks/incremental.json)
+include exact samples, phase and cache observations, tool versions, input hashes,
+and source and executable receipts. Full event traces, implementation patches,
+and binaries remain in local `artifacts/native-adapters/`.
+
+Times below are **median / p95 in seconds**. The R API prose, formal, and export
+cases change maintained R source only. The monorepo signature case changes a
+Python annotation. Each pair saves a new variant and then restores the original
+bytes, so the medians include both invalidation and restoration.
+
+| Profile | Action | Baseline | Incremental |
+| --- | --- | --- | --- |
+| qualpalr | startup | 7.662 / 7.749 | 14.672 / 14.751 |
+| qualpalr | authored prose | 7.828 / 7.890 | 4.514 / 4.563 |
+| qualpalr | API prose | 7.754 / 8.033 | 10.157 / 14.502 |
+| qualpalr | formals | 7.855 / 7.925 | 10.150 / 14.443 |
+| qualpalr | exports | 7.866 / 7.918 | 10.180 / 14.492 |
+| monorepo | startup | 13.289 / 13.299 | 33.012 / 33.286 |
+| monorepo | authored prose | 13.088 / 13.162 | 10.871 / 10.901 |
+| monorepo | R API prose | 13.134 / 13.187 | 14.965 / 19.062 |
+| monorepo | Python signature | 13.101 / 13.130 | 12.437 / 14.135 |
+
+Authored-save medians improved by **42.3% for qualpalr** and **16.9% for the
+monorepo**. Every authored save hit all expected native result caches, including
+generation, extraction, metadata, and examples. Fresh environment and checkout
+probes and input verification still run. Every recorded candidate save produced
+exactly one rebuild. R generation failures retained the completed site and
+snapshot; correcting the source recovered without a generated-write loop.
+
+A separate acceptance run used the same candidate and inputs. After an authored
+save, restarting with retained caches hit all expected native stages and
+preserved every site byte and the snapshot fingerprint. Those single restart
+observations took 4.731 s for qualpalr and 11.418 s for the monorepo; they are
+separate from the paired startup and save samples above.
+
+Cold starts and new R API edits remain more expensive. A new R source variant
+invalidates the whole package, then pays for native work and dependency capture.
+Qualpalr's new API variants took about 14.4 s, while restored variants took about
+5.9 s. R API prose medians increased by 31.0% for qualpalr and 13.9% for the
+monorepo. These results support reuse for authored saves and expose the remaining
+cost of conservative package invalidation. Finer invalidation, persistent
+workers, and provisional previews remain future work.
+
+Input guards retain fresh verification boundaries. The implementation reduces
+duplicate observations, uses hash maps for private lookup state, and checks
+subscription ancestors instead of comparing every dependency root with every
+other root. These changes improve bookkeeping costs without changing snapshot
+or publication validation. As with the earlier measurements, this local sample
+does not establish portable latency or precise tail guarantees.

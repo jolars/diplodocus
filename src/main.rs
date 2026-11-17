@@ -33,6 +33,18 @@ fn main() -> ExitCode {
 }
 
 fn dispatch(cli: Cli, runner: &CommandRunner) -> Result<(), CommandError> {
+    let no_cache = match &cli.command {
+        Command::Build(args) => args.no_cache,
+        Command::Check(args) => args.no_cache,
+        Command::Extract(args) => args.no_cache,
+        Command::Serve(args) => args.no_cache,
+        Command::Generate(_) => false,
+    };
+    let runner = runner.clone().with_cache_policy(if no_cache {
+        diplodocus::incremental::CachePolicy::Bypass
+    } else {
+        diplodocus::incremental::CachePolicy::Auto
+    });
     match cli.command {
         Command::Build(args) => runner.build(BuildOptions {
             config: args.config,
@@ -76,7 +88,7 @@ fn dispatch(cli: Cli, runner: &CommandRunner) -> Result<(), CommandError> {
             output: args.output,
             host: args.host,
             port: args.port,
-            live_reload: args.live_reload,
+            live_reload: args.live_reload && !args.no_live_reload,
             open: args.open,
         }),
     }

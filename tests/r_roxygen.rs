@@ -202,6 +202,12 @@ async fn plain_serve_regenerates_once_and_recovers_after_generation_failure() {
     struct Observer(tokio::sync::mpsc::UnboundedSender<bool>);
     impl Reporter for Observer {
         fn report(&self, event: Event<'_>) {
+            if let Event::Error(message) = &event {
+                eprintln!("serve failure: {message}");
+            }
+            if let Event::Diagnostic(diagnostic) = &event {
+                eprintln!("serve diagnostic: {diagnostic:?}");
+            }
             if let Event::Watching { retained_previous } = event {
                 let _ = self.0.send(retained_previous);
             }

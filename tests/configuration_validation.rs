@@ -14,6 +14,46 @@ fn configuration() -> WorkspaceConfiguration {
 }
 
 #[test]
+fn incremental_dependencies_and_extra_inputs_are_validated() {
+    let mut config = configuration();
+    let mut dependency = config.packages[0].clone();
+    dependency.id = "core".into();
+    dependency.slug = "core".into();
+    config.packages.push(dependency);
+    let dependency = "core".to_owned();
+    config.packages[0].incremental.depends_on = vec![dependency.clone()];
+    config.content[0].incremental.depends_on = vec![dependency];
+    config.packages[0].incremental.extra_inputs = vec!["shared".into(), ".".into()];
+    config.content[0].incremental.environment_variables = vec!["DOCS_VARIANT".into()];
+    assert!(validate_configuration(&config).is_empty());
+
+    config.packages[0].incremental.depends_on = vec!["missing".into()];
+    assert!(
+        only_diagnostic(&config, DiagnosticCode::InvalidConfiguration)
+            .message
+            .contains("depends-on")
+    );
+    config.packages[0].incremental.depends_on.clear();
+    for invalid in ["", "../outside", "/outside"] {
+        config.packages[0].incremental.extra_inputs = vec![invalid.into()];
+        assert!(
+            only_diagnostic(&config, DiagnosticCode::InvalidConfiguration)
+                .message
+                .contains("extra-inputs")
+        );
+    }
+    config.packages[0].incremental.extra_inputs.clear();
+    for invalid in ["", "NAME=value", "A\0B"] {
+        config.content[0].incremental.environment_variables = vec![invalid.into()];
+        assert!(
+            only_diagnostic(&config, DiagnosticCode::InvalidConfiguration)
+                .message
+                .contains("environment-variables")
+        );
+    }
+}
+
+#[test]
 fn julia_settings_require_a_julia_target_and_package() {
     use diplodocus::configuration::JuliaTargetConfiguration;
     for (extractor, ecosystem, valid) in [

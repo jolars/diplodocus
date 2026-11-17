@@ -37,8 +37,29 @@ extraction, using the prepared checkout and native interpreter. Expected-output
 mismatches, unexpected errors, missing dependencies, and unsupported executable
 syntax prevent publication. Snapshots retain checked outcomes and literal
 results. See the [API extraction guide](extraction.md) for comparison, setup,
-scope, and explicit skip rules. These adapters do not use Jupyter or an
-execution cache.
+scope, and explicit skip rules. These adapters use native interpreters rather
+than Jupyter.
+
+## Reusing completed results
+
+Commands automatically reuse completed native results when source, tool,
+dependency, and declared environment observations still agree. Generation, API
+discovery, and execution use separate entries. A package source change,
+including a comment edit, invalidates that package's examples. Authored pages
+reuse whole-page results, preserving their session state and retained figures.
+Cached output passes the current validators before publication.
+
+Declare supplemental files, directories, environment variables, and workspace
+package dependencies through the package or collection's
+[`incremental` settings](../reference/configuration.md). Unobservable dependency
+coverage forces fresh work. Code that depends on time, network responses, or
+other untracked state needs `incremental.cache: off`.
+
+Use `--no-cache` with `check`, `extract`, `build`, or `serve` to bypass result-cache
+reads and writes, including QMD caching. This leaves compiler caches available.
+Deleting `.diplodocus/cache` also starts fresh. Low-level source assembly does
+not enable these caches by itself, and detached generation still consumes only
+the completed snapshot.
 
 ## Native Documenter execution {#native-documenter-execution}
 
@@ -63,7 +84,11 @@ UUIDs and versions. The selected project file, available `Manifest*.toml` and
 repository-relative fingerprints. Diplodocus rechecks those files before
 publication and revalidates retained execution and image evidence on snapshot
 load. Detached HTML and Markdown generation needs no Julia or source checkout.
-Native Documenter execution has no persistent execution cache.
+Native Documenter execution can restore completed whole-page results and
+validated figures when the page, owning package, and prepared Julia environment
+still agree. Named sessions remain page-local. Use `--no-cache` to execute the
+page again, and declare supplemental inputs through the collection's
+`incremental` settings.
 
 ## Native R Markdown execution
 

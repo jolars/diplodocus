@@ -201,7 +201,7 @@ pub struct PageExecutionRequest {
 }
 
 /// Original cell input paired with caller-normalized options.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PreparedCell {
     /// Zero-based ordinal among all authored cells, including nested cells.
     pub ordinal: usize,

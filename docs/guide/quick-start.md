@@ -69,7 +69,7 @@ From `my-project/`, run:
 
 ```console
 diplodocus check
-diplodocus serve --live-reload
+diplodocus serve
 ```
 
 Add `--open` to open your browser after the first successful build. The preview

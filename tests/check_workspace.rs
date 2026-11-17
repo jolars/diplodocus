@@ -5,7 +5,7 @@ use diplodocus::diagnostics::{DiagnosticCode, Severity};
 use snapbox::cmd::{Command, cargo_bin};
 
 #[test]
-fn check_runs_the_static_pipeline_with_missing_kernels_and_leaves_files_unchanged() {
+fn check_runs_the_static_pipeline_with_missing_kernels_and_preserves_sources() {
     let root = support::acceptance_workspace();
     let config = root
         .read("workspace/diplodocus.yaml")
@@ -91,8 +91,18 @@ fn tree(root: &std::path::Path) -> Vec<(std::path::PathBuf, Option<Vec<u8>>)> {
         for entry in std::fs::read_dir(dir).unwrap() {
             let path = entry.unwrap().path();
             let relative = path.strip_prefix(root).unwrap().to_owned();
+            if path.file_name().is_some_and(|name| name == "cache")
+                && path
+                    .parent()
+                    .and_then(std::path::Path::file_name)
+                    .is_some_and(|name| name == ".diplodocus")
+            {
+                continue;
+            }
             if path.is_dir() {
-                files.push((relative, None));
+                if !path.file_name().is_some_and(|name| name == ".diplodocus") {
+                    files.push((relative, None));
+                }
                 walk(root, &path, files);
             } else {
                 files.push((relative, Some(std::fs::read(path).unwrap())));

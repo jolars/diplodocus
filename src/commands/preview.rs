@@ -59,10 +59,10 @@ async fn run(
         config: options.config.clone(),
         output: options.output.clone(),
     };
-    let mut watcher = Watcher::new(&options.config, &options.output)?;
+    let mut watcher = Watcher::new(&options.config, &options.output, reporting)?;
     setup.finish();
     let command = reporting.command("build");
-    let mut attempt = pipeline::AttemptState::default();
+    let mut attempt = pipeline::AttemptState::watching();
     let initial = pipeline::build_attempt_observed(
         &build,
         deadlines,
@@ -121,7 +121,7 @@ async fn run(
             }
             _ = watcher.next_change() => {
                 let command = reporting.command("rebuild");
-                let mut attempt = pipeline::AttemptState::default();
+                let mut attempt = pipeline::AttemptState::watching();
                 let result = pipeline::build_attempt_observed(&build, deadlines, Box::pin(cancelled(stop.clone())), reporting, &mut attempt).await;
                 watcher.acknowledge(attempt);
                 match result {
@@ -391,6 +391,7 @@ const LIVE_RELOAD: &str = r#"<script>(()=>{const served='__REVISION__';async fun
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::assembly::assemble_workspace;
     use std::fs;
 
     #[test]

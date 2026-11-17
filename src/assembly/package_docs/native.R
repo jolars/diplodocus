@@ -31,5 +31,9 @@ if (nzchar(args[[3L]])) {
   emit("news", capture.output(tools::Rd2txt(tools::parse_Rd(args[[3L]]))))
 }
 emit("version", as.character(getRversion()))
+for (name in sort(loadedNamespaces())) {
+  emit("dependency", paste(name, utils::packageVersion(name), sep = "="))
+}
 emit("complete", "r-package-metadata-v1")
+write_native_environment(args[[4L]], dirname(args[[1L]]))
 close(output)

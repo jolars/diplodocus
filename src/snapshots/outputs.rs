@@ -185,6 +185,7 @@ impl Snapshot {
                 mount: declaration.mount.clone(),
                 format: declaration.format,
                 navigation: declaration.navigation,
+                incremental: Default::default(),
                 execution: crate::configuration::ExecutionConfiguration {
                     mode: declaration.execution.mode,
                     engine: declaration.execution.engine,

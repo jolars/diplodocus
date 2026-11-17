@@ -15,7 +15,8 @@ mod signatures;
 use signatures::Signatures;
 
 /// One compiler JSON graph translated into the shared portable API model.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct RustExtraction {
     /// Compiler-supplied package version, when present.
     pub version: Option<String>,

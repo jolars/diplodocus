@@ -176,10 +176,24 @@ async fn opens_ready_local_url_once_with_assigned_port_and_live_reload() {
 async fn browser_opening_is_opt_in() {
     let root = workspace();
     let (mut child, _lines, url) = start(&mut command(&root, 0)).await;
-    assert!(request(&url).contains("First generation"));
+    let page = request(&url);
+    assert!(page.contains("First generation"));
+    assert!(page.contains("/__diplodocus/revision"));
     root.write("guide/index.md", "# Second generation\n");
     until(async || request(&url).contains("Second generation")).await;
     assert!(!root.path().join("browser.log").exists());
+    child.kill().await.unwrap();
+}
+
+#[tokio::test]
+async fn browser_refresh_can_be_disabled() {
+    let root = workspace();
+    let (mut child, _lines, url) = start(command(&root, 0).arg("--no-live-reload")).await;
+    let page = request(&url);
+    assert!(page.contains("First generation"));
+    assert!(!page.contains("/__diplodocus/revision"));
+    root.write("guide/index.md", "# Second generation\n");
+    until(async || request(&url).contains("Second generation")).await;
     child.kill().await.unwrap();
 }
 

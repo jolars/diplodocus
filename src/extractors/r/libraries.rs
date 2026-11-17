@@ -1,7 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
-use std::sync::OnceLock;
 
 use rd_rds::lazyload::LazyLoadIndex;
 use rd_rds::package::{MetadataField, NamespaceMetadata};
@@ -109,8 +108,8 @@ impl Libraries {
     }
 
     pub(super) fn discover() -> Result<Self, String> {
-        static DISCOVERY: OnceLock<Result<Discovery, String>> = OnceLock::new();
-        let discovery = DISCOVERY.get_or_init(probe).clone()?;
+        // A long-running preview can outlive a replacement of its prepared libraries.
+        let discovery = probe()?;
         let mut libraries = Self {
             exports: BTreeMap::from([("base".into(), discovery.base.clone())]),
             discovery,

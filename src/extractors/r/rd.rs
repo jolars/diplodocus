@@ -1284,9 +1284,10 @@ pub(super) fn attach(
         }
         let mut document_provenance = provenance(&topic.source, true);
         if topic.uses_r {
-            document_provenance
-                .tools
-                .insert("arity-parser".into(), "0.6.1".into());
+            document_provenance.tools.insert(
+                "arity-parser".into(),
+                env!("DIPLODOCUS_ARITY_VERSION").into(),
+            );
         }
         item.documentation = Some(SourcedDocument {
             document: Document {

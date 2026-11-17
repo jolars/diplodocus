@@ -28,7 +28,7 @@ location, native commands report the conflict before loading the package. Move
 the artifact before retrying. Static source inspection still excludes
 recognized Diplodocus storage artifacts regardless of their filename extension.
 
-## Roxygen2 or maintained Rd
+## Roxygen2 or maintained Rd {#roxygen2-or-maintained-rd}
 
 By default, packages with `Roxygen`, `RoxygenNote`, or `Config/roxygen2/*`
 DESCRIPTION fields, or `man/roxygen/meta.R`, use roxygen2. Other packages use
@@ -43,10 +43,10 @@ r:
 
 Normal commands run generation automatically. Saving roxygen prose, inherited
 documentation, formals, or export tags during `diplodocus serve` regenerates the
-documentation and rebuilds the site. Use `--live-reload` to refresh open browser
-pages. A generation error keeps the previous successful site; correcting the
-source lets the next rebuild recover. No separate `devtools::document()` call
-is needed.
+documentation, rebuilds the site, and refreshes open browser pages. Use
+`--no-live-reload` to disable browser refresh. A generation error keeps the
+previous successful site; correcting the source lets the next rebuild recover.
+No separate `devtools::document()` call is needed.
 
 Generation can evaluate `@evalRd`, `@evalNamespace`, included R Markdown, custom
 roclets, and package loading hooks. `check` permits this native preparation but
@@ -81,10 +81,26 @@ Custom outputs cannot occupy `R/`, `src/`, `inst/`, `data/`, DESCRIPTION,
 NAMESPACE, or roxygen's maintained configuration, templates, and macros.
 Diplodocus does not install extensions or sandbox their side effects.
 
-Generation and native discovery run on every command attempt. Their observed
-inputs, outputs, and exact tool versions travel with the snapshot, but they do
-not form an extraction cache. `documentation: rd` skips generation while keeping
-native API discovery.
+Generation and native discovery have separate persistent caches in
+`.diplodocus/cache/incremental/`. Reuse requires matching maintained inputs,
+generated output bytes and membership, configuration, supplemental inputs, and
+the prepared R environment. Diplodocus checks the selected R runtime, library
+precedence, dependency contents, mapped native libraries, and loader search paths.
+Replacing an installed dependency without changing its version invalidates
+affected results. Missing optional dependencies remain tracked as missing;
+installing one invalidates the affected entry. Stage helpers and dependencies
+actually loaded during native work must be available. Native-library reuse
+requires observable loaded libraries. Unsupported environments run afresh. A
+missing generated Rd file triggers generation again. `documentation: rd` skips
+generation while keeping native API discovery.
+
+Use `--no-cache` with `check`, `extract`, `build`, or `serve` to recompute results.
+Declare additional files or directories and environment variables consumed by
+evaluated documentation or package hooks through the package's `incremental`
+settings. These paths are relative to its repository, while `r.extra-inputs`
+remains relative to the package. Use `incremental.cache: off` for untracked
+external state such as network services. Dependency coverage that cannot be
+established causes fresh preparation instead of cache reuse.
 
 The current API model supports functions, constants, datasets, and S3 dispatch.
 Selected S4, R6, and S7 declarations receive explicit unsupported-surface
@@ -99,8 +115,10 @@ Normal R error handling such as `tryCatch()` remains available to examples.
 Results, messages, and warnings render as literal text, and recorded plots become
 validated PNG assets. Snapshots retain executed expressions, illustrative regions,
 skip reasons, the Rd source fingerprint, R and package versions, and loaded
-namespace versions. Each extraction executes examples afresh; the QMD cache does
-not cover Rd examples. Generation uses the completed snapshot without R or the
+namespace versions. Native example reuse requires the package source,
+documentation, dependency, and execution environment inputs to remain valid.
+Any package source change, including comments, invalidates its examples.
+Generation uses the completed snapshot without R or the
 checkout. Errors, missing prerequisites, timeouts, invalid figures, and cleanup
 failures prevent publication and preserve the previous snapshot and site.
 

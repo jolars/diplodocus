@@ -15,7 +15,7 @@ pub(crate) mod signatures;
 pub use configuration::DoxygenConfiguration;
 
 /// API items and diagnostics decoded from one completed native XML run.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
 pub struct DoxygenExtraction {
     /// Canonical declarations keyed independently of native reference IDs.
     pub items: BTreeMap<String, Item>,

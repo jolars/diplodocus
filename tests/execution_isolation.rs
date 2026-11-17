@@ -132,7 +132,7 @@ impl Isolation {
         monitor.tree(&private.path().join("data"), WatchFlags::ALL_EVENTS);
         if populated {
             monitor.tree(
-                &root.path().join(".diplodocus/cache"),
+                &root.path().join(".diplodocus/cache/execution"),
                 WatchFlags::ALL_EVENTS,
             );
         }
@@ -235,7 +235,7 @@ fn library_execute_child() {
 }
 
 #[test]
-fn every_check_exit_path_avoids_discovery_execution_and_writes() {
+fn uncached_check_exit_paths_avoid_discovery_execution_and_writes() {
     for mode in ["", NEVER, ENABLED] {
         for populated in [false, true] {
             for case in [
@@ -295,7 +295,7 @@ fn every_check_exit_path_avoids_discovery_execution_and_writes() {
                 let success = matches!(case, "success" | "warning");
                 for explicit in [false, true] {
                     let mut command = fixture.command(cargo_bin("diplodocus"));
-                    command.arg("check");
+                    command.args(["check", "--no-cache"]);
                     if explicit {
                         command.args(["--config", "diplodocus.yaml"]);
                     }
@@ -430,7 +430,13 @@ fn never_extract_build_and_watched_serve_leave_execution_untouched() {
             fixture.assert_quiet();
             assert_static_snapshot(&fixture.root.path().join(".diplodocus/documentation.sqlite"));
             if !populated {
-                assert!(!fixture.root.path().join(".diplodocus/cache").exists());
+                assert!(
+                    !fixture
+                        .root
+                        .path()
+                        .join(".diplodocus/cache/execution")
+                        .exists()
+                );
             }
         }
     }

@@ -34,6 +34,7 @@ mod authored;
 mod documenter;
 mod documenter_examples;
 mod doxygen_native;
+mod julia_environment;
 mod julia_runtime;
 pub(crate) use julia_runtime::assemble_for_extraction;
 #[cfg(target_os = "linux")]
@@ -43,6 +44,7 @@ mod packages;
 pub(crate) mod r_native;
 mod rd_examples;
 mod references;
+mod reuse;
 mod rmarkdown;
 mod rust_native;
 
@@ -149,10 +151,40 @@ pub struct WorkspaceSources {
     rmd_inputs: BTreeMap<String, Vec<PathBuf>>,
     doxygen_observations: Vec<doxygen_native::DoxygenObservation>,
     r_observations: Vec<r_native::RObservation>,
+    cache_observations: CacheObservations,
     selections: DeclaredSourceInputs,
     evidence: StaticProvenance,
     pub(crate) native_assets: BTreeMap<DiagnosticPath, crate::validation::ContentAsset>,
 }
+
+#[derive(Debug, Default)]
+struct CacheObservations(Vec<crate::incremental::Manifest>);
+
+impl CacheObservations {
+    fn push(&mut self, manifest: crate::incremental::Manifest) {
+        // Retain conflicting observations so a later guard still rejects changed inputs.
+        if !self.contains(&manifest) {
+            self.0.push(manifest);
+        }
+    }
+
+    fn contains(&self, manifest: &crate::incremental::Manifest) -> bool {
+        self.0.contains(manifest)
+    }
+
+    fn iter(&self) -> impl Iterator<Item = &crate::incremental::Manifest> {
+        self.0.iter()
+    }
+}
+
+impl Extend<crate::incremental::Manifest> for CacheObservations {
+    fn extend<T: IntoIterator<Item = crate::incremental::Manifest>>(&mut self, manifests: T) {
+        for manifest in manifests {
+            self.push(manifest);
+        }
+    }
+}
+
 impl WorkspaceSources {
     /// Portable records assembled so far, without a claim of final validation.
     pub fn workspace(&self) -> &Workspace {
@@ -192,6 +224,11 @@ impl WorkspaceSources {
                     .iter()
                     .flat_map(|observation| observation.paths().cloned()),
             )
+            .chain(
+                self.cache_observations
+                    .iter()
+                    .flat_map(|manifest| manifest.paths().cloned()),
+            )
     }
 
     pub(crate) fn doxygen_watch_roots(&self) -> impl Iterator<Item = &PathBuf> {
@@ -200,11 +237,49 @@ impl WorkspaceSources {
             .flat_map(|observation| observation.roots())
     }
 
+    pub(crate) fn dependency_watch_roots(&self) -> impl Iterator<Item = &PathBuf> {
+        self.cache_observations
+            .iter()
+            .flat_map(|manifest| manifest.roots())
+            .chain(
+                self.r_observations
+                    .iter()
+                    .flat_map(|observation| observation.dependency_roots()),
+            )
+    }
+
+    pub(crate) fn dependency_library_roots(&self) -> impl Iterator<Item = &PathBuf> {
+        self.cache_observations
+            .iter()
+            .flat_map(|manifest| manifest.native_library_roots())
+            .chain(
+                self.r_observations
+                    .iter()
+                    .flat_map(|observation| observation.dependency_library_roots()),
+            )
+    }
+
     /// Reread selected bytes and containment before accepting a later operation.
     ///
     /// This detects ordinary edits, including a later page changing an earlier
     /// page. It cannot snapshot undeclared reads or changes after this check.
     pub fn revalidate(&self) -> Result<(), AssemblyError> {
+        let timing = self.reporting.phase(Phase::SourceVerification, None, None);
+        let result = crate::incremental::verification_scope(|| self.revalidate_inner());
+        if result.is_ok() {
+            timing.finish();
+        }
+        result
+    }
+
+    fn revalidate_inner(&self) -> Result<(), AssemblyError> {
+        if self
+            .cache_observations
+            .iter()
+            .any(|manifest| !manifest.verify())
+        {
+            return Err(AssemblyError::InputsChanged);
+        }
         for observation in &self.r_observations {
             observation.verify()?;
         }
@@ -404,12 +479,18 @@ async fn rust_results(
     );
     let cache = paths.configuration_directory.join(".diplodocus/cache");
     let mut results = BTreeMap::new();
-    for (declaration, package) in configuration.packages.iter().zip(&paths.packages) {
+    for (index, (declaration, package)) in configuration
+        .packages
+        .iter()
+        .zip(&paths.packages)
+        .enumerate()
+    {
         let repository = &paths.repositories[package.repository_index];
+        let result_cache = crate::incremental::package_context(&configuration, &paths, index);
         for (target, selected) in declaration.targets.iter().zip(&package.targets) {
             if target.extractor == "rust" {
                 progress.item(&format!("{}:{}", package.id, target.id));
-                let result = rust_native::extract_target(
+                let result = rust_native::extract_target_cached(
                     repository,
                     package,
                     selected,
@@ -419,6 +500,7 @@ async fn rust_results(
                     reporting,
                     deadlines,
                     cancellation,
+                    result_cache.as_ref(),
                 )
                 .await?;
                 results.insert((package.id.clone(), target.id.clone()), result);
@@ -470,8 +552,14 @@ async fn doxygen_results(
         Some(target_count(&configuration, "doxygen")),
     );
     let mut results = BTreeMap::new();
-    for (declaration, package) in configuration.packages.iter().zip(&paths.packages) {
+    for (index, (declaration, package)) in configuration
+        .packages
+        .iter()
+        .zip(&paths.packages)
+        .enumerate()
+    {
         let repository = &paths.repositories[package.repository_index];
+        let cache = crate::incremental::package_context(&configuration, &paths, index);
         for (target, selected) in declaration.targets.iter().zip(&package.targets) {
             if target.extractor == "doxygen" {
                 progress.item(&format!("{}:{}", package.id, target.id));
@@ -484,6 +572,7 @@ async fn doxygen_results(
                         reporting,
                         deadlines,
                         cancellation,
+                        cache.as_ref(),
                     )
                     .await?,
                 );
@@ -611,6 +700,32 @@ fn assemble_with_native(
     };
     let mut selections = DeclaredSourceInputs::default();
     let mut observed = BTreeMap::new();
+    let mut cache_observations = CacheObservations::default();
+    cache_observations.extend(
+        rust_results
+            .values()
+            .filter_map(|result| result.observation.clone()),
+    );
+    for package in &configuration.packages {
+        cache_observations.push(crate::incremental::supplemental_manifest(
+            &configuration,
+            &paths,
+            package,
+        )?);
+    }
+    for (index, collection) in configuration.content.iter().enumerate() {
+        let repository = &paths.repositories[paths.content[index].repository_index];
+        let inputs = collection
+            .incremental
+            .extra_inputs
+            .iter()
+            .map(|path| crate::incremental::checked_incremental_path(&repository.path, path))
+            .collect::<Result<Vec<_>, _>>()?;
+        cache_observations.push(crate::incremental::Manifest::capture(
+            &inputs,
+            &collection.incremental.environment_variables,
+        )?);
+    }
     let doxygen_observations = doxygen_results
         .values()
         .map(|result| result.observation.clone())
@@ -697,6 +812,7 @@ fn assemble_with_native(
         rmd_inputs,
         doxygen_observations,
         r_observations,
+        cache_observations,
         selections,
         evidence,
         native_assets: BTreeMap::new(),

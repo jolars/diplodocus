@@ -214,7 +214,7 @@ fn read_input(
                 .parsers
                 .entry("toml".into())
                 .or_insert(ParserProvenance {
-                    version: "1.1.8".into(),
+                    version: env!("DIPLODOCUS_TOML_VERSION").into(),
                     role: "julia-metadata".into(),
                     settings: BTreeMap::new(),
                 });

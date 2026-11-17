@@ -4,12 +4,14 @@ Usage: diplodocus serve [OPTIONS]
 
 Options:
       --color <COLOR>   Control terminal colors in help, diagnostics, and status output [default: auto] [possible values: auto, always, never]
+      --no-cache        Recompute results without reading or writing incremental caches
       --config <PATH>   Path to the workspace configuration file [default: ./diplodocus.yaml]
       --no-progress     Print stage summaries instead of animated progress bars
       --output <PATH>   Directory in which to write the generated site [default: ./site]
-      --host <ADDRESS>  Address on which to serve the generated site [default: 127.0.0.1]
   -q, --quiet           Suppress routine status output while retaining warnings and errors
+      --host <ADDRESS>  Address on which to serve the generated site [default: 127.0.0.1]
       --port <PORT>     Port on which to serve the generated site [default: 8000]
-      --live-reload     Refresh open browser pages after successful rebuilds
+      --live-reload     Refresh open browser pages after successful rebuilds (enabled by default)
+      --no-live-reload  Disable automatic browser refresh after successful rebuilds
       --open            Open the local preview in a browser after the first successful build
   -h, --help            Print help

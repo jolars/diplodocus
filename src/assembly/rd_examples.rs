@@ -84,7 +84,7 @@ pub(super) async fn execute(
     cancellation: &mut ExecutionCancellation<'_>,
 ) -> Result<BTreeMap<DiagnosticPath, ContentAsset>, AssemblyError> {
     let mut assets = BTreeMap::new();
-    for package in &sources.paths.packages {
+    for package in sources.paths.packages.clone() {
         let record = &sources.workspace.packages[&package.id];
         let Some(PackageMetadata::R(metadata)) = &record.metadata else {
             continue;
@@ -110,12 +110,51 @@ pub(super) async fn execute(
                     .or_insert_with(|| location.clone());
             }
         }
+        let cache = if topics.is_empty() {
+            None
+        } else {
+            reuse::r_context(
+                sources,
+                &package.id,
+                "rd-execution",
+                record,
+                &["evaluate"],
+                deadlines,
+                cancellation,
+            )
+            .await?
+        };
+        if let Some(context) = &cache
+            && let Some((package_record, retained)) =
+                context.load_with::<reuse::PackageResult, _>(&sources.reporting, |cached| {
+                    reuse::Asset::restore(cached.assets).map(|assets| (cached.package, assets))
+                })
+        {
+            sources
+                .workspace
+                .packages
+                .insert(package.id.clone(), package_record);
+            assets.extend(retained);
+            context.retain(sources);
+            continue;
+        }
+        let mut package_assets = BTreeMap::new();
+        let mut native_environments = Some(Vec::new());
         let mut progress = sources
             .reporting
             .stage("Executing R help examples", Some(topics.len()));
         for location in topics.into_values() {
             progress.item(&format!("{}:{}", package.id, location.path.as_str()));
-            sources.revalidate()?;
+            sources.revalidate().map_err(|error| match error {
+                AssemblyError::Io(error) => AssemblyError::Io(std::io::Error::new(
+                    error.kind(),
+                    format!(
+                        "Cannot revalidate inputs before R topic `{}`: {error}",
+                        location.path.as_str()
+                    ),
+                )),
+                error => error,
+            })?;
             let document = sources.workspace.packages[&package.id]
                 .items
                 .values()
@@ -129,16 +168,27 @@ pub(super) async fn execute(
             let output = staging.path().join("results");
             let errors = staging.path().join("errors");
             let path = repository.path.join(location.path.as_str());
-            let input_bytes = fs::read(&path)?;
+            let input_bytes = fs::read(&path).map_err(|error| {
+                std::io::Error::new(
+                    error.kind(),
+                    format!("Cannot read R help topic `{}`: {error}", path.display()),
+                )
+            })?;
+            let helper = staging.path().join("examples.R");
+            fs::write(
+                &helper,
+                format!(
+                    "{}\n{}\n{}",
+                    include_str!("r_runtime.R"),
+                    include_str!("r_environment.R"),
+                    HELPER
+                ),
+            )?;
             let mut command = tokio::process::Command::new("R");
             command
-                .args([
-                    "--vanilla",
-                    "--slave",
-                    "-e",
-                    &format!("{}\n{}", include_str!("r_runtime.R"), HELPER),
-                    "--args",
-                ])
+                .args(["--vanilla", "--slave", "-f"])
+                .arg(&helper)
+                .arg("--args")
                 .arg(&package.path)
                 .arg(&path)
                 .arg(&output)
@@ -201,12 +251,21 @@ pub(super) async fn execute(
             }
             timing.finish();
             let (blocks, activity, generated) = decode(
-                &fs::read_to_string(output)?,
+                &fs::read_to_string(&output).map_err(|error| {
+                    std::io::Error::new(
+                        error.kind(),
+                        format!(
+                            "Cannot read completed R help results `{}`: {error}",
+                            output.display()
+                        ),
+                    )
+                })?,
                 &package.id,
                 &location,
                 &input_bytes,
                 staging.path(),
             )?;
+            package_assets.extend(generated.clone());
             assets.extend(generated);
             let provenance = Provenance {
                 activity,
@@ -245,10 +304,40 @@ pub(super) async fn execute(
                     document.provenance.push(provenance.clone());
                 }
             }
+            if let Some(inputs) = r_native::completed_environment_manifest(&output) {
+                if let Some(environments) = &mut native_environments {
+                    environments.extend(inputs);
+                }
+            } else {
+                native_environments = None;
+            }
             staging.close()?;
             progress.advance();
         }
         progress.finish();
+        if let Some(context) = cache {
+            let result = reuse::PackageResult {
+                package: sources.workspace.packages[&package.id].clone(),
+                assets: reuse::Asset::capture(&package_assets),
+            };
+            let dependencies = reuse::document_dependencies(
+                result
+                    .package
+                    .items
+                    .values()
+                    .filter_map(|item| item.documentation.as_ref()),
+            );
+            context
+                .save_execution(
+                    &result,
+                    &dependencies,
+                    native_environments.unwrap_or_default(),
+                    deadlines,
+                    cancellation,
+                    sources,
+                )
+                .await?;
+        }
     }
     sources.revalidate()?;
     Ok(assets)

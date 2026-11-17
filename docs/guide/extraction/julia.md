@@ -25,7 +25,7 @@ and aliases resolve to maintained declarations. Julia Markdown docstrings supply
 prose, lists, tables, admonitions, and inert code examples. API `@ref` links can
 name a family or select a method, and they preserve their labels.
 
-During extraction, Julia loads every checkout in the configured package project
+On a cache miss, Julia loads the checkout in the configured package project
 and verifies its name, UUID, version, and entry file, even without doctests.
 Unresolved public bindings additionally trigger type reflection. Prepare Julia
 and the package dependencies before building. The helper verifies the supplied
@@ -51,7 +51,16 @@ output still participates in comparison. Unsupported options, including filters
 and `@meta` setup, fail extraction. Ordinary Julia fences remain illustrative.
 
 The adapter retains literal outputs, outcomes, source fingerprints, and runtime
-and dependency observations in snapshots. It does not install dependencies or
-cache API execution. `check` does not load packages or execute doctests;
-`generate` needs no interpreter or source checkout.
+and dependency observations in snapshots. Native reflection and API examples
+reuse separate completed results when package sources and the prepared Julia
+environment still agree. Environment checks cover project files, manifests,
+preferences, resolved dependency sources, artifacts, runtime libraries, and
+load paths. Uncertain dependency coverage forces fresh work.
+
+Declare additional files and environment variables through
+[`incremental` settings](../../reference/configuration.md), or use
+`incremental.cache: off` for uncontrolled external state. `--no-cache` forces
+fresh extraction and execution. Diplodocus does not install dependencies.
+`check` does not load packages or execute doctests; `generate` needs no
+interpreter or source checkout.
 

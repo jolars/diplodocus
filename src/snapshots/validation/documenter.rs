@@ -41,6 +41,7 @@ pub(super) fn validate(snapshot: &Snapshot) -> Result<(), SnapshotError> {
             mount: collection.mount.clone(),
             format: collection.format,
             navigation: collection.navigation,
+            incremental: Default::default(),
             execution: crate::configuration::ExecutionConfiguration {
                 mode: collection.execution.mode,
                 engine: collection.execution.engine,

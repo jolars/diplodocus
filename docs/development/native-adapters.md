@@ -64,7 +64,7 @@ loading.
 | `check` | Python and Julia source adapters; native R, Rust, and Doxygen extraction. R may run roxygen2 and load the verified checkout. No documentation examples, knitr articles, or Jupyter sessions. | Diagnostics only. Native tools can write caches, generated documentation, or configured side effects. |
 | `extract` | Shared API discovery plus Julia runtime completion, verified package loading, API doctests, Rd examples, native authored-document execution, and configured QMD execution. | Completed, validated snapshot with execution evidence and retained assets. |
 | `build` | The same extraction operation, followed by snapshot generation. | Snapshot, then site. A generation failure can leave the newer completed snapshot while preserving the previous site. |
-| `serve` | The same build operation initially and after watched changes. The current watcher rebuilds the workspace. | Last successful served generation survives a failed rebuild. |
+| `serve` | The same build operation initially and after watched changes, reusing verified package and page results when their inputs match. Workspace references and site output are rebuilt. | Last successful served generation survives a failed rebuild. |
 | `generate` | Read a completed snapshot. No producer checkouts, configuration, extraction tools, or language runtimes. | Validated site or fragments. |
 
 Native preparation, generation, extraction, and examples are distinct activities.
@@ -83,17 +83,17 @@ code's side effects or roll back roxygen's checkout writes.
 | Adapter | Prepared environment | Current capabilities and evidence | Native migration gaps |
 | --- | --- | --- | --- |
 | Python | Python and prepared imports/extensions for extraction commands. Source-only checks need no Python interpreter. | Static PEP 621 metadata, maintained stubs, reexports, overloads, supported decorators, structured NumPy docstrings, and source maps. Native helpers verify the checkout and execute doctests. The Python source, surface, docstring, public API, and native example suites cover these features. | Import-time functions and arbitrary generated bindings are not discovered. Native loading does not replace static metadata or declaration rules. A supported Sphinx/autodoc exporter and extension policy remain future work. |
-| R | R, pkgload, jsonlite, dependencies, and prebuilt extensions for native discovery; roxygen2 for generated documentation; evaluate for examples and knitr for R Markdown. | Package-level auto selection or explicit roxygen2/Rd mode, in-checkout generation, native exports/formals and S3 evidence, generated declarations, Rd topics, aliases, shared help, and supplemental source evidence. Loading verifies checkout identity and extension bytes. | Package-level incremental invalidation and generation reuse remain step 3. Installed-package loading is rejected; custom roclets require declared supplemental inputs and generated outputs. |
+| R | R, pkgload, jsonlite, dependencies, and prebuilt extensions for native discovery; roxygen2 for generated documentation; evaluate for examples and knitr for R Markdown. | Package-level auto selection or explicit roxygen2/Rd mode, in-checkout generation, native exports/formals and S3 evidence, generated declarations, Rd topics, aliases, shared help, and supplemental source evidence. Loading verifies checkout identity and extension bytes. Verified generation, discovery, metadata, and execution results have separate persistent cache entries. | Installed-package loading is rejected; custom roclets require declared supplemental inputs and generated outputs. Dependency uncertainty prevents reuse. |
 | Julia | Julia and a prepared project for extraction commands; source-only checks need no Julia runtime. | Static includes, exports, aliases, methods, signatures, docstrings, and source maps. Native loading validates the checkout and completes supported generated types and fields. API doctests and Documenter examples retain execution evidence. Julia extraction, runtime, and discovery suites cover these boundaries. | Generated functions, generated methods, and runtime-attached documentation are not generally discovered. `check` retains static diagnostics for generated declarations. A supported documentation/method exporter remains future work. |
 | Rust | Prepared `nightly-2026-09-28` toolchain, Cargo.lock, offline dependencies, host target, and explicit library entry. | Native rustdoc JSON format 61 supplies public declarations, macro-generated APIs, reexports, traits, implementations, signatures, links, and source evidence. Native doctests retain compilation, expected errors, and skips. Rust extraction and native runner tests cover the integration. | No replacement planned. Preserve compiler authority and feature selection. Cross-compilation and binary targets remain unsupported. |
 | C++ | Doxygen on PATH, an explicit Doxyfile, and prepared generated headers/configuration. No library compilation required. | Native XML supplies namespaces, types, templates, overloads, signatures, references, and source evidence. Doxygen diagnostics and source inventory checks remain effective. Doxygen extraction tests cover extraction and detached generation. | No replacement planned. Standalone Doxygen pages, groups, diagrams, and executable examples are outside the imported API surface. |
 
-The inventory also exposes stale parser-version literals in current provenance:
-Legacy R source records use arity-parser `0.6.1` while Cargo selects `0.8.0`, and Julia records toml
-`1.1.8` while Cargo selects `1.2.1`. Correcting stale literals and binding them to build-selected versions is a follow-up before
-using this evidence for extraction caching. Benchmark reports include direct
-runtime version probes separately from verbatim snapshot tool records. Language
-IDs in those records can denote the built-in extractor version, not the runtime.
+Parser versions used by cache identities come from the current executable build
+and its selected dependencies. Recorded tool versions alone are insufficient
+cache keys: runtime and installed dependency observations must also match.
+Benchmark reports include direct runtime version probes separately from verbatim
+snapshot tool records. Language IDs in those records can denote the built-in
+extractor version, not the runtime.
 
 The `native_adapter_contract` suite adds two deliberately unsupported packages.
 `generated-python` creates a documented function through `exec`; Python exposes
@@ -118,8 +118,14 @@ guides explicitly. The complete shared-site recipe, authored guide migration,
 and cross-repository bundle workflow remain separate roadmap work. Known
 qualpalr vignette HTML incompatibilities remain full-site gaps.
 
-R generation currently runs on each command attempt rather than reusing output
-from a persistent cache. The watcher acknowledges only observed generator
+R generation and native discovery can reuse completed results when package and
+environment observations still match. Package loading and examples have separate
+reuse rules; generated Rd alone does not prove execution remains current.
+`incremental.depends-on`, `extra-inputs`, and `environment-variables` describe
+additional package dependencies and maintained reads. Native environment probes
+and installed dependency observations remain part of verification. Cache hits
+retain completed evidence and reconstruct local observations before publication.
+The watcher acknowledges only observed generator
 writes, including partial output after a failed attempt, and retains maintained
 source changes for another attempt. The previous successful snapshot and site
 survive generation failures. Roxygen2 supports `>= 7.3.2, < 9`. Compatibility

@@ -58,6 +58,13 @@ enum NativeOutput {
     Image { media_type: String, file: String },
 }
 
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CachedPage {
+    page: crate::ir::Page,
+    assets: Vec<super::reuse::Asset>,
+}
+
 fn failure(page: &PreparedPage, collection: &str, message: impl Into<String>) -> AssemblyError {
     AssemblyError::Diagnostics(vec![
         Diagnostic::new(
@@ -168,12 +175,77 @@ impl WorkspaceSources {
                     version: metadata.version.as_deref().unwrap_or_default(),
                 })
             };
+            let base = crate::incremental::content_context(
+                &self.configuration,
+                &self.paths,
+                page.collection,
+            );
+            let environment = if base.is_some() {
+                let validation = self.reporting.phase(
+                    Phase::CacheValidation,
+                    (collection.owner != "project").then_some(collection.owner.as_str()),
+                    None,
+                );
+                let environment = super::julia_environment::observe(
+                    &self.paths.configuration_directory,
+                    project,
+                    package
+                        .as_ref()
+                        .map_or(project.as_path(), |package| package.root),
+                    page.path.parent().expect("page parent"),
+                    deadlines,
+                    cancellation,
+                )
+                .await?;
+                validation.finish();
+                environment
+            } else {
+                None
+            };
+            let cache = environment.as_ref().and_then(|environment| {
+                super::julia_environment::Context::new(
+                    base.clone(),
+                    environment,
+                    "documenter-examples",
+                    &id,
+                    &(collection, &self.workspace.pages[&id], &page.source),
+                    deadlines,
+                )
+            });
+            if let Some(cache) = &cache {
+                self.cache_observations
+                    .extend(cache.manifests().iter().cloned());
+                if let Some(candidate) = cache.load::<CachedPage>(&self.reporting)
+                    && candidate.page.owner == self.workspace.pages[&id].owner
+                    && candidate.page.kind == self.workspace.pages[&id].kind
+                    && let Some(assets) = super::reuse::Asset::restore(candidate.assets)
+                {
+                    self.workspace.pages.insert(id.clone(), candidate.page);
+                    self.native_assets.extend(assets);
+                    self.revalidate()?;
+                    stage.advance();
+                    continue;
+                }
+            } else if base.is_some() {
+                self.reporting.cache(
+                    "documenter-examples",
+                    &id,
+                    false,
+                    Some("Prepared Julia dependency coverage is uncertain."),
+                );
+            }
             let staging = tempfile::tempdir()?;
             let request = staging.path().join("request.toml");
             let output = staging.path().join("results.toml");
             let errors = staging.path().join("errors");
             let helper = staging.path().join("documenter.jl");
-            fs::write(&helper, include_str!("documenter_examples.jl"))?;
+            fs::write(
+                &helper,
+                super::julia_environment::completed_source(
+                    include_str!("documenter_examples.jl"),
+                    staging.path(),
+                )?,
+            )?;
             fs::write(
                 &request,
                 toml::to_string(&Request {
@@ -313,8 +385,21 @@ impl WorkspaceSources {
                     tools
                 },
             });
+            let cached_assets = super::reuse::Asset::capture(&assets);
             self.native_assets.extend(assets);
+            let cache_complete = cache
+                .as_ref()
+                .is_some_and(|cache| cache.accepts_completion(staging.path(), &self.reporting));
             staging.close()?;
+            self.revalidate()?;
+            if let Some(cache) = &cache
+                && cache_complete
+            {
+                cache.save(&CachedPage {
+                    page: self.workspace.pages[&id].clone(),
+                    assets: cached_assets,
+                });
+            }
             stage.advance();
         }
         self.revalidate()?;

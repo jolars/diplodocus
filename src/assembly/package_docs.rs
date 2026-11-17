@@ -829,8 +829,10 @@ impl WorkspaceSources {
                 .packages
                 .iter()
                 .find(|package| package.id == id)
-                .expect("declared package");
-            let Some(PackageMetadata::R(metadata)) = &self.workspace.packages[&id].metadata else {
+                .expect("declared package")
+                .clone();
+            let Some(PackageMetadata::R(metadata)) = self.workspace.packages[&id].metadata.clone()
+            else {
                 continue;
             };
             progress.item(&id);
@@ -844,16 +846,70 @@ impl WorkspaceSources {
             let timing = self
                 .reporting
                 .phase(Phase::PackageMetadata, Some(&id), None);
-            let result = native::complete(
+            let cache = reuse::r_context(
+                self,
                 &id,
-                package,
-                files.citation.as_deref(),
-                news.map(PathBuf::as_path),
-                &metadata.description.source,
+                "r-metadata",
+                &(&metadata.description, &files.citation, &news),
+                &[],
                 deadlines,
                 cancellation,
             )
             .await?;
+            let current_runtime = self
+                .workspace
+                .provenance
+                .iter()
+                .find_map(|record| match &record.activity {
+                    ProvenanceActivity::RRuntime {
+                        package, r_version, ..
+                    } if package == &id => Some(r_version),
+                    _ => None,
+                });
+            let cached = cache.as_ref().and_then(|context| {
+                context.load_with::<native::NativeResult, _>(&self.reporting, |result| {
+                    if result.runtime.r_version.is_empty()
+                        || current_runtime
+                            .is_some_and(|version| version != &result.runtime.r_version)
+                        || result.dependencies.get("base") != Some(&result.runtime.r_version)
+                        || result
+                            .dependencies
+                            .iter()
+                            .any(|(name, version)| name.is_empty() || version.is_empty())
+                    {
+                        return None;
+                    }
+                    Some(result)
+                })
+            });
+            let restored = cached.is_some();
+            let result = if let Some(result) = cached {
+                result
+            } else {
+                native::complete(
+                    &id,
+                    &package,
+                    files.citation.as_deref(),
+                    news.map(PathBuf::as_path),
+                    &metadata.description.source,
+                    deadlines,
+                    cancellation,
+                )
+                .await?
+            };
+            if !restored && let Some(context) = &cache {
+                let dependencies = result.dependencies.keys().cloned().collect::<Vec<_>>();
+                context
+                    .save_execution(
+                        &result,
+                        &dependencies,
+                        result.environment.clone().unwrap_or_default(),
+                        deadlines,
+                        cancellation,
+                        self,
+                    )
+                    .await?;
+            }
             timing.finish();
             let mut blocks = vec![];
             if !result.runtime.authors.is_empty() {
@@ -966,6 +1022,9 @@ impl WorkspaceSources {
                 metadata.runtime = Some(result.runtime);
             }
             self.workspace.provenance.push(provenance);
+            if restored && let Some(context) = cache {
+                context.retain(self);
+            }
             progress.advance();
         }
         self.revalidate()?;

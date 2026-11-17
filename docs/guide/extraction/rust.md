@@ -58,9 +58,18 @@ Source links retain the original definition location.
 
 Snapshots retain Rust declarations, resolved references, input fingerprints,
 compiler and dependency evidence, and completed doctest outcomes. Generation
-requires neither the checkout nor the Rust toolchain. Compilation artifacts may
-be reused, but extraction and doctest outcomes are recomputed on each build.
-Failures preserve the previous snapshot and site. The
+requires neither the checkout nor the Rust toolchain. Extraction and doctest
+results have separate persistent caches. Reuse checks Cargo's resolved source
+dependencies, compiler inputs, toolchain contents, effective configuration and
+features, declared supplemental inputs, and environment observations. A source
+edit invalidates that package's doctests, including comment changes.
+
+Result reuse is disabled when a reachable dependency contains a build script or
+procedural macro, since its additional reads cannot be established through the
+current compiler input inventory. Cargo can still reuse its compilation
+artifacts. Use `--no-cache` or the package's `incremental.cache: off` to force
+fresh extraction and examples. Failures preserve the previous snapshot and
+site. The
 [Rust extraction contract](https://github.com/jolars/diplodocus/blob/main/docs/ir/rust-extraction.md)
 describes the portable representation and native input boundary.
 

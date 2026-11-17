@@ -10,7 +10,7 @@ use tokio::time::Instant;
 use crate::configuration::{ContentConfiguration, WorkspaceConfiguration};
 use crate::execution::{ExecutionCancellation, ExecutionDeadlines};
 use crate::provenance::fingerprint_bytes;
-use crate::reporting::{Event, Reporting};
+use crate::reporting::{Event, Phase, Reporting};
 
 /// Extract on startup and after debounced changes to declared inputs.
 ///
@@ -62,7 +62,7 @@ async fn extract_loop(
             .unwrap_or(Path::new("."))
             .join(".diplodocus/documentation.sqlite")
     });
-    let mut watcher = Watcher::new(&options.config, &output)?;
+    let mut watcher = Watcher::new(&options.config, &output, reporting)?;
     let mut initial = true;
     loop {
         if !initial {
@@ -72,7 +72,7 @@ async fn extract_loop(
             }
         }
         let command = reporting.command("extract");
-        let mut attempt = pipeline::AttemptState::default();
+        let mut attempt = pipeline::AttemptState::watching();
         let result = pipeline::extract_attempt_observed(
             options.clone(),
             None,
@@ -107,6 +107,7 @@ async fn extract_loop(
 }
 
 pub(super) struct Watcher {
+    reporting: Reporting,
     observer: Observer,
     attempted: Observation,
     pending: Observation,
@@ -115,10 +116,17 @@ pub(super) struct Watcher {
 }
 
 impl Watcher {
-    pub(super) fn new(config: &Path, output: &Path) -> Result<Self, CommandError> {
+    pub(super) fn new(
+        config: &Path,
+        output: &Path,
+        reporting: &Reporting,
+    ) -> Result<Self, CommandError> {
+        let timing = reporting.phase(Phase::WatchCapture, None, None);
         let mut observer = Observer::new(config, output)?;
         let attempted = observer.capture();
+        timing.finish();
         Ok(Self {
+            reporting: reporting.clone(),
             observer,
             pending: attempted.clone(),
             attempted,
@@ -128,7 +136,10 @@ impl Watcher {
     }
 
     pub(super) fn acknowledge(&mut self, attempt: pipeline::AttemptState) {
+        let timing = self.reporting.phase(Phase::WatchCapture, None, None);
         let previous_assets = self.observer.assets.clone();
+        let previous_roots = self.observer.native_roots.clone();
+        let previous_library_roots = self.observer.native_library_roots.clone();
         if let Some(inputs) = attempt.watch_inputs {
             // New subscriptions use the bytes observed during assembly, so an
             // edit after that observation still schedules another attempt.
@@ -139,6 +150,10 @@ impl Watcher {
             }
             self.observer.assets = inputs.assets.into_keys().collect();
             self.observer.native_roots = inputs.native_roots;
+            self.observer.native_library_roots = inputs.native_library_roots;
+            self.observer
+                .external_fingerprints
+                .extend(inputs.external_fingerprints);
         }
         let observed = self.observer.capture();
         for path in previous_assets.difference(&self.observer.assets) {
@@ -146,12 +161,30 @@ impl Watcher {
                 self.attempted.remove(path);
             }
         }
+        self.attempted.retain(|path, _| {
+            observed.contains_key(path)
+                || !previous_roots
+                    .iter()
+                    .chain(&previous_library_roots)
+                    .any(|root| path.starts_with(root))
+                || self
+                    .observer
+                    .native_roots
+                    .iter()
+                    .chain(&self.observer.native_library_roots)
+                    .any(|root| path.starts_with(root))
+        });
         self.attempted.retain(|path, value| {
             !(value == "NotFound"
                 && path.is_dir()
                 && attempt.writes.keys().any(|output| output.starts_with(path)))
         });
         for (path, value) in &observed {
+            if path.is_dir() && attempt.writes.keys().any(|output| output.starts_with(path)) {
+                self.attempted
+                    .entry(path.clone())
+                    .or_insert_with(|| value.clone());
+            }
             if value == "NotFound"
                 && attempt
                     .writes
@@ -178,12 +211,15 @@ impl Watcher {
             }
         }
         self.pending = self.attempted.clone();
+        timing.finish();
     }
 
-    pub(super) async fn next_change(&mut self) {
+    pub(super) async fn next_change(&mut self) -> BTreeSet<PathBuf> {
         loop {
             self.interval.tick().await;
+            let timing = self.reporting.phase(Phase::WatchPoll, None, None);
             let observed = self.observer.capture();
+            timing.finish();
             // Wait a full period after scanning. A build or a slow scan can
             // leave ticks perpetually overdue and starve shutdown in select!.
             self.interval.reset();
@@ -195,10 +231,15 @@ impl Watcher {
             {
                 continue;
             }
-            self.observer.refresh_assets();
-            self.attempted = self.observer.capture();
-            self.pending = self.attempted.clone();
-            return;
+            let paths = self
+                .attempted
+                .keys()
+                .chain(self.pending.keys())
+                .filter(|path| self.attempted.get(*path) != self.pending.get(*path))
+                .cloned()
+                .collect();
+            self.attempted = self.pending.clone();
+            return paths;
         }
     }
 }
@@ -235,16 +276,58 @@ pub(super) async fn termination() {
 }
 
 type Observation = BTreeMap<PathBuf, String>;
+type ExternalFingerprints = BTreeMap<PathBuf, (ExternalSignature, String)>;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct MetadataSignature {
+    length: u64,
+    modified: Option<std::time::SystemTime>,
+    directory: bool,
+    #[cfg(unix)]
+    unix: (u64, u64, i64, i64, i64, i64, u32),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct ExternalSignature {
+    target: MetadataSignature,
+    link: Option<MetadataSignature>,
+}
+
+impl MetadataSignature {
+    fn new(metadata: &fs::Metadata) -> Self {
+        Self {
+            length: metadata.len(),
+            modified: metadata.modified().ok(),
+            directory: metadata.is_dir(),
+            #[cfg(unix)]
+            unix: {
+                use std::os::unix::fs::MetadataExt;
+                (
+                    metadata.dev(),
+                    metadata.ino(),
+                    metadata.mtime(),
+                    metadata.mtime_nsec(),
+                    metadata.ctime(),
+                    metadata.ctime_nsec(),
+                    metadata.mode(),
+                )
+            },
+        }
+    }
+}
+
 struct Observer {
     config: PathBuf,
     output: PathBuf,
     configuration: Option<WorkspaceConfiguration>,
     assets: BTreeSet<PathBuf>,
     native_roots: Vec<PathBuf>,
+    native_library_roots: Vec<PathBuf>,
+    external_fingerprints: ExternalFingerprints,
 }
 impl Observer {
     fn new(config: &Path, output: &Path) -> Result<Self, CommandError> {
-        let mut observer = Self {
+        let observer = Self {
             config: pipeline::absolute(
                 config
                     .parent()
@@ -256,19 +339,14 @@ impl Observer {
             configuration: None,
             assets: BTreeSet::new(),
             native_roots: Vec::new(),
+            native_library_roots: Vec::new(),
+            external_fingerprints: BTreeMap::new(),
         };
-        observer.refresh_assets();
         Ok(observer)
     }
     fn capture(&mut self) -> Observation {
         let mut observed = BTreeMap::new();
         observe(&self.config, &mut observed);
-        for asset in &self.assets {
-            observe(asset, &mut observed);
-        }
-        for root in &self.native_roots {
-            discover_doxygen(root, &self.output, &mut observed);
-        }
         if let Ok(text) = fs::read_to_string(&self.config)
             && let Ok(config) = crate::configuration::parse_configuration(&text)
         {
@@ -287,6 +365,41 @@ impl Observer {
                     .map(|path| (r.id.as_str(), path))
             })
             .collect();
+        for root in &self.native_roots {
+            if roots
+                .values()
+                .any(|repository| root.starts_with(repository))
+            {
+                discover_doxygen(root, &self.output, &mut observed);
+            } else {
+                discover_external(
+                    root,
+                    &self.output,
+                    &mut observed,
+                    &mut self.external_fingerprints,
+                    &mut BTreeSet::new(),
+                );
+            }
+        }
+        for root in &self.native_library_roots {
+            let maintained = roots
+                .values()
+                .any(|repository| root.starts_with(repository));
+            discover_native_libraries(
+                root,
+                &self.output,
+                maintained,
+                &mut observed,
+                &mut self.external_fingerprints,
+            );
+        }
+        for asset in &self.assets {
+            if roots.values().any(|root| asset.starts_with(root)) {
+                observe(asset, &mut observed);
+            } else {
+                observe_external(asset, &mut observed, &mut self.external_fingerprints);
+            }
+        }
         if let Some(logo) = &config.presentation.logo
             && let Some(root) = roots.get(logo.repository.as_str())
         {
@@ -322,6 +435,7 @@ impl Observer {
             let Some(root) = roots.get(package.repository.as_str()) else {
                 continue;
             };
+            self.incremental_inputs(&package.incremental, root, &mut observed);
             let Ok(root) = pipeline::absolute(&root.join(&package.path)) else {
                 continue;
             };
@@ -453,6 +567,7 @@ impl Observer {
             let Some(root) = roots.get(content.repository.as_str()) else {
                 continue;
             };
+            self.incremental_inputs(&content.incremental, root, &mut observed);
             for input in &content.execution.declared_environment_inputs {
                 observe(&root.join(input), &mut observed);
             }
@@ -476,13 +591,29 @@ impl Observer {
                 self.authored_assets(&page, content, root, &mut observed);
             }
         }
+        self.external_fingerprints
+            .retain(|path, _| observed.contains_key(path));
         observed
     }
+    fn incremental_inputs(
+        &self,
+        settings: &crate::configuration::IncrementalConfiguration,
+        root: &Path,
+        observed: &mut Observation,
+    ) {
+        for path in &settings.extra_inputs {
+            discover_incremental(root, path, &self.output, observed, &mut BTreeSet::new());
+        }
+    }
+
+    // Tests simulate the subscriptions supplied by a completed assembly.
+    #[cfg(test)]
     fn refresh_assets(&mut self) {
-        let Ok(sources) = assemble_workspace(&self.config) else {
+        let Ok(sources) = crate::assembly::assemble_workspace(&self.config) else {
             return;
         };
-        let inputs = SourceWatchInputs::capture(&sources, &self.output);
+        let inputs =
+            SourceWatchInputs::capture(&sources, &self.output, &Reporting::default(), None);
         self.assets = inputs.assets.into_keys().collect();
         self.native_roots = inputs.native_roots;
     }
@@ -572,25 +703,87 @@ impl Observer {
         );
     }
 }
+#[derive(Default)]
 pub(super) struct SourceWatchInputs {
     assets: Observation,
     native_roots: Vec<PathBuf>,
+    native_library_roots: Vec<PathBuf>,
+    external_fingerprints: ExternalFingerprints,
 }
+
+fn minimize_native_roots(roots: impl IntoIterator<Item = PathBuf>) -> Vec<PathBuf> {
+    let mut roots: Vec<_> = roots
+        .into_iter()
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect();
+    roots.sort_by(|left, right| {
+        left.components()
+            .count()
+            .cmp(&right.components().count())
+            .then_with(|| left.cmp(right))
+    });
+    let mut selected = BTreeSet::<PathBuf>::new();
+    let mut ordered = Vec::new();
+    for root in roots {
+        let covered = root.ancestors().any(|parent| {
+            selected.contains(parent)
+                && root.strip_prefix(parent).is_ok_and(|relative| {
+                    !relative.components().any(|component| {
+                        crate::extractors::doxygen::configuration::excluded(
+                            &component.as_os_str().to_string_lossy(),
+                        )
+                    })
+                })
+        });
+        if !covered {
+            selected.insert(root.clone());
+            ordered.push(root);
+        }
+    }
+    ordered
+}
+
 impl SourceWatchInputs {
-    pub(super) fn capture(sources: &crate::assembly::WorkspaceSources, output: &Path) -> Self {
+    pub(super) fn capture(
+        sources: &crate::assembly::WorkspaceSources,
+        output: &Path,
+        reporting: &Reporting,
+        previous: Option<Self>,
+    ) -> Self {
+        let timing = reporting.phase(Phase::WatchCapture, None, None);
         let observer = Observer {
             config: PathBuf::new(),
             output: output.to_owned(),
             configuration: None,
             assets: BTreeSet::new(),
             native_roots: Vec::new(),
+            native_library_roots: Vec::new(),
+            external_fingerprints: BTreeMap::new(),
         };
         let workspace = sources.workspace();
-        let native_roots = sources.doxygen_watch_roots().cloned().collect();
-        let mut assets = Observation::new();
-        for path in sources.input_paths() {
-            observe(&path, &mut assets);
-        }
+        let native_roots = minimize_native_roots(
+            sources
+                .doxygen_watch_roots()
+                .chain(sources.dependency_watch_roots())
+                .cloned(),
+        );
+        let native_library_roots = sources
+            .dependency_library_roots()
+            .cloned()
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .collect();
+        let mut inputs = Self::from_previous(previous);
+        inputs.native_roots = native_roots;
+        inputs.native_library_roots = native_library_roots;
+        inputs.observe_paths(sources.input_paths(), |path| {
+            sources
+                .paths()
+                .repositories
+                .iter()
+                .any(|root| path.starts_with(&root.path))
+        });
         let documents = workspace
             .pages
             .values()
@@ -623,17 +816,47 @@ impl SourceWatchInputs {
                 &root.path.join(source.path.as_str()),
                 &document.document,
                 &root.path,
-                &mut assets,
+                &mut inputs.assets,
             );
         }
+        inputs.retire_fingerprints();
+        timing.finish();
+        inputs
+    }
+
+    fn from_previous(previous: Option<Self>) -> Self {
         Self {
-            assets,
-            native_roots,
+            external_fingerprints: previous
+                .map(|inputs| inputs.external_fingerprints)
+                .unwrap_or_default(),
+            ..Self::default()
         }
+    }
+
+    fn observe_paths(
+        &mut self,
+        paths: impl IntoIterator<Item = PathBuf>,
+        maintained: impl Fn(&Path) -> bool,
+    ) {
+        for path in paths.into_iter().collect::<BTreeSet<_>>() {
+            if maintained(&path) {
+                observe(&path, &mut self.assets);
+            } else {
+                observe_external(&path, &mut self.assets, &mut self.external_fingerprints);
+            }
+        }
+    }
+
+    fn retire_fingerprints(&mut self) {
+        self.external_fingerprints
+            .retain(|path, _| self.assets.contains_key(path));
     }
 }
 
 fn observe(path: &Path, observed: &mut Observation) {
+    if observed.contains_key(path) {
+        return;
+    }
     let value = match fs::metadata(path).and_then(|metadata| {
         if metadata.is_file() {
             fs::read(path)
@@ -647,8 +870,192 @@ fn observe(path: &Path, observed: &mut Observation) {
     observed.insert(path.to_owned(), value);
 }
 
+fn observe_external(path: &Path, observed: &mut Observation, cache: &mut ExternalFingerprints) {
+    if observed.contains_key(path) {
+        return;
+    }
+    let value = (|| -> std::io::Result<String> {
+        let link = fs::symlink_metadata(path)?;
+        let metadata = if link.is_symlink() {
+            fs::metadata(path)?
+        } else {
+            link.clone()
+        };
+        let signature = ExternalSignature {
+            target: MetadataSignature::new(&metadata),
+            link: link.is_symlink().then(|| MetadataSignature::new(&link)),
+        };
+        if metadata.is_dir() {
+            // Recursive discovery tracks children without reacting to ignored cache writes.
+            #[cfg(unix)]
+            return Ok(format!(
+                "Directory:{}:{}:{}",
+                signature.target.unix.0, signature.target.unix.1, signature.target.unix.6
+            ));
+            #[cfg(not(unix))]
+            return Ok(format!("Directory:{:?}", fs::canonicalize(path)?));
+        }
+        if metadata.is_file() {
+            if let Some((previous, value)) = cache.get(path)
+                && previous == &signature
+            {
+                return Ok(value.clone());
+            }
+            let fingerprint = crate::incremental::file_digest(path)?.value;
+            let value = format!("File:{fingerprint}:{signature:?}");
+            cache.insert(path.to_owned(), (signature, value.clone()));
+            return Ok(value);
+        }
+        Err(std::io::Error::other("not a regular external dependency"))
+    })()
+    .unwrap_or_else(|error| {
+        cache.remove(path);
+        format!("{:?}", error.kind())
+    });
+    observed.insert(path.to_owned(), value);
+}
+
+fn discover_external(
+    root: &Path,
+    output: &Path,
+    observed: &mut Observation,
+    cache: &mut ExternalFingerprints,
+    active: &mut BTreeSet<PathBuf>,
+) {
+    if root.starts_with(output) || crate::generated_storage::is_reserved(root) {
+        return;
+    }
+    let directory = root.is_dir();
+    if directory && generated_site(root) {
+        return;
+    }
+    observe_external(root, observed, cache);
+    if !directory {
+        return;
+    }
+    let Ok(canonical) = fs::canonicalize(root) else {
+        return;
+    };
+    if !active.insert(canonical.clone()) {
+        return;
+    }
+    if let Ok(entries) = fs::read_dir(root) {
+        for entry in entries.flatten() {
+            if !matches!(
+                entry.file_name().to_str(),
+                Some(
+                    ".git"
+                        | ".devenv"
+                        | ".direnv"
+                        | "target"
+                        | "node_modules"
+                        | "__pycache__"
+                        | ".pytest_cache"
+                )
+            ) {
+                discover_external(&entry.path(), output, observed, cache, active);
+            }
+        }
+    }
+    active.remove(&canonical);
+}
+
+fn discover_native_libraries(
+    root: &Path,
+    output: &Path,
+    maintained: bool,
+    observed: &mut Observation,
+    cache: &mut ExternalFingerprints,
+) {
+    if root.starts_with(output) || crate::generated_storage::is_reserved(root) {
+        return;
+    }
+    if maintained {
+        observe(root, observed);
+    } else {
+        observe_external(root, observed, cache);
+    }
+    if let Ok(entries) = fs::read_dir(root) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if crate::incremental::native_library_file(&path) && !path.is_dir() {
+                if maintained {
+                    observe(&path, observed);
+                } else {
+                    observe_external(&path, observed, cache);
+                }
+            }
+        }
+    }
+}
+
+fn discover_incremental(
+    repository: &Path,
+    declared: &Path,
+    output: &Path,
+    observed: &mut Observation,
+    active: &mut BTreeSet<PathBuf>,
+) {
+    let path = repository.join(declared);
+    if crate::generated_storage::is_reserved(&path)
+        || path.starts_with(output)
+        || path.file_name().is_some_and(|name| {
+            matches!(
+                name.to_str(),
+                Some(
+                    ".git"
+                        | ".devenv"
+                        | ".direnv"
+                        | "target"
+                        | "node_modules"
+                        | "__pycache__"
+                        | ".pytest_cache"
+                )
+            )
+        })
+    {
+        return;
+    }
+    if crate::incremental::checked_incremental_path(repository, declared).is_err() {
+        observed.insert(path, "InvalidBoundary".into());
+        return;
+    }
+    if !path.is_dir() {
+        if !crate::generated_storage::is_generated_file(&path) {
+            observe(&path, observed);
+        }
+        return;
+    }
+    if generated_site(&path) {
+        return;
+    }
+    let Ok(canonical) = fs::canonicalize(&path) else {
+        observe(&path, observed);
+        return;
+    };
+    if canonical.starts_with(output) {
+        return;
+    }
+    observed.insert(path.clone(), format!("Directory:{canonical:?}"));
+    if !active.insert(canonical.clone()) {
+        return;
+    }
+    if let Ok(entries) = fs::read_dir(&path) {
+        for entry in entries.flatten() {
+            discover_incremental(
+                repository,
+                &declared.join(entry.file_name()),
+                output,
+                observed,
+                active,
+            );
+        }
+    }
+    active.remove(&canonical);
+}
+
 fn discover_doxygen(root: &Path, output: &Path, observed: &mut Observation) {
-    if root.starts_with(output) {
+    if root.starts_with(output) || crate::generated_storage::is_reserved(root) {
         return;
     }
     let Ok(metadata) = fs::symlink_metadata(root) else {
@@ -656,8 +1063,13 @@ fn discover_doxygen(root: &Path, output: &Path, observed: &mut Observation) {
         return;
     };
     if metadata.is_file() || metadata.is_symlink() {
-        observe(root, observed);
+        if !crate::generated_storage::is_generated_file(root) {
+            observe(root, observed);
+        }
     } else if let Ok(entries) = fs::read_dir(root) {
+        if generated_site(root) {
+            return;
+        }
         for entry in entries.flatten() {
             if !crate::extractors::doxygen::configuration::excluded(
                 &entry.file_name().to_string_lossy(),
@@ -666,6 +1078,10 @@ fn discover_doxygen(root: &Path, output: &Path, observed: &mut Observation) {
             }
         }
     }
+}
+
+fn generated_site(path: &Path) -> bool {
+    fs::read(path.join(".diplodocus-site")).is_ok_and(|bytes| bytes == b"diplodocus-site-v1\n")
 }
 
 fn discover_rust(root: &Path, output: &Path, observed: &mut Observation) {
@@ -750,6 +1166,7 @@ fn discover(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::assembly::assemble_workspace;
 
     fn journal_watcher(root: &Path, assets: &[&str]) -> Watcher {
         let config = root.join("diplodocus.yaml");
@@ -768,9 +1185,12 @@ mod tests {
             configuration: None,
             assets: assets.iter().map(|path| root.join(path)).collect(),
             native_roots: Vec::new(),
+            native_library_roots: Vec::new(),
+            external_fingerprints: BTreeMap::new(),
         };
         let attempted = observer.capture();
         Watcher {
+            reporting: Reporting::default(),
             observer,
             pending: attempted.clone(),
             attempted,
@@ -789,7 +1209,7 @@ mod tests {
                     (path, fingerprint)
                 })
                 .collect(),
-            watch_inputs: None,
+            ..pipeline::AttemptState::default()
         }
     }
 
@@ -800,8 +1220,260 @@ mod tests {
         }
         SourceWatchInputs {
             assets,
-            native_roots: Vec::new(),
+            ..SourceWatchInputs::default()
         }
+    }
+
+    #[test]
+    fn native_root_pruning_preserves_explicit_roots_under_excluded_directories() {
+        let roots = [
+            "/deps/pkg/source",
+            "/deps",
+            "/deps/target/pkg",
+            "/deps/target",
+            "/deps/pkg",
+            "/deps/target/pkg/.git/config",
+            "/deps/node_modules/pkg",
+            "/deps/node_modules/pkg/include",
+            "/elsewhere/file",
+            "/deps",
+            "/deps/node_modules/pkg",
+            "/deps/target/pkg/.git/config",
+        ];
+        assert_eq!(
+            minimize_native_roots(roots.into_iter().map(PathBuf::from)),
+            [
+                "/deps",
+                "/deps/target",
+                "/elsewhere/file",
+                "/deps/node_modules/pkg",
+                "/deps/target/pkg/.git/config",
+            ]
+            .map(PathBuf::from)
+        );
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn subscription_memos_recheck_mutations_between_captures_and_retire_removed_paths() {
+        let root = tempfile::tempdir().unwrap();
+        let dependencies = tempfile::tempdir().unwrap();
+        let file = dependencies.path().join("retained");
+        let removed = dependencies.path().join("removed");
+        fs::write(&file, "first").unwrap();
+        fs::write(&removed, "retired").unwrap();
+        let modified = fs::metadata(&file).unwrap().modified().unwrap();
+        let mut initial = SourceWatchInputs::from_previous(None);
+        initial.observe_paths([file.clone(), removed.clone(), file.clone()], |_| false);
+        initial.retire_fingerprints();
+        let before = initial.assets[&file].clone();
+        assert_eq!(initial.external_fingerprints.len(), 2);
+
+        fs::write(&file, "other").unwrap();
+        fs::File::open(&file)
+            .unwrap()
+            .set_times(fs::FileTimes::new().set_modified(modified))
+            .unwrap();
+        let mut final_inputs = SourceWatchInputs::from_previous(Some(initial));
+        final_inputs.observe_paths([file.clone()], |_| false);
+        final_inputs.retire_fingerprints();
+        assert_ne!(final_inputs.assets[&file], before);
+        assert!(
+            final_inputs.assets[&file]
+                .starts_with(&format!("File:{}:", fingerprint_bytes(b"other").value))
+        );
+        assert_eq!(final_inputs.external_fingerprints.len(), 1);
+        assert!(!final_inputs.external_fingerprints.contains_key(&removed));
+
+        let mut watcher = journal_watcher(root.path(), &[]);
+        watcher.acknowledge(pipeline::AttemptState {
+            watch_inputs: Some(final_inputs),
+            ..pipeline::AttemptState::default()
+        });
+        assert_eq!(watcher.observer.capture(), watcher.attempted);
+        assert!(watcher.observer.external_fingerprints.contains_key(&file));
+        watcher.acknowledge(pipeline::AttemptState {
+            watch_inputs: Some(SourceWatchInputs::default()),
+            ..pipeline::AttemptState::default()
+        });
+        assert!(watcher.observer.external_fingerprints.is_empty());
+    }
+
+    #[test]
+    fn external_dependencies_detect_content_and_membership_changes() {
+        let root = tempfile::tempdir().unwrap();
+        let file = root.path().join("dependency");
+        fs::write(&file, "first").unwrap();
+        let modified = fs::metadata(&file).unwrap().modified().unwrap();
+        let mut cache = BTreeMap::new();
+        let mut first = Observation::new();
+        observe_external(&file, &mut first, &mut cache);
+        let mut repeated = Observation::new();
+        observe_external(&file, &mut repeated, &mut cache);
+        assert_eq!(first, repeated);
+        assert_eq!(cache.len(), 1);
+
+        fs::write(&file, "other").unwrap();
+        fs::File::open(&file)
+            .unwrap()
+            .set_times(fs::FileTimes::new().set_modified(modified))
+            .unwrap();
+        let mut edited = Observation::new();
+        observe_external(&file, &mut edited, &mut cache);
+        assert_ne!(first, edited);
+
+        let mut directory = Observation::new();
+        discover_external(
+            root.path(),
+            &root.path().join("site"),
+            &mut directory,
+            &mut cache,
+            &mut BTreeSet::new(),
+        );
+        fs::create_dir(root.path().join("new")).unwrap();
+        let mut added = Observation::new();
+        discover_external(
+            root.path(),
+            &root.path().join("site"),
+            &mut added,
+            &mut cache,
+            &mut BTreeSet::new(),
+        );
+        assert_ne!(directory, added);
+
+        #[cfg(unix)]
+        {
+            let alias = root.path().join("alias");
+            std::os::unix::fs::symlink(&file, &alias).unwrap();
+            let mut linked = Observation::new();
+            observe_external(&alias, &mut linked, &mut cache);
+            let target = root.path().join("replacement");
+            fs::write(&target, "other").unwrap();
+            fs::remove_file(&alias).unwrap();
+            std::os::unix::fs::symlink(&target, &alias).unwrap();
+            let mut replaced = Observation::new();
+            observe_external(&alias, &mut replaced, &mut cache);
+            assert_ne!(linked, replaced);
+        }
+    }
+
+    #[test]
+    fn external_dependency_roots_discover_new_files_and_retire_memos() {
+        let root = tempfile::tempdir().unwrap();
+        fs::create_dir(root.path().join("repository")).unwrap();
+        let dependencies = root.path().join("dependencies");
+        fs::create_dir(&dependencies).unwrap();
+        let file = dependencies.join("first");
+        fs::write(&file, "first").unwrap();
+        let config = root.path().join("diplodocus.yaml");
+        fs::write(
+            &config,
+            "project:\n  name: Dependencies\nrepositories:\n  - id: repo\n    path: repository\n",
+        )
+        .unwrap();
+        let mut observer = Observer::new(&config, &root.path().join("site")).unwrap();
+        observer.native_roots.push(dependencies.clone());
+        observer.assets.insert(file.clone());
+        let first = observer.capture();
+        assert!(first.contains_key(&file));
+        assert!(observer.external_fingerprints.contains_key(&file));
+        fs::create_dir(dependencies.join("__pycache__")).unwrap();
+        fs::write(dependencies.join("__pycache__/runtime.pyc"), "generated").unwrap();
+        assert_eq!(observer.capture(), first);
+        let previous_site = dependencies.join("previous-output");
+        fs::create_dir(&previous_site).unwrap();
+        fs::write(
+            previous_site.join(".diplodocus-site"),
+            "diplodocus-site-v1\n",
+        )
+        .unwrap();
+        fs::write(previous_site.join("index.html"), "generated").unwrap();
+        assert_eq!(observer.capture(), first);
+        let added = dependencies.join("added");
+        fs::write(&added, "added").unwrap();
+        assert!(observer.capture().contains_key(&added));
+        fs::remove_file(&file).unwrap();
+        assert_eq!(observer.capture().get(&file).unwrap(), "NotFound");
+        assert!(!observer.external_fingerprints.contains_key(&file));
+        observer.assets.clear();
+        assert!(!observer.capture().contains_key(&file));
+        observer.native_roots.clear();
+        observer.capture();
+        assert!(observer.external_fingerprints.is_empty());
+    }
+
+    #[test]
+    fn native_library_search_roots_ignore_unrelated_files_and_subdirectories() {
+        let root = tempfile::tempdir().unwrap();
+        fs::create_dir(root.path().join("repository")).unwrap();
+        let libraries = root.path().join("libraries");
+        fs::create_dir(&libraries).unwrap();
+        let library = libraries.join("libexample.so");
+        fs::write(&library, "first").unwrap();
+        let config = root.path().join("diplodocus.yaml");
+        fs::write(
+            &config,
+            "project:\n  name: Libraries\nrepositories:\n  - id: repo\n    path: repository\n",
+        )
+        .unwrap();
+        let mut observer = Observer::new(&config, &root.path().join("site")).unwrap();
+        observer.native_library_roots.push(libraries.clone());
+        let first = observer.capture();
+        assert!(first.contains_key(&library));
+        let unrelated = libraries.join("unrelated.rlib");
+        fs::write(&unrelated, "compiler output").unwrap();
+        fs::create_dir(libraries.join("nested.so")).unwrap();
+        fs::write(libraries.join("nested.so/libignored.so"), "nested output").unwrap();
+        assert_eq!(observer.capture(), first);
+        assert!(!observer.external_fingerprints.contains_key(&unrelated));
+        let added = libraries.join("libadded.so.1");
+        fs::write(&added, "added").unwrap();
+        let changed = observer.capture();
+        assert!(changed.contains_key(&added));
+        assert_ne!(changed, first);
+        fs::write(&library, "other").unwrap();
+        assert_ne!(observer.capture(), changed);
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn changed_paths_include_edits_creations_and_deletions() {
+        let root = tempfile::tempdir().unwrap();
+        let mut watcher = journal_watcher(root.path(), &[]);
+        let source = root.path().join("R/source.R");
+        fs::write(&source, "f <- function() 2L\n").unwrap();
+        assert_eq!(
+            watcher.next_change().await,
+            BTreeSet::from([source.clone()])
+        );
+        let added = root.path().join("R/added.R");
+        fs::write(&added, "g <- function() 1L\n").unwrap();
+        assert_eq!(watcher.next_change().await, BTreeSet::from([added]));
+        fs::remove_file(&source).unwrap();
+        assert_eq!(watcher.next_change().await, BTreeSet::from([source]));
+    }
+
+    #[test]
+    fn incremental_extra_inputs_use_the_repository_root() {
+        let root = tempfile::tempdir().unwrap();
+        let config = root.path().join("diplodocus.yaml");
+        fs::create_dir(root.path().join("package")).unwrap();
+        fs::write(root.path().join("package/manifest"), "metadata").unwrap();
+        fs::write(&config, "project:\n  name: Extra inputs\nrepositories:\n  - id: repo\n    path: .\npackages:\n  - id: pkg\n    name: Package\n    slug: package\n    ecosystem: python\n    repository: repo\n    path: package\n    metadata-path: manifest\n    incremental:\n      extra-inputs: [shared]\n    targets: []\ncontent:\n  - id: guide\n    owner: project\n    repository: repo\n    path: guide\n    mount: guide\n    format: gfm\n    incremental:\n      extra-inputs: [environment.lock]\n").unwrap();
+        let mut observer = Observer::new(&config, &root.path().join("site")).unwrap();
+        let before = observer.capture();
+        fs::create_dir(root.path().join("shared")).unwrap();
+        fs::write(root.path().join("shared/input"), "first").unwrap();
+        let created = observer.capture();
+        assert_ne!(created, before);
+        fs::create_dir(root.path().join("shared/empty")).unwrap();
+        assert_ne!(observer.capture(), created);
+        fs::remove_dir(root.path().join("shared/empty")).unwrap();
+        fs::write(root.path().join("shared/input"), "second").unwrap();
+        assert_ne!(observer.capture(), created);
+        fs::remove_dir_all(root.path().join("shared")).unwrap();
+        assert_eq!(observer.capture(), before);
+        fs::write(root.path().join("environment.lock"), "environment").unwrap();
+        assert_ne!(observer.capture(), before);
     }
 
     #[tokio::test]
@@ -821,7 +1493,7 @@ mod tests {
         )
         .unwrap();
         let mut attempt = generated_attempt(root.path(), &["man/generated.Rd", "NAMESPACE"]);
-        attempt.watch_inputs = Some(subscribed_inputs(root.path(), &["man/generated.Rd"]));
+        attempt.watch_inputs = Some(subscribed_inputs(root.path(), &["man", "man/generated.Rd"]));
         watcher.acknowledge(attempt);
         assert_eq!(watcher.observer.capture(), watcher.attempted);
     }
@@ -930,6 +1602,7 @@ mod tests {
         let attempt = pipeline::AttemptState {
             writes: BTreeMap::new(),
             watch_inputs: Some(subscribed_inputs(root.path(), &["figure.png"])),
+            ..pipeline::AttemptState::default()
         };
         watcher.acknowledge(attempt);
         assert_eq!(watcher.observer.capture(), watcher.attempted);
@@ -944,6 +1617,7 @@ mod tests {
         let attempt = pipeline::AttemptState {
             writes: BTreeMap::new(),
             watch_inputs: Some(subscribed_inputs(root.path(), &["figure.png"])),
+            ..pipeline::AttemptState::default()
         };
         fs::write(&asset, "Concurrent image edit.").unwrap();
         watcher.acknowledge(attempt);
@@ -962,6 +1636,7 @@ mod tests {
         watcher.acknowledge(pipeline::AttemptState {
             writes: BTreeMap::new(),
             watch_inputs: Some(subscribed_inputs(root.path(), &[])),
+            ..pipeline::AttemptState::default()
         });
         assert_eq!(watcher.observer.capture(), watcher.attempted);
         assert!(!watcher.attempted.contains_key(&asset));
@@ -1007,7 +1682,8 @@ mod tests {
         let root = tempfile::tempdir().unwrap();
         let config = root.path().join("diplodocus.yaml");
         fs::write(&config, "project:\n  name: Initial\n").unwrap();
-        let mut watcher = Watcher::new(&config, &root.path().join("site")).unwrap();
+        let mut watcher =
+            Watcher::new(&config, &root.path().join("site"), &Reporting::default()).unwrap();
 
         // A build can leave hundreds of polling ticks overdue. Scans must still
         // wait between observations so other select branches can handle shutdown.
@@ -1193,6 +1869,7 @@ mod tests {
         let sources = assemble_workspace(&config).unwrap();
         assert_eq!(resolve_workspace(&sources).unwrap().assets().len(), 1);
         let mut observer = Observer::new(&config, &root.path().join("site")).unwrap();
+        observer.refresh_assets();
         let before = observer.capture();
         fs::write(&asset, "after").unwrap();
         assert_ne!(observer.capture(), before);

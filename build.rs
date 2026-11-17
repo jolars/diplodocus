@@ -25,6 +25,8 @@ fn main() {
         ("DIPLODOCUS_PANACHE_VERSION", "panache-parser"),
         ("DIPLODOCUS_RUFF_VERSION", "ruff_python_parser"),
         ("DIPLODOCUS_FATOU_VERSION", "fatou-parser"),
+        ("DIPLODOCUS_ARITY_VERSION", "arity-parser"),
+        ("DIPLODOCUS_TOML_VERSION", "toml"),
     ] {
         let selected = build_metadata::selected_version(&lock, &version, name)
             .expect("unambiguous locked parser version");

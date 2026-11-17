@@ -141,6 +141,11 @@ fn builds_report_real_counts_and_one_completion_after_publication() {
         .unwrap();
     let events = recording.events.lock().unwrap();
     balanced_stages(&events);
+    assert!(
+        !events
+            .iter()
+            .any(|event| matches!(event, Recorded::PhaseStarted(_, Phase::WatchCapture, _, _)))
+    );
     assert_eq!(
         events
             .iter()
@@ -183,6 +188,11 @@ fn failed_validation_finishes_the_attempt_without_rendering_or_publication() {
     );
     let events = recording.events.lock().unwrap();
     balanced_stages(&events);
+    assert!(
+        !events
+            .iter()
+            .any(|event| matches!(event, Recorded::PhaseStarted(_, Phase::WatchCapture, _, _)))
+    );
     assert!(matches!(
         events.last(),
         Some(Recorded::CommandFinished(false))
@@ -270,6 +280,11 @@ async fn watch_reports_failure_recovery_and_clean_cancellation() {
         })
         .collect();
     assert_eq!(outcomes, [true, false, true]);
+    assert!(
+        events
+            .iter()
+            .any(|event| matches!(event, Recorded::PhaseStarted(_, Phase::WatchCapture, _, _)))
+    );
     assert!(events.iter().any(|event| matches!(event, Recorded::Error)));
 }
 

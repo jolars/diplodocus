@@ -14,6 +14,16 @@ use crate::validation::resolve_executed_workspace;
 pub(super) struct AttemptState {
     pub writes: crate::assembly::r_native::GeneratedWrites,
     pub watch_inputs: Option<super::watching::SourceWatchInputs>,
+    pub watch_sources: bool,
+}
+
+impl AttemptState {
+    pub fn watching() -> Self {
+        Self {
+            watch_sources: true,
+            ..Self::default()
+        }
+    }
 }
 
 pub(super) fn runtime() -> Result<tokio::runtime::Runtime, CommandError> {
@@ -84,6 +94,49 @@ pub(super) async fn extract_attempt_observed(
     options: ExtractOptions,
     site_output: Option<&Path>,
     deadlines: ExecutionDeadlines,
+    cancellation: ExecutionCancellation<'_>,
+    reporting: &Reporting,
+    attempt: &mut AttemptState,
+) -> Result<PathBuf, CommandError> {
+    let mut outputs = Vec::new();
+    if let Some(site) = site_output {
+        outputs.push(absolute(site)?);
+    }
+    if let Some(output) = &options.output {
+        outputs.push(absolute(output)?);
+    }
+    let parent = options
+        .config
+        .parent()
+        .filter(|path| !path.as_os_str().is_empty())
+        .unwrap_or(Path::new("."));
+    let configuration_directory = fs::canonicalize(parent)?;
+    for destination in &outputs {
+        for kind in ["execution", "rust", "incremental"] {
+            let cache = configuration_directory.join(".diplodocus/cache").join(kind);
+            if destination.starts_with(&cache) || cache.starts_with(destination) {
+                return Err(CommandError::InputOverlap);
+            }
+        }
+    }
+    crate::incremental::scope_outputs(
+        outputs,
+        extract_attempt_observed_inner(
+            options,
+            site_output,
+            deadlines,
+            cancellation,
+            reporting,
+            attempt,
+        ),
+    )
+    .await
+}
+
+async fn extract_attempt_observed_inner(
+    options: ExtractOptions,
+    site_output: Option<&Path>,
+    deadlines: ExecutionDeadlines,
     mut cancellation: ExecutionCancellation<'_>,
     reporting: &Reporting,
     attempt: &mut AttemptState,
@@ -96,21 +149,25 @@ pub(super) async fn extract_attempt_observed(
         &mut attempt.writes,
     )
     .await?;
-    let resolved = reporting.run_phase(
-        Phase::ReferenceResolution,
-        "Validating documentation",
-        || resolve_workspace(&sources),
-    )?;
     let output = options.output.unwrap_or_else(|| {
         sources
             .paths()
             .configuration_directory
             .join(".diplodocus/documentation.sqlite")
     });
-    attempt.watch_inputs = Some(super::watching::SourceWatchInputs::capture(
-        &sources,
-        &absolute(site_output.unwrap_or(&output))?,
-    ));
+    if attempt.watch_sources {
+        attempt.watch_inputs = Some(super::watching::SourceWatchInputs::capture(
+            &sources,
+            &absolute(site_output.unwrap_or(&output))?,
+            reporting,
+            attempt.watch_inputs.take(),
+        ));
+    }
+    let resolved = reporting.run_phase(
+        Phase::ReferenceResolution,
+        "Validating documentation",
+        || resolve_workspace(&sources),
+    )?;
     protect_sources(&sources, &resolved, &options.config, &output)?;
     if let Some(site) = site_output {
         protect_sources(&sources, &resolved, &options.config, site)?;
@@ -142,6 +199,14 @@ pub(super) async fn extract_attempt_observed(
                 cancellation,
             })
             .await?;
+        if attempt.watch_sources {
+            attempt.watch_inputs = Some(super::watching::SourceWatchInputs::capture(
+                executed.sources(),
+                &absolute(site_output.unwrap_or(&output))?,
+                reporting,
+                attempt.watch_inputs.take(),
+            ));
+        }
         let resolved = reporting.run_phase(
             Phase::ReferenceResolution,
             "Validating executed documentation",
@@ -313,7 +378,7 @@ fn protect_sources(
     // The cache rejects symlinked roots itself. Compare its reserved location
     // without inspecting cache storage on disabled execution paths.
     let destination = absolute(output)?;
-    for kind in ["execution", "rust"] {
+    for kind in ["execution", "rust", "incremental"] {
         let cache = sources
             .paths()
             .configuration_directory

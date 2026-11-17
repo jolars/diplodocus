@@ -23,6 +23,7 @@ load_checkout <- function(root, expected_name, expected_version, export_all = FA
           identical(readBin(path, "raw", n = file.info(path)$size), readBin(dll_path, "raw", n = file.info(dll_path)$size))
       }, logical(1L))
       if (!any(matches)) stop("Loaded package extension does not belong to the supplied checkout")
+      record_verified_checkout_dll(root, dll_path, candidates[[which(matches)[[1L]]]])
     }
     if (!isTRUE(utils::packageVersion(name) == base::package_version(meta[["Version"]]))) stop("Loaded R package version does not match DESCRIPTION")
   }

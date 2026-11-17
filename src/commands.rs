@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 use thiserror::Error;
 
-use crate::assembly::{AssemblyError, assemble_workspace};
+use crate::assembly::AssemblyError;
 use crate::diagnostics::{Diagnostic, DiagnosticSource, Severity};
 use crate::execution::{ExecutionCancellation, ExecutionDeadlines};
 use crate::validation::{ResolutionError, resolve_workspace};

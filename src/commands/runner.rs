@@ -3,6 +3,7 @@ use std::io::Write;
 use std::path::Path;
 use std::sync::Arc;
 
+use crate::incremental::{CachePolicy, scope, scope_async};
 use crate::reporting::{Event, Reporter, Reporting};
 
 /// Command operations with an explicitly scoped progress and diagnostic reporter.
@@ -12,6 +13,7 @@ use crate::reporting::{Event, Reporter, Reporting};
 #[derive(Debug, Clone, Default)]
 pub struct CommandRunner {
     pub(super) reporting: Reporting,
+    cache_policy: CachePolicy,
 }
 
 impl CommandRunner {
@@ -19,17 +21,27 @@ impl CommandRunner {
     pub fn with_reporter(reporter: Arc<dyn Reporter>) -> Self {
         Self {
             reporting: Reporting::new(reporter),
+            cache_policy: CachePolicy::default(),
         }
+    }
+
+    /// Select cache reuse independently of command and reporting options.
+    pub fn with_cache_policy(mut self, policy: CachePolicy) -> Self {
+        self.cache_policy = policy;
+        self
     }
 
     /// Build and atomically publish a documentation site.
     pub fn build(&self, options: BuildOptions) -> Result<(), CommandError> {
         let command = self.reporting.command("build");
-        let site = pipeline::runtime()?.block_on(pipeline::build_attempt(
-            &options,
-            ExecutionDeadlines::default(),
-            Box::pin(watching::termination()),
-            &self.reporting,
+        let site = pipeline::runtime()?.block_on(scope_async(
+            self.cache_policy,
+            pipeline::build_attempt(
+                &options,
+                ExecutionDeadlines::default(),
+                Box::pin(watching::termination()),
+                &self.reporting,
+            ),
         ))?;
         command.finish(Some(&options.output), Some(site.page_count()));
         Ok(())
@@ -38,7 +50,9 @@ impl CommandRunner {
     /// Check sources and report successful diagnostics as well as returning them.
     pub fn check(&self, options: CheckOptions) -> Result<CheckReport, CommandError> {
         let command = self.reporting.command("check");
-        let report = pipeline::check_attempt(options, &self.reporting)?;
+        let report = scope(self.cache_policy, || {
+            pipeline::check_attempt(options, &self.reporting)
+        })?;
         for diagnostic in &report.diagnostics {
             self.reporting.emit(Event::Diagnostic(diagnostic));
         }
@@ -64,9 +78,11 @@ impl CommandRunner {
         cancellation: ExecutionCancellation<'_>,
     ) -> Result<PathBuf, CommandError> {
         let command = self.reporting.command("extract");
-        let output =
-            pipeline::extract_attempt(options, None, deadlines, cancellation, &self.reporting)
-                .await?;
+        let output = scope_async(
+            self.cache_policy,
+            pipeline::extract_attempt(options, None, deadlines, cancellation, &self.reporting),
+        )
+        .await?;
         command.finish(Some(&output), None);
         Ok(output)
     }
@@ -95,12 +111,15 @@ impl CommandRunner {
         cancellation: ExecutionCancellation<'_>,
         on_snapshot: impl FnMut(&Path) -> std::io::Result<()>,
     ) -> Result<(), CommandError> {
-        watching::watch_extract_reported(
-            options,
-            deadlines,
-            cancellation,
-            on_snapshot,
-            &self.reporting,
+        scope_async(
+            self.cache_policy,
+            watching::watch_extract_reported(
+                options,
+                deadlines,
+                cancellation,
+                on_snapshot,
+                &self.reporting,
+            ),
         )
         .await
     }
@@ -161,7 +180,11 @@ impl CommandRunner {
         deadlines: ExecutionDeadlines,
         cancellation: ExecutionCancellation<'_>,
     ) -> Result<(), CommandError> {
-        preview::serve_reported(options, deadlines, cancellation, &self.reporting).await
+        scope_async(
+            self.cache_policy,
+            preview::serve_reported(options, deadlines, cancellation, &self.reporting),
+        )
+        .await
     }
 
     /// Report an error returned to the caller, including cleanup diagnostics.

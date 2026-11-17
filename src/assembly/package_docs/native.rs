@@ -6,9 +6,13 @@ use crate::execution::{ExecutionCancellation, ExecutionDeadlines};
 
 const HELPER: &str = include_str!("native.R");
 
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
 pub(super) struct NativeResult {
     pub runtime: RPackageRuntime,
     pub news: Option<String>,
+    pub dependencies: BTreeMap<String, String>,
+    #[serde(skip)]
+    pub environment: Option<Vec<crate::incremental::Manifest>>,
 }
 
 pub(super) fn diagnostic(
@@ -57,7 +61,13 @@ pub(super) async fn complete(
     let errors = staging.path().join("errors");
     let mut command = tokio::process::Command::new("R");
     command
-        .args(["--vanilla", "--slave", "-e", HELPER, "--args"])
+        .args([
+            "--vanilla",
+            "--slave",
+            "-e",
+            &format!("{}\n{}", include_str!("../r_environment.R"), HELPER),
+            "--args",
+        ])
         .arg(&package.metadata_path)
         .arg(citation.unwrap_or(Path::new("")))
         .arg(news.unwrap_or(Path::new("")))
@@ -114,7 +124,10 @@ pub(super) async fn complete(
             format!("R package metadata completion failed: {}", message.trim()),
         )]));
     }
-    decode(&fs::read_to_string(output)?, id, location)
+    let mut result = decode(&fs::read_to_string(&output)?, id, location)?;
+    result.environment = super::super::r_native::completed_environment_manifest(&output);
+    staging.close()?;
+    Ok(result)
 }
 
 async fn reap(process: &mut Process, deadlines: ExecutionDeadlines) -> Result<(), AssemblyError> {
@@ -138,6 +151,7 @@ fn decode(text: &str, id: &str, location: &SourceLocation) -> Result<NativeResul
     let mut authors = vec![];
     let mut maintainers = vec![];
     let mut fields = BTreeMap::new();
+    let mut dependencies = BTreeMap::new();
     for line in text.lines() {
         let (key, value) = line.split_once('\t').ok_or_else(invalid)?;
         if value.len() % 2 != 0 {
@@ -154,7 +168,15 @@ fn decode(text: &str, id: &str, location: &SourceLocation) -> Result<NativeResul
             })
             .collect::<Result<Vec<_>, _>>()?;
         let value = String::from_utf8(bytes).map_err(|_| invalid())?;
-        if key == "author" {
+        if key == "dependency" {
+            let (name, version) = value.split_once('=').ok_or_else(invalid)?;
+            if name.is_empty()
+                || version.is_empty()
+                || dependencies.insert(name.into(), version.into()).is_some()
+            {
+                return Err(invalid());
+            }
+        } else if key == "author" {
             authors.push(value);
         } else if key == "maintainer" {
             maintainers.push(value);
@@ -186,5 +208,7 @@ fn decode(text: &str, id: &str, location: &SourceLocation) -> Result<NativeResul
             r_version,
         },
         news,
+        dependencies,
+        environment: None,
     })
 }

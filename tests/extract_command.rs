@@ -147,7 +147,12 @@ fn cli_paths_and_completed_snapshot_match_the_contract() {
     }
     assert!(!root.path().join("workspace/exports").exists());
     assert!(!root.path().join("site").exists());
-    assert!(!root.path().join("workspace/.diplodocus/cache").exists());
+    assert!(
+        !root
+            .path()
+            .join("workspace/.diplodocus/cache/execution")
+            .exists()
+    );
     drop(root);
     assert_eq!(
         Snapshot::load(&absolute)
@@ -401,10 +406,19 @@ fn cli_rejects_every_kind_of_declared_input_before_execution() {
         assert_eq!(fs::read(root.path().join(path)).unwrap(), *bytes);
     }
     assert_eq!(
-        support::files_under(root.path()),
+        support::files_under(root.path())
+            .into_iter()
+            .filter(|path| !path.starts_with("workspace/.diplodocus/cache/incremental"))
+            .collect::<Vec<_>>(),
         before.into_iter().map(|(path, _)| path).collect::<Vec<_>>()
     );
-    assert!(!root.path().join("workspace/.diplodocus").exists());
+    assert!(!root.path().join(DEFAULT_OUTPUT).exists());
+    assert!(
+        !root
+            .path()
+            .join("workspace/.diplodocus/cache/execution")
+            .exists()
+    );
 }
 
 #[cfg(unix)]
@@ -475,7 +489,14 @@ fn cli_validation_and_publication_failures_preserve_the_previous_snapshot() {
             .values()
             .any(|page| page.title == "Refreshed")
     );
-    assert_eq!(fs::read_dir(path.parent().unwrap()).unwrap().count(), 1);
+    assert_eq!(
+        fs::read_dir(path.parent().unwrap())
+            .unwrap()
+            .map(Result::unwrap)
+            .filter(|entry| entry.file_name() != "cache")
+            .count(),
+        1
+    );
 }
 
 #[cfg(target_os = "linux")]

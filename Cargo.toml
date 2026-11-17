@@ -95,3 +95,6 @@ debug = "line-tables-only"
 # Execution identity checks hash executables even when page results are cached.
 [profile.test.package.sha2]
 opt-level = 3
+
+[profile.dev.package.sha2]
+opt-level = 3

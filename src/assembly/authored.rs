@@ -7,6 +7,14 @@ use crate::ir::{
 };
 use crate::provenance::builtin_tools;
 
+#[derive(serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CachedPreparation {
+    parsed: crate::documents::DocumentParse,
+    preparation: Option<QmdPreparation>,
+    included_resource_targets: std::collections::BTreeSet<String>,
+}
+
 pub(super) fn assemble(
     configuration: &WorkspaceConfiguration,
     paths: &ResolvedWorkspacePaths,
@@ -20,6 +28,8 @@ pub(super) fn assemble(
     for (index, collection) in configuration.content.iter().enumerate() {
         let resolved = &paths.content[index];
         let repository = &paths.repositories[resolved.repository_index];
+        let preparation_cache =
+            crate::incremental::content_preparation_context(configuration, paths, index);
         let owner = if collection.owner == "project" {
             ContentOwner::Project
         } else {
@@ -108,7 +118,8 @@ pub(super) fn assemble(
                 location.path.as_str()
             ));
             let text = fs::read_to_string(&path)?;
-            observe(observed, &location, fingerprint_bytes(text.as_bytes()))?;
+            let source_fingerprint = fingerprint_bytes(text.as_bytes());
+            observe(observed, &location, source_fingerprint.clone())?;
             let expanded = super::includes::expand(
                 &text,
                 &path,
@@ -125,25 +136,80 @@ pub(super) fn assemble(
                     .push(PathBuf::from(input.path.as_str()));
             }
             let text = expanded.text;
-            let included_resource_targets =
-                std::cell::RefCell::new(std::collections::BTreeSet::new());
-            let prepared =
-                prepare_collection_document_with_resources(&text, collection, &|target, span| {
-                    if let Some(rebased) =
-                        super::includes::resource_target(target, span, &location, &expanded.ranges)
-                    {
-                        included_resource_targets
-                            .borrow_mut()
-                            .insert(rebased.clone());
-                        rebased
-                    } else {
-                        target.to_owned()
-                    }
-                })
+            let relative = portable(relative)?;
+            let cache_key = preparation_cache.as_ref().map(|(_, build, supplemental)| {
+                crate::incremental::key(&(
+                    "authored-preparation-v1",
+                    build,
+                    collection,
+                    &location,
+                    &relative,
+                    &source_fingerprint,
+                    fingerprint_bytes(text.as_bytes()),
+                    &expanded.ranges,
+                    supplemental,
+                ))
+            });
+            let cached = preparation_cache
+                .as_ref()
+                .zip(cache_key.as_ref())
+                .filter(|((_, _, supplemental), _)| supplemental.verify())
+                .and_then(|((store, _, _), key)| store.load("authored-preparation", key));
+            if preparation_cache.is_some() {
+                reporting.cache(
+                    "authored-preparation",
+                    &format!("{}:{}", collection.id, relative.as_str()),
+                    cached.is_some(),
+                    cached
+                        .is_none()
+                        .then_some("Source or preparation inputs changed."),
+                );
+            }
+            let prepared: CachedPreparation = if let Some(cached) = cached {
+                cached
+            } else {
+                let included_resource_targets =
+                    std::cell::RefCell::new(std::collections::BTreeSet::new());
+                let prepared = prepare_collection_document_with_resources(
+                    &text,
+                    collection,
+                    &|target, span| {
+                        if let Some(rebased) = super::includes::resource_target(
+                            target,
+                            span,
+                            &location,
+                            &expanded.ranges,
+                        ) {
+                            included_resource_targets
+                                .borrow_mut()
+                                .insert(rebased.clone());
+                            rebased
+                        } else {
+                            target.to_owned()
+                        }
+                    },
+                )
                 .map_err(|error| {
                     AssemblyError::Diagnostics(vec![error.to_diagnostic(&collection.id)])
                 })?;
-            let relative = portable(relative)?;
+                let prepared = CachedPreparation {
+                    parsed: prepared.parsed,
+                    preparation: prepared.preparation,
+                    included_resource_targets: included_resource_targets.into_inner(),
+                };
+                if !prepared
+                    .parsed
+                    .diagnostics
+                    .iter()
+                    .any(|diagnostic| diagnostic.severity == Severity::Error)
+                    && let Some(((store, _, supplemental), key)) =
+                        preparation_cache.as_ref().zip(cache_key.as_ref())
+                    && supplemental.verify()
+                {
+                    let _ = store.save("authored-preparation", key, &prepared);
+                }
+                prepared
+            };
             let mut parsed = prepared.parsed.with_context(
                 source(&location),
                 DiagnosticEntity::Document {
@@ -223,7 +289,7 @@ pub(super) fn assemble(
                 id,
                 PreparedPage {
                     source_ranges: expanded.ranges,
-                    included_resource_targets: included_resource_targets.into_inner(),
+                    included_resource_targets: prepared.included_resource_targets,
                     source: text,
                     path,
                     relative,

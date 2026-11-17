@@ -18,7 +18,8 @@ R extraction now selects roxygen2 generation or maintained Rd and combines
 documentation with native checkout discovery. Python and Julia primarily use
 static source adapters with runtime assistance, and Rust and C++ consume native
 rustdoc JSON and Doxygen XML.
-The current watcher reruns extraction; it is not yet an incremental API engine.
+The development loop reuses verified extraction and execution results by package.
+Workspace reference resolution and site rendering still run after each change.
 Keep the existing Rust and C++ integrations and use the [current
 design](docs/development/design.md) as the migration baseline. Preserve native
 execution engines such as knitr for authored documents; this roadmap does not
@@ -81,25 +82,31 @@ records source-only preview updates, failure recovery, and current latency.
 
 ### 3. Make the development loop incremental
 
-- [ ] Make watching, native regeneration, and browser refresh work together
+- [x] Make watching, native regeneration, and browser refresh work together
   through plain `diplodocus serve`, with documented defaults and overrides.
   Build on the existing watcher and optional live reload.
-- [ ] Start with package-level invalidation. Track source, documentation
+- [x] Start with package-level invalidation. Track source, documentation
   inheritance, configuration, tool versions, dependencies, and declared
   environment inputs; invalidate the whole affected package when
   dependencies are uncertain. Avoid re-extracting unrelated packages.
-- [ ] Reuse extraction or execution results only when their tracked inputs and
+- [x] Reuse extraction or execution results only when their tracked inputs and
   environment justify it. Define separate policies for documentation
   generation and example execution; a comment-only edit is not proof that
   evaluated documentation or inherited topics are unchanged.
-- [ ] Rebuild affected documents and update references, navigation, and search
+- [x] Rebuild affected documents and update references, navigation, and search
   when their dependencies change. Remove deleted items and assets, and
   compare incremental results with a clean build.
-- [ ] Measure representative R saves against the baseline before adding finer
+- [x] Measure representative R saves against the baseline before adding finer
   invalidation or persistent workers. If native extraction dominates,
   evaluate upstream improvements or an explicitly provisional preview with
   pending validation visible; keep completed snapshots and published builds
   verified.
+
+The [incremental design](docs/development/design.md#incremental-work-retains-verified-results)
+describes persistent reuse and fresh input guards. The
+[comparison](docs/development/pipeline-baseline.md#incremental-workflow-results)
+records authored-save improvements, cold-build and API-edit costs, and verified
+restart parity.
 
 ### 4. Migrate Python and Julia through supported native interfaces
 

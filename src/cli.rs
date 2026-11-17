@@ -47,6 +47,9 @@ pub(super) enum Command {
 
 #[derive(Debug, Args)]
 pub(super) struct BuildArgs {
+    /// Recompute results without reading or writing incremental caches.
+    #[arg(long)]
+    pub(super) no_cache: bool,
     /// Path to the workspace configuration file.
     #[arg(long, value_name = "PATH", default_value = "./diplodocus.yaml")]
     pub(super) config: PathBuf,
@@ -57,6 +60,9 @@ pub(super) struct BuildArgs {
 
 #[derive(Debug, Args)]
 pub(super) struct CheckArgs {
+    /// Recompute results without reading or writing incremental caches.
+    #[arg(long)]
+    pub(super) no_cache: bool,
     /// Path to the workspace configuration file.
     #[arg(long, value_name = "PATH", default_value = "./diplodocus.yaml")]
     pub(super) config: PathBuf,
@@ -64,6 +70,9 @@ pub(super) struct CheckArgs {
 
 #[derive(Debug, Args)]
 pub(super) struct ExtractArgs {
+    /// Recompute results without reading or writing incremental caches.
+    #[arg(long)]
+    pub(super) no_cache: bool,
     /// Path to the workspace configuration file.
     #[arg(long, value_name = "PATH", default_value = "./diplodocus.yaml")]
     pub(super) config: PathBuf,
@@ -102,6 +111,9 @@ pub(super) enum GenerateFormat {
 
 #[derive(Debug, Args)]
 pub(super) struct ServeArgs {
+    /// Recompute results without reading or writing incremental caches.
+    #[arg(long)]
+    pub(super) no_cache: bool,
     /// Path to the workspace configuration file.
     #[arg(long, value_name = "PATH", default_value = "./diplodocus.yaml")]
     pub(super) config: PathBuf,
@@ -114,9 +126,12 @@ pub(super) struct ServeArgs {
     /// Port on which to serve the generated site.
     #[arg(long, value_name = "PORT", default_value_t = 8000)]
     pub(super) port: u16,
-    /// Refresh open browser pages after successful rebuilds.
-    #[arg(long)]
+    /// Refresh open browser pages after successful rebuilds (enabled by default).
+    #[arg(long, default_value_t = true, action = clap::ArgAction::SetTrue)]
     pub(super) live_reload: bool,
+    /// Disable automatic browser refresh after successful rebuilds.
+    #[arg(long, conflicts_with = "live_reload")]
+    pub(super) no_live_reload: bool,
     /// Open the local preview in a browser after the first successful build.
     #[arg(long)]
     pub(super) open: bool,
@@ -166,7 +181,8 @@ mod tests {
         assert_eq!(args.output, PathBuf::from("./site"));
         assert_eq!(args.host, IpAddr::from([127, 0, 0, 1]));
         assert_eq!(args.port, 8000);
-        assert!(!args.live_reload);
+        assert!(args.live_reload);
+        assert!(!args.no_live_reload);
         assert!(!args.open);
     }
 
@@ -178,5 +194,32 @@ mod tests {
         };
         assert!(args.open);
         assert!(args.live_reload);
+    }
+
+    #[test]
+    fn serve_can_disable_browser_refresh() {
+        let cli = Cli::try_parse_from(["diplodocus", "serve", "--no-live-reload"]).unwrap();
+        let Command::Serve(args) = cli.command else {
+            panic!("expected the serve command");
+        };
+        assert!(args.no_live_reload);
+        assert!(
+            Cli::try_parse_from(["diplodocus", "serve", "--no-live-reload", "--live-reload"])
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn source_commands_accept_cache_bypass() {
+        for command in ["check", "extract", "build", "serve"] {
+            let cli = Cli::try_parse_from(["diplodocus", command, "--no-cache"]).unwrap();
+            match cli.command {
+                Command::Check(args) => assert!(args.no_cache),
+                Command::Extract(args) => assert!(args.no_cache),
+                Command::Build(args) => assert!(args.no_cache),
+                Command::Serve(args) => assert!(args.no_cache),
+                Command::Generate(_) => unreachable!(),
+            }
+        }
     }
 }
