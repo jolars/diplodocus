@@ -91,7 +91,7 @@ class Diamond(Left, Right):
     assert!(html.contains(&format!("id=\"{}\"", member_anchor(&size))));
     assert!(html.contains("The complete drawing input."));
     assert!(html.contains("<h3>Parameters</h3>"));
-    assert!(html.contains(">demo.target</code></a>"));
+    assert!(html.contains(">demo.target()</code></a>"));
     assert!(!rendered.files().contains_key(&route(&draw)));
     let child_html = std::str::from_utf8(&rendered.files()[&route(&child)].bytes).unwrap();
     let base_filename = route(&base).rsplit('/').next().unwrap().to_owned();
@@ -160,7 +160,7 @@ class Diamond(Left, Right):
 }
 
 #[test]
-fn explicit_constructors_and_cyclic_bases_remain_bounded() {
+fn explicit_constructors_and_inherited_bases_remain_bounded() {
     let root = support::TestWorkspace::from_fixture("python-overloads");
     root.write(
         "python/pyproject.toml",
@@ -177,12 +177,12 @@ class Plain:
 class Derived(Plain):
     """An inherited initializer."""
 
-class First(Second):
-    """A deliberately cyclic static declaration."""
+class First:
+    """A runtime class with an annotated field."""
     count: int
 
 class Second(First):
-    """The other cyclic declaration."""
+    """A derived runtime class."""
     label: str
 
 class NativeError(ValueError):

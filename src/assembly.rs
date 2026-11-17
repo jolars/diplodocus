@@ -41,6 +41,7 @@ pub(crate) use julia_runtime::assemble_for_extraction;
 mod execution;
 mod package_docs;
 mod packages;
+mod python_native;
 pub(crate) mod r_native;
 mod rd_examples;
 mod references;
@@ -152,6 +153,15 @@ pub struct WorkspaceSources {
     doxygen_observations: Vec<doxygen_native::DoxygenObservation>,
     r_observations: Vec<r_native::RObservation>,
     cache_observations: CacheObservations,
+    python_interpreter: Option<PathBuf>,
+    python_doctests: BTreeMap<String, crate::extractors::python::native::DoctestPlans>,
+    python_environments: BTreeMap<
+        String,
+        (
+            api_examples::PythonEnvironment,
+            crate::incremental::Manifest,
+        ),
+    >,
     selections: DeclaredSourceInputs,
     evidence: StaticProvenance,
     pub(crate) native_assets: BTreeMap<DiagnosticPath, crate::validation::ContentAsset>,
@@ -380,7 +390,8 @@ impl ExecutedWorkspace {
 /// Read and assemble declared sources without executing documentation examples.
 /// Rust targets use the prepared compiler and may compile dependencies and run
 /// build scripts. C++ targets invoke Doxygen and any configured input filters.
-/// Other language adapters retain their source-only check path.
+/// Python targets import the prepared checkout and invoke Sphinx autodoc.
+/// R targets may regenerate documentation and load package code.
 ///
 /// All packages and pages are inspected before errors are returned. Rust may
 /// write compilation caches; no examples, kernels, snapshots, or sites run.
@@ -398,10 +409,11 @@ pub fn assemble_workspace(path: impl AsRef<Path>) -> Result<WorkspaceSources, As
         package
             .targets
             .iter()
-            .any(|target| matches!(target.extractor.as_str(), "rust" | "doxygen"))
+            .any(|target| matches!(target.extractor.as_str(), "python" | "rust" | "doxygen"))
     }) {
         return assemble_with_native(
             path,
+            BTreeMap::new(),
             BTreeMap::new(),
             BTreeMap::new(),
             BTreeMap::new(),
@@ -436,12 +448,20 @@ pub fn assemble_workspace(path: impl AsRef<Path>) -> Result<WorkspaceSources, As
                     &reporting,
                 )
                 .await?;
+                let python = python_native::results(
+                    &path,
+                    ExecutionDeadlines::default(),
+                    &mut cancellation,
+                    &reporting,
+                )
+                .await?;
                 assemble_with_native(
                     &path,
                     BTreeMap::new(),
                     results,
                     doxygen,
                     BTreeMap::new(),
+                    python,
                     &reporting,
                 )
             })
@@ -531,7 +551,8 @@ pub(crate) async fn assemble_for_check(
         &mut r_native::GeneratedWrites::default(),
     )
     .await?;
-    assemble_with_native(path, BTreeMap::new(), rust, doxygen, r, reporting)
+    let python = python_native::results(path, deadlines, cancellation, reporting).await?;
+    assemble_with_native(path, BTreeMap::new(), rust, doxygen, r, python, reporting)
 }
 
 async fn doxygen_results(
@@ -655,6 +676,7 @@ async fn r_results(
 }
 
 struct NativeExtractions {
+    python: BTreeMap<(String, String), python_native::PythonNativeExtraction>,
     julia: BTreeMap<(String, String), crate::extractors::julia::JuliaExtraction>,
     rust: BTreeMap<(String, String), rust_native::RustNativeExtraction>,
     doxygen: BTreeMap<(String, String), doxygen_native::DoxygenNativeExtraction>,
@@ -667,6 +689,7 @@ fn assemble_with_native(
     rust_results: BTreeMap<(String, String), rust_native::RustNativeExtraction>,
     doxygen_results: BTreeMap<(String, String), doxygen_native::DoxygenNativeExtraction>,
     r_results: BTreeMap<(String, String), r_native::RNativeExtraction>,
+    python_results: BTreeMap<(String, String), python_native::PythonNativeExtraction>,
     reporting: &Reporting,
 ) -> Result<WorkspaceSources, AssemblyError> {
     let text = fs::read_to_string(path).map_err(|source| ConfigurationError::Read {
@@ -706,6 +729,11 @@ fn assemble_with_native(
             .values()
             .filter_map(|result| result.observation.clone()),
     );
+    cache_observations.extend(
+        python_results
+            .values()
+            .flat_map(|result| result.observations.iter().cloned()),
+    );
     for package in &configuration.packages {
         cache_observations.push(crate::incremental::supplemental_manifest(
             &configuration,
@@ -734,7 +762,30 @@ fn assemble_with_native(
         .values()
         .map(|result| result.observation.clone())
         .collect();
+    let python_interpreter = python_results
+        .values()
+        .next()
+        .map(|result| result.interpreter.clone());
+    let python_environments = python_results
+        .iter()
+        .filter_map(|((package, _), result)| {
+            let environment = result.environment.as_ref()?;
+            // Example reuse needs consistent coverage for every target. One
+            // target's environment cannot stand in for an opaque loader in another.
+            python_results
+                .iter()
+                .filter(|((owner, _), _)| owner == package)
+                .all(|(_, result)| {
+                    result
+                        .environment
+                        .as_ref()
+                        .is_some_and(|(candidate, _)| candidate == &environment.0)
+                })
+                .then(|| (package.clone(), environment.clone()))
+        })
+        .collect();
     let mut native = NativeExtractions {
+        python: python_results,
         julia: julia_results,
         rust: rust_results,
         doxygen: doxygen_results,
@@ -759,7 +810,7 @@ fn assemble_with_native(
             }
         }
     }
-    packages::assemble(
+    let python_doctests = packages::assemble(
         &configuration,
         &paths,
         &mut workspace,
@@ -813,6 +864,9 @@ fn assemble_with_native(
         doxygen_observations,
         r_observations,
         cache_observations,
+        python_interpreter,
+        python_doctests,
+        python_environments,
         selections,
         evidence,
         native_assets: BTreeMap::new(),

@@ -23,6 +23,7 @@ static PyTypeObject workspace_type = {
     .tp_name = "foo._native.NativeWorkspace",
     .tp_basicsize = sizeof(NativeWorkspace),
     .tp_flags = Py_TPFLAGS_DEFAULT,
+    .tp_doc = "Reusable workspace allocated by the native Foo library.",
     .tp_new = PyType_GenericNew,
     .tp_init = (initproc)workspace_init,
     .tp_members = workspace_members,
@@ -52,7 +53,8 @@ static PyObject *native_mean(PyObject *self, PyObject *values) {
 }
 
 static PyMethodDef methods[] = {
-    {"native_mean", native_mean, METH_O, NULL},
+    {"native_mean", native_mean, METH_O,
+     "native_mean($module, values, /)\n--\n\nCompute the native mean."},
     {NULL, NULL, 0, NULL},
 };
 

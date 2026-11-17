@@ -38,6 +38,7 @@ pub struct PythonSurface {
 
 struct Builder<'a> {
     package: &'a str,
+    data_descriptors: &'a BTreeSet<String>,
     registry: IdentityRegistry,
     items: BTreeMap<String, Item>,
     docstrings: BTreeMap<String, ParsedDocstring>,
@@ -61,6 +62,22 @@ struct ModuleSurface {
 /// Cycles, unresolved exports, and ambiguous aliases yield diagnostics rather
 /// than fallback identities. Module discovery order never selects a winner.
 pub fn reconcile(package: &ParsedPythonPackage) -> PythonSurface {
+    reconcile_with_runtime(
+        package,
+        &BTreeSet::new(),
+        &BTreeMap::new(),
+        &BTreeSet::new(),
+        &BTreeMap::new(),
+    )
+}
+
+pub(crate) fn reconcile_with_runtime(
+    package: &ParsedPythonPackage,
+    support: &BTreeSet<String>,
+    runtime_exports: &BTreeMap<&str, &[String]>,
+    data_descriptors: &BTreeSet<String>,
+    dataclass_fields: &BTreeMap<String, Vec<String>>,
+) -> PythonSurface {
     let Ok(registry) = IdentityRegistry::new(&package.package) else {
         let mut diagnostics = package.diagnostics.clone();
         diagnostics.push(Diagnostic::new(
@@ -77,6 +94,7 @@ pub fn reconcile(package: &ParsedPythonPackage) -> PythonSurface {
     };
     let mut builder = Builder {
         package: &package.package,
+        data_descriptors,
         registry,
         items: BTreeMap::new(),
         docstrings: BTreeMap::new(),
@@ -115,12 +133,13 @@ pub fn reconcile(package: &ParsedPythonPackage) -> PythonSurface {
         let source = implementations.first().copied();
         let stub = stubs.first().copied();
         let selected = stub.or(source).unwrap();
-        let export_module = if selected.exports.is_empty() {
-            source.unwrap_or(selected)
-        } else {
-            selected
+        let exports = match runtime_exports.get(name) {
+            Some(names) => PythonExports::Runtime {
+                names: names.to_vec(),
+            },
+            _ if selected.exports.is_empty() => exports::exports(source.unwrap_or(selected)),
+            _ => exports::exports(selected),
         };
-        let exports = exports::exports(export_module);
         if let PythonExports::Dynamic { sources, .. } = &exports {
             builder.diagnostic(
                 DiagnosticCode::PythonDynamicExport,
@@ -175,12 +194,10 @@ pub fn reconcile(package: &ParsedPythonPackage) -> PythonSurface {
         builder.items.insert(id.clone(), item);
         let mut names = BTreeMap::new();
         for declaration in &selected.declarations {
-            if declaration.name != "__all__" {
-                names.insert(
-                    declaration.name.clone(),
-                    (true, false, declaration.source.clone()),
-                );
-            }
+            names.insert(
+                declaration.name.clone(),
+                (true, false, declaration.source.clone()),
+            );
         }
         let selected_imports = bindings::imports(selected);
         for (local, bindings) in selected_imports {
@@ -226,20 +243,16 @@ pub fn reconcile(package: &ParsedPythonPackage) -> PythonSurface {
                 .or_default()
                 .extend(bindings);
         }
-        if let PythonExports::Explicit {
-            names: exported,
-            sources,
-        } = &exports
-        {
+        if let Some(exported) = explicit_names(&exports) {
+            let location = match &exports {
+                PythonExports::Explicit { sources, .. } => sources.last().map(|s| &s.source),
+                _ => None,
+            }
+            .unwrap_or(&selected.source);
             for name in exported {
-                names.entry(name.clone()).or_insert((
-                    false,
-                    false,
-                    sources
-                        .last()
-                        .map(|s| s.source.clone())
-                        .unwrap_or_else(|| selected.source.clone()),
-                ));
+                names
+                    .entry(name.clone())
+                    .or_insert((false, false, location.clone()));
             }
         }
         surfaces.push(ModuleSurface {
@@ -249,17 +262,56 @@ pub fn reconcile(package: &ParsedPythonPackage) -> PythonSurface {
             names,
         });
     }
+    for (class, runtime_fields) in dataclass_fields {
+        let Some(ids) = builder.direct.get(class) else {
+            continue;
+        };
+        let resolved: Option<Vec<_>> = runtime_fields
+            .iter()
+            .map(|name| {
+                let ids = builder.direct.get(name)?;
+                let id = ids.first()?;
+                (ids.len() == 1
+                    && matches!(
+                        python(&builder.items[id]).declaration,
+                        PythonDeclaration::Field
+                    ))
+                .then(|| ItemReference {
+                    package: package.package.clone(),
+                    item: id.clone(),
+                })
+            })
+            .collect();
+        if let Some(resolved) = resolved {
+            for id in ids {
+                if let PythonDeclaration::Class {
+                    constructor:
+                        PythonConstructor::Dataclass {
+                            fields,
+                            fields_include_inherited,
+                            ..
+                        },
+                    ..
+                } = &mut python_mut(builder.items.get_mut(id).unwrap()).declaration
+                {
+                    fields.clone_from(&resolved);
+                    *fields_include_inherited = true;
+                }
+            }
+        }
+    }
     let mut visible = BTreeMap::new();
     let mut pending_aliases = Vec::new();
     let mut pending_modules: BTreeSet<_> = surfaces
         .iter()
         .enumerate()
         .filter(|(_, surface)| {
-            !surface
-                .name
-                .split('.')
-                .skip(1)
-                .any(|part| part.starts_with('_'))
+            !support.contains(&surface.name)
+                && !surface
+                    .name
+                    .split('.')
+                    .skip(1)
+                    .any(|part| part.starts_with('_'))
         })
         .map(|(index, _)| index)
         .collect();
@@ -272,10 +324,7 @@ pub fn reconcile(package: &ParsedPythonPackage) -> PythonSurface {
         visible.insert(surface.id.clone(), PythonVisibility::Public);
         builder.items.get_mut(&surface.id).unwrap().children.clear();
         let mut names: Vec<_> = surface.names.iter().collect();
-        if let PythonExports::Explicit {
-            names: exported, ..
-        } = &surface.exports
-        {
+        if let Some(exported) = explicit_names(&surface.exports) {
             names.sort_by_key(|(name, _)| exported.iter().position(|n| n == *name));
         } else {
             names.sort_by_key(|(name, (_, _, source))| {
@@ -342,12 +391,9 @@ pub fn reconcile(package: &ParsedPythonPackage) -> PythonSurface {
             }
         }
     }
-    // A public reexport keeps its canonical defining module addressable, but
-    // does not promote that private module's unrelated declarations.
-    for (id, visibility) in visible.clone() {
-        if visibility == PythonVisibility::Private {
-            continue;
-        }
+    // Keep the owning modules of retained declarations addressable.
+    // Their unrelated declarations remain outside the surface.
+    for id in visible.clone().into_keys() {
         let qualified = &builder.items[&id].qualified_name;
         for surface in &surfaces {
             if qualified.starts_with(&format!("{}.", surface.name)) {
@@ -484,6 +530,13 @@ pub fn reconcile(package: &ParsedPythonPackage) -> PythonSurface {
     }
 }
 
+fn explicit_names(exports: &PythonExports) -> Option<&[String]> {
+    match exports {
+        PythonExports::Explicit { names, .. } | PythonExports::Runtime { names } => Some(names),
+        _ => None,
+    }
+}
+
 impl Builder<'_> {
     fn diagnostic(
         &mut self,
@@ -560,7 +613,20 @@ impl Builder<'_> {
         } = &python(item).declaration
         {
             for field in fields {
-                if self.items[&field.item].name.starts_with('_') {
+                let inherited = !item.children.contains(&field.item);
+                if inherited {
+                    // Preserve the defining class and the inherited field as support records.
+                    let qualified = &self.items[&field.item].qualified_name;
+                    let (owner, _) = qualified.rsplit_once('.').unwrap();
+                    if let Some(ids) = self.direct.get(owner) {
+                        for id in ids {
+                            visible
+                                .entry(id.clone())
+                                .or_insert(PythonVisibility::Private);
+                        }
+                    }
+                }
+                if inherited || self.items[&field.item].name.starts_with('_') {
                     self.expose(&field.item, PythonVisibility::Private, visible, visited);
                 }
             }

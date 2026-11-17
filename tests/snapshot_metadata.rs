@@ -9,7 +9,7 @@ use diplodocus::validation::resolve_workspace;
 use serde_json::{Value, json};
 
 fn fixture(presentation: &str) -> support::TestWorkspace {
-    let root = support::acceptance_workspace();
+    let root = support::prepared_acceptance_workspace();
     let config = root.read("workspace/diplodocus.yaml");
     let config = config
         .replace("slug: \"python\"", "slug: \"python-api\"")

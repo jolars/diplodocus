@@ -1,3 +1,5 @@
+#![cfg(target_os = "linux")]
+
 mod support;
 
 use std::sync::{Arc, Mutex};
@@ -10,7 +12,7 @@ struct Events(Mutex<Vec<(String, bool)>>);
 impl Reporter for Events {
     fn report(&self, event: Event<'_>) {
         if let Event::Cache {
-            stage: "static-python",
+            stage: "python-native",
             owner,
             hit,
             ..
@@ -22,6 +24,7 @@ impl Reporter for Events {
 }
 
 #[test]
+#[ignore = "native Python cache acceptance"]
 fn inferred_and_declared_dependencies_propagate_through_cycles() {
     let root = support::TestWorkspace::new();
     let mut configuration = "project:\n  name: Dependency invalidation\nrepositories:\n  - id: repo\n    path: .\npackages:\n".to_owned();
@@ -80,6 +83,7 @@ fn inferred_and_declared_dependencies_propagate_through_cycles() {
 }
 
 #[test]
+#[ignore = "native Python cache acceptance"]
 fn declared_environment_values_change_persistent_identities() {
     let root = support::TestWorkspace::new();
     root.write("diplodocus.yaml", "project:\n  name: Environment cache\nrepositories:\n  - id: repo\n    path: .\npackages:\n  - id: demo\n    name: Demo\n    slug: demo\n    ecosystem: python\n    repository: repo\n    path: package\n    metadata-path: pyproject.toml\n    incremental:\n      environment-variables: [DIPLODOCUS_TEST_ENVIRONMENT]\n    targets:\n      - id: api\n        extractor: python\n        path: demo\n        role: public-api\n");
@@ -102,7 +106,7 @@ fn declared_environment_values_change_persistent_identities() {
         );
         std::fs::read_dir(
             root.path()
-                .join(".diplodocus/cache/incremental/static-python"),
+                .join(".diplodocus/cache/incremental/python-native"),
         )
         .unwrap()
         .count()

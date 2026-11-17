@@ -166,7 +166,19 @@ fn cli_paths_and_completed_snapshot_match_the_contract() {
 
 #[test]
 fn generated_snapshots_never_become_sources_or_change_input_fingerprints() {
-    let root = support::acceptance_workspace();
+    let root = support::shared_r_workspace();
+    let configuration = root.read(CONFIG).replace(
+        "packages:\n",
+        "  - id: core\n    path: ../core\npackages:\n",
+    );
+    root.write(
+        CONFIG,
+        format!(
+            "{configuration}content:\n  - id: guide\n    owner: project\n    repository: core\n    path: docs\n    mount: guide\n    format: gfm\n  - id: notes\n    owner: project\n    repository: core\n    path: notes\n    mount: notes\n    format: qmd\n"
+        ),
+    );
+    root.write("core/docs/index.md", "# Guide\n\nGuide content.\n");
+    root.write("core/notes/index.qmd", "# Notes\n\nQuarto content.\n");
     let config = root.path().join(CONFIG);
     let original = assemble_workspace(&config).unwrap();
     let expected_inputs: Vec<_> = original.input_paths().collect();
@@ -180,9 +192,7 @@ fn generated_snapshots_never_become_sources_or_change_input_fingerprints() {
     for output in [
         DEFAULT_OUTPUT,
         "core/docs/export.md",
-        "python/docs/export.qmd",
-        "python/python/foo/export.py",
-        "python/python/foo/export.pyi",
+        "core/notes/export.qmd",
         "r/R/export.R",
         "r/man/export.Rd",
         "r/README.md",
@@ -259,7 +269,7 @@ fn temporary_storage_does_not_enter_discovery_or_revalidation() {
 
 #[test]
 fn older_snapshots_are_excluded_without_touching_their_recovery_files() {
-    let root = support::acceptance_workspace();
+    let root = support::prepared_acceptance_workspace();
     let config = root.path().join(CONFIG);
     let original = assemble_workspace(&config).unwrap();
     // URI punctuation must remain part of the filename during read-only inspection.
@@ -298,7 +308,7 @@ fn older_snapshots_are_excluded_without_touching_their_recovery_files() {
 fn source_aliases_to_snapshots_and_storage_are_excluded_within_the_boundary() {
     use std::os::unix::fs::symlink;
 
-    let root = support::acceptance_workspace();
+    let root = support::prepared_acceptance_workspace();
     let config = root.path().join(CONFIG);
     let original = assemble_workspace(&config).unwrap();
     let snapshot =
@@ -342,7 +352,7 @@ fn source_aliases_to_snapshots_and_storage_are_excluded_within_the_boundary() {
 
 #[test]
 fn explicit_database_downloads_remain_inputs_and_cannot_be_overwritten() {
-    let root = support::acceptance_workspace();
+    let root = support::prepared_acceptance_workspace();
     let config = root.path().join(CONFIG);
     let output = Path::new("core/docs/download.sqlite");
     let sources = assemble_workspace(&config).unwrap();
@@ -368,7 +378,7 @@ fn explicit_database_downloads_remain_inputs_and_cannot_be_overwritten() {
 
 #[test]
 fn cli_rejects_every_kind_of_declared_input_before_execution() {
-    let root = support::acceptance_workspace();
+    let root = support::prepared_acceptance_workspace();
     let config = root
         .read(CONFIG)
         .replace("- \"pyproject.toml\"", "- \"environment.lock\"");

@@ -565,6 +565,16 @@ impl Manifest {
     pub(crate) fn paths(&self) -> impl Iterator<Item = &PathBuf> {
         self.inputs.keys()
     }
+    pub(crate) fn matches_file(&self, path: &Path, target: &Path, digest: &Fingerprint) -> bool {
+        self.inputs.get(path).is_some_and(|input| {
+            input.target.as_deref() == Some(target) && input.digest.as_ref() == Some(digest)
+        })
+    }
+    pub(crate) fn resolved_paths(&self) -> impl Iterator<Item = &PathBuf> {
+        self.inputs
+            .values()
+            .filter_map(|input| input.target.as_ref())
+    }
     pub(crate) fn roots(&self) -> impl Iterator<Item = &PathBuf> {
         self.roots
             .iter()

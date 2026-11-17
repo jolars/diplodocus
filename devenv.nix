@@ -34,6 +34,7 @@ let
   '';
   python = pkgs.python3.withPackages (pythonPackages: [
     pythonPackages.ipykernel
+    pythonPackages.sphinx
   ]);
   r = pkgs.rWrapper.override {
     packages = with pkgs.rPackages; [ IRkernel pkgload evaluate knitr roxygen2 jsonlite ];

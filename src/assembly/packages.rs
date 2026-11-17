@@ -1,7 +1,11 @@
 use super::*;
 use crate::diagnostics::DiagnosticEntity;
-use crate::extractors::{adapter::AdapterOutput, julia, python, r};
-use crate::ir::{ExtractionTarget, Package, SourceLocation};
+use crate::extractors::python::native::DoctestPlans;
+use crate::extractors::{adapter::AdapterOutput, julia, r};
+use crate::ir::{
+    ExtractionTarget, Item, ItemLanguageData, Package, PythonVisibility, SourceLocation,
+};
+use std::collections::{BTreeSet, btree_map::Entry};
 
 pub(super) fn assemble(
     configuration: &WorkspaceConfiguration,
@@ -11,13 +15,14 @@ pub(super) fn assemble(
     observed: &mut ObservedInputs,
     native: &mut super::NativeExtractions,
     reporting: &Reporting,
-) -> Result<(), AssemblyError> {
+) -> Result<BTreeMap<String, DoctestPlans>, AssemblyError> {
     let total = configuration
         .packages
         .iter()
         .map(|package| package.targets.len())
         .sum();
     let mut progress = reporting.stage("Assembling API documentation", Some(total));
+    let mut python_doctests = BTreeMap::new();
     for (index, declaration) in configuration.packages.iter().enumerate() {
         let resolved = &paths.packages[index];
         let repository = &paths.repositories[resolved.repository_index];
@@ -37,6 +42,8 @@ pub(super) fn assemble(
             extraction_targets: BTreeMap::new(),
             items: BTreeMap::new(),
         };
+        let mut python_support = BTreeSet::new();
+        let mut doctests = DoctestPlans::new();
         for (target, selected) in declaration.targets.iter().zip(&resolved.targets) {
             progress.item(&format!(
                 "{}:{} ({})",
@@ -50,6 +57,8 @@ pub(super) fn assemble(
                     role: target.role.clone(),
                 },
             );
+            let mut support_items = BTreeSet::new();
+            let mut target_doctests = DoctestPlans::new();
             let fragment: AdapterOutput = match target.extractor.as_str() {
                 "doxygen" => {
                     let result = native
@@ -93,25 +102,15 @@ pub(super) fn assemble(
                     result.into()
                 }
                 "python" => {
-                    let timing =
-                        reporting.phase(Phase::Extraction, Some(&declaration.id), Some(&target.id));
-                    let result = cached_fragment(
-                        extraction_cache.as_ref(),
-                        "static-python",
-                        &declaration.id,
-                        reporting,
-                        &(declaration, target),
-                        |result: &python::PythonExtraction| {
-                            !result
-                                .diagnostics
-                                .iter()
-                                .any(|diagnostic| diagnostic.severity == Severity::Error)
-                                && evidence_current(&result.provenance, repository)
-                        },
-                        || python::extract_target(repository, resolved, selected),
-                    );
-                    timing.finish();
-                    result.into()
+                    let result = native
+                        .python
+                        .remove(&(declaration.id.clone(), target.id.clone()))
+                        .ok_or(AssemblyError::InputsChanged)?;
+                    support_items = result.support_items;
+                    target_doctests = result.doctests;
+                    let mut fragment = AdapterOutput::from(result.extraction);
+                    fragment.evidence.completed.push(result.completed);
+                    fragment
                 }
                 "r" => {
                     let timing =
@@ -213,21 +212,49 @@ pub(super) fn assemble(
                 package.version = fragment.version;
             }
             for (id, item) in fragment.items {
-                if let std::collections::btree_map::Entry::Vacant(entry) =
-                    package.items.entry(id.clone())
-                {
-                    entry.insert(item);
-                } else {
-                    workspace.diagnostics.insert(
-                        diagnostic(
-                            DiagnosticCode::ConflictingExtraction,
-                            format!("Multiple extraction targets claim item `{id}`."),
-                        )
-                        .with_entity(DiagnosticEntity::Item {
-                            package: declaration.id.clone(),
-                            id,
-                        }),
-                    );
+                let support = support_items.contains(&id);
+                let incoming_doc = match package.items.entry(id.clone()) {
+                    Entry::Vacant(entry) => {
+                        if support {
+                            python_support.insert(id.clone());
+                        }
+                        entry.insert(item);
+                        true
+                    }
+                    Entry::Occupied(mut entry) => {
+                        if let Some(incoming_doc) = merge_python_support(
+                            entry.get_mut(),
+                            item,
+                            python_support.contains(&id),
+                            support,
+                        ) {
+                            if !support {
+                                python_support.remove(&id);
+                            }
+                            incoming_doc
+                        } else {
+                            workspace.diagnostics.insert(
+                                diagnostic(
+                                    DiagnosticCode::ConflictingExtraction,
+                                    format!("Multiple extraction targets claim item `{id}`."),
+                                )
+                                .with_entity(
+                                    DiagnosticEntity::Item {
+                                        package: declaration.id.clone(),
+                                        id: id.clone(),
+                                    },
+                                ),
+                            );
+                            false
+                        }
+                    }
+                };
+                if incoming_doc {
+                    if let Some(plan) = target_doctests.remove(&id) {
+                        doctests.insert(id, plan);
+                    } else {
+                        doctests.remove(&id);
+                    }
                 }
             }
             {
@@ -267,10 +294,78 @@ pub(super) fn assemble(
             workspace.provenance.push(fragment.evidence.extraction);
             progress.advance();
         }
+        if !doctests.is_empty() {
+            python_doctests.insert(declaration.id.clone(), doctests);
+        }
         workspace.packages.insert(declaration.id.clone(), package);
     }
     progress.finish();
-    Ok(())
+    Ok(python_doctests)
+}
+
+/// Merge matching Python items and report whether the incoming item supplies the prose.
+fn merge_python_support(
+    previous: &mut Item,
+    mut item: Item,
+    previous_support: bool,
+    support: bool,
+) -> Option<bool> {
+    if !(previous_support || support) {
+        return None;
+    }
+    let left = previous.source_location.as_ref()?;
+    let right = item.source_location.as_ref()?;
+    if left.repository != right.repository || left.path != right.path {
+        return None;
+    }
+    let (Some(ItemLanguageData::Python(existing)), Some(ItemLanguageData::Python(incoming))) =
+        (&mut previous.language_data, &mut item.language_data)
+    else {
+        return None;
+    };
+    // Keep definition facts from the selecting target. Support items can
+    // contribute public names, visibility, and edges from the reexport.
+    let prefer_incoming = previous_support && !support;
+    let incoming_doc =
+        previous.documentation.is_none() || (prefer_incoming && item.documentation.is_some());
+    let (selected, other) = if prefer_incoming {
+        (incoming, existing)
+    } else {
+        (existing, incoming)
+    };
+    if other.visibility == PythonVisibility::Public
+        || selected.visibility == PythonVisibility::Private
+    {
+        selected.visibility = other.visibility;
+    }
+    if prefer_incoming {
+        std::mem::swap(previous, &mut item);
+    }
+    if previous.documentation.is_none() {
+        previous.documentation = item.documentation;
+    }
+    for child in item.children {
+        if !previous.children.contains(&child) {
+            previous.children.push(child);
+        }
+    }
+    for alias in item.aliases {
+        if let Some(existing) = previous.aliases.iter_mut().find(|existing| {
+            existing.qualified_name == alias.qualified_name && existing.kind == alias.kind
+        }) {
+            for source in alias.sources {
+                if !existing.sources.contains(&source) {
+                    existing.sources.push(source);
+                }
+            }
+        } else {
+            previous.aliases.push(alias);
+        }
+    }
+    previous
+        .aliases
+        .sort_by(|a, b| a.qualified_name.cmp(&b.qualified_name));
+    Some(incoming_doc)
 }
 
 pub(super) fn cached_fragment<T: serde::Serialize + serde::de::DeserializeOwned>(

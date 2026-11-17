@@ -69,11 +69,19 @@ pub fn acceptance_workspace() -> TestWorkspace {
 
 pub fn prepared_acceptance_workspace() -> TestWorkspace {
     let workspace = acceptance_workspace();
-    // Command tests supply the extension before extraction; parser tests use the stubs alone.
-    let output = std::process::Command::new("python")
-        .args([
-            "-c",
-            r#"
+    prepare_acceptance_python(&workspace);
+    workspace
+}
+
+fn prepare_acceptance_python(workspace: &TestWorkspace) {
+    // Relocated workspaces copy the same prepared producer artifact. Compiling
+    // twice can embed different build paths in otherwise equivalent binaries.
+    static NATIVE: std::sync::OnceLock<(String, Vec<u8>)> = std::sync::OnceLock::new();
+    let (name, bytes) = NATIVE.get_or_init(|| {
+        let output = std::process::Command::new("python")
+            .args([
+                "-c",
+                r#"
 import os, pathlib, subprocess, sys, sysconfig
 root = pathlib.Path(sys.argv[1])
 destination = root / 'python/python/foo' / ('_native' + sysconfig.get_config_var('EXT_SUFFIX'))
@@ -87,15 +95,29 @@ sys.path.insert(0, str(root / 'python/python'))
 from foo import NativeWorkspace, native_mean
 assert NativeWorkspace(3).dimension == 3
 assert native_mean([1.0, 3.0]) == 2.0
+print(destination.name)
 "#,
-        ])
-        .arg(workspace.path())
-        .output()
-        .unwrap();
-    assert!(
-        output.status.success(),
-        "{}",
-        String::from_utf8_lossy(&output.stderr)
+            ])
+            .arg(workspace.path())
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let name = String::from_utf8(output.stdout).unwrap().trim().to_owned();
+        let bytes = fs::read(workspace.path().join("python/python/foo").join(&name)).unwrap();
+        (name, bytes)
+    });
+    workspace.write(Path::new("python/python/foo").join(name), bytes);
+}
+
+pub fn prepared_python_overloads_workspace() -> TestWorkspace {
+    let workspace = TestWorkspace::from_fixture("python-overloads");
+    workspace.write(
+        "python/demo/native.py",
+        "def native_value(value):\n    return value\n",
     );
     workspace
 }

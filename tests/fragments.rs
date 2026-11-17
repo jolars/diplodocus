@@ -10,7 +10,7 @@ use diplodocus::{
 
 #[test]
 fn detached_snapshot_supplies_content_without_a_site_shell() {
-    let root = support::TestWorkspace::from_fixture("python-overloads");
+    let root = support::prepared_python_overloads_workspace();
     root.write(
         "diplodocus.yaml",
         format!(
@@ -299,7 +299,7 @@ fn julia_list_fragments_preserve_markup_spacing_and_mapped_references() {
 
 #[test]
 fn cli_fragment_generation_preserves_output_after_invalid_mapping() {
-    let root = support::TestWorkspace::from_fixture("python-overloads");
+    let root = support::prepared_python_overloads_workspace();
     let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let temporary = tempfile::tempdir().unwrap();

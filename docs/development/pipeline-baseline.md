@@ -42,6 +42,12 @@ environment. For local qualpalr measurements, its existing
 `.devenv/profile/bin` can supply the prepared R wrapper on PATH. The harness
 does not create environments, install packages, or compile producer extensions.
 
+Use `--scenario python` for the Python migration profile. It copies the
+monorepo's Python package, adds an authored page, and measures authored prose,
+API docstring prose, and return-annotation saves. Native Python workers need
+Sphinx in the prepared interpreter. Add `--warm-restart` to verify that retained
+caches preserve the completed site and snapshot after restarting the worker.
+
 Each executable receives equivalent temporary copies. The Qualpal profile uses
 a headers-only Doxyfile. The qualpalr profile selects maintained API inputs,
 native artifacts, runtime assets, package metadata, and news, and excludes
@@ -339,3 +345,51 @@ subscription ancestors instead of comparing every dependency root with every
 other root. These changes improve bookkeeping costs without changing snapshot
 or publication validation. As with the earlier measurements, this local sample
 does not establish portable latency or precise tail guarantees.
+
+## Python native migration results {#python-native-results}
+
+Recorded on November 17, 2026, on an AMD Ryzen 9 7900 host with 24 logical CPUs.
+The Python migration profile compares the previous source adapter with native
+Sphinx discovery on the same prepared Python package. Both release workers used
+Python 3.14.7; the native worker used Sphinx 9.1.0 and Docutils 0.23. The
+[measurements](https://github.com/jolars/diplodocus/blob/main/docs/development/benchmarks/python-native.json)
+retain input and executable hashes, source receipts, individual timings,
+cache counts, and aggregate phase timings.
+
+All 48 samples passed: three fresh workspaces per worker, two saves of each
+change type per workspace, and three warm restarts. The workers received
+identical initial files. Each restart preserved every site byte and the
+completed snapshot fingerprint. Native API semantics and documentation differ
+from the previous source interpretation, so outputs are compared within each
+worker rather than between workers.
+
+The comparison ran baseline then candidate in one foreground command, with no
+other builds or tests active. An inherited advisory lock in idle Codex services
+prevented an exclusive `compute bench` reservation, so the command ran directly.
+This local sample provides directional costs rather than portable latency or
+precise tail guarantees.
+
+Times below are **median / p95 in seconds**. Saves include polling and debounce.
+Each pair writes a new variant and then restores the original bytes.
+
+| Action | Source adapter | Native Python |
+| --- | --- | --- |
+| startup | 8.550 / 9.816 | 26.924 / 27.758 |
+| authored prose | 6.668 / 7.465 | 15.704 / 16.206 |
+| API prose | 7.765 / 8.874 | 22.399 / 31.023 |
+| signature | 7.877 / 9.399 | 21.987 / 29.174 |
+| warm restart | 6.536 / 6.653 | 14.841 / 15.406 |
+
+Native discovery and all six doctest documents reused completed results on
+every authored save and warm restart. New API variants invalidated the package;
+restored variants reused their earlier completed results. New API prose variants
+took a median 30.522 s, while restored variants took 16.437 s. The combined
+medians in the table include both cases.
+
+The native path currently costs more even when results are reusable. Source
+verification on authored saves increased from a median 3.012 s to 5.420 s, and
+watch capture increased from 0.619 s to 1.375 s. Rendering remained about
+0.026 s. Conservative environment observations and publication guards remain
+active on cache hits. These measurements identify verification and environment
+bookkeeping as follow-up performance work. Further improvements should retain
+the current publication checks.

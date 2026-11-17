@@ -34,6 +34,7 @@ pub(super) fn validate(workspace: &Workspace) -> Result {
                 } = &record.activity
                     && owner.package == *id
                     && owner.target == *target_id
+                    && target.extractor != "python"
                 {
                     require(
                         package.ecosystem == "r" && target.extractor == "r",

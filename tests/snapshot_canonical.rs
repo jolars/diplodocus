@@ -47,7 +47,7 @@ fn reverse_object_keys(value: &Value) -> String {
 
 #[test]
 fn export_and_fingerprints_ignore_sqlite_layout_and_json_object_order() {
-    let root = support::acceptance_workspace();
+    let root = support::prepared_acceptance_workspace();
     root.write("core/docs/layout.bin", b"\0\xfflayout\n");
     root.write("core/docs/layout.md", "[Download](layout.bin)\n");
     let snapshot = snapshot(&root);
@@ -120,7 +120,7 @@ fn export_and_fingerprints_ignore_sqlite_layout_and_json_object_order() {
 
 #[test]
 fn export_retains_exact_binary_assets_and_sorts_semantic_record_keys() {
-    let root = support::acceptance_workspace();
+    let root = support::prepared_acceptance_workspace();
     let binary = b"\0\xff\x01\xfe\n";
     root.write("core/docs/canonical.bin", binary);
     root.write(

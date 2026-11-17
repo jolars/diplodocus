@@ -31,7 +31,7 @@ fn entries(path: &Path) -> Vec<PathBuf> {
 
 #[test]
 fn refuses_destination_sidecars_without_changing_the_previous_snapshot() {
-    let root = support::acceptance_workspace();
+    let root = support::prepared_acceptance_workspace();
     let before = snapshot(&root);
     root.write("core/docs/new.md", "# New page\n");
     let after = snapshot(&root);
@@ -68,7 +68,7 @@ fn refuses_destination_sidecars_without_changing_the_previous_snapshot() {
 fn dangling_sidecar_symlinks_prevent_first_publication() {
     use std::os::unix::fs::symlink;
 
-    let root = support::acceptance_workspace();
+    let root = support::prepared_acceptance_workspace();
     let snapshot = snapshot(&root);
     let target = tempfile::tempdir().unwrap();
     let path = target.path().join("documentation.sqlite");
@@ -90,7 +90,7 @@ fn dangling_sidecar_symlinks_prevent_first_publication() {
 
 #[test]
 fn refuses_a_destination_with_an_active_sqlite_transaction() {
-    let root = support::acceptance_workspace();
+    let root = support::prepared_acceptance_workspace();
     let before = snapshot(&root);
     root.write("core/docs/new.md", "# New page\n");
     let after = snapshot(&root);
@@ -129,7 +129,7 @@ fn refuses_a_destination_with_an_active_sqlite_transaction() {
 
 #[test]
 fn publication_is_a_complete_standalone_database() {
-    let root = support::acceptance_workspace();
+    let root = support::prepared_acceptance_workspace();
     let snapshot = snapshot(&root);
     let expected = snapshot.canonical_export().unwrap();
     assert!(!snapshot.workspace().packages.is_empty());
@@ -164,7 +164,7 @@ fn publication_is_a_complete_standalone_database() {
 #[cfg(unix)]
 #[test]
 fn an_open_reader_keeps_the_previous_complete_database_during_replacement() {
-    let root = support::acceptance_workspace();
+    let root = support::prepared_acceptance_workspace();
     let before = snapshot(&root);
     root.write("core/docs/new.md", "# New page\n\n[Download](new.txt)\n");
     root.write("core/docs/new.txt", "new asset");

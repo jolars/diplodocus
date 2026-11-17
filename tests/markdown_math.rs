@@ -96,7 +96,7 @@ fn generated_markdown_equations_use_the_same_inert_representation() {
 
 #[test]
 fn detached_markdown_snapshot_renders_local_katex_and_readable_fallbacks() {
-    let root = support::TestWorkspace::from_fixture("python-overloads");
+    let root = support::prepared_python_overloads_workspace();
     root.write("diplodocus.yaml", format!("{}\ncontent:\n  - id: guide\n    owner: project\n    repository: demo\n    path: docs\n    mount: guide\n    format: gfm\n", root.read("diplodocus.yaml")));
     root.write(
         "docs/index.md",

@@ -40,8 +40,9 @@ job. Run them explicitly when changing native extraction or cache boundaries:
 compute run -- cargo test --locked --lib \
   persistent_discovery_and_doctests_have_independent_cache_entries -- --ignored
 compute run -- cargo test --locked \
-  --test incremental_execution --test incremental_preparation \
-  --test incremental_source_paths --test r_incremental -- --ignored
+  --test incremental_dependencies --test incremental_execution \
+  --test incremental_preparation --test incremental_source_paths \
+  --test r_incremental --test python_native -- --ignored
 ```
 
 Keep fast regression tests in the default suite. New slow native acceptance

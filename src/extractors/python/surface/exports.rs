@@ -130,7 +130,7 @@ pub(super) fn visibility(
     definition: bool,
 ) -> Option<PythonVisibility> {
     match exports {
-        PythonExports::Explicit { names, .. } => names
+        PythonExports::Explicit { names, .. } | PythonExports::Runtime { names } => names
             .iter()
             .any(|n| n == name)
             .then_some(PythonVisibility::Public),

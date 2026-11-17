@@ -25,6 +25,44 @@ pub(super) fn parse(
     target_version: &str,
     diagnostics: &mut Vec<Diagnostic>,
 ) -> ParsedModule {
+    parse_module(
+        text,
+        name,
+        is_package,
+        kind,
+        source,
+        Some(target_version),
+        diagnostics,
+    )
+}
+
+pub(super) fn parse_native(
+    text: &str,
+    name: String,
+    is_package: bool,
+    source: SourceLocation,
+    diagnostics: &mut Vec<Diagnostic>,
+) -> ParsedModule {
+    parse_module(
+        text,
+        name,
+        is_package,
+        PythonSourceKind::Source,
+        source,
+        None,
+        diagnostics,
+    )
+}
+
+fn parse_module(
+    text: &str,
+    name: String,
+    is_package: bool,
+    kind: PythonSourceKind,
+    source: SourceLocation,
+    maintained_version: Option<&str>,
+    diagnostics: &mut Vec<Diagnostic>,
+) -> ParsedModule {
     let mut module = ParsedModule {
         name,
         is_package,
@@ -40,6 +78,7 @@ pub(super) fn parse(
         PythonSourceKind::Source => PySourceType::Python,
         PythonSourceKind::Stub => PySourceType::Stub,
     };
+    let target_version = maintained_version.unwrap_or("3.14");
     let version: PythonVersion = target_version.parse().expect("validated target grammar");
     let parsed = parse_unchecked(
         text,
@@ -71,6 +110,7 @@ pub(super) fn parse(
     let mut context = Context {
         module_name: &module.name,
         is_package,
+        maintained_exports: maintained_version.is_some(),
         annotation_imports: vec![],
         expressions: Expressions {
             names: BTreeMap::new(),
@@ -103,7 +143,9 @@ pub(super) fn parse(
             }),
             _ => {}
         }
-        if let Some(operation) = context.export(statement) {
+        if context.maintained_exports
+            && let Some(operation) = context.export(statement)
+        {
             module.exports.push(operation);
         }
     }
@@ -126,6 +168,7 @@ fn imports(names: &[ast::Alias]) -> Vec<ImportedName> {
 struct Context<'a> {
     module_name: &'a str,
     is_package: bool,
+    maintained_exports: bool,
     annotation_imports: Vec<ParsedImport>,
     expressions: Expressions<'a>,
 }
@@ -229,7 +272,7 @@ impl Context<'_> {
                 Stmt::Assign(value) => {
                     for target in &value.targets {
                         if let Expr::Name(name) = target {
-                            if name.id == "__all__" && module { continue; }
+                            if name.id == "__all__" && module && self.maintained_exports { continue; }
                             let mut declaration = self.declaration(name.id.to_string(), DeclarationKind::Assignment, statement);
                             let signature = Signature::Value { annotation: None, value: Some(self.assignment_value(&value.value)) };
                             declaration.signature = Some(self.signature(signature, &declaration.source));
@@ -243,7 +286,7 @@ impl Context<'_> {
                 }
                 Stmt::AnnAssign(value) => {
                     if let Expr::Name(name) = &*value.target {
-                        if name.id == "__all__" && module { continue; }
+                        if name.id == "__all__" && module && self.maintained_exports { continue; }
                         let annotation = self.expressions.annotation(&value.annotation);
                         let is_type_alias = matches!(&annotation, crate::ir::SignatureExpression::Name { name, .. }
                             if matches!(name.as_str(), "typing.TypeAlias" | "typing_extensions.TypeAlias"));

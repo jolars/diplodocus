@@ -12,6 +12,7 @@ fn complete_public_package_keeps_class_facts_and_contextual_references() {
     root.write(
         "python/demo/_api.py",
         r#""""Private implementation prose with :func:`missing_private_helper`."""
+from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Generic, TypeVar
 if TYPE_CHECKING:
@@ -58,6 +59,7 @@ def private_helper(): ...
                 fields,
                 frozen,
                 init,
+                ..
             },
         ..
     } = &data.declaration
@@ -107,7 +109,7 @@ def private_helper(): ...
         .iter()
         .filter(|diagnostic| diagnostic.code.as_str() == "python-unsupported-docstring")
         .collect();
-    assert_eq!(warnings.len(), 3, "{warnings:?}");
+    assert_eq!(warnings.len(), 4, "{warnings:?}");
     assert!(warnings.iter().all(|diagnostic| diagnostic.span.is_some()));
     assert!(
         warnings

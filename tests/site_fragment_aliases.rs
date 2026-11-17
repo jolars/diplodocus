@@ -533,7 +533,7 @@ end
 
 #[test]
 fn python_member_and_overload_aliases_preserve_signature_anchors() {
-    let root = support::TestWorkspace::from_fixture("python-overloads");
+    let root = support::prepared_python_overloads_workspace();
     let original = snapshot(&root);
     let fragments = render_fragments(&Site::new(&original).unwrap()).unwrap();
     let index: diplodocus::rendering::FragmentIndex =

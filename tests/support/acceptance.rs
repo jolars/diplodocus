@@ -59,6 +59,12 @@ pub fn acceptance_case(id: &str) -> TestWorkspace {
     materialize_case(case)
 }
 
+pub fn prepared_acceptance_case(id: &str) -> TestWorkspace {
+    let workspace = acceptance_case(id);
+    super::prepare_acceptance_python(&workspace);
+    workspace
+}
+
 pub fn materialize_case(case: &AcceptanceCase) -> TestWorkspace {
     let workspace = acceptance_workspace();
     if let Some(overlay) = &case.overlay {

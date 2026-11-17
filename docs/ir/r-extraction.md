@@ -20,7 +20,7 @@ fingerprints. Native discovery records `RRuntime` with the verified package
 version, R and dependency versions, and observed inputs. These package-level
 records accompany target extraction in `native` mode. They contain no checkout
 paths, process IDs, timestamps, or execution claims. Maintained Rd mode omits
-generation evidence. Snapshots use IR version 15; storage remains version 2 and
+generation evidence. Snapshots use IR version 16; storage remains version 2 and
 record encoding remains version 1.
 
 Generation errors, changed maintained inputs, invalid helper results, timeout,

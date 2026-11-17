@@ -163,7 +163,7 @@ pub enum PythonVisibility {
     Unknown,
 }
 
-/// The supported static Python declaration shapes.
+/// The supported Python declaration shapes.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum PythonDeclaration {
@@ -212,6 +212,8 @@ pub enum PythonDeclaration {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum PythonModuleSource {
+    /// A loaded module without contributing maintained source/stub observations.
+    Runtime,
     /// Maintained `.py` declarations.
     Implementation,
     /// Maintained `.pyi` declarations with no implementation required.
@@ -224,6 +226,11 @@ pub enum PythonModuleSource {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum PythonExports {
+    /// The actual export names observed after importing the selected checkout.
+    Runtime {
+        /// Runtime __all__, including the result of computed export expressions.
+        names: Vec<String>,
+    },
     /// Public definitions and explicitly public imports determine the surface.
     Implicit,
     /// A supported literal `__all__` is authoritative, including an empty list.
@@ -294,6 +301,9 @@ pub enum PythonConstructor {
     Dataclass {
         /// Fields in declaration order.
         fields: Vec<ItemReference>,
+        /// Whether runtime discovery already incorporated inherited fields.
+        #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+        fields_include_inherited: bool,
         /// Whether the decorator generates `__init__`.
         init: bool,
         /// Whether the class is frozen.

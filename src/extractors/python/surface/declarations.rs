@@ -21,9 +21,6 @@ impl Builder<'_> {
         }
         let mut result = vec![];
         for (name, group) in groups {
-            if name == "__all__" {
-                continue;
-            }
             let originals: Vec<_> = implementation.iter().filter(|d| d.name == name).collect();
             let preferred = group[0];
             let original = originals
@@ -32,6 +29,18 @@ impl Builder<'_> {
                 .copied()
                 .or_else(|| originals.first().copied());
             let qualified = format!("{parent}.{name}");
+            let property = group.iter().any(|d| {
+                d.decorators.iter().any(|v| {
+                    bindings::decorator_name(&v.expression, &imports).as_deref() == Some("property")
+                })
+            });
+            let descriptor_property = in_class
+                && module.kind == PythonSourceKind::Stub
+                && property
+                && self.data_descriptors.contains(&qualified);
+            let describes_property = |d: &ParsedDeclaration| {
+                descriptor_property && d.kind == DeclarationKind::Assignment
+            };
             if source.is_some_and(|source| source.kind != module.kind)
                 && originals
                     .iter()
@@ -52,7 +61,9 @@ impl Builder<'_> {
                 continue;
             }
             if group.iter().any(|d| d.kind != preferred.kind)
-                || originals.iter().any(|d| d.kind != preferred.kind)
+                || originals
+                    .iter()
+                    .any(|d| d.kind != preferred.kind && !describes_property(d))
             {
                 self.diagnostic(
                     DiagnosticCode::PythonConflictingStub,
@@ -84,6 +95,7 @@ impl Builder<'_> {
             if let Some(original) = original {
                 let source_decorators = self.decorators(original, &source_imports);
                 if preferred.kind == DeclarationKind::Function
+                    && !describes_property(original)
                     && (callable_kind(name, in_class, &decorators)
                         != callable_kind(name, in_class, &source_decorators)
                         || decorators
@@ -105,11 +117,6 @@ impl Builder<'_> {
                     decorators = source_decorators;
                 }
             }
-            let property = group.iter().any(|d| {
-                d.decorators.iter().any(|v| {
-                    bindings::decorator_name(&v.expression, &imports).as_deref() == Some("property")
-                })
-            });
             let overload = group.iter().any(|d| is_overload(d, &imports));
             if group.len() > 1
                 && !(preferred.kind == DeclarationKind::Function && (property || overload))
@@ -242,6 +249,14 @@ impl Builder<'_> {
                 self.docstrings.insert(id.clone(), docstring);
             }
             if overload {
+                if let Some(implementation) = originals
+                    .iter()
+                    .copied()
+                    .find(|d| !is_overload(d, &source_imports))
+                    .or_else(|| group.iter().copied().find(|d| !is_overload(d, &imports)))
+                {
+                    item.source_location = Some(implementation.source.clone());
+                }
                 let mut overload_ids = vec![];
                 let implementation_count =
                     group.iter().filter(|d| !is_overload(d, &imports)).count();
@@ -392,6 +407,7 @@ impl Builder<'_> {
                                 item: id.clone(),
                             })
                             .collect(),
+                        fields_include_inherited: false,
                         init,
                         frozen,
                     }

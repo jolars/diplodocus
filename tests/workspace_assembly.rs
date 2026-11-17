@@ -17,8 +17,8 @@ fn simple_workspace() -> support::TestWorkspace {
 
 #[test]
 fn assembly_combines_declared_packages_pages_concepts_and_evidence_portably() {
-    let first = support::acceptance_workspace();
-    let second = support::acceptance_workspace();
+    let first = support::prepared_acceptance_workspace();
+    let second = support::prepared_acceptance_workspace();
     let a = assemble_workspace(first.path().join("workspace/diplodocus.yaml")).unwrap();
     let b = assemble_workspace(second.path().join("workspace/diplodocus.yaml")).unwrap();
     assert_eq!(a.workspace(), b.workspace());
@@ -57,7 +57,7 @@ fn assembly_combines_declared_packages_pages_concepts_and_evidence_portably() {
 
 #[test]
 fn overlapping_targets_fail_instead_of_selecting_one_fragment() {
-    let root = support::acceptance_workspace();
+    let root = support::prepared_acceptance_workspace();
     let mut configuration = support::fixture_configuration(&root, "workspace/diplodocus.yaml");
     let mut overlap = configuration["packages"][0]["targets"][0].clone();
     overlap["id"] = "overlap".into();
@@ -109,7 +109,7 @@ async fn execution_projects_typed_outputs_and_staging_is_owned_by_the_workspace(
 
 #[tokio::test]
 async fn acceptance_workspace_executes_only_the_four_authorized_python_and_r_pages() {
-    let root = support::acceptance_workspace();
+    let root = support::prepared_acceptance_workspace();
     let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
     let stage = tempfile::tempdir().unwrap();
     let result = sources.execute(settings(stage.path())).await.unwrap();
@@ -232,7 +232,7 @@ async fn disabled_vetoed_and_candidate_free_pages_never_discover_or_stage() {
 
 #[test]
 fn invalid_static_inputs_and_unknown_concept_members_stop_assembly() {
-    let root = support::acceptance_workspace();
+    let root = support::prepared_acceptance_workspace();
     root.write(
         "workspace/diplodocus.yaml",
         root.read("workspace/diplodocus.yaml")

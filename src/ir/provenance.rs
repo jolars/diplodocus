@@ -40,6 +40,25 @@ pub struct Provenance {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum ProvenanceActivity {
+    /// Completed Sphinx discovery in the verified supplied Python checkout.
+    PythonRuntime {
+        /// Owning extraction target.
+        target: TargetReference,
+        /// Versioned native export and normalization contract.
+        policy: String,
+        /// Observed Python interpreter version.
+        python_version: String,
+        /// Observed Sphinx version.
+        sphinx_version: String,
+        /// Observed Docutils version.
+        docutils_version: String,
+        /// Verified package metadata version.
+        package_version: String,
+        /// Loaded distribution versions, without installation paths.
+        dependencies: BTreeMap<String, String>,
+        /// Maintained and native module inputs consumed by discovery.
+        inputs: Vec<InputFingerprint>,
+    },
     /// Completed native Documenter examples in a prepared Julia environment.
     DocumenterExamples {
         /// Owning authored collection.

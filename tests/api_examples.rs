@@ -238,7 +238,7 @@ fn unavailable_interpreters_and_dependencies_are_errors_instead_of_skips() {
         let expected = if language == "julia" {
             "requires Julia"
         } else {
-            "require the interpreter"
+            "requires `python`"
         };
         assert!(String::from_utf8_lossy(&output.stderr).contains(expected));
         assert!(
@@ -257,7 +257,11 @@ fn unavailable_interpreters_and_dependencies_are_errors_instead_of_skips() {
             root.read(path)
         ),
     );
-    success(command(&root, "check"));
+    let checked = command(&root, "check");
+    assert!(!checked.status.success());
+    assert!(
+        String::from_utf8_lossy(&checked.stderr).contains("unavailable_documentation_dependency")
+    );
     let output = command(&root, "extract");
     assert!(!output.status.success());
     assert!(
@@ -402,13 +406,19 @@ fn python_checkouts_without_doctests_are_loaded_before_publication() {
             ),
             "empty" => ("", "requires an importable module"),
             "version" => ("__version__ = '9.9.9'\n", "version conflicts"),
-            _ => ("value = 42\n", "require the interpreter"),
+            _ => ("value = 42\n", "requires `python`"),
         };
         root.write(path, source);
         if broken == "empty" {
             fs::remove_file(root.path().join(path)).unwrap();
         }
-        success(command(&root, "check"));
+        let checked = command(&root, "check");
+        if broken == "interpreter" {
+            success(checked);
+        } else {
+            assert!(!checked.status.success(), "{broken}: check");
+            assert!(String::from_utf8_lossy(&checked.stderr).contains(expected));
+        }
         for operation in ["extract", "build"] {
             let mut invocation = Command::new(env!("CARGO_BIN_EXE_diplodocus"));
             invocation

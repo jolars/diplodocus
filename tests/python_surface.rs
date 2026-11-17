@@ -611,6 +611,7 @@ fn class_members_keep_source_dataclass_facts_and_reexport_aliases() {
                 fields,
                 init,
                 frozen,
+                ..
             },
         ..
     } = &data(class).declaration
@@ -992,9 +993,15 @@ fn annotated_type_aliases_preserve_union_targets_and_signature_links_in_snapshot
         root.write("diplodocus.yaml", "project:\n  name: \"Aliases\"\nrepositories:\n  - id: \"python\"\n    path: \".\"\npackages:\n  - id: \"pyfoo\"\n    name: \"Foo\"\n    slug: \"python\"\n    ecosystem: \"python\"\n    repository: \"python\"\n    path: \".\"\n    metadata-path: \"pyproject.toml\"\n    targets:\n      - id: \"api\"\n        extractor: \"python\"\n        path: \"python/foo\"\n        role: \"public-api\"\n");
         root.write(
             "python/foo/__init__.py",
-            "from ._models import DatasetData, SparseDataset, SparseDatasetSplit, fetch\n__all__ = ['DatasetData', 'SparseDataset', 'SparseDatasetSplit', 'fetch']\n",
+            "from ._exports import DatasetData\nfrom ._models import SparseDataset, SparseDatasetSplit, fetch\n__all__ = ['DatasetData', 'SparseDataset', 'SparseDatasetSplit', 'fetch']\n",
         );
-        root.write("python/foo/_models.py", format!("{import}\nimport pandas as pd\nclass SparseDataset: ...\nclass SparseDatasetSplit: ...\nDatasetData: {marker} = pd.DataFrame | SparseDataset | SparseDatasetSplit\n\"\"\"Decoded dataset values.\"\"\"\ndef fetch(data: DatasetData) -> DatasetData: ...\n"));
+        // Prepare the external type dependency without requiring pandas itself.
+        root.write("python/pandas.py", "class DataFrame: ...\n");
+        root.write(
+            "python/foo/_exports.py",
+            "from ._models import DatasetData as DatasetData\n",
+        );
+        root.write("python/foo/_models.py", format!("from __future__ import annotations\n{import}\nimport pandas as pd\nclass SparseDataset: ...\nclass SparseDatasetSplit: ...\nDatasetData: {marker} = pd.DataFrame | SparseDataset | SparseDatasetSplit\n\"\"\"Decoded dataset values.\"\"\"\ndef fetch(data: DatasetData) -> DatasetData: ...\n"));
         let sources =
             diplodocus::assembly::assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
         let resolved = diplodocus::validation::resolve_workspace(&sources).unwrap();
@@ -1070,7 +1077,8 @@ fn annotated_type_aliases_preserve_union_targets_and_signature_links_in_snapshot
             returns.as_ref().unwrap(),
         ] {
             assert!(
-                matches!(expression, SignatureExpression::Name { target: Some(reference), .. } if reference.package == "pyfoo" && reference.item == alias_id)
+                matches!(expression, SignatureExpression::Name { target: Some(reference), .. } if reference.package == "pyfoo" && reference.item == alias_id),
+                "{import}: {expression:?}"
             );
         }
     }

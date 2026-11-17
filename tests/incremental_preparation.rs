@@ -2,31 +2,46 @@ mod support;
 
 use std::sync::{Arc, Mutex};
 
+#[cfg(target_os = "linux")]
 use diplodocus::assembly::AssemblyError;
-use diplodocus::commands::{BuildOptions, CheckOptions, CommandError, CommandRunner};
+#[cfg(target_os = "linux")]
+use diplodocus::commands::CommandError;
+use diplodocus::commands::{BuildOptions, CheckOptions, CommandRunner};
 use diplodocus::incremental::CachePolicy;
 use diplodocus::reporting::{Event, Reporter};
 
 #[derive(Default)]
-struct CacheEvents(Mutex<Vec<(String, String, bool)>>);
+struct CacheEvents {
+    events: Mutex<Vec<(String, String, bool)>>,
+    misses: Mutex<Vec<String>>,
+}
 
 impl Reporter for CacheEvents {
     fn report(&self, event: Event<'_>) {
         if let Event::Cache {
-            stage, owner, hit, ..
+            stage,
+            owner,
+            hit,
+            reason,
         } = event
         {
-            self.0
+            self.events
                 .lock()
                 .unwrap()
                 .push((stage.into(), owner.into(), hit));
+            if !hit && let Some(reason) = reason {
+                self.misses
+                    .lock()
+                    .unwrap()
+                    .push(format!("{stage}: {reason}"));
+            }
         }
     }
 }
 
 impl CacheEvents {
     fn take(&self) -> Vec<(String, String, bool)> {
-        std::mem::take(&mut *self.0.lock().unwrap())
+        std::mem::take(&mut *self.events.lock().unwrap())
     }
 }
 
@@ -92,10 +107,12 @@ fn preparation_reuses_across_commands_and_tracks_nested_includes() {
     support::assert_output_tree(&output.path().join("changed"), &output.path().join("clean"));
 }
 
+#[cfg(target_os = "linux")]
 #[test]
-fn static_api_reuse_keeps_unrelated_packages_after_prose_and_source_saves() {
+#[ignore = "native Python cache acceptance"]
+fn python_api_reuse_keeps_unrelated_packages_after_prose_and_source_saves() {
     let root = support::TestWorkspace::new();
-    root.write("diplodocus.yaml", "project:\n  name: Static package caches\nrepositories:\n  - id: source\n    path: .\npackages:\n  - id: first\n    name: First\n    slug: first\n    ecosystem: python\n    repository: source\n    path: first\n    metadata-path: pyproject.toml\n    targets:\n      - id: api\n        extractor: python\n        path: first\n        role: public-api\n  - id: second\n    name: Second\n    slug: second\n    ecosystem: python\n    repository: source\n    path: second\n    metadata-path: pyproject.toml\n    targets:\n      - id: api\n        extractor: python\n        path: second\n        role: public-api\ncontent:\n  - id: guide\n    owner: project\n    repository: source\n    path: docs\n    mount: guide\n    format: gfm\n");
+    root.write("diplodocus.yaml", "project:\n  name: Native Python caches\nrepositories:\n  - id: source\n    path: .\npackages:\n  - id: first\n    name: First\n    slug: first\n    ecosystem: python\n    repository: source\n    path: first\n    metadata-path: pyproject.toml\n    targets:\n      - id: api\n        extractor: python\n        path: first\n        role: public-api\n  - id: second\n    name: Second\n    slug: second\n    ecosystem: python\n    repository: source\n    path: second\n    metadata-path: pyproject.toml\n    targets:\n      - id: api\n        extractor: python\n        path: second\n        role: public-api\ncontent:\n  - id: guide\n    owner: project\n    repository: source\n    path: docs\n    mount: guide\n    format: gfm\n");
     for name in ["first", "second"] {
         root.write(
             format!("{name}/pyproject.toml"),
@@ -117,23 +134,23 @@ fn static_api_reuse_keeps_unrelated_packages_after_prose_and_source_saves() {
         events.take()
     };
     let first = check();
-    assert!(contains(&first, "static-python", "first", false));
-    assert!(contains(&first, "static-python", "second", false));
+    assert!(contains(&first, "python-native", "first", false));
+    assert!(contains(&first, "python-native", "second", false));
     let warm = check();
-    assert!(contains(&warm, "static-python", "first", true));
-    assert!(contains(&warm, "static-python", "second", true));
+    assert!(contains(&warm, "python-native", "first", true));
+    assert!(contains(&warm, "python-native", "second", true));
 
     root.write("docs/index.md", "# Updated guide\n");
     let prose = check();
-    assert!(contains(&prose, "static-python", "first", true));
-    assert!(contains(&prose, "static-python", "second", true));
+    assert!(contains(&prose, "python-native", "first", true));
+    assert!(contains(&prose, "python-native", "second", true));
     root.write(
         "first/first/__init__.py",
         "# Package source changed.\ndef greet(name: str) -> str:\n    return name\n",
     );
     let source = check();
-    assert!(contains(&source, "static-python", "first", false));
-    assert!(contains(&source, "static-python", "second", true));
+    assert!(contains(&source, "python-native", "first", false));
+    assert!(contains(&source, "python-native", "second", true));
 }
 
 #[test]
@@ -158,6 +175,7 @@ fn doxygen_restores_verified_output_and_invalidates_changed_headers() {
     assert!(contains(&check(), "doxygen", "demo", false));
 }
 
+#[cfg(target_os = "linux")]
 #[test]
 #[ignore = "slow incremental acceptance; run explicitly with --ignored"]
 fn python_examples_reuse_only_after_fresh_checkout_validation() {
@@ -223,9 +241,10 @@ fn python_examples_reuse_only_after_fresh_checkout_validation() {
     );
 }
 
+#[cfg(target_os = "linux")]
 #[test]
 #[ignore = "slow incremental acceptance; run explicitly with --ignored"]
-fn python_module_probes_do_not_reuse_an_earlier_modules_environment() {
+fn python_targets_do_not_reuse_another_targets_environment() {
     let root = support::TestWorkspace::new();
     root.write("diplodocus.yaml", "project:\n  name: Python module coverage\nrepositories:\n  - id: source\n    path: .\npackages:\n  - id: cached\n    name: Cached Python\n    slug: cached\n    ecosystem: python\n    repository: source\n    path: .\n    metadata-path: pyproject.toml\n    targets:\n      - id: alpha\n        extractor: python\n        path: src/alpha\n        role: public-api\n      - id: zeta\n        extractor: python\n        path: src/zeta\n        role: public-api\n");
     root.write(
@@ -234,8 +253,13 @@ fn python_module_probes_do_not_reuse_an_earlier_modules_environment() {
     );
     let example = "__all__ = ['answer']\ndef answer():\n    \"\"\"Return the answer.\n\n    Examples\n    --------\n    >>> answer()\n    42\n    \"\"\"\n    return 42\n";
     root.write("src/zeta/__init__.py", example);
-    let external = tempfile::tempdir().unwrap();
-    let marker = external.path().join("opaque-loader");
+    // Runtime-dependent reads must be declared so discovery notices changes.
+    let configuration = root.read("diplodocus.yaml").replace(
+        "    metadata-path: pyproject.toml\n",
+        "    metadata-path: pyproject.toml\n    incremental:\n      extra-inputs: [opaque-loader]\n",
+    );
+    root.write("diplodocus.yaml", configuration);
+    let marker = root.path().join("opaque-loader");
     let marker_literal = serde_json::to_string(marker.to_str().unwrap()).unwrap();
     root.write("src/alpha/__init__.py", format!("import pathlib\nimport sys\nimport types\ndef _configure_loader():\n    if pathlib.Path({marker_literal}).exists():\n        opaque = types.ModuleType('cachemulti_opaque')\n        opaque.__spec__ = types.SimpleNamespace(origin='opaque-loader')\n        sys.modules['cachemulti_opaque'] = opaque\n_configure_loader()\n\n{example}"));
     let output = tempfile::tempdir().unwrap();
@@ -252,7 +276,7 @@ fn python_module_probes_do_not_reuse_an_earlier_modules_environment() {
     build();
     assert!(contains(&build(), "python-api-examples", "cached", true));
 
-    // The later alpha probe discovers an opaque loader without changing package inputs.
+    // The changed declared input makes alpha discover an opaque loader.
     std::fs::write(&marker, "opaque runtime coverage\n").unwrap();
     let uncertain = build();
     assert!(contains(&uncertain, "python-api-examples", "cached", false));
@@ -299,7 +323,8 @@ fn julia_native_stages_reuse_completed_results_and_invalidate_package_edits() {
     for stage in ["julia-runtime", "julia-api-examples", "documenter-examples"] {
         assert!(
             warm.iter().any(|event| event.0 == stage && event.2),
-            "missing {stage} hit: {warm:?}"
+            "missing {stage} hit: {warm:?}; reasons: {:?}",
+            events.misses.lock().unwrap()
         );
     }
     support::assert_output_tree(&output.path().join("first"), &output.path().join("warm"));

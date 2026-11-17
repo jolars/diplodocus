@@ -12,7 +12,7 @@ use diplodocus::validation::resolve_workspace;
 
 #[test]
 fn remote_readme_badges_survive_detached_html_and_markdown_exports() {
-    let root = support::TestWorkspace::from_fixture("python-overloads");
+    let root = support::prepared_python_overloads_workspace();
     let url = "https://images.example.invalid/status/C%2FC%2B%2B?branch=main&style=flat#badge";
     root.write(
         "python/README.md",

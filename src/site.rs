@@ -957,6 +957,11 @@ mod tests {
             std::fs::create_dir_all(destination.parent().unwrap()).unwrap();
             std::fs::copy(fixture.join(path), destination).unwrap();
         }
+        std::fs::write(
+            root.path().join("python/demo/native.py"),
+            "def native_value(value):\n    return value\n",
+        )
+        .unwrap();
         let sources =
             crate::assembly::assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
         let resolved = crate::validation::resolve_workspace(&sources).unwrap();

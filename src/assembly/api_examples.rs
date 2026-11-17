@@ -4,6 +4,7 @@ use super::*;
 use crate::diagnostics::DiagnosticEntity;
 use crate::ir::*;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeSet;
 use std::process::Stdio;
 use std::time::Duration;
 
@@ -15,9 +16,15 @@ struct Request<'a> {
     import_roots: Vec<PathBuf>,
     tracked_source_paths: Vec<PathBuf>,
     qualified_name: &'a str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    docstring_module: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    doctest_lines: Option<&'a [[usize; 2]]>,
     package_name: &'a str,
     package_version: &'a str,
     source: &'a str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    portable_source: Option<&'a str>,
 }
 
 #[derive(Deserialize)]
@@ -34,15 +41,38 @@ struct Results {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-struct PythonEnvironment {
+pub(super) struct PythonEnvironment {
     search_paths: Vec<PathBuf>,
     runtime_paths: Vec<PathBuf>,
+    used_paths: Vec<PathBuf>,
     flags: Vec<i64>,
     eligible: bool,
 }
 
 impl PythonEnvironment {
-    fn observe(&self) -> Option<crate::incremental::Manifest> {
+    pub(super) fn covers(
+        &self,
+        completed: &Self,
+        manifests: &[&crate::incremental::Manifest],
+    ) -> bool {
+        if !completed.eligible
+            || self.search_paths != completed.search_paths
+            || self.flags != completed.flags
+        {
+            return false;
+        }
+        let covered: BTreeSet<_> = manifests
+            .iter()
+            .flat_map(|manifest| manifest.paths().chain(manifest.resolved_paths()))
+            .collect();
+        completed
+            .runtime_paths
+            .iter()
+            .chain(&completed.used_paths)
+            .all(|path| covered.contains(path))
+    }
+
+    pub(super) fn observe(&self) -> Option<crate::incremental::Manifest> {
         if !self.eligible {
             return None;
         }
@@ -57,6 +87,7 @@ impl PythonEnvironment {
                 "LD_PRELOAD",
                 "PYTHONPATH",
                 "PYTHONHOME",
+                "PYTHONOPTIMIZE",
                 "PYTHONNOUSERSITE",
                 "PYTHONUSERBASE",
                 "PYTHONSAFEPATH",
@@ -69,19 +100,12 @@ impl PythonEnvironment {
     }
 }
 
-/// Recognized executable syntax; ordinary language fences remain illustrative.
-pub(crate) fn recognized(document: &SourcedDocument) -> bool {
+/// Recognized Julia executable syntax; ordinary language fences remain illustrative.
+fn recognized_julia(document: &SourcedDocument) -> bool {
     let Some(raw) = &document.raw_source else {
         return false;
     };
     match &document.source_format {
-        DocumentFormat::Extracted { name } if name == "numpy-docstring" => raw
-            .lines()
-            .filter_map(|line| line.trim_start().strip_prefix(">>>"))
-            .any(|source| {
-                !source.trim().is_empty()
-                    && (!source.trim_start().starts_with('#') || source.contains("doctest:"))
-            }),
         DocumentFormat::Extracted { name } if name == "julia-markdown" => raw.lines().any(|line| {
             let line = line.trim_start();
             (line.starts_with("```") || line.starts_with("~~~"))
@@ -127,7 +151,7 @@ impl WorkspaceSources {
             }
             let language = record.ecosystem.clone();
             let version = record.version.clone().unwrap_or_default();
-            let mut package_cache = (language == "python")
+            let package_cache = (language == "python")
                 .then(|| {
                     crate::incremental::package_context(
                         &self.configuration,
@@ -136,8 +160,18 @@ impl WorkspaceSources {
                     )
                 })
                 .flatten();
-            let mut python_environment: Option<(PythonEnvironment, crate::incremental::Manifest)> =
-                None;
+            let python_environment = self.python_environments.get(&package.id).cloned();
+            // Hash the shared discovery environment once. Each document keeps
+            // only dependencies loaded in addition to that verified baseline.
+            let python_environment_key = python_environment.as_ref().map(crate::incremental::key);
+            if package_cache.is_some() && python_environment.is_none() {
+                self.reporting.cache(
+                    "python-api-examples",
+                    &package.id,
+                    false,
+                    Some("Prepared Python dependency coverage is uncertain."),
+                );
+            }
             let julia_base = (language == "julia")
                 .then(|| {
                     crate::incremental::package_context(
@@ -197,112 +231,80 @@ impl WorkspaceSources {
                     Some("Prepared Julia dependency coverage is uncertain."),
                 );
             }
-            let mut selected: Vec<_> = record
+            let doctests = self.python_doctests.get(&package.id);
+            let selected: Vec<_> = record
                 .items
                 .iter()
                 .filter_map(|(id, item)| {
-                    item.documentation
+                    let doctest = doctests.and_then(|plans| plans.get(id));
+                    let document = item
+                        .documentation
                         .as_ref()
-                        .filter(|d| recognized(d))
-                        .map(|d| {
-                            (
-                                Some(id.clone()),
-                                item.qualified_name.clone(),
-                                Some(d.clone()),
-                                d.source_location.clone(),
-                            )
-                        })
+                        .filter(|document| doctest.is_some() || recognized_julia(document))?;
+                    Some((
+                        id.clone(),
+                        item.qualified_name.clone(),
+                        document.clone(),
+                        doctest.cloned(),
+                    ))
                 })
                 .collect();
             let repository = &self.paths.repositories[package.repository_index];
-            if language == "python" {
-                // Module identities exist even when no API item has documentation.
-                let modules: BTreeMap<_, _> = record
-                    .items
-                    .values()
-                    .filter(|item| item.kind == ItemKind::Module)
-                    .filter_map(|item| {
-                        item.source_location.as_ref().map(|location| {
-                            (
-                                item.qualified_name.split('.').next().unwrap().to_owned(),
-                                location.clone(),
-                            )
-                        })
-                    })
-                    .collect();
-                if modules.is_empty() {
-                    return Err(failure(
-                        &package.id,
-                        &repository.source_location(&package.metadata_path, None)?,
-                        "Python checkout validation requires an importable module in the declared targets.",
-                    ));
-                }
-                for (name, location) in modules {
-                    selected.insert(0, (None, name, None, Some(location)));
-                }
-            }
             let label = if language == "python" {
                 "Checking Python APIs and examples"
             } else {
                 "Executing Julia API examples"
             };
             let mut progress = self.reporting.stage(label, Some(selected.len()));
-            for (id, qualified_name, document, location) in selected {
+            for (id, qualified_name, document, doctest) in selected {
                 progress.item(&format!("{}:{qualified_name}", package.id));
                 self.revalidate()?;
-                // A module probe must establish its own coverage, while earlier guards remain.
-                if id.is_none() {
-                    python_environment = None;
-                }
-                let operation = if id.is_none() {
-                    "checkout validation"
-                } else {
-                    "API example execution"
-                };
-                let location = location.as_ref().ok_or(AssemblyError::InputsChanged)?;
-                if document.as_ref().is_some_and(|document| {
-                    document
-                        .provenance
-                        .iter()
-                        .any(|p| matches!(p.activity, ProvenanceActivity::ApiExamples { .. }))
-                }) {
+                let location = document
+                    .source_location
+                    .as_ref()
+                    .ok_or(AssemblyError::InputsChanged)?;
+                if document
+                    .provenance
+                    .iter()
+                    .any(|p| matches!(p.activity, ProvenanceActivity::ApiExamples { .. }))
+                {
                     return Err(AssemblyError::InputsChanged);
                 }
-                let raw = document
-                    .as_ref()
-                    .and_then(|d| d.raw_source.as_deref())
-                    .unwrap_or_default();
+                let raw = document.raw_source.as_deref().unwrap_or_default();
+                let execution_source = doctest.as_ref().map_or(raw, |plan| plan.source.as_str());
+                let docstring_module = doctest.as_ref().map(|plan| plan.module.as_str());
+                let doctest_lines = doctest.as_ref().map(|plan| plan.lines.as_slice());
                 let cache_key = package_cache
                     .as_ref()
-                    .zip(python_environment.as_ref())
-                    .and_then(|((_, build, inputs), (environment, runtime))| {
-                        id.as_ref().map(|id| {
-                            crate::incremental::key(&(
-                                "python-api-examples-v1",
-                                build,
-                                &package.id,
-                                id,
-                                &qualified_name,
-                                &version,
-                                &document,
-                                inputs,
-                                environment,
-                                runtime,
-                                [
-                                    deadlines.startup,
-                                    deadlines.cell,
-                                    deadlines.shutdown,
-                                    deadlines.forced_exit,
-                                ],
-                            ))
-                        })
+                    .zip(python_environment_key.as_ref())
+                    .map(|((_, build, inputs), environment)| {
+                        crate::incremental::key(&(
+                            "python-api-examples-v6",
+                            build,
+                            &package.id,
+                            &id,
+                            &qualified_name,
+                            docstring_module,
+                            doctest_lines,
+                            fingerprint_bytes(execution_source.as_bytes()),
+                            &version,
+                            &document,
+                            inputs,
+                            environment,
+                            [
+                                deadlines.startup,
+                                deadlines.cell,
+                                deadlines.shutdown,
+                                deadlines.forced_exit,
+                            ],
+                        ))
                     });
                 if let Some(((store, _, inputs), key)) =
                     package_cache.as_ref().zip(cache_key.as_ref())
                 {
                     let cached: Option<Provenance> = store.load("python-api-examples", key);
-                    if let Some(provenance) = cached
-                        && matches!(&provenance.activity, ProvenanceActivity::ApiExamples {
+                    if let Some(cached) = cached
+                        && matches!(&cached.activity, ProvenanceActivity::ApiExamples {
                             package: cached_package, policy, input, examples, ..
                         } if cached_package == &package.id
                             && policy == "python-doctest-v1"
@@ -318,13 +320,13 @@ impl WorkspaceSources {
                             .get_mut(&package.id)
                             .unwrap()
                             .items
-                            .get_mut(id.as_ref().unwrap())
+                            .get_mut(&id)
                             .unwrap()
                             .documentation
                             .as_mut()
                             .unwrap()
                             .provenance
-                            .push(provenance);
+                            .push(cached);
                         self.revalidate()?;
                         self.reporting
                             .cache("python-api-examples", &package.id, true, None);
@@ -338,7 +340,7 @@ impl WorkspaceSources {
                         Some("Example, package, or Python environment inputs changed."),
                     );
                 }
-                let staging = tempfile::tempdir()?;
+                let staging = tempfile::tempdir_in(std::path::absolute(std::env::temp_dir())?)?;
                 let request = staging.path().join("request.toml");
                 let output = staging.path().join("results");
                 let errors = staging.path().join("errors");
@@ -356,12 +358,17 @@ impl WorkspaceSources {
                     )?
                 };
                 fs::write(&helper, helper_source)?;
-                let import_roots = package
-                    .targets
-                    .iter()
-                    .filter_map(|target| target.path.parent().map(Path::to_owned))
-                    .chain(std::iter::once(package.path.clone()))
-                    .collect();
+                if language == "python" {
+                    fs::write(
+                        staging.path().join("python_environment.py"),
+                        include_str!("python_environment.py"),
+                    )?;
+                }
+                let import_roots = if language == "python" {
+                    crate::extractors::python::import_roots(package)
+                } else {
+                    vec![]
+                };
                 let package_name = qualified_name.split('.').next().unwrap();
                 fs::write(
                     &request,
@@ -375,17 +382,24 @@ impl WorkspaceSources {
                             .map(|(_, _, inputs)| inputs.paths().cloned().collect())
                             .unwrap_or_default(),
                         qualified_name: &qualified_name,
+                        docstring_module,
+                        doctest_lines,
                         package_name,
                         package_version: &version,
-                        source: raw,
+                        source: execution_source,
+                        portable_source: (execution_source != raw).then_some(raw),
                     })
                     .map_err(|_| AssemblyError::InputsChanged)?,
                 )?;
-                let mut command = tokio::process::Command::new(if language == "python" {
-                    "python"
+                let mut command = if language == "python" {
+                    let python = self
+                        .python_interpreter
+                        .as_ref()
+                        .ok_or(AssemblyError::InputsChanged)?;
+                    super::python_native::command(python, staging.path())
                 } else {
-                    "julia"
-                });
+                    tokio::process::Command::new("julia")
+                };
                 if language == "julia" {
                     command
                         .args(["--startup-file=no", "--history-file=no"])
@@ -421,7 +435,7 @@ impl WorkspaceSources {
                             Ok(status) => status?,
                             Err(_) => {
                                 rd_examples::terminate(&mut process, deadlines).await?;
-                                return Err(failure(&package.id, location, format!("{language} {operation} timed out.")));
+                                return Err(failure(&package.id, location, format!("{language} API example execution timed out.")));
                             }
                         }
                     }
@@ -430,6 +444,7 @@ impl WorkspaceSources {
                         return Err(AssemblyError::Cancelled);
                     }
                 };
+                drop(process);
                 self.reporting
                     .native_timings(&output.with_extension("timings"), &package.id, None);
                 if !status.success() {
@@ -440,12 +455,15 @@ impl WorkspaceSources {
                     return Err(failure(
                         &package.id,
                         location,
-                        format!("{language} {operation} failed: {}", message.trim()),
+                        format!(
+                            "{language} API example execution failed: {}",
+                            message.trim()
+                        ),
                     ));
                 }
                 timing.finish();
                 let result = fs::read_to_string(&output)?;
-                let mut results: Results = if language == "python" {
+                let results: Results = if language == "python" {
                     serde_json::from_str(&result).map_err(|_| ())
                 } else {
                     toml::from_str(&result).map_err(|_| ())
@@ -453,7 +471,7 @@ impl WorkspaceSources {
                 .map_err(|()| {
                     failure(&package.id, location, "Invalid native API example results.")
                 })?;
-                if (id.is_some() && results.examples.is_empty())
+                if results.examples.is_empty()
                     || results.package_name != package_name
                     || results.package_version != version
                 {
@@ -463,38 +481,23 @@ impl WorkspaceSources {
                         "API example results do not match the supplied package or examples.",
                     ));
                 }
-                for example in &mut results.examples {
-                    example.actual = example
-                        .actual
+                let mut examples = results.examples;
+                let portable = |text: &str| {
+                    text.replace(staging.path().to_string_lossy().as_ref(), "<examples>")
                         .replace(repository.path.to_string_lossy().as_ref(), "<repository>")
-                        .replace(staging.path().to_string_lossy().as_ref(), "<examples>");
-                }
-                self.revalidate()?;
-                let Some(id) = id else {
-                    if package_cache.is_some()
-                        && let Some(environment) = results.environment.take()
-                    {
-                        package_cache = crate::incremental::package_context(
-                            &self.configuration,
-                            &self.paths,
-                            package_index,
-                        );
-                        if let Some(runtime) = environment.observe() {
-                            self.cache_observations.push(runtime.clone());
-                            python_environment = Some((environment, runtime));
-                        } else {
-                            self.reporting.cache(
-                                "python-api-examples",
-                                &package.id,
-                                false,
-                                Some("Python runtime dependency coverage is uncertain."),
-                            );
-                        }
-                    }
-                    staging.close()?;
-                    progress.advance();
-                    continue;
                 };
+                for example in &mut examples {
+                    example.actual = portable(&example.actual);
+                    if language == "python" {
+                        example.source = portable(&example.source);
+                        example.expected = portable(&example.expected);
+                    }
+                }
+                if let Some(cache) = &julia_cache {
+                    julia_complete &= cache.accepts_completion(staging.path(), &self.reporting);
+                }
+                staging.close()?;
+                self.revalidate()?;
                 let activity = ProvenanceActivity::ApiExamples {
                     package: package.id.clone(),
                     policy: format!("{language}-doctest-v1"),
@@ -507,9 +510,23 @@ impl WorkspaceSources {
                         source: location.clone(),
                         fingerprint: fingerprint_bytes(raw.as_bytes()),
                     },
-                    examples: results.examples,
+                    examples,
                 };
-                let result_environment = results.environment.take();
+                let covered = results.environment.as_ref().is_some_and(|environment| {
+                    python_environment
+                        .as_ref()
+                        .zip(package_cache.as_ref())
+                        .is_some_and(|((base, runtime), (_, _, inputs))| {
+                            base.covers(environment, &[runtime, inputs])
+                        })
+                });
+                if !covered
+                    && let Some(environment) = results
+                        .environment
+                        .and_then(|environment| environment.observe())
+                {
+                    self.cache_observations.push(environment);
+                }
                 let provenance = Provenance {
                     activity,
                     source: Some(DiagnosticSource::Repository {
@@ -534,15 +551,10 @@ impl WorkspaceSources {
                     .unwrap()
                     .provenance
                     .push(provenance.clone());
-                if let Some(cache) = &julia_cache {
-                    julia_complete &= cache.accepts_completion(staging.path(), &self.reporting);
-                }
-                staging.close()?;
                 self.revalidate()?;
                 if let Some(((store, _, inputs), key)) =
                     package_cache.as_ref().zip(cache_key.as_ref())
-                    && let Some((environment, _)) = python_environment.as_ref()
-                    && result_environment.as_ref() == Some(environment)
+                    && covered
                     && inputs.verify()
                 {
                     let _ = store.save("python-api-examples", key, &provenance);

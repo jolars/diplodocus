@@ -6,7 +6,7 @@ use snapbox::cmd::{Command, cargo_bin};
 
 #[test]
 fn check_runs_the_static_pipeline_with_missing_kernels_and_preserves_sources() {
-    let root = support::acceptance_workspace();
+    let root = support::prepared_acceptance_workspace();
     let config = root
         .read("workspace/diplodocus.yaml")
         .replace("kernel: \"python3\"", "kernel: \"must-not-be-discovered\"")
@@ -30,7 +30,7 @@ fn check_runs_the_static_pipeline_with_missing_kernels_and_preserves_sources() {
 
 #[test]
 fn check_reports_reference_failures_repeatedly_without_publishing() {
-    let root = support::acceptance_workspace();
+    let root = support::prepared_acceptance_workspace();
     root.write("core/docs/bad.md", "[`missing-name`]\n");
     let before = tree(root.path());
     let mut previous = None;

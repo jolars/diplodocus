@@ -228,7 +228,7 @@ fn hosting_limits_fail_before_rules_are_silently_dropped() {
 #[test]
 fn redirect_destinations_follow_package_visibility() {
     for visibility in ["public", "internal", "hidden"] {
-        let root = support::acceptance_workspace();
+        let root = support::prepared_acceptance_workspace();
         let mut configuration = support::fixture_configuration(&root, "workspace/diplodocus.yaml");
         configuration["packages"][1]
             .as_object_mut()

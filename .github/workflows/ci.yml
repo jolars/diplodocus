@@ -65,8 +65,9 @@ jobs:
           devenv shell -- cargo test --locked --lib \
             persistent_discovery_and_doctests_have_independent_cache_entries -- --ignored
           devenv shell -- cargo test --locked \
-            --test incremental_execution --test incremental_preparation \
-            --test incremental_source_paths --test r_incremental -- --ignored
+            --test incremental_dependencies --test incremental_execution \
+            --test incremental_preparation --test incremental_source_paths \
+            --test r_incremental --test python_native -- --ignored
       - name: Check snapshots with insertion-ordered JSON maps
         if: matrix.suite == 'snapshots'
         run: |
@@ -75,6 +76,27 @@ jobs:
             --test snapshot_canonical --test snapshot_schema --test snapshot_metadata \
             --test snapshots_storage --test snapshot_assets --test snapshot_validation \
             --test snapshot_publication --test snapshot_refresh
+
+  python-sphinx:
+    name: Sphinx ${{ matrix.sphinx }} (Python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python: '3.11'
+            sphinx: '9.0.4'
+          - python: '3.14'
+            sphinx: '9.1.1'
+          - python: '3.14'
+            sphinx: '9.2.0'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install 'sphinx==${{ matrix.sphinx }}'
+      - run: python scripts/test-python-compat.py --profile '${{ matrix.sphinx }}=python'
 
   browser:
     name: browser
@@ -124,7 +146,7 @@ jobs:
   versionary:
     name: versionary
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [fmt, clippy, test, browser, docs]
+    needs: [fmt, clippy, test, python-sphinx, browser, docs]
     runs-on: ubuntu-latest
     permissions:
       contents: write

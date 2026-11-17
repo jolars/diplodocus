@@ -61,7 +61,7 @@ loading.
 
 | Command | Discovery and execution | Publication |
 | --- | --- | --- |
-| `check` | Python and Julia source adapters; native R, Rust, and Doxygen extraction. R may run roxygen2 and load the verified checkout. No documentation examples, knitr articles, or Jupyter sessions. | Diagnostics only. Native tools can write caches, generated documentation, or configured side effects. |
+| `check` | Julia source adapter; native Python, R, Rust, and Doxygen extraction. Python imports the verified checkout and runs Sphinx without examples. R may run roxygen2 and load the verified checkout. No documentation examples, knitr articles, or Jupyter sessions. | Diagnostics only. Native tools can write caches, generated documentation, or configured side effects. |
 | `extract` | Shared API discovery plus Julia runtime completion, verified package loading, API doctests, Rd examples, native authored-document execution, and configured QMD execution. | Completed, validated snapshot with execution evidence and retained assets. |
 | `build` | The same extraction operation, followed by snapshot generation. | Snapshot, then site. A generation failure can leave the newer completed snapshot while preserving the previous site. |
 | `serve` | The same build operation initially and after watched changes, reusing verified package and page results when their inputs match. Workspace references and site output are rebuilt. | Last successful served generation survives a failed rebuild. |
@@ -82,7 +82,7 @@ code's side effects or roll back roxygen's checkout writes.
 
 | Adapter | Prepared environment | Current capabilities and evidence | Native migration gaps |
 | --- | --- | --- | --- |
-| Python | Python and prepared imports/extensions for extraction commands. Source-only checks need no Python interpreter. | Static PEP 621 metadata, maintained stubs, reexports, overloads, supported decorators, structured NumPy docstrings, and source maps. Native helpers verify the checkout and execute doctests. The Python source, surface, docstring, public API, and native example suites cover these features. | Import-time functions and arbitrary generated bindings are not discovered. Native loading does not replace static metadata or declaration rules. A supported Sphinx/autodoc exporter and extension policy remain future work. |
+| Python | Python >=3.11, a compatible Sphinx >=9.0.4,<10, prepared dependencies, and compiled extensions for all discovery commands. | Native exports, generated declarations, attached prose, signatures, maintained stubs, aliases, overloads, and reStructuredText/NumPy/Google documentation through autodoc/Napoleon. Discovery and doctests retain separate completed evidence and caches. | Built-in Sphinx configuration only; project conf.py, third-party extensions, MyST, and Markdown docstrings remain outside the supported interface. Static PEP 621 metadata remains required. Import failures never select a static fallback. |
 | R | R, pkgload, jsonlite, dependencies, and prebuilt extensions for native discovery; roxygen2 for generated documentation; evaluate for examples and knitr for R Markdown. | Package-level auto selection or explicit roxygen2/Rd mode, in-checkout generation, native exports/formals and S3 evidence, generated declarations, Rd topics, aliases, shared help, and supplemental source evidence. Loading verifies checkout identity and extension bytes. Verified generation, discovery, metadata, and execution results have separate persistent cache entries. | Installed-package loading is rejected; custom roclets require declared supplemental inputs and generated outputs. Dependency uncertainty prevents reuse. |
 | Julia | Julia and a prepared project for extraction commands; source-only checks need no Julia runtime. | Static includes, exports, aliases, methods, signatures, docstrings, and source maps. Native loading validates the checkout and completes supported generated types and fields. API doctests and Documenter examples retain execution evidence. Julia extraction, runtime, and discovery suites cover these boundaries. | Generated functions, generated methods, and runtime-attached documentation are not generally discovered. `check` retains static diagnostics for generated declarations. A supported documentation/method exporter remains future work. |
 | Rust | Prepared `nightly-2026-09-28` toolchain, Cargo.lock, offline dependencies, host target, and explicit library entry. | Native rustdoc JSON format 61 supplies public declarations, macro-generated APIs, reexports, traits, implementations, signatures, links, and source evidence. Native doctests retain compilation, expected errors, and skips. Rust extraction and native runner tests cover the integration. | No replacement planned. Preserve compiler authority and feature selection. Cross-compilation and binary targets remain unsupported. |
@@ -95,20 +95,28 @@ Benchmark reports include direct runtime version probes separately from verbatim
 snapshot tool records. Language IDs in those records can denote the built-in
 extractor version, not the runtime.
 
-The `native_adapter_contract` suite adds two deliberately unsupported packages.
+The `native_adapter_contract` suite includes two generated-API packages.
 `generated-python` creates a documented function through `exec`; Python exposes
-its signature and docstring, while static extraction reports
-`python-unresolved-reexport`. `generated-julia` creates a documented method with a
+its signature and docstring, and native Sphinx discovery retains both.
+`generated-julia` creates a documented method with a
 macro; Julia exposes the callable and attached documentation, while extraction
 reports `julia-unresolved-definition`. These cases pin visible gaps without
 silently importing a different interpretation. Existing Julia generated-type
 tests remain positive acceptance cases.
 
 The same suite compares canonical snapshots from `extract`, `build`, and
-`serve`, confirms that Python `check` neither loads the package nor runs its
+`serve`, confirms that Python `check` loads the package without running its
 examples, and verifies that reporting leaves portable evidence unchanged.
 Language-specific identity, signature, reference, source-map, and relocation
 tests remain the migration acceptance baseline.
+
+Python compatibility checks cover Sphinx 9.0.4 with Python 3.11 and Sphinx
+9.1.1 and 9.2.0 with Python 3.14. They exercise generated declarations,
+overloads, reStructuredText, NumPy and Google docstrings, module sections,
+stub-only documentation, changed exports, inert examples, and import failures.
+Run `compute run -- python scripts/test-python-compat.py` in a prepared
+environment, or repeat `--profile SPHINX_VERSION=PYTHON` for prepared
+interpreters. The script does not install dependencies.
 
 Qualpal's public headers and qualpalr's maintained source, Rd topics, shared
 topics, and S3 methods provide real-package acceptance inputs. The developer

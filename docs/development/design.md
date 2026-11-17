@@ -58,9 +58,10 @@ ambiguous constructs rather than silently inventing an interpretation.
 
 The caller prepares the runtimes, dependencies, and build artifacts needed to
 use the documented packages. Diplodocus combines source analysis with native
-tools where they help establish API semantics or check examples. Python source
-and stubs supply declarations and documentation; native Python verifies the
-loaded checkout and doctests. R combines roxygen2 generation or maintained Rd
+tools where they help establish API semantics or check examples. Python uses
+the loaded checkout and Sphinx autodoc/Napoleon for declarations and documentation,
+with maintained stubs supplying public signatures and source parsers supplying
+evidence. Native Python verifies doctests. R combines roxygen2 generation or maintained Rd
 with native exports, formals, and dispatch evidence, supplemental source
 attribution, and example execution. Julia combines source parsing with
 runtime type completion and doctests. Rust uses rustdoc JSON, and C++ uses

@@ -4,16 +4,43 @@ import contextlib
 import doctest
 import importlib
 import importlib.metadata
+import inspect
 import io
 import json
 import pathlib
 import platform
-import shutil
+import runpy
 import sys
-import sysconfig
 import time
-
 import tomllib
+
+environment_helper = runpy.run_path(str(pathlib.Path(__file__).with_name("python_environment.py")))
+observe_environment = environment_helper["observe_environment"]
+verify_module = environment_helper["verify_module"]
+
+
+def first_content_line(lines):
+    return next((index for index, line in enumerate(lines) if line.strip()), len(lines))
+
+
+def collect_examples(source, ranges):
+    parser = doctest.DocTestParser()
+    if ranges is None:
+        return parser.get_examples(source)
+
+    cleaned = inspect.cleandoc(source).splitlines()
+    cleaned = cleaned[first_content_line(cleaned):]
+    leading = first_content_line(source.splitlines())
+    examples = []
+    previous = 0
+    for start, end in ranges:
+        if not previous <= start < end <= len(cleaned):
+            raise ValueError("Invalid doctest range in the original docstring.")
+        for example in parser.get_examples("\n".join(cleaned[start:end])):
+            example.lineno += leading + start
+            examples.append(example)
+        previous = end
+    return examples
 
 
 def run(request_path, output_path):
@@ -22,7 +49,7 @@ def run(request_path, output_path):
     timings = pathlib.Path(output_path).with_suffix(".timings")
     started = time.monotonic()
     root = pathlib.Path(request["package_root"]).resolve()
-    project = tomllib.loads(pathlib.Path(request["metadata_path"]).read_text())[
+    project = tomllib.loads(pathlib.Path(request["metadata_path"]).read_text(encoding="utf-8"))[
         "project"
     ]
     if str(project.get("version", "")) != request["package_version"]:
@@ -33,34 +60,22 @@ def run(request_path, output_path):
     sys.pycache_prefix = str(pathlib.Path(request_path).parent / "bytecode")
     sys.dont_write_bytecode = True
     package = importlib.import_module(request["package_name"])
-    if not pathlib.Path(package.__file__).resolve().is_relative_to(root):
-        raise ValueError("Loaded package does not match the supplied checkout.")
+    verify_module(package, root)
     advertised_version = getattr(package, "__version__", None)
     if advertised_version is not None and str(advertised_version) != str(
         project["version"]
     ):
         raise ValueError("Loaded package version conflicts with checkout metadata.")
-    components = request["qualified_name"].split(".")
-    while components:
-        name = ".".join(components)
-        try:
-            module = importlib.import_module(name)
-            break
-        except ModuleNotFoundError as error:
-            if error.name is None or not (
-                name == error.name or name.startswith(error.name + ".")
-            ):
-                raise
-            components.pop()
-    if not pathlib.Path(module.__file__).resolve().is_relative_to(root):
-        raise ValueError("Example module does not match the supplied checkout.")
-    timings.write_text(f"package-loading\t{time.monotonic() - started}\n")
+    module = importlib.import_module(request["docstring_module"])
+    verify_module(module, root)
+    timings.write_text(f"package-loading\t{time.monotonic() - started}\n", encoding="utf-8")
     started = time.monotonic()
     source = request["source"]
-    test = doctest.DocTestParser().get_doctest(
-        source, vars(module).copy(), request["qualified_name"], "<api-document>", 0
+    test = doctest.DocTest(
+        collect_examples(source, request.get("doctest_lines")),
+        vars(module), request["qualified_name"], "<api-document>", 0, source,
     )
-    lines = source.splitlines(keepends=True)
+    lines = request.get("portable_source", source).splitlines(keepends=True)
     offsets = [0]
     for line in lines:
         offsets.append(offsets[-1] + len(line.encode("utf-8")))
@@ -139,7 +154,9 @@ def run(request_path, output_path):
             request.get("tracked_source_paths", []),
         )
     except (OSError, RuntimeError, TypeError, ValueError):
-        environment = {"search_paths": [], "runtime_paths": [], "flags": [], "eligible": False}
+        environment = {
+            "search_paths": [], "runtime_paths": [], "used_paths": [], "flags": [], "eligible": False
+        }
     result = {
         "runtime_version": platform.python_version(),
         "package_name": request["package_name"],
@@ -148,78 +165,8 @@ def run(request_path, output_path):
         "examples": outcomes,
         "environment": environment,
     }
-    pathlib.Path(output_path).write_text(json.dumps(result, ensure_ascii=False))
+    pathlib.Path(output_path).write_text(json.dumps(result, ensure_ascii=False), encoding="utf-8")
 
-
-def observe_environment(request_path, root, repository_root, tracked_source_paths):
-    staging_root = pathlib.Path(request_path).parent.resolve()
-    search_paths = [
-        str(pathlib.Path(path or root).resolve())
-        for path in sys.path
-        if pathlib.Path(path or root).resolve() != staging_root
-    ]
-    # Native library replacements must invalidate results even at the same version.
-    maps_path = pathlib.Path("/proc/self/maps")
-    mapped_libraries = []
-    if maps_path.is_file():
-        mapped_libraries = [
-            line.split(maxsplit=5)[5]
-            for line in maps_path.read_text().splitlines()
-            if len(line.split(maxsplit=5)) == 6
-            and line.split(maxsplit=5)[5].startswith("/")
-        ]
-    runtime_paths = sorted(
-        {
-            str(pathlib.Path(path).resolve())
-            for path in [
-                sys.executable,
-                shutil.which("python"),
-                sysconfig.get_path("stdlib"),
-                sysconfig.get_path("platstdlib"),
-                sysconfig.get_config_var("LIBDIR"),
-                *search_paths,
-                *mapped_libraries,
-            ]
-            if path
-            and not pathlib.Path(path).resolve().is_relative_to(repository_root)
-            and not repository_root.is_relative_to(pathlib.Path(path).resolve())
-        }
-    )
-    runtime_paths = [
-        path
-        for path in runtime_paths
-        if not any(
-            path != parent
-            and pathlib.Path(parent).is_dir()
-            and pathlib.Path(path).is_relative_to(parent)
-            for parent in runtime_paths
-        )
-    ]
-    covered_roots = [
-        root,
-        staging_root,
-        *map(pathlib.Path, runtime_paths),
-        *[pathlib.Path(path).resolve() for path in tracked_source_paths],
-    ]
-    eligible = maps_path.is_file() and all(
-        pathlib.Path(path).is_file() for path in mapped_libraries
-    )
-    for module in list(sys.modules.values()):
-        module_path = getattr(module, "__file__", None)
-        if module_path is not None:
-            module_path = pathlib.Path(module_path).resolve()
-            if not any(module_path.is_relative_to(base) for base in covered_roots):
-                eligible = False
-        elif getattr(getattr(module, "__spec__", None), "origin", None) not in (
-            "built-in", "frozen", None
-        ):
-            eligible = False
-    return {
-        "search_paths": search_paths,
-        "runtime_paths": runtime_paths,
-        "flags": [int(flag) for flag in sys.flags],
-        "eligible": eligible,
-    }
 
 
 if __name__ == "__main__":

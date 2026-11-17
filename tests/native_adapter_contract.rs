@@ -12,7 +12,7 @@ use diplodocus::reporting::{Event, Phase, Reporter};
 use diplodocus::snapshots::Snapshot;
 
 #[test]
-fn generated_python_api_is_native_but_static_discovery_reports_the_gap() {
+fn generated_python_api_is_discovered_from_the_prepared_checkout() {
     let root = support::TestWorkspace::from_fixture("generated-python");
     let output = Command::new("python")
         .current_dir(root.path())
@@ -23,12 +23,18 @@ fn generated_python_api_is_native_but_static_discovery_reports_the_gap() {
         "{}",
         String::from_utf8_lossy(&output.stderr)
     );
-    let error = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap_err();
-    assert!(
-        matches!(error, diplodocus::assembly::AssemblyError::Diagnostics(ref diagnostics)
-        if diagnostics.iter().any(|d| d.code.as_str() == "python-unresolved-reexport")),
-        "{error:?}"
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
+    let item = sources.workspace().packages["demo"]
+        .items
+        .values()
+        .find(|item| item.qualified_name == "generated_demo.generated")
+        .unwrap();
+    assert_eq!(item.signatures.len(), 1);
+    assert_eq!(
+        item.documentation.as_ref().unwrap().raw_source.as_deref(),
+        Some("Return the generated value.")
     );
+    assert!(item.source_location.as_ref().unwrap().span.is_none());
 }
 
 #[test]
@@ -58,14 +64,16 @@ fn commands_share_discovery_and_reporting_does_not_change_portable_evidence() {
     root.write("generated_demo/__init__.py", "\"\"\"A static package.\"\"\"\nfrom pathlib import Path as _Path\n_Path('loaded').write_text('yes')\n__all__ = [\"identity\"]\ndef identity(value: int = 1) -> int:\n    \"\"\"Return a value.\n\n    >>> _ = _Path('example-ran').write_text('yes')\n    >>> identity(2)\n    2\n    \"\"\"\n    return value\n");
     let config = root.path().join("diplodocus.yaml");
     let database = root.path().join(".diplodocus/documentation.sqlite");
-    CommandRunner::default()
+    let observation = Arc::new(Observation::default());
+    let runner = CommandRunner::with_reporter(observation.clone());
+    runner
         .check(CheckOptions {
             config: config.clone(),
         })
         .unwrap();
-    assert!(!root.path().join("loaded").exists());
+    assert!(root.path().join("loaded").exists());
     assert!(!root.path().join("example-ran").exists());
-    CommandRunner::default()
+    runner
         .extract(ExtractOptions {
             config: config.clone(),
             output: None,
@@ -77,8 +85,6 @@ fn commands_share_discovery_and_reporting_does_not_change_portable_evidence() {
         .unwrap()
         .canonical_export()
         .unwrap();
-    let observation = Arc::new(Observation::default());
-    let runner = CommandRunner::with_reporter(observation.clone());
     runner
         .build(BuildOptions {
             config: config.clone(),

@@ -15,8 +15,9 @@ caller supplies the language tools, dependencies, and compiled extensions;
 Diplodocus orchestrates them without installing dependencies.
 
 R extraction now selects roxygen2 generation or maintained Rd and combines
-documentation with native checkout discovery. Python and Julia primarily use
-static source adapters with runtime assistance, and Rust and C++ consume native
+documentation with native checkout discovery. Python uses Sphinx autodoc and
+Napoleon with maintained stubs; Julia uses static source adapters with runtime
+assistance. Rust and C++ consume native
 rustdoc JSON and Doxygen XML.
 The development loop reuses verified extraction and execution results by package.
 Workspace reference resolution and site rendering still run after each change.
@@ -108,29 +109,43 @@ describes persistent reuse and fresh input guards. The
 records authored-save improvements, cold-build and API-edit costs, and verified
 restart parity.
 
-### 4. Migrate Python and Julia through supported native interfaces
+### 4. Migrate Python through supported native interfaces
 
-- [ ] Prototype a Python exporter using the prepared package and Sphinx/autodoc.
+- [x] Prototype a Python exporter using the prepared package and Sphinx/autodoc.
   Identify the smallest supported interface that returns structured API
   records, including signatures and docstrings, rather than importing a
   separately rendered site. Define supported docstring formats, extension
   behavior, and precedence for maintained stubs.
-- [ ] Prototype Julia extraction from the loaded package's documentation and
-  method systems, using Documenter where needed. Define the supported export
-  interface and compatibility policy before relying on Documenter internals.
-  Cover generated declarations, attached documentation, and method
-  identities.
-- [ ] Migrate one adapter at a time with acceptance cases for existing public
-  APIs and runtime-derived declarations. Preserve aliases, overloads or
-  methods, source evidence, doctests, and detached generation. Keep
+- [x] Migrate Python commands with acceptance cases for existing public APIs
+  and runtime-derived declarations. Preserve aliases, overloads, maintained
+  stubs, source evidence, doctests, and detached generation. Keep
   unsupported behavior explicit rather than silently switching to a
   different API interpretation.
-- [ ] Update environment requirements, CI, configuration guidance, and extractor
-  contracts alongside each migration. Remove superseded static semantic
+- [x] Update environment requirements, CI, configuration guidance, and extractor
+  contracts alongside the migration. Remove superseded static semantic
   rules after the native path covers their acceptance cases; retain useful
   parsers.
 
-### 5. Compose documentation produced in separate repositories
+The [Python extraction contract](docs/ir/python-extraction.md) describes native
+discovery, maintained stubs, supported docstrings, and portable evidence. The
+[comparison](docs/development/pipeline-baseline.md#python-native-results) records
+startup, source-save, and verified restart costs.
+
+### 5. Migrate Julia through supported native interfaces
+
+- [ ] Prototype Julia extraction from the loaded package's documentation and
+  method systems, using Documenter where needed. Define the supported export
+  interface and compatibility policy before relying on Documenter internals.
+  Cover generated declarations, attached documentation, and method identities.
+- [ ] Migrate Julia commands with acceptance cases for existing public APIs and
+  runtime-derived declarations. Preserve aliases, methods, source evidence,
+  doctests, and detached generation. Keep unsupported behavior explicit rather
+  than silently switching to a different API interpretation.
+- [ ] Update environment requirements, CI, configuration guidance, and extractor
+  contracts alongside the migration. Remove superseded static semantic rules
+  after the native path covers their acceptance cases; retain useful parsers.
+
+### 6. Compose documentation produced in separate repositories
 
 - [ ] Define a versioned package API bundle built on the existing IR and
   snapshot machinery. Retain semantic identities, symbolic references,

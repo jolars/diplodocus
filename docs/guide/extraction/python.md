@@ -1,42 +1,55 @@
 # Python API extraction
 
-Python extraction reads `pyproject.toml` metadata and maintained `.py` and
-`.pyi` files. It recognizes statically visible functions, classes, methods,
-properties, constants, fields, type aliases, overloads, and supported
-decorators. A statically resolvable `__all__` controls exports; otherwise,
-public definitions and explicit aliases form the visible surface. Maintained
-stubs supply public signatures, while implementation docstrings supply prose.
-PEP 257 and NumPy-style docstrings provide structured documentation, and simple
-`:func:` roles can become cross-references.
+Python extraction imports the selected checkout and uses Sphinx autodoc and
+Napoleon to collect API declarations and structured documentation. Prepare the
+package, dependencies, and compiled extensions first. The caller's `python`
+interpreter must provide Python 3.11 or newer and Sphinx `>=9.0.4,<10`; the
+selected Sphinx release must support that interpreter. Diplodocus does not
+install dependencies or run a build backend.
+
+`check`, `extract`, `build`, and `serve` share native discovery. `check` imports
+package code without running documentation examples. Import errors, checkout
+mismatches, and native failures remain errors. `generate` reads a completed
+snapshot and needs neither Python nor the producer checkout.
+
+The built-in Sphinx configuration enables autodoc and Napoleon. It supports
+reStructuredText, NumPy, and Google docstrings. Diplodocus does not discover or
+load project `conf.py`, third-party extensions, MyST, or separately rendered
+Sphinx sites. Markdown fences in docstrings produce an unsupported-syntax
+diagnostic. Authored Markdown and QMD pages keep their own authoring rules.
+
+The loaded package supplies computed exports, generated declarations, native
+signatures, descriptors, and attached documentation. Runtime `__all__` controls
+exports. Without it, public definitions and explicitly public import aliases
+form the visible surface. Annotation helpers do not become API items merely
+because they were imported. Unsupported observations produce diagnostics
+instead of a static fallback.
+
+Maintained `.pyi` files select their public declarations and signatures.
+Implementation documentation supplies prose when available; maintained stubs
+provide fallback documentation. Stub-only modules
+remain documentable without a runtime counterpart, but a stub does not make a
+failed runtime import succeed. A package importing an unavailable native
+extension still requires that extension to be prepared.
 
 Overloaded callables have one reference page containing their public signatures
-and implementation docstring. Navigation and search list the callable once.
-Individual overload identities remain in snapshots, and references to them link
-to the corresponding signature on the callable's page.
+and implementation documentation. Navigation and search list the callable once.
+Individual overload identities remain in snapshots and link to signature
+anchors. Public reexport names appear in headings, navigation, and search while
+snapshots retain defining names, aliases, and source evidence.
 
-Python pages prefer public reexport names over private implementation paths.
-For example, a function defined as `datamonger._api.fetch_data` and exported as
-`datamonger.fetch_data` uses the latter name in its heading, navigation, and
-search result. Both names remain searchable and resolve to the same page.
-Snapshots retain the defining name, source location, and export evidence.
+Python doctest transcripts execute during `extract`, `build`, and `serve` in the
+prepared environment. Each API document gets a fresh process, and its examples
+share the defining module's globals. The standard-library `doctest` runner
+checks output and expected exceptions, supports comparison directives, and
+records explicit `+SKIP` outcomes. Failed examples prevent publication. Ordinary
+code blocks remain illustrative.
 
-Computed exports, conditional definitions, opaque signatures, unsupported
-decorators, and other dynamic behavior cannot be inferred safely. Diplodocus
-reports the limit instead of guessing an API. For a
-public function decorated with `contextlib.contextmanager`, it preserves the
-parameters and renders a generator's `Iterator[T]` or `Generator[T, ...]` return
-annotation as `AbstractContextManager[T]`. An unsupported decorator on a public
-declaration produces a diagnostic, and its callable signature is omitted because
-the wrapper may change it. Unsupported decorators on internal declarations do
-not prevent extraction of the public surface unless those declarations are
-reexported.
+Doctests in stub-only modules require an importable runtime module, even though
+their API declarations can be documented without one.
 
-Python doctest transcripts execute during `extract`, `build`, and `serve` through
-the caller's `python` interpreter (Python 3.11 or newer). Prepare the checkout and
-its example dependencies first. Diplodocus loads the selected checkout, verifies
-the module's source path, and starts a fresh process per API document. Examples
-within one document share the defining module's globals. The standard library
-`doctest` runner checks expected output and exceptions, supports comparison
-directives, and records explicit `+SKIP` outcomes. Output mismatches and unexpected
-errors prevent publication. Ordinary code fences remain illustrative.
-
+Discovery and examples have separate caches. Source, stub, dependency,
+interpreter, Sphinx, and native-library changes invalidate affected results.
+Additional maintained reads and environment inputs use the existing
+`incremental` configuration. Uncertain dependency coverage disables reuse.
+Failed watched builds preserve the previous successful site.

@@ -22,6 +22,7 @@ pub mod docstrings;
 mod extraction;
 mod metadata;
 mod model;
+pub(crate) mod native;
 mod references;
 mod signatures;
 mod source;
@@ -31,6 +32,38 @@ pub use extraction::{PythonExtraction, extract_target};
 pub use model::*;
 
 const RUFF_VERSION: &str = env!("DIPLODOCUS_RUFF_VERSION");
+
+pub(crate) fn import_roots(package: &ResolvedPackagePaths) -> Vec<PathBuf> {
+    let mut roots = Vec::new();
+    for target in &package.targets {
+        let root = if target.path.is_dir() {
+            target.path.parent().map(Path::to_owned)
+        } else {
+            module_name(&target.path, &target.path, &package.path, "3.14").and_then(
+                |(name, is_package)| {
+                    let mut root = target.path.parent()?;
+                    for _ in 0..name
+                        .split('.')
+                        .count()
+                        .saturating_sub(usize::from(!is_package))
+                    {
+                        root = root.parent()?;
+                    }
+                    Some(root.to_owned())
+                },
+            )
+        };
+        if let Some(root) = root
+            && !roots.contains(&root)
+        {
+            roots.push(root);
+        }
+    }
+    if !roots.contains(&package.path) {
+        roots.push(package.path.clone());
+    }
+    roots
+}
 
 /// Parse one explicitly selected Python module file or package directory.
 ///

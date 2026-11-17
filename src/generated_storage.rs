@@ -10,13 +10,16 @@ use rusqlite::{Connection, OpenFlags};
 mod tests;
 
 pub(crate) const SNAPSHOT_TEMP_PREFIX: &str = ".diplodocus-snapshot-";
+pub(crate) const EXECUTION_TEMP_PREFIX: &str = ".diplodocus-execution-";
 pub(crate) const SNAPSHOT_APPLICATION_ID: i32 = i32::from_be_bytes(*b"DIPL");
 
 pub(crate) fn is_reserved(path: &Path) -> bool {
     path.components().any(|part| {
-        part.as_os_str()
-            .to_str()
-            .is_some_and(|name| name == ".diplodocus" || name.starts_with(SNAPSHOT_TEMP_PREFIX))
+        part.as_os_str().to_str().is_some_and(|name| {
+            name == ".diplodocus"
+                || name.starts_with(SNAPSHOT_TEMP_PREFIX)
+                || name.starts_with(EXECUTION_TEMP_PREFIX)
+        })
     })
 }
 

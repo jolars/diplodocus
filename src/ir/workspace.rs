@@ -24,7 +24,7 @@ use super::{
 };
 
 /// Current portable workspace schema version.
-pub const WORKSPACE_SCHEMA_VERSION: u32 = 15;
+pub const WORKSPACE_SCHEMA_VERSION: u32 = 16;
 
 /// The supported schema version, serialized as the integer `15`.
 ///

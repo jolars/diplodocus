@@ -43,7 +43,7 @@ fn code_blocks(html: &str) -> Vec<(bool, String)> {
 fn python_reexports_use_public_labels_and_retain_implementation_evidence() {
     use diplodocus::validation::resolve_item;
 
-    let root = support::TestWorkspace::from_fixture("python-overloads");
+    let root = support::prepared_python_overloads_workspace();
     root.write("python/demo/_api.py", root.read("python/demo/_api.py").replace(
         "Retrieve one dataset, optionally returning its metadata.",
         "Retrieve one dataset, optionally returning its metadata.\n\n    See :func:`demo.load_data` and :func:`demo._api.fetch_data`.",
@@ -86,7 +86,7 @@ fn python_reexports_use_public_labels_and_retain_implementation_evidence() {
         assert_eq!(
             item.source_location.as_ref().unwrap().path.as_str(),
             if canonical.starts_with("demo.native.") {
-                "python/demo/native.pyi"
+                "python/demo/native.py"
             } else {
                 "python/demo/_api.py"
             }
@@ -124,7 +124,7 @@ fn python_reexports_use_public_labels_and_retain_implementation_evidence() {
             );
             for spelling in [public, canonical] {
                 assert!(html.contains(&format!(
-                    "<a href=\"{destination}\"><code>{spelling}</code></a>"
+                    "<a href=\"{destination}\"><code>{spelling}()</code></a>"
                 )));
             }
             assert!(
@@ -145,7 +145,7 @@ fn python_reexports_use_public_labels_and_retain_implementation_evidence() {
 fn python_reexport_labels_are_stable_and_prefer_public_modules() {
     use diplodocus::validation::resolve_item;
 
-    let root = support::TestWorkspace::from_fixture("python-overloads");
+    let root = support::prepared_python_overloads_workspace();
     root.write(
         "python/demo/public_api.py",
         "from ._api import fetch_data as lookup\n",
@@ -194,7 +194,7 @@ fn python_overloads_share_one_page_navigation_entry_and_search_result() {
     use diplodocus::ir::{ItemLanguageData, PythonCallableRole, PythonDeclaration};
     use diplodocus::validation::resolve_item;
 
-    let root = support::TestWorkspace::from_fixture("python-overloads");
+    let root = support::prepared_python_overloads_workspace();
     let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let artifact = tempfile::tempdir().unwrap();
@@ -535,7 +535,7 @@ fn footer_omits_unconfigured_content_and_credit_is_optional() {
 
 #[test]
 fn eulerr_datasets_survive_snapshots_and_render_bare_usage_format_and_source() {
-    let root = support::acceptance_workspace();
+    let root = support::prepared_acceptance_workspace();
     support::add_r_datasets(&root);
     let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
@@ -692,7 +692,7 @@ fn shared_r_topics_and_method_navigation_survive_generation_without_sources() {
 
 #[test]
 fn internal_r_topics_survive_snapshots_without_public_navigation_or_search() {
-    let root = support::acceptance_workspace();
+    let root = support::prepared_acceptance_workspace();
     let fixture = support::fixture_path("r-internal-topics");
     for directory in ["R", "man"] {
         for file in support::files_under(&fixture.join(directory)) {
@@ -745,7 +745,7 @@ fn internal_r_topics_survive_snapshots_without_public_navigation_or_search() {
 
 #[test]
 fn unsupported_rd_renders_compact_markers_and_authored_source_stays_visible() {
-    let root = support::acceptance_case("unsupported-rd");
+    let root = support::prepared_acceptance_case("unsupported-rd");
     let rd = root.read("r/man/experimental_summary.Rd");
     root.write(
         "r/man/experimental_summary.Rd",
@@ -874,7 +874,7 @@ fn authored_titles_reuse_matching_headings_and_preserve_their_anchors() {
 
 #[test]
 fn static_site_uses_only_snapshot_bytes_and_preserves_output_on_failure() {
-    let root = support::acceptance_workspace();
+    let root = support::prepared_acceptance_workspace();
     let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
     let resolved = resolve_workspace(&sources).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolved).unwrap();
@@ -919,7 +919,7 @@ fn all_rendered_local_links_and_images_resolve_beneath_a_hosting_prefix() {
             links(child, urls, ids);
         }
     }
-    let root = support::acceptance_workspace();
+    let root = support::prepared_acceptance_workspace();
     let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let rendered =
@@ -978,7 +978,7 @@ fn global_sections(html: &str) -> &str {
 
 #[test]
 fn section_labels_distinguish_packages_and_ignore_hidden_packages() {
-    let root = support::acceptance_workspace();
+    let root = support::prepared_acceptance_workspace();
     let path = "workspace/variants/visibility.yaml";
     let mut configuration: serde_json::Value = serde_saphyr::from_str(&root.read(path)).unwrap();
     let packages = configuration["packages"].as_array_mut().unwrap();
@@ -1223,7 +1223,7 @@ end
 
 #[test]
 fn standalone_pages_include_the_same_markdown_as_fragments() {
-    let root = support::TestWorkspace::from_fixture("python-overloads");
+    let root = support::prepared_python_overloads_workspace();
     let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let site = diplodocus::site::Site::new(&snapshot).unwrap();
@@ -1263,7 +1263,7 @@ fn navigation_shell(html: &str) -> &str {
 
 #[test]
 fn standalone_navigation_preserves_static_links_and_shares_a_shell_across_sections() {
-    let root = support::TestWorkspace::from_fixture("python-overloads");
+    let root = support::prepared_python_overloads_workspace();
     let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let site = diplodocus::site::Site::new(&snapshot).unwrap();
@@ -1341,7 +1341,7 @@ fn navigation_shell_changes_with_retained_presentation_but_not_document_content(
 
 #[test]
 fn standalone_navigation_supports_mapped_document_and_runtime_urls() {
-    let root = support::TestWorkspace::from_fixture("python-overloads");
+    let root = support::prepared_python_overloads_workspace();
     let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let original =

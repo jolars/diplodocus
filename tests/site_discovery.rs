@@ -138,7 +138,7 @@ fn sitemap_and_canonical_links_share_encoded_urls_in_both_styles() {
 
 #[test]
 fn sitemap_matches_search_visibility_for_packages_and_concepts() {
-    let root = support::acceptance_workspace();
+    let root = support::prepared_acceptance_workspace();
     let mut config = support::fixture_configuration(&root, "workspace/diplodocus.yaml");
     config.as_object_mut().unwrap().insert(
         "presentation".into(),

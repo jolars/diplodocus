@@ -231,7 +231,9 @@ pub(crate) async fn assemble_for_extraction(
     let rust = super::rust_results(path, true, deadlines, cancellation, reporting, false).await?;
     let doxygen = super::doxygen_results(path, deadlines, cancellation, reporting).await?;
     let r = super::r_results(path, deadlines, cancellation, reporting, journal).await?;
-    let mut sources = super::assemble_with_native(path, results, rust, doxygen, r, reporting)?;
+    let python = super::python_native::results(path, deadlines, cancellation, reporting).await?;
+    let mut sources =
+        super::assemble_with_native(path, results, rust, doxygen, r, python, reporting)?;
     sources.cache_observations.extend(cache_observations);
     Ok(sources)
 }

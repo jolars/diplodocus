@@ -190,8 +190,10 @@ async fn extract_attempt_observed_inner(
         .await?;
     #[cfg(target_os = "linux")]
     let snapshot = {
-        // Execution staging stays outside watched source trees and survives until copying finishes.
-        let staging = tempfile::tempdir()?;
+        // Execution staging can live inside a source tree when TMPDIR is set.
+        let staging = tempfile::Builder::new()
+            .prefix(crate::generated_storage::EXECUTION_TEMP_PREFIX)
+            .tempdir()?;
         let executed = sources
             .execute(WorkspaceExecution {
                 staging_parent: staging.path(),

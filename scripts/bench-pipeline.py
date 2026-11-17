@@ -95,6 +95,14 @@ def prepare(root, scenario, qualpal, qualpalr, qualpalr_patch=None, qualpalr_dll
     edits = [mutation(root, "docs/index.md", "authored", append=f"\n{MARKER}\n")]
     if scenario == "authored":
         pass
+    elif scenario == "python":
+        copy_source(ROOT / "examples/monorepo/python", root / "package")
+        config["packages"] = [package("python", "python", "pyproject.toml", "python", "src/tinystats")]
+        edits.extend([
+            mutation(root, "package/src/tinystats/__init__.py", "api-prose",
+                     "Compute the mean squared difference", MARKER + " Compute the mean squared difference"),
+            mutation(root, "package/src/tinystats/__init__.py", "signature", "-> float:", "-> int:"),
+        ])
     elif scenario == "qualpal":
         copy_source(qualpal / "include", root / "package/include")
         (root / "package/Doxyfile").write_text(
@@ -484,7 +492,7 @@ def command_versions():
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--worker", action="append", required=True, metavar="LABEL=EXECUTABLE")
-    parser.add_argument("--scenario", action="append", choices=["authored", "monorepo", "qualpal", "qualpalr"])
+    parser.add_argument("--scenario", action="append", choices=["authored", "python", "monorepo", "qualpal", "qualpalr"])
     parser.add_argument("--qualpal", type=Path, default=ROOT.parent / "qualpal")
     parser.add_argument("--qualpalr", type=Path, default=ROOT.parent / "qualpalr")
     parser.add_argument("--qualpalr-patch", type=Path,

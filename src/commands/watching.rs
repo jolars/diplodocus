@@ -1859,7 +1859,7 @@ mod tests {
         .unwrap();
         fs::write(
             root.path().join("python/pkg/__init__.py"),
-            "def documented():\n    \"\"\"[Download](payload.txt).\"\"\"\n    pass\n",
+            "def documented():\n    \"\"\"`Download <payload.txt>`_.\"\"\"\n    pass\n",
         )
         .unwrap();
         let config = root.path().join("diplodocus.yaml");

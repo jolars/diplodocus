@@ -7010,7 +7010,7 @@
       "rd-source": "[TOOL_VERSION]"
     }
   },
-  "schema_version": 15,
+  "schema_version": 16,
   "target": {
     "package": "rfoo",
     "target": "api"

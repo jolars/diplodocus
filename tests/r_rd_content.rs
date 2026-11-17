@@ -10,7 +10,7 @@ use diplodocus::snapshots::Snapshot;
 use diplodocus::validation::{ReferenceTarget, resolve_workspace};
 
 fn fixture() -> support::TestWorkspace {
-    let workspace = support::acceptance_workspace();
+    let workspace = support::prepared_acceptance_workspace();
     support::add_r_rd_content(&workspace);
     workspace
 }

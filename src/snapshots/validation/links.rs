@@ -526,6 +526,41 @@ impl Links<'_> {
                 self.diagnostic_source(source)?;
             }
             match &record.activity {
+                ProvenanceActivity::PythonRuntime {
+                    target,
+                    policy,
+                    python_version,
+                    sphinx_version,
+                    docutils_version,
+                    package_version,
+                    dependencies,
+                    inputs,
+                } => {
+                    require(
+                        workspace
+                            && self.0.packages.get(&target.package).is_some_and(|package| {
+                                package.version.as_deref() == Some(package_version)
+                                    && package
+                                        .extraction_targets
+                                        .get(&target.target)
+                                        .is_some_and(|target| target.extractor == "python")
+                            })
+                            && policy == "python-sphinx-v1"
+                            && !python_version.is_empty()
+                            && !sphinx_version.is_empty()
+                            && !docutils_version.is_empty()
+                            && record.tools.get("python") == Some(python_version)
+                            && record.tools.get("sphinx") == Some(sphinx_version)
+                            && record.tools.get("docutils") == Some(docutils_version)
+                            && dependencies.get("sphinx") == Some(sphinx_version)
+                            && dependencies.get("docutils") == Some(docutils_version)
+                            && !inputs.is_empty(),
+                        "Python runtime provenance",
+                    )?;
+                    for input in inputs {
+                        self.source(&input.source)?;
+                    }
+                }
                 ProvenanceActivity::RDocumentation { .. } | ProvenanceActivity::RRuntime { .. } => {
                     require(workspace, "native R provenance placement")?;
                     super::r::provenance(self.0, record)?;
@@ -911,7 +946,7 @@ impl Links<'_> {
                 }
                 match &data.declaration {
                     PythonDeclaration::Module { exports, .. } => match exports {
-                        PythonExports::Implicit => Ok(()),
+                        PythonExports::Implicit | PythonExports::Runtime { .. } => Ok(()),
                         PythonExports::Explicit { sources, .. } => self.evidence(sources),
                         PythonExports::Dynamic {
                             expression,
@@ -1058,7 +1093,7 @@ impl Links<'_> {
                     .ok_or(SnapshotError::Invalid("API example source"))?;
                 require(
                     matches!(&document.source_format, DocumentFormat::Extracted { name }
-                        if (language == "python" && name == "numpy-docstring")
+                        if (language == "python" && matches!(name.as_str(), "numpy-docstring" | "python-docstring"))
                             || (language == "julia" && name == "julia-markdown"))
                         && document.source_location.as_ref() == Some(&input.source)
                         && crate::provenance::fingerprint_bytes(raw.as_bytes())

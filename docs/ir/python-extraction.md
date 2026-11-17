@@ -1,120 +1,114 @@
-# Static Python extraction
+# Native Python extraction
 
-This page describes the source adapter. The source adapter stays static, while
-the extraction command pipeline always loads the Python checkout and verifies its
-source path and version, then executes any Python doctests. Packages without
-doctests still require an interpreter and prepared dependencies. `check` uses only
-the static adapter.
+Python command discovery uses the prepared checkout as the authority for API
+semantics. Assembly supervises an embedded exporter, verifies checkout identity,
+and normalizes observations into `PythonExtraction` for the common adapter
+boundary. Source and stub parsers supply supplemental syntax, maintained
+signatures, and source evidence.
 
-`extractors::python::extract_target` consumes one resolved repository, package,
-and extraction target. It returns a schema-versioned `PythonExtraction`
-fragment containing metadata, canonical items, diagnostics, and provenance.
-The caller must reject error-bearing fragments before building a site. Workspace
-assembly, reference resolution, routes, and CLI commands consume this fragment;
-their boundaries are described in the [design overview](../development/design.md).
+## Native boundary
 
-The implementation composes three independently testable passes:
+The exporter uses public Sphinx application, extension-event, Builder, and
+doctree APIs. It enables autodoc and Napoleon in a temporary built-in
+configuration. It does not subclass the legacy autodoc `Documenter` hierarchy,
+use private import machinery, load project `conf.py`, or import rendered HTML.
+Sphinx `>=9.0.4,<10` is supported, subject to each release's Python requirements.
+Python 3.11 remains the minimum interpreter version.
 
-- `parse_target` reads static PEP 621 metadata and maintained `.py`/`.pyi`
-  inputs into Diplodocus-owned source observations.
-- `surface::reconcile` establishes public items, source/stub precedence,
-  callable families, overload identities, and aliases.
-- `docstrings::parse_docstring` translates decoded PEP 257 and NumPy-style
-  documentation into inert document IR with original-source diagnostics.
+The private, versioned exchange carries runtime bindings, signatures, class
+shapes, aliases, processed documentation, original docstrings, diagnostics,
+exact versions, dependencies, and consumed inputs. Unknown fields and protocol
+versions are rejected. Absolute runtime paths and temporary Sphinx state stay
+local to assembly.
 
-No pass starts Python, imports a documented package, installs dependencies, or
-invokes a build backend. Source discovery stays inside the configured target
-and package boundaries. Directory symlinks are diagnosed; file symlinks must
-remain inside the package. A directory target names its importable package or
-namespace-package root. A file target derives qualification from enclosing
-`__init__` directories within the package boundary.
+Rust parses native signature syntax with Ruff and uses the common identity and
+maintained-stub normalization helpers. Generated syntax is a parsing aid; its
+offsets never become source evidence. Runtime origins and documentation inputs
+must remain within the selected package. Installed dependencies contribute
+local environment observations rather than repository declarations.
 
-## Public identities and signatures
+## Public surface and identities
 
-A statically resolvable `__all__` is authoritative. Supported operations include
-literal lists and tuples, supported helper bindings and concatenation,
-`+=`, `append` of a literal name, and `extend` of a literal sequence. Unknown
-computation produces `python-dynamic-export` and leaves visible definitions
-with unknown visibility.
+Runtime `__all__`, including computed lists, supplies effective exports. Without
+it, public definitions and explicit import aliases form the visible surface.
+Private defining modules remain support records when their declarations are
+reexported. Their unrelated private members and module prose stay private.
+Disjoint targets can reexport the same canonical item. When a target selects its
+definition, that target supplies the declaration and the other targets supply
+the reexports. Generated children registered under a checkout module and exposed
+by that module use its file as source evidence.
 
-Without `__all__`, public definitions and explicitly aliased imports are
-exposed. Redundant aliases such as `from .model import fit as fit` count as
-explicit. Unaliased imports used for annotations do not become public by
-default. Underscore-prefixed modules require public reexports to expose their
-items. A public reexport retains the canonical defining module without
-promoting its unrelated private declarations. An implementation module retained
-this way stays private: its metadata remains available, while its module prose,
-navigation entry, and search result are omitted. Explicitly reexporting the
-module itself still exposes its public API.
+Canonical identities use defining modules and qualified names. Reexports and
+assignment aliases resolve to canonical items. Callable families retain
+separately addressable overload identities based on normalized signatures.
+Public aliases remain the preferred presentation names without changing
+identities or attribution. See the [identity contract](item-identity.md).
 
-Maintained stubs select the public declaration surface and signatures.
-Implementation prose and constant values retain separate evidence. Stub-only
-native modules are valid inputs. Reexports and proven assignment aliases use
-the defining item's identity. Every callable has a family, and overloads also
-have individually addressable signature-based identities. The
-[item identity contract](item-identity.md) defines the wire keys.
-Site generation presents one page per callable family, with signature anchors
-for individual overload references and one navigation and search entry.
-Display names prefer canonical or reexport paths outside private source modules,
-then paths with fewer components. Equal-ranked canonical names take precedence;
-ties between reexports use lexical order. Class and constructor names beginning
-with underscores do not make a path private. Display selection does not change
-identities, aliases, source locations, or provenance. Search indexes the defining
-name and retained aliases alongside the selected display name.
+Native observations supply generated declarations, decorated callables,
+properties, methods, dataclass fields, constructors, bases, and attached prose.
+Maintained stubs can supply property signatures for runtime data descriptors.
+The existing context-manager return presentation remains available through
+normalization. Unrepresentable signatures must not acquire guessed defaults or
+address-based identities. PEP 695 generic type parameters remain unsupported
+and produce an explicit error rather than losing their bounds or defaults.
 
-The supported surface includes functions, classes, methods, constructors,
-properties, constants, fields, explicit type aliases, and the supported
-overload, property, static/class method, dataclass, and
-`contextlib.contextmanager` decorators. Signatures retain parameters, calling
-conventions, annotations, defaults, returns, and async state. A supported
-context manager maps a generator's `Iterator[T]` or `Generator[T, ...]` return
-to `AbstractContextManager[T]`. An unfamiliar generator return annotation
-becomes an unparameterized context manager. Unknown decorators on public
-declarations produce diagnostics and leave callable signatures unspecified;
-unknown decorators on internal declarations do not fail the public surface
-unless those declarations are reexported. Conditional declarations, generic
-type parameters, and opaque signature expressions produce diagnostics. An
-import-only `if typing.TYPE_CHECKING:` block, including imported aliases of the
-guard, qualifies annotations without creating runtime exports. Other conditional
-definitions remain unsupported.
+Maintained stubs select declarations and signatures; runtime documentation
+supplies prose, with maintained stub documentation as a fallback. Stub-only
+declarations can retain their own prose and need no runtime counterpart.
+A failed runtime-backed import remains an error even when
+stubs are present. Missing dependencies never trigger a static command fallback.
 
-Dataclass extraction accepts the boolean `init`, `frozen`, `repr`, `eq`, `order`,
-and `unsafe_hash` options. Constructor metadata preserves field order and omits
-fields with `field(init=False)`. Field expressions retain `default` and
-`default_factory` arguments for presentation without evaluating factories.
+## Documentation and examples
 
-## Documentation and evidence
+Autodoc and Napoleon process reStructuredText, NumPy, and Google docstrings.
+Supported doctree nodes become common document IR: prose, headings, entries,
+lists, code, admonitions, math, and symbolic references. Unsupported nodes and
+legacy Markdown-only syntax remain visible with diagnostics. Raw HTML gains no
+rendering authority.
 
-Parameters, Attributes, Returns, Raises, Notes, References, and Examples become
-structured headings, entries, prose, and display code. Entries may omit a
-redundant type when they have a description. Nested lists retain their structure,
-and indented literal examples introduced by `::` become Python display code.
+References retain their spelling and labels for workspace resolution through
+canonical names, aliases, lexical contexts, and class bases. Unavailable
+private or external references render as code with diagnostics; ambiguous
+references remain errors. Sphinx does not choose final site routes.
 
-Sphinx `func`, `class`, `meth`, `attr`, `data`, `exc`, `mod`, and `obj` roles,
-including their `py:` forms and shortened `~` labels, retain code labels and
-semantic links. Extraction resolves names against the enclosing class, defining
-module, and public package aliases. References to inherited members use retained
-same-package base definitions. An unavailable private or external target renders
-as readable code with a source-attributed warning; ambiguous targets remain
-errors. Other unsupported roles, directives, sections, and raw HTML remain
-visible placeholders. Neither docstring examples nor their hashpipe options
-authorize execution in the source adapter.
+Original decoded docstrings remain separate from processed prose. Native
+doctests use this original text and the interpreter selected for discovery.
+Each doctest imports the module that defined the docstring and uses its globals.
+Examples in maintained stubs require an importable runtime module.
+Inherited examples from outside the checkout remain display-only. `check` does
+not execute examples. `extract`, `build`, and `serve` use fresh processes per API
+document and retain output, expected exceptions, options, and explicit skips.
 
-Document ranges address decoded UTF-8 text. Proven unchanged-byte segments map
-diagnostics back to original Python source. Escapes, missing mappings, and
-ranges crossing concatenation gaps use the enclosing source range with an
-explicit attribution warning. The adapter never guesses offsets.
+Source parsers retain exact maintained-source mappings when proven. Generated
+or runtime-attached documentation can have only file-level evidence. The
+adapter does not manufacture source declarations or copy temporary parser
+offsets into snapshots.
 
-Provenance records static mode, implemented capabilities, actual parser use,
-grammar and source/stub settings, and hashes of contributing inputs, including
-`py.typed`. Unknown or invalid grammar permits diagnostic parsing only. Invalid
-UTF-8 retains its original bytes and hash without claiming successful parsing.
-Portable paths are repository-relative, and no timestamp or checkout root is
-introduced by extraction.
+## Evidence, reuse, and snapshots
 
-`tests/milestone_four.rs` combines the passes against the acceptance workspace:
-26 canonical items, four overload members, 15 attached documents, and no
-baseline diagnostics. It compares relocated workspaces, checks the isolated
-dynamic-export warning, and verifies that import failures and build-backend
-hooks are not executed. Component tests cover malformed inputs, conflicting
-identities, visibility, source attribution, and inert examples.
+Native extraction records `ExtractionMode::Native` and completed
+`PythonRuntime` evidence: target, policy, Python/Sphinx/Docutils versions,
+distribution versions, and contributing inputs. `PythonExports::Runtime`
+distinguishes observed exports, and `PythonModuleSource::Runtime` represents
+modules without maintained source or stubs. Documents use `python-docstring`.
+
+Discovery and doctests have separate persistent entries. Reuse requires
+matching package inputs, declared dependencies, interpreter selection, installed
+dependency contents, native libraries, and environment inputs. Assembly observes
+dependency bytes before discovery imports the package and verifies them afterward.
+It tracks both symlinked import search paths and their resolved targets.
+Publication also checks checkout files read during discovery, including
+import-time data. Declare data outside the default inventory with `extra-inputs`
+to enable cache reuse for those reads. Uncertain coverage disables reuse.
+Observation owners remain live through publication checks and supply watch inputs.
+Failures preserve the previous publication.
+
+IR schema 16 includes this evidence; schema 15 snapshots require fresh
+extraction. Snapshot validation verifies completion and input/tool associations
+without Python. Detached `generate` needs no producer checkout or runtime.
+
+`parse_target` and legacy source-inspection helpers remain process-free. Their
+static diagnostics describe source inspection; commands no longer use that
+interpretation as a fallback. Parser and normalization checks remain in the
+default suite. Slow native acceptance runs in the `incremental-native` CI job;
+see [Contributing](https://github.com/jolars/diplodocus/blob/main/CONTRIBUTING.md).

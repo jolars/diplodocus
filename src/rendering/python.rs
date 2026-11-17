@@ -244,10 +244,20 @@ fn constructors(
                     signature
                 })
                 .collect()
-        } else if matches!(constructor, PythonConstructor::Dataclass { init: true, .. }) {
-            let mut fields = Vec::new();
-            dataclass_fields(package, owner, &mut fields);
-            let mut parameters: Vec<_> = fields.into_iter().filter_map(field_parameter).collect();
+        } else if let PythonConstructor::Dataclass {
+            init: true,
+            fields,
+            fields_include_inherited,
+            ..
+        } = constructor
+        {
+            let mut resolved = Vec::new();
+            if *fields_include_inherited {
+                resolved.extend(fields.iter().map(|field| &package.items[&field.item]));
+            } else {
+                dataclass_fields(package, owner, &mut resolved);
+            }
+            let mut parameters: Vec<_> = resolved.into_iter().filter_map(field_parameter).collect();
             // Dataclasses put keyword-only fields after all positional fields.
             parameters.sort_by_key(|parameter| parameter.kind == ParameterKind::KeywordOnly);
             vec![Signature::Callable {

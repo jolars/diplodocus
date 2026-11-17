@@ -12,6 +12,7 @@ use crate::validation::{
 
 mod documenter;
 mod links;
+mod python;
 mod r;
 mod source_maps;
 
@@ -29,6 +30,7 @@ impl Snapshot {
             .site_base_url()
             .map_err(SnapshotError::Invalid)?;
         links::validate(&self.workspace)?;
+        python::validate(&self.workspace)?;
         r::validate(&self.workspace)?;
         documenter::validate(self)?;
         let outputs = self.restore_outputs()?;
