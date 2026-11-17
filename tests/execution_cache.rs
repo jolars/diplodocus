@@ -177,7 +177,7 @@ fn assert_cache_round_trip(
 fn python_builds_restore_relocated_and_invalidated_cache_entries() {
     let (root, output) = assert_cache_round_trip(
         "python3",
-        "# Cached page\n\n```{python}\nfrom pathlib import Path\np = Path('executions.txt')\nwith p.open('a') as f: f.write('executed\\n')\nvalue = 40\n```\n\n```{python}\nprint(value + 2)\nfrom IPython.display import display, HTML, Markdown, SVG\ndisplay(HTML('<strong>safe html</strong>'))\ndisplay(Markdown('**safe markdown**'))\ndisplay(SVG(\"<svg xmlns='http://www.w3.org/2000/svg'><circle r='3'/></svg>\"))\n```\n",
+        "# Cached page\n\n```{python}\nfrom pathlib import Path\np = Path('executions.txt')\nwith p.open('a') as f: f.write('executed\\n')\nvalue = 40\n```\n\n```{python}\nprint(value + 2)\nfrom IPython.display import display, HTML, Markdown, SVG\ndisplay(HTML('<strong>safe html</strong><table><tr><th>Count</th></tr><tr><td>42</td></tr></table>'))\ndisplay(Markdown('**safe markdown**'))\ndisplay(SVG(\"<svg xmlns='http://www.w3.org/2000/svg'><circle r='3'/></svg>\"))\n```\n",
         "# Other\n\n```{python}\nprint(7)\n```\n",
     );
     let build = |destination| {
@@ -191,6 +191,8 @@ fn python_builds_restore_relocated_and_invalidated_cache_entries() {
         "guide/other.qmd",
         format!("{}\nChanged prose.\n", root.read("guide/other.qmd")),
     );
+    let html = std::fs::read_to_string(output.path().join("first/index.html")).unwrap();
+    assert!(html.contains("<table class=\"document-table\" tabindex=\"0\">"));
     build(output.path().join("mixed"));
     let database = root.path().join(".diplodocus/documentation.sqlite");
     let mixed = Snapshot::load(&database).unwrap();

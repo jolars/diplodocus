@@ -1953,7 +1953,7 @@ impl Renderer<'_, '_> {
                     alignments,
                     ..
                 } => {
-                    html.push_str("<table>");
+                    html.push_str("<table class=\"document-table\" tabindex=\"0\">");
                     if !caption.is_empty() {
                         write!(html, "<caption>{}</caption>", self.inlines(caption)?).unwrap();
                     }
@@ -2130,6 +2130,9 @@ impl Renderer<'_, '_> {
                     children,
                 } => {
                     write!(html, "<{name}").unwrap();
+                    if name == "table" {
+                        html.push_str(" class=\"document-table\" tabindex=\"0\"");
+                    }
                     for (key, value) in attributes {
                         let value = match value {
                             HtmlAttribute::Text(value) => value.clone(),

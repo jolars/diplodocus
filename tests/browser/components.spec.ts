@@ -33,7 +33,7 @@ content:
     mount: ''
     format: gfm
 `);
-  await writeFile(join(workspace, 'pages/index.md'), '# Home\n\n::: {.component name="counter"}\n\nStatic fallback.\n\n:::\n\n[Other page](other.md)\n');
+  await writeFile(join(workspace, 'pages/index.md'), '# Home\n\n::: {.component name="counter"}\n\nStatic fallback.\n\n:::\n\n| Authored | Value |\n| --- | --- |\n| Example | 1 |\n\n[Other page](other.md)\n');
   await writeFile(join(workspace, 'pages/other.md'), '# Other page\n\n[Home](index.md)\n');
   await writeFile(join(workspace, 'widget/index.js'), `window.evaluations = (window.evaluations || 0) + 1;
 export async function mount(root, { signal }) {
@@ -41,12 +41,20 @@ export async function mount(root, { signal }) {
   const worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
   signal.addEventListener('abort', () => worker.terminate(), { once: true });
   const button = document.createElement('button'); button.className = 'counter'; button.textContent = 'Waiting'; root.append(button);
+  const scroll = document.createElement('div'); scroll.className = 'widget-scroll'; scroll.tabIndex = 0; scroll.setAttribute('role', 'region'); scroll.setAttribute('aria-label', 'Widget results');
+  const table = document.createElement('table'); table.className = 'widget-table'; table.innerHTML = '<thead><tr><th>Region</th><th>Value</th></tr></thead><tbody><tr><td>A</td><td>1</td></tr></tbody>'; scroll.append(table); root.append(scroll);
   worker.onmessage = event => { button.textContent = event.data; };
   button.addEventListener('click', () => button.textContent = 'Clicked', { signal });
   return () => { window.cleanups = (window.cleanups || 0) + 1; };
 }`);
   await writeFile(join(workspace, 'widget/worker.js'), "postMessage('Ready');");
-  await writeFile(join(workspace, 'widget/style.css'), '.counter { border: 3px solid rgb(12, 34, 56); }');
+  await writeFile(join(workspace, 'widget/style.css'), `.counter { border: 3px solid rgb(12, 34, 56); }
+@layer widget {
+  .widget-scroll { width: 180px; max-width: 100%; overflow-x: auto; }
+  .widget-table { width: 600px; border-collapse: collapse; table-layout: fixed; }
+  .widget-table th:first-child { width: 120px; }
+  .widget-table th, .widget-table td { padding: 2px; text-align: right; }
+}`);
   const binary = process.env.DIPLODOCUS_BROWSER_BINARY!;
   const built = spawnSync(binary, ['build', '--config', join(workspace, 'diplodocus.yaml'), '--output', join(workspace, 'site')], { encoding: 'utf8' });
   expect(built.status, built.stderr).toBe(0);
@@ -101,6 +109,36 @@ test('retains fallback without JavaScript', async ({ browser }) => {
   await page.goto(origin);
   await expect(page.getByText('Static fallback.')).toBeVisible();
   await context.close();
+});
+
+test('component tables keep their layout and keyboard scrolling', async ({ page }, info) => {
+  await page.goto(origin);
+  const button = page.getByRole('button', { name: 'Ready', exact: true });
+  await expect(button).toBeVisible();
+  const scroll = page.getByRole('region', { name: 'Widget results' });
+  const table = scroll.getByRole('table');
+  await expect(table).toHaveCSS('display', 'table');
+  await expect(table).toHaveCSS('border-collapse', 'collapse');
+  await expect(table.getByRole('columnheader').first()).toHaveCSS('padding-left', '2px');
+  await expect(table.getByRole('columnheader').first()).toHaveCSS('text-align', 'right');
+  const authored = page.getByRole('table').filter({ hasText: 'Authored' });
+  await expect(authored).toHaveCSS('display', 'block');
+  await expect(authored).toHaveAttribute('tabindex', '0');
+  await button.focus();
+  await page.keyboard.press('Tab');
+  await expect(scroll).toBeFocused();
+  await page.keyboard.press('ArrowRight');
+  await expect.poll(() => scroll.evaluate(element => element.scrollLeft)).toBeGreaterThan(0);
+  await page.keyboard.press('Tab');
+  await expect(authored).toBeFocused();
+  await expect(authored).toHaveCSS('outline-style', 'solid');
+  if (process.env.DIPLODOCUS_BROWSER_CAPTURE) {
+    const directory = join(process.env.DIPLODOCUS_BROWSER_ARTIFACTS!, 'screenshots', info.project.name);
+    await mkdir(directory, { recursive: true });
+    await page.screenshot({ path: join(directory, 'component-tables.png'), fullPage: true });
+  }
+  await page.addStyleTag({ content: 'th { font-weight: 500; }' });
+  await expect(authored.getByRole('columnheader').first()).toHaveCSS('font-weight', '500');
 });
 
 test('queued visibility callbacks cannot mount a departed component', async ({ page }) => {

@@ -99,7 +99,7 @@ fn monorepo_example_builds_with_r_and_generates_without_sources_or_runtimes() {
         "Evaluating predictions in R",
         "The mean squared error is 1",
         "mean absolute error is 0.5",
-        "<table>",
+        "<table class=\"document-table\" tabindex=\"0\">",
         "<img ",
         "The last prediction accounts for all of the error.",
     ] {

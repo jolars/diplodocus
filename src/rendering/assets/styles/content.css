@@ -275,7 +275,8 @@ figcaption {
   font-size: .9rem;
 }
 
-table {
+/* Preserve the specificity of the table defaults while scoping them. */
+table:where(.document-table) {
   overflow-wrap: normal;
   border-collapse: separate;
   border-spacing: 0;
@@ -286,39 +287,39 @@ table {
   line-height: 1.5;
 }
 
-th,
-td {
+:where(.document-table) th,
+:where(.document-table) td {
   padding: .5rem .875rem;
   text-align: left;
   vertical-align: top;
 }
 
-th {
+:where(.document-table) th {
   background: var(--sidebar-background);
   font-weight: 600;
 }
 
-th:first-child {
+:where(.document-table) th:first-child {
   border-start-start-radius: .5rem;
   border-end-start-radius: .5rem;
 }
 
-th:last-child {
+:where(.document-table) th:last-child {
   border-start-end-radius: .5rem;
   border-end-end-radius: .5rem;
 }
 
-tr + tr > td {
+:where(.document-table) tr + tr > td {
   border-top: 1px solid var(--border);
 }
 
-th > :first-child,
-td > :first-child {
+:where(.document-table) th > :first-child,
+:where(.document-table) td > :first-child {
   margin-top: 0;
 }
 
-th > :last-child,
-td > :last-child {
+:where(.document-table) th > :last-child,
+:where(.document-table) td > :last-child {
   margin-bottom: 0;
 }
 

@@ -62,7 +62,8 @@ a {
 a:focus-visible,
 input:focus-visible,
 summary:focus-visible,
-pre:focus-visible {
+pre:focus-visible,
+.document-table:focus-visible {
   outline: 3px solid var(--focus-ring);
   outline-offset: 3px;
 }

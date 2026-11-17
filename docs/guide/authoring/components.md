@@ -40,6 +40,10 @@ for bundle-relative resources. Components initialize near the viewport on both
 direct visits and client-side navigation. Stylesheets should scope their rules
 to the component and use the theme's semantic CSS properties.
 
+Components control their own table layout and styles. Diplodocus applies its
+table styles to the tables it renders from documentation, including fallback
+content. Those documentation tables support keyboard focus and scrolling.
+
 Configuration-based builds enable their explicitly declared bundles. For a
 trusted snapshot, `generate --allow-components` enables retained bundles. Without
 that flag, generation emits only the fallback. Markdown and fragment exports
