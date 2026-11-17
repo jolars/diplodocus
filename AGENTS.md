@@ -42,6 +42,9 @@ GFM, as configured in `panache.toml`.
 ## Testing Guidelines
 
 Run `cargo test --locked --test rust_extraction` to target one integration
-suite. For presentation changes, run `npm run site-test` and inspect
+suite. Keep new slow native acceptance tests out of the default test run. The
+incremental native acceptance tests use `#[ignore]` and run separately in CI's
+`incremental-native` job; see `CONTRIBUTING.md` for explicit commands. For
+presentation changes, run `npm run site-test` and inspect
 `npm run site-capture` screenshots. Use `npm run vitepress-test` for external
 frontend integration changes. See `docs/development/browser.md` for details.

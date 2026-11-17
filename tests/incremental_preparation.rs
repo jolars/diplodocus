@@ -137,6 +137,7 @@ fn static_api_reuse_keeps_unrelated_packages_after_prose_and_source_saves() {
 }
 
 #[test]
+#[ignore = "slow incremental acceptance; run explicitly with --ignored"]
 fn doxygen_restores_verified_output_and_invalidates_changed_headers() {
     let root = support::TestWorkspace::from_fixture("doxygen-api");
     let events = Arc::new(CacheEvents::default());
@@ -158,6 +159,7 @@ fn doxygen_restores_verified_output_and_invalidates_changed_headers() {
 }
 
 #[test]
+#[ignore = "slow incremental acceptance; run explicitly with --ignored"]
 fn python_examples_reuse_only_after_fresh_checkout_validation() {
     let root = support::TestWorkspace::new();
     root.write("diplodocus.yaml", "project:\n  name: Python execution cache\nrepositories:\n  - id: source\n    path: .\npackages:\n  - id: cached\n    name: Cached Python\n    slug: cached\n    ecosystem: python\n    repository: source\n    path: .\n    metadata-path: pyproject.toml\n    targets:\n      - id: api\n        extractor: python\n        path: src/cachepy\n        role: public-api\n");
@@ -222,6 +224,7 @@ fn python_examples_reuse_only_after_fresh_checkout_validation() {
 }
 
 #[test]
+#[ignore = "slow incremental acceptance; run explicitly with --ignored"]
 fn python_module_probes_do_not_reuse_an_earlier_modules_environment() {
     let root = support::TestWorkspace::new();
     root.write("diplodocus.yaml", "project:\n  name: Python module coverage\nrepositories:\n  - id: source\n    path: .\npackages:\n  - id: cached\n    name: Cached Python\n    slug: cached\n    ecosystem: python\n    repository: source\n    path: .\n    metadata-path: pyproject.toml\n    targets:\n      - id: alpha\n        extractor: python\n        path: src/alpha\n        role: public-api\n      - id: zeta\n        extractor: python\n        path: src/zeta\n        role: public-api\n");
@@ -262,6 +265,7 @@ fn python_module_probes_do_not_reuse_an_earlier_modules_environment() {
 }
 
 #[test]
+#[ignore = "slow incremental acceptance; run explicitly with --ignored"]
 fn julia_native_stages_reuse_completed_results_and_invalidate_package_edits() {
     let root = support::TestWorkspace::new();
     root.write("diplodocus.yaml", "project:\n  name: Julia result caches\nrepositories:\n  - id: source\n    path: .\npackages:\n  - id: demo\n    name: Demo\n    slug: demo\n    ecosystem: julia\n    repository: source\n    path: .\n    metadata-path: Project.toml\n    targets:\n      - id: api\n        extractor: julia\n        path: src/Demo.jl\n        role: public-api\ncontent:\n  - id: manual\n    owner: demo\n    repository: source\n    path: docs\n    mount: ''\n    format: documenter\n    execution:\n      mode: execute\n      engine: julia\n      julia-project: Project.toml\n");

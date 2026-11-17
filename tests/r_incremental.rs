@@ -57,6 +57,7 @@ fn compile_extension(root: &support::TestWorkspace, output: &str, value: i32) {
 }
 
 #[test]
+#[ignore = "slow incremental acceptance; run explicitly with --ignored"]
 fn persistent_generation_and_discovery_reuse_have_separate_lifetimes() {
     let root = workspace("");
     check(&root, &[]);
@@ -96,6 +97,7 @@ fn persistent_generation_and_discovery_reuse_have_separate_lifetimes() {
 }
 
 #[test]
+#[ignore = "slow incremental acceptance; run explicitly with --ignored"]
 fn forced_recomputation_and_package_opt_out_bypass_r_results() {
     let root = workspace("");
     check(&root, &[]);
@@ -117,6 +119,7 @@ fn forced_recomputation_and_package_opt_out_bypass_r_results() {
 }
 
 #[test]
+#[ignore = "slow incremental acceptance; run explicitly with --ignored"]
 fn same_version_installed_dependency_changes_invalidate_native_results() {
     let root = workspace("");
     root.write("dependency/DESCRIPTION", "Package: cachedependency\nVersion: 0.1.0\nTitle: Cache Dependency\nDescription: Supplies a prepared dependency for invalidation.\nLicense: MIT\nAuthor: Fixture Author\nMaintainer: Fixture Author <fixture@example.com>\n");
@@ -178,6 +181,7 @@ fn same_version_installed_dependency_changes_invalidate_native_results() {
 }
 
 #[test]
+#[ignore = "slow incremental acceptance; run explicitly with --ignored"]
 #[cfg(target_os = "linux")]
 fn retained_checkout_dlls_allow_persistent_reuse_and_guard_their_bytes() {
     let root = workspace("");
@@ -226,6 +230,7 @@ fn retained_checkout_dlls_allow_persistent_reuse_and_guard_their_bytes() {
 }
 
 #[test]
+#[ignore = "slow incremental acceptance; run explicitly with --ignored"]
 #[cfg(target_os = "linux")]
 fn unknown_deleted_native_mappings_disable_reuse_with_a_reason() {
     let root = workspace("");

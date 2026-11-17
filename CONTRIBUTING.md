@@ -32,6 +32,23 @@ cargo fmt --all -- --check
 cargo clippy --locked --all-targets --all-features -- -D warnings
 ```
 
+Slow incremental acceptance tests that invoke R, Python, Julia, Doxygen, or
+Rustdoc are ignored by default. CI runs them in the separate `incremental-native`
+job. Run them explicitly when changing native extraction or cache boundaries:
+
+```sh
+compute run -- cargo test --locked --lib \
+  persistent_discovery_and_doctests_have_independent_cache_entries -- --ignored
+compute run -- cargo test --locked \
+  --test incremental_execution --test incremental_preparation \
+  --test incremental_source_paths --test r_incremental -- --ignored
+```
+
+Keep fast regression tests in the default suite. New slow native acceptance
+tests should remain opt-in rather than adding minutes to routine testing.
+Pipeline benchmarks also remain manual; see the
+[benchmark workflow](docs/development/pipeline-baseline.md).
+
 For presentation changes, install browser tools with `npm ci --ignore-scripts`,
 run `npm run site-test`, and inspect screenshots from `npm run site-capture`.
 Run `npm run vitepress-test` for changes to the external frontend integration.

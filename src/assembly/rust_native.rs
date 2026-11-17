@@ -1496,6 +1496,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore = "slow incremental acceptance; run explicitly with --ignored"]
     async fn persistent_discovery_and_doctests_have_independent_cache_entries() {
         if std::env::var_os("DIPLODOCUS_RUST_TOOLCHAIN").is_none() {
             return;

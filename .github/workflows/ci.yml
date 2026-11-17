@@ -39,6 +39,8 @@ jobs:
             args: --lib --bins --examples --benches
           - suite: integration
             args: --test '*'
+          - suite: incremental-native
+            args: ''
           - suite: snapshots
             args: ''
     steps:
@@ -55,8 +57,16 @@ jobs:
         with:
           key: test-${{ matrix.suite }}
       - name: Run tests
-        if: matrix.suite != 'snapshots'
+        if: matrix.suite != 'snapshots' && matrix.suite != 'incremental-native'
         run: devenv shell -- cargo test --locked ${{ matrix.args }}
+      - name: Check opt-in native incremental acceptance
+        if: matrix.suite == 'incremental-native'
+        run: |
+          devenv shell -- cargo test --locked --lib \
+            persistent_discovery_and_doctests_have_independent_cache_entries -- --ignored
+          devenv shell -- cargo test --locked \
+            --test incremental_execution --test incremental_preparation \
+            --test incremental_source_paths --test r_incremental -- --ignored
       - name: Check snapshots with insertion-ordered JSON maps
         if: matrix.suite == 'snapshots'
         run: |

@@ -5,6 +5,7 @@ use diplodocus::incremental::CachePolicy;
 use diplodocus::snapshots::Snapshot;
 
 #[test]
+#[ignore = "slow incremental acceptance; run explicitly with --ignored"]
 fn conventional_output_names_can_contain_maintained_packages() {
     for directory in ["site", "artifacts"] {
         let root = support::TestWorkspace::new();

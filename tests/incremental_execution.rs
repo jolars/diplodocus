@@ -37,6 +37,7 @@ fn cli_build(root: &support::TestWorkspace) -> Snapshot {
 }
 
 #[test]
+#[ignore = "slow incremental acceptance; run explicitly with --ignored"]
 fn shared_figures_remain_self_contained_in_each_cached_package() {
     let root = r_workspace(&["first", "second"]);
     let first = cli_build(&root);
@@ -69,6 +70,7 @@ fn shared_figures_remain_self_contained_in_each_cached_package() {
 }
 
 #[test]
+#[ignore = "slow incremental acceptance; run explicitly with --ignored"]
 fn bibliography_changes_invalidate_articles_without_reexecuting_native_examples() {
     let root = r_workspace(&["demo"]);
     root.write("demo/vignettes/article.Rmd", "---\ntitle: Citation cache\nbibliography: references.bib\n---\nCitation [@example].\n\n```{r, echo=FALSE}\ncat('executed\\n', file = '../bibliography-count', append = TRUE)\n```\n");
@@ -106,6 +108,7 @@ fn bibliography_changes_invalidate_articles_without_reexecuting_native_examples(
 }
 
 #[test]
+#[ignore = "slow incremental acceptance; run explicitly with --ignored"]
 fn citation_loaded_dependencies_guard_cached_package_metadata() {
     let root = r_workspace(&["demo"]);
     root.write("dependency/DESCRIPTION", "Package: cachecitation\nVersion: 0.1.0\nTitle: Citation Dependency\nDescription: Supplies author text for citation cache validation.\nLicense: MIT\nAuthor: Example Author\nMaintainer: Example Author <example@example.com>\n");
@@ -165,6 +168,7 @@ fn citation_loaded_dependencies_guard_cached_package_metadata() {
 }
 
 #[test]
+#[ignore = "slow incremental acceptance; run explicitly with --ignored"]
 fn absent_suggested_dependencies_allow_reuse_and_later_installation_invalidates_it() {
     let root = r_workspace(&["demo"]);
     std::fs::create_dir(root.path().join("library")).unwrap();
@@ -231,6 +235,7 @@ impl Reporter for Events {
 }
 
 #[test]
+#[ignore = "slow incremental acceptance; run explicitly with --ignored"]
 fn native_execution_reuses_completed_results_and_figures() {
     let root = support::TestWorkspace::new();
     root.write("diplodocus.yaml", "project:\n  name: Cached R execution\nrepositories:\n  - id: repo\n    path: .\npackages:\n  - id: demo\n    name: Demo\n    slug: demo\n    ecosystem: r\n    repository: repo\n    path: package\n    metadata-path: DESCRIPTION\n    targets:\n      - id: api\n        extractor: r\n        path: .\n        role: public-api\n");
