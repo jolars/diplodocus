@@ -32,7 +32,7 @@ def run_profile(expected: str | None, library: str | None) -> None:
     repository = Path(__file__).resolve().parents[1]
     source = "\n".join(
         (repository / "src/assembly" / name).read_text()
-        for name in ("r_runtime.R", "r_native.R")
+        for name in ("r_runtime.R", "r_environment.R", "r_native.R")
     )
     for loader in ("pkgload", "source"):
         with tempfile.TemporaryDirectory(prefix="diplodocus-roxygen-compat-") as directory:

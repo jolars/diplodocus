@@ -1,6 +1,7 @@
 using TOML
 using Libdl
 using Artifacts
+import Pkg
 
 function observe_environment(output, package_root)
     roots = String[]
@@ -52,7 +53,6 @@ function observe_environment(output, package_root)
     for project in unique(projects)
         metadata = TOML.parsefile(project)
         if !isempty(get(metadata, "deps", Dict())) || isfile(joinpath(dirname(project), "Manifest.toml"))
-            @eval using Pkg
             Base.invokelatest(Pkg.activate, dirname(project); io=devnull)
             for (id, dependency) in sort!(collect(Base.invokelatest(Pkg.dependencies)); by=entry -> string(first(entry)))
                 source = abspath(dependency.source)
@@ -90,10 +90,11 @@ function observe_environment(output, package_root)
     if isfile(maps)
         for line in eachline(maps)
             fields = split(line; limit=6)
-            if length(fields) == 6 && startswith(fields[6], '/')
-                any(depot -> startswith(fields[6], abspath(depot, "compiled") * "/") ||
-                             startswith(fields[6], abspath(depot, "logs") * "/"), DEPOT_PATH) && continue
-                isfile(fields[6]) ? push!(roots, realpath(fields[6])) : (eligible = false)
+            path = length(fields) == 6 ? strip(fields[6]) : ""
+            if startswith(path, '/')
+                any(depot -> startswith(path, abspath(depot, "compiled") * "/") ||
+                             startswith(path, abspath(depot, "logs") * "/"), DEPOT_PATH) && continue
+                isfile(path) ? push!(roots, realpath(path)) : (eligible = false)
             end
         end
     else
@@ -118,10 +119,11 @@ function write_completion(output)
     if isfile("/proc/self/maps")
         for line in eachline("/proc/self/maps")
             fields = split(line; limit=6)
-            if length(fields) == 6 && startswith(fields[6], '/')
-                any(depot -> startswith(fields[6], abspath(depot, "compiled") * "/") ||
-                             startswith(fields[6], abspath(depot, "logs") * "/"), DEPOT_PATH) && continue
-                isfile(fields[6]) ? push!(roots, realpath(fields[6])) : (eligible = false)
+            path = length(fields) == 6 ? strip(fields[6]) : ""
+            if startswith(path, '/')
+                any(depot -> startswith(path, abspath(depot, "compiled") * "/") ||
+                             startswith(path, abspath(depot, "logs") * "/"), DEPOT_PATH) && continue
+                isfile(path) ? push!(roots, realpath(path)) : (eligible = false)
             end
         end
     else

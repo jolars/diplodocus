@@ -271,7 +271,11 @@ fn julia_native_stages_reuse_completed_results_and_invalidate_package_edits() {
     root.write("diplodocus.yaml", "project:\n  name: Julia result caches\nrepositories:\n  - id: source\n    path: .\npackages:\n  - id: demo\n    name: Demo\n    slug: demo\n    ecosystem: julia\n    repository: source\n    path: .\n    metadata-path: Project.toml\n    targets:\n      - id: api\n        extractor: julia\n        path: src/Demo.jl\n        role: public-api\ncontent:\n  - id: manual\n    owner: demo\n    repository: source\n    path: docs\n    mount: ''\n    format: documenter\n    execution:\n      mode: execute\n      engine: julia\n      julia-project: Project.toml\n");
     root.write(
         "Project.toml",
-        "name = 'Demo'\nuuid = '12345678-1234-1234-1234-123456789abc'\nversion = '1.0.0'\n",
+        "name = 'Demo'\nuuid = '12345678-1234-1234-1234-123456789abc'\nversion = '1.0.0'\n[deps]\nLibdl = '8f399da3-3557-5675-b5ff-fb832c97cbdb'\n",
+    );
+    root.write(
+        "Manifest.toml",
+        "manifest_format = '2.0'\n[[deps.Libdl]]\nuuid = '8f399da3-3557-5675-b5ff-fb832c97cbdb'\n",
     );
     let source = "module Demo\nexport answer\n\"\"\"Return an answer.\n\n```jldoctest\njulia> answer()\n42\n```\n\"\"\"\nanswer() = 42\nend\n";
     root.write("src/Demo.jl", source);
@@ -308,6 +312,70 @@ fn julia_native_stages_reuse_completed_results_and_invalidate_package_edits() {
         assert!(
             changed.iter().any(|event| event.0 == stage && !event.2),
             "missing {stage} miss: {changed:?}"
+        );
+    }
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+#[ignore = "slow incremental acceptance; run explicitly with --ignored"]
+fn julia_environment_and_completion_retain_mapped_native_libraries() {
+    let root = support::TestWorkspace::new();
+    root.write(
+        "Project.toml",
+        "[deps]\nLibdl = '8f399da3-3557-5675-b5ff-fb832c97cbdb'\n",
+    );
+    root.write(
+        "Manifest.toml",
+        "manifest_format = '2.0'\n[[deps.Libdl]]\nuuid = '8f399da3-3557-5675-b5ff-fb832c97cbdb'\n",
+    );
+    root.write("library.c", "int cache_answer(void) { return 42; }\n");
+    let library = root.path().join("native library.so");
+    let compiled = std::process::Command::new("cc")
+        .args(["-shared", "-fPIC", "-o"])
+        .arg(&library)
+        .arg(root.path().join("library.c"))
+        .output()
+        .unwrap();
+    assert!(
+        compiled.status.success(),
+        "{}",
+        String::from_utf8_lossy(&compiled.stderr)
+    );
+    root.write(
+        "environment.jl",
+        include_str!("../src/assembly/julia_environment.jl"),
+    );
+    root.write(
+        "observe.jl",
+        "include(\"environment.jl\")\nlibrary = Libdl.dlopen(ARGS[1])\nobserve_environment(\"observation.toml\", pwd())\nwrite_completion(\"completion.toml\")\nLibdl.dlclose(library)\n",
+    );
+    let observed = std::process::Command::new("julia")
+        .current_dir(root.path())
+        .args([
+            "--startup-file=no",
+            "--history-file=no",
+            "--project=.",
+            "observe.jl",
+        ])
+        .arg(&library)
+        .output()
+        .unwrap();
+    assert!(
+        observed.status.success(),
+        "{}",
+        String::from_utf8_lossy(&observed.stderr)
+    );
+    for filename in ["observation.toml", "completion.toml"] {
+        let observation: toml::Value = toml::from_str(&root.read(filename)).unwrap();
+        assert_eq!(observation["eligible"].as_bool(), Some(true));
+        assert!(
+            observation["roots"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|path| path.as_str() == library.to_str()),
+            "{filename} omitted the loaded library"
         );
     }
 }

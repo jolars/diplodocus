@@ -68,6 +68,15 @@ fn inferred_and_declared_dependencies_propagate_through_cycles() {
     for package in ["first", "second", "third"] {
         assert!(changed.contains(&(package.into(), false)), "{changed:?}");
     }
+
+    root.write(
+        "second/second/target/added.py",
+        "def added():\n    return 1\n",
+    );
+    let added = check();
+    for package in ["first", "second", "third"] {
+        assert!(added.contains(&(package.into(), false)), "{added:?}");
+    }
 }
 
 #[test]

@@ -1,8 +1,47 @@
 mod support;
 
-use diplodocus::commands::{BuildOptions, CommandRunner};
+use diplodocus::commands::{BuildOptions, CheckOptions, CommandRunner};
 use diplodocus::incremental::CachePolicy;
 use diplodocus::snapshots::Snapshot;
+
+#[test]
+fn python_cache_tracks_additions_in_maintained_source_subdirectories() {
+    for directory in ["target", "node_modules"] {
+        for existing in [false, true] {
+            let root = support::TestWorkspace::new();
+            root.write("diplodocus.yaml", "project:\n  name: Python discovery cache\nrepositories:\n  - id: repo\n    path: .\npackages:\n  - id: example\n    name: Example\n    slug: example\n    ecosystem: python\n    repository: repo\n    path: .\n    metadata-path: pyproject.toml\n    targets:\n      - id: api\n        extractor: python\n        path: pkg\n        role: public-api\n");
+            root.write(
+                "pyproject.toml",
+                "[project]\nname = 'example'\nversion = '1.0.0'\n",
+            );
+            root.write("pkg/__init__.py", "\"\"\"Example package.\"\"\"\n");
+            if existing {
+                root.write(format!("pkg/{directory}/__init__.py"), "");
+            }
+            let options = CheckOptions {
+                config: root.path().join("diplodocus.yaml"),
+            };
+            let runner = CommandRunner::default();
+            runner.check(options.clone()).unwrap();
+            runner.check(options.clone()).unwrap();
+
+            root.write(format!("pkg/{directory}/broken.py"), "def broken(:\n");
+            let cached = runner.check(options.clone()).unwrap_err();
+            assert!(
+                cached
+                    .diagnostics()
+                    .iter()
+                    .any(|diagnostic| diagnostic.code.as_str() == "python-syntax"),
+                "{directory}, existing={existing}: {cached}"
+            );
+            let clean = runner
+                .with_cache_policy(CachePolicy::Bypass)
+                .check(options)
+                .unwrap_err();
+            assert_eq!(cached.diagnostics(), clean.diagnostics());
+        }
+    }
+}
 
 #[test]
 #[ignore = "slow incremental acceptance; run explicitly with --ignored"]

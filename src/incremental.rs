@@ -391,12 +391,15 @@ struct Input {
     permissions: Option<u32>,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 enum Selection {
     #[default]
     All,
     NativeLibraries,
+    PythonSources {
+        roots: Vec<PathBuf>,
+    },
 }
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -516,7 +519,7 @@ impl Manifest {
                 &spec.excludes,
                 &mut inputs,
                 &mut BTreeSet::new(),
-                spec.selection,
+                &spec.selection,
             )?;
         }
         let environment = spec
@@ -525,7 +528,7 @@ impl Manifest {
             .map(|name| (name.clone(), environment_observed(name)))
             .collect();
         Ok(Self {
-            selection: spec.selection,
+            selection: spec.selection.clone(),
             roots: spec.roots.clone(),
             excludes: spec.excludes.clone(),
             inputs,
@@ -538,7 +541,7 @@ impl Manifest {
             &self.roots,
             &self.environment.keys().cloned().collect::<Vec<_>>(),
             &self.excludes,
-            self.selection,
+            self.selection.clone(),
         );
         observing(|| {
             let current = observed(|state| state.inventories.get(&spec).cloned());
@@ -565,7 +568,7 @@ impl Manifest {
     pub(crate) fn roots(&self) -> impl Iterator<Item = &PathBuf> {
         self.roots
             .iter()
-            .filter(|_| self.selection == Selection::All)
+            .filter(|_| self.selection != Selection::NativeLibraries)
     }
     pub(crate) fn native_library_roots(&self) -> impl Iterator<Item = &PathBuf> {
         self.roots
@@ -579,7 +582,7 @@ fn visit(
     excludes: &[PathBuf],
     inputs: &mut BTreeMap<PathBuf, Input>,
     seen: &mut BTreeSet<PathBuf>,
-    selection: Selection,
+    selection: &Selection,
 ) -> io::Result<()> {
     if crate::generated_storage::is_reserved(path)
         || excludes.iter().any(|root| path.starts_with(root))
@@ -637,8 +640,12 @@ fn visit(
         if !seen.insert(target.clone()) {
             return Err(io::Error::other("cyclic cache input directory"));
         }
+        // Python discovery traverses `target` and `node_modules`. Retain the
+        // other observations, including hidden files used as extra inputs.
+        let python_source = matches!(selection, Selection::PythonSources { roots }
+            if roots.iter().any(|root| path.starts_with(root)));
         for name in directory_observed(&target)?.iter() {
-            if selection == Selection::NativeLibraries
+            if *selection == Selection::NativeLibraries
                 && (!native_library_file(Path::new(name))
                     || resolve_observed(&target.join(name))
                         .ok()
@@ -648,18 +655,12 @@ fn visit(
             {
                 continue;
             }
-            if matches!(
+            let excluded = matches!(
                 name.to_str(),
-                Some(
-                    ".git"
-                        | ".devenv"
-                        | ".direnv"
-                        | "target"
-                        | "node_modules"
-                        | "__pycache__"
-                        | ".pytest_cache"
-                )
-            ) {
+                Some(".git" | ".devenv" | ".direnv" | "__pycache__" | ".pytest_cache")
+            ) || (!python_source
+                && matches!(name.to_str(), Some("target" | "node_modules")));
+            if excluded {
                 continue;
             }
             visit(&path.join(name), excludes, inputs, seen, selection)?;
@@ -1010,7 +1011,39 @@ pub(crate) fn supplemental_manifest(
         &mut inputs,
         &mut env,
     )?;
-    Manifest::capture(&inputs, &env)
+    workspace_manifest(configuration, paths, &inputs, &env, &[])
+}
+
+fn workspace_manifest(
+    configuration: &WorkspaceConfiguration,
+    paths: &ResolvedWorkspacePaths,
+    inputs: &[PathBuf],
+    environment: &[String],
+    excludes: &[PathBuf],
+) -> io::Result<Manifest> {
+    // Keep discovery rules per target, including dependencies of another
+    // ecosystem, without traversing unrelated compiler output directories.
+    let mut roots: Vec<_> = configuration
+        .packages
+        .iter()
+        .zip(&paths.packages)
+        .filter(|(package, _)| package.ecosystem == "python")
+        .flat_map(|(_, package)| &package.targets)
+        .map(|target| target.path.clone())
+        .filter(|root| {
+            inputs
+                .iter()
+                .any(|input| root.starts_with(input) || input.starts_with(root))
+        })
+        .collect();
+    roots.sort();
+    roots.dedup();
+    let selection = if roots.is_empty() {
+        Selection::All
+    } else {
+        Selection::PythonSources { roots }
+    };
+    Manifest::capture_selected(inputs, environment, excludes, selection)
 }
 
 fn package_roots(
@@ -1142,7 +1175,7 @@ pub(crate) fn package_context(
         })
         .map(|c| c.path.clone())
         .collect();
-    let manifest = Manifest::capture_excluding(&inputs, &env, &excludes).ok()?;
+    let manifest = workspace_manifest(configuration, paths, &inputs, &env, &excludes).ok()?;
     Some((store, build, manifest))
 }
 
@@ -1189,7 +1222,7 @@ pub(crate) fn content_preparation_context(
     Some((
         Store::new(&paths.configuration_directory)?,
         BuildIdentity::observe().ok()?,
-        Manifest::capture(&inputs, &env).ok()?,
+        workspace_manifest(configuration, paths, &inputs, &env, &[]).ok()?,
     ))
 }
 
@@ -1253,7 +1286,11 @@ pub(crate) fn content_context(
         inputs.extend(package.roots);
         env.extend(package.environment.keys().cloned());
     }
-    Some((store, build, Manifest::capture(&inputs, &env).ok()?))
+    Some((
+        store,
+        build,
+        workspace_manifest(configuration, paths, &inputs, &env, &[]).ok()?,
+    ))
 }
 
 /// Preserve declared aliases for later verification while checking containment.
@@ -1297,6 +1334,45 @@ pub(crate) fn checked_incremental_path(repository: &Path, declared: &Path) -> io
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn python_discovery_tracks_membership_without_including_unrelated_artifacts() {
+        let root = tempfile::tempdir().unwrap();
+        let python = root.path().join("pkg");
+        let source = python.join("target");
+        fs::create_dir_all(&source).unwrap();
+        fs::create_dir(root.path().join("target")).unwrap();
+        fs::create_dir(python.join("__pycache__")).unwrap();
+        fs::create_dir(python.join(".pytest_cache")).unwrap();
+        let hidden_input = python.join(".settings.json");
+        fs::write(&hidden_input, "settings").unwrap();
+        let roots = [root.path().to_owned()];
+        let ordinary = Manifest::capture(&roots, &[]).unwrap();
+        let sources = Manifest::capture_selected(
+            &roots,
+            &[],
+            &[],
+            Selection::PythonSources {
+                roots: vec![python.clone()],
+            },
+        )
+        .unwrap();
+        assert!(sources.inputs.contains_key(&source));
+        assert!(sources.inputs.contains_key(&hidden_input));
+        assert!(!ordinary.inputs.contains_key(&source));
+        assert_eq!(sources.roots().count(), 1);
+
+        fs::write(root.path().join("target/compiler-output"), "output").unwrap();
+        fs::write(python.join("__pycache__/cached.pyc"), "bytecode").unwrap();
+        fs::write(python.join(".pytest_cache/ignored.py"), "ignored").unwrap();
+        assert!(sources.verify());
+        let ordinary = Manifest::capture(&roots, &[]).unwrap();
+        fs::write(source.join("added.py"), "new source").unwrap();
+        verification_scope(|| {
+            assert!(ordinary.verify());
+            assert!(!sources.verify());
+        });
+    }
 
     #[test]
     fn overlapping_roots_preserve_recursive_and_shallow_selections() {
