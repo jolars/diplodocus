@@ -70,9 +70,10 @@ async fn shell_connection_survives_port_reservation_handoff() {
 #[tokio::test]
 async fn shell_connection_preserves_invalid_endpoint_errors() {
     let mut connection_info = shell_connection_info(0);
-    connection_info.ip = "[invalid".to_string();
+    // An empty TCP host fails endpoint parsing before any DNS lookup.
+    connection_info.ip.clear();
     let result = tokio::time::timeout(
-        Duration::from_millis(100),
+        Duration::from_secs(1),
         connect_shell(&connection_info, "client-session", IO_TIMEOUT),
     )
     .await

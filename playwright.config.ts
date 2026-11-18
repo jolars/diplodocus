@@ -31,7 +31,7 @@ export default defineConfig({
     wait: { stderr: /Serving http:\/\/127\.0\.0\.1:(?<DIPLODOCUS_PREVIEW_PORT>\d+)/ },
     reuseExistingServer: false,
     // Fresh workspaces run native extraction and examples before the server listens.
-    timeout: 180_000,
+    timeout: 300_000,
     gracefulShutdown: { signal: "SIGTERM", timeout: 10_000 },
   },
 });

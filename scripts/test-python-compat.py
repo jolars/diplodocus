@@ -158,7 +158,8 @@ def run_profile(expected: str | None, python: str) -> None:
         result, output = export(in_package=True)
         assert result.returncode == 0, result.stderr
         observed = json.loads(output.read_text())
-        assert observed["protocol"] == 4 and observed["sphinx_version"] == version
+        assert observed["protocol"] == 6
+        assert observed["sphinx_version"] == version
         assert all(not Path(path).is_relative_to(output.parent) for path in observed["inputs"])
         assert observed["inputs"][str(module / "__init__.py")] == {
             "algorithm": "sha256", "value": hashlib.sha256((module / "__init__.py").read_bytes()).hexdigest(),
@@ -209,8 +210,9 @@ def run_profile(expected: str | None, python: str) -> None:
             assert declarations["Text"]["value"] == "TypeOnly"
             (module / "__init__.py").write_text("exec('def generic[T](value: T) -> T: return value')\n")
             result, output = export()
-            assert result.returncode != 0 and not output.exists()
-            assert "Generic type parameters are not yet represented" in result.stderr
+            assert result.returncode == 0, result.stderr
+            observed = json.loads(output.read_text())
+            assert observed["unsupported_generics"] == ["compat_api.generic"]
         (module / "__init__.py").write_text("raise RuntimeError('native import failure')\n")
         result, output = export()
         assert result.returncode != 0 and not output.exists()
