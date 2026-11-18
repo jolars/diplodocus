@@ -320,7 +320,7 @@ fn julia_native_stages_reuse_completed_results_and_invalidate_package_edits() {
     };
     build("first");
     let warm = build("warm");
-    for stage in ["julia-runtime", "julia-api-examples", "documenter-examples"] {
+    for stage in ["julia-native", "julia-api-examples", "documenter-examples"] {
         assert!(
             warm.iter().any(|event| event.0 == stage && event.2),
             "missing {stage} hit: {warm:?}; reasons: {:?}",
@@ -329,16 +329,46 @@ fn julia_native_stages_reuse_completed_results_and_invalidate_package_edits() {
     }
     support::assert_output_tree(&output.path().join("first"), &output.path().join("warm"));
     root.write(
+        "docs/index.md",
+        format!("{}\nAuthored guide edit.\n", root.read("docs/index.md")),
+    );
+    let authored = build("authored");
+    for stage in ["julia-native", "julia-api-examples"] {
+        assert!(contains(&authored, stage, "demo", true), "{authored:?}");
+    }
+    root.write(
         "src/Demo.jl",
         format!("{source}\n# Changed maintained source.\n"),
     );
     let changed = build("changed");
-    for stage in ["julia-runtime", "julia-api-examples", "documenter-examples"] {
+    for stage in ["julia-native", "julia-api-examples", "documenter-examples"] {
         assert!(
             changed.iter().any(|event| event.0 == stage && !event.2),
             "missing {stage} miss: {changed:?}"
         );
     }
+    build("restart");
+    let config = root.path().join("diplodocus.yaml");
+    let snapshot = root.path().join(".diplodocus/documentation.sqlite");
+    let canonical = diplodocus::snapshots::Snapshot::load(&snapshot)
+        .unwrap()
+        .canonical_export()
+        .unwrap();
+    CommandRunner::default()
+        .with_cache_policy(CachePolicy::Bypass)
+        .build(BuildOptions {
+            config,
+            output: output.path().join("clean"),
+        })
+        .unwrap();
+    support::assert_output_tree(&output.path().join("restart"), &output.path().join("clean"));
+    assert_eq!(
+        diplodocus::snapshots::Snapshot::load(&snapshot)
+            .unwrap()
+            .canonical_export()
+            .unwrap(),
+        canonical
+    );
 }
 
 #[cfg(target_os = "linux")]

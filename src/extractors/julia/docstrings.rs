@@ -27,10 +27,22 @@ pub struct JuliaDocstringParse {
 /// addresses absolute source-file bytes; document-node spans address decoded
 /// text, just as the other extracted documentation formats do.
 pub fn parse(text: &StaticDocText, source: SourceLocation) -> JuliaDocstringParse {
-    let parsed = documentation::parse(text.as_str());
+    parse_docstring(text.as_str(), Some(text), Some(source))
+}
+
+pub(super) fn parse_runtime(text: &str, source: Option<SourceLocation>) -> JuliaDocstringParse {
+    parse_docstring(text, None, source)
+}
+
+fn parse_docstring(
+    raw: &str,
+    text: Option<&StaticDocText>,
+    source: Option<SourceLocation>,
+) -> JuliaDocstringParse {
+    let parsed = documentation::parse(raw);
     let mut context = Context {
-        text: Some(text),
-        source: Some(source.clone()),
+        text,
+        source: source.clone(),
         authored: false,
         diagnostics: Vec::new(),
         provenance: Vec::new(),
@@ -47,7 +59,7 @@ pub fn parse(text: &StaticDocText, source: SourceLocation) -> JuliaDocstringPars
         document: Document {
             span: SourceSpan {
                 start: 0,
-                end: text.as_str().len(),
+                end: raw.len(),
             },
             frontmatter: None,
             blocks,
@@ -55,9 +67,9 @@ pub fn parse(text: &StaticDocText, source: SourceLocation) -> JuliaDocstringPars
         source_format: DocumentFormat::Extracted {
             name: "julia-markdown".into(),
         },
-        source_location: Some(source),
+        source_location: source,
         generated_source: None,
-        raw_source: Some(text.as_str().into()),
+        raw_source: Some(raw.into()),
         provenance: context.provenance,
     };
     JuliaDocstringParse {
@@ -143,7 +155,9 @@ impl Context<'_> {
     }
 
     fn record(&mut self, range: TextRange) {
-        if let Some(location) = self.location(range) {
+        if let Some(location) = self.location(range)
+            && location.span.is_some()
+        {
             let mut provenance = declaration_provenance(&location);
             provenance.activity = ProvenanceActivity::DecodedDocumentation {
                 decoded_span: span(range),
@@ -162,7 +176,11 @@ impl Context<'_> {
             )
         } else {
             Diagnostic::new(
-                DiagnosticCode::UnsupportedAuthoredSyntax,
+                if self.authored {
+                    DiagnosticCode::UnsupportedAuthoredSyntax
+                } else {
+                    DiagnosticCode::JuliaUnsupportedMarkdown
+                },
                 Severity::Warning,
                 message,
             )

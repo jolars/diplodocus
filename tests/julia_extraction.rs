@@ -1039,7 +1039,7 @@ fn documented_aliases_keep_their_documentation_on_the_canonical_family() {
 }
 
 #[test]
-fn acceptance_fixture_checks_without_julia_and_retains_structured_markdown() {
+fn native_acceptance_checks_and_retains_structured_markdown() {
     use diplodocus::ir::Block;
     use diplodocus::snapshots::Snapshot;
     use std::path::Path;
@@ -1052,7 +1052,6 @@ fn acceptance_fixture_checks_without_julia_and_retains_structured_markdown() {
     let output = Command::new(env!("CARGO_BIN_EXE_diplodocus"))
         .current_dir(workspace.path())
         .args(["check"])
-        .env("PATH", "")
         .output()
         .unwrap();
     assert!(
@@ -1060,7 +1059,6 @@ fn acceptance_fixture_checks_without_julia_and_retains_structured_markdown() {
         "{}",
         String::from_utf8_lossy(&output.stderr)
     );
-    assert!(!workspace.path().join("julia-was-executed").exists());
     let sources =
         diplodocus::assembly::assemble_workspace(workspace.path().join("diplodocus.yaml")).unwrap();
     let resolved = diplodocus::validation::resolve_workspace(&sources).unwrap();
@@ -1127,7 +1125,8 @@ fn acceptance_fixture_checks_without_julia_and_retains_structured_markdown() {
 fn refresh_removes_stale_methods_and_includes_and_preserves_snapshot_on_error() {
     use diplodocus::commands::{self, ExtractOptions};
     use diplodocus::snapshots::Snapshot;
-    let workspace = small("module Demo\nexport f\ninclude(\"methods.jl\")\nend\n");
+    let workspace =
+        small("module Demo\nexport f\ninclude(joinpath(@__DIR__, \"methods.jl\"))\nend\n");
     workspace.write("src/methods.jl", "f(x::Int)=x\nf(x::String)=x\n");
     let database = workspace.path().join("documentation.sqlite");
     let options = || ExtractOptions {
@@ -1144,6 +1143,15 @@ fn refresh_removes_stale_methods_and_includes_and_preserves_snapshot_on_error() 
             .count(),
         2
     );
+    let rewritten = small(
+        "module Demo\nexport f\nfunction rewrite(expr)\n    if Meta.isexpr(expr, :(=))\n        expr.args[1].args[2].args[2] = :Float64\n    end\n    return expr\nend\ninclude(rewrite, \"methods.jl\")\nend\n",
+    );
+    rewritten.write("src/methods.jl", "f(x::Int)=x\n");
+    let rewritten_sources =
+        diplodocus::assembly::assemble_workspace(rewritten.path().join("diplodocus.yaml")).unwrap();
+    let surface = rewritten_sources.workspace();
+    assert!(diplodocus::validation::resolve_item(surface, Some("demo"), "f(::Float64)").is_ok());
+    assert!(diplodocus::validation::resolve_item(surface, Some("demo"), "f(::Int)").is_err());
     workspace.write(
         "src/Demo.jl",
         "module Demo\nexport f\nf(x::Float64)=x\nend\n",
@@ -1171,6 +1179,78 @@ fn refresh_removes_stale_methods_and_includes_and_preserves_snapshot_on_error() 
     );
     assert!(commands::extract(options()).is_err());
     assert_eq!(std::fs::read(&database).unwrap(), successful);
+}
+
+#[test]
+fn native_extraction_checks_authored_dispatch_and_resolves_whole_module_imports() {
+    use diplodocus::validation::{resolve_item, resolve_workspace};
+
+    let workspace = small(
+        r#"
+module Demo
+module Inner
+export fit
+fit(x) = x
+end
+using .Inner
+
+export rewritten, preserved, optional, Thing
+"See [fit](@ref fit) and [the rewritten overload](@ref rewritten(::Array{Float64, 1}))."
+function rewritten end
+function rewrite(expr)
+    if Meta.isexpr(expr, :(=))
+        expr.args[1].args[2].args[2].args[2] = :Float64
+    end
+    return expr
+end
+include(rewrite, "methods.jl")
+preserved(x::Base.Vector{T}, y::T=1) where {T<:Number} = x
+"Return the supplied number or the default."
+optional(x::T=1) where {T<:Number} = x
+struct Thing{T}
+    value::T
+    Thing(x::T) where T = new{T}(x)
+    Thing{T}(x::T) where T = new{T}(x)
+end
+@doc "Use the parameterized constructor." Thing{T}(x::T) where T
+end
+"#,
+    );
+    workspace.write("src/methods.jl", "rewritten(x::Vector{Int}) = x\n");
+    let sources =
+        diplodocus::assembly::assemble_workspace(workspace.path().join("diplodocus.yaml")).unwrap();
+    resolve_workspace(&sources).unwrap();
+    let surface = sources.workspace();
+    let lookup = |name| resolve_item(surface, Some("demo"), name);
+    assert_eq!(
+        lookup("Demo.fit").unwrap(),
+        lookup("Demo.Inner.fit").unwrap()
+    );
+    assert!(lookup("rewritten(::Vector{Int})").is_err());
+    assert!(lookup("rewritten(::Array{Float64, 1})").is_ok());
+    let preserved = lookup("preserved(::Base.Vector{T}, ::T) where {T<:Number}").unwrap();
+    let items = &surface.packages["demo"].items;
+    let item = &items[&preserved.item];
+    assert!(item.source_location.as_ref().unwrap().span.is_some());
+    let family = lookup("preserved").unwrap();
+    assert_eq!(items[&family.item].signatures.len(), 1);
+    let doc = |selector| {
+        let method = lookup(selector).unwrap();
+        items[&method.item]
+            .documentation
+            .as_ref()
+            .and_then(|doc| doc.raw_source.as_deref())
+    };
+    assert_eq!(
+        doc("optional(::T) where {T<:Number}"),
+        Some("Return the supplied number or the default.")
+    );
+    assert!(lookup("optional()").is_err());
+    assert_eq!(
+        doc("Thing{T}(::T) where T"),
+        Some("Use the parameterized constructor.")
+    );
+    assert_eq!(doc("Thing(::T) where T"), None);
 }
 
 #[test]

@@ -1,43 +1,41 @@
 # Julia extraction contract
 
-This page describes the source adapter and its runtime type completion. The
-extraction command pipeline also runs Julia examples through a native doctest
-adapter. The [design overview](../development/design.md) explains how source
-analysis and runtime assistance fit together.
+Julia supplies bindings, dispatch, type information, and registered
+documentation from the loaded checkout. Diplodocus builds the portable API
+records, resolves references, and renders pages. Fatou supplies Julia Markdown,
+authored signatures, and source maps. The explicit Rust `extract_target` API
+still supports source inspection without starting Julia.
 
-The `julia` adapter reads an explicit `.jl` entry file and `Project.toml` with
-Rust libraries. Fatou provides Julia syntax, documentation attachments, string
-decoding, source maps, and Julia Markdown. Diplodocus determines the maintained
-API, assigns identities, and resolves references. `check` uses this static
-adapter without starting Julia. During `extract`, `build`, and `serve`, every
-checkout is loaded and validated, even without doctests or unresolved public
-bindings. Unresolved public bindings additionally trigger native type completion.
+## Native discovery
 
-## Runtime type completion
+Diplodocus starts Julia 1.10 through 1.13 with startup and history files
+disabled and activates the configured package project. The caller prepares
+Julia, the package's dependencies, and any compiled artifacts. Julia loads the
+package by its project name and UUID. The helper verifies the name, UUID,
+available version, and entry file against the supplied checkout.
 
-Diplodocus starts Julia with startup and history files disabled and activates
-the configured package project. The caller must provide Julia and the package's
-dependencies. Diplodocus never installs or resolves dependencies. The helper
-loads the package by its Project.toml name and UUID and verifies the loaded
-module name, UUID, version, and entry file against the supplied checkout.
-Loading another release, missing prerequisites, errors, cancellation, and
-timeouts prevent snapshot publication.
+The private `julia-native-v1` TOML exporter reports modules, bindings, aliases,
+method dispatch, fields, registered documentation, actual input files, and Julia
+and dependency versions. Julia's binding and method introspection supplies the
+surface. A small compatibility layer reads exact `Base.Docs` attachments, method
+metadata, and loader source observations. The GitHub Actions version matrix
+checks this interface on every supported Julia minor. Discovery uses the
+standard library. Authored Documenter pages and example execution use
+Diplodocus's [Documenter support](../guide/authoring/documenter.md).
 
-The helper observes exported types defined by the root module, their type
-parameters, supertypes, mutability, and fields. This completes macro-generated
-exception types such as Datamonger's 15 `@define_error` exports. It does not
-synthesize constructor methods or source locations. Existing source declarations
-retain their source evidence; incompatible observed type flavors produce errors.
-Unresolved functions, external types, dynamic includes, and unsupported source
-syntax remain errors.
+`check`, `extract`, `build`, and `serve` share discovery. `check` loads the
+package and validates references and presentation. Extraction commands also
+verify the retained doctests. Package loading, unsupported native declarations,
+input changes, cancellation, and timeouts prevent publication. Package
+initialization can write to the checkout.
 
-Runtime-derived types and fields carry `julia-runtime` provenance with the helper
-policy, Julia version, verified package identity and version, and loaded
-dependency UUIDs and versions. These records contain no local paths or invented
-source ranges. Static parser extraction evidence remains separate. Completed
-snapshots can be generated without the checkout or Julia. `check` continues to
-diagnose unresolved generated declarations and does not prove that runtime
-extraction will succeed.
+The loader reports which files it included, even for computed paths, and the
+exporter verifies the source bytes for precompiled checkouts. Files are resolved
+inside the configured package. Portable evidence contains repository-relative
+paths and uses byte ranges only for verified material. Cache reuse additionally
+requires coverage by the prepared environment and package input inventories.
+Untracked external reads and environment variables can be supplied through the
+incremental settings.
 
 ## Configuration and inputs
 
@@ -57,23 +55,11 @@ packages:
         role: "public-api"
 ```
 
-The target must be an explicit entry file, rather than a source directory.
-Unconditional `include("relative.jl")` calls extend that target. Paths are
-relative to the including file, and both lexical paths and symlink destinations
-must remain inside the package and repository. Includes retain their enclosing
-module. A file included in two modules contributes declarations to both, while
-its bytes and parser input are recorded once. Missing files, cycles, computed
-paths, include transforms, qualified includes, and conditional includes produce
-errors. A locally declared or imported `include` binding also produces an error
-because its semantics cannot be established from a call alone. Unreferenced
-files and package extensions are not discovered automatically.
-
-Metadata requires a nonempty `name` and a UUID. A supplied `version` must be
-SemVer; omitting it leaves the package version absent. Authors, dependency
-UUIDs, and compatibility strings are retained. Compatibility strings use
-Julia/Pkg syntax and are not interpreted as Cargo constraints. Every original
-top-level metadata field retains its TOML value and source range. Extraction
-does not read `Manifest.toml` or resolve dependencies.
+The target names the package's explicit entry file. Package metadata requires a
+name and UUID. A supplied version must be SemVer. Authors, dependency UUIDs,
+compatibility strings, and original top-level metadata fields retain their TOML
+values and source ranges. Julia resolves the prepared environment using its own
+project and manifest rules.
 
 ### Explicit extension sources
 
@@ -90,58 +76,35 @@ targets:
         - ext/EunoiaMakieExt.jl
 ```
 
-Each entry must name a unique `.jl` file relative to the package root. Missing
-files, directories, and paths or symlinks outside the package fail validation.
-Both `ext/NameExt.jl` and `ext/NameExt/NameExt.jl` layouts work when supplied
-explicitly. The adapter does not select files from `[extensions]`, inspect a
-depot, or load weak dependencies.
+Each entry names a unique `.jl` file relative to the package root. Both
+`ext/NameExt.jl` and `ext/NameExt/NameExt.jl` layouts work. The adapter reads
+each selected file and its unconditional literal includes with Fatou. Lexical
+paths and resolved symlinks must stay inside the package. Missing files, cycles,
+transformed includes, and unknown include paths in extension sources produce
+diagnostics.
 
-Extension files start in their own top-level scope and follow the same static
-include and declaration rules as the core entry. Diplodocus assembles all
-supplied declarations together. For example, `import Eunoia: eunoiaplot` in the
-extension binds its methods to the existing `Eunoia.eunoiaplot` family. The
-family retains its generic documentation and core fallback methods, while its
-signatures also include the supplied extension implementations. Method
-documentation stays with its method. Duplicate dispatch identities still
-produce conflicts rather than simulating method replacement.
-
-Only authored methods from the selected files and their literal includes are
-retained. Imports from unavailable dependencies do not invent their modules,
-types, exports, or other methods. Macro-generated recipes remain subject to
-the existing unsupported-syntax policy. Selecting an extension describes a
-static documentation surface; it does not claim that Julia activated it.
-Runtime checkout validation continues to load the core package and requires
-its prepared dependencies, without explicitly activating selected extensions.
-
-Extension sources and includes retain repository-relative locations, original
-input bytes, and extraction fingerprints. Their methods share the core
-family's identities, discovery policy, and rendered page, including after
-detached snapshot generation. Removing an extension from the selection removes
-its methods on the next extraction without removing the core generic.
+Imports such as `import Eunoia: eunoiaplot` join the selected methods to the
+loaded generic. Its core fallback methods and generic prose remain available.
+Method docstrings keep their own attribution. Conflicting dispatch identities
+produce errors. This selection describes the authored extension surface and
+works with an environment that omits weak dependencies. Removing an entry
+removes its contributed methods at the next discovery.
 
 ## Maintained surface
 
-The adapter retains exported and `public` bindings, documented declarations,
-and the containers and members needed to describe them. A visible callable
-retains all supplied methods. A visible type retains its fields and explicit
-constructors. Private, undocumented helpers are omitted.
+The adapter retains exported and documented bindings, as well as those marked
+`public` on Julia 1.11 and later. It includes the modules and fields needed to
+represent those items. Callable families retain the loaded package's methods,
+including methods introduced by metaprogramming. Exported or documented aliases
+of an external generic require at least one package-owned method. Private
+extensions of external generics can also be retained through registered method
+documentation.
 
-Supported declarations include modules and bare modules, long and short
-functions, empty generic declarations, structs and mutable structs, abstract
-and primitive types, fields, constants, macros, and explicit constructors.
-`@inline`, `@noinline`, and `@propagate_inbounds`, including their `Base`
-qualifications, preserve an underlying declaration and its wrapper provenance.
-Other declaration-generating macros and definitions inside conditional or
-runtime scopes produce errors. Function bodies and constant values are retained
-as syntax where needed; they are never evaluated.
-
-Supplied imports, local `using` exports, import aliases, and assignment aliases
-resolve to maintained canonical declarations. Constant aliases of supplied
-functions, types, or modules also retain the canonical identity. Reexporting a
-binding whose definition is unavailable produces an error. An explicitly
-supplied extension such as `Base.show` has a local callable family with an
-external owner; extraction does not invent the dependency's other methods or
-module declaration. Julia's implicit `Base` exports are not discovered.
+Module, function, type, macro, and constant bindings have canonical identities.
+Imports and aliases retain their lookup names. Type information includes fields,
+type parameters, and supertypes. An unsupported public binding or a
+documentation attachment with ambiguous ownership produces a diagnostic.
+Undocumented private helpers stay outside the retained surface.
 
 ## Automatic API discovery
 
@@ -151,42 +114,42 @@ that declaration part of automatic API navigation, search results, or indexes.
 Exported bindings and bindings marked with `public` are discoverable, including
 undocumented bindings. An exported or public alias makes its canonical item
 discoverable. Aliases keep the canonical identity, display name, and route;
-search includes the canonical name and retained alias spellings without
-creating duplicate results.
+search includes the canonical name and retained alias spellings without creating
+duplicate results.
 
 Methods inherit discovery from their callable family, and explicit constructors
-inherit it from their type. They remain grouped on the family or type page,
-with searchable method prose and stable method anchors. An extension of an
-external generic is private unless a supplied export or `public` declaration
-exposes its binding or an alias. Mentioning a public type in a method signature
-does not make the external family discoverable.
+inherit it from their type. They remain grouped on the family or type page, with
+searchable method prose and stable method anchors. An extension of an external
+generic is private unless a supplied export or `public` declaration exposes its
+binding or an alias. Mentioning a public type in a method signature does not
+make the external family discoverable.
 
 The package root and retained enclosing modules of discoverable items remain
 discoverable as containers. Explicitly exported or public modules are also
 discoverable, but their private children are not exposed automatically. Fields
-never receive automatic index entries, including fields of public types.
-Fields appear in declaration order in a Fields section on their owning type's
-page, with annotations, retained documentation, and stable `field-<name>` anchors.
-HTML and Markdown use the same grouping. Field references
-and host URL maps target the type page and field anchor; separate field pages
-are not generated. The type's fragment descriptor retains field identities and
-headings, and its search entry includes field names and documentation.
+never receive automatic index entries, including fields of public types. Fields
+appear in declaration order in a Fields section on their owning type's page,
+with annotations, retained documentation, and stable `field-<name>` anchors.
+HTML and Markdown use the same grouping. Field references and host URL maps
+target the type page and field anchor; separate field pages are not generated.
+The type's fragment descriptor retains field identities and headings, and its
+search entry includes field names and documentation.
 
-Retained private items keep their HTML and Markdown content, semantic identities,
-routes, and direct references. Fragment descriptors include private pages with
-`visible: false`, including private types with their fields.
+Retained private items keep their HTML and Markdown content, semantic
+identities, routes, and direct references. Fragment descriptors include private
+pages with `visible: false`, including private types with their fields.
 
 `Package::discoverable_items` derives this policy from retained declaration and
 ownership facts. `Item::discoverable` describes an item's intrinsic eligibility;
 the package query also accounts for method ownership and required module
-containers. Site generation applies package visibility separately and shares
-the resulting page visibility across navigation, HTML and Markdown indexes,
-search, sitemaps, and fragment descriptors. Existing snapshots acquire these
-defaults when regenerated, without a schema change.
+containers. Site generation applies package visibility separately and shares the
+resulting page visibility across navigation, HTML and Markdown indexes, search,
+sitemaps, and fragment descriptors. Existing snapshots acquire these defaults
+when regenerated, without a schema change.
 
 Authored `@docs`, `@autodocs`, and `@index` selections remain independent of
-automatic discovery. An authored page may embed private documentation and
-remain searchable without promoting those items into automatic API indexes.
+automatic discovery. An authored page may embed private documentation and remain
+searchable without promoting those items into automatic API indexes.
 
 ## Families, methods, and identities
 
@@ -198,25 +161,26 @@ parameters, and supertypes. Signatures preserve annotations, defaults, keyword
 arguments, varargs, return annotations, and `where` clauses.
 
 Family identity uses the canonical qualified binding and declaration kind.
-Method identity adds a structured dispatch expression: the constructor head,
-positional annotations, varargs, and `where` constraints. Bound type variables
-are normalized by binding order. Argument names, keyword arguments, defaults,
-return annotations, file paths, and declaration order do not change identity.
-This defines the adapter's static identity subset; it does not attempt Julia's
-full semantic equivalence of types or constraints. Two declarations with the
-same dispatch identity produce a conflict diagnostic instead of simulating
-runtime method replacement.
+Method identity adds normalized positional dispatch. Matching authored methods
+retain their source-derived dispatch expressions and stable IDs.
+Positional-default forwarding methods join their verified authored declaration.
+Constructor methods require a matching authored declaration or an exact native
+method docstring. Compiler-supplied default constructors are omitted.
 
-Optional arguments and runtime-generated constructors do not create synthetic
-method items. Callable objects, generated methods, arbitrary macro expansion,
-and runtime reflection are outside this contract.
+Runtime-only methods use the reflected constructor head, qualified type names,
+positional annotations, varargs, and bound type variables. Dispatch keys exclude
+argument names, keyword arguments, defaults, return annotations, and source
+coordinates. A generated method's exact selector follows the exported dispatch
+spelling, such as `generated(::Int64)`. Reflected signatures display the keyword
+names Julia reports. Supplemental authored evidence provides defaults, keyword
+annotations, and return annotations.
 
 ## Julia Markdown and references
 
-Static ordinary, triple-quoted, and raw docstrings become Julia Markdown
-through Fatou. Generic documentation belongs to the family; a docstring on a
-method belongs to that method. Supported `@doc` attachments can refer to an
-existing family or method. Conflicting attachments produce errors.
+Generic documentation belongs to the binding. An exact method attachment belongs
+to the live method. Julia supplies registered string and Markdown documentation,
+including interpolated text and `@doc` attachments. An unsupported documentation
+object produces a diagnostic.
 
 Prose, headings, emphasis, inline code, links, images, lists, block quotes,
 tables, common admonitions, thematic breaks, and code blocks become portable
@@ -225,52 +189,44 @@ recognizes inline markup across wrapped lines and fences in list items and
 admonitions. The adapter preserves exact decoded source spans and code
 indentation, with a separate source segment for each contributing code token.
 Source parsing retains code blocks without execution. The command pipeline
-executes `jldoctest` fences with expected-output verification; ordinary Julia
-fences remain illustrative.
-Unsupported executable directives fail extraction. See the
-[extraction guide](../guide/extraction.md) for the supported native subset.
-Math, footnotes, interpolation, unsupported admonitions, and other Documenter
-directives retain their source visibly with warnings. A docstring that requires
-evaluation remains an opaque document with a warning.
+executes `jldoctest` fences and verifies their expected output. Ordinary Julia
+fences remain illustrative. Unsupported executable directives fail extraction.
+See the [extraction guide](../guide/extraction.md) for the supported native
+subset. Math, footnotes, unsupported admonitions, and other Documenter
+directives retain their source visibly with warnings. The source inspection API
+retains opaque literals with a warning.
 
-API references support explicit names, method selectors, and names inferred
-from code labels:
+API references support explicit names, method selectors, and names inferred from
+code labels:
 
 ```markdown
 [`mean_squared_error`](@ref)
 [vector method](@ref mean_squared_error(::AbstractVector, ::AbstractVector))
 ```
 
-Names resolve in the defining module, including maintained aliases. Labels
-remain intact. A bare name resolves to the family; a selector resolves to a
-supplied method using the same dispatch normalization as extraction. Unresolved
-API references fail workspace validation. Documenter heading references and
-page assembly are outside this API-reference subset.
+Names resolve in the module that registered the docstring, including maintained
+aliases. Labels remain intact. A bare name resolves to the family. A selector
+resolves to a retained method using the same dispatch normalization as
+extraction. Unresolved API references fail workspace validation.
 
-Document-node spans address decoded Markdown. Fatou maps documentation
-provenance, extraction diagnostics, and unresolved reference diagnostics back to the original Julia literal,
-including indentation removal, escapes, Unicode, and newline normalization.
-Raw input and repository-relative source locations remain in the extraction
-result. No absolute checkout paths or runtime state enter the snapshot.
-Decoded documentation provenance records pair each node's decoded range with
-its original source range, preserving this attribution in portable snapshots.
+Document-node spans address decoded Markdown. When Fatou matches a decoded
+literal to the registered text, it maps documentation and reference diagnostics
+back to original bytes, including indentation, escapes, Unicode, and newline
+normalization. Runtime-generated prose carries a verified repository-relative
+registration file when one is available. Doctests need such a file for portable
+execution evidence. The snapshot retains the raw Markdown and the resulting
+documentation nodes.
 
 ## Integration and verification
 
-`extract_target` returns `JuliaExtraction`, including metadata, items, retained
-inputs, diagnostics, and the static extraction observation. Workspace assembly
-uses this result, and portable snapshots validate Julia family and constructor
-references. Generated sites provide family and method pages, Julia signatures,
-navigation, search, and shared concepts without the original sources or Julia.
+The workspace records native discovery and Julia tool versions under the
+existing `JuliaRuntime` provenance activity. Portable snapshots validate family
+and constructor references. Snapshots produced with the earlier source and
+runtime completion policy remain readable. Detached generation uses the retained
+records and execution evidence.
 
-Error-bearing extraction remains inspectable but cannot be published. Refresh
-replaces the selected package's extracted surface rather than retaining deleted
-methods or includes. Existing IR, SQLite, and encoding versions remain unchanged
-because the Julia records extend the existing language data, signatures, and
-documentation provenance.
-
-The [static extractor contract](../spikes/static-extractor-contract.md) records
-parser pins and capabilities. The [Julia tests](../../tests/julia_extraction.rs),
-[acceptance fixture](../../tests/fixtures/acceptance/julia/), and
-[four-language example](../../examples/monorepo/README.md) exercise the adapter
-and its build pipeline.
+Refresh replaces the target's API surface, including removed methods and
+includes. Error-bearing extraction cannot replace a successful publication. The
+[Julia tests](../../tests/julia_extraction.rs), [acceptance
+fixture](../../tests/fixtures/acceptance/julia/), and [four-language
+example](../../examples/monorepo/README.md) cover the pipeline.

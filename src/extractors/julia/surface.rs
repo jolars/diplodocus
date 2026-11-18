@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::diagnostics::{DiagnosticCode as Code, Severity};
+use crate::diagnostics::{Diagnostic, DiagnosticCode as Code, Severity};
 use crate::ir::*;
 
 use super::source::{Declarations, Draft, DraftDeclaration, qualify};
@@ -24,13 +24,14 @@ pub(super) fn assemble(mut declarations: Declarations, result: &mut JuliaExtract
         .collect();
     let mut bindings = BTreeMap::new();
     let mut binding_sources = BTreeMap::new();
+    let mut documentation_modules = BTreeMap::new();
     for import in &declarations.imports {
         bind(
             &mut bindings,
             &mut binding_sources,
             qualify(&import.module, &import.name),
             import.target.clone(),
-            &import.source,
+            import.source.as_ref(),
             result,
         );
     }
@@ -42,7 +43,7 @@ pub(super) fn assemble(mut declarations: Declarations, result: &mut JuliaExtract
                 &mut binding_sources,
                 qualify(&draft.module, &draft.name),
                 target,
-                &draft.source,
+                draft.source.as_ref(),
                 result,
             );
         }
@@ -64,7 +65,7 @@ pub(super) fn assemble(mut declarations: Declarations, result: &mut JuliaExtract
                     &mut binding_sources,
                     qualify(&import.module, &export.name),
                     target,
-                    &import.source,
+                    import.source.as_ref(),
                     result,
                 );
             }
@@ -107,7 +108,7 @@ pub(super) fn assemble(mut declarations: Declarations, result: &mut JuliaExtract
                     &mut binding_sources,
                     qualify(&draft.module, &draft.name),
                     target.clone(),
-                    &draft.source,
+                    draft.source.as_ref(),
                     result,
                 );
                 draft.declaration = DraftDeclaration::Alias { target };
@@ -152,7 +153,7 @@ pub(super) fn assemble(mut declarations: Declarations, result: &mut JuliaExtract
         if let Some(existing) = named.insert(name.clone(), identity.item_id().to_owned())
             && existing != identity.item_id()
         {
-            conflict(result, &draft.source, &name);
+            conflict(result, draft.source.as_ref(), &name);
         }
         containers
             .entry(name.clone())
@@ -174,14 +175,14 @@ pub(super) fn assemble(mut declarations: Declarations, result: &mut JuliaExtract
         if draft.documented && matches!(draft.declaration, DraftDeclaration::Alias { .. }) {
             let target = resolve(&draft.module, &draft.name, &bindings, &modules);
             if !named.contains_key(&target) {
-                result.diagnostics.push(diagnostic(
+                result.diagnostics.push(attributed(
                     Code::JuliaUnresolvedDefinition,
                     Severity::Error,
                     format!(
                         "Documented Julia alias `{}` has no supplied static definition.",
                         qualify(&draft.module, &draft.name)
                     ),
-                    &draft.source,
+                    draft.source.as_ref(),
                 ));
             }
         }
@@ -199,19 +200,18 @@ pub(super) fn assemble(mut declarations: Declarations, result: &mut JuliaExtract
             if *current != JuliaVisibility::Exported {
                 *current = export.visibility;
             }
-            export_sources
-                .entry(name)
-                .or_default()
-                .push(export.source.clone());
+            if let Some(source) = &export.source {
+                export_sources.entry(name).or_default().push(source.clone());
+            }
         } else {
-            result.diagnostics.push(diagnostic(
+            result.diagnostics.push(attributed(
                 Code::JuliaUnresolvedDefinition,
                 Severity::Error,
                 format!(
                     "Public Julia binding `{}` has no supplied static definition.",
                     qualify(&export.module, &export.name)
                 ),
-                &export.source,
+                export.source.as_ref(),
             ));
         }
     }
@@ -258,6 +258,19 @@ pub(super) fn assemble(mut declarations: Declarations, result: &mut JuliaExtract
         let Some(id) = named.get(&name).cloned() else {
             continue;
         };
+        let documentation_id = match &draft.declaration {
+            DraftDeclaration::Callable {
+                signature,
+                macro_definition: false,
+            } => SemanticIdentity::julia_method(&name, &signature.dispatch)
+                .ok()
+                .map(|method| method.item_id().to_owned())
+                .unwrap_or_else(|| id.clone()),
+            _ => id.clone(),
+        };
+        if let Some(module) = &draft.documentation_module {
+            documentation_modules.insert(documentation_id, module.clone());
+        }
         match &draft.declaration {
             DraftDeclaration::Named {
                 kind,
@@ -282,7 +295,7 @@ pub(super) fn assemble(mut declarations: Declarations, result: &mut JuliaExtract
                     item.signatures.push(sourced(signature.clone(), draft));
                 }
                 if result.items.insert(id, item).is_some() {
-                    conflict(result, &draft.source, &name);
+                    conflict(result, draft.source.as_ref(), &name);
                 }
             }
             DraftDeclaration::Generic | DraftDeclaration::Callable { .. } => {
@@ -342,7 +355,7 @@ pub(super) fn assemble(mut declarations: Declarations, result: &mut JuliaExtract
                 if is_macro {
                     let item = result.items.get_mut(&id).unwrap();
                     if !item.signatures.is_empty() {
-                        conflict(result, &draft.source, &name);
+                        conflict(result, draft.source.as_ref(), &name);
                     } else {
                         item.signatures
                             .push(sourced(signature.signature.clone(), draft));
@@ -352,7 +365,7 @@ pub(super) fn assemble(mut declarations: Declarations, result: &mut JuliaExtract
                 let identity = SemanticIdentity::julia_method(&name, &signature.dispatch).unwrap();
                 let method_id = identity.item_id().to_owned();
                 if result.items.contains_key(&method_id) {
-                    conflict(result, &draft.source, &name);
+                    conflict(result, draft.source.as_ref(), &name);
                     continue;
                 }
                 let method_ref = identity.in_package(&package).unwrap();
@@ -415,11 +428,11 @@ pub(super) fn assemble(mut declarations: Declarations, result: &mut JuliaExtract
         if let Some(item) = id.and_then(|id| result.items.get_mut(&id)) {
             attach_document(item, draft, &mut result.diagnostics);
         } else {
-            result.diagnostics.push(diagnostic(
+            result.diagnostics.push(attributed(
                 Code::JuliaUnresolvedDefinition,
                 Severity::Error,
                 format!("Documented Julia target `{name}` has no static declaration."),
-                &draft.source,
+                draft.source.as_ref(),
             ));
         }
     }
@@ -505,11 +518,12 @@ pub(super) fn assemble(mut declarations: Declarations, result: &mut JuliaExtract
         })
         .collect();
     let existing: BTreeSet<_> = result.items.keys().cloned().collect();
-    for item in result.items.values_mut() {
-        let module = match &item.language_data {
+    for (id, item) in &mut result.items {
+        let defining_module = match &item.language_data {
             Some(ItemLanguageData::Julia(data)) => &data.defining_module,
             _ => continue,
         };
+        let module = documentation_modules.get(id).unwrap_or(defining_module);
         if let Some(document) = &mut item.documentation {
             rewrite_references(&mut document.document.blocks, &mut |target| {
                 if let Some((name, dispatch)) = signatures::selector(target) {
@@ -532,6 +546,9 @@ pub(super) fn assemble(mut declarations: Declarations, result: &mut JuliaExtract
 }
 
 fn constant_alias(draft: &Draft) -> Option<String> {
+    if draft.canonical_name.is_some() {
+        return None;
+    }
     let DraftDeclaration::Named {
         kind: JuliaIdentityKind::Constant,
         signature: Some(Signature::Value {
@@ -584,9 +601,11 @@ fn base(
         aliases: Vec::new(),
         signatures: Vec::new(),
         documentation: draft.documentation.clone(),
-        source_location: Some(draft.source.clone()),
+        source_location: draft.source.clone(),
         children: Vec::new(),
-        provenance: std::iter::once(&draft.source)
+        provenance: draft
+            .source
+            .iter()
             .chain(&draft.wrappers)
             .map(declaration_provenance)
             .collect(),
@@ -596,15 +615,18 @@ fn base(
 fn sourced(signature: Signature, draft: &Draft) -> SourcedSignature {
     SourcedSignature {
         signature,
-        sources: std::iter::once(&draft.source)
+        sources: draft
+            .source
+            .iter()
+            .filter(|source| source.span.is_some())
             .chain(&draft.wrappers)
             .map(|source| evidence(source, SourceRole::Signature))
             .collect(),
     }
 }
 
-fn conflict(result: &mut JuliaExtraction, source: &SourceLocation, name: &str) {
-    result.diagnostics.push(diagnostic(
+fn conflict(result: &mut JuliaExtraction, source: Option<&SourceLocation>, name: &str) {
+    result.diagnostics.push(attributed(
         Code::JuliaConflictingSurface,
         Severity::Error,
         format!(
@@ -625,11 +647,11 @@ fn attach_document(
             .as_ref()
             .is_some_and(|existing| existing != document)
         {
-            diagnostics.push(diagnostic(
+            diagnostics.push(attributed(
                 Code::JuliaConflictingSurface,
                 Severity::Error,
                 "Multiple documentation attachments claim the same Julia declaration.",
-                &draft.source,
+                draft.source.as_ref(),
             ));
         } else {
             item.documentation = Some(document.clone());
@@ -642,14 +664,14 @@ fn bind(
     sources: &mut BTreeMap<String, SourceLocation>,
     name: String,
     target: String,
-    source: &SourceLocation,
+    source: Option<&SourceLocation>,
     result: &mut JuliaExtraction,
 ) {
     if bindings
         .get(&name)
         .is_some_and(|existing| existing != &target)
     {
-        result.diagnostics.push(diagnostic(
+        result.diagnostics.push(attributed(
             Code::JuliaConflictingSurface,
             Severity::Error,
             format!("Julia lookup name `{name}` has conflicting bindings."),
@@ -657,7 +679,9 @@ fn bind(
         ));
     } else {
         bindings.insert(name.clone(), target);
-        sources.entry(name).or_insert(source.clone());
+        if let Some(source) = source {
+            sources.entry(name).or_insert_with(|| source.clone());
+        }
     }
 }
 
@@ -673,7 +697,7 @@ fn follow(name: &str, bindings: &BTreeMap<String, String>) -> String {
     current
 }
 
-fn resolve(
+pub(super) fn resolve(
     module: &str,
     name: &str,
     bindings: &BTreeMap<String, String>,
@@ -684,7 +708,7 @@ fn resolve(
     }
     if let Some((first, rest)) = name.split_once('.') {
         if let Some(target) = bindings.get(&qualify(module, first)) {
-            return qualify(&follow(target, bindings), rest);
+            return follow(&qualify(&follow(target, bindings), rest), bindings);
         }
         if modules.contains(&qualify(module, first)) {
             return qualify(module, name);
@@ -695,15 +719,30 @@ fn resolve(
     }
 }
 
-fn canonical(
+pub(super) fn canonical(
     draft: &Draft,
     bindings: &BTreeMap<String, String>,
     modules: &BTreeSet<String>,
 ) -> String {
-    if matches!(draft.declaration, DraftDeclaration::Named { .. }) {
+    if let Some(name) = &draft.canonical_name {
+        name.clone()
+    } else if matches!(draft.declaration, DraftDeclaration::Named { .. }) {
         qualify(&draft.module, &draft.name)
     } else {
         resolve(&draft.module, &draft.name, bindings, modules)
+    }
+}
+
+fn attributed(
+    code: Code,
+    severity: Severity,
+    message: impl Into<String>,
+    source: Option<&SourceLocation>,
+) -> Diagnostic {
+    let message = message.into();
+    match source {
+        Some(source) => diagnostic(code, severity, message, source),
+        None => Diagnostic::new(code, severity, message),
     }
 }
 

@@ -15,16 +15,20 @@ use crate::provenance::ExtractionObservation;
 use super::signatures::{ParsedSignature, lower, node_name};
 use super::{JuliaExtraction, diagnostic, located, normalized_path, read_input, signatures};
 
+#[derive(Clone)]
 pub(super) struct Draft {
     pub module: String,
     pub name: String,
+    pub canonical_name: Option<String>,
     pub declaration: DraftDeclaration,
     pub documentation: Option<SourcedDocument>,
+    pub documentation_module: Option<String>,
     pub documented: bool,
-    pub source: SourceLocation,
+    pub source: Option<SourceLocation>,
     pub wrappers: Vec<SourceLocation>,
 }
 
+#[derive(Clone)]
 pub(super) enum DraftDeclaration {
     Named {
         kind: JuliaIdentityKind,
@@ -44,18 +48,20 @@ pub(super) enum DraftDeclaration {
     },
 }
 
+#[derive(Clone)]
 pub(super) struct Export {
     pub module: String,
     pub name: String,
     pub visibility: JuliaVisibility,
-    pub source: SourceLocation,
+    pub source: Option<SourceLocation>,
 }
 
+#[derive(Clone)]
 pub(super) struct Import {
     pub module: String,
     pub name: String,
     pub target: String,
-    pub source: SourceLocation,
+    pub source: Option<SourceLocation>,
     pub whole_using: bool,
 }
 
@@ -75,12 +81,19 @@ struct Context<'a> {
     active: Vec<PathBuf>,
     includes: Vec<(String, SourceLocation)>,
     declarations: Declarations,
+    evidence_only: bool,
+}
+
+pub(super) enum Inputs<'a> {
+    Static(&'a ResolvedTargetPath),
+    Observed(&'a [(PathBuf, String)]),
+    Extensions(&'a ResolvedTargetPath),
 }
 
 pub(super) fn extract(
     repository: &ResolvedRepositoryPaths,
     package: &ResolvedPackagePaths,
-    target: &ResolvedTargetPath,
+    selection: Inputs<'_>,
     result: &mut JuliaExtraction,
     observation: &mut ExtractionObservation,
 ) -> Declarations {
@@ -93,8 +106,21 @@ pub(super) fn extract(
         active: Vec::new(),
         includes: Vec::new(),
         declarations: Declarations::default(),
+        evidence_only: matches!(selection, Inputs::Observed(_)),
     };
-    context.file(&target.path, "", None);
+    let target = match selection {
+        Inputs::Observed(inputs) => {
+            for (file, module) in inputs {
+                context.file(file, module, None);
+            }
+            return context.declarations;
+        }
+        Inputs::Static(target) => {
+            context.file(&target.path, "", None);
+            target
+        }
+        Inputs::Extensions(target) => target,
+    };
     for entry in &target.julia_extensions {
         // Extension modules are siblings of the package module, not includes in it.
         if !entry.starts_with(&package.path)
@@ -277,10 +303,12 @@ impl Context<'_> {
         let mut draft = Draft {
             module: module.into(),
             name: String::new(),
+            canonical_name: None,
             declaration: DraftDeclaration::Generic,
             documentation,
+            documentation_module: None,
             documented,
-            source: source.clone(),
+            source: Some(source.clone()),
             wrappers,
         };
         match node.kind() {
@@ -454,6 +482,9 @@ impl Context<'_> {
                 };
                 let callee = call.callee().and_then(|e| node_name(e.syntax()));
                 if callee.as_deref() == Some("include") {
+                    if self.evidence_only {
+                        return;
+                    }
                     self.includes.push((module.into(), source.clone()));
                     let argument = call.arg_list().and_then(|list| {
                         let nodes: Vec<_> = list.syntax().children().collect();
@@ -641,6 +672,7 @@ impl Context<'_> {
             self.declarations.drafts.push(Draft {
                 module: module.into(),
                 name: format!("{owner}.{name}"),
+                canonical_name: None,
                 declaration: DraftDeclaration::Named {
                     kind: JuliaIdentityKind::Field,
                     declaration: JuliaDeclaration::Field { is_const },
@@ -650,8 +682,9 @@ impl Context<'_> {
                     }),
                 },
                 documentation,
+                documentation_module: None,
                 documented,
-                source: located(file_source, node.text_range()),
+                source: Some(located(file_source, node.text_range())),
                 wrappers: Vec::new(),
             });
         } else {
@@ -696,7 +729,7 @@ impl Context<'_> {
                     module: module.into(),
                     name,
                     visibility,
-                    source: located(file_source, element.text_range()),
+                    source: Some(located(file_source, element.text_range())),
                 });
             }
         }
@@ -749,16 +782,18 @@ impl Context<'_> {
                 module: module.into(),
                 name,
                 target,
-                source: located(file_source, clause.text_range()),
+                source: Some(located(file_source, clause.text_range())),
                 whole_using: node.kind() == K::USING_STMT && colon.is_none(),
             });
         }
     }
 
     fn error(&mut self, code: Code, message: impl Into<String>, source: &SourceLocation) {
-        self.result
-            .diagnostics
-            .push(diagnostic(code, Severity::Error, message, source));
+        if !self.evidence_only {
+            self.result
+                .diagnostics
+                .push(diagnostic(code, Severity::Error, message, source));
+        }
     }
 
     fn unsupported(&mut self, node: &SyntaxNode, source: &SourceLocation) {

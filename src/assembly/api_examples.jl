@@ -104,12 +104,13 @@ function run(request_path, output_path)
     request = TOML.parsefile(request_path)
     root = request["package_root"]
     project = TOML.parsefile(joinpath(root, "Project.toml"))
+    package_version = get(project, "version", "")
     project["name"] == request["package_name"] || error("Checkout package identity mismatch.")
-    project["version"] == request["package_version"] || error("Checkout package version mismatch.")
+    package_version == request["package_version"] || error("Checkout package version mismatch.")
     loaded = Base.require(Base.PkgId(Base.UUID(project["uuid"]), project["name"]))
     realpath(pathof(loaded)) == realpath(joinpath(root, "src", project["name"] * ".jl")) ||
         error("Loaded package does not match the supplied checkout.")
-    string(Base.pkgversion(loaded)) == project["version"] ||
+    isempty(package_version) || VersionNumber(package_version) == Base.pkgversion(loaded) ||
         error("Loaded package version conflicts with checkout metadata.")
     write(timings, "package-loading\t$(Float64(time_ns() - started) / 1e9)\n")
     started = time_ns()
@@ -186,7 +187,7 @@ function run(request_path, output_path)
         isnothing(version) || (dependencies[string(id.uuid)] = string(version))
     end
     result = Dict("runtime_version" => string(VERSION), "package_name" => project["name"],
-                  "package_version" => project["version"], "dependencies" => dependencies,
+                  "package_version" => package_version, "dependencies" => dependencies,
                   "examples" => outcomes)
     open(output_path, "w") do io
         TOML.print(io, result; sorted=true)

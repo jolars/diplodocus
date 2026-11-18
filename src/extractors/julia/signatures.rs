@@ -12,6 +12,7 @@ pub(super) struct ParsedSignature {
     pub name: String,
     pub signature: Signature,
     pub dispatch: E,
+    pub parameters: Vec<Parameter>,
 }
 
 pub(super) fn trivia(kind: K) -> bool {
@@ -204,7 +205,7 @@ pub(super) fn parse(start: &SyntaxNode) -> Option<ParsedSignature> {
         ],
     );
     let callable = Signature::Callable {
-        parameters,
+        parameters: parameters.clone(),
         returns,
     };
     let signature = if wheres.is_empty() && type_args.is_empty() {
@@ -221,6 +222,7 @@ pub(super) fn parse(start: &SyntaxNode) -> Option<ParsedSignature> {
         name,
         signature,
         dispatch,
+        parameters,
     })
 }
 
@@ -330,13 +332,17 @@ fn substitute(expression: &mut E, substitutions: &BTreeMap<String, String>) {
 }
 
 pub(crate) fn selector(text: &str) -> Option<(String, E)> {
+    let signature = parse_header(text)?;
+    Some((signature.name, signature.dispatch))
+}
+
+pub(super) fn parse_header(text: &str) -> Option<ParsedSignature> {
     let parsed = fatou_parser::parser::parse(text);
     if !parsed.diagnostics.is_empty() || parsed.cst.children().count() != 1 {
         return None;
     }
     let header = parsed.cst.children().next()?;
-    let signature = parse(&header)?;
-    Some((signature.name, signature.dispatch))
+    parse(&header)
 }
 
 pub(super) fn assignment(node: &SyntaxNode) -> Option<(SyntaxNode, SyntaxNode)> {

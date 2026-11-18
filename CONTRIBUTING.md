@@ -20,6 +20,17 @@ cargo run --locked -- build --output site/docs
 Use `task preview` to watch generator changes and serve the four-language
 monorepo example with live reload.
 
+Julia API discovery requires Julia 1.10 through 1.13 and a prepared package
+project. The development shell provides Julia. The compatibility job runs the
+standard-library exporter test and a CLI acceptance case on each supported
+minor:
+
+```sh
+julia --startup-file=no --history-file=no tests/julia_runtime.jl
+cargo test --locked --test native_adapter_contract \
+  generated_julia_methods_are_discovered_and_doctests_run_only_during_extraction
+```
+
 ## Checks
 
 Add focused regression tests for behavior changes, and review any changes to

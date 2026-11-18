@@ -157,7 +157,7 @@ fn git_command(repository: &ResolvedRepositoryPaths, args: &[&str]) -> Command {
 pub enum BuiltinExtractor {
     /// The compiler-backed Rust documentation producer.
     Rust,
-    /// The static Julia producer backed by Fatou.
+    /// The Julia producer backed by native discovery and Fatou source analysis.
     Julia,
     /// The static Python producer, implemented in Milestone 4.
     Python,

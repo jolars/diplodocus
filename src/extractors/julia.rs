@@ -87,6 +87,45 @@ pub fn extract_target(
     package: &ResolvedPackagePaths,
     target: &ResolvedTargetPath,
 ) -> JuliaExtraction {
+    let (mut result, mut observation) =
+        prepare_extraction(repository, package, target, CAPABILITIES);
+    if valid_target(repository, package, target) {
+        let declarations = source::extract(
+            repository,
+            package,
+            source::Inputs::Static(target),
+            &mut result,
+            &mut observation,
+        );
+        surface::assemble(declarations, &mut result);
+    }
+    result.provenance = observation.into_provenance(None, None);
+    result.diagnostics.sort();
+    result.diagnostics.dedup();
+    result
+}
+
+fn valid_target(
+    repository: &ResolvedRepositoryPaths,
+    package: &ResolvedPackagePaths,
+    target: &ResolvedTargetPath,
+) -> bool {
+    package.path.starts_with(&repository.path)
+        && fs::canonicalize(&package.path).ok().as_ref() == Some(&package.path)
+        && target.path.starts_with(&package.path)
+        && target.path.is_file()
+        && target
+            .path
+            .extension()
+            .is_some_and(|extension| extension == "jl")
+}
+
+fn prepare_extraction(
+    repository: &ResolvedRepositoryPaths,
+    package: &ResolvedPackagePaths,
+    target: &ResolvedTargetPath,
+    capabilities: &[&str],
+) -> (JuliaExtraction, ExtractionObservation) {
     let reference = TargetReference {
         package: package.id.clone(),
         target: target.id.clone(),
@@ -94,7 +133,7 @@ pub fn extract_target(
     let mut observation = ExtractionObservation {
         target: reference.clone(),
         extractor: BuiltinExtractor::Julia,
-        capabilities: CAPABILITIES.iter().map(|s| (*s).into()).collect(),
+        capabilities: capabilities.iter().map(|s| (*s).into()).collect(),
         parsers: BTreeMap::new(),
         inputs: BTreeMap::new(),
     };
@@ -108,21 +147,13 @@ pub fn extract_target(
         diagnostics: Vec::new(),
         provenance: observation.clone().into_provenance(None, None),
     };
-    if !package.path.starts_with(&repository.path)
-        || fs::canonicalize(&package.path).ok().as_ref() != Some(&package.path)
-        || !target.path.starts_with(&package.path)
-        || !target.path.is_file()
-        || target
-            .path
-            .extension()
-            .is_none_or(|extension| extension != "jl")
-    {
+    if !valid_target(repository, package, target) {
         result.diagnostics.push(Diagnostic::new(
             DiagnosticCode::JuliaSourceRead,
             Severity::Error,
             "Julia targets must be explicit .jl entry files inside the configured package.",
         ));
-        return result;
+        return (result, observation);
     }
     if let Some(input) = read_input(
         repository,
@@ -135,12 +166,7 @@ pub fn extract_target(
     {
         result.metadata = metadata::parse(text, &input.source, &mut result.diagnostics);
     }
-    let declarations = source::extract(repository, package, target, &mut result, &mut observation);
-    surface::assemble(declarations, &mut result);
-    result.provenance = observation.into_provenance(None, None);
-    result.diagnostics.sort();
-    result.diagnostics.dedup();
-    result
+    (result, observation)
 }
 
 fn read_input(

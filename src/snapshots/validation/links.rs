@@ -141,6 +141,32 @@ pub(super) fn validate(workspace: &Workspace) -> Result {
             require(!id.is_empty(), "empty target identity")?;
         }
         for (target_id, target) in &package.extraction_targets {
+            if target.extractor == "julia"
+                && workspace.provenance.iter().any(|record| {
+                    matches!(
+                        &record.activity,
+                        ProvenanceActivity::Extraction { target, mode: ExtractionMode::Native, .. }
+                            if target.package == *package_id && target.target == *target_id
+                    )
+                })
+            {
+                require(
+                    workspace
+                        .provenance
+                        .iter()
+                        .filter(|record| {
+                            matches!(
+                                &record.activity,
+                                ProvenanceActivity::JuliaRuntime { target, policy, .. }
+                                    if target.package == *package_id && target.target == *target_id
+                                        && policy == "julia-native-v1"
+                            )
+                        })
+                        .count()
+                        == 1,
+                    "Julia native extraction evidence",
+                )?;
+            }
             if target.extractor == "doxygen" {
                 require(package.ecosystem == "cpp", "Doxygen extraction ecosystem")?;
                 require(workspace.provenance.iter().any(|record| matches!(&record.activity,
@@ -658,7 +684,11 @@ impl Links<'_> {
                 } => {
                     require(
                         self.0.packages.get(package).is_some_and(|p| {
-                            p.ecosystem == *language && p.version.as_ref() == Some(package_version)
+                            p.ecosystem == *language
+                                && (p.version.as_ref() == Some(package_version)
+                                    || (language == "julia"
+                                        && p.version.is_none()
+                                        && package_version.is_empty()))
                         }) && matches!(language.as_str(), "python" | "julia")
                             && *policy == format!("{language}-doctest-v1")
                             && !runtime_version.is_empty()
@@ -699,11 +729,11 @@ impl Links<'_> {
                             p.extraction_targets
                                 .get(&target.target)
                                 .is_some_and(|t| t.extractor == "julia")
-                        }) && policy == "julia-runtime-v1"
+                        }) && matches!(policy.as_str(), "julia-runtime-v1" | "julia-native-v1")
                             && !julia_version.is_empty()
                             && !package_name.is_empty()
                             && !package_uuid.is_empty()
-                            && !package_version.is_empty()
+                            && (policy == "julia-native-v1" || !package_version.is_empty())
                             && !dependencies.is_empty()
                             && record.source.is_none()
                             && record.span.is_none(),

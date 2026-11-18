@@ -56,12 +56,19 @@ fn command(root: &support::TestWorkspace, name: &str, no_runtime: bool) -> std::
 }
 
 #[test]
-fn generated_types_complete_extraction_while_check_stays_static_and_generation_is_portable() {
+fn generated_types_are_discovered_by_check_and_detached_generation_is_portable() {
     let root = workspace();
     let checked = command(&root, "check", true);
     assert!(!checked.status.success());
-    assert!(String::from_utf8_lossy(&checked.stderr).contains("julia-unresolved-definition"));
+    assert!(String::from_utf8_lossy(&checked.stderr).contains("requires Julia"));
     assert!(!root.path().join("package/loaded").exists());
+    let checked = command(&root, "check", false);
+    assert!(
+        checked.status.success(),
+        "{}",
+        String::from_utf8_lossy(&checked.stderr)
+    );
+    assert!(root.path().join("package/loaded").exists());
     let output = command(&root, "extract", false);
     assert!(
         output.status.success(),
@@ -97,12 +104,10 @@ fn generated_types_complete_extraction_while_check_stays_static_and_generation_i
         assert!(!discoverable.contains(item.children[0].as_str()));
         assert_eq!(item.signatures.len(), 1);
         assert!(item.signatures[0].sources.is_empty());
-        assert!(
-            item.provenance
-                .iter()
-                .all(|p| p.source.is_none() && p.span.is_none())
-        );
-        assert!(item.provenance.iter().any(|p| matches!(&p.activity, ProvenanceActivity::JuliaRuntime { package_version, .. } if package_version == "1.2.3")));
+        assert!(item.provenance.iter().any(|p| {
+            p.source.is_none() && p.span.is_none()
+                && matches!(&p.activity, ProvenanceActivity::JuliaRuntime { package_version, .. } if package_version == "1.2.3")
+        }));
     }
     fs::remove_dir_all(root.path().join("package")).unwrap();
     let generated = Command::new(env!("CARGO_BIN_EXE_diplodocus"))
@@ -182,7 +187,7 @@ fn plain_checkouts_are_validated_before_publication() {
     let site = root.path().join("site/index.html");
     let previous_site = fs::read(&site).unwrap();
 
-    for broken in ["runtime", "dependency", "checkout", "load"] {
+    for broken in ["runtime", "dependency", "checkout", "load", "doctest"] {
         let (source, expected) = match broken {
             "dependency" => (
                 "module Demo\nusing UnavailableDocumentationDependency\nend\n",
@@ -191,6 +196,10 @@ fn plain_checkouts_are_validated_before_publication() {
             "load" => (
                 "module Demo\nerror(\"checkout load failed\")\nend\n",
                 "checkout load failed",
+            ),
+            "doctest" => (
+                "module Demo\nexport answer\n\"\"\"\n```jldoctest\njulia> answer()\n41\n```\n\"\"\"\nanswer() = 42\nend\n",
+                "doctest mismatch",
             ),
             _ => ("module Demo\nvalue = 42\nend\n", ""),
         };
@@ -202,13 +211,19 @@ fn plain_checkouts_are_validated_before_publication() {
                 configuration.replace("src/Demo.jl", "src/Other.jl"),
             );
         }
-        let checked = command(&root, "check", true);
-        assert!(
+        let checked = command(&root, "check", broken == "runtime");
+        assert_eq!(
             checked.status.success(),
+            broken == "doctest",
             "{broken}: {}",
             String::from_utf8_lossy(&checked.stderr)
         );
-        for operation in ["extract", "build"] {
+        let operations = if broken == "doctest" {
+            vec!["extract", "build"]
+        } else {
+            vec!["check", "extract", "build"]
+        };
+        for operation in operations {
             let failed = command(&root, operation, broken == "runtime");
             assert!(!failed.status.success(), "{broken}: {operation}");
             let expected = match broken {

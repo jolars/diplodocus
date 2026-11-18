@@ -185,10 +185,10 @@ Fields in `packages[].targets[].julia`:
 | `extensions` | list of paths | `[]` | Explicit extension `.jl` entry files relative to the package root. |
 
 For example, `julia: { extensions: [ext/MyPackageMakieExt.jl] }` adds that
-extension's static declarations to the target. Extension files and their
-literal includes must remain inside the package. They retain their own module
-scope, and imports resolve against the supplied core declarations. Extension
-selection does not load optional dependencies or prove runtime activation.
+extension's authored declarations to the loaded package's API. Extension
+files and their literal includes must remain inside the package. They retain
+their own module scope and can join methods to the loaded generics. This
+source selection works even when optional dependencies are unavailable.
 See the [Julia extraction
 contract](https://github.com/jolars/diplodocus/blob/main/docs/ir/julia-extraction.md#explicit-extension-sources).
 

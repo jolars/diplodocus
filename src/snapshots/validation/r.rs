@@ -34,7 +34,7 @@ pub(super) fn validate(workspace: &Workspace) -> Result {
                 } = &record.activity
                     && owner.package == *id
                     && owner.target == *target_id
-                    && target.extractor != "python"
+                    && !matches!(target.extractor.as_str(), "python" | "julia")
                 {
                     require(
                         package.ecosystem == "r" && target.extractor == "r",

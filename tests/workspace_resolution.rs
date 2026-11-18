@@ -182,7 +182,10 @@ fn julia_unqualified_links_prefer_the_owning_module_over_other_packages() {
             .to_owned();
     configuration.push_str("packages:\n");
     for (index, name) in ["First", "Second"].iter().enumerate() {
-        root.write(format!("{name}/Project.toml"), format!("name='{name}'\nversion='0.1.0'\nuuid='00000000-0000-0000-0000-00000000000{index}'\n"));
+        root.write(
+            format!("{name}/Project.toml"),
+            format!("name='{name}'\nversion='0.1.0'\nuuid='12345678-1234-1234-1234-00000000000{index}'\n"),
+        );
         root.write(
             format!("{name}/src/{name}.jl"),
             format!("module {name}\nexport fit\nfit(x) = x\nend\n"),

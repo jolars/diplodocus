@@ -98,6 +98,24 @@ jobs:
       - run: python -m pip install 'sphinx==${{ matrix.sphinx }}'
       - run: python scripts/test-python-compat.py --profile '${{ matrix.sphinx }}=python'
 
+  julia-native:
+    name: Julia ${{ matrix.julia }} native extraction
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        julia: ['1.10', '1.11', '1.12', '1.13']
+    env:
+      JULIA_LOAD_PATH: '@:@stdlib'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: ${{ matrix.julia }}
+      - uses: Swatinem/rust-cache@v2
+      - run: julia --startup-file=no --history-file=no tests/julia_runtime.jl
+      - run: cargo test --locked --test native_adapter_contract generated_julia_methods_are_discovered_and_doctests_run_only_during_extraction
+
   browser:
     name: browser
     runs-on: ubuntu-latest
@@ -146,7 +164,7 @@ jobs:
   versionary:
     name: versionary
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [fmt, clippy, test, python-sphinx, browser, docs]
+    needs: [fmt, clippy, test, python-sphinx, julia-native, browser, docs]
     runs-on: ubuntu-latest
     permissions:
       contents: write

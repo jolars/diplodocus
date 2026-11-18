@@ -1,7 +1,7 @@
 use super::*;
 use crate::diagnostics::DiagnosticEntity;
 use crate::extractors::python::native::DoctestPlans;
-use crate::extractors::{adapter::AdapterOutput, julia, r};
+use crate::extractors::{adapter::AdapterOutput, r};
 use crate::ir::{
     ExtractionTarget, Item, ItemLanguageData, Package, PythonVisibility, SourceLocation,
 };
@@ -26,7 +26,6 @@ pub(super) fn assemble(
     for (index, declaration) in configuration.packages.iter().enumerate() {
         let resolved = &paths.packages[index];
         let repository = &paths.repositories[resolved.repository_index];
-        let extraction_cache = crate::incremental::package_context(configuration, paths, index);
         let mut package = Package {
             slug: declaration.slug.clone(),
             name: declaration.name.clone(),
@@ -76,30 +75,10 @@ pub(super) fn assemble(
                     let result = native
                         .julia
                         .remove(&(declaration.id.clone(), target.id.clone()))
-                        .unwrap_or_else(|| {
-                            let timing = reporting.phase(
-                                Phase::Extraction,
-                                Some(&declaration.id),
-                                Some(&target.id),
-                            );
-                            let result =
-                                cached_fragment(
-                                    extraction_cache.as_ref(),
-                                    "static-julia",
-                                    &declaration.id,
-                                    reporting,
-                                    &(declaration, target),
-                                    |result: &julia::JuliaExtraction| {
-                                        !result.diagnostics.iter().any(|diagnostic| {
-                                            diagnostic.severity == Severity::Error
-                                        }) && evidence_current(&result.provenance, repository)
-                                    },
-                                    || julia::extract_target(repository, resolved, selected),
-                                );
-                            timing.finish();
-                            result
-                        });
-                    result.into()
+                        .ok_or(AssemblyError::InputsChanged)?;
+                    let mut fragment = AdapterOutput::from(result.extraction);
+                    fragment.evidence.completed.push(result.completed);
+                    fragment
                 }
                 "python" => {
                     let result = native
@@ -366,44 +345,6 @@ fn merge_python_support(
         .aliases
         .sort_by(|a, b| a.qualified_name.cmp(&b.qualified_name));
     Some(incoming_doc)
-}
-
-pub(super) fn cached_fragment<T: serde::Serialize + serde::de::DeserializeOwned>(
-    cache: Option<&(
-        crate::incremental::Store,
-        String,
-        crate::incremental::Manifest,
-    )>,
-    stage: &'static str,
-    owner: &str,
-    reporting: &Reporting,
-    selection: &impl serde::Serialize,
-    valid: impl Fn(&T) -> bool,
-    extract: impl FnOnce() -> T,
-) -> T {
-    let Some((store, build, inputs)) = cache else {
-        return extract();
-    };
-    let key = crate::incremental::key(&(stage, build, selection, inputs));
-    if let Some(result) = store.load(stage, &key)
-        && valid(&result)
-        && inputs.verify()
-    {
-        reporting.cache(stage, owner, true, None);
-        return result;
-    }
-    reporting.cache(
-        stage,
-        owner,
-        false,
-        Some("Source or extraction inputs changed."),
-    );
-    let _ = store.discard(stage, &key);
-    let result = extract();
-    if valid(&result) && inputs.verify() {
-        let _ = store.save(stage, &key, &result);
-    }
-    result
 }
 
 pub(super) fn evidence_current(

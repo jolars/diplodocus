@@ -63,9 +63,10 @@ the loaded checkout and Sphinx autodoc/Napoleon for declarations and documentati
 with maintained stubs supplying public signatures and source parsers supplying
 evidence. Native Python verifies doctests. R combines roxygen2 generation or maintained Rd
 with native exports, formals, and dispatch evidence, supplemental source
-attribution, and example execution. Julia combines source parsing with
-runtime type completion and doctests. Rust uses rustdoc JSON, and C++ uses
-Doxygen XML.
+attribution, and example execution. Julia uses the loaded checkout's bindings,
+method tables, and registered documentation, with Fatou for source evidence
+and Julia Markdown. Julia also verifies native doctests. Rust uses rustdoc
+JSON, and C++ uses Doxygen XML.
 
 These integrations stop short of delegating the site to another generator.
 Rustdoc and Doxygen supply API structure; their HTML does not become the site.

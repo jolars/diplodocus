@@ -391,6 +391,7 @@ impl ExecutedWorkspace {
 /// Rust targets use the prepared compiler and may compile dependencies and run
 /// build scripts. C++ targets invoke Doxygen and any configured input filters.
 /// Python targets import the prepared checkout and invoke Sphinx autodoc.
+/// Julia targets load the verified checkout and reflect on its API and docs.
 /// R targets may regenerate documentation and load package code.
 ///
 /// All packages and pages are inspected before errors are returned. Rust may
@@ -406,10 +407,12 @@ pub fn assemble_workspace(path: impl AsRef<Path>) -> Result<WorkspaceSources, As
     let reporting = Reporting::default();
     let configuration = crate::configuration::load_configuration(path)?;
     if !configuration.packages.iter().any(|package| {
-        package
-            .targets
-            .iter()
-            .any(|target| matches!(target.extractor.as_str(), "python" | "rust" | "doxygen"))
+        package.targets.iter().any(|target| {
+            matches!(
+                target.extractor.as_str(),
+                "python" | "julia" | "rust" | "doxygen"
+            )
+        })
     }) {
         return assemble_with_native(
             path,
@@ -455,9 +458,16 @@ pub fn assemble_workspace(path: impl AsRef<Path>) -> Result<WorkspaceSources, As
                     &reporting,
                 )
                 .await?;
+                let julia = julia_runtime::results(
+                    &path,
+                    ExecutionDeadlines::default(),
+                    &mut cancellation,
+                    &reporting,
+                )
+                .await?;
                 assemble_with_native(
                     &path,
-                    BTreeMap::new(),
+                    julia,
                     results,
                     doxygen,
                     BTreeMap::new(),
@@ -552,7 +562,8 @@ pub(crate) async fn assemble_for_check(
     )
     .await?;
     let python = python_native::results(path, deadlines, cancellation, reporting).await?;
-    assemble_with_native(path, BTreeMap::new(), rust, doxygen, r, python, reporting)
+    let julia = julia_runtime::results(path, deadlines, cancellation, reporting).await?;
+    assemble_with_native(path, julia, rust, doxygen, r, python, reporting)
 }
 
 async fn doxygen_results(
@@ -677,7 +688,7 @@ async fn r_results(
 
 struct NativeExtractions {
     python: BTreeMap<(String, String), python_native::PythonNativeExtraction>,
-    julia: BTreeMap<(String, String), crate::extractors::julia::JuliaExtraction>,
+    julia: BTreeMap<(String, String), julia_runtime::JuliaNativeExtraction>,
     rust: BTreeMap<(String, String), rust_native::RustNativeExtraction>,
     doxygen: BTreeMap<(String, String), doxygen_native::DoxygenNativeExtraction>,
     r: BTreeMap<(String, String), r_native::RNativeExtraction>,
@@ -685,7 +696,7 @@ struct NativeExtractions {
 
 fn assemble_with_native(
     path: &Path,
-    julia_results: BTreeMap<(String, String), crate::extractors::julia::JuliaExtraction>,
+    julia_results: BTreeMap<(String, String), julia_runtime::JuliaNativeExtraction>,
     rust_results: BTreeMap<(String, String), rust_native::RustNativeExtraction>,
     doxygen_results: BTreeMap<(String, String), doxygen_native::DoxygenNativeExtraction>,
     r_results: BTreeMap<(String, String), r_native::RNativeExtraction>,
@@ -731,6 +742,11 @@ fn assemble_with_native(
     );
     cache_observations.extend(
         python_results
+            .values()
+            .flat_map(|result| result.observations.iter().cloned()),
+    );
+    cache_observations.extend(
+        julia_results
             .values()
             .flat_map(|result| result.observations.iter().cloned()),
     );

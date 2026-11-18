@@ -33,12 +33,10 @@ portable output. Doxygen's observation guard survives conversion through the
 workspace owner. Inputs are rechecked before accepting later work. Generation
 from a completed snapshot requires none of these local owners.
 
-Capabilities describe supported semantics. Do not infer full native discovery
-from the presence of a runtime or from the legacy extraction `mode` field:
-Julia's source manifest still says `static`, with separate `JuliaRuntime`
-evidence for completion. Doxygen also retains its existing `static` manifest
-while invoking a native tool. Migrating these records requires an explicit
-compatibility decision in a later change.
+Capabilities describe supported semantics. Julia command discovery records
+`native` and includes `JuliaRuntime` evidence for the verified checkout.
+Doxygen records its existing `static` mode with Doxygen tool and parser
+evidence.
 R command discovery uses `native`, with package-level `RRuntime` observations
 and, when enabled, completed `RDocumentation` generation evidence. The public
 source extractor retains `static` for supplemental analysis.
@@ -61,8 +59,8 @@ loading.
 
 | Command | Discovery and execution | Publication |
 | --- | --- | --- |
-| `check` | Julia source adapter; native Python, R, Rust, and Doxygen extraction. Python imports the verified checkout and runs Sphinx without examples. R may run roxygen2 and load the verified checkout. No documentation examples, knitr articles, or Jupyter sessions. | Diagnostics only. Native tools can write caches, generated documentation, or configured side effects. |
-| `extract` | Shared API discovery plus Julia runtime completion, verified package loading, API doctests, Rd examples, native authored-document execution, and configured QMD execution. | Completed, validated snapshot with execution evidence and retained assets. |
+| `check` | Native API discovery and reference validation. Julia loads and reflects on its checkout. Python imports its checkout and invokes Sphinx. R may run roxygen2 and load its checkout. Document examples stay inert. | Diagnostics only. Native tools can write caches, generated documentation, or configured side effects. |
+| `extract` | Shared API discovery, API doctests, Rd examples, native authored-document execution, and configured QMD execution. | Completed, validated snapshot with execution evidence and retained assets. |
 | `build` | The same extraction operation, followed by snapshot generation. | Snapshot, then site. A generation failure can leave the newer completed snapshot while preserving the previous site. |
 | `serve` | The same build operation initially and after watched changes, reusing verified package and page results when their inputs match. Workspace references and site output are rebuilt. | Last successful served generation survives a failed rebuild. |
 | `generate` | Read a completed snapshot. No producer checkouts, configuration, extraction tools, or language runtimes. | Validated site or fragments. |
@@ -84,7 +82,7 @@ code's side effects or roll back roxygen's checkout writes.
 | --- | --- | --- | --- |
 | Python | Python >=3.11, a compatible Sphinx >=9.0.4,<10, prepared dependencies, and compiled extensions for all discovery commands. | Native exports, generated declarations, attached prose, signatures, maintained stubs, aliases, overloads, and reStructuredText/NumPy/Google documentation through autodoc/Napoleon. Discovery and doctests retain separate completed evidence and caches. | Built-in Sphinx configuration only; project conf.py, third-party extensions, MyST, and Markdown docstrings remain outside the supported interface. Static PEP 621 metadata remains required. Import failures never select a static fallback. |
 | R | R, pkgload, jsonlite, dependencies, and prebuilt extensions for native discovery; roxygen2 for generated documentation; evaluate for examples and knitr for R Markdown. | Package-level auto selection or explicit roxygen2/Rd mode, in-checkout generation, native exports/formals and S3 evidence, generated declarations, Rd topics, aliases, shared help, and supplemental source evidence. Loading verifies checkout identity and extension bytes. Verified generation, discovery, metadata, and execution results have separate persistent cache entries. | Installed-package loading is rejected; custom roclets require declared supplemental inputs and generated outputs. Dependency uncertainty prevents reuse. |
-| Julia | Julia and a prepared project for extraction commands; source-only checks need no Julia runtime. | Static includes, exports, aliases, methods, signatures, docstrings, and source maps. Native loading validates the checkout and completes supported generated types and fields. API doctests and Documenter examples retain execution evidence. Julia extraction, runtime, and discovery suites cover these boundaries. | Generated functions, generated methods, and runtime-attached documentation are not generally discovered. `check` retains static diagnostics for generated declarations. A supported documentation/method exporter remains future work. |
+| Julia | Julia 1.10 through 1.13 and a prepared package project for discovery and example execution. | Verified bindings, aliases, method dispatch, generated declarations, attached documentation, and source input evidence. Fatou supplies source attribution and explicitly selected extension implementations. API doctests and Documenter examples retain execution evidence. | External-only reexports and unsupported attachment formats produce diagnostics. Explicit extension source selection covers authored methods. |
 | Rust | Prepared `nightly-2026-09-28` toolchain, Cargo.lock, offline dependencies, host target, and explicit library entry. | Native rustdoc JSON format 61 supplies public declarations, macro-generated APIs, reexports, traits, implementations, signatures, links, and source evidence. Native doctests retain compilation, expected errors, and skips. Rust extraction and native runner tests cover the integration. | No replacement planned. Preserve compiler authority and feature selection. Cross-compilation and binary targets remain unsupported. |
 | C++ | Doxygen on PATH, an explicit Doxyfile, and prepared generated headers/configuration. No library compilation required. | Native XML supplies namespaces, types, templates, overloads, signatures, references, and source evidence. Doxygen diagnostics and source inventory checks remain effective. Doxygen extraction tests cover extraction and detached generation. | No replacement planned. Standalone Doxygen pages, groups, diagrams, and executable examples are outside the imported API surface. |
 
@@ -98,11 +96,11 @@ extractor version, not the runtime.
 The `native_adapter_contract` suite includes two generated-API packages.
 `generated-python` creates a documented function through `exec`; Python exposes
 its signature and docstring, and native Sphinx discovery retains both.
-`generated-julia` creates a documented method with a
-macro; Julia exposes the callable and attached documentation, while extraction
-reports `julia-unresolved-definition`. These cases pin visible gaps without
-silently importing a different interpretation. Existing Julia generated-type
-tests remain positive acceptance cases.
+`generated-julia` uses a macro to create a documented method. The native
+exporter retains that method, an evaluated alias, and registered prose.
+The acceptance test checks the method reference and verifies the doctest
+during extraction. The native matrix also exercises generated types and
+computed includes on all four supported Julia minors.
 
 The same suite compares canonical snapshots from `extract`, `build`, and
 `serve`, confirms that Python `check` loads the package without running its

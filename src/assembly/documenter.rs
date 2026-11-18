@@ -203,9 +203,7 @@ fn explicit(
             && !crate::extractors::julia::method_selector(target)
                 .is_some_and(|(name, _)| binding.is_match(&name))
         {
-            return Err(
-                "`@docs` supports binding names and exact static method selectors only.".into(),
-            );
+            return Err("`@docs` supports binding names and exact method selectors.".into());
         }
         let item = crate::validation::resolve_item(workspace, owner, target)
             .or_else(|code| {

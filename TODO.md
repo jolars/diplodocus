@@ -16,9 +16,9 @@ Diplodocus orchestrates them without installing dependencies.
 
 R extraction now selects roxygen2 generation or maintained Rd and combines
 documentation with native checkout discovery. Python uses Sphinx autodoc and
-Napoleon with maintained stubs; Julia uses static source adapters with runtime
-assistance. Rust and C++ consume native
-rustdoc JSON and Doxygen XML.
+Napoleon with maintained stubs. Julia uses the loaded checkout's bindings,
+dispatch, and registered documentation. Rust and C++ consume native rustdoc
+JSON and Doxygen XML.
 The development loop reuses verified extraction and execution results by package.
 Workspace reference resolution and site rendering still run after each change.
 Keep the existing Rust and C++ integrations and use the [current
@@ -133,17 +133,22 @@ startup, source-save, and verified restart costs.
 
 ### 5. Migrate Julia through supported native interfaces
 
-- [ ] Prototype Julia extraction from the loaded package's documentation and
+- [x] Prototype Julia extraction from the loaded package's documentation and
   method systems, using Documenter where needed. Define the supported export
   interface and compatibility policy before relying on Documenter internals.
   Cover generated declarations, attached documentation, and method identities.
-- [ ] Migrate Julia commands with acceptance cases for existing public APIs and
+- [x] Migrate Julia commands with acceptance cases for existing public APIs and
   runtime-derived declarations. Preserve aliases, methods, source evidence,
   doctests, and detached generation. Keep unsupported behavior explicit rather
   than silently switching to a different API interpretation.
-- [ ] Update environment requirements, CI, configuration guidance, and extractor
+- [x] Update environment requirements, CI, configuration guidance, and extractor
   contracts alongside the migration. Remove superseded static semantic rules
   after the native path covers their acceptance cases; retain useful parsers.
+
+The [Julia extraction contract](docs/ir/julia-extraction.md) describes the
+exporter, supported releases, method identities, and extension selection.
+The [Eunoia recipe](examples/eunoia/README.md#julia-acceptance-run) verifies
+the public surface and detached generation.
 
 ### 6. Compose documentation produced in separate repositories
 

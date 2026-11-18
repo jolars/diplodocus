@@ -122,7 +122,7 @@ pub enum ProvenanceActivity {
         /// Example outcomes in source order.
         examples: Vec<ApiExampleOutcome>,
     },
-    /// Julia type reflection in the verified supplied checkout.
+    /// Julia native API discovery or legacy type completion in the verified checkout.
     JuliaRuntime {
         /// Owning extraction target.
         target: TargetReference,

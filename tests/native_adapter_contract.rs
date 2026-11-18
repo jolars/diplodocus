@@ -38,23 +38,50 @@ fn generated_python_api_is_discovered_from_the_prepared_checkout() {
 }
 
 #[test]
-fn generated_julia_method_and_attached_docs_remain_an_explicit_migration_gap() {
+fn generated_julia_methods_are_discovered_and_doctests_run_only_during_extraction() {
+    use diplodocus::ir::{ItemKind, ProvenanceActivity};
+    use diplodocus::validation::resolve_item;
+
     let root = support::TestWorkspace::from_fixture("generated-julia");
-    let output = Command::new("julia")
-        .current_dir(root.path())
-        .args(["--startup-file=no", "--history-file=no", "--project=.", "-e",
-            "using GeneratedDemo; @assert generated(3) == 3; @assert occursin(\"Return the generated value.\", string(@doc generated))"])
-        .output().unwrap();
+    let config = root.path().join("diplodocus.yaml");
+    let runner = CommandRunner::default();
+    runner
+        .check(CheckOptions {
+            config: config.clone(),
+        })
+        .unwrap();
+    assert!(root.path().join("generated-checkout-loaded").exists());
+    assert!(!root.path().join("generated-doctest-ran").exists());
+    let sources = assemble_workspace(&config).unwrap();
+    let family = resolve_item(sources.workspace(), Some("demo"), "runtime_alias").unwrap();
+    let method = resolve_item(sources.workspace(), Some("demo"), "generated(::Int64)").unwrap();
+    assert_ne!(family, method);
+    assert!(!root.path().join("generated-doctest-ran").exists());
+    let database = root.path().join("documentation.sqlite");
+    runner
+        .extract(ExtractOptions {
+            config,
+            output: Some(database.clone()),
+        })
+        .unwrap();
+    assert!(root.path().join("generated-doctest-ran").exists());
+    let snapshot = Snapshot::load(database).unwrap();
+    let package = &snapshot.workspace().packages["demo"];
+    assert_eq!(package.items[&family.item].signatures.len(), 2);
+    assert_eq!(package.items[&method.item].kind, ItemKind::Method);
+    let doc = package.items[&method.item].documentation.as_ref().unwrap();
     assert!(
-        output.status.success(),
-        "{}",
-        String::from_utf8_lossy(&output.stderr)
+        doc.raw_source
+            .as_deref()
+            .unwrap()
+            .starts_with("Return the generated value.")
     );
-    let error = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap_err();
+    assert!(doc.source_location.as_ref().unwrap().span.is_none());
     assert!(
-        matches!(error, diplodocus::assembly::AssemblyError::Diagnostics(ref diagnostics)
-        if diagnostics.iter().any(|d| d.code.as_str() == "julia-unresolved-definition")),
-        "{error:?}"
+        doc.provenance
+            .iter()
+            .any(|record| matches!(&record.activity,
+        ProvenanceActivity::ApiExamples { examples, .. } if examples.len() == 2))
     );
 }
 

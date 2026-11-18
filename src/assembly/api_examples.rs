@@ -151,6 +151,10 @@ impl WorkspaceSources {
             }
             let language = record.ecosystem.clone();
             let version = record.version.clone().unwrap_or_default();
+            let julia_package = match &record.metadata {
+                Some(PackageMetadata::Julia(metadata)) => Some(metadata.name.clone()),
+                _ => None,
+            };
             let package_cache = (language == "python")
                 .then(|| {
                     crate::incremental::package_context(
@@ -259,10 +263,13 @@ impl WorkspaceSources {
             for (id, qualified_name, document, doctest) in selected {
                 progress.item(&format!("{}:{qualified_name}", package.id));
                 self.revalidate()?;
-                let location = document
-                    .source_location
-                    .as_ref()
-                    .ok_or(AssemblyError::InputsChanged)?;
+                let location = document.source_location.as_ref().ok_or_else(|| {
+                    AssemblyError::Diagnostics(vec![Diagnostic::new(
+                        DiagnosticCode::ExecutionCellFailed,
+                        Severity::Error,
+                        format!("API examples for `{qualified_name}` need a verified documentation source file."),
+                    ).with_entity(DiagnosticEntity::Item { package: package.id.clone(), id: id.clone() })])
+                })?;
                 if document
                     .provenance
                     .iter()
@@ -369,7 +376,9 @@ impl WorkspaceSources {
                 } else {
                     vec![]
                 };
-                let package_name = qualified_name.split('.').next().unwrap();
+                let package_name = julia_package
+                    .as_deref()
+                    .unwrap_or_else(|| qualified_name.split('.').next().unwrap());
                 fs::write(
                     &request,
                     toml::to_string(&Request {
@@ -448,8 +457,11 @@ impl WorkspaceSources {
                 self.reporting
                     .native_timings(&output.with_extension("timings"), &package.id, None);
                 if !status.success() {
-                    let message = fs::read_to_string(&errors)
-                        .unwrap_or_default()
+                    let mut message = fs::read_to_string(&errors).unwrap_or_default();
+                    if language == "julia" {
+                        message = super::julia_runtime::portable_error(&message);
+                    }
+                    let message = message
                         .replace(repository.path.to_string_lossy().as_ref(), "<repository>")
                         .replace(staging.path().to_string_lossy().as_ref(), "<examples>");
                     return Err(failure(

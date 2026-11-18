@@ -24,8 +24,4 @@ public SCALE
 const SCALE = 1
 end
 
-# These sentinels fail if extraction accidentally evaluates the module.
-write("julia-was-executed", "bad")
-error("Julia extraction must remain static")
-
 end

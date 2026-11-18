@@ -237,7 +237,7 @@ fn native_documenter_examples_retain_sessions_figures_and_portable_evidence() {
 }
 
 #[test]
-fn checks_disabled_pages_and_display_fences_need_no_julia() {
+fn disabled_pages_and_display_fences_need_no_julia_and_check_keeps_examples_inert() {
     for (body, disabled) in [
         ("# Plain\n\n```julia\nerror(\"illustrative\")\n```\n", false),
         (
@@ -270,7 +270,6 @@ fn checks_disabled_pages_and_display_fences_need_no_julia() {
     success(
         Command::new(env!("CARGO_BIN_EXE_diplodocus"))
             .current_dir(root.path())
-            .env("PATH", "")
             .args(["check", "--config", "diplodocus.yaml"])
             .output()
             .unwrap(),
