@@ -166,7 +166,7 @@ public surface and detached generation.
   diagnostics for conflicting identities, incompatible formats, or missing
   dependencies. Verify relocation and generation without producer checkouts
   or runtimes.
-- [ ] Add producer CI recipes that export revision-pinned bundles in each
+- [x] Add producer CI recipes that export revision-pinned bundles in each
   repository's own environment. Use Qualpal and qualpalr to demonstrate a
   shared site whose final assembly does not require the C++ producer's
   toolchain in the R repository.

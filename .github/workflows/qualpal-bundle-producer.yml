@@ -1,0 +1,78 @@
+name: Export a Qualpal API bundle
+
+on:
+  workflow_call:
+    inputs:
+      package:
+        description: Package ID (qualpal or qualpalr)
+        type: string
+        required: true
+      source-revision:
+        description: Full commit SHA in the producer repository
+        type: string
+        required: true
+      diplodocus-revision:
+        description: Commit containing the compatible CLI and export recipe
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    env:
+      PACKAGE: ${{ inputs.package }}
+      SOURCE_REVISION: ${{ inputs.source-revision }}
+    steps:
+      - name: Validate producer inputs
+        run: |
+          [[ "$PACKAGE" == qualpal || "$PACKAGE" == qualpalr ]] &&
+            [[ "$SOURCE_REVISION" =~ ^[0-9a-f]{40}$ ]]
+      - uses: actions/checkout@v7
+        with:
+          repository: jolars/diplodocus
+          ref: ${{ inputs.diplodocus-revision }}
+          path: diplodocus
+          persist-credentials: false
+      - uses: actions/checkout@v7
+        with:
+          repository: jolars/${{ inputs.package }}
+          ref: ${{ inputs.source-revision }}
+          path: producer
+          persist-credentials: false
+      - name: Verify source checkout
+        run: test "$(git -C producer rev-parse HEAD)" = "$SOURCE_REVISION"
+      - name: Build Diplodocus
+        working-directory: diplodocus
+        run: |
+          rustup update stable
+          cargo +stable build --locked --bin diplodocus
+      - name: Install Doxygen
+        if: inputs.package == 'qualpal'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y doxygen
+      - uses: r-lib/actions/setup-r@v2
+        if: inputs.package == 'qualpalr'
+        with:
+          use-public-rspm: true
+      - name: Install R extraction dependencies
+        if: inputs.package == 'qualpalr'
+        run: |
+          packages <- c("pkgload", "pkgbuild", "cpp11", "roxygen2", "evaluate", "jsonlite")
+          install.packages(packages)
+          stopifnot(all(vapply(packages, requireNamespace, logical(1), quietly = TRUE)))
+        shell: Rscript {0}
+      - name: Export API bundle
+        run: |
+          mkdir bundles
+          python3 diplodocus/examples/qualpal/bundles.py \
+            --export "$PACKAGE" "--$PACKAGE" producer \
+            --output "bundles/$PACKAGE.sqlite"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ inputs.package }}-${{ inputs.source-revision }}
+          path: bundles/${{ inputs.package }}.sqlite
+          if-no-files-found: error

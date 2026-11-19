@@ -1,0 +1,53 @@
+name: Compose Qualpal API bundles
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/qualpal-bundle*.yml'
+      - 'examples/qualpal/**'
+      - 'docs/development/benchmarks/qualpalr-description.patch'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualpal:
+    uses: ./.github/workflows/qualpal-bundle-producer.yml
+    with:
+      package: qualpal
+      source-revision: bd0c14d6718e8dae6a43759569ca0e09dbf9d6cf
+      diplodocus-revision: ${{ github.sha }}
+  qualpalr:
+    uses: ./.github/workflows/qualpal-bundle-producer.yml
+    with:
+      package: qualpalr
+      source-revision: 7fd73fd3b3ee455008662f41db71da21244bc5d7
+      diplodocus-revision: ${{ github.sha }}
+
+  assemble:
+    needs: [qualpal, qualpalr]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Build Diplodocus
+        run: |
+          rustup update stable
+          cargo +stable build --locked --bin diplodocus
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: qualpal*
+          path: bundles
+          merge-multiple: true
+      - name: Assemble and verify the shared site
+        run: |
+          python3 examples/qualpal/bundles.py \
+            --assemble bundles/qualpal.sqlite bundles/qualpalr.sqlite \
+            --output assembly
+      - uses: actions/upload-artifact@v7
+        with:
+          name: qualpal-documentation
+          path: assembly/detached/site
+          if-no-files-found: error
