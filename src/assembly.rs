@@ -31,6 +31,7 @@ use crate::reporting::{Phase, Reporting};
 mod adapters;
 mod api_examples;
 mod authored;
+mod bundles;
 mod documenter;
 mod documenter_examples;
 mod doxygen_native;
@@ -68,6 +69,14 @@ pub(crate) const PACKAGE_LICENSE_FILENAMES: &[&str] = &[
 /// A failed source assembly or execution, without a publishable workspace.
 #[derive(Debug, thiserror::Error)]
 pub enum AssemblyError {
+    /// A local bundle failed validation or conflicted with workspace records.
+    #[error("package bundle {path}: {message}")]
+    Bundle {
+        /// Selected artifact.
+        path: PathBuf,
+        /// Failure details.
+        message: String,
+    },
     /// Configuration parsing failed.
     #[error(transparent)]
     Configuration(#[from] ConfigurationError),
@@ -164,6 +173,8 @@ pub struct WorkspaceSources {
     >,
     selections: DeclaredSourceInputs,
     evidence: StaticProvenance,
+    pub(crate) bundles: bundles::ImportedBundles,
+    bundle_export: bool,
     pub(crate) native_assets: BTreeMap<DiagnosticPath, crate::validation::ContentAsset>,
 }
 
@@ -229,6 +240,7 @@ impl WorkspaceSources {
                     .path;
                 files.keys().map(move |path| root.join(path.as_str()))
             })
+            .chain(self.bundles.input_paths())
             .chain(
                 self.r_observations
                     .iter()
@@ -306,7 +318,10 @@ impl WorkspaceSources {
                     source,
                 }
             })?;
-        rmarkdown::collections(&self.configuration_path, &mut configuration)?;
+        self.bundles.revalidate()?;
+        if !self.bundle_export {
+            rmarkdown::collections(&self.configuration_path, &mut configuration)?;
+        }
         if configuration != self.configuration {
             return Err(AssemblyError::InputsChanged);
         }
@@ -507,7 +522,18 @@ pub(crate) async fn assemble_for_check(
     .await?;
     let python = python_native::results(path, deadlines, cancellation, reporting).await?;
     let julia = julia_runtime::results(path, deadlines, cancellation, reporting).await?;
-    assemble_with_native(path, julia, rust, doxygen, r, python, reporting)
+    assemble_with_native(
+        path,
+        NativeExtractions {
+            julia,
+            rust,
+            doxygen,
+            r,
+            python,
+        },
+        false,
+        reporting,
+    )
 }
 
 async fn doxygen_results(
@@ -640,11 +666,8 @@ struct NativeExtractions {
 
 fn assemble_with_native(
     path: &Path,
-    julia_results: BTreeMap<(String, String), julia_runtime::JuliaNativeExtraction>,
-    rust_results: BTreeMap<(String, String), rust_native::RustNativeExtraction>,
-    doxygen_results: BTreeMap<(String, String), doxygen_native::DoxygenNativeExtraction>,
-    r_results: BTreeMap<(String, String), r_native::RNativeExtraction>,
-    python_results: BTreeMap<(String, String), python_native::PythonNativeExtraction>,
+    mut native: NativeExtractions,
+    bundle_export: bool,
     reporting: &Reporting,
 ) -> Result<WorkspaceSources, AssemblyError> {
     let text = fs::read_to_string(path).map_err(|source| ConfigurationError::Read {
@@ -666,7 +689,11 @@ fn assemble_with_native(
         &configuration,
         config_name.clone(),
     ))?;
-    rmarkdown::collections(path, &mut configuration)?;
+    if bundle_export {
+        bundles::validate_export(&configuration)?;
+    } else {
+        rmarkdown::collections(path, &mut configuration)?;
+    }
     reject_errors(validate_configuration_with_source(
         &configuration,
         config_name.clone(),
@@ -680,17 +707,20 @@ fn assemble_with_native(
     let mut observed = BTreeMap::new();
     let mut cache_observations = CacheObservations::default();
     cache_observations.extend(
-        rust_results
+        native
+            .rust
             .values()
             .filter_map(|result| result.observation.clone()),
     );
     cache_observations.extend(
-        python_results
+        native
+            .python
             .values()
             .flat_map(|result| result.observations.iter().cloned()),
     );
     cache_observations.extend(
-        julia_results
+        native
+            .julia
             .values()
             .flat_map(|result| result.observations.iter().cloned()),
     );
@@ -714,25 +744,30 @@ fn assemble_with_native(
             &collection.incremental.environment_variables,
         )?);
     }
-    let doxygen_observations = doxygen_results
+    let doxygen_observations = native
+        .doxygen
         .values()
         .map(|result| result.observation.clone())
         .collect();
-    let r_observations = r_results
+    let r_observations = native
+        .r
         .values()
         .map(|result| result.observation.clone())
         .collect();
-    let python_interpreter = python_results
+    let python_interpreter = native
+        .python
         .values()
         .next()
         .map(|result| result.interpreter.clone());
-    let python_environments = python_results
+    let python_environments = native
+        .python
         .iter()
         .filter_map(|((package, _), result)| {
             let environment = result.environment.as_ref()?;
             // Example reuse needs consistent coverage for every target. One
             // target's environment cannot stand in for an opaque loader in another.
-            python_results
+            native
+                .python
                 .iter()
                 .filter(|((owner, _), _)| owner == package)
                 .all(|(_, result)| {
@@ -744,13 +779,6 @@ fn assemble_with_native(
                 .then(|| (package.clone(), environment.clone()))
         })
         .collect();
-    let mut native = NativeExtractions {
-        python: python_results,
-        julia: julia_results,
-        rust: rust_results,
-        doxygen: doxygen_results,
-        r: r_results,
-    };
     let rmd_inputs = rmarkdown::inputs(&paths, &configuration)?;
     for (collection, resolved) in configuration.content.iter().zip(&paths.content) {
         if let Some(files) = rmd_inputs.get(&collection.id) {
@@ -787,7 +815,7 @@ fn assemble_with_native(
         &mut observed,
         reporting,
     )?;
-    documenter::assemble(&mut workspace, &prepared_pages);
+
     let package_files = package_docs::assemble(
         &paths,
         &mut workspace,
@@ -795,8 +823,7 @@ fn assemble_with_native(
         &mut selections,
         &mut observed,
     )?;
-    references::concepts_and_relationships(&configuration, &mut workspace, &config_name);
-    reject_errors(workspace.diagnostics.iter().cloned().collect())?;
+
     let evidence = collect_static_provenance(path, &configuration, &selections)?;
     for ((repository, path), fingerprint) in observed {
         if evidence
@@ -809,6 +836,14 @@ fn assemble_with_native(
         }
     }
     workspace.repositories = evidence.repositories.clone();
+    let bundles = bundles::ImportedBundles::load(
+        &configuration,
+        &paths.configuration_directory,
+        &mut workspace,
+    )?;
+    documenter::assemble(&mut workspace, &prepared_pages);
+    references::concepts_and_relationships(&configuration, &mut workspace, &config_name);
+    reject_errors(workspace.diagnostics.iter().cloned().collect())?;
     let result = WorkspaceSources {
         reporting: reporting.clone(),
         workspace,
@@ -829,6 +864,8 @@ fn assemble_with_native(
         python_environments,
         selections,
         evidence,
+        bundles,
+        bundle_export,
         native_assets: BTreeMap::new(),
     };
     result.revalidate()?;

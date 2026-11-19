@@ -123,3 +123,39 @@ No token estimate is emitted because Diplodocus does not select a tokenizer.
 ```console
 curl -H 'Accept: text/markdown' https://your-site.example/guide/index.html
 ```
+
+## Compose packages from separate repositories
+
+In each producer environment, prepare the package sources and the tools needed
+for its normal extraction. Use a configuration with one repository, one
+package, and its extraction targets, then export the package:
+
+```console
+diplodocus bundle export --config diplodocus.yaml --output qualpal.sqlite
+```
+
+Copy the resulting file to the workspace that builds the site. List it under
+`package-bundles`, with the producer's package ID and a path relative to the
+consumer configuration:
+
+```yaml
+project:
+  name: Qualpal
+package-bundles:
+  - package: qualpal
+    path: bundles/qualpal.sqlite
+  - package: qualpalr
+    path: bundles/qualpalr.sqlite
+```
+
+Run `check`, `build`, or `extract` with this configuration. The consumer
+resolves API links and assigns routes using all packages, including local
+packages declared in the same file. To develop one package from a checkout,
+replace its bundle entry with a normal repository and package declaration
+using the same package ID, repository ID, and slug. Put site guides, navigation,
+concepts, and package relationships in the consumer configuration. Native API
+examples run during export, and their figures travel with the bundle.
+
+The [bundle format](../reference/snapshots.md#package-api-bundles) describes
+compatibility. The [Qualpal recipe](https://github.com/jolars/diplodocus/tree/main/examples/qualpal)
+demonstrates both workflows.

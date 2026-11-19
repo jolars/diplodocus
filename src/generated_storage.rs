@@ -11,6 +11,7 @@ mod tests;
 
 pub(crate) const SNAPSHOT_TEMP_PREFIX: &str = ".diplodocus-snapshot-";
 pub(crate) const EXECUTION_TEMP_PREFIX: &str = ".diplodocus-execution-";
+pub(crate) const BUNDLE_APPLICATION_ID: i32 = i32::from_be_bytes(*b"DIPB");
 pub(crate) const SNAPSHOT_APPLICATION_ID: i32 = i32::from_be_bytes(*b"DIPL");
 
 pub(crate) fn is_reserved(path: &Path) -> bool {
@@ -51,7 +52,10 @@ fn is_snapshot(path: &Path) -> bool {
     {
         return false;
     }
-    if header[68..72] == SNAPSHOT_APPLICATION_ID.to_be_bytes() {
+    if [SNAPSHOT_APPLICATION_ID, BUNDLE_APPLICATION_ID]
+        .iter()
+        .any(|id| header[68..72] == id.to_be_bytes())
+    {
         return true;
     }
     if header[68..72] != [0; 4] {

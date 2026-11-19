@@ -39,10 +39,31 @@ pub(super) enum Command {
     Check(CheckArgs),
     /// Extract a portable SQLite documentation snapshot.
     Extract(ExtractArgs),
+    /// Work with portable package API bundles.
+    Bundle {
+        #[command(subcommand)]
+        command: BundleCommand,
+    },
     /// Generate a site using only a completed snapshot.
     Generate(GenerateArgs),
     /// Build and serve a site, rebuilding when declared inputs change.
     Serve(ServeArgs),
+}
+
+#[derive(Debug, Subcommand)]
+pub(super) enum BundleCommand {
+    /// Extract and export one package API bundle.
+    Export {
+        /// Recompute results without using incremental caches.
+        #[arg(long)]
+        no_cache: bool,
+        /// Producer configuration file.
+        #[arg(long, default_value = "./diplodocus.yaml")]
+        config: PathBuf,
+        /// Destination SQLite artifact.
+        #[arg(long)]
+        output: PathBuf,
+    },
 }
 
 #[derive(Debug, Args)]
@@ -218,7 +239,7 @@ mod tests {
                 Command::Extract(args) => assert!(args.no_cache),
                 Command::Build(args) => assert!(args.no_cache),
                 Command::Serve(args) => assert!(args.no_cache),
-                Command::Generate(_) => unreachable!(),
+                Command::Generate(_) | Command::Bundle { .. } => unreachable!(),
             }
         }
     }

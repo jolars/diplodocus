@@ -5,6 +5,7 @@ use crate::ir::Repository;
 
 fn fixture() -> Snapshot {
     Snapshot {
+        bundle: false,
         workspace: Workspace {
             name: "Canonical café".into(),
             repositories: BTreeMap::from([(

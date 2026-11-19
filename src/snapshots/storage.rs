@@ -29,10 +29,17 @@ pub(super) fn publish(snapshot: &Snapshot, path: &Path) -> Result<(), SnapshotEr
     connection.execute_batch(
         "PRAGMA journal_mode = DELETE; PRAGMA synchronous = FULL; PRAGMA trusted_schema = OFF;",
     )?;
+    if snapshot.bundle {
+        connection.pragma_update(None, "user_version", 1)?;
+    }
     connection.pragma_update(
         None,
         "application_id",
-        crate::generated_storage::SNAPSHOT_APPLICATION_ID,
+        if snapshot.bundle {
+            crate::generated_storage::BUNDLE_APPLICATION_ID
+        } else {
+            crate::generated_storage::SNAPSHOT_APPLICATION_ID
+        },
     )?;
     let transaction = connection.transaction()?;
     transaction.execute_batch(include_str!("schema.sql"))?;
@@ -68,7 +75,7 @@ pub(super) fn publish(snapshot: &Snapshot, path: &Path) -> Result<(), SnapshotEr
     temporary.as_file().sync_all()?;
     // Close and validate the standalone artifact before the publication point.
     ensure_no_sidecars(temporary.path())?;
-    load(temporary.path())?;
+    load_kind(temporary.path(), snapshot.bundle)?;
     ensure_no_sidecars(path)?;
     temporary.persist(path).map_err(|error| error.error)?;
     Ok(())
@@ -77,16 +84,14 @@ pub(super) fn publish(snapshot: &Snapshot, path: &Path) -> Result<(), SnapshotEr
 fn ensure_no_sidecars(path: &Path) -> Result<(), SnapshotError> {
     // SQLite names recovery files after the destination. Leaving one beside a
     // replacement could apply the previous database's state to the new file.
-    for suffix in ["-journal", "-wal", "-shm"] {
-        let mut companion = path.as_os_str().to_owned();
-        companion.push(suffix);
+    for companion in super::sqlite_sidecar_paths(path) {
         match fs::symlink_metadata(&companion) {
             Ok(_) => {
                 return Err(std::io::Error::new(
                     std::io::ErrorKind::AlreadyExists,
                     format!(
                         "SQLite sidecar exists at {}; close SQLite writers and resolve their recovery files before publishing",
-                        Path::new(&companion).display()
+                        companion.display()
                     ),
                 )
                 .into());
@@ -99,6 +104,13 @@ fn ensure_no_sidecars(path: &Path) -> Result<(), SnapshotError> {
 }
 
 pub(super) fn load(path: &Path) -> Result<Snapshot, SnapshotError> {
+    load_kind(path, false)
+}
+
+pub(super) fn load_kind(path: &Path, bundle: bool) -> Result<Snapshot, SnapshotError> {
+    if bundle {
+        ensure_no_sidecars(path)?;
+    }
     use std::io::Read;
     let mut header = [0_u8; 20];
     fs::File::open(path)?.read_exact(&mut header)?;
@@ -112,6 +124,20 @@ pub(super) fn load(path: &Path) -> Result<Snapshot, SnapshotError> {
         OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_NO_MUTEX,
     )?;
     connection.execute_batch("PRAGMA query_only = ON; PRAGMA trusted_schema = OFF;")?;
+    let application_id: i32 =
+        connection.pragma_query_value(None, "application_id", |r| r.get(0))?;
+    if bundle != (application_id == crate::generated_storage::BUNDLE_APPLICATION_ID) {
+        return Err(SnapshotError::Invalid(if bundle {
+            "expected a package API bundle"
+        } else {
+            "expected a completed workspace snapshot, found a package API bundle"
+        }));
+    }
+    if bundle && connection.pragma_query_value(None, "user_version", |r| r.get::<_, u32>(0))? != 1 {
+        return Err(SnapshotError::Invalid(
+            "unsupported package API bundle version",
+        ));
+    }
     let count: u32 = connection.query_row("SELECT count(*) FROM manifest", [], |r| r.get(0))?;
     if count != 1 {
         return Err(SnapshotError::Invalid("manifest count"));
@@ -188,6 +214,7 @@ pub(super) fn load(path: &Path) -> Result<Snapshot, SnapshotError> {
         }
     }
     let mut snapshot = decode(&records, assets, producer)?;
+    snapshot.bundle = bundle;
     if content_fingerprint(&snapshot, &records)? != expected {
         return Err(SnapshotError::Invalid("snapshot fingerprint"));
     }
@@ -331,6 +358,7 @@ fn decode(
     }
     documents.sort_by(|a, b| a.document.cmp(&b.document));
     Ok(Snapshot {
+        bundle: false,
         workspace: serde_json::from_value(workspace)?,
         presentation: presentation.ok_or(SnapshotError::Invalid("missing presentation"))?,
         public_assets,

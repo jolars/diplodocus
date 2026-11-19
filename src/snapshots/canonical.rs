@@ -153,6 +153,9 @@ fn logical_value(snapshot: &Snapshot, records: &[Record], include_bytes: bool) -
         "records": records,
         "assets": assets,
     });
+    if snapshot.bundle {
+        value["package_bundle_version"] = 1.into();
+    }
     value.sort_all_objects();
     value
 }

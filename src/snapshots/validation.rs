@@ -26,6 +26,24 @@ impl Snapshot {
     pub(super) fn validate(
         &self,
     ) -> Result<BTreeMap<String, crate::execution::ValidatedPage>, SnapshotError> {
+        if self.bundle {
+            require(
+                self.workspace.packages.len() == 1
+                    && self.workspace.repositories.len() == 1
+                    && self.workspace.content_collections.is_empty()
+                    && self.workspace.concepts.is_empty()
+                    && self.workspace.relationships.is_empty()
+                    && self
+                        .workspace
+                        .pages
+                        .values()
+                        .all(|page| matches!(page.kind, PageKind::PackageDocumentation { .. }))
+                    && self.presentation == PresentationDefaults::default()
+                    && self.components.is_empty()
+                    && self.executions.is_empty(),
+                "package bundle scope",
+            )?;
+        }
         self.presentation
             .site_base_url()
             .map_err(SnapshotError::Invalid)?;
@@ -319,7 +337,11 @@ impl Snapshot {
                 &document.document.blocks,
                 None,
                 &mut |kind, spelling, _, generated| {
-                    references.push((kind, spelling.to_owned(), generated))
+                    if !self.bundle
+                        || crate::validation::semantic_target(document, kind, spelling).is_none()
+                    {
+                        references.push((kind, spelling.to_owned(), generated));
+                    }
                 },
             );
             require(

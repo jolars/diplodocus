@@ -166,6 +166,34 @@ Extract a portable SQLite documentation snapshot
 
     Re-extract changed inputs and emit a JSON line after each published snapshot
 
+## `diplodocus bundle`
+
+Work with portable package API bundles
+
+**Usage:** `diplodocus bundle <COMMAND>`
+
+### `diplodocus bundle export`
+
+Extract and export one package API bundle
+
+**Usage:** `diplodocus bundle export [OPTIONS] --output <OUTPUT>`
+
+#### Options
+
+- `--no-cache`
+
+    Recompute results without using incremental caches
+
+- `--config <CONFIG>`
+
+    Producer configuration file
+
+    Default value: `./diplodocus.yaml`
+
+- `--output <OUTPUT>`
+
+    Destination SQLite artifact
+
 ## `diplodocus generate`
 
 Generate a site using only a completed snapshot

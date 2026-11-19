@@ -3,10 +3,11 @@
 use std::collections::BTreeMap;
 use std::collections::btree_map::Entry;
 
-use crate::configuration::{IncrementalConfiguration, WorkspaceConfiguration};
+use crate::configuration::{ExecutionMode, IncrementalConfiguration, WorkspaceConfiguration};
 use crate::diagnostics::{
     Diagnostic, DiagnosticCode, DiagnosticEntity, DiagnosticPath, DiagnosticSource, Severity,
 };
+use crate::documents::AuthoredFormat;
 
 /// Collect identity and reference errors in the shared [`Diagnostic`] order.
 ///
@@ -18,6 +19,7 @@ use crate::diagnostics::{
 ///
 /// Package and content repository references must name declared repositories.
 /// Content owners must be the reserved `project` owner or a declared package ID.
+/// Executable Documenter collections with a package owner require a local checkout.
 /// Concept members must name declared packages; resolving their items requires
 /// extracted IR and remains a later step. Duplicate declarations are diagnosed
 /// without selecting a winner or cascading errors onto references to their IDs.
@@ -53,7 +55,9 @@ pub fn validate_configuration(configuration: &WorkspaceConfiguration) -> Vec<Dia
             &mut diagnostics,
         );
     }
-    if let Some(selected) = &configuration.presentation.header.repositories {
+    if let Some(selected) = &configuration.presentation.header.repositories
+        && configuration.package_bundles.is_empty()
+    {
         for (index, repository) in selected.iter().enumerate() {
             let field = format!("presentation.header.repositories[{index}]");
             check_repository(
@@ -257,6 +261,17 @@ pub fn validate_configuration(configuration: &WorkspaceConfiguration) -> Vec<Dia
             }
         }
     }
+    let local_packages = packages.clone();
+    for (index, bundle) in configuration.package_bundles.iter().enumerate() {
+        packages.declare(
+            &bundle.package,
+            format!("package-bundles[{index}].package"),
+            DiagnosticEntity::Package {
+                id: bundle.package.clone(),
+            },
+            &mut diagnostics,
+        );
+    }
     for (index, collection) in configuration.content.iter().enumerate() {
         let entity = DiagnosticEntity::Content {
             id: collection.id.clone(),
@@ -280,13 +295,26 @@ pub fn validate_configuration(configuration: &WorkspaceConfiguration) -> Vec<Dia
                 format!("content[{index}].owner: unknown owner `{}`; expected `project` or a workspace package ID", collection.owner),
                 entity,
             ));
+        } else if collection.owner != "project"
+            && collection.format == AuthoredFormat::Documenter
+            && collection.execution.mode == ExecutionMode::Execute
+            && !local_packages.contains(&collection.owner)
+        {
+            diagnostics.push(error(
+                DiagnosticCode::InvalidConfiguration,
+                format!(
+                    "content[{index}].owner: executable Documenter collections require a local checkout for package owner `{}`",
+                    collection.owner
+                ),
+                entity,
+            ));
         }
     }
     for (index, package) in configuration.packages.iter().enumerate() {
         validate_incremental(
             &package.incremental,
             &format!("packages[{index}].incremental"),
-            &packages,
+            &local_packages,
             &mut diagnostics,
         );
     }
@@ -294,7 +322,7 @@ pub fn validate_configuration(configuration: &WorkspaceConfiguration) -> Vec<Dia
         validate_incremental(
             &collection.incremental,
             &format!("content[{index}].incremental"),
-            &packages,
+            &local_packages,
             &mut diagnostics,
         );
     }
@@ -419,6 +447,7 @@ pub fn validate_configuration_with_source(
         .collect()
 }
 
+#[derive(Clone)]
 struct Names<'a> {
     first_fields: BTreeMap<&'a str, String>,
     duplicate_code: DiagnosticCode,

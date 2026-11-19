@@ -153,12 +153,12 @@ the public surface and detached generation.
 
 ### 6. Compose documentation produced in separate repositories
 
-- [ ] Define a versioned package API bundle built on the existing IR and
+- [x] Define a versioned package API bundle built on the existing IR and
   snapshot machinery. Retain semantic identities, symbolic references,
   assets, execution evidence, tool versions, and source revisions before
   final site routing. Distinguish bundles from completed workspace
   snapshots.
-- [ ] Import local bundles alongside locally extracted packages. Resolve
+- [x] Import local bundles alongside locally extracted packages. Resolve
   cross-package references and choose routes after composition, with
   diagnostics for conflicting identities, incompatible formats, or missing
   dependencies. Verify relocation and generation without producer checkouts
@@ -176,6 +176,9 @@ the public surface and detached generation.
 - [ ] Document and test both workflows: prepared local checkouts for active
   development, and independently published bundles for site assembly. Keep
   existing cross-repository configuration working throughout the migration.
+
+The [local bundle recipe](examples/qualpal/README.md) covers mixed-source assembly
+and detached generation for the C++ and R APIs.
 
 ## Qualpal and qualpalr documentation integration
 

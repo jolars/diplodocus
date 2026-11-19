@@ -40,6 +40,9 @@ pub struct WorkspaceConfiguration {
     /// Explicit packages and internal components to document; omission declares none.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub packages: Vec<PackageConfiguration>,
+    /// Local portable API bundles to import.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub package_bundles: Vec<PackageBundleConfiguration>,
     /// Authored content collections.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub content: Vec<ContentConfiguration>,
@@ -49,6 +52,16 @@ pub struct WorkspaceConfiguration {
     /// Implementation and release relationships between packages.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub relationships: Vec<RelationshipConfiguration>,
+}
+
+/// A local package bundle and its expected package identity.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PackageBundleConfiguration {
+    /// Package ID declared by the producer.
+    pub package: String,
+    /// Artifact path relative to the configuration directory.
+    pub path: PathBuf,
 }
 
 /// Project-wide documentation settings.

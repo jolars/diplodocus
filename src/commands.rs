@@ -151,6 +151,15 @@ pub fn serve(options: ServeOptions) -> Result<(), CommandError> {
     CommandRunner::default().serve(options)
 }
 
+/// Options for exporting a portable package API bundle.
+#[derive(Debug, Clone)]
+pub struct BundleExportOptions {
+    /// Producer configuration file.
+    pub config: PathBuf,
+    /// Destination SQLite artifact.
+    pub output: PathBuf,
+}
+
 /// Options for extracting a portable SQLite snapshot.
 #[derive(Debug, Clone)]
 pub struct ExtractOptions {

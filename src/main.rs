@@ -2,15 +2,15 @@ use std::process::ExitCode;
 
 use clap::{CommandFactory, FromArgMatches};
 use diplodocus::commands::{
-    BuildOptions, CheckOptions, CommandError, CommandRunner, ExtractOptions, GenerateOptions,
-    ServeOptions,
+    BuildOptions, BundleExportOptions, CheckOptions, CommandError, CommandRunner, ExtractOptions,
+    GenerateOptions, ServeOptions,
 };
 use std::sync::Arc;
 
 mod cli;
 mod terminal;
 
-use cli::{Cli, Command, GenerateFormat};
+use cli::{BundleCommand, Cli, Command, GenerateFormat};
 
 fn main() -> ExitCode {
     let arguments: Vec<_> = std::env::args_os().collect();
@@ -39,6 +39,9 @@ fn dispatch(cli: Cli, runner: &CommandRunner) -> Result<(), CommandError> {
         Command::Extract(args) => args.no_cache,
         Command::Serve(args) => args.no_cache,
         Command::Generate(_) => false,
+        Command::Bundle {
+            command: BundleCommand::Export { no_cache, .. },
+        } => *no_cache,
     };
     let runner = runner.clone().with_cache_policy(if no_cache {
         diplodocus::incremental::CachePolicy::Bypass
@@ -66,6 +69,9 @@ fn dispatch(cli: Cli, runner: &CommandRunner) -> Result<(), CommandError> {
                 runner.extract(options)
             }
         }
+        Command::Bundle {
+            command: BundleCommand::Export { config, output, .. },
+        } => runner.export_bundle(BundleExportOptions { config, output }),
         Command::Generate(args) => {
             let options = GenerateOptions {
                 input: args.input,

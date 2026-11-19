@@ -60,6 +60,18 @@ impl CommandRunner {
         Ok(report)
     }
 
+    /// Extract one package and atomically publish its API bundle.
+    pub fn export_bundle(&self, options: BundleExportOptions) -> Result<(), CommandError> {
+        let command = self.reporting.command("bundle export");
+        let output = options.output.clone();
+        pipeline::runtime()?.block_on(scope_async(
+            self.cache_policy,
+            pipeline::export_bundle(options, Box::pin(watching::termination()), &self.reporting),
+        ))?;
+        command.finish(Some(&output), None);
+        Ok(())
+    }
+
     /// Extract a snapshot using default execution limits and signal handling.
     pub fn extract(&self, options: ExtractOptions) -> Result<(), CommandError> {
         pipeline::runtime()?.block_on(self.extract_with(

@@ -59,9 +59,10 @@ impl WorkspaceSources {
         cancellation: &mut ExecutionCancellation<'_>,
     ) -> Result<(), AssemblyError> {
         if self
-            .workspace
+            .paths
             .packages
-            .values()
+            .iter()
+            .map(|package| &self.workspace.packages[&package.id])
             .flat_map(|package| package.items.values())
             .filter_map(|item| item.documentation.as_ref())
             .any(|document| {

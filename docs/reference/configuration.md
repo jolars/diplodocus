@@ -19,6 +19,7 @@ strings, for boolean options.
 | `presentation` | mapping | Built-in presentation | Site metadata, navigation, branding, and footer. |
 | `repositories` | list | `[]` | Local source checkouts. |
 | `packages` | list | `[]` | Packages or components to document. |
+| `package-bundles` | list | `[]` | Local API bundles, each with a producer `package` ID and a config-relative `path`. |
 | `content` | list | `[]` | Authored page collections. |
 | `components` | list | `[]` | Prebuilt browser bundles used by authored pages. |
 | `concepts` | list | `[]` | Groups of corresponding API items. |

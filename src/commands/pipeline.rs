@@ -2,7 +2,7 @@ use super::*;
 use std::fs;
 use std::path::{Component, Path};
 
-use crate::assembly::WorkspaceExecution;
+use crate::assembly::{WorkspaceExecution, WorkspaceSources};
 use crate::execution::{ExecutionCancellation, ExecutionDeadlines};
 use crate::rendering::RenderedSite;
 use crate::reporting::{Event, Phase, Reporting};
@@ -112,12 +112,7 @@ pub(super) async fn extract_attempt_observed(
         .unwrap_or(Path::new("."));
     let configuration_directory = fs::canonicalize(parent)?;
     for destination in &outputs {
-        for kind in ["execution", "rust", "incremental"] {
-            let cache = configuration_directory.join(".diplodocus/cache").join(kind);
-            if destination.starts_with(&cache) || cache.starts_with(destination) {
-                return Err(CommandError::InputOverlap);
-            }
-        }
+        protect_caches(&configuration_directory, destination)?;
     }
     crate::incremental::scope_outputs(
         outputs,
@@ -147,6 +142,7 @@ async fn extract_attempt_observed_inner(
         &mut cancellation,
         reporting,
         &mut attempt.writes,
+        false,
     )
     .await?;
     let output = options.output.unwrap_or_else(|| {
@@ -173,15 +169,7 @@ async fn extract_attempt_observed_inner(
         protect_sources(&sources, &resolved, &options.config, site)?;
         reject_overlap(site, &output)?;
     }
-    sources
-        .complete_package_metadata(deadlines, &mut cancellation)
-        .await?;
-    sources
-        .execute_api_examples(deadlines, &mut cancellation)
-        .await?;
-    sources
-        .execute_rd_examples(deadlines, &mut cancellation)
-        .await?;
+    complete_api(&mut sources, deadlines, &mut cancellation).await?;
     sources
         .execute_rmarkdown(deadlines, &mut cancellation)
         .await?;
@@ -377,19 +365,8 @@ fn protect_sources(
     output: &Path,
 ) -> Result<(), CommandError> {
     reject_overlap(output, config)?;
-    // The cache rejects symlinked roots itself. Compare its reserved location
-    // without inspecting cache storage on disabled execution paths.
     let destination = absolute(output)?;
-    for kind in ["execution", "rust", "incremental"] {
-        let cache = sources
-            .paths()
-            .configuration_directory
-            .join(".diplodocus/cache")
-            .join(kind);
-        if destination.starts_with(&cache) || cache.starts_with(&destination) {
-            return Err(CommandError::InputOverlap);
-        }
-    }
+    protect_caches(&sources.paths().configuration_directory, &destination)?;
     for input in sources
         .input_paths()
         .chain(resolved.input_paths().map(Path::to_owned))
@@ -425,4 +402,71 @@ fn protect_sources(
         reject_overlap(output, root)?;
     }
     Ok(())
+}
+
+fn protect_caches(configuration_directory: &Path, destination: &Path) -> Result<(), CommandError> {
+    // Compare reserved locations without inspecting disabled cache storage.
+    for kind in ["execution", "rust", "incremental"] {
+        let cache = configuration_directory.join(".diplodocus/cache").join(kind);
+        if destination.starts_with(&cache) || cache.starts_with(destination) {
+            return Err(CommandError::InputOverlap);
+        }
+    }
+    Ok(())
+}
+
+async fn complete_api(
+    sources: &mut WorkspaceSources,
+    deadlines: ExecutionDeadlines,
+    cancellation: &mut ExecutionCancellation<'_>,
+) -> Result<(), CommandError> {
+    sources
+        .complete_package_metadata(deadlines, cancellation)
+        .await?;
+    sources
+        .execute_api_examples(deadlines, cancellation)
+        .await?;
+    sources.execute_rd_examples(deadlines, cancellation).await?;
+    Ok(())
+}
+
+pub(super) async fn export_bundle(
+    options: BundleExportOptions,
+    mut cancellation: ExecutionCancellation<'_>,
+    reporting: &Reporting,
+) -> Result<(), CommandError> {
+    let destination = absolute(&options.output)?;
+    reject_overlap(&options.output, &options.config)?;
+    let parent = options
+        .config
+        .parent()
+        .filter(|path| !path.as_os_str().is_empty())
+        .unwrap_or(Path::new("."));
+    protect_caches(&fs::canonicalize(parent)?, &destination)?;
+    let deadlines = ExecutionDeadlines::default();
+    crate::incremental::scope_outputs(vec![destination], async {
+        let mut sources = crate::assembly::assemble_for_extraction(
+            &options.config,
+            deadlines,
+            &mut cancellation,
+            reporting,
+            &mut Default::default(),
+            true,
+        )
+        .await?;
+        let resolved = crate::validation::resolve_bundle(&sources)?;
+        protect_sources(&sources, &resolved, &options.config, &options.output)?;
+        complete_api(&mut sources, deadlines, &mut cancellation).await?;
+        let resolved = crate::validation::resolve_bundle(&sources)?;
+        protect_sources(&sources, &resolved, &options.config, &options.output)?;
+        let bundle = Snapshot::from_bundle(&sources, &resolved)?;
+        reporting.run_phase(Phase::Publication, "Publishing package bundle", || {
+            bundle.publish(&options.output)
+        })?;
+        for diagnostic in &bundle.workspace().diagnostics {
+            reporting.emit(Event::Diagnostic(diagnostic));
+        }
+        Ok(())
+    })
+    .await
 }

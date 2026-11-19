@@ -4,7 +4,7 @@
 //! values remain untrusted until structural and content validation succeeds.
 
 use std::collections::BTreeMap;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use crate::assembly::{AssemblyError, WorkspaceSources};
 use crate::configuration::PresentationDefaults;
@@ -15,6 +15,14 @@ mod canonical;
 mod outputs;
 mod storage;
 mod validation;
+
+pub(crate) fn sqlite_sidecar_paths(path: &Path) -> [PathBuf; 3] {
+    ["-journal", "-wal", "-shm"].map(|suffix| {
+        let mut companion = path.as_os_str().to_owned();
+        companion.push(suffix);
+        PathBuf::from(companion)
+    })
+}
 
 /// Independent SQLite storage schema version.
 pub const STORAGE_SCHEMA_VERSION: u32 = 2;
@@ -28,6 +36,7 @@ pub const RECORD_ENCODING_VERSION: u32 = 1;
 /// A complete portable snapshot, with immutable validated records and bytes.
 #[derive(Debug)]
 pub struct Snapshot {
+    bundle: bool,
     workspace: Workspace,
     presentation: PresentationDefaults,
     pub(crate) public_assets: BTreeMap<String, String>,
@@ -73,11 +82,20 @@ impl Snapshot {
         sources: &WorkspaceSources,
         resolved: &ResolvedWorkspace,
     ) -> Result<Self, SnapshotError> {
+        Self::from_resolved(sources, resolved, false)
+    }
+
+    fn from_resolved(
+        sources: &WorkspaceSources,
+        resolved: &ResolvedWorkspace,
+        bundle: bool,
+    ) -> Result<Self, SnapshotError> {
         sources.revalidate()?;
         resolved.revalidate()?;
         let mut workspace = sources.workspace().clone();
         workspace.diagnostics = resolved.diagnostics().clone();
         let mut snapshot = Self {
+            bundle,
             workspace,
             presentation: sources.configuration().presentation.clone(),
             public_assets: resolved.public_assets.clone(),
@@ -92,6 +110,17 @@ impl Snapshot {
         };
         snapshot.validated_outputs = snapshot.validate()?;
         Ok(snapshot)
+    }
+
+    pub(crate) fn from_bundle(
+        sources: &WorkspaceSources,
+        resolved: &ResolvedWorkspace,
+    ) -> Result<Self, SnapshotError> {
+        Self::from_resolved(sources, resolved, true)
+    }
+
+    pub(crate) fn load_bundle(path: &Path) -> Result<Self, SnapshotError> {
+        storage::load_kind(path, true)
     }
 
     /// Portable semantic records; no runtime checkout paths are stored.

@@ -340,11 +340,26 @@ pub(crate) async fn assemble_for_extraction(
     cancellation: &mut ExecutionCancellation<'_>,
     reporting: &Reporting,
     journal: &mut super::r_native::GeneratedWrites,
+    bundle_export: bool,
 ) -> Result<WorkspaceSources, AssemblyError> {
+    if bundle_export {
+        super::bundles::validate_export(&crate::configuration::load_configuration(path)?)?;
+    }
     let julia = results(path, deadlines, cancellation, reporting).await?;
     let rust = super::rust_results(path, true, deadlines, cancellation, reporting).await?;
     let doxygen = super::doxygen_results(path, deadlines, cancellation, reporting).await?;
     let r = super::r_results(path, deadlines, cancellation, reporting, journal).await?;
     let python = super::python_native::results(path, deadlines, cancellation, reporting).await?;
-    super::assemble_with_native(path, julia, rust, doxygen, r, python, reporting)
+    super::assemble_with_native(
+        path,
+        super::NativeExtractions {
+            julia,
+            rust,
+            doxygen,
+            r,
+            python,
+        },
+        bundle_export,
+        reporting,
+    )
 }

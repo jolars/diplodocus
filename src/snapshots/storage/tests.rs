@@ -3,6 +3,7 @@ use super::*;
 #[test]
 fn validation_failure_preserves_the_previous_file_and_cleans_staging() {
     let mut snapshot = Snapshot {
+        bundle: false,
         workspace: Workspace {
             name: "Before refresh".into(),
             ..Workspace::default()

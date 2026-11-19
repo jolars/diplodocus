@@ -297,7 +297,13 @@ impl ResolutionError {
 /// This operation never discovers a kernel, runs authored code, reads an
 /// execution cache, or publishes output. It checks only outputs already present.
 pub fn resolve_workspace(sources: &WorkspaceSources) -> Result<ResolvedWorkspace, ResolutionError> {
-    resolve(sources, sources.native_assets.clone())
+    resolve(sources, sources.native_assets.clone(), false)
+}
+
+pub(crate) fn resolve_bundle(
+    sources: &WorkspaceSources,
+) -> Result<ResolvedWorkspace, ResolutionError> {
+    resolve(sources, sources.native_assets.clone(), true)
 }
 
 /// Resolve executed documents and copy their verified final staged asset bytes.
@@ -332,7 +338,7 @@ pub fn resolve_executed_workspace(
             );
         }
     }
-    resolve(executed.sources(), generated)
+    resolve(executed.sources(), generated, false)
 }
 
 struct DocumentContext<'a> {
@@ -346,6 +352,7 @@ struct DocumentContext<'a> {
 fn resolve(
     sources: &WorkspaceSources,
     generated: BTreeMap<DiagnosticPath, ContentAsset>,
+    bundle_export: bool,
 ) -> Result<ResolvedWorkspace, ResolutionError> {
     sources.revalidate()?;
     let workspace = sources.workspace();
@@ -598,21 +605,42 @@ fn resolve(
             resolution.result.inputs.insert(selected, observation);
         }
     }
+    for asset in &sources.bundles.assets {
+        insert_asset(&mut resolution.result.assets, asset.clone())
+            .map_err(|_| AssemblyError::InputsChanged)?;
+    }
     for context in documents {
+        let mut imported = sources
+            .bundles
+            .documents
+            .get(&context.identity)
+            .map(|record| record.references.iter());
         let mut references = Vec::new();
         walk::references(
             &context.document.document.blocks,
             None,
-            &mut |kind, spelling, span, generated| match resolution
-                .reference(&context, kind, spelling, generated)
-            {
-                Ok(target) => references.push(ResolvedReference {
-                    kind,
-                    spelling: spelling.into(),
-                    target,
-                }),
-                Err(code) => {
-                    let mut diagnostic = Diagnostic::new(
+            &mut |kind, spelling, span, generated| {
+                if semantic_target(context.document, kind, spelling).is_none() {
+                    if let Some(imported) = &mut imported {
+                        references.push(
+                            imported
+                                .next()
+                                .expect("validated bundle references")
+                                .clone(),
+                        );
+                        return;
+                    }
+                } else if bundle_export {
+                    return;
+                }
+                match resolution.reference(&context, kind, spelling, generated) {
+                    Ok(target) => references.push(ResolvedReference {
+                        kind,
+                        spelling: spelling.into(),
+                        target,
+                    }),
+                    Err(code) => {
+                        let mut diagnostic = Diagnostic::new(
                         code,
                         Severity::Error,
                         if code == DiagnosticCode::InvalidContentImage {
@@ -626,35 +654,36 @@ fn resolve(
                         },
                     )
                     .with_entity(context.entity.clone());
-                    diagnostic.span = context
-                        .document
-                        .provenance
-                        .iter()
-                        .find_map(|record| match record.activity {
-                            ProvenanceActivity::DecodedDocumentation { decoded_span }
-                                if decoded_span == span =>
-                            {
-                                record.span
+                        diagnostic.span = context
+                            .document
+                            .provenance
+                            .iter()
+                            .find_map(|record| match record.activity {
+                                ProvenanceActivity::DecodedDocumentation { decoded_span }
+                                    if decoded_span == span =>
+                                {
+                                    record.span
+                                }
+                                _ => None,
+                            })
+                            .or(Some(span));
+                        diagnostic.source = context.document.source_location.as_ref().map(|s| {
+                            DiagnosticSource::Repository {
+                                repository: s.repository.clone(),
+                                path: s.path.clone(),
                             }
-                            _ => None,
-                        })
-                        .or(Some(span));
-                    diagnostic.source = context.document.source_location.as_ref().map(|s| {
-                        DiagnosticSource::Repository {
-                            repository: s.repository.clone(),
-                            path: s.path.clone(),
+                        });
+                        if !generated
+                            && let DocumentIdentity::Page { page } = &context.identity
+                            && let Some(prepared) = sources.prepared_pages().get(page)
+                        {
+                            crate::assembly::remap_include_diagnostic(
+                                &mut diagnostic,
+                                &prepared.source_ranges,
+                            );
                         }
-                    });
-                    if !generated
-                        && let DocumentIdentity::Page { page } = &context.identity
-                        && let Some(prepared) = sources.prepared_pages().get(page)
-                    {
-                        crate::assembly::remap_include_diagnostic(
-                            &mut diagnostic,
-                            &prepared.source_ranges,
-                        );
+                        resolution.result.diagnostics.insert(diagnostic);
                     }
-                    resolution.result.diagnostics.insert(diagnostic);
                 }
             },
         );

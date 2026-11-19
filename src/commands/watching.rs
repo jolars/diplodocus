@@ -356,6 +356,18 @@ impl Observer {
             return observed;
         };
         let parent = self.config.parent().expect("absolute config");
+        for bundle in &config.package_bundles {
+            let path = parent.join(&bundle.path);
+            observe_external(&path, &mut observed, &mut self.external_fingerprints);
+            for sidecar in crate::snapshots::sqlite_sidecar_paths(&path) {
+                // Bundle loading checks directory entries, including dangling symlinks.
+                let state = match fs::symlink_metadata(&sidecar) {
+                    Ok(_) => "Present".to_owned(),
+                    Err(error) => format!("{:?}", error.kind()),
+                };
+                observed.insert(sidecar, state);
+            }
+        }
         let roots: BTreeMap<_, _> = config
             .repositories
             .iter()
@@ -1167,6 +1179,27 @@ fn discover(
 mod tests {
     use super::*;
     use crate::assembly::assemble_workspace;
+
+    #[test]
+    fn removing_bundle_sidecars_changes_observation_without_repository_roots() {
+        let root = tempfile::tempdir().unwrap();
+        let config = root.path().join("diplodocus.yaml");
+        fs::write(
+            &config,
+            "project: {name: Test}\npackage-bundles:\n  - {package: example, path: example.sqlite}\n",
+        )
+        .unwrap();
+        let bundle = root.path().join("example.sqlite");
+        fs::write(&bundle, "unchanged database").unwrap();
+        let mut observer = Observer::new(&config, &root.path().join("site")).unwrap();
+        let clean = observer.capture();
+        for sidecar in crate::snapshots::sqlite_sidecar_paths(&bundle) {
+            fs::write(&sidecar, "").unwrap();
+            assert_ne!(observer.capture(), clean);
+            fs::remove_file(sidecar).unwrap();
+            assert_eq!(observer.capture(), clean);
+        }
+    }
 
     fn journal_watcher(root: &Path, assets: &[&str]) -> Watcher {
         let config = root.join("diplodocus.yaml");

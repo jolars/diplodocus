@@ -113,6 +113,7 @@ impl Snapshot {
         let mut workspace = executed.workspace().clone();
         workspace.diagnostics = resolved.diagnostics().clone();
         let mut snapshot = Self {
+            bundle: false,
             workspace,
             presentation: executed.sources().configuration().presentation.clone(),
             public_assets: resolved.public_assets.clone(),

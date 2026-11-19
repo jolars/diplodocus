@@ -189,3 +189,20 @@ std::fs::write("documentation.json", snapshot.canonical_export()?)?;
 Compare these exports when reviewing logical snapshot changes. The export is not
 an import format, and hashing its pretty-printed bytes does not reproduce the
 manifest fingerprint.
+
+## Package API bundles
+
+A package API bundle is a standalone SQLite artifact for one repository and
+one package. It uses application ID `DIPB` and SQLite `user_version` 1.
+Its manifest uses the same storage, IR, and encoding versions as workspace
+snapshots. Its logical fingerprint also includes `package_bundle_version`.
+
+The bundle retains package pages, API items, extraction targets, native
+example evidence, and validated assets. Document records omit semantic API
+reference resolutions. The consumer resolves those references from the
+original document syntax after loading all packages. Other references retain
+their validated portable targets, including bound asset digests. The consuming
+workspace supplies authored collections, site presentation, and page execution.
+
+Use `package-bundles` to load the artifact into a workspace. `generate`
+requires the completed snapshot produced by that workspace.
