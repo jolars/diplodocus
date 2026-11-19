@@ -32,19 +32,6 @@ presentation:
 repositories:
   - id: docs
     path: .
-packages:
-  - id: python
-    name: Python
-    slug: python
-    ecosystem: python
-    repository: docs
-    path: python
-    metadata-path: pyproject.toml
-    targets:
-      - id: api
-        extractor: python
-        path: eunoia
-        role: public-api
 content:
   - id: guide
     owner: project
@@ -58,14 +45,6 @@ content:
     root.write("docs/index.md", "# Eunoia\n");
     root.write("docs/guide.md", "# Authored guide\n\nOriginal content.\n");
     root.write("docs/fallback.md", "# Fallback\n");
-    root.write(
-        "python/pyproject.toml",
-        "[project]\nname = 'eunoia'\nversion = '1.2.3'\ndescription = 'Package description'\n",
-    );
-    root.write(
-        "python/eunoia/__init__.py",
-        "def fit(values):\n    \"\"\"Fit a diagram.\"\"\"\n    return values\n",
-    );
     let mut image = std::io::Cursor::new(Vec::new());
     image::RgbImage::new(12, 6)
         .write_to(&mut image, image::ImageFormat::Png)
@@ -150,6 +129,35 @@ fn page_metadata_overrides_head_tags_and_preserves_authored_content() {
 #[test]
 fn generated_package_and_api_metadata_survive_build_and_detached_generation() {
     let root = workspace("clean");
+    let config = root.read("diplodocus.yaml");
+    root.write(
+        "diplodocus.yaml",
+        format!(
+            r#"{config}
+packages:
+  - id: python
+    name: Python
+    slug: python
+    ecosystem: python
+    repository: docs
+    path: python
+    metadata-path: pyproject.toml
+    targets:
+      - id: api
+        extractor: python
+        path: eunoia
+        role: public-api
+"#
+        ),
+    );
+    root.write(
+        "python/pyproject.toml",
+        "[project]\nname = 'eunoia'\nversion = '1.2.3'\ndescription = 'Package description'\n",
+    );
+    root.write(
+        "python/eunoia/__init__.py",
+        "def fit(values):\n    \"\"\"Fit a diagram.\"\"\"\n    return values\n",
+    );
     let initial = snapshot(&root);
     let (id, _) = initial.workspace().packages["python"]
         .items

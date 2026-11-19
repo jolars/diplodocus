@@ -16,6 +16,8 @@ const temporary = await mkdtemp(join(tmpdir(), "diplodocus-vitepress-"));
 const root = join(temporary, "examples/vitepress");
 const artifacts = resolve(process.env.DIPLODOCUS_VITEPRESS_ARTIFACTS ??
   join(repository, "artifacts/vitepress", `${Date.now()}-${process.pid}`));
+// Native extraction can exceed a minute, including when the watcher retries.
+const extractionTimeout = 180_000;
 await mkdir(artifacts, { recursive: true });
 if (process.env.DIPLODOCUS_BROWSER_FONTCONFIG_FILE) {
   process.env.FONTCONFIG_FILE = process.env.DIPLODOCUS_BROWSER_FONTCONFIG_FILE;
@@ -29,8 +31,8 @@ async function run(command, args, env = process.env) {
   });
 }
 
-async function until(condition, label) {
-  const deadline = Date.now() + 60_000;
+async function until(condition, label, timeout = 60_000) {
+  const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
     if (await condition()) return;
     await delay(100);
@@ -74,12 +76,12 @@ try {
   await until(() => {
     if (developer.exitCode !== null) throw new Error(log);
     return generations() >= 1;
-  }, "initial reference");
+  }, "initial reference", extractionTimeout);
   async function rebuild(change, generation, label) {
     // Publication precedes the HMR client's reload after the VitePress restart.
-    const loaded = page.waitForEvent("load", { timeout: 60_000 });
+    const loaded = page.waitForEvent("load", { timeout: extractionTimeout });
     await change();
-    await Promise.all([until(() => generations() >= generation, label), loaded]);
+    await Promise.all([until(() => generations() >= generation, label, extractionTimeout), loaded]);
   }
   const snapshot = join(root, ".diplodocus/documentation.sqlite");
   const initialSnapshot = await digest(snapshot);
@@ -140,8 +142,9 @@ try {
   const complete = await digest(snapshot);
   const configPath = join(root, "diplodocus.yaml");
   const config = await readFile(configPath, "utf8");
+  const beforeInvalidConfig = log.length;
   await writeFile(configPath, "project: [");
-  await until(() => log.includes("error:"), "failed extraction diagnostic");
+  await until(() => log.includes("error:", beforeInvalidConfig), "failed extraction diagnostic");
   assert.equal(await digest(snapshot), complete);
   assert.equal(generations(), 5);
   await page.goto("/guide.html");
