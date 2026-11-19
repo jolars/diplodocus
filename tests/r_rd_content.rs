@@ -1,34 +1,16 @@
 mod support;
 
 use diplodocus::assembly::assemble_workspace;
-use diplodocus::configuration::load_configuration;
 use diplodocus::diagnostics::Severity;
-use diplodocus::extractors::r::{RExtraction, extract_target};
 use diplodocus::ir::{Block, Inline, PackageMetadata, TableAlignment};
-use diplodocus::paths::resolve_workspace_paths;
 use diplodocus::snapshots::Snapshot;
 use diplodocus::validation::{ReferenceTarget, resolve_workspace};
+use support::discover_r_api as extract;
 
 fn fixture() -> support::TestWorkspace {
     let workspace = support::prepared_acceptance_workspace();
     support::add_r_rd_content(&workspace);
     workspace
-}
-
-fn extract(workspace: &support::TestWorkspace) -> RExtraction {
-    let path = workspace.path().join("workspace/diplodocus.yaml");
-    let config = load_configuration(&path).unwrap();
-    let paths = resolve_workspace_paths(&path, &config).unwrap();
-    let package = paths
-        .packages
-        .iter()
-        .find(|package| package.id == "rfoo")
-        .unwrap();
-    extract_target(
-        &paths.repositories[package.repository_index],
-        package,
-        &package.targets[0],
-    )
 }
 
 fn replace_topic(workspace: &support::TestWorkspace, content: &str) {
@@ -115,8 +97,11 @@ fn eulerr_content_retains_equations_tables_sections_and_named_values() {
         assert!(json.contains(expected), "{expected}");
     }
     assert!(!json.contains("Text-only content."));
-    assert_eq!(result.help_links["as.numeric"][0].topic, "numeric");
-    assert_eq!(result.help_links["grid::gpar"][0].package, "grid");
+    let Some(PackageMetadata::R(metadata)) = result.metadata else {
+        panic!("missing R package metadata");
+    };
+    assert_eq!(metadata.help_links["as.numeric"][0].topic, "numeric");
+    assert_eq!(metadata.help_links["grid::gpar"][0].package, "grid");
 }
 
 #[test]
@@ -167,7 +152,7 @@ fn rd_conditionals_select_sections_inline_content_and_display_code() {
         assert!(!json.contains(excluded));
     }
     let diplodocus::ir::ProvenanceActivity::Extraction { parsers, .. } =
-        &result.provenance.activity
+        &result.extraction().activity
     else {
         panic!()
     };
@@ -261,7 +246,7 @@ fn local_help_wins_over_installed_topics_and_missing_links_fail() {
 }
 
 #[test]
-fn malformed_rd_shapes_are_diagnosed_without_discarding_source() {
+fn malformed_rd_shapes_are_diagnosed_during_native_assembly() {
     for content in [
         r"\description{\link[=]{empty}}",
         r"\details{\tabular{lx}{one\tab two\cr}}",
@@ -278,12 +263,6 @@ fn malformed_rd_shapes_are_diagnosed_without_discarding_source() {
             "{content}: {:?}",
             result.diagnostics
         );
-        assert!(result.inputs.values().any(|input| {
-            input
-                .text
-                .as_ref()
-                .is_some_and(|text| text.contains(content))
-        }));
     }
 }
 

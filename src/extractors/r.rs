@@ -1,8 +1,6 @@
-//! Static R extraction from maintained DESCRIPTION, NAMESPACE, R, and Rd files.
+//! Reconcile native R discovery with maintained DESCRIPTION, NAMESPACE, R, and Rd files.
 //!
-//! The adapter probes R's installed library paths but never evaluates package
-//! code. Native syntax stays internal; results contain only portable Diplodocus
-//! records.
+//! Source parsers supply attribution and documentation for the observed API.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
@@ -27,7 +25,6 @@ mod namespace;
 mod native;
 mod rd;
 mod source;
-mod surface;
 
 pub(crate) use metadata::license_files;
 pub use metadata::{RDependency, RMetadata, RMetadataField, RVersionConstraint};
@@ -80,35 +77,11 @@ pub struct RInput {
     pub raw_bytes: Option<Vec<u8>>,
 }
 
-/// Extract one R package-layout directory without installing or loading it.
-///
-/// The target contains NAMESPACE, R/, and man/; metadata uses the configured
-/// package metadata path. Missing R/ or man/ directories are allowed. Reads stay
-/// inside the package and target boundaries, except the explicitly configured
-/// metadata input. Directory symlinks are rejected. Error-bearing results are
-/// inspectable, but callers must reject them before building a site.
-pub fn extract_target(
-    repository: &ResolvedRepositoryPaths,
-    package: &ResolvedPackagePaths,
-    target: &ResolvedTargetPath,
-) -> RExtraction {
-    extract(repository, package, target, None)
-}
-
 pub(crate) fn extract_native_target(
     repository: &ResolvedRepositoryPaths,
     package: &ResolvedPackagePaths,
     target: &ResolvedTargetPath,
-    observation: &NativeObservation,
-) -> RExtraction {
-    extract(repository, package, target, Some(observation))
-}
-
-fn extract(
-    repository: &ResolvedRepositoryPaths,
-    package: &ResolvedPackagePaths,
-    target: &ResolvedTargetPath,
-    native: Option<&NativeObservation>,
+    native: &NativeObservation,
 ) -> RExtraction {
     let reference = TargetReference {
         package: package.id.clone(),
@@ -183,19 +156,13 @@ fn extract(
                 result.metadata = metadata::parse(text, &input.source, &mut result.diagnostics)
             }
             "namespace" => {
-                let mut diagnostics = vec![];
-                namespace = namespace::parse(text, &input.source, &mut diagnostics);
-                if native.is_none() {
-                    result.diagnostics.extend(diagnostics);
-                }
+                namespace = namespace::parse(text, &input.source);
             }
             "r-source" => {
                 let mut diagnostics = vec![];
                 definitions.extend(source::parse(text, &input.source, &mut diagnostics));
-                if native.is_some() {
-                    for diagnostic in &mut diagnostics {
-                        diagnostic.severity = Severity::Warning;
-                    }
+                for diagnostic in &mut diagnostics {
+                    diagnostic.severity = Severity::Warning;
                 }
                 result.diagnostics.extend(diagnostics);
             }
@@ -251,11 +218,7 @@ fn extract(
                 namespace.unknown_imports.insert(package.clone());
                 result.diagnostics.push(diagnostic(
                     DiagnosticCode::RLibraryUnavailable,
-                    if native.is_some() {
-                        Severity::Warning
-                    } else {
-                        Severity::Error
-                    },
+                    Severity::Warning,
                     message,
                     &sources[0],
                 ));
@@ -275,25 +238,14 @@ fn extract(
                 .map(String::from),
         );
     source::reject_shadowed_builtins(&mut definitions, imported_names);
-    result.items = if let Some(observation) = native {
-        native::reconcile(
-            &mut result,
-            &definitions,
-            &mut namespace,
-            &topics,
-            &libraries,
-            observation,
-        )
-    } else {
-        surface::reconcile(
-            &package.id,
-            &definitions,
-            &namespace,
-            &topics,
-            &libraries,
-            &mut result.diagnostics,
-        )
-    };
+    result.items = native::reconcile(
+        &mut result,
+        &definitions,
+        &mut namespace,
+        &topics,
+        &libraries,
+        native,
+    );
     rd::attach(
         &package.id,
         &mut result.items,
@@ -301,9 +253,7 @@ fn extract(
         &namespace,
         &mut result.diagnostics,
     );
-    if native.is_some() {
-        native::retain_generated_sources(&mut result, repository, target);
-    }
+    native::retain_generated_sources(&mut result, repository, target);
     let mut requested = BTreeSet::new();
     for item in result.items.values() {
         if let Some(document) = &item.documentation {

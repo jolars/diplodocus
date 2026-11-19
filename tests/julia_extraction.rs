@@ -2,9 +2,11 @@ mod support;
 
 use diplodocus::configuration::load_configuration;
 use diplodocus::diagnostics::Severity;
-use diplodocus::extractors::julia::{JuliaExtraction, extract_target};
-use diplodocus::ir::{Item, ItemKind, ItemLanguageData, JuliaCallableRole, JuliaDeclaration};
+use diplodocus::ir::{
+    Item, ItemKind, ItemLanguageData, JuliaCallableRole, JuliaDeclaration, PackageMetadata,
+};
 use diplodocus::paths::resolve_workspace_paths;
+use support::ApiDiscovery;
 
 fn small(source: &str) -> support::TestWorkspace {
     let workspace = support::TestWorkspace::new();
@@ -35,15 +37,11 @@ packages:
     workspace
 }
 
-fn extract(workspace: &support::TestWorkspace) -> JuliaExtraction {
-    let path = workspace.path().join("diplodocus.yaml");
-    let configuration = load_configuration(&path).unwrap();
-    let paths = resolve_workspace_paths(&path, &configuration).unwrap();
-    let package = &paths.packages[0];
-    extract_target(&paths.repositories[0], package, &package.targets[0])
+fn extract(workspace: &support::TestWorkspace) -> ApiDiscovery {
+    support::discover_api(&workspace.path().join("diplodocus.yaml"), "demo")
 }
 
-fn item<'a>(result: &'a JuliaExtraction, name: &str) -> &'a Item {
+fn item<'a>(result: &'a ApiDiscovery, name: &str) -> &'a Item {
     result
         .items
         .values()
@@ -51,7 +49,7 @@ fn item<'a>(result: &'a JuliaExtraction, name: &str) -> &'a Item {
         .unwrap_or_else(|| panic!("missing {name}: {:?}", result.diagnostics))
 }
 
-fn methods(result: &JuliaExtraction) -> Vec<&str> {
+fn methods(result: &ApiDiscovery) -> Vec<&str> {
     result
         .items
         .iter()
@@ -118,7 +116,7 @@ fn explicit_extensions_join_core_families_without_loading_dependencies() {
     let core = extract(&workspace);
     assert!(core.diagnostics.is_empty(), "{:?}", core.diagnostics);
     assert_eq!(item(&core, "Demo.plot").signatures.len(), 1);
-    assert_eq!(core.inputs.len(), 2);
+    assert_eq!(core.input_count("repo"), 2);
 
     select_extensions(&workspace, &["ext/DemoMakieExt.jl"]);
     let result = extract(&workspace);
@@ -127,7 +125,7 @@ fn explicit_extensions_join_core_families_without_loading_dependencies() {
     assert_eq!(family.signatures.len(), 3);
     assert_eq!(family.documentation, item(&core, "Demo.plot").documentation);
     assert_eq!(family.children.len(), 3);
-    assert_eq!(result.inputs.len(), 4);
+    assert_eq!(result.input_count("repo"), 4);
     assert!(family.signatures.iter().any(|signature| {
         signature
             .sources
@@ -282,7 +280,7 @@ fn extension_symlinks_cannot_escape_the_package() {
 }
 
 #[test]
-fn static_includes_preserve_modules_public_surface_and_method_docs() {
+fn native_includes_preserve_modules_public_surface_and_method_docs() {
     let workspace = small(
         "module Demo\nexport fit\ninclude(\"fit.jl\")\nmodule Sub\npublic score\ninclude(\"score.jl\")\nend\nprivate(x) = x\nend\n",
     );
@@ -290,11 +288,8 @@ fn static_includes_preserve_modules_public_surface_and_method_docs() {
     workspace.write("src/score.jl", "score(x::Vector{T}) where {T<:Real} = x\n");
     let result = extract(&workspace);
     assert!(result.diagnostics.is_empty(), "{:?}", result.diagnostics);
-    assert_eq!(
-        result.metadata.as_ref().unwrap().version.as_deref(),
-        Some("1.2.3")
-    );
-    assert_eq!(result.inputs.len(), 4);
+    assert_eq!(result.metadata.as_ref().unwrap().version(), Some("1.2.3"));
+    assert_eq!(result.input_count("repo"), 4);
     assert_eq!(methods(&result).len(), 4);
     assert!(item(&result, "Demo.helper").signatures.len() == 1);
     assert!(item(&result, "Demo.Sub.score").signatures.len() == 1);
@@ -328,24 +323,15 @@ fn static_includes_preserve_modules_public_surface_and_method_docs() {
 #[test]
 fn dispatch_identity_ignores_names_keywords_defaults_returns_and_order() {
     let first = extract(&small(
-        "module Demo\nexport fit\nfit(x::T; verbose=false)::T where {T<:Real} = x\nfit(x::String=\"\") = x\nend\n",
+        "module Demo\nexport fit\nfunction fit(x::T; verbose=false)::T where {T<:Real}\n    x\nend\nfit(x::String; count=1) = x\nend\n",
     ));
     let second = extract(&small(
-        "module Demo\nexport fit\nfit(renamed::String=\"new\") = renamed\nfit(value::S; other=1)::Any where {S<:Real} = value\nend\n",
+        "module Demo\nexport fit\nfit(renamed::String; output=\"new\") = renamed\nfunction fit(value::S; other=1)::Any where {S<:Real}\n    value\nend\nend\n",
     ));
     assert!(first.diagnostics.is_empty(), "{:?}", first.diagnostics);
     assert!(second.diagnostics.is_empty(), "{:?}", second.diagnostics);
     assert_eq!(methods(&first), methods(&second));
     assert_eq!(methods(&first).len(), 2);
-    let duplicate = extract(&small(
-        "module Demo\nexport f\nf(x::Int; a=1)=x\nf(y::Int; b=2)=y\nend\n",
-    ));
-    assert!(
-        duplicate
-            .diagnostics
-            .iter()
-            .any(|d| d.code.as_str() == "julia-conflicting-surface")
-    );
 }
 
 #[test]
@@ -382,33 +368,6 @@ end
 }
 
 #[test]
-fn include_and_dynamic_failures_are_visible_without_evaluation() {
-    for (body, code) in [
-        ("include(\"Demo.jl\")", "julia-include"),
-        ("include(\"missing.jl\")", "julia-source-read"),
-        ("include(joinpath(@__DIR__, \"other.jl\"))", "julia-include"),
-        (
-            "include(\"../../outside.jl\")",
-            "source-path-outside-boundary",
-        ),
-        ("if true\nf(x)=x\nend", "julia-unsupported-surface"),
-        ("@eval f(x)=x", "julia-unsupported-surface"),
-    ] {
-        let result = extract(&small(&format!("module Demo\nexport f\n{body}\nend\n")));
-        assert!(
-            result.diagnostics.iter().any(|d| d.code.as_str() == code),
-            "{body}: {:?}",
-            result.diagnostics
-        );
-    }
-    let workspace = small(
-        "module Demo\nexport f\nf(x)=x\nwrite(\"executed\", \"bad\")\nerror(\"do not execute\")\nend\n",
-    );
-    assert!(extract(&workspace).diagnostics.is_empty());
-    assert!(!workspace.path().join("executed").exists());
-}
-
-#[test]
 fn malformed_metadata_and_source_do_not_claim_a_valid_surface() {
     let workspace = small("module Demo\nexport f\nf(\nend\n");
     let result = extract(&workspace);
@@ -416,7 +375,8 @@ fn malformed_metadata_and_source_do_not_claim_a_valid_surface() {
         result
             .diagnostics
             .iter()
-            .any(|d| d.code.as_str() == "julia-syntax" && d.severity == Severity::Error)
+            .any(|d| d.message.contains("Julia runtime extraction failed")
+                && d.severity == Severity::Error)
     );
     workspace.write("Project.toml", "name: 42\n");
     assert!(extract(&workspace).metadata.is_none());
@@ -810,7 +770,6 @@ fn unsupported_inline_markup_in_lists_retains_one_warning_and_exact_attribution(
 
 #[test]
 fn unsupported_documentation_remains_visible_and_diagnostics_map_escapes() {
-    use diplodocus::ir::Block;
     let source =
         "module Demo\nexport f\n\"Unsupported \\u0060\\u0060x\\u0060\\u0060.\"\nf(x)=x\nend\n";
     let result = extract(&small(source));
@@ -821,21 +780,6 @@ fn unsupported_documentation_remains_visible_and_diagnostics_map_escapes() {
         .unwrap();
     let span = warning.span.unwrap();
     assert_eq!(&source[span.start..span.end], r"\u0060\u0060x\u0060\u0060");
-    let result = extract(&small("module Demo\n\"Value: $unknown\"\nf(x)=x\nend\n"));
-    assert!(
-        result
-            .diagnostics
-            .iter()
-            .any(|d| d.code.as_str() == "julia-unsupported-docstring")
-    );
-    let method = result
-        .items
-        .values()
-        .find(|item| item.kind == ItemKind::Method)
-        .unwrap();
-    assert!(
-        matches!(&method.documentation.as_ref().unwrap().document.blocks[0], Block::Unsupported { raw, .. } if raw.contains("$unknown"))
-    );
 }
 
 #[test]
@@ -862,7 +806,7 @@ fn family_and_method_references_round_trip_through_snapshots() {
 }
 
 #[test]
-fn transparent_wrappers_operators_varargs_and_nonstandard_names_are_static() {
+fn transparent_wrappers_operators_varargs_and_nonstandard_names_keep_source_evidence() {
     let result = extract(&small(
         r#"module Demo
 export f, +, var"a name"
@@ -894,7 +838,7 @@ fn a_shared_include_is_parsed_once_and_keeps_each_module_context() {
     workspace.write("src/shared.jl", "f(x::Int)=x\n");
     let result = extract(&workspace);
     assert!(result.diagnostics.is_empty(), "{:?}", result.diagnostics);
-    assert_eq!(result.inputs.len(), 3);
+    assert_eq!(result.input_count("repo"), 3);
     assert_eq!(methods(&result).len(), 2);
     assert_eq!(
         item(&result, "Demo.A.f").source_location,
@@ -947,30 +891,11 @@ fn docs_for_unresolved_aliases_and_reexports_have_visible_errors() {
             result
                 .diagnostics
                 .iter()
-                .any(|d| d.code.as_str() == "julia-unresolved-definition"),
+                .any(|d| d.message.contains("Julia runtime extraction failed")),
             "{:?}",
             result.diagnostics
         );
     }
-}
-
-#[test]
-fn included_utf8_failures_retain_original_bytes() {
-    let workspace = small("module Demo\ninclude(\"invalid.jl\")\nend\n");
-    workspace.write("src/invalid.jl", [0xff, 0x00]);
-    let result = extract(&workspace);
-    assert!(
-        result
-            .diagnostics
-            .iter()
-            .any(|d| d.code.as_str() == "julia-source-read")
-    );
-    assert!(
-        result
-            .inputs
-            .values()
-            .any(|input| input.raw_bytes.as_deref() == Some(&[0xff, 0x00]))
-    );
 }
 
 #[cfg(unix)]
@@ -989,9 +914,10 @@ fn includes_reject_symlinks_outside_the_package() {
         result
             .diagnostics
             .iter()
-            .any(|d| d.code.as_str() == "source-path-outside-boundary")
+            .any(|d| d.message.contains("escapes the configured checkout")),
+        "{:?}",
+        result.diagnostics
     );
-    assert_eq!(result.inputs.len(), 2);
 }
 
 #[test]
@@ -1009,14 +935,15 @@ fn bound_variables_do_not_collide_with_free_type_names() {
         "module Demo\nexport f\nf(x::T, y::T) where T = x\nend\n",
     ));
     let free = extract(&small(
-        "module Demo\nexport f\nf(x::T, y::T0) where T = x\nend\n",
+        "module Demo\nexport f\nconst T0 = Int
+f(x::T, y::T0) where T = x\nend\n",
     ));
     assert_ne!(methods(&bound), methods(&free));
     let first = extract(&small(
-        "module Demo\nexport f\nf(x::Other.T, y::T) where T = x\nend\n",
+        "module Demo\nexport f\nmodule Other; struct T end; end\nf(x::Other.T, y::T) where T = x\nend\n",
     ));
     let renamed = extract(&small(
-        "module Demo\nexport f\nf(x::Other.T, y::S) where S = x\nend\n",
+        "module Demo\nexport f\nmodule Other; struct T end; end\nf(x::Other.T, y::S) where S = x\nend\n",
     ));
     assert_eq!(methods(&first), methods(&renamed));
 }
@@ -1279,7 +1206,9 @@ fn project_metadata_preserves_julia_compatibility_and_optional_version() {
     workspace.write("Project.toml", text);
     let result = extract(&workspace);
     assert!(result.diagnostics.is_empty(), "{:?}", result.diagnostics);
-    let metadata = result.metadata.unwrap();
+    let Some(PackageMetadata::Julia(metadata)) = result.metadata else {
+        panic!("missing Julia package metadata")
+    };
     assert!(metadata.version.is_none());
     assert_eq!(metadata.compatibility["julia"], "1.6 - 1.12");
     assert_eq!(
@@ -1291,20 +1220,6 @@ fn project_metadata_preserves_julia_compatibility_and_optional_version() {
     let sources =
         diplodocus::assembly::assemble_workspace(workspace.path().join("diplodocus.yaml")).unwrap();
     assert!(sources.workspace().packages["demo"].version.is_none());
-}
-
-#[test]
-fn a_shadowed_include_cannot_claim_standard_include_semantics() {
-    let workspace =
-        small("module Demo\nexport f\ninclude(path) = nothing\ninclude(\"methods.jl\")\nend\n");
-    workspace.write("src/methods.jl", "f(x)=x\n");
-    let result = extract(&workspace);
-    assert!(
-        result
-            .diagnostics
-            .iter()
-            .any(|d| d.code.as_str() == "julia-include")
-    );
 }
 
 #[test]

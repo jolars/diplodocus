@@ -38,8 +38,7 @@ Capabilities describe supported semantics. Julia command discovery records
 Doxygen records its existing `static` mode with Doxygen tool and parser
 evidence.
 R command discovery uses `native`, with package-level `RRuntime` observations
-and, when enabled, completed `RDocumentation` generation evidence. The public
-source extractor retains `static` for supplemental analysis.
+and, when enabled, completed `RDocumentation` generation evidence.
 
 ## Commands and prerequisites
 
@@ -53,9 +52,7 @@ Native tools retain their own rules for discovering files. Excluding generated s
 from Diplodocus's source inventories does not hide it from package loaders. R
 commands reject recognized snapshots in native code, help, or data locations,
 and CLI publication rejects new snapshot destinations there. The default
-`.diplodocus/` location keeps storage outside those producer inputs. Low-level
-snapshot publication and static source inspection remain independent of native
-loading.
+`.diplodocus/` location keeps storage outside those producer inputs.
 
 | Command | Discovery and execution | Publication |
 | --- | --- | --- |
@@ -65,10 +62,9 @@ loading.
 | `serve` | The same build operation initially and after watched changes, reusing verified package and page results when their inputs match. Workspace references and site output are rebuilt. | Last successful served generation survives a failed rebuild. |
 | `generate` | Read a completed snapshot. No producer checkouts, configuration, extraction tools, or language runtimes. | Validated site or fragments. |
 
-Native preparation, generation, extraction, and examples are distinct activities.
-R `check` uses the same documentation generation and native discovery as
-extraction. A successful `check` does not claim example execution succeeded.
-`extract`, `build`, and `serve` must not use different API discovery policies.
+The Rust library's `assembly::assemble_workspace()` uses the same native
+discovery as `check`, including R checkout loading and configured roxygen2
+generation. Both keep documentation examples inert.
 
 Failures, changed inputs, cancellation, unsupported output, and cleanup errors
 stop the operation. Successful execution evidence and validated assets must be

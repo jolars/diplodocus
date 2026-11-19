@@ -18,7 +18,8 @@ R extraction now selects roxygen2 generation or maintained Rd and combines
 documentation with native checkout discovery. Python uses Sphinx autodoc and
 Napoleon with maintained stubs. Julia uses the loaded checkout's bindings,
 dispatch, and registered documentation. Rust and C++ consume native rustdoc
-JSON and Doxygen XML.
+JSON and Doxygen XML. The Rust library and CLI share native discovery for
+workspace assembly.
 The development loop reuses verified extraction and execution results by package.
 Workspace reference resolution and site rendering still run after each change.
 Keep the existing Rust and C++ integrations and use the [current

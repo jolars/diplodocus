@@ -1,11 +1,11 @@
-use diplodocus::extractors::python::{parse_target, surface};
+use diplodocus::extractors::python::parse_target;
 use diplodocus::ir::{ItemLanguageData, PythonDecoratorSemantics, Signature, SignatureExpression};
 use diplodocus::paths::{ResolvedPackagePaths, ResolvedRepositoryPaths, ResolvedTargetPath};
 
-mod support;
+use super::{reconcile, support};
 
 #[test]
-fn contextmanagers_are_static_and_private_decorators_do_not_fail_public_extraction() {
+fn supplemental_source_classifies_context_managers_and_diagnoses_unknown_decorators() {
     let workspace = support::TestWorkspace::from_fixture("python-contextmanager");
     let root = workspace.path().canonicalize().unwrap();
     let repository = ResolvedRepositoryPaths {
@@ -27,7 +27,7 @@ fn contextmanagers_are_static_and_private_decorators_do_not_fail_public_extracti
     };
     let parsed = parse_target(&repository, &package, &target);
     assert!(parsed.diagnostics.is_empty(), "{:?}", parsed.diagnostics);
-    let surface = surface::reconcile(&parsed);
+    let surface = reconcile(&parsed);
     let public = surface
         .items
         .values()

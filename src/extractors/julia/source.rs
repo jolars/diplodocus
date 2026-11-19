@@ -85,7 +85,6 @@ struct Context<'a> {
 }
 
 pub(super) enum Inputs<'a> {
-    Static(&'a ResolvedTargetPath),
     Observed(&'a [(PathBuf, String)]),
     Extensions(&'a ResolvedTargetPath),
 }
@@ -114,10 +113,6 @@ pub(super) fn extract(
                 context.file(file, module, None);
             }
             return context.declarations;
-        }
-        Inputs::Static(target) => {
-            context.file(&target.path, "", None);
-            target
         }
         Inputs::Extensions(target) => target,
     };

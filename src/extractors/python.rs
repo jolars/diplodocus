@@ -26,9 +26,9 @@ pub(crate) mod native;
 mod references;
 mod signatures;
 mod source;
-pub mod surface;
+mod surface;
 
-pub use extraction::{PythonExtraction, extract_target};
+pub use extraction::PythonExtraction;
 pub use model::*;
 
 const RUFF_VERSION: &str = env!("DIPLODOCUS_RUFF_VERSION");

@@ -25,8 +25,7 @@ Keep snapshots and generated sites in `.diplodocus/` or outside the package's
 regardless of filename extension, and also protects `DESCRIPTION`, `NAMESPACE`,
 and `.Rbuildignore`. If a recognized snapshot already occupies a native input
 location, native commands report the conflict before loading the package. Move
-the artifact before retrying. Static source inspection still excludes
-recognized Diplodocus storage artifacts regardless of their filename extension.
+the artifact before retrying.
 
 ## Roxygen2 or maintained Rd {#roxygen2-or-maintained-rd}
 

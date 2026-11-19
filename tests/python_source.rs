@@ -63,15 +63,6 @@ fn type_checking_imports_qualify_annotations_without_runtime_exports() {
     assert!(
         matches!(&parameters[0].default, Some(diplodocus::ir::SignatureExpression::Name { name, .. }) if name == "Axes")
     );
-    let surface = diplodocus::extractors::python::surface::reconcile(&result);
-    assert!(surface.diagnostics.is_empty(), "{:?}", surface.diagnostics);
-    assert!(
-        !surface
-            .items
-            .values()
-            .any(|item| item.qualified_name.ends_with(".Axes")
-                || item.qualified_name.ends_with(".go"))
-    );
     workspace.write("python/foo/annotations.py", "import typing as t\nif t.TYPE_CHECKING:\n    from matplotlib.axes import Axes\n    class RuntimeClass: ...\n");
     assert!(
         parse(&workspace)

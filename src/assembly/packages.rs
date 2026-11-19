@@ -1,7 +1,7 @@
 use super::*;
 use crate::diagnostics::DiagnosticEntity;
+use crate::extractors::adapter::AdapterOutput;
 use crate::extractors::python::native::DoctestPlans;
-use crate::extractors::{adapter::AdapterOutput, r};
 use crate::ir::{
     ExtractionTarget, Item, ItemLanguageData, Package, PythonVisibility, SourceLocation,
 };
@@ -92,19 +92,12 @@ pub(super) fn assemble(
                     fragment
                 }
                 "r" => {
-                    let timing =
-                        reporting.phase(Phase::Extraction, Some(&declaration.id), Some(&target.id));
-                    let fragment = if let Some(result) = native
+                    let result = native
                         .r
                         .remove(&(declaration.id.clone(), target.id.clone()))
-                    {
-                        let mut fragment = AdapterOutput::from(result.extraction);
-                        fragment.evidence.completed = result.completed;
-                        fragment
-                    } else {
-                        r::extract_target(repository, resolved, selected).into()
-                    };
-                    timing.finish();
+                        .ok_or(AssemblyError::InputsChanged)?;
+                    let mut fragment = AdapterOutput::from(result.extraction);
+                    fragment.evidence.completed = result.completed;
                     fragment
                 }
                 _ => {

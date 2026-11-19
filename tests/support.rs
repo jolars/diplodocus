@@ -73,6 +73,73 @@ pub fn prepared_acceptance_workspace() -> TestWorkspace {
     workspace
 }
 
+#[derive(Debug, Default, PartialEq, serde::Serialize)]
+pub struct ApiDiscovery {
+    pub items: BTreeMap<String, diplodocus::ir::Item>,
+    pub metadata: Option<diplodocus::ir::PackageMetadata>,
+    pub diagnostics: Vec<diplodocus::diagnostics::Diagnostic>,
+    extraction: Option<diplodocus::ir::Provenance>,
+}
+
+impl ApiDiscovery {
+    pub fn extraction(&self) -> &diplodocus::ir::Provenance {
+        self.extraction.as_ref().expect("successful API discovery")
+    }
+
+    pub fn input_count(&self, repository: &str) -> usize {
+        let diplodocus::ir::ProvenanceActivity::Extraction { inputs, .. } =
+            &self.extraction().activity
+        else {
+            unreachable!()
+        };
+        inputs[repository].len()
+    }
+}
+
+pub fn discover_api(config: &Path, package: &str) -> ApiDiscovery {
+    use diplodocus::assembly::{AssemblyError, assemble_workspace};
+    use diplodocus::ir::ProvenanceActivity;
+
+    match assemble_workspace(config) {
+        Ok(sources) => {
+            let workspace = sources.workspace();
+            let extraction = workspace.provenance.iter().find(|record| {
+                matches!(&record.activity, ProvenanceActivity::Extraction { target, .. }
+                    if target.package == package)
+            });
+            ApiDiscovery {
+                items: workspace.packages[package].items.clone(),
+                metadata: workspace.packages[package].metadata.clone(),
+                diagnostics: workspace.diagnostics.iter().cloned().collect(),
+                extraction: extraction.cloned(),
+            }
+        }
+        Err(AssemblyError::Path(error)) => ApiDiscovery {
+            diagnostics: vec![error.to_diagnostic("diplodocus.yaml".try_into().unwrap())],
+            ..ApiDiscovery::default()
+        },
+        Err(AssemblyError::Diagnostics(diagnostics)) => ApiDiscovery {
+            diagnostics,
+            ..ApiDiscovery::default()
+        },
+        Err(error) => panic!("{error:?}"),
+    }
+}
+
+pub fn discover_r_api(workspace: &TestWorkspace) -> ApiDiscovery {
+    let directory = workspace.path().join("workspace");
+    let mut config =
+        diplodocus::configuration::load_configuration(directory.join("diplodocus.yaml")).unwrap();
+    config.packages.retain(|package| package.id == "rfoo");
+    config.packages[0].incremental.cache = diplodocus::configuration::IncrementalCache::Off;
+    config.content.clear();
+    config.concepts.clear();
+    config.relationships.clear();
+    let path = directory.join("r-extraction.yaml");
+    workspace.write(&path, serde_saphyr::to_string(&config).unwrap());
+    discover_api(&path, "rfoo")
+}
+
 fn prepare_acceptance_python(workspace: &TestWorkspace) {
     // Relocated workspaces copy the same prepared producer artifact. Compiling
     // twice can embed different build paths in otherwise equivalent binaries.

@@ -3,8 +3,7 @@
 Julia supplies bindings, dispatch, type information, and registered
 documentation from the loaded checkout. Diplodocus builds the portable API
 records, resolves references, and renders pages. Fatou supplies Julia Markdown,
-authored signatures, and source maps. The explicit Rust `extract_target` API
-still supports source inspection without starting Julia.
+authored signatures, and source maps.
 
 ## Native discovery
 
@@ -23,8 +22,8 @@ checks this interface on every supported Julia minor. Discovery uses the
 standard library. Authored Documenter pages and example execution use
 Diplodocus's [Documenter support](../guide/authoring/documenter.md).
 
-`check`, `extract`, `build`, and `serve` share discovery. `check` loads the
-package and validates references and presentation. Extraction commands also
+The CLI commands and Rust library workspace assembly share native discovery.
+`check` loads the package and validates references and presentation. Extraction commands also
 verify the retained doctests. Package loading, unsupported native declarations,
 input changes, cancellation, and timeouts prevent publication. Package
 initialization can write to the checkout.

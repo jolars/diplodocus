@@ -1,7 +1,6 @@
-//! Static Julia extraction from Project.toml and an explicit source entry file.
+//! Reconcile runtime Julia discovery with Project.toml and maintained source.
 //!
-//! Fatou owns syntax and string decoding. This adapter owns filesystem boundaries,
-//! API policy, identities, and portable evidence; it never starts Julia.
+//! Fatou supplies authored signatures, documentation, and source attribution.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
@@ -26,20 +25,6 @@ mod surface;
 pub use metadata::{JuliaMetadata, JuliaMetadataField};
 
 pub(crate) const FATOU_VERSION: &str = env!("DIPLODOCUS_FATOU_VERSION");
-pub(crate) const CAPABILITIES: &[&str] = &[
-    "diagnostics.unsupported-visible",
-    "julia.declarations",
-    "julia.docs.markdown",
-    "julia.docs.references",
-    "julia.exports.static",
-    "julia.extensions.static",
-    "julia.includes.static",
-    "julia.metadata.project",
-    "julia.methods",
-    "julia.reexports",
-    "provenance.source",
-];
-
 /// Portable Julia extraction ready for workspace assembly.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -75,34 +60,6 @@ pub struct JuliaInput {
     /// Original bytes when UTF-8 decoding failed.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub raw_bytes: Option<Vec<u8>>,
-}
-
-/// Extract maintained Julia entry and extension files and their literal includes.
-///
-/// Files may be included from anywhere inside the configured package, but reads
-/// never escape that package or repository. Error-bearing results are inspectable
-/// and must be rejected before publication. No depot or runtime is consulted.
-pub fn extract_target(
-    repository: &ResolvedRepositoryPaths,
-    package: &ResolvedPackagePaths,
-    target: &ResolvedTargetPath,
-) -> JuliaExtraction {
-    let (mut result, mut observation) =
-        prepare_extraction(repository, package, target, CAPABILITIES);
-    if valid_target(repository, package, target) {
-        let declarations = source::extract(
-            repository,
-            package,
-            source::Inputs::Static(target),
-            &mut result,
-            &mut observation,
-        );
-        surface::assemble(declarations, &mut result);
-    }
-    result.provenance = observation.into_provenance(None, None);
-    result.diagnostics.sort();
-    result.diagnostics.dedup();
-    result
 }
 
 fn valid_target(
@@ -147,14 +104,6 @@ fn prepare_extraction(
         diagnostics: Vec::new(),
         provenance: observation.clone().into_provenance(None, None),
     };
-    if !valid_target(repository, package, target) {
-        result.diagnostics.push(Diagnostic::new(
-            DiagnosticCode::JuliaSourceRead,
-            Severity::Error,
-            "Julia targets must be explicit .jl entry files inside the configured package.",
-        ));
-        return (result, observation);
-    }
     if let Some(input) = read_input(
         repository,
         package,

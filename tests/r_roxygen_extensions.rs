@@ -164,23 +164,6 @@ fn maintained_numeric_defaults_keep_their_source_spellings() {
     );
     root.write("package/NAMESPACE", "export(numeric_defaults)\n");
     root.write("package/man/numeric_defaults.Rd", format!("\\name{{numeric_defaults}}\\alias{{numeric_defaults}}\\title{{Numeric defaults}}\\usage{{numeric_defaults({formals})}}\\description{{Maintained spellings survive native reflection.}}"));
-    let config_path = root.path().join("diplodocus.yaml");
-    let config = diplodocus::configuration::load_configuration(&config_path).unwrap();
-    let paths = diplodocus::paths::resolve_workspace_paths(&config_path, &config).unwrap();
-    let package = &paths.packages[0];
-    let source = diplodocus::extractors::r::extract_target(
-        &paths.repositories[package.repository_index],
-        package,
-        &package.targets[0],
-    );
-    let source_signature = source
-        .items
-        .values()
-        .find(|item| item.name == "numeric_defaults")
-        .unwrap()
-        .signatures[0]
-        .signature
-        .clone();
     success(cli(&root, &["extract"]));
     let loaded = snapshot(&root);
     let item = loaded.workspace().packages["demo"]
@@ -189,7 +172,6 @@ fn maintained_numeric_defaults_keep_their_source_spellings() {
         .find(|item| item.name == "numeric_defaults")
         .unwrap();
     assert!(!item.signatures[0].sources.is_empty());
-    assert_eq!(item.signatures[0].signature, source_signature);
     let Signature::Callable { parameters, .. } = &item.signatures[0].signature else {
         panic!()
     };

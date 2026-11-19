@@ -1,10 +1,11 @@
 # R extraction
 
-Normal commands use native package discovery. `check`, `extract`, `build`, and
-`serve` share package-level documentation selection, optional roxygen2
-generation, and verified checkout loading. Only extraction commands execute
-documentation examples. The [R workflow](../guide/extraction/r.md) describes
-configuration and checkout writes.
+`check`, `extract`, `build`, `serve`, and the Rust library's
+`assembly::assemble_workspace()` share package-level documentation selection,
+optional roxygen2 generation, and verified checkout loading. The library
+assembly function keeps documentation examples inert, as `check` does. The
+[R workflow](../guide/extraction/r.md) describes configuration and checkout
+writes.
 
 ## Native command discovery
 
@@ -25,8 +26,8 @@ record encoding remains version 1.
 
 Generation errors, changed maintained inputs, invalid helper results, timeout,
 cancellation, or failed cleanup reject the attempt. The adapter never accepts
-preexisting generated Rd after generation fails. Generation and discovery are
-fresh on every command attempt; their evidence does not authorize cache reuse.
+preexisting generated Rd after generation fails. The incremental cache verifies
+inputs and environment observations before reusing generation or discovery.
 
 The package's complete `R/`, `man/`, and `data/` trees are native input
 locations, regardless of filename extension. Normal commands reject recognized
@@ -35,32 +36,10 @@ sites in those trees. `DESCRIPTION`, `NAMESPACE`, and `.Rbuildignore` are also
 protected native inputs. Store outputs in reserved `.diplodocus/` paths or
 outside those locations so language tools consume their normal package inputs.
 
-## Supplemental source adapter
-
-The following source-only interface remains available independently of native
-command orchestration.
-
-`extractors::r::extract_target(repository, package, target)` reads a resolved R
-package directory and returns a portable `RExtraction`. The API adapter never
-installs, attaches, loads, or sources a package, or evaluates documentation. R must be
-available on `PATH` for an isolated library-discovery probe.
-The public `assembly::assemble_workspace` source-inspection API consumes this
-fragment. Normal CLI commands use native discovery and reconcile its observations
-with source evidence instead; their boundaries are described in the
-[design overview](../development/design.md).
-
-The result contains validated `DESCRIPTION` metadata, canonical items with
-independent signatures and documentation, ordered diagnostics, and extraction
-provenance. Its `inputs` map retains the original text of every configured source file,
-including unsupported or malformed input. Invalid UTF-8 retains its bytes
-instead. Callers must reject error-bearing results before building a site;
-independent valid inputs remain available for inspection.
-
 Workspace assembly retains the complete DESCRIPTION metadata on its package
 record and discovers conventional package documents. During extraction, a
 separate native helper evaluates author and citation information and converts
-NEWS.Rd. These completed results are distinct from the static API adapter's
-observations. See the [package landing page workflow](../guide/extraction.md).
+NEWS.Rd. See the [package landing page workflow](../guide/extraction.md).
 
 ## Inputs and public declarations
 
@@ -71,12 +50,6 @@ directories are allowed. Reads stay within the package and target boundaries,
 and directory symlinks are rejected. Portable output contains repository IDs
 and relative paths, never checkout roots.
 
-Static discovery excludes `.diplodocus/`, reserved temporary snapshot paths,
-and recognized snapshot databases and their recovery files, even when their
-extensions resemble R source or Rd documentation. This exclusion applies to
-source inspection; native commands also enforce the requirements for native inputs
-described above.
-
 `DESCRIPTION` must contain one DCF record with nonempty Package, Version, and
 Title fields. Metadata retains all fields, including unevaluated `Authors@R`,
 and dependency declarations with their original version constraints. Duplicate
@@ -84,49 +57,25 @@ fields, malformed dependencies, unsupported encoding, and parser recovery
 produce errors and exclude the metadata fragment. Folded values and exact
 field, dependency, and constraint ranges retain separate evidence.
 
-Supported namespace directives are unconditional `export`, `import`,
-`importFrom`, two- or three-argument `S3method` declarations with static names,
-and literal `useDynLib` declarations. For `useDynLib`, the library and any
-named or positional symbols must have static names. `.registration` accepts
-`TRUE` or `FALSE`, and `.fixes` accepts a string literal. Extraction retains the
-namespace input without loading a native library or inferring registered symbols.
+Native R interprets the checkout's NAMESPACE and loads required packages and
+prepared native libraries. Diplodocus reads unconditional `export`, `import`,
+`importFrom`, and `S3method` entries with literal names for source attribution
+and supplemental import evidence. Export patterns and conditional directives
+can contribute to the observed native API.
 
-R extraction requires an installed R and the packages named in package-wide
-imports. A single `R --vanilla` probe discovers `.libPaths()`, base bindings,
-and R's known S3 generic coordinates. The probe sets `R_DEFAULT_PACKAGES=NULL`
-and skips profiles and environment files, so it never loads project code or
-attaches dependency packages. It respects library environment variables and
-launcher-supplied paths, including Nix wrappers. Profiles that configure `renv`
-or other project libraries are not executed; expose those libraries through
-`R_LIBS` when needed.
-
-Rust reads installed `Meta/nsInfo.rds` with `rd-rds` to resolve package-wide
-imports, including `import(grid)`. Installed export patterns expand against
-names in the package's `.rdx` index using supported regular expressions; dependency
-code records and package hooks are never read or run. Missing packages, malformed
-metadata, and unsupported patterns produce `r-library-unavailable` errors.
-Explicit `importFrom` declarations and qualified registrations retain their
-source-declared coordinates without loading the dependency.
-
-S3 registrations resolve through local generics, explicit imports, and the
-usual default R packages, in that order. Base takes precedence over the default
-search path. Installed exports and R's known-generic map determine external
-coordinates; ambiguous imports and uncertain local bindings produce errors.
-There is no embedded table of generic names. Provenance records the R version
-and fingerprints of the effective export sets and known-generic map, without
-local library paths. Generation from a snapshot does not require R.
-
-Conditional directives, computed names, `exportPattern`, and other directives
-in the documented package's NAMESPACE produce errors. An invalid namespace
-cannot establish a public surface.
+A separate `R --vanilla` probe discovers library paths, base bindings, and known
+S3 generic coordinates. The probe sets `R_DEFAULT_PACKAGES=NULL`. Diplodocus
+also reads installed `Meta/nsInfo.rds` with `rd-rds` for supplemental import and
+help evidence. Expose prepared libraries through `R_LIBS`, `R_LIBS_USER`, or
+the R launcher on `PATH`.
 
 Maintained source supplies direct, statically named function assignments and
 assignment aliases. Signatures preserve formal order, required parameters,
 defaults, `...`, and named parameters following `...`. Defaults become
 structured expressions without evaluation. Non-syntactic names retain their
-spelling. Source parsing errors exclude that file's definitions. Ambiguous,
-conditional, computed, cyclic, or unsupported bindings cannot supply an
-exported definition.
+spelling. Source parsing errors produce supplemental warnings. Generated
+bindings can use native discovery evidence when a direct source definition is
+unavailable.
 
 A direct terminal `UseMethod` call with a literal generic name establishes an
 S3 generic. A terminal `structure` call with a literal class, or literal vector
@@ -138,9 +87,8 @@ this supplemental subset; native discovery handles supported generated bindings.
 
 ## Reconciliation and identity
 
-Exports, S3 registrations, and valid Rd aliases select maintained functions.
-Documented helpers do not require exports or S3 registration, but documentation
-cannot invent a definition or disambiguate uncertain source bindings.
+Native exports, S3 registrations, and valid Rd aliases select observed
+functions. Rd can document a private binding without exporting it.
 Dataset topics marked `\docType{data}` establish data objects directly from Rd,
 without requiring maintained assignments or namespace exports. They carry
 `RDeclaration::Dataset`, `ItemKind::Constant`, a value signature without an
@@ -200,9 +148,10 @@ listings. Grouped argument labels remain intact, including names used only by
 another method. In argument labels, `\dots` and `\ldots` normalize to the
 maintained `...` formal. Shared topic coordinates retain the topic name,
 primary declaration, and all members independently of their semantic identities.
-Usage supports ordinary calls and typed `\method` or `\S3method` syntax;
-maintained source remains authoritative for signatures. Conflicting usage,
-unknown declarations, and arguments with no matching formal produce errors.
+Usage supports ordinary calls and typed `\method` or `\S3method` syntax. Native
+formals establish signatures. Diplodocus preserves maintained spellings when it
+can verify them against those formals. Conflicting usage, unknown declarations,
+and arguments with no matching formal produce errors.
 Additional help aliases name the topic's primary declaration. Selection prefers
 a declaration matching the topic name, then a local generic, then the first
 documented usage, and finally the first canonical identity. Declaration aliases
@@ -239,8 +188,7 @@ topics remain discoverable even when they carry the conventional internal keywor
 Examples, including `\dontrun`, `\donttest`, and `\dontdiff` content, are
 display-only `CodeBlock` nodes. They never become executable `CodeCell` nodes.
 Unsupported example or usage forms retain a placeholder and the original
-file. Malformed files remain in `inputs`, even when their documentation cannot
-be attached.
+file in the enclosing document when lowering succeeds.
 
 `rd-source` provides exact native diagnostic ranges and a source map for its
 parsed AST. The adapter selects conditional branches and normalizes tables
@@ -258,10 +206,9 @@ offsets.
 | --- | --- |
 | `r-metadata` | Invalid DESCRIPTION grammar, fields, or dependency constraints |
 | `r-source-read` | An input cannot be read or decoded |
-| `r-library-unavailable` | R discovery or installed dependency metadata is unavailable |
+| `r-library-unavailable` | The supplemental R library probe or installed dependency metadata is unavailable |
 | `r-syntax` | Native maintained-source parse failure |
-| `r-unsupported-namespace` | Invalid, conditional, or unsupported namespace syntax |
-| `r-unresolved-definition` | A public name, generic, or Rd usage lacks an unambiguous static declaration |
+| `r-unresolved-definition` | An Rd topic or usage lacks a matching declaration |
 | `r-conflicting-surface` | Incompatible identities, registrations, topics, or signatures |
 | `r-missing-documented-alias` | Warning for a public item without valid Rd documentation |
 | `r-unsupported-surface` | Invalid or unsupported formal structure |
@@ -274,25 +221,18 @@ Filesystem boundary failures use the shared source-path diagnostic codes.
 Diagnostics sort in the common deterministic order and retain exact ranges
 only when a parser supplies them.
 
-Supplemental provenance records static mode, the seven implemented R capabilities, content
-fingerprints, and actual parser use. The build uses `arity-parser` 0.8.0 for DCF,
-namespace, R source, and supported Rd usage calls; legacy parser evidence still
-records 0.6.1. `rd-source` 0.5.0 handles Rd syntax, and
-`rd-ast` 0.5.0 supplies strict semantic views with default features disabled.
-Parser records are present only when used; undecodable input claims no parser
-use. See the [extractor contract](../spikes/static-extractor-contract.md) for
-the capability manifest.
+Extraction provenance records native discovery, source fingerprints, and the
+parsers used to read each input. The build uses `arity-parser` for DCF, NAMESPACE,
+R source, and supported Rd usage. `rd-source` provides Rd syntax and `rd-ast`
+supplies strict semantic views.
 
-The [integrated tests](../../tests/r_extraction.rs) lock the seven acceptance
-items, four location warnings, shared documentation, alias identities, local
-and imported S3 generics, and the extra dynamic-Rd warning. They compare
-relocated workspaces, diagnose a missing R executable, and verify installed
-dependency imports without package loading or profile execution. Component
-cases cover malformed input, conflicts, source boundaries, structured markup,
-and inert source and examples during assembly. [`tests/rd_examples.rs`](../../tests/rd_examples.rs)
-checks required extraction-time execution, shared topic sessions, illustrative
-regions, conditional skips, text, figures, prerequisite failures, cancellation,
-timeouts, failure preservation, and portable generation.
+The [R integration tests](../../tests/r_extraction.rs) cover native identities,
+signatures, source evidence, shared topics, and malformed inputs.
+[The roxygen2 tests](../../tests/r_roxygen.rs) verify package loading and
+generation through both library assembly and CLI commands.
+[The Rd example tests](../../tests/rd_examples.rs) exercise extraction-time
+execution, shared sessions, figures, failure preservation, and detached
+generation.
 
 ## Native Rd example execution
 

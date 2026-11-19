@@ -82,7 +82,7 @@ fn cli_paths_and_completed_snapshot_match_the_contract() {
         .map(|diagnostic| format!("{}\n", format_diagnostic(diagnostic)))
         .collect();
     assert!(!warnings.is_empty());
-    let static_packages = expected.workspace().packages.clone();
+    let assembled_packages = expected.workspace().packages.clone();
     drop((sources, resolved));
 
     let result = Command::new(env!("CARGO_BIN_EXE_diplodocus"))
@@ -102,7 +102,7 @@ fn cli_paths_and_completed_snapshot_match_the_contract() {
     };
     assert!(metadata.runtime.take().is_some());
     for (id, item) in &mut completed_packages.get_mut("rfoo").unwrap().items {
-        let expected = &static_packages["rfoo"].items[id];
+        let expected = &assembled_packages["rfoo"].items[id];
         if let Some(document) = &item.documentation {
             assert!(document.provenance.iter().any(|record| matches!(
                 record.activity,
@@ -116,7 +116,7 @@ fn cli_paths_and_completed_snapshot_match_the_contract() {
         }
     }
     for (id, item) in &mut completed_packages.get_mut("pyfoo").unwrap().items {
-        let expected = &static_packages["pyfoo"].items[id];
+        let expected = &assembled_packages["pyfoo"].items[id];
         if let Some(document) = &mut item.documentation {
             document.provenance.retain(|p| {
                 !matches!(
@@ -127,7 +127,7 @@ fn cli_paths_and_completed_snapshot_match_the_contract() {
             assert_eq!(item.documentation, expected.documentation);
         }
     }
-    assert_eq!(completed_packages, static_packages);
+    assert_eq!(completed_packages, assembled_packages);
     let expected = completed.canonical_export().unwrap();
     assert!(!root.path().join(".diplodocus").exists());
     fs::remove_file(&default).unwrap();
@@ -187,14 +187,12 @@ fn generated_snapshots_never_become_sources_or_change_input_fingerprints() {
         Snapshot::from_sources(&original, &resolve_workspace(&original).unwrap()).unwrap();
     let expected = snapshot.canonical_export().unwrap();
 
-    // Low-level publication is path-agnostic; static inspection recognizes
-    // generated storage independently of its filename extension.
+    // Low-level publication is path-agnostic. Assembly recognizes snapshots
+    // by their contents even when they have a documentation file extension.
     for output in [
         DEFAULT_OUTPUT,
         "core/docs/export.md",
         "core/notes/export.qmd",
-        "r/R/export.R",
-        "r/man/export.Rd",
         "r/README.md",
         "r/NEWS.md",
         "r/LICENSE.md",
@@ -216,6 +214,13 @@ fn generated_snapshots_never_become_sources_or_change_input_fingerprints() {
             original.revalidate().unwrap();
         }
     }
+    let output = root.path().join("r/R/export.R");
+    snapshot.publish(&output).unwrap();
+    let error = assemble_workspace(&config).unwrap_err();
+    assert!(
+        matches!(error, diplodocus::assembly::AssemblyError::Diagnostics(diagnostics)
+        if diagnostics.iter().any(|diagnostic| diagnostic.message.contains("native inputs")))
+    );
     let result = Command::new(env!("CARGO_BIN_EXE_diplodocus"))
         .current_dir(root.path())
         .args(["check", "--config", CONFIG])
@@ -316,7 +321,6 @@ fn source_aliases_to_snapshots_and_storage_are_excluded_within_the_boundary() {
     for (output, alias) in [
         ("core/export.sqlite", "core/docs/alias.md"),
         ("python/export.sqlite", "python/python/foo/alias.py"),
-        ("r/export.sqlite", "r/R/alias.R"),
     ] {
         snapshot.publish(root.path().join(output)).unwrap();
         symlink(root.path().join(output), root.path().join(alias)).unwrap();
@@ -341,6 +345,17 @@ fn source_aliases_to_snapshots_and_storage_are_excluded_within_the_boundary() {
         original.workspace()
     );
     original.revalidate().unwrap();
+
+    let output = root.path().join("r/export.sqlite");
+    let alias = root.path().join("r/R/alias.R");
+    snapshot.publish(&output).unwrap();
+    symlink(output, &alias).unwrap();
+    let error = assemble_workspace(&config).unwrap_err();
+    assert!(
+        matches!(error, diplodocus::assembly::AssemblyError::Diagnostics(diagnostics)
+        if diagnostics.iter().any(|diagnostic| diagnostic.message.contains("native inputs")))
+    );
+    fs::remove_file(alias).unwrap();
 
     symlink(
         root.path().join("python/export.sqlite"),

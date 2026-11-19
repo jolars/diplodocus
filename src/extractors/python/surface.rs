@@ -56,21 +56,6 @@ struct ModuleSurface {
     names: BTreeMap<String, (bool, bool, SourceLocation)>,
 }
 
-/// Resolve the public surface without importing or executing documented code.
-///
-/// A dynamic export list retains visible definitions with unknown visibility.
-/// Cycles, unresolved exports, and ambiguous aliases yield diagnostics rather
-/// than fallback identities. Module discovery order never selects a winner.
-pub fn reconcile(package: &ParsedPythonPackage) -> PythonSurface {
-    reconcile_with_runtime(
-        package,
-        &BTreeSet::new(),
-        &BTreeMap::new(),
-        &BTreeSet::new(),
-        &BTreeMap::new(),
-    )
-}
-
 pub(crate) fn reconcile_with_runtime(
     package: &ParsedPythonPackage,
     support: &BTreeSet<String>,
@@ -812,3 +797,6 @@ fn alias_rank(kind: ItemAliasKind) -> u8 {
         ItemAliasKind::RustReexport => 6,
     }
 }
+
+#[cfg(test)]
+mod tests;

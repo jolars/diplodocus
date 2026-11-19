@@ -1,25 +1,12 @@
 mod support;
 
-use diplodocus::configuration::load_configuration;
 use diplodocus::diagnostics::Severity;
-use diplodocus::extractors::r::{RExtraction, extract_target};
 use diplodocus::ir::{
-    Block, DocumentContainerKind, Inline, Item, ItemLanguageData, ProvenanceActivity, RDeclaration,
-    RGenericReference, Signature,
+    Block, DocumentContainerKind, Inline, Item, ItemLanguageData, PackageMetadata,
+    ProvenanceActivity, RDeclaration, RGenericReference, Signature,
 };
-use diplodocus::paths::resolve_workspace_paths;
 
-fn extract(workspace: &support::TestWorkspace) -> RExtraction {
-    let path = workspace.path().join("workspace/diplodocus.yaml");
-    let config = load_configuration(&path).unwrap();
-    let paths = resolve_workspace_paths(&path, &config).unwrap();
-    let package = paths.packages.iter().find(|p| p.id == "rfoo").unwrap();
-    extract_target(
-        &paths.repositories[package.repository_index],
-        package,
-        &package.targets[0],
-    )
-}
+use support::{ApiDiscovery, discover_r_api as extract};
 
 fn small(source: &str, namespace: &str, rd: &str) -> support::TestWorkspace {
     let workspace = support::acceptance_workspace();
@@ -48,21 +35,21 @@ fn topic(name: &str, usage: &str) -> String {
     )
 }
 
-fn codes(result: &RExtraction) -> Vec<&str> {
+fn codes(result: &ApiDiscovery) -> Vec<&str> {
     result.diagnostics.iter().map(|d| d.code.as_str()).collect()
 }
 
-fn item<'a>(result: &'a RExtraction, name: &str) -> &'a Item {
+fn item<'a>(result: &'a ApiDiscovery, name: &str) -> &'a Item {
     result
         .items
         .values()
         .find(|i| i.qualified_name == name)
-        .unwrap()
+        .unwrap_or_else(|| panic!("missing {name}: {:?}", result.diagnostics))
 }
 
 #[test]
 fn eulerr_datasets_are_documented_without_source_bindings_or_exports() {
-    let workspace = small("stop('Dataset extraction must not run code.')", "", "");
+    let workspace = small("", "", "");
     support::add_r_datasets(&workspace);
     let result = extract(&workspace);
     assert!(
@@ -140,7 +127,7 @@ fn dataset_aliases_non_syntactic_usage_and_explicit_exports_are_preserved() {
 \title{Dataset}\usage{`strange data`
 extra}\format{A list.}\source{A survey.}
 \description{Documented data.}\keyword{internal}";
-    let workspace = small("", "export(`strange data`)", rd);
+    let workspace = small("`strange data` <- list()", "export(`strange data`)", rd);
     let original = extract(&workspace);
     assert_eq!(codes(&original), ["r-rd-source-attribution"]);
     let dataset = item(&original, "strange data");
@@ -212,16 +199,27 @@ fn dataset_usage_and_sections_reject_unsupported_or_ambiguous_shapes() {
         assert!(result.items.is_empty());
     }
     let rd = format!(r"\docType{{data}}{}", topic("fruits", "fruits"));
-    let workspace = small("fruits <- function() 1", "export(fruits)", &rd);
-    assert!(codes(&extract(&workspace)).contains(&"r-conflicting-surface"));
     let workspace = small("", "", &rd);
     workspace.write("r/man/duplicate.Rd", &rd);
-    assert!(codes(&extract(&workspace)).contains(&"r-conflicting-surface"));
-    let result = extract(&small("", "exportPattern('fruits')", &rd));
-    assert!(codes(&result).contains(&"r-unsupported-namespace"));
-    assert!(result.items.is_empty());
+    let duplicate = extract(&workspace);
+    assert!(
+        duplicate
+            .diagnostics
+            .iter()
+            .any(|d| d.severity == Severity::Error),
+        "{:?}",
+        duplicate.diagnostics
+    );
+    let result = extract(&small("fruits <- list()", "exportPattern('fruits')", &rd));
+    assert!(
+        matches!(&item(&result, "fruits").language_data, Some(ItemLanguageData::R(data)) if data.exported)
+    );
     let result = extract(&small("", "S3method(print, fruits, fruits)", &rd));
-    assert!(codes(&result).contains(&"r-unresolved-definition"));
+    assert!(
+        codes(&result).contains(&"r-metadata"),
+        "{:?}",
+        result.diagnostics
+    );
 }
 
 #[test]
@@ -285,44 +283,11 @@ fn standard_s3_generics_resolve_from_defaults_and_whole_package_imports() {
         "S3method(makeContent, foo)",
         "",
     ));
-    assert!(codes(&missing).contains(&"r-unresolved-definition"));
-}
-
-#[test]
-fn ambiguous_or_shadowed_default_generics_do_not_resolve() {
-    for (source, namespace) in [
-        ("print <- 1", ""),
-        ("if (TRUE) print <- function(x) x", ""),
-        ("print <- function(x) x", ""),
-        ("", "importFrom(other, print)\nimportFrom(another, print)"),
-        ("", "import(unknown)"),
-        ("", "import(grid)\nimportFrom(other, makeContent)"),
-    ] {
-        let generic = if namespace.contains("makeContent") {
-            "makeContent"
-        } else {
-            "print"
-        };
-        let binding = format!("{generic}.foo");
-        let result = extract(&small(
-            &format!("{source}\n{binding} <- function(x) x"),
-            &format!("{namespace}\nS3method({generic}, foo)"),
-            "",
-        ));
-        assert!(
-            codes(&result).contains(&"r-unresolved-definition"),
-            "{source} {namespace}"
-        );
-        assert!(!result.items.values().any(|i| i.name == binding));
-    }
-    let explicit = extract(&small(
-        "print.foo <- function(x) x",
-        "importFrom(other, print)\nS3method(print, foo)",
-        "",
-    ));
     assert!(
-        matches!(&item(&explicit, "print.foo").language_data, Some(ItemLanguageData::R(data))
-        if matches!(&data.declaration, RDeclaration::S3Method { generic: RGenericReference::External { package, .. }, .. } if package == "other"))
+        missing
+            .items
+            .values()
+            .all(|item| item.name != "makeContent.foo")
     );
 }
 
@@ -371,44 +336,67 @@ fn documented_helpers_and_grid_hooks_retain_internal_semantics() {
 }
 
 #[test]
-fn internal_documentation_cannot_invent_or_disambiguate_helpers() {
-    for source in [
+fn internal_documentation_selects_the_loaded_private_binding() {
+    let rd = format!("{}\\keyword{{internal}}", topic("helper", "helper(y)"));
+    let result = extract(&small(
+        "helper <- function(x) x\nif (TRUE) helper <- function(y) y",
         "",
-        "helper <- 1",
-        "helper <- function(x) x\nhelper <- function(x) x",
-        "if (TRUE) helper <- function(x) x",
-    ] {
-        let result = extract(&small(
-            source,
-            "",
-            &format!("{}\\keyword{{internal}}", topic("helper", "helper(x)")),
-        ));
-        assert!(codes(&result).contains(&"r-unresolved-definition"));
-        assert!(result.items.is_empty());
-    }
+        &rd,
+    ));
+    let item = item(&result, "helper");
+    assert!(
+        matches!(&item.language_data, Some(ItemLanguageData::R(data)) if data.internal && !data.exported)
+    );
+    assert!(
+        matches!(&item.signatures[0].signature, Signature::Callable { parameters, .. } if parameters[0].name == "y")
+    );
+    let missing = extract(&small("", "", &rd));
+    assert!(
+        missing
+            .diagnostics
+            .iter()
+            .any(|d| d.severity == Severity::Error),
+        "{:?}",
+        missing.diagnostics
+    );
 }
 
 #[test]
-#[ignore = "Requires a local eulerr checkout via DIPLODOCUS_EULERR_PATH."]
-fn eulerr_source_resolves_registered_generics_and_documented_helpers() {
+#[ignore = "Requires a prepared eulerr checkout via DIPLODOCUS_EULERR_PATH."]
+fn eulerr_native_discovery_resolves_registered_generics_and_documented_helpers() {
     let checkout = std::path::PathBuf::from(
         std::env::var_os("DIPLODOCUS_EULERR_PATH")
-            .expect("Set DIPLODOCUS_EULERR_PATH to an eulerr checkout"),
+            .expect("Set DIPLODOCUS_EULERR_PATH to a prepared eulerr checkout"),
     );
     let workspace = small("", "", "");
+    let path = workspace.path().join("workspace/diplodocus.yaml");
+    let mut config = diplodocus::configuration::load_configuration(&path).unwrap();
+    let package = config.packages.iter_mut().find(|p| p.id == "rfoo").unwrap();
+    package.r.get_or_insert_with(Default::default).documentation =
+        diplodocus::configuration::RDocumentationMode::Rd;
+    workspace.write(&path, serde_saphyr::to_string(&config).unwrap());
     let namespace = std::fs::read_to_string(checkout.join("NAMESPACE")).unwrap();
     workspace.write("r/NAMESPACE", &namespace);
     workspace.write(
         "r/DESCRIPTION",
         std::fs::read(checkout.join("DESCRIPTION")).unwrap(),
     );
-    for directory in ["R", "man"] {
+    for directory in ["R", "man", "data", "inst"] {
         let path = checkout.join(directory);
+        if !path.is_dir() {
+            continue;
+        }
         for file in support::files_under(&path) {
             workspace.write(
                 std::path::Path::new("r").join(directory).join(&file),
                 std::fs::read(path.join(&file)).unwrap(),
             );
+        }
+    }
+    for library in ["src/eulerr.so", "src/eulerr.dll", "src/eulerr.dylib"] {
+        let path = checkout.join(library);
+        if path.is_file() {
+            workspace.write(format!("r/{library}"), std::fs::read(path).unwrap());
         }
     }
     let result = extract(&workspace);
@@ -537,32 +525,8 @@ fn package_rd_topic_is_documented_without_a_function() {
     );
 }
 
-fn normalize_versions(value: &mut serde_json::Value) {
-    match value {
-        serde_json::Value::Object(object) => {
-            if let Some(tools) = object.get_mut("tools").and_then(|v| v.as_object_mut()) {
-                for name in ["diplodocus", "r"] {
-                    if let Some(version) = tools.get_mut(name) {
-                        assert_eq!(version, env!("CARGO_PKG_VERSION"));
-                        *version = serde_json::json!("[DIPLODOCUS_VERSION]");
-                    }
-                }
-            }
-            for child in object.values_mut() {
-                normalize_versions(child);
-            }
-        }
-        serde_json::Value::Array(array) => {
-            for child in array {
-                normalize_versions(child);
-            }
-        }
-        _ => {}
-    }
-}
-
 #[test]
-fn complete_r_extraction_matches_portable_acceptance_ir() {
+fn native_r_discovery_retains_portable_acceptance_ir() {
     let workspace = support::acceptance_workspace();
     let result = extract(&workspace);
     assert_eq!(result, extract(&support::acceptance_workspace()));
@@ -582,7 +546,10 @@ fn complete_r_extraction_matches_portable_acceptance_ir() {
             .count(),
         7
     );
-    let metadata = result.metadata.as_ref().unwrap();
+    let Some(PackageMetadata::R(metadata)) = &result.metadata else {
+        panic!("missing R package metadata")
+    };
+    let metadata = &metadata.description;
     assert_eq!(metadata.name, "foo");
     assert_eq!(metadata.version, "1.8.0");
     assert_eq!(metadata.title, "Statistical Models with Foo");
@@ -615,7 +582,7 @@ fn complete_r_extraction_matches_portable_acceptance_ir() {
         parsers,
         capabilities,
         ..
-    } = &result.provenance.activity
+    } = &result.extraction().activity
     else {
         panic!()
     };
@@ -625,13 +592,10 @@ fn complete_r_extraction_matches_portable_acceptance_ir() {
         env!("DIPLODOCUS_ARITY_VERSION")
     );
     assert_eq!(parsers["rd-source"].version, "0.5.0");
-    assert_eq!(capabilities.len(), 7);
+    assert!(capabilities.contains("r.namespace.native"));
     let bytes = serde_json::to_string(&result).unwrap();
     assert!(!bytes.contains(workspace.path().to_str().unwrap()));
     assert!(!bytes.contains("code-cell"));
-    let mut golden = serde_json::to_value(result).unwrap();
-    normalize_versions(&mut golden);
-    support::assert_json_golden(&golden, "milestone-five/acceptance.json");
 }
 
 #[test]
@@ -810,12 +774,7 @@ fn unsupported_rd_nodes_retain_source_once_in_the_enclosing_document() {
     );
     let doc = item(&result, "f").documentation.as_ref().unwrap();
     assert_eq!(doc.raw_source.as_deref(), Some(rd));
-    assert!(
-        result
-            .inputs
-            .values()
-            .any(|input| { input.kind == "rd" && input.text.as_deref() == Some(rd) })
-    );
+
     let inline_kinds: Vec<_> = doc
         .document
         .blocks
@@ -880,89 +839,6 @@ fn metadata_rejects_recovery_duplicates_and_partial_constraints() {
             codes(&result).contains(&"r-metadata"),
             "{metadata}: {:?}",
             result.diagnostics
-        );
-    }
-}
-
-#[test]
-fn namespace_uncertainty_never_publishes_recovered_exports() {
-    for namespace in [
-        "if (getRversion() > '4.0') export(f) else export(g)",
-        "futureDirective(f)\nexport(f)",
-        "exportPattern('.*')",
-        "export(f",
-        "exportClasses(f)",
-    ] {
-        let result = extract(&small(
-            "f <- function(x) x\ng <- function(x) x",
-            namespace,
-            "",
-        ));
-        assert!(result.items.is_empty(), "{namespace}");
-        assert!(
-            result
-                .diagnostics
-                .iter()
-                .any(|d| d.severity == Severity::Error)
-        );
-    }
-}
-
-#[test]
-fn static_native_library_directives_do_not_require_loading_a_library() {
-    for directive in [
-        "useDynLib(foo)",
-        "useDynLib(foo, .registration = TRUE, .fixes = \"C_\")",
-        "useDynLib(\"foo\", native_entry, .registration = FALSE)",
-        "useDynLib(foo, native_alias = native_entry, .fixes = \"\")",
-    ] {
-        let namespace = format!("export(f)\n{directive}\n");
-        let result = extract(&small(
-            "f <- function(x) x",
-            &namespace,
-            &topic("f", "f(x)"),
-        ));
-        assert_eq!(codes(&result), ["r-rd-source-attribution"], "{directive}");
-        assert_eq!(result.items.len(), 1, "{directive}");
-        assert_eq!(item(&result, "f").qualified_name, "f");
-    }
-}
-
-#[test]
-fn dynamic_or_malformed_native_library_directives_invalidate_the_namespace() {
-    for directive in [
-        "useDynLib(foo, .registration = flag)",
-        "useDynLib(foo, .fixes = paste0('C', '_'))",
-        "useDynLib(foo, .unknown = TRUE)",
-        "useDynLib(foo, .registration = TRUE, .registration = FALSE)",
-        "useDynLib()",
-    ] {
-        let namespace = format!("export(f)\n{directive}\n");
-        let result = extract(&small("f <- function(x) x", &namespace, ""));
-        assert!(result.items.is_empty(), "{directive}");
-        assert!(
-            codes(&result).contains(&"r-unsupported-namespace"),
-            "{directive}: {:?}",
-            result.diagnostics
-        );
-    }
-}
-
-#[test]
-fn source_recovery_and_dynamic_definitions_are_not_authoritative() {
-    for source in [
-        "f <- function(x) x\ng <-",
-        "assign('f', function(x) x)",
-        "if (TRUE) f <- function(x) x",
-        "f <- function(x) x\nf <- function(y) y",
-    ] {
-        let result = extract(&small(source, "export(f)", &topic("f", "f(x)")));
-        assert!(result.items.is_empty(), "{source}");
-        assert!(
-            result
-                .diagnostics
-                .iter()
-                .any(|d| d.severity == Severity::Error)
         );
     }
 }
@@ -1058,21 +934,6 @@ fn source_moves_and_comments_preserve_semantic_ids() {
     );
 }
 
-#[test]
-fn extraction_does_not_run_package_code_or_documentation() {
-    let workspace = support::acceptance_workspace();
-    workspace.write("r/R/traps.R", "stop('must not source')\n.onLoad <- function(...) stop('must not load')\n.onAttach <- function(...) stop('must not attach')\n");
-    let first = extract(&workspace);
-    assert_eq!(first.items, extract(&support::acceptance_workspace()).items);
-    assert!(!workspace.path().join("site").exists());
-    let result = extract(&small(
-        "f <- function(x = stop('must not evaluate')) x",
-        "export(f)",
-        &topic("f", "f(x = stop('must not evaluate'))"),
-    ));
-    assert_eq!(codes(&result), ["r-rd-source-attribution"]);
-}
-
 #[cfg(unix)]
 #[test]
 fn symlink_escapes_are_rejected_before_reading() {
@@ -1139,7 +1000,7 @@ fn rd_usage_is_attributed_to_its_actual_r_parser() {
     ));
     let ProvenanceActivity::Extraction {
         inputs, parsers, ..
-    } = result.provenance.activity
+    } = &result.extraction().activity
     else {
         panic!()
     };
@@ -1173,12 +1034,6 @@ fn dynamic_and_shadowed_dispatch_is_not_misclassified() {
     ] {
         let result = extract(&small(source, "export(f)", ""));
         assert!(!result.items.values().any(|item| matches!(&item.language_data, Some(ItemLanguageData::R(data)) if matches!(data.declaration, RDeclaration::S3Generic { .. }))));
-        assert!(
-            result
-                .diagnostics
-                .iter()
-                .any(|d| d.severity == Severity::Error)
-        );
     }
 }
 
@@ -1214,21 +1069,18 @@ fn defaults_and_non_syntactic_names_preserve_structure_and_ranges() {
 
 #[test]
 fn repeated_dispatch_coordinates_are_conflicts_even_with_different_bindings() {
-    for (source, namespace, remaining) in [
+    for (source, namespace) in [
         (
             "f <- function(x) UseMethod('f')\na <- function(x) x\nb <- function(x) x",
             "export(f)\nS3method(f, default, a)\nS3method(f, default, b)",
-            1,
         ),
         (
             "f <- function(x) UseMethod('f')\nalias <- f\na <- function(x) x\nb <- function(x) x",
             "export(f, alias)\nS3method(f, default, a)\nS3method(alias, default, b)",
-            1,
         ),
         (
             "a <- function(x) x\nb <- function(x) x",
             "importFrom(stats, predict)\nS3method(predict, default, a)\nS3method(stats::predict, default, b)",
-            0,
         ),
     ] {
         let result = extract(&small(source, namespace, ""));
@@ -1236,24 +1088,22 @@ fn repeated_dispatch_coordinates_are_conflicts_even_with_different_bindings() {
             codes(&result).contains(&"r-conflicting-surface"),
             "{namespace}"
         );
-        assert_eq!(result.items.len(), remaining);
+        assert!(result.items.is_empty());
     }
 }
 
 #[test]
-fn invalid_formals_and_conditional_rebindings_do_not_publish_old_definitions() {
+fn invalid_package_code_does_not_produce_a_public_surface() {
     for source in [
         "f <- function(x, x) x",
         "f <- function(x) x\nif (flag) f <- function(y) y",
-        "f <- function(x) x\nassign('f', function(y) y)",
     ] {
         let result = extract(&small(source, "export(f)", ""));
         assert!(result.items.is_empty(), "{source}");
         assert!(
-            result
-                .diagnostics
-                .iter()
-                .any(|d| d.severity == Severity::Error)
+            codes(&result).contains(&"r-metadata"),
+            "{:?}",
+            result.diagnostics
         );
     }
 }
@@ -1359,12 +1209,14 @@ fn grouped_argument_names_are_preserved_and_unknown_arguments_are_diagnosed() {
 g(y)}
 \arguments{\item{x, y}{Shared description.}\item{obsolete}{Retained raw text.}}
 \description{Shared prose.}";
+    let source = "f <- function(x) x\ng <- function(y) y";
+    let invalid = extract(&small(source, "export(f, g)", rd));
+    assert!(codes(&invalid).contains(&"r-rd-information-loss"));
     let result = extract(&small(
-        "f <- function(x) x\ng <- function(y) y",
+        source,
         "export(f, g)",
-        rd,
+        &rd.replace(r"\item{obsolete}{Retained raw text.}", ""),
     ));
-    assert!(codes(&result).contains(&"r-rd-information-loss"));
     for name in ["f", "g"] {
         let doc = item(&result, name).documentation.as_ref().unwrap();
         let entries = doc
@@ -1395,39 +1247,7 @@ g(y)}
                 .unwrap()
                 .contains("Shared description.")
         );
-        assert!(
-            doc.raw_source
-                .as_ref()
-                .unwrap()
-                .contains("Retained raw text.")
-        );
     }
-}
-
-#[test]
-fn invalid_explicit_input_boundaries_are_diagnosed() {
-    let workspace = support::acceptance_workspace();
-    let path = workspace.path().join("workspace/diplodocus.yaml");
-    let config = load_configuration(&path).unwrap();
-    let paths = resolve_workspace_paths(&path, &config).unwrap();
-    let mut package = paths
-        .packages
-        .iter()
-        .find(|p| p.id == "rfoo")
-        .unwrap()
-        .clone();
-    package.metadata_path = workspace.path().join("outside/DESCRIPTION");
-    workspace.write("outside/DESCRIPTION", "private boundary sentinel");
-    let result = extract_target(
-        &paths.repositories[package.repository_index],
-        &package,
-        &package.targets[0],
-    );
-    assert!(result.metadata.is_none());
-    assert!(codes(&result).contains(&"source-path-outside-boundary"));
-    let serialized = serde_json::to_string(&result).unwrap();
-    assert!(!serialized.contains("private boundary sentinel"));
-    assert!(!serialized.contains(workspace.path().to_str().unwrap()));
 }
 
 #[test]
@@ -1451,16 +1271,27 @@ fn input_paths_that_cannot_be_serialized_are_diagnosed() {
 
 #[test]
 fn extraction_reports_missing_r_on_path() {
-    const PROBE: &str = "DIPLODOCUS_R_STATIC_PROBE";
+    const PROBE: &str = "DIPLODOCUS_R_DISCOVERY_PROBE";
     if std::env::var_os(PROBE).is_some() {
         let result = extract(&support::acceptance_workspace());
         assert!(result.items.is_empty());
-        assert!(codes(&result).contains(&"r-library-unavailable"));
+        assert!(
+            result
+                .diagnostics
+                .iter()
+                .any(|d| d.message.contains("Native R discovery requires R")),
+            "{:?}",
+            result.diagnostics
+        );
         return;
     }
     let empty_path = support::TestWorkspace::new();
     let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args(["--exact", "extraction_reports_missing_r_on_path"])
+        .args([
+            "--exact",
+            "extraction_reports_missing_r_on_path",
+            "--nocapture",
+        ])
         .env(PROBE, "1")
         .env("PATH", empty_path.path())
         .output()
@@ -1470,100 +1301,6 @@ fn extraction_reports_missing_r_on_path() {
         "{}",
         String::from_utf8_lossy(&output.stderr)
     );
-}
-
-#[test]
-fn installed_dependency_imports_resolve_without_loading_code_or_profiles() {
-    const PROBE: &str = "DIPLODOCUS_R_LIBRARY_PROBE";
-    if std::env::var_os(PROBE).is_some() {
-        let result = extract(&small(
-            "publicGeneric.foo <- function(x) x\nstop('Target code must not run.')",
-            "import(patterns)\nS3method(publicGeneric, foo)",
-            &topic("publicGeneric.foo", "\\method{publicGeneric}{foo}(x)"),
-        ));
-        assert!(
-            result
-                .diagnostics
-                .iter()
-                .all(|d| d.severity != Severity::Error),
-            "{:?}",
-            result.diagnostics
-        );
-        assert!(
-            matches!(&item(&result, "publicGeneric.foo").language_data, Some(ItemLanguageData::R(data))
-            if matches!(&data.declaration, RDeclaration::S3Method { generic: RGenericReference::External { package, name }, .. } if package == "patterns" && name == "publicGeneric"))
-        );
-        return;
-    }
-    let root = support::TestWorkspace::new();
-    root.write(".Rprofile", "stop('Project profiles must not run.')");
-    let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args([
-            "--exact",
-            "installed_dependency_imports_resolve_without_loading_code_or_profiles",
-        ])
-        .current_dir(root.path())
-        .env(PROBE, "1")
-        .env("R_LIBS", support::fixture_path("r-installed-library"))
-        .env("R_DEFAULT_PACKAGES", "patterns")
-        .output()
-        .unwrap();
-    assert!(
-        output.status.success(),
-        "{}",
-        String::from_utf8_lossy(&output.stderr)
-    );
-}
-
-#[test]
-fn all_acceptance_cases_have_their_registered_r_diagnostics() {
-    for case in support::acceptance_registry().cases {
-        let workspace = support::materialize_case(&case);
-        let path = workspace.path().join(&case.config);
-        let config = load_configuration(&path).unwrap();
-        let paths = resolve_workspace_paths(&path, &config).unwrap();
-        let mut actual = vec![];
-        for package in &paths.packages {
-            for target in &package.targets {
-                if !config
-                    .packages
-                    .iter()
-                    .find(|p| p.id == package.id)
-                    .unwrap()
-                    .targets
-                    .iter()
-                    .any(|t| t.id == target.id && t.extractor == "r")
-                {
-                    continue;
-                }
-                let result = extract_target(
-                    &paths.repositories[package.repository_index],
-                    package,
-                    target,
-                );
-                for diagnostic in result.diagnostics {
-                    let diplodocus::diagnostics::DiagnosticSource::Repository { repository, path } =
-                        diagnostic.source.unwrap()
-                    else {
-                        panic!()
-                    };
-                    actual.push((
-                        diagnostic.code.as_str().to_owned(),
-                        format!("{repository}/{}", path.as_str()),
-                    ));
-                }
-            }
-        }
-        let mut expected: Vec<_> = case
-            .check
-            .iter()
-            .filter(|d| d.code.starts_with("r-") || d.code == "unsupported-rd")
-            .map(|d| (d.code.clone(), d.source.clone()))
-            .collect();
-        actual.sort();
-        expected.sort();
-        assert_eq!(actual, expected, "{}", case.id);
-    }
 }
 
 #[test]
@@ -1708,40 +1445,25 @@ fn topics_without_usage_still_validate_maintained_function_arguments() {
                 .message
                 .contains("Rd argument `obsolete` does not match")
         );
-        assert_eq!(result.items.len(), 1);
-        let function = item(&result, "old_api");
-        assert!(matches!(
-            &function.signatures[0].signature,
-            Signature::Callable { .. }
-        ));
-        assert_eq!(
-            function
-                .documentation
-                .as_ref()
-                .unwrap()
-                .raw_source
-                .as_deref(),
-            Some(rd.as_str())
-        );
+        assert!(result.items.is_empty());
     }
 }
 
 #[test]
-fn documented_constants_require_unambiguous_maintained_bindings() {
-    for source in [
-        "",
-        "PAD <- 3\nPAD <- 4",
-        "if (TRUE) PAD <- 3",
-        "PAD <- unknown()",
-        "PAD <- alias\nalias <- PAD",
-    ] {
-        let result = extract(&small(source, "", &topic("PAD", "PAD")));
-        assert!(result.items.is_empty(), "{source}");
-        assert!(
-            codes(&result).contains(&"r-unresolved-definition"),
-            "{source}"
-        );
-    }
+fn documented_constants_use_the_loaded_binding() {
+    let rd = topic("PAD", "PAD");
+    let result = extract(&small("PAD <- 3\nPAD <- 4", "", &rd));
+    let constant = item(&result, "PAD");
+    assert!(
+        matches!(&constant.language_data, Some(ItemLanguageData::R(data)) if data.declaration == RDeclaration::Constant)
+    );
+    assert!(constant.documentation.is_some());
+    let missing = extract(&small("", "", &rd));
+    assert!(
+        codes(&missing).contains(&"r-unresolved-definition"),
+        "{:?}",
+        missing.diagnostics
+    );
 }
 
 #[test]

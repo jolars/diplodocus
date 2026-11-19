@@ -37,12 +37,6 @@ pub(super) struct Topic {
     pub(super) uses_r: bool,
 }
 
-impl Topic {
-    pub(super) fn has_value_usage(&self) -> bool {
-        self.usages.is_empty() || self.usages.iter().any(|usage| usage.arguments.is_none())
-    }
-}
-
 enum Part {
     Title(Box<Block>),
     Introduction(Vec<Block>),

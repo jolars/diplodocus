@@ -342,7 +342,7 @@ pub(crate) async fn assemble_for_extraction(
     journal: &mut super::r_native::GeneratedWrites,
 ) -> Result<WorkspaceSources, AssemblyError> {
     let julia = results(path, deadlines, cancellation, reporting).await?;
-    let rust = super::rust_results(path, true, deadlines, cancellation, reporting, true).await?;
+    let rust = super::rust_results(path, true, deadlines, cancellation, reporting).await?;
     let doxygen = super::doxygen_results(path, deadlines, cancellation, reporting).await?;
     let r = super::r_results(path, deadlines, cancellation, reporting, journal).await?;
     let python = super::python_native::results(path, deadlines, cancellation, reporting).await?;

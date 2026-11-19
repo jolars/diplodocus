@@ -41,14 +41,20 @@ fn snapshot(root: &support::TestWorkspace) -> Snapshot {
 }
 
 #[test]
-fn commands_generate_and_discover_runtime_functions_without_executing_check_examples() {
+fn assembly_and_commands_generate_and_discover_runtime_functions() {
     let root = workspace("");
     // Portable string ordering differs from filesystem component ordering here.
     root.write("package/inst/include/widget.h", "#pragma once\n");
     root.write("package/inst/include/widget/api.h", "#pragma once\n");
-    success(command(&root, &["check"]));
+    let sources =
+        diplodocus::assembly::assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
+    let package = &sources.workspace().packages["demo"];
+    assert!(package.items.values().any(|item| item.name == "identity"));
+    assert_eq!(package.items.len(), 2);
     assert!(root.path().join("package/man/identity.Rd").is_file());
     assert!(root.read("package/NAMESPACE").contains("export(identity)"));
+    assert!(!root.path().join("package/example-ran").exists());
+    success(command(&root, &["check"]));
     assert!(!root.path().join("package/example-ran").exists());
     success(command(&root, &["extract"]));
     assert!(root.path().join("package/example-ran").exists());

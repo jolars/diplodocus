@@ -24,3 +24,10 @@ pub mod site;
 mod site_assets;
 pub mod snapshots;
 pub mod validation;
+
+#[cfg(test)]
+extern crate self as diplodocus;
+
+#[cfg(test)]
+#[path = "../tests/support.rs"]
+mod integration_support;

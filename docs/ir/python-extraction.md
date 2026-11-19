@@ -107,8 +107,9 @@ IR schema 16 includes this evidence; schema 15 snapshots require fresh
 extraction. Snapshot validation verifies completion and input/tool associations
 without Python. Detached `generate` needs no producer checkout or runtime.
 
-`parse_target` and legacy source-inspection helpers remain process-free. Their
-static diagnostics describe source inspection; commands no longer use that
-interpretation as a fallback. Parser and normalization checks remain in the
+`parse_target` reads Python source and stubs without importing the package.
+The native adapter uses those observations for maintained signatures,
+source attribution, and supplemental facts. Workspace assembly uses the same
+native discovery as `check`. Parser and normalization checks remain in the
 default suite. Slow native acceptance runs in the `incremental-native` CI job;
 see [Contributing](https://github.com/jolars/diplodocus/blob/main/CONTRIBUTING.md).

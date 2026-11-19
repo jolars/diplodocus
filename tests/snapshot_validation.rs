@@ -110,33 +110,32 @@ fn changed(
 fn native_r_snapshot() -> Snapshot {
     let snapshot = snapshot();
     changed(&snapshot, |export| {
-        let provenance = record(export, "workspace")["provenance"].as_array_mut().unwrap();
-        let extraction = provenance.iter_mut().find(|record| {
-            record["activity"]["kind"] == "extraction"
-                && record["activity"]["target"]["package"] == "rfoo"
-        }).unwrap();
-        extraction["activity"]["mode"] = "native".into();
-        for (name, version) in [("R", "4.6.1"), ("pkgload", "1.4.1")] {
-            extraction["tools"][name] = version.into();
-            extraction["activity"]["parsers"][name] = json!({
-                "version": version, "role": "r-native-discovery", "settings": {},
-            });
-        }
-        let inputs = extraction["activity"]["inputs"].as_object().unwrap().iter()
-            .flat_map(|(repository, files)| files.as_object().unwrap().iter().map(move |(path, input)| {
-                json!({"source": {"repository": repository, "path": path, "span": null}, "fingerprint": input["fingerprint"]})
-            })).collect::<Vec<_>>();
-        let dependencies = json!({"foo": "1.8.0", "pkgload": "1.4.1", "roxygen2": "7.3.2"});
-        let tools = json!({"r": "4.6.1", "pkgload": "1.4.1", "roxygen2": "7.3.2"});
-        provenance.push(json!({
-            "activity": {"kind": "r-documentation", "package": "rfoo", "policy": "r-roxygen2-v1", "r_version": "4.6.1", "roxygen2_version": "7.3.2", "loader": "pkgload", "roclets": ["collate", "namespace", "rd"], "dependencies": dependencies, "inputs": inputs, "outputs": inputs},
+        let provenance = record(export, "workspace")["provenance"]
+            .as_array_mut()
+            .unwrap();
+        let runtime = provenance
+            .iter()
+            .find(|record| record["activity"]["kind"] == "r-runtime")
+            .unwrap();
+        // The acceptance fixture uses maintained Rd. Add generation evidence to
+        // the actual discovery record to exercise its separate validation rules.
+        let mut dependencies = runtime["activity"]["dependencies"].clone();
+        dependencies["roxygen2"] = "7.3.2".into();
+        let mut tools = runtime["tools"].clone();
+        tools["roxygen2"] = "7.3.2".into();
+        let generation = json!({
+            "activity": {
+                "kind": "r-documentation", "package": "rfoo", "policy": "r-roxygen2-v1",
+                "r_version": runtime["activity"]["r_version"],
+                "roxygen2_version": "7.3.2", "loader": "pkgload",
+                "roclets": ["collate", "namespace", "rd"], "dependencies": dependencies,
+                "inputs": runtime["activity"]["inputs"], "outputs": runtime["activity"]["inputs"],
+            },
             "source": null, "span": null, "tools": tools,
-        }));
-        provenance.push(json!({
-            "activity": {"kind": "r-runtime", "package": "rfoo", "policy": "r-runtime-v1", "r_version": "4.6.1", "package_version": "1.8.0", "dependencies": dependencies, "inputs": inputs},
-            "source": null, "span": null, "tools": tools,
-        }));
-    }).unwrap()
+        });
+        provenance.push(generation);
+    })
+    .unwrap()
 }
 
 #[test]
@@ -304,7 +303,7 @@ fn native_r_snapshots_validate_generation_discovery_and_portable_evidence() {
 
 #[test]
 fn native_r_rd_source_text_matches_observed_documentation_bytes() {
-    let snapshot = native_r_snapshot();
+    let snapshot = snapshot();
     for field in ["raw_source", "source_location"] {
         let result = changed(&snapshot, |export| {
             let document = &mut export["records"]
@@ -343,7 +342,7 @@ fn native_r_rd_source_text_matches_observed_documentation_bytes() {
 
 #[test]
 fn native_r_discovery_applies_to_every_package_target() {
-    let snapshot = native_r_snapshot();
+    let snapshot = snapshot();
     let multiple = changed(&snapshot, |export| {
         let records = export["records"].as_array_mut().unwrap();
         let mut target = records

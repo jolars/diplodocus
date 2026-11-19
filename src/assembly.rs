@@ -387,15 +387,15 @@ impl ExecutedWorkspace {
     }
 }
 
-/// Read and assemble declared sources without executing documentation examples.
+/// Read and assemble declared sources using the discovery rules of `check`.
+/// Documentation examples do not execute.
 /// Rust targets use the prepared compiler and may compile dependencies and run
 /// build scripts. C++ targets invoke Doxygen and any configured input filters.
 /// Python targets import the prepared checkout and invoke Sphinx autodoc.
 /// Julia targets load the verified checkout and reflect on its API and docs.
-/// R targets may regenerate documentation and load package code.
+/// R targets load package code and may regenerate documentation in the checkout.
 ///
-/// All packages and pages are inspected before errors are returned. Rust may
-/// write compilation caches; no examples, kernels, snapshots, or sites run.
+/// The returned workspace is ready for reference validation.
 /// Semantic page identity depends on collection ID and relative source path,
 /// never a route.
 ///
@@ -403,30 +403,9 @@ impl ExecutedWorkspace {
 /// Reports malformed declarations, unsafe paths, conflicting fragments,
 /// unresolved concepts, source diagnostics, I/O, or changed input observations.
 pub fn assemble_workspace(path: impl AsRef<Path>) -> Result<WorkspaceSources, AssemblyError> {
-    let path = path.as_ref();
-    let reporting = Reporting::default();
-    let configuration = crate::configuration::load_configuration(path)?;
-    if !configuration.packages.iter().any(|package| {
-        package.targets.iter().any(|target| {
-            matches!(
-                target.extractor.as_str(),
-                "python" | "julia" | "rust" | "doxygen"
-            )
-        })
-    }) {
-        return assemble_with_native(
-            path,
-            BTreeMap::new(),
-            BTreeMap::new(),
-            BTreeMap::new(),
-            BTreeMap::new(),
-            BTreeMap::new(),
-            &reporting,
-        );
-    }
     // Callers may already own a Tokio runtime; a separate thread keeps this
     // synchronous API usable from both synchronous and asynchronous hosts.
-    let path = path.to_owned();
+    let path = path.as_ref().to_owned();
     std::thread::Builder::new()
         .name("native-documentation-check".into())
         .spawn(move || {
@@ -435,45 +414,13 @@ pub fn assemble_workspace(path: impl AsRef<Path>) -> Result<WorkspaceSources, As
                 .build()?;
             runtime.block_on(async {
                 let mut cancellation: ExecutionCancellation<'_> = Box::pin(std::future::pending());
-                let results = rust_results(
-                    &path,
-                    false,
-                    ExecutionDeadlines::default(),
-                    &mut cancellation,
-                    &reporting,
-                    false,
-                )
-                .await?;
-                let doxygen = doxygen_results(
+                assemble_for_check(
                     &path,
                     ExecutionDeadlines::default(),
                     &mut cancellation,
-                    &reporting,
+                    &Reporting::default(),
                 )
-                .await?;
-                let python = python_native::results(
-                    &path,
-                    ExecutionDeadlines::default(),
-                    &mut cancellation,
-                    &reporting,
-                )
-                .await?;
-                let julia = julia_runtime::results(
-                    &path,
-                    ExecutionDeadlines::default(),
-                    &mut cancellation,
-                    &reporting,
-                )
-                .await?;
-                assemble_with_native(
-                    &path,
-                    julia,
-                    results,
-                    doxygen,
-                    BTreeMap::new(),
-                    python,
-                    &reporting,
-                )
+                .await
             })
         })?
         .join()
@@ -490,9 +437,8 @@ async fn rust_results(
     deadlines: ExecutionDeadlines,
     cancellation: &mut ExecutionCancellation<'_>,
     reporting: &Reporting,
-    report_loading: bool,
 ) -> Result<BTreeMap<(String, String), rust_native::RustNativeExtraction>, AssemblyError> {
-    let loading = report_loading.then(|| reporting.stage("Loading workspace", None));
+    let loading = reporting.stage("Loading workspace", None);
     let configuration_source = fs::read(path)?;
     let configuration = crate::configuration::load_configuration(path)?;
     reject_errors(validate_configuration_with_source(
@@ -500,9 +446,7 @@ async fn rust_results(
         "diplodocus.yaml".try_into().unwrap(),
     ))?;
     let paths = resolve_workspace_paths(path, &configuration)?;
-    if let Some(loading) = loading {
-        loading.finish();
-    }
+    loading.finish();
     let mut progress = reporting.stage(
         "Extracting Rust APIs",
         Some(target_count(&configuration, "rust")),
@@ -551,7 +495,7 @@ pub(crate) async fn assemble_for_check(
     cancellation: &mut ExecutionCancellation<'_>,
     reporting: &Reporting,
 ) -> Result<WorkspaceSources, AssemblyError> {
-    let rust = rust_results(path, false, deadlines, cancellation, reporting, true).await?;
+    let rust = rust_results(path, false, deadlines, cancellation, reporting).await?;
     let doxygen = doxygen_results(path, deadlines, cancellation, reporting).await?;
     let r = r_results(
         path,
