@@ -17,12 +17,11 @@ Diplodocus orchestrates them without installing dependencies.
 R extraction now selects roxygen2 generation or maintained Rd and combines
 documentation with native checkout discovery. Python uses Sphinx autodoc and
 Napoleon with maintained stubs. Julia uses the loaded checkout's bindings,
-dispatch, and registered documentation. Rust and C++ consume native rustdoc
-JSON and Doxygen XML. The Rust library and CLI share native discovery for
-workspace assembly.
-The development loop reuses verified extraction and execution results by package.
-Workspace reference resolution and site rendering still run after each change.
-Keep the existing Rust and C++ integrations and use the [current
+dispatch, and registered documentation. Rust and C++ consume native rustdoc JSON
+and Doxygen XML. The Rust library and CLI share native discovery for workspace
+assembly. The development loop reuses verified extraction and execution results
+by package. Workspace reference resolution and site rendering still run after
+each change. Keep the existing Rust and C++ integrations and use the [current
 design](docs/development/design.md) as the migration baseline. Preserve native
 execution engines such as knitr for authored documents; this roadmap does not
 require replacing Quarto, MyST, or R Markdown in full.
@@ -47,10 +46,10 @@ require replacing Quarto, MyST, or R Markdown in full.
   rendering. Compare baseline and candidate in one `compute bench` window
   and choose measurable preview targets from the results.
 
-The [adapter contract and capability inventory](docs/development/native-adapters.md)
-record the shared boundary and migration gaps. The
-[pipeline baseline](docs/development/pipeline-baseline.md) describes the
-developer measurement workflow.
+The [adapter contract and capability
+inventory](docs/development/native-adapters.md) record the shared boundary and
+migration gaps. The [pipeline baseline](docs/development/pipeline-baseline.md)
+describes the developer measurement workflow.
 
 ### 2. Deliver the R workflow with roxygen2
 
@@ -79,7 +78,8 @@ developer measurement workflow.
   recovers after a generation error is fixed.
 
 The [R workflow](docs/guide/extraction/r.md) documents configuration and native
-prerequisites. The [qualpalr comparison](docs/development/pipeline-baseline.md#roxygen2-workflow-results)
+prerequisites. The [qualpalr
+comparison](docs/development/pipeline-baseline.md#roxygen2-workflow-results)
 records source-only preview updates, failure recovery, and current latency.
 
 ### 3. Make the development loop incremental
@@ -104,7 +104,8 @@ records source-only preview updates, failure recovery, and current latency.
   pending validation visible; keep completed snapshots and published builds
   verified.
 
-The [incremental design](docs/development/design.md#incremental-work-retains-verified-results)
+The [incremental
+design](docs/development/design.md#incremental-work-retains-verified-results)
 describes persistent reuse and fresh input guards. The
 [comparison](docs/development/pipeline-baseline.md#incremental-workflow-results)
 records authored-save improvements, cold-build and API-edit costs, and verified
@@ -117,39 +118,41 @@ restart parity.
   records, including signatures and docstrings, rather than importing a
   separately rendered site. Define supported docstring formats, extension
   behavior, and precedence for maintained stubs.
-- [x] Migrate Python commands with acceptance cases for existing public APIs
-  and runtime-derived declarations. Preserve aliases, overloads, maintained
+- [x] Migrate Python commands with acceptance cases for existing public APIs and
+  runtime-derived declarations. Preserve aliases, overloads, maintained
   stubs, source evidence, doctests, and detached generation. Keep
   unsupported behavior explicit rather than silently switching to a
   different API interpretation.
 - [x] Update environment requirements, CI, configuration guidance, and extractor
-  contracts alongside the migration. Remove superseded static semantic
-  rules after the native path covers their acceptance cases; retain useful
+  contracts alongside the migration. Remove superseded static semantic rules
+  after the native path covers their acceptance cases; retain useful
   parsers.
 
 The [Python extraction contract](docs/ir/python-extraction.md) describes native
 discovery, maintained stubs, supported docstrings, and portable evidence. The
-[comparison](docs/development/pipeline-baseline.md#python-native-results) records
-startup, source-save, and verified restart costs.
+[comparison](docs/development/pipeline-baseline.md#python-native-results)
+records startup, source-save, and verified restart costs.
 
 ### 5. Migrate Julia through supported native interfaces
 
 - [x] Prototype Julia extraction from the loaded package's documentation and
   method systems, using Documenter where needed. Define the supported export
   interface and compatibility policy before relying on Documenter internals.
-  Cover generated declarations, attached documentation, and method identities.
+  Cover generated declarations, attached documentation, and method
+  identities.
 - [x] Migrate Julia commands with acceptance cases for existing public APIs and
   runtime-derived declarations. Preserve aliases, methods, source evidence,
-  doctests, and detached generation. Keep unsupported behavior explicit rather
-  than silently switching to a different API interpretation.
+  doctests, and detached generation. Keep unsupported behavior explicit
+  rather than silently switching to a different API interpretation.
 - [x] Update environment requirements, CI, configuration guidance, and extractor
   contracts alongside the migration. Remove superseded static semantic rules
-  after the native path covers their acceptance cases; retain useful parsers.
+  after the native path covers their acceptance cases; retain useful
+  parsers.
 
 The [Julia extraction contract](docs/ir/julia-extraction.md) describes the
-exporter, supported releases, method identities, and extension selection.
-The [Eunoia recipe](examples/eunoia/README.md#julia-acceptance-run) verifies
-the public surface and detached generation.
+exporter, supported releases, method identities, and extension selection. The
+[Eunoia recipe](examples/eunoia/README.md#julia-acceptance-run) verifies the
+public surface and detached generation.
 
 ### 6. Compose documentation produced in separate repositories
 
@@ -177,82 +180,8 @@ the public surface and detached generation.
   development, and independently published bundles for site assembly. Keep
   existing cross-repository configuration working throughout the migration.
 
-The [local bundle recipe](examples/qualpal/README.md) covers mixed-source assembly
-and detached generation for the C++ and R APIs.
-
-## Qualpal and qualpalr documentation integration
-
-Use the local checkouts at `../qualpal` and `../qualpalr` as the acceptance case
-for a shared C++ and R documentation site. Both API extractors, cross-repository
-configuration, and explicit R/C++ API associations work. The existing
-documentation still needs the compatibility fixes and migration work below
-before it can build in full.
-
-### Diplodocus work
-
-- [x] Accept `\item{\dots}` argument labels in Rd documentation. Normalize
-  `\dots` and `\ldots` to the maintained `...` formal, including grouped
-  labels. Regression tests cover qualpalr's `plot.qualpal`, `pairs.qualpal`,
-  and `print.qualpal` topics, preserved source, and unmatched formals.
-- [x] Preserve argument documentation in standalone deprecated Rd topics without
-  requiring callable formals. Qualpalr's `man/autopal-deprecated.Rd` retains
-  its arguments, return values, prose, and help links through snapshot
-  rendering. Maintained functions still require matching formals.
-- [x] Preserve native `HAVE_DOT` during XML-only extraction so existing
-  Doxyfiles with `WARN_AS_ERROR=YES` accept `@dot` blocks without invoking
-  Graphviz. Cover the generated `build/Doxyfile.docs`, retain genuine
-  extraction diagnostics, and document a headers-only Doxyfile as an
-  alternative.
-- [x] Support qualpal's static Matplotlib SVGs through a documented PNG
-  conversion path. The converter retains styles, definitions, references,
-  and clipping without scripts or external resource loading. All 15 guide
-  image references validate after conversion in disposable copies, and
-  detached generation retains the figures. Image validation failures now
-  identify the asset and conversion remedy at the authored reference's
-  source location.
-- [x] Handle `LINE_PREFIX` as parser layout in authored Markdown. Wrapped list
-  text in qualpalr's `NEWS.md`, `CONDUCT.md`, and qualpal's guides retains
-  continuation spacing and nested structure without warnings, unsupported
-  HTML spans, or whitespace-only code in Markdown exports. Regression tests
-  cover GFM, QMD, R Markdown, CRLF, fragments, and rendering.
-- [ ] Add a complete qualpal/qualpalr acceptance recipe. Cover C++ namespaces,
-  types, templates, overloads, R help topics and S3 methods, executed Rd
-  examples and articles, explicit API associations, and retained figures.
-  Verify detached generation from a relocated snapshot without either
-  checkout, Doxygen, or R. Keep all trial work in disposable source copies.
-
-### Qualpal integration follow-up
-
-- [ ] Configure one site with both repositories, shared guides, separate C++ and
-  R reference sections, explicit API concepts, and the R package's binding
-  relationship to the C++ library. Choose package overviews and navigation
-  explicitly rather than relying on the existing site layouts.
-- [ ] Migrate qualpal's Doxygen guides into content collections. Replace
-  document-wide `#page-id` links and Doxygen API links with supported page
-  and semantic references, convert `\f$...\f$` math, and replace the `@dot`
-  color-space diagram with a supported static figure. Standalone Doxygen
-  pages, groups, and generated diagrams are not currently imported.
-- [ ] Replace or support the inline `<sub>ab</sub>` markup in
-  `vignettes/comparisons.Rmd`. It currently causes rendered R Markdown to
-  fail, although source checking reports only a warning. Preserve the
-  subscript in the published article.
-- [ ] Choose how to publish the introduction's four `rglwidget()` outputs.
-  Provide static figures that work in the prepared build environment, or add
-  explicit widget support with retained browser dependencies and portable
-  snapshots. The current Markdown path attempts an OpenGL snapshot and fails
-  in the supplied headless R environment.
-- [ ] Preserve published URLs using `qualpal/docs/site-contract.json` as the
-  compatibility fixture. Map its 61 legacy paths and recorded anchors to the
-  new site, including member and source pages, and redirect qualpalr's old
-  site. Handle fragment aliases and redirects between origins separately:
-  `presentation.redirects` currently supports neither.
-- [ ] Replace the documentation build and deployment workflows with a shared
-  Diplodocus build under `/docs/`. Prepare both checkouts at selected
-  revisions, Doxygen, R dependencies, and qualpalr's compiled extension
-  before extraction. Include article dependencies such as `maps` and
-  `randtoolbox`, plus the chosen 3D rendering prerequisites. Keep
-  `README.Rmd` generation as a separate knitr step while needed, and
-  validate links, assets, and legacy URLs before deployment.
+The [local bundle recipe](examples/qualpal/README.md) covers mixed-source
+assembly and detached generation for the C++ and R APIs.
 
 ## Scope held for later
 
