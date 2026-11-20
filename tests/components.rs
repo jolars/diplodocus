@@ -1,7 +1,10 @@
 mod support;
 
 use diplodocus::{
-    assembly::assemble_workspace, rendering::render_site, site::Site, snapshots::Snapshot,
+    assembly::assemble_workspace,
+    rendering::{render_fragments, render_site},
+    site::Site,
+    snapshots::Snapshot,
     validation::resolve_workspace,
 };
 
@@ -31,7 +34,14 @@ content:
     );
     root.write(
         "pages/index.md",
-        "# Components\n\n::: {.component name=\"counter\"}\n\nFallback **content**.\n\n:::\n",
+        r#"# Components
+
+::: {.component name="counter" #example props='{"counts":[1,2],"label":"<example>"}'}
+
+Fallback **content**.
+
+:::
+"#,
     );
     root.write(
         "widget/index.js",
@@ -50,11 +60,18 @@ fn component_bundles_survive_snapshot_round_trip_without_a_checkout() {
     let path = root.path().join("snapshot.sqlite");
     snapshot.publish(&path).unwrap();
     std::fs::remove_dir_all(root.path().join("widget")).unwrap();
+    root.remove("pages/index.md");
+    root.remove("diplodocus.yaml");
     let snapshot = Snapshot::load(path).unwrap();
     let passive = render_site(&Site::new(&snapshot).unwrap()).unwrap();
     let html = std::str::from_utf8(&passive.files()["index.html"].bytes).unwrap();
     assert!(html.contains("Fallback <strong>content</strong>"));
     assert!(!html.contains("data-component-module"));
+    assert!(!html.contains("data-component-props"));
+    let fragments = render_fragments(&Site::new(&snapshot).unwrap().with_components(true)).unwrap();
+    let html = std::str::from_utf8(&fragments.files()["index.html"].bytes).unwrap();
+    assert!(html.contains("Fallback <strong>content</strong>"));
+    assert!(!html.contains("data-component-props"));
     assert!(
         !passive
             .files()
@@ -64,7 +81,11 @@ fn component_bundles_survive_snapshot_round_trip_without_a_checkout() {
     let active = render_site(&Site::new(&snapshot).unwrap().with_components(true)).unwrap();
     let html = std::str::from_utf8(&active.files()["index.html"].bytes).unwrap();
     assert!(html.contains("data-component-module"));
+    assert!(html.contains("data-component-props=\"{&quot;counts&quot;:[1,2],&quot;label&quot;:&quot;&lt;example&gt;&quot;}\""));
     assert!(html.contains("assets/components.js"));
+    let markdown = std::str::from_utf8(&active.files()["index.md"].bytes).unwrap();
+    assert!(markdown.contains("Fallback **content**"));
+    assert!(!markdown.contains("<example>"));
     assert!(
         active
             .files()
@@ -101,5 +122,56 @@ fn bundle_changes_invalidate_resolution_and_escaping_symlinks_are_rejected() {
     {
         std::os::unix::fs::symlink("/etc/passwd", root.path().join("widget/escape.js")).unwrap();
         assert!(resolve_workspace(&sources).is_err());
+    }
+}
+
+#[test]
+fn validates_qmd_component_props_and_reports_included_gfm_sources() {
+    let root = workspace();
+    let config = root.path().join("diplodocus.yaml");
+    let qmd = std::fs::read_to_string(&config)
+        .unwrap()
+        .replace("format: gfm", "format: qmd");
+    root.write("diplodocus.yaml", &qmd);
+    root.remove("pages/index.md");
+    root.write(
+        "pages/index.qmd",
+        r#"# QMD
+
+::: {.component name="counter" props='{"visible":true}'}
+
+Fallback.
+
+:::
+"#,
+    );
+    let sources = assemble_workspace(&config).unwrap();
+    assert!(resolve_workspace(&sources).is_ok());
+
+    root.write("diplodocus.yaml", qmd.replace("format: qmd", "format: gfm"));
+    root.remove("pages/index.qmd");
+    root.write(
+        "pages/index.md",
+        "# GFM\n\n<!--@include: ../partial.md-->\n",
+    );
+    for props in ["props='[]'", "props='{bad}'", "props='{}' props='{}'"] {
+        root.write(
+            "partial.md",
+            format!("::: {{.component name=\"counter\" {props}}}\n\nFallback.\n\n:::\n"),
+        );
+        let sources = assemble_workspace(&config).unwrap();
+        let err = resolve_workspace(&sources).unwrap_err();
+        let diplodocus::validation::ResolutionError::Diagnostics(diagnostics) = err else {
+            panic!("{err:?}");
+        };
+        assert!(
+            diagnostics.iter().any(|diagnostic| {
+                diagnostic.code == diplodocus::diagnostics::DiagnosticCode::InvalidComponent
+                    && diagnostic.span.is_some()
+                    && format!("{:?}", diagnostic.source).contains("partial.md")
+                    && diagnostic.message.contains("Included from")
+            }),
+            "{diagnostics:?}"
+        );
     }
 }

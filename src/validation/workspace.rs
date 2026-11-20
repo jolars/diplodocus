@@ -609,7 +609,30 @@ fn resolve(
         insert_asset(&mut resolution.result.assets, asset.clone())
             .map_err(|_| AssemblyError::InputsChanged)?;
     }
+    let component_names = sources
+        .configuration()
+        .components
+        .iter()
+        .map(|component| component.id.as_str())
+        .collect();
     for context in documents {
+        if let Err(error) =
+            crate::components::validate_blocks(&context.document.document.blocks, &component_names)
+        {
+            let mut diagnostic = (*error).with_entity(context.entity.clone());
+            diagnostic.source = context.document.source_location.as_ref().map(|source| {
+                DiagnosticSource::Repository {
+                    repository: source.repository.clone(),
+                    path: source.path.clone(),
+                }
+            });
+            if let DocumentIdentity::Page { page } = &context.identity
+                && let Some(prepared) = sources.prepared_pages().get(page)
+            {
+                crate::assembly::remap_include_diagnostic(&mut diagnostic, &prepared.source_ranges);
+            }
+            resolution.result.diagnostics.insert(diagnostic);
+        }
         let mut imported = sources
             .bundles
             .documents

@@ -34,9 +34,31 @@ content:
     format: gfm
 `);
   await writeFile(join(workspace, 'pages/index.md'), '# Home\n\n::: {.component name="counter"}\n\nStatic fallback.\n\n:::\n\n| Authored | Value |\n| --- | --- |\n| Example | 1 |\n\n[Other page](other.md)\n');
+  await writeFile(join(workspace, 'pages/props.md'), String.raw`# Props
+
+::: {.component name="counter" #first props='{"label":"<em>&quot; \u0027 \"quoted\"</em>","values":[true,null,{"count":2}]}'}
+
+Fallback first.
+
+:::
+
+::: {.component name="counter" #second props='{"label":"Second"}'}
+
+Fallback second.
+
+:::
+
+::: {.component name="counter" #default}
+
+Fallback default.
+
+:::
+`);
   await writeFile(join(workspace, 'pages/other.md'), '# Other page\n\n[Home](index.md)\n');
   await writeFile(join(workspace, 'widget/index.js'), `window.evaluations = (window.evaluations || 0) + 1;
-export async function mount(root, { signal }) {
+export async function mount(root, { signal, props }) {
+  root.dataset.props = JSON.stringify(props);
+  props.mounted = true;
   window.mounts = (window.mounts || 0) + 1;
   const worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
   signal.addEventListener('abort', () => worker.terminate(), { once: true });
@@ -56,7 +78,13 @@ export async function mount(root, { signal }) {
   .widget-table th, .widget-table td { padding: 2px; text-align: right; }
 }`);
   const binary = process.env.DIPLODOCUS_BROWSER_BINARY!;
-  const built = spawnSync(binary, ['build', '--config', join(workspace, 'diplodocus.yaml'), '--output', join(workspace, 'site')], { encoding: 'utf8' });
+  const snapshot = join(workspace, 'documentation.sqlite');
+  const extracted = spawnSync(binary, ['extract', '--config', join(workspace, 'diplodocus.yaml'), '--output', snapshot], { encoding: 'utf8' });
+  expect(extracted.status, extracted.stderr).toBe(0);
+  await rm(join(workspace, 'pages'), { recursive: true });
+  await rm(join(workspace, 'widget'), { recursive: true });
+  await rm(join(workspace, 'diplodocus.yaml'));
+  const built = spawnSync(binary, ['generate', '--input', snapshot, '--allow-components', '--output', join(workspace, 'site')], { encoding: 'utf8' });
   expect(built.status, built.stderr).toBe(0);
   server = createServer(async (request, response) => {
     try {
@@ -163,4 +191,18 @@ test('queued visibility callbacks cannot mount a departed component', async ({ p
   await page.evaluate(() => (window as any).pendingComponents.splice(0).forEach((callback: () => void) => callback()));
   await page.waitForLoadState('networkidle');
   expect(await page.evaluate(() => (window as any).mounts || 0)).toBe(0);
+});
+
+test('passes isolated props to instances from a portable snapshot', async ({ page }) => {
+  await page.goto(`${origin}props.html`);
+  for (const [id, props] of [
+    ['first', { label: `<em>&quot; ' "quoted"</em>`, values: [true, null, { count: 2 }] }],
+    ['second', { label: 'Second' }],
+    ['default', {}],
+  ] as const) {
+    const widget = page.locator(`#${id}`);
+    await widget.scrollIntoViewIfNeeded();
+    await expect(widget.getByRole('button')).toHaveText('Ready');
+    await expect(widget.locator('[data-props]')).toHaveAttribute('data-props', JSON.stringify(props));
+  }
 });

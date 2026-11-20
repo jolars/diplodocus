@@ -207,23 +207,32 @@ pub(crate) fn collect(sources: &WorkspaceSources) -> Result<Collected, Box<Diagn
             },
         );
     }
-    let known = bundles.keys().map(String::as_str).collect();
-    for page in sources.workspace().pages.values() {
-        validate_blocks(&page.document.document.blocks, &known)?;
-    }
-    for package in sources.workspace().packages.values() {
-        for item in package.items.values() {
-            if let Some(document) = &item.documentation {
-                validate_blocks(&document.document.blocks, &known)?;
-            }
-        }
-    }
-    for concept in sources.workspace().concepts.values() {
-        if let Some(document) = &concept.documentation {
-            validate_blocks(&document.document.blocks, &known)?;
-        }
-    }
     Ok((bundles, assets, inputs))
+}
+
+pub(crate) fn props(attributes: &Attributes) -> Result<Option<&str>, Box<Diagnostic>> {
+    let mut entries = attributes
+        .key_values
+        .iter()
+        .filter(|entry| entry.key.value == "props");
+    let Some(entry) = entries.next() else {
+        return Ok(None);
+    };
+    if let Some(duplicate) = entries.next() {
+        let mut error = diagnostic("Component blocks can declare props only once.");
+        error.span = Some(duplicate.key.span);
+        return Err(error);
+    }
+    let value = entry.value.value.as_str();
+    if !matches!(
+        serde_json::from_str::<serde_json::Value>(value),
+        Ok(serde_json::Value::Object(_))
+    ) {
+        let mut error = diagnostic("Component props must be a JSON object.");
+        error.span = Some(entry.value.span);
+        return Err(error);
+    }
+    Ok(Some(value))
 }
 
 pub(crate) fn validate_blocks(
@@ -233,13 +242,16 @@ pub(crate) fn validate_blocks(
     for block in blocks {
         match block {
             Block::Component {
-                attributes, blocks, ..
+                attributes,
+                blocks,
+                span,
             } => {
                 if !name(attributes).is_some_and(|n| known.contains(n)) {
-                    return Err(diagnostic(
-                        "Component blocks must name a declared component.",
-                    ));
+                    let mut error = diagnostic("Component blocks must name a declared component.");
+                    error.span = Some(*span);
+                    return Err(error);
                 }
+                props(attributes)?;
                 validate_blocks(blocks, known)?;
             }
             Block::Container { blocks, .. }

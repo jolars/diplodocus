@@ -150,7 +150,7 @@ pub enum Block {
     },
     /// An explicitly declared browser component with ordinary Markdown fallback.
     Component {
-        /// Component name and optional local anchor.
+        /// Component name, optional instance props, and optional local anchor.
         attributes: Attributes,
         /// Content retained when scripting is unavailable.
         blocks: Vec<Block>,

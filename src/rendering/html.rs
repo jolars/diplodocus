@@ -1724,7 +1724,18 @@ impl Renderer<'_, '_> {
                             .iter()
                             .map(|s| self.site.url(self.route, &format!("{prefix}{s}")))
                             .collect();
-                        write!(html, "<div class=\"diplodocus-component\"{} data-component-module=\"{}\" data-component-styles=\"{}\"><div data-component-fallback>{}</div></div>", id(attributes), escape(&module), escape(&serde_json::to_string(&styles).map_err(|_| SiteError::Evidence)?), self.blocks(blocks)?).unwrap();
+                        write!(html, "<div class=\"diplodocus-component\"{} data-component-module=\"{}\" data-component-styles=\"{}\"", id(attributes), escape(&module), escape(&serde_json::to_string(&styles).map_err(|_| SiteError::Evidence)?)).unwrap();
+                        if let Some(props) =
+                            crate::components::props(attributes).map_err(|_| SiteError::Evidence)?
+                        {
+                            write!(html, " data-component-props=\"{}\"", escape(props)).unwrap();
+                        }
+                        write!(
+                            html,
+                            "><div data-component-fallback>{}</div></div>",
+                            self.blocks(blocks)?
+                        )
+                        .unwrap();
                     } else {
                         write!(
                             html,

@@ -24,7 +24,7 @@ Build the bundle before running `check`, `build`, `extract`, or `serve`.
 Mount it in a GFM or QMD source:
 
 ```markdown
-::: {.component name="explorer"}
+::: {.component name="explorer" props='{"sets":{"A":5,"B":3,"A&B":2},"editable":true}'}
 
 A static explanation, image, and links remain available without JavaScript.
 
@@ -33,7 +33,12 @@ A static explanation, image, and links remain available without JavaScript.
 
 Evaluated R Markdown articles do not retain component blocks.
 
-The module exports `mount(element, { signal, assetBaseUrl })`. It may return a
+The optional `props` attribute takes a single-line JSON object. Use single
+quotes around the attribute and write apostrophes inside JSON strings as
+`\u0027`. Each mount receives its own props object, which defaults to `{}`.
+An optional block ID remains available as an HTML anchor.
+
+The module exports `mount(element, { signal, assetBaseUrl, props })`. It may return a
 cleanup function or a promise for one. Use the abort signal to stop workers,
 remove listeners, and cancel animation. Use `new URL("worker.js", import.meta.url)`
 for bundle-relative resources. Components initialize near the viewport on both

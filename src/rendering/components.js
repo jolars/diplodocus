@@ -26,12 +26,13 @@
     content.hidden = true;
     root.append(content);
     try {
+      const props = JSON.parse(root.dataset.componentProps ?? '{}');
       await Promise.all(JSON.parse(root.dataset.componentStyles).map(url => stylesheet(new URL(url, location.href).href)));
       if (signal.aborted) return;
       if (!modules.has(moduleUrl)) modules.set(moduleUrl, import(moduleUrl).catch(error => { modules.delete(moduleUrl); throw error; }));
       const component = await modules.get(moduleUrl);
       if (signal.aborted) return;
-      const cleanup = await component.mount(content, { signal, assetBaseUrl });
+      const cleanup = await component.mount(content, { signal, assetBaseUrl, props });
       if (signal.aborted) { cleanup?.(); return; }
       if (cleanup) signal.addEventListener('abort', cleanup, { once: true });
       fallback.hidden = true;

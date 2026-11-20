@@ -1657,3 +1657,61 @@ async fn documenter_snapshots_require_complete_consistent_execution_evidence() {
         assert!(result.is_err(), "accepted {case}: {result:?}");
     }
 }
+
+#[test]
+fn rejects_invalid_component_props_with_valid_fingerprints() {
+    let root = support::TestWorkspace::new();
+    root.write(
+        "diplodocus.yaml",
+        r#"
+project:
+  name: Components
+repositories:
+  - id: docs
+    path: .
+components:
+  - id: widget
+    repository: docs
+    path: widget
+    module: index.js
+content:
+  - id: guide
+    owner: project
+    repository: docs
+    path: pages
+    mount: ""
+    format: gfm
+"#,
+    );
+    root.write("widget/index.js", "export function mount() {}");
+    root.write(
+        "pages/index.md",
+        r#"# Props
+
+::: {.component name="widget" props='{}'}
+
+Fallback.
+
+:::
+"#,
+    );
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
+    let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+    let result = changed(&snapshot, |export| {
+        let mut page = record(export, "page");
+        for key in ["document", "document", "blocks"] {
+            page = &mut page[key];
+        }
+        let component = page
+            .as_array_mut()
+            .unwrap()
+            .iter_mut()
+            .find(|block| block["type"] == "component")
+            .unwrap();
+        component["attributes"]["key_values"][1]["value"]["value"] = json!("[]");
+    });
+    assert!(
+        matches!(result, Err(SnapshotError::Invalid("component block"))),
+        "{result:?}"
+    );
+}
