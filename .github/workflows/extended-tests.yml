@@ -1,0 +1,59 @@
+name: Extended tests
+
+on:
+  schedule:
+    - cron: '23 2 * * *'
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: Extended suite to run
+        type: choice
+        default: all
+        options: [all, incremental-native, snapshots]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test (${{ matrix.suite }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: >-
+          ${{ fromJSON(
+            (inputs.suite == 'incremental-native' && '["incremental-native"]') ||
+            (inputs.suite == 'snapshots' && '["snapshots"]') ||
+            '["incremental-native","snapshots"]'
+          ) }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: cachix/install-nix-action@v31
+      - uses: cachix/cachix-action@v17
+        with:
+          name: devenv
+      - name: Install devenv
+        run: nix profile add nixpkgs#devenv
+      - name: Build devenv shell
+        run: devenv shell -- true
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: extended-${{ matrix.suite }}
+      - name: Check opt-in native incremental acceptance
+        if: matrix.suite == 'incremental-native'
+        run: |
+          devenv shell -- cargo test --locked --lib \
+            persistent_discovery_and_doctests_have_independent_cache_entries -- --ignored
+          devenv shell -- cargo test --locked \
+            --test incremental_dependencies --test incremental_execution \
+            --test incremental_preparation --test incremental_source_paths \
+            --test r_incremental --test python_native -- --ignored
+      - name: Check snapshots with insertion-ordered JSON maps
+        if: matrix.suite == 'snapshots'
+        run: |
+          devenv shell -- cargo test --locked --lib snapshots:: --features serde_json/preserve_order
+          devenv shell -- cargo test --locked --features serde_json/preserve_order \
+            --test snapshot_canonical --test snapshot_schema --test snapshot_metadata \
+            --test snapshots_storage --test snapshot_assets --test snapshot_validation \
+            --test snapshot_publication --test snapshot_refresh

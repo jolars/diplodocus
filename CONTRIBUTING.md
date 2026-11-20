@@ -44,8 +44,9 @@ cargo clippy --locked --all-targets --all-features -- -D warnings
 ```
 
 Slow incremental acceptance tests that invoke R, Python, Julia, Doxygen, or
-Rustdoc are ignored by default. CI runs them in the separate `incremental-native`
-job. Run them explicitly when changing native extraction or cache boundaries:
+Rustdoc are ignored by default. The **Extended tests** workflow runs them
+nightly. Run the workflow manually with `suite: incremental-native` or use
+these local commands when changing native extraction or cache boundaries:
 
 ```sh
 compute run -- cargo test --locked --lib \
@@ -55,6 +56,15 @@ compute run -- cargo test --locked \
   --test incremental_preparation --test incremental_source_paths \
   --test r_incremental --test python_native -- --ignored
 ```
+
+Regular CI splits Cargo integration targets into four shards. To see which
+targets a shard runs, use
+`python scripts/test-integration-shard.py integration-1 --list`.
+Omit `--list` to run the shard.
+
+Regular CI checks canonical snapshot fingerprints with
+`serde_json/preserve_order`. The **Extended tests** workflow runs the full
+alternate-feature suite nightly or on demand with `suite: snapshots`.
 
 Keep fast regression tests in the default suite. New slow native acceptance
 tests should remain opt-in rather than adding minutes to routine testing.

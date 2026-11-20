@@ -34,7 +34,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [unit, integration, incremental-native, snapshots]
+        suite: [unit, integration-1, integration-2, integration-3, integration-4, snapshots]
     steps:
       - uses: actions/checkout@v7
       - uses: cachix/install-nix-action@v31
@@ -51,26 +51,12 @@ jobs:
       - name: Run unit tests
         if: matrix.suite == 'unit'
         run: devenv shell -- cargo test --locked --lib --bins --examples --benches
-      - name: Run integration tests with nextest
-        if: matrix.suite == 'integration'
-        run: devenv shell -- cargo nextest run --locked --test '*' --no-fail-fast
-      - name: Check opt-in native incremental acceptance
-        if: matrix.suite == 'incremental-native'
-        run: |
-          devenv shell -- cargo test --locked --lib \
-            persistent_discovery_and_doctests_have_independent_cache_entries -- --ignored
-          devenv shell -- cargo test --locked \
-            --test incremental_dependencies --test incremental_execution \
-            --test incremental_preparation --test incremental_source_paths \
-            --test r_incremental --test python_native -- --ignored
-      - name: Check snapshots with insertion-ordered JSON maps
+      - name: Run integration shard
+        if: startsWith(matrix.suite, 'integration-')
+        run: devenv shell -- python scripts/test-integration-shard.py "${{ matrix.suite }}"
+      - name: Check snapshot fingerprints with insertion-ordered JSON maps
         if: matrix.suite == 'snapshots'
-        run: |
-          devenv shell -- cargo test --locked --lib snapshots:: --features serde_json/preserve_order
-          devenv shell -- cargo test --locked --features serde_json/preserve_order \
-            --test snapshot_canonical --test snapshot_schema --test snapshot_metadata \
-            --test snapshots_storage --test snapshot_assets --test snapshot_validation \
-            --test snapshot_publication --test snapshot_refresh
+        run: devenv shell -- cargo test --locked --features serde_json/preserve_order --test snapshot_canonical
 
   python-sphinx:
     name: Sphinx ${{ matrix.sphinx }} (Python ${{ matrix.python }})

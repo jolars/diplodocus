@@ -124,6 +124,33 @@ fn workspace() -> support::TestWorkspace {
     root
 }
 
+// Publication failures and manual database edits only need authored records.
+fn authored_workspace() -> support::TestWorkspace {
+    let root = support::TestWorkspace::new();
+    root.write(
+        "diplodocus.yaml",
+        r#"project:
+  name: Refresh
+repositories:
+  - id: main
+    path: repo
+content:
+  - id: guide
+    owner: project
+    repository: main
+    path: docs
+    mount: guide
+    format: qmd
+"#,
+    );
+    root.write(
+        "repo/docs/index.qmd",
+        "# Guide\n\n[Download](download.bin)\n",
+    );
+    root.write("repo/docs/download.bin", "retained bytes");
+    root
+}
+
 fn extract(root: &support::TestWorkspace, path: &Path) -> Result<(), CommandError> {
     commands::extract(ExtractOptions {
         config: root.path().join("diplodocus.yaml"),
@@ -326,14 +353,14 @@ fn repeated_refreshes_retain_ids_and_replace_deleted_entities_and_unused_assets(
 
 #[test]
 fn refresh_discards_manual_database_edits_and_history() {
-    let root = workspace();
+    let root = authored_workspace();
     let target = tempfile::tempdir().unwrap();
     let path = target.path().join("documentation.sqlite");
     let original = refresh(&root, &path).canonical_export().unwrap();
     let original_records = records(&path);
     for sql in [
         "UPDATE records SET content = '{}' WHERE kind = 'page'",
-        "DELETE FROM records WHERE kind = 'item'",
+        "DELETE FROM records WHERE kind = 'document'",
         "UPDATE assets SET bytes = X'00'",
         "INSERT INTO assets VALUES (printf('%064d', 0), 'application/octet-stream', X'01')",
         "UPDATE manifest SET storage_version = 0",
@@ -359,13 +386,13 @@ fn refresh_discards_manual_database_edits_and_history() {
 
 #[test]
 fn failed_refreshes_preserve_the_previous_snapshot_and_recover_from_current_sources() {
-    let root = workspace();
+    let root = authored_workspace();
     let target = tempfile::tempdir().unwrap();
     let path = target.path().join("documentation.sqlite");
     let before = refresh(&root, &path).canonical_export().unwrap();
     let bytes = fs::read(&path).unwrap();
 
-    root.write("repo/docs/index.qmd", "[`missing-item`]\n");
+    root.write("repo/docs/index.qmd", "[Missing](missing.md)\n");
     assert!(matches!(
         extract(&root, &path),
         Err(CommandError::Resolution(_))
@@ -404,7 +431,7 @@ fn failed_refreshes_preserve_the_previous_snapshot_and_recover_from_current_sour
 
 #[test]
 fn replacement_failure_removes_staging_and_allows_retry() {
-    let root = workspace();
+    let root = authored_workspace();
     let target = tempfile::tempdir().unwrap();
     let path = target.path().join("documentation.sqlite");
     fs::create_dir(&path).unwrap();
