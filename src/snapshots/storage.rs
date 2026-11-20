@@ -236,6 +236,7 @@ fn decode(
     let mut logo = None;
     let mut open_graph = None;
     let mut components = BTreeMap::new();
+    let mut package_mounts = BTreeMap::new();
     let mut entities: BTreeMap<&str, serde_json::Map<String, Value>> = BTreeMap::new();
     let mut nested = Vec::new();
     let mut documents = Vec::new();
@@ -248,6 +249,9 @@ fn decode(
                 let object = content
                     .as_object_mut()
                     .ok_or(SnapshotError::Invalid("presentation shape"))?;
+                if let Some(mounts) = object.remove("package-mounts") {
+                    package_mounts = serde_json::from_value(mounts)?;
+                }
                 if let Some(assets) = object.remove("public-assets") {
                     public_assets = serde_json::from_value(assets)?;
                 }
@@ -365,6 +369,7 @@ fn decode(
         logo,
         open_graph,
         components,
+        package_mounts,
         documents,
         assets,
         producer,

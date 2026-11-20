@@ -74,3 +74,11 @@ python3 examples/qualpal/bundles.py \
 ```
 
 The verified site is in `assembly/detached/site`.
+
+To let a consumer fetch the bundles directly, attach each exported SQLite
+file to a public release in its producer repository with
+`gh release upload TAG FILE`. Record the producer commit and the result of
+`sha256sum FILE` in the consumer's
+[release bundle declarations](../../docs/guide/snapshots.md).
+For checkout development, enable the local override for the package you are
+editing and keep its site mount.

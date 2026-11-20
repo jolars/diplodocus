@@ -406,7 +406,7 @@ fn protect_sources(
 
 fn protect_caches(configuration_directory: &Path, destination: &Path) -> Result<(), CommandError> {
     // Compare reserved locations without inspecting disabled cache storage.
-    for kind in ["execution", "rust", "incremental"] {
+    for kind in ["execution", "rust", "incremental", "package-bundles"] {
         let cache = configuration_directory.join(".diplodocus/cache").join(kind);
         if destination.starts_with(&cache) || cache.starts_with(destination) {
             return Err(CommandError::InputOverlap);

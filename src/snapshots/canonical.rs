@@ -79,6 +79,9 @@ pub(super) fn records(snapshot: &Snapshot) -> Result<Vec<Record>, SnapshotError>
     if !snapshot.public_assets.is_empty() {
         presentation["public-assets"] = serde_json::to_value(&snapshot.public_assets)?;
     }
+    if !snapshot.package_mounts.is_empty() {
+        presentation["package-mounts"] = serde_json::to_value(&snapshot.package_mounts)?;
+    }
     if !snapshot.components.is_empty() {
         presentation["component-bundles"] = serde_json::to_value(&snapshot.components)?;
     }

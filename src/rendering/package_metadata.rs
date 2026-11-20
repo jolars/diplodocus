@@ -7,9 +7,7 @@ use crate::site::Site;
 use super::html::escape;
 
 pub(super) fn is_overview(site: &Site<'_>, route: &str, owner: Option<&str>) -> bool {
-    owner.is_some_and(|id| {
-        route == format!("packages/{}/index.html", site.workspace.packages[id].slug)
-    })
+    owner.is_some_and(|id| route == format!("{}/index.html", site.package_root(id)))
 }
 
 struct Summary {
@@ -72,7 +70,7 @@ fn summary(site: &Site<'_>, route: &str, id: &str) -> Summary {
         }),
     );
     summary.field("Version", package.version.as_deref());
-    let license_page = format!("packages/{}/license.html", package.slug);
+    let license_page = format!("{}/license.html", site.package_root(id));
     summary.license_url = site
         .pages
         .contains_key(&license_page)
@@ -162,7 +160,7 @@ fn summary(site: &Site<'_>, route: &str, id: &str) -> Summary {
         PackagePageRole::License,
         PackagePageRole::Community,
     ] {
-        let destination = format!("packages/{}/{}", package.slug, role.filename());
+        let destination = format!("{}/{}", site.package_root(id), role.filename());
         if site.pages.contains_key(&destination) {
             summary
                 .links

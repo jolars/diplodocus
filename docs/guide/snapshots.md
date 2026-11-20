@@ -159,3 +159,34 @@ examples run during export, and their figures travel with the bundle.
 The [bundle format](../reference/snapshots.md#package-api-bundles) describes
 compatibility. The [Qualpal recipe](https://github.com/jolars/diplodocus/tree/main/examples/qualpal)
 demonstrates both workflows.
+
+### Use a published GitHub release bundle {#release-bundles}
+
+Run `bundle export` in the producer's prepared environment at the release's
+source commit. Ensure the producer repository record carries that full commit
+SHA. Upload the SQLite file to a public GitHub release with
+`gh release upload TAG qualpal.sqlite`. Compute its SHA-256 with
+`sha256sum qualpal.sqlite` and record both pins in the consumer configuration.
+
+```yaml
+package-bundles:
+  - package: qualpal
+    mount: api/qualpal
+    github-release:
+      repository: jolars/qualpal
+      tag: v1.2.3
+      asset: qualpal.sqlite
+      revision: "<full source commit SHA>"
+      sha256: "<SHA-256 of qualpal.sqlite>"
+```
+
+The `owner/repository` identifies the host of the uploaded artifact. A source
+repository needs an extraction step in a prepared environment before it can
+supply a bundle. Diplodocus verifies cached files on each use and can assemble
+offline once the cache is populated. A completed snapshot retains the mount
+and supports offline generation without the cache.
+
+To develop against a prepared checkout, keep the published entry, set
+`local-override: true` on it, and add the usual local repository and package
+declarations in your development configuration. Use the same package ID.
+The checkout supplies the package at the configured mount.

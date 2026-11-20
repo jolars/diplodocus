@@ -206,3 +206,7 @@ workspace supplies authored collections, site presentation, and page execution.
 
 Use `package-bundles` to load the artifact into a workspace. `generate`
 requires the completed snapshot produced by that workspace.
+
+A completed workspace snapshot records custom package roots in the optional
+`package-mounts` map on its presentation record. Mounted snapshots require a
+reader that supports this field.

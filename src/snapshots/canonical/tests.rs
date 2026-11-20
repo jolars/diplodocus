@@ -30,6 +30,7 @@ fn fixture() -> Snapshot {
         logo: None,
         open_graph: None,
         components: BTreeMap::new(),
+        package_mounts: BTreeMap::new(),
         assets: BTreeMap::new(),
         producer: "canonical-fixture".into(),
         executions: BTreeMap::new(),

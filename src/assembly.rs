@@ -69,10 +69,10 @@ pub(crate) const PACKAGE_LICENSE_FILENAMES: &[&str] = &[
 /// A failed source assembly or execution, without a publishable workspace.
 #[derive(Debug, thiserror::Error)]
 pub enum AssemblyError {
-    /// A local bundle failed validation or conflicted with workspace records.
+    /// A package bundle could not be retrieved, validated, or composed.
     #[error("package bundle {path}: {message}")]
     Bundle {
-        /// Selected artifact.
+        /// Selected artifact path or release URL.
         path: PathBuf,
         /// Failure details.
         message: String,
@@ -533,7 +533,9 @@ pub(crate) async fn assemble_for_check(
         },
         false,
         reporting,
+        cancellation,
     )
+    .await
 }
 
 async fn doxygen_results(
@@ -664,11 +666,12 @@ struct NativeExtractions {
     r: BTreeMap<(String, String), r_native::RNativeExtraction>,
 }
 
-fn assemble_with_native(
+async fn assemble_with_native(
     path: &Path,
     mut native: NativeExtractions,
     bundle_export: bool,
     reporting: &Reporting,
+    cancellation: &mut ExecutionCancellation<'_>,
 ) -> Result<WorkspaceSources, AssemblyError> {
     let text = fs::read_to_string(path).map_err(|source| ConfigurationError::Read {
         path: path.to_owned(),
@@ -840,7 +843,9 @@ fn assemble_with_native(
         &configuration,
         &paths.configuration_directory,
         &mut workspace,
-    )?;
+        cancellation,
+    )
+    .await?;
     documenter::assemble(&mut workspace, &prepared_pages);
     references::concepts_and_relationships(&configuration, &mut workspace, &config_name);
     reject_errors(workspace.diagnostics.iter().cloned().collect())?;

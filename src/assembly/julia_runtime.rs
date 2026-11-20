@@ -361,5 +361,7 @@ pub(crate) async fn assemble_for_extraction(
         },
         bundle_export,
         reporting,
+        cancellation,
     )
+    .await
 }

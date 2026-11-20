@@ -51,6 +51,7 @@ pub struct Site<'a> {
     pub(crate) components: &'a BTreeMap<String, crate::components::ComponentBundle>,
     pub(crate) components_enabled: bool,
     pub(crate) workspace: &'a Workspace,
+    package_mounts: &'a BTreeMap<String, String>,
     pub(crate) presentation: &'a PresentationDefaults,
     pub(crate) logo: Option<&'a AssetReference>,
     pub(crate) open_graph: Option<&'a AssetReference>,
@@ -67,6 +68,7 @@ pub struct Site<'a> {
 }
 
 struct SiteInputs<'a> {
+    package_mounts: &'a BTreeMap<String, String>,
     public_assets: &'a BTreeMap<String, String>,
     workspace: &'a Workspace,
     presentation: &'a PresentationDefaults,
@@ -148,6 +150,7 @@ impl<'a> Site<'a> {
             SiteInputs {
                 workspace: snapshot.workspace(),
                 presentation: snapshot.presentation(),
+                package_mounts: &snapshot.package_mounts,
                 logo: snapshot.logo(),
                 open_graph: snapshot.open_graph(),
                 public_assets: snapshot.public_assets(),
@@ -168,6 +171,7 @@ impl<'a> Site<'a> {
             SiteInputs {
                 workspace: sources.workspace(),
                 presentation: &sources.configuration().presentation,
+                package_mounts: &sources.bundles.mounts,
                 logo: resolved.logo(),
                 open_graph: resolved.open_graph(),
                 public_assets: &resolved.public_assets,
@@ -191,6 +195,7 @@ impl<'a> Site<'a> {
             components: inputs.components,
             components_enabled: false,
             presentation: inputs.presentation,
+            package_mounts: inputs.package_mounts,
             logo: inputs.logo,
             open_graph: inputs.open_graph,
             pages: BTreeMap::new(),
@@ -208,6 +213,13 @@ impl<'a> Site<'a> {
             url_map: None,
         };
         let records: BTreeMap<_, _> = inputs.documents.iter().map(|r| (&r.document, r)).collect();
+        let mut roots = BTreeSet::new();
+        for id in workspace.packages.keys() {
+            let root = site.package_root(id);
+            if !roots.insert(root.clone()) {
+                return Err(SiteError::Route(root));
+            }
+        }
         for (id, page) in &workspace.pages {
             let identity = DocumentIdentity::Page { page: id.clone() };
             let resolved = *records.get(&identity).ok_or(SiteError::Evidence)?;
@@ -237,7 +249,7 @@ impl<'a> Site<'a> {
                 };
                 let base = owner
                     .as_ref()
-                    .map(|p| format!("packages/{}/", workspace.packages[p].slug))
+                    .map(|p| format!("{}/", site.package_root(p)))
                     .unwrap_or_default();
                 let mount = if collection.mount.is_empty() {
                     String::new()
@@ -288,11 +300,7 @@ impl<'a> Site<'a> {
                 format!("{base}{mount}{stem}.html")
             } else if let PageKind::PackageDocumentation { role } = &page.kind {
                 let package = owner.as_ref().ok_or(SiteError::Evidence)?;
-                format!(
-                    "packages/{}/{}",
-                    workspace.packages[package].slug,
-                    role.filename()
-                )
+                format!("{}/{}", site.package_root(package), role.filename())
             } else {
                 format!(
                     "pages/{}.html",
@@ -325,9 +333,13 @@ impl<'a> Site<'a> {
                 })
                 .map(|item| item.qualified_name.as_str())
                 .collect();
-            let base = format!("packages/{}", package.slug);
+            let base = site.package_root(id);
             let route = format!("{base}/index.html");
-            if !site.pages.contains_key(&route) {
+            if let Some(page) = site.pages.get(&route) {
+                if page.owner.as_deref() != Some(id) {
+                    return Err(SiteError::Route(route));
+                }
+            } else {
                 site.insert(
                     route,
                     PageModel::empty(
@@ -339,6 +351,13 @@ impl<'a> Site<'a> {
             }
             let r_routes = if package.ecosystem == "r" {
                 let reference = format!("{base}/reference/index.html");
+                if site
+                    .pages
+                    .get(&reference)
+                    .is_some_and(|page| page.owner.as_deref() != Some(id))
+                {
+                    return Err(SiteError::Route(reference));
+                }
                 if !discoverable.is_empty() && !site.pages.contains_key(&reference) {
                     let mut model = PageModel::empty(
                         "Reference".into(),
@@ -348,7 +367,7 @@ impl<'a> Site<'a> {
                     model.reference_index = true;
                     site.insert(reference, model)?;
                 }
-                crate::rendering::r_topics::routes(package)
+                crate::rendering::r_topics::routes(package, &base)
             } else {
                 BTreeMap::new()
             };
@@ -364,8 +383,8 @@ impl<'a> Site<'a> {
                     site.routes.insert(
                         identity,
                         format!(
-                            "packages/{}/reference/{}.html",
-                            workspace.packages[&family.package].slug,
+                            "{}/reference/{}.html",
+                            site.package_root(&family.package),
                             crate::provenance::fingerprint_bytes(owner.as_bytes()).value
                         ),
                     );
@@ -506,8 +525,8 @@ impl<'a> Site<'a> {
                     site.routes.insert(
                         identity,
                         format!(
-                            "packages/{}/reference/{}.html",
-                            workspace.packages[&family.package].slug,
+                            "{}/reference/{}.html",
+                            site.package_root(&family.package),
                             crate::provenance::fingerprint_bytes(family.item.as_bytes()).value
                         ),
                     );
@@ -668,6 +687,13 @@ impl<'a> Site<'a> {
         map.validate(&self)?;
         self.url_map = Some(map);
         Ok(self)
+    }
+
+    pub(crate) fn package_root(&self, id: &str) -> String {
+        self.package_mounts
+            .get(id)
+            .cloned()
+            .unwrap_or_else(|| format!("packages/{}", self.workspace.packages[id].slug))
     }
 
     pub(crate) fn url(&self, from: &str, to: &str) -> String {
@@ -965,7 +991,11 @@ mod tests {
         let sources =
             crate::assembly::assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
         let resolved = crate::validation::resolve_workspace(&sources).unwrap();
-        let snapshot = Snapshot::from_sources(&sources, &resolved).unwrap();
+        let mut snapshot = Snapshot::from_sources(&sources, &resolved).unwrap();
+        snapshot
+            .package_mounts
+            .insert("python".into(), "api/python".into());
+        let referring_page = "packages/consumer/index.html";
         let site = Site::new(&snapshot).unwrap();
         let rendered = crate::rendering::render_site(&site).unwrap();
         for (id, item) in &site.workspace.packages["python"].items {
@@ -980,10 +1010,11 @@ mod tests {
                 item: family.clone(),
             }];
             let target = site
-                .target("index.html", &ReferenceTarget::Item { item: reference })
+                .target(referring_page, &ReferenceTarget::Item { item: reference })
                 .unwrap();
             let (destination, fragment) = target.split_once('#').unwrap();
-            assert_eq!(destination, relative_url("index.html", route));
+            assert!(route.starts_with("api/python/reference/"));
+            assert_eq!(destination, relative_url(referring_page, route));
             let html = std::str::from_utf8(&rendered.files()[route].bytes).unwrap();
             let fragment = percent_encoding::percent_decode_str(fragment)
                 .decode_utf8()

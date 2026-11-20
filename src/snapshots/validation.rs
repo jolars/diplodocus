@@ -38,6 +38,7 @@ impl Snapshot {
                         .pages
                         .values()
                         .all(|page| matches!(page.kind, PageKind::PackageDocumentation { .. }))
+                    && self.package_mounts.is_empty()
                     && self.presentation == PresentationDefaults::default()
                     && self.components.is_empty()
                     && self.executions.is_empty(),
@@ -53,6 +54,13 @@ impl Snapshot {
         documenter::validate(self)?;
         let outputs = self.restore_outputs()?;
         let workspace = &self.workspace;
+        require(
+            self.package_mounts.iter().all(|(id, mount)| {
+                workspace.packages.contains_key(id)
+                    && crate::configuration::valid_package_mount(mount)
+            }),
+            "package mount",
+        )?;
         if let Some(selected) = &self.presentation.header.repositories {
             require(
                 selected

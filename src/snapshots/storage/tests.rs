@@ -9,6 +9,7 @@ fn validation_failure_preserves_the_previous_file_and_cleans_staging() {
             ..Workspace::default()
         },
         presentation: PresentationDefaults::default(),
+        package_mounts: BTreeMap::new(),
         documents: Vec::new(),
         public_assets: BTreeMap::new(),
         logo: None,

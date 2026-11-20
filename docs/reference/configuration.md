@@ -19,7 +19,7 @@ strings, for boolean options.
 | `presentation` | mapping | Built-in presentation | Site metadata, navigation, branding, and footer. |
 | `repositories` | list | `[]` | Local source checkouts. |
 | `packages` | list | `[]` | Packages or components to document. |
-| `package-bundles` | list | `[]` | Local API bundles, each with a producer `package` ID and a config-relative `path`. |
+| `package-bundles` | list | `[]` | API bundles, each with a producer `package` ID and either a config-relative `path` or a pinned `github-release`. |
 | `content` | list | `[]` | Authored page collections. |
 | `components` | list | `[]` | Prebuilt browser bundles used by authored pages. |
 | `concepts` | list | `[]` | Groups of corresponding API items. |
@@ -614,3 +614,17 @@ starts with an ASCII letter and then uses letters, digits, `.`, `_`, or `-`.
 Colon-separated components must be nonempty, with no whitespace or control
 characters. Diplodocus retains external coordinates without resolving packages
 or inferring unknown unqualified names.
+
+
+## Package bundle sources
+
+A `github-release` declares `repository` as `owner/repository`, an explicit
+`tag`, the uploaded SQLite `asset` filename, a 40-digit hexadecimal source
+`revision`, and a 64-digit hexadecimal `sha256`. A remote entry may set
+`local-override: true` when a local package with the same ID is declared.
+
+Either source may specify a site-relative `mount` with slash-separated
+segments containing ASCII letters, digits, hyphens, or underscores. The
+default root is `packages/<slug>/`. Verified release artifacts are cached
+under `.diplodocus/cache/package-bundles/sha256/`. See the
+[publishing guide](../guide/snapshots.md#release-bundles).

@@ -116,6 +116,7 @@ impl Snapshot {
             bundle: false,
             workspace,
             presentation: executed.sources().configuration().presentation.clone(),
+            package_mounts: executed.sources().bundles.mounts.clone(),
             public_assets: resolved.public_assets.clone(),
             logo: resolved.logo().cloned(),
             open_graph: resolved.open_graph().cloned(),

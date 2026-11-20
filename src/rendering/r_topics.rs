@@ -28,7 +28,7 @@ pub(crate) fn page_title(item: &Item) -> Option<String> {
     title(item).map(super::html::plain)
 }
 
-pub(crate) fn routes(package: &Package) -> BTreeMap<String, String> {
+pub(crate) fn routes(package: &Package, root: &str) -> BTreeMap<String, String> {
     let stems: BTreeMap<_, _> = package
         .items
         .iter()
@@ -73,10 +73,7 @@ pub(crate) fn routes(package: &Package) -> BTreeMap<String, String> {
             } else {
                 stem.clone()
             };
-            (
-                id.clone(),
-                format!("packages/{}/reference/{stem}.html", package.slug),
-            )
+            (id.clone(), format!("{root}/reference/{stem}.html"))
         })
         .collect()
 }

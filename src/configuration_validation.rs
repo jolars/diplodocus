@@ -263,6 +263,38 @@ pub fn validate_configuration(configuration: &WorkspaceConfiguration) -> Vec<Dia
     }
     let local_packages = packages.clone();
     for (index, bundle) in configuration.package_bundles.iter().enumerate() {
+        let invalid = bundle.path.is_some() == bundle.github_release.is_some()
+            || bundle
+                .mount
+                .as_deref()
+                .is_some_and(|mount| !crate::configuration::valid_package_mount(mount))
+            || (bundle.local_override
+                && (bundle.github_release.is_none() || !local_packages.contains(&bundle.package)))
+            || bundle
+                .github_release
+                .as_ref()
+                .is_some_and(|release| !release.valid());
+        if invalid {
+            let path = format!("package-bundles[{index}]");
+            diagnostics.push(error(DiagnosticCode::InvalidConfiguration,
+                format!("{path}: expected one valid bundle source, valid mount and release pins, and a matching local package for local-override"),
+                DiagnosticEntity::ConfigurationField { path }));
+        }
+        if bundle.local_override && local_packages.contains(&bundle.package) {
+            if configuration.package_bundles[..index]
+                .iter()
+                .any(|other| other.package == bundle.package)
+            {
+                diagnostics.push(error(
+                    DiagnosticCode::DuplicatePackageId,
+                    format!("duplicate bundle for package `{}`", bundle.package),
+                    DiagnosticEntity::Package {
+                        id: bundle.package.clone(),
+                    },
+                ));
+            }
+            continue;
+        }
         packages.declare(
             &bundle.package,
             format!("package-bundles[{index}].package"),

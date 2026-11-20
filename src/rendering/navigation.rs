@@ -171,7 +171,7 @@ pub(super) fn sections(html: &mut String, site: &Site<'_>, route: &str, class: &
             html,
             site,
             route,
-            &format!("packages/{}/index.html", package.slug),
+            &format!("{}/index.html", site.package_root(id)),
             package_label(site, package),
             owner == Some(id.as_str()),
         );
@@ -472,7 +472,7 @@ fn package_pages(html: &mut String, site: &Site<'_>, route: &str, id: &str) {
         route,
         Some(id),
         package_label(site, package),
-        &format!("packages/{}/", package.slug),
+        &format!("{}/", site.package_root(id)),
     );
     package_api_pages(html, site, route, id);
 }
@@ -495,7 +495,7 @@ fn package_api_pages(html: &mut String, site: &Site<'_>, route: &str, id: &str) 
             html,
             site,
             route,
-            &format!("packages/{}/reference/index.html", package.slug),
+            &format!("{}/reference/index.html", site.package_root(id)),
             "Reference overview",
         );
     }

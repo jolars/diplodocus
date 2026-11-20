@@ -40,7 +40,7 @@ pub struct WorkspaceConfiguration {
     /// Explicit packages and internal components to document; omission declares none.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub packages: Vec<PackageConfiguration>,
-    /// Local portable API bundles to import.
+    /// Portable API bundles to import.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub package_bundles: Vec<PackageBundleConfiguration>,
     /// Authored content collections.
@@ -54,14 +54,60 @@ pub struct WorkspaceConfiguration {
     pub relationships: Vec<RelationshipConfiguration>,
 }
 
-/// A local package bundle and its expected package identity.
+/// A package bundle source and its expected package identity.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct PackageBundleConfiguration {
     /// Package ID declared by the producer.
     pub package: String,
     /// Artifact path relative to the configuration directory.
-    pub path: PathBuf,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub path: Option<PathBuf>,
+    /// Public GitHub release asset and its pins.
+    #[serde(
+        rename = "github-release",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub github_release: Option<GitHubBundleRelease>,
+    /// Site-relative package root.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mount: Option<String>,
+    /// Use the explicitly declared local package.
+    #[serde(rename = "local-override", default, skip_serializing_if = "is_false")]
+    pub local_override: bool,
+}
+
+fn is_false(value: &bool) -> bool {
+    !value
+}
+
+/// Coordinates and integrity pins for a public GitHub release asset.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct GitHubBundleRelease {
+    /// GitHub owner and repository.
+    pub repository: String,
+    /// Explicit release tag.
+    pub tag: String,
+    /// Uploaded asset filename.
+    pub asset: String,
+    /// Full producer source commit.
+    pub revision: String,
+    /// SHA-256 of the SQLite file.
+    pub sha256: String,
+}
+
+pub(crate) fn valid_package_mount(path: &str) -> bool {
+    path.split('/').all(|part| {
+        !part.is_empty()
+            && part
+                .bytes()
+                .all(|c| c.is_ascii_alphanumeric() || matches!(c, b'-' | b'_'))
+    }) && !matches!(
+        path.split('/').next(),
+        Some("assets" | "__diplodocus" | "_redirects")
+    )
 }
 
 /// Project-wide documentation settings.

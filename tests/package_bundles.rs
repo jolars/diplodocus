@@ -191,3 +191,94 @@ fn bundle_storage_and_composition_work_without_sources() {
             .any(|asset| asset.bytes == b"retained download")
     );
 }
+
+#[test]
+fn pinned_release_cache_and_local_override_keep_the_mount() {
+    let temporary = tempfile::tempdir().unwrap();
+    let root = temporary.path();
+    let revision = "a".repeat(40);
+    producer(
+        root,
+        "example",
+        "upstream",
+        "example",
+        "# Example\n\nPublished bundle body.\n",
+    );
+    let producer_config = root.join("example.yaml");
+    let local = fs::read_to_string(&producer_config).unwrap().replace(
+        "path: example}",
+        &format!("path: example, revision: {revision}}}"),
+    );
+    fs::write(&producer_config, &local).unwrap();
+    export(root, "example");
+    let bytes = fs::read(root.join("example.sqlite")).unwrap();
+    let digest = diplodocus::provenance::fingerprint_bytes(&bytes).value;
+    let cache = root.join(".diplodocus/cache/package-bundles/sha256");
+    fs::create_dir_all(&cache).unwrap();
+    fs::write(cache.join(format!("{digest}.sqlite")), bytes).unwrap();
+
+    let remote = format!(
+        "package-bundles:\n  - package: example\n    mount: api/example\n    github-release: {{repository: example/source, tag: v1, asset: example.sqlite, revision: {revision}, sha256: '{digest}'}}\n"
+    );
+    let config = root.join("diplodocus.yaml");
+    fs::write(&config, format!("project: {{name: Test}}\n{remote}")).unwrap();
+    success(cli(
+        root,
+        &["extract", "--output", "published.sqlite"],
+        true,
+    ));
+    producer(root, "other", "other-source", "other", "# Other package\n");
+    let other = fs::read_to_string(root.join("other.yaml")).unwrap();
+    fs::write(&config, format!("{other}{remote}")).unwrap();
+    success(cli(root, &["build", "--output", "mixed"], true));
+    let home = fs::read_to_string(root.join("mixed/index.html")).unwrap();
+    assert!(home.contains("api/example/index.html"));
+    assert!(home.contains("packages/other/index.html"));
+    fs::write(
+        &config,
+        format!(
+            "{}{}",
+            other.replace("slug: other", "slug: collision"),
+            remote.replace("api/example", "packages/collision")
+        ),
+    )
+    .unwrap();
+    failure(
+        cli(root, &["check"], true),
+        "site route is invalid or conflicts",
+    );
+
+    fs::remove_dir_all(&cache).unwrap();
+    fs::write(
+        root.join("example/README.md"),
+        "# Example\n\nLocal checkout body.\n",
+    )
+    .unwrap();
+    fs::write(
+        &config,
+        format!("{local}{remote}    local-override: true\n"),
+    )
+    .unwrap();
+    success(cli(root, &["extract", "--output", "local.sqlite"], true));
+    assert!(!cache.exists());
+    fs::remove_file(config).unwrap();
+    fs::remove_dir_all(root.join("example")).unwrap();
+    for (name, title) in [
+        ("published", "Published bundle body"),
+        ("local", "Local checkout body"),
+    ] {
+        success(cli(
+            root,
+            &[
+                "generate",
+                "--input",
+                &format!("{name}.sqlite"),
+                "--output",
+                name,
+            ],
+            true,
+        ));
+        let page = fs::read_to_string(root.join(name).join("api/example/index.html")).unwrap();
+        assert!(page.contains(title), "missing {title} in {name}");
+    }
+}

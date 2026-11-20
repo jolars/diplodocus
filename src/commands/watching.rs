@@ -357,7 +357,8 @@ impl Observer {
         };
         let parent = self.config.parent().expect("absolute config");
         for bundle in &config.package_bundles {
-            let path = parent.join(&bundle.path);
+            let Some(path) = &bundle.path else { continue };
+            let path = parent.join(path);
             observe_external(&path, &mut observed, &mut self.external_fingerprints);
             for sidecar in crate::snapshots::sqlite_sidecar_paths(&path) {
                 // Bundle loading checks directory entries, including dangling symlinks.

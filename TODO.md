@@ -170,7 +170,7 @@ public surface and detached generation.
   repository's own environment. Use Qualpal and qualpalr to demonstrate a
   shared site whose final assembly does not require the C++ producer's
   toolchain in the R repository.
-- [ ] Add explicit remote bundle retrieval, caching, and mounting under a chosen
+- [x] Add explicit remote bundle retrieval, caching, and mounting under a chosen
   site path, starting with one documented artifact source. Pin revisions and
   artifact digests and allow a local checkout to replace a published bundle
   during development. Repository shorthand must explain the producer
