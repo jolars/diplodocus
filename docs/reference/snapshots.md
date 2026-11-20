@@ -190,7 +190,7 @@ Compare these exports when reviewing logical snapshot changes. The export is not
 an import format, and hashing its pretty-printed bytes does not reproduce the
 manifest fingerprint.
 
-## Package API bundles
+## Package API bundles {#package-api-bundles}
 
 A package API bundle is a standalone SQLite artifact for one repository and
 one package. It uses application ID `DIPB` and SQLite `user_version` 1.
