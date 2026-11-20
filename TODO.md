@@ -51,7 +51,7 @@ an optional `serve --live-reload` feature.
   - [ ] Add partial-file selection after whole-file inclusion works: line
     ranges, named regions, and heading anchors, with diagnostics for invalid
     or missing selections and source locations retained after selection.
-  - [ ] Support verbatim includes inside code fences, preserving indentation and
+  - [x] Support verbatim includes inside code fences, preserving indentation and
     allowing line-range selection without parsing the included code as
     Markdown.
   - [x] Document the syntax and compatibility decisions in the include contract,

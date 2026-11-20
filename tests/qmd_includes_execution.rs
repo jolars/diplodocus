@@ -62,8 +62,9 @@ fn nested_python_includes_share_state_invalidate_cache_and_generate_without_sour
         "pages/parts/setup.qmd",
         "Shared setup.\n\n{{< include ../../shared/step.md >}}\n",
     );
-    let partial = "Step.\n\n[Download](data.txt)\n\n![Included figure](figure.svg)\n\n```{python}\nvalue += 1\nprint(value)\n```\n";
+    let partial = "Step.\n\n[Download](data.txt)\n\n![Included figure](figure.svg)\n\n```{python}\n#| echo: false\n#|\n{{< include-code step.py >}}\n```\n";
     root.write("shared/step.md", partial);
+    root.write("shared/step.py", "#| echo: true\nvalue += 1\nprint(value)");
     root.write("shared/data.txt", "Download from the partial.\n");
     root.write("shared/figure.svg", "<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10'><rect width='10' height='10'/></svg>");
     root.write("pages/parts/empty.md", "");

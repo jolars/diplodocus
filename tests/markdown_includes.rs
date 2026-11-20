@@ -460,3 +460,105 @@ fn included_resources_reject_symlinks_outside_the_repository() {
     let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     assert!(resolve_workspace(&sources).is_err());
 }
+
+#[test]
+fn code_includes_render_selected_bytes_as_code_and_track_the_original_file() {
+    for (format, extension, marker, directive) in [
+        (
+            "gfm",
+            "md",
+            "```",
+            "<!--@include-code: \"../code/my example.txt\"{2-5}-->",
+        ),
+        (
+            "qmd",
+            "qmd",
+            "~~~",
+            "{{< include-code \"../code/my example.txt\"{2-5} >}}",
+        ),
+    ] {
+        let root = workspace(format);
+        let page =
+            format!("# Main\r\n\r\n{marker}text\r\n  {directive}\r\n{marker}\r\n\r\n## After\r\n");
+        root.write(format!("pages/index.{extension}"), &page);
+        let snippet = format!(
+            "omitted\r\n    π\r\n{marker}\r\n# Literal [link](missing.md)\r\n<!--@include: missing.md-->"
+        );
+        root.write("code/my example.txt", &snippet);
+
+        let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
+        let prepared = sources.prepared_pages().values().next().unwrap();
+        assert!(
+            prepared
+                .source()
+                .contains(&format!("      π\r\n  {marker}\r\n"))
+        );
+        assert!(!prepared.source().contains("omitted"));
+        let ranges = prepared.source_ranges();
+        for range in ranges {
+            let original = if range.original.path.as_str() == "code/my example.txt" {
+                &snippet
+            } else {
+                &page
+            };
+            let span = range.original.span.unwrap();
+            assert_eq!(
+                &prepared.source()[range.expanded.start..range.expanded.end],
+                &original[span.start..span.end]
+            );
+            assert_eq!(range.line, original[..span.start].matches('\n').count() + 1);
+        }
+        let included: Vec<_> = ranges
+            .iter()
+            .filter(|r| r.original.path.as_str() == "code/my example.txt")
+            .collect();
+        assert_eq!(
+            included.iter().map(|range| range.line).collect::<Vec<_>>(),
+            [2, 3, 4, 5]
+        );
+        assert!(included.iter().all(|range| range.include_chain.len() == 1));
+
+        let resolved = resolve_workspace(&sources).unwrap();
+        let snapshot = Snapshot::from_sources(&sources, &resolved).unwrap();
+        let site = Site::new(&snapshot).unwrap();
+        let rendered = render_site(&site).unwrap();
+        let html = std::str::from_utf8(&rendered.files().get("index.html").unwrap().bytes).unwrap();
+        assert!(html.contains("      π"));
+        assert!(html.contains("# Literal [link](missing.md)"), "{html}");
+        assert!(html.contains("&lt;!--@include: missing.md--&gt;"));
+        assert!(html.contains("id=\"after\""));
+        sources.revalidate().unwrap();
+        root.write("code/my example.txt", snippet.replace("omitted", "changed"));
+        assert!(sources.revalidate().is_err());
+    }
+}
+
+#[test]
+fn code_includes_diagnose_invalid_ranges_and_missing_files() {
+    for (target, message) in [
+        ("example.txt{0-1}", "Invalid code include"),
+        ("example.txt{2-1}", "Invalid code include"),
+        ("example.txt{1-3}", "exceeds the target"),
+        ("example.txt{3-3}", "exceeds the target"),
+        ("missing.txt", "regular file"),
+    ] {
+        let root = workspace("gfm");
+        let directive = format!("<!--@include-code: {target}-->");
+        let page = format!("```\n{directive}\n```\n");
+        root.write("pages/index.md", &page);
+        root.write("pages/example.txt", "first\nsecond\n");
+        let Err(AssemblyError::Diagnostics(diagnostics)) =
+            assemble_workspace(root.path().join("diplodocus.yaml"))
+        else {
+            panic!("expected include diagnostic for {target}");
+        };
+        assert_eq!(diagnostics[0].code, DiagnosticCode::InvalidMarkdownInclude);
+        assert!(
+            diagnostics[0].message.contains(message),
+            "{:?}",
+            diagnostics[0]
+        );
+        let span = diagnostics[0].span.unwrap();
+        assert_eq!(&page[span.start..span.end], directive);
+    }
+}

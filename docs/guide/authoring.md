@@ -312,9 +312,40 @@ the collection directory when they should have no route. Missing files and
 include cycles fail validation, with diagnostics pointing to the original
 source and include chain.
 
-Line ranges, named regions, heading selection, and verbatim code inclusion are
-not supported. Directives inside code fences, lists, and block quotes remain
-literal content. Includes currently apply only to GFM and QMD collections.
+Whole-file Markdown includes currently have no line, region, or heading
+selectors. Includes apply only to GFM and QMD collections.
+
+### Include source code
+
+Place a code include on its own line inside a top-level fence. This GFM
+example includes lines 3 through 8 of `demo.py`.
+
+> ````markdown
+> ```python
+> <!--@include-code: ../examples/demo.py{3-8}-->
+> ```
+> ````
+
+QMD uses shortcode syntax.
+
+````markdown
+```python
+{{< include-code "../examples/my demo.py"{3-8} >}}
+```
+````
+
+Omit `{3-8}` to include the entire file. Ranges are one-based and inclusive.
+Code includes accept local UTF-8 files of any extension and use the same path
+roots and repository boundary as Markdown includes. Each selected line keeps
+its original indentation and receives any leading whitespace from the
+directive line. Markdown syntax, fence markers, and nested directives in the
+included lines stay inside the fence. In executable QMD cells, put cell options
+in the page. A blank line separates options from included code that starts
+with an option-like comment.
+
+`include-code` is a Diplodocus extension. Whole-file Markdown directives remain
+literal inside fences. Code directives inside indented code, block quotes,
+and lists also remain literal.
 
 ## R Markdown articles
 
