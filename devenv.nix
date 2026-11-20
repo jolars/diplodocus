@@ -83,6 +83,7 @@ in
     cargo-deny
     cargo-llvm-cov
     cargo-msrv
+    cargo-nextest
     nodejs
     go-task
     watchexec

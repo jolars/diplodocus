@@ -34,15 +34,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - suite: unit
-            args: --lib --bins --examples --benches
-          - suite: integration
-            args: --test '*'
-          - suite: incremental-native
-            args: ''
-          - suite: snapshots
-            args: ''
+        suite: [unit, integration, incremental-native, snapshots]
     steps:
       - uses: actions/checkout@v7
       - uses: cachix/install-nix-action@v31
@@ -56,9 +48,12 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           key: test-${{ matrix.suite }}
-      - name: Run tests
-        if: matrix.suite != 'snapshots' && matrix.suite != 'incremental-native'
-        run: devenv shell -- cargo test --locked ${{ matrix.args }}
+      - name: Run unit tests
+        if: matrix.suite == 'unit'
+        run: devenv shell -- cargo test --locked --lib --bins --examples --benches
+      - name: Run integration tests with nextest
+        if: matrix.suite == 'integration'
+        run: devenv shell -- cargo nextest run --locked --test '*' --no-fail-fast
       - name: Check opt-in native incremental acceptance
         if: matrix.suite == 'incremental-native'
         run: |
