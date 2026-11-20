@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.15.0](https://github.com/jolars/diplodocus/compare/v0.14.0...v0.15.0) (2026-11-20)
+
+### Breaking changes
+
+- use native API discovery for workspace assembly ([`e1fe995`](https://github.com/jolars/diplodocus/commit/e1fe995ca3374f8718183abac6e6e4d3be218d07))
+
+### Features
+
+- add per-instance props to browser components ([`8390f4e`](https://github.com/jolars/diplodocus/commit/8390f4ec7e2980b31479e8aadf14a150752685a6))
+- support verbatim code includes ([`4a26160`](https://github.com/jolars/diplodocus/commit/4a26160a80a1265ca60c413802326f4b3a476c64))
+- import pinned GitHub release bundles ([`6483b2e`](https://github.com/jolars/diplodocus/commit/6483b2e12fbaae777cf0b9be551b90084c0dbdd7))
+- compose documentation from local package bundles ([`6c5a95e`](https://github.com/jolars/diplodocus/commit/6c5a95ee63c8c271a233af0a9d377012af4d15d6))
+- extract Julia APIs through native discovery ([`2697ce4`](https://github.com/jolars/diplodocus/commit/2697ce4cc6909a18a80abc3f33b202398c2b89ee))
+- extract Python APIs through Sphinx ([`196a710`](https://github.com/jolars/diplodocus/commit/196a710febf038602e7643f4983b730827c0ca67))
+- make the development loop incremental ([`2a70b78`](https://github.com/jolars/diplodocus/commit/2a70b78376ccf6f7a77ac43376a9ac80db8904b1))
+- add native R and roxygen2 workflow ([`e03de3c`](https://github.com/jolars/diplodocus/commit/e03de3c5cee491e620eb6af368983ece26d8de53))
+- **home:** support external action links ([`43e8643`](https://github.com/jolars/diplodocus/commit/43e86434e2b72e8767d8029a1b1fee611bc25ec3))
+- **navigation:** group API links in a dropdown by default ([`498ceeb`](https://github.com/jolars/diplodocus/commit/498ceeba45b49359ec3d6a623534021e055a2fc9))
+
+### Bug Fixes
+
+- use native API discovery for workspace assembly ([`e1fe995`](https://github.com/jolars/diplodocus/commit/e1fe995ca3374f8718183abac6e6e4d3be218d07))
+- preserve source and native cache dependencies ([`4d0cd4f`](https://github.com/jolars/diplodocus/commit/4d0cd4f70d05a7c0e69392364a2f3f7e9221be12))
+- **rendering:** isolate table styles and support keyboard scrolling ([`b277bc6`](https://github.com/jolars/diplodocus/commit/b277bc65e5ed4ed49a99dc02a817fc28359facea))
+- align HTML parser and DOM dependency versions ([`8d99935`](https://github.com/jolars/diplodocus/commit/8d9993546bc11768b453f0506e1f5107062f0707))
+- keep preview responsive to shutdown signals ([`31cd53d`](https://github.com/jolars/diplodocus/commit/31cd53de1eb4020f798c5e6c3a9449d521b1102f)), fixes [#36](https://github.com/jolars/diplodocus/issues/36)
+
 ## [0.14.0](https://github.com/jolars/diplodocus/compare/v0.13.1...v0.14.0) (2026-11-11)
 
 ### Breaking changes
