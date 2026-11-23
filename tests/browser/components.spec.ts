@@ -33,7 +33,7 @@ content:
     mount: ''
     format: gfm
 `);
-  await writeFile(join(workspace, 'pages/index.md'), '# Home\n\n::: {.component name="counter"}\n\nStatic fallback.\n\n:::\n\n| Authored | Value |\n| --- | --- |\n| Example | 1 |\n\n[Other page](other.md)\n');
+  await writeFile(join(workspace, 'pages/index.md'), '# Home\n\n::: {.component name="counter" #counter loading="Loading the counter" min-height="240px"}\n\nStatic fallback.\n\n:::\n\n| Authored | Value |\n| --- | --- |\n| Example | 1 |\n\n[Other page](other.md)\n');
   await writeFile(join(workspace, 'pages/props.md'), String.raw`# Props
 
 ::: {.component name="counter" #first props='{"label":"<em>&quot; \u0027 \"quoted\"</em>","values":[true,null,{"count":2}]}'}
@@ -67,6 +67,7 @@ export async function mount(root, { signal, props }) {
   const table = document.createElement('table'); table.className = 'widget-table'; table.innerHTML = '<thead><tr><th>Region</th><th>Value</th></tr></thead><tbody><tr><td>A</td><td>1</td></tr></tbody>'; scroll.append(table); root.append(scroll);
   worker.onmessage = event => { button.textContent = event.data; };
   button.addEventListener('click', () => button.textContent = 'Clicked', { signal });
+  if (window.mountGate) await window.mountGate;
   return () => { window.cleanups = (window.cleanups || 0) + 1; };
 }`);
   await writeFile(join(workspace, 'widget/worker.js'), "postMessage('Ready');");
@@ -129,6 +130,7 @@ test('retains fallback when a module fails', async ({ page }) => {
   await page.goto(origin);
   await expect(page.getByRole('status')).toContainText('could not load');
   await expect(page.getByText('Static fallback.')).toBeVisible();
+  await expect(page.getByText('Loading the counter')).toBeHidden();
 });
 
 test('retains fallback without JavaScript', async ({ browser }) => {
@@ -136,6 +138,7 @@ test('retains fallback without JavaScript', async ({ browser }) => {
   const page = await context.newPage();
   await page.goto(origin);
   await expect(page.getByText('Static fallback.')).toBeVisible();
+  await expect(page.getByText('Loading the counter')).toBeHidden();
   await context.close();
 });
 
@@ -205,4 +208,66 @@ test('passes isolated props to instances from a portable snapshot', async ({ pag
     await expect(widget.getByRole('button')).toHaveText('Ready');
     await expect(widget.locator('[data-props]')).toHaveAttribute('data-props', JSON.stringify(props));
   }
+});
+
+test('reserves space before the loader arrives and through async mount', async ({ page }, info) => {
+  let releaseLoader!: () => void;
+  const loader = new Promise<void>(resolve => { releaseLoader = resolve; });
+  await page.route('**/assets/components.js', async route => {
+    await loader;
+    await route.continue();
+  });
+  await page.addInitScript(() => {
+    (window as any).mountGate = new Promise<void>(resolve => { (window as any).releaseMount = resolve; });
+  });
+  try {
+    await page.goto(origin, { waitUntil: 'commit' });
+    const loading = page.getByRole('status').filter({ hasText: 'Loading the counter' });
+    await expect(loading).toBeVisible();
+    await expect(loading).toHaveCSS('min-block-size', '240px');
+    await expect(page.getByText('Static fallback.')).toBeHidden();
+    await page.addStyleTag({ content: `
+      #counter { --diplodocus-component-min-height: 320px; }
+      @media (max-width: 600px) { #counter { --diplodocus-component-min-height: 300px; } }
+    ` });
+    const height = page.viewportSize()!.width <= 600 ? 300 : 320;
+    await expect(loading).toHaveCSS('min-block-size', `${height}px`);
+    await expect.poll(async () => (await loading.boundingBox())?.height).toBe(height);
+    releaseLoader();
+    await expect(page.locator('#counter [data-component-content] button')).toHaveCount(1);
+    await expect(loading).toBeVisible();
+    if (process.env.DIPLODOCUS_BROWSER_CAPTURE) {
+      const directory = join(process.env.DIPLODOCUS_BROWSER_ARTIFACTS!, 'screenshots', info.project.name);
+      await mkdir(directory, { recursive: true });
+      await page.screenshot({ path: join(directory, 'component-loading.png'), fullPage: true });
+    }
+    await page.evaluate(() => (window as any).releaseMount());
+    await expect(loading).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Ready', exact: true })).toBeVisible();
+    const content = page.locator('#counter [data-component-content]');
+    await expect(content).toHaveCSS('min-block-size', `${height}px`);
+    await expect.poll(async () => (await content.boundingBox())?.height).toBe(height);
+  } finally {
+    releaseLoader();
+  }
+});
+
+test('restores fallback when the component loader fails', async ({ page }) => {
+  await page.route('**/assets/components.js', route => route.abort());
+  await page.goto(origin);
+  await expect(page.getByText('Static fallback.')).toBeVisible();
+  await expect(page.getByText('Loading the counter')).toBeHidden();
+});
+
+test('cleans up a mount that finishes after navigation', async ({ page }) => {
+  await page.addInitScript(() => {
+    (window as any).mountGate = new Promise<void>(resolve => { (window as any).releaseMount = resolve; });
+  });
+  await page.goto(origin);
+  await expect(page.locator('#counter [data-component-content] button')).toHaveCount(1);
+  await page.getByRole('main').getByRole('link', { name: 'Other page' }).click();
+  await expect(page.getByRole('heading', { name: 'Other page', exact: true })).toBeVisible();
+  await page.evaluate(() => (window as any).releaseMount());
+  await expect.poll(() => page.evaluate(() => (window as any).cleanups)).toBe(1);
+  await expect(page.getByText('Loading the counter')).toHaveCount(0);
 });

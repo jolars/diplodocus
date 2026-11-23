@@ -235,6 +235,57 @@ pub(crate) fn props(attributes: &Attributes) -> Result<Option<&str>, Box<Diagnos
     Ok(Some(value))
 }
 
+pub(crate) fn loading_options(
+    attributes: &Attributes,
+) -> Result<(Option<&str>, Option<&str>), Box<Diagnostic>> {
+    let mut loading = None;
+    let mut min_height = None;
+    for entry in &attributes.key_values {
+        let value = entry.value.value.trim();
+        let (slot, valid, message) = match entry.key.value.as_str() {
+            "loading" => (
+                &mut loading,
+                !value.is_empty(),
+                "Component loading text must not be blank.",
+            ),
+            "min-height" => {
+                let number = ["rem", "em", "px"]
+                    .iter()
+                    .find_map(|unit| value.strip_suffix(unit));
+                let valid = value == "0"
+                    || number.is_some_and(|number| {
+                        let (whole, fraction) = number.split_once('.').unwrap_or((number, ""));
+                        !whole.is_empty()
+                            && whole.bytes().all(|byte| byte.is_ascii_digit())
+                            && (!number.contains('.') || !fraction.is_empty())
+                            && fraction.bytes().all(|byte| byte.is_ascii_digit())
+                    });
+                (
+                    &mut min_height,
+                    valid,
+                    "Component min-height must be 0 or a nonnegative length in px, em, or rem.",
+                )
+            }
+            _ => continue,
+        };
+        if slot.is_some() {
+            let mut error = diagnostic(format!(
+                "Component blocks can declare {} only once.",
+                entry.key.value
+            ));
+            error.span = Some(entry.key.span);
+            return Err(error);
+        }
+        if !valid {
+            let mut error = diagnostic(message);
+            error.span = Some(entry.value.span);
+            return Err(error);
+        }
+        *slot = Some(value);
+    }
+    Ok((loading, min_height))
+}
+
 pub(crate) fn validate_blocks(
     blocks: &[Block],
     known: &BTreeSet<&str>,
@@ -252,6 +303,7 @@ pub(crate) fn validate_blocks(
                     return Err(error);
                 }
                 props(attributes)?;
+                loading_options(attributes)?;
                 validate_blocks(blocks, known)?;
             }
             Block::Container { blocks, .. }

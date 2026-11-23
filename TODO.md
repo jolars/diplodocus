@@ -71,7 +71,7 @@ in tests and CI results rather than adding another dated ledger.
 - [x] Publish public asset directories with a declared destination prefix. Check
   collisions and track membership changes so Datamonger can publish its
   generated catalog JSON through the regular build and preview.
-- [ ] Let browser components declare a loading state and reserve layout space
+- [x] Let browser components declare a loading state and reserve layout space
   before their bundle mounts. Preserve the authored fallback without
   JavaScript. Shrinkage currently inserts its explorer loading indicator
   after rendering.

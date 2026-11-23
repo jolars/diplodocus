@@ -137,6 +137,18 @@ fn image_dimensions(site: &Site<'_>, digest: &str) -> Result<String, SiteError> 
     Ok(format!(" width=\"{width}\" height=\"{height}\""))
 }
 
+const COMPONENT_BOOTSTRAP: &str = r#"
+if ('IntersectionObserver' in window) {
+  const root = document.documentElement;
+  root.dataset.diplodocusComponents = 'pending';
+  document.addEventListener('DOMContentLoaded', () => {
+    if (root.dataset.diplodocusComponents === 'pending') {
+      delete root.dataset.diplodocusComponents;
+    }
+  }, { once: true });
+}
+"#;
+
 fn navigation_shell_fingerprint(
     site: &Site<'_>,
     images: &super::images::Images,
@@ -165,6 +177,9 @@ fn navigation_shell_fingerprint(
     }
     super::footer::render(&mut shell, site);
     // A retained document must not combine runtimes or styles from different builds.
+    if site.components_enabled && !site.components.is_empty() {
+        shell.push_str(COMPONENT_BOOTSTRAP);
+    }
     let syntax_style = super::highlighting::stylesheet();
     for source in [
         STYLE,
@@ -326,6 +341,7 @@ pub(crate) fn render_reported(
             )
             .unwrap();
             if site.components_enabled && !site.components.is_empty() {
+                write!(html, "<script>{COMPONENT_BOOTSTRAP}</script>").unwrap();
                 write!(
                     html,
                     "<script defer src=\"{}\"></script>",
@@ -1793,9 +1809,27 @@ impl Renderer<'_, '_> {
                         {
                             write!(html, " data-component-props=\"{}\"", escape(props)).unwrap();
                         }
+                        let (loading, min_height) = crate::components::loading_options(attributes)
+                            .map_err(|_| SiteError::Evidence)?;
+                        if let Some(height) = min_height {
+                            write!(
+                                html,
+                                " style=\"--diplodocus-component-default-min-height:{height}\""
+                            )
+                            .unwrap();
+                        }
+                        html.push('>');
+                        if let Some(message) = loading {
+                            write!(
+                                html,
+                                "<div data-component-loading role=\"status\" hidden>{}</div>",
+                                escape(message)
+                            )
+                            .unwrap();
+                        }
                         write!(
                             html,
-                            "><div data-component-fallback>{}</div></div>",
+                            "<div data-component-fallback>{}</div></div>",
                             self.blocks(blocks)?
                         )
                         .unwrap();

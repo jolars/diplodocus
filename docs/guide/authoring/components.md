@@ -38,6 +38,24 @@ quotes around the attribute and write apostrophes inside JSON strings as
 `\u0027`. Each mount receives its own props object, which defaults to `{}`.
 An optional block ID remains available as an HTML anchor.
 
+Set `loading` to show a plain-text message while the bundle loads and the
+component mounts. Set `min-height` to reserve space while the component loads
+and after it mounts. Use either attribute on its own or both together.
+
+```markdown
+::: {.component name="explorer" #explorer loading="Loading the explorer…" min-height="24rem"}
+
+A static illustration of the explorer.
+
+:::
+```
+
+The height accepts `0` or a nonnegative number in `px`, `em`, or `rem`.
+For responsive sizing, set `--diplodocus-component-min-height` on the component's
+anchor in a [site stylesheet](../presentation.md).
+The fallback appears at its natural height when JavaScript is disabled or the
+component fails to load.
+
 The module exports `mount(element, { signal, assetBaseUrl, props })`. It may return a
 cleanup function or a promise for one. Use the abort signal to stop workers,
 remove listeners, and cancel animation. Use `new URL("worker.js", import.meta.url)`

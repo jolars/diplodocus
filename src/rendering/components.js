@@ -1,6 +1,6 @@
 (() => {
   let observer;
-  let controllers = [];
+  const instances = new Map();
   const modules = new Map();
   const styles = new Map();
   const stylesheet = url => {
@@ -17,13 +17,14 @@
   const mount = async root => {
     if (!root.isConnected) return;
     const controller = new AbortController();
-    controllers.push(controller);
     const { signal } = controller;
     const moduleUrl = new URL(root.dataset.componentModule, location.href).href;
     const assetBaseUrl = new URL('./', moduleUrl).href;
-    const fallback = root.querySelector('[data-component-fallback]');
+    const fallback = root.querySelector(':scope > [data-component-fallback]');
     const content = document.createElement('div');
+    content.dataset.componentContent = '';
     content.hidden = true;
+    instances.set(root, { controller, content, fallback });
     root.append(content);
     try {
       const props = JSON.parse(root.dataset.componentProps ?? '{}');
@@ -39,10 +40,13 @@
       content.hidden = false;
       root.dataset.componentReady = 'true';
     } catch (error) {
+      if (signal.aborted) return;
       controller.abort();
       content.remove();
       if (root.isConnected) {
         const status = document.createElement('p');
+        root.dataset.componentFailed = 'true';
+        status.dataset.componentError = '';
         status.setAttribute('role', 'status');
         status.textContent = 'The interactive component could not load. The static explanation is available below.';
         root.prepend(status);
@@ -52,8 +56,15 @@
   const dispose = () => {
     observer?.disconnect();
     observer = undefined;
-    controllers.forEach(controller => controller.abort());
-    controllers = [];
+    for (const [root, { controller, content, fallback }] of instances) {
+      controller.abort();
+      content.remove();
+      fallback.hidden = false;
+      root.querySelector(':scope > [data-component-error]')?.remove();
+      delete root.dataset.componentReady;
+      delete root.dataset.componentFailed;
+    }
+    instances.clear();
   };
   const initialize = () => {
     const currentObserver = new IntersectionObserver(entries => {
@@ -64,9 +75,13 @@
     observer = currentObserver;
     document.querySelectorAll('[data-component-module]').forEach(root => currentObserver.observe(root));
   };
+  if (!('IntersectionObserver' in window)) return;
   document.addEventListener('diplodocus:before-page-change', dispose);
   document.addEventListener('diplodocus:page-change', initialize);
   window.addEventListener('pagehide', dispose);
-  window.addEventListener('pageshow', event => { if (event.persisted) { dispose(); document.querySelectorAll('[data-component-ready]').forEach(root => { root.querySelector('[data-component-fallback]').hidden = false; root.querySelector('[data-component-fallback]').nextElementSibling?.remove(); delete root.dataset.componentReady; }); initialize(); } });
+  window.addEventListener('pageshow', event => {
+    if (event.persisted) initialize();
+  });
   initialize();
+  document.documentElement.dataset.diplodocusComponents = 'ready';
 })();

@@ -36,7 +36,7 @@ content:
         "pages/index.md",
         r#"# Components
 
-::: {.component name="counter" #example props='{"counts":[1,2],"label":"<example>"}'}
+::: {.component name="counter" #example loading="Loading <counter>" min-height="24.5rem" props='{"counts":[1,2],"label":"<example>"}'}
 
 Fallback **content**.
 
@@ -68,10 +68,14 @@ fn component_bundles_survive_snapshot_round_trip_without_a_checkout() {
     assert!(html.contains("Fallback <strong>content</strong>"));
     assert!(!html.contains("data-component-module"));
     assert!(!html.contains("data-component-props"));
+    assert!(!html.contains("data-component-loading"));
+    assert!(!html.contains("24.5rem"));
     let fragments = render_fragments(&Site::new(&snapshot).unwrap().with_components(true)).unwrap();
     let html = std::str::from_utf8(&fragments.files()["index.html"].bytes).unwrap();
     assert!(html.contains("Fallback <strong>content</strong>"));
     assert!(!html.contains("data-component-props"));
+    assert!(!html.contains("data-component-loading"));
+    assert!(!html.contains("24.5rem"));
     assert!(
         !passive
             .files()
@@ -83,6 +87,8 @@ fn component_bundles_survive_snapshot_round_trip_without_a_checkout() {
     assert!(html.contains("data-component-module"));
     assert!(html.contains("data-component-props=\"{&quot;counts&quot;:[1,2],&quot;label&quot;:&quot;&lt;example&gt;&quot;}\""));
     assert!(html.contains("assets/components.js"));
+    assert!(html.contains("data-component-loading role=\"status\" hidden>Loading &lt;counter&gt;"));
+    assert!(html.contains("--diplodocus-component-default-min-height:24.5rem"));
     let markdown = std::str::from_utf8(&active.files()["index.md"].bytes).unwrap();
     assert!(markdown.contains("Fallback **content**"));
     assert!(!markdown.contains("<example>"));
@@ -138,7 +144,7 @@ fn validates_qmd_component_props_and_reports_included_gfm_sources() {
         "pages/index.qmd",
         r#"# QMD
 
-::: {.component name="counter" props='{"visible":true}'}
+::: {.component name="counter" props='{"visible":true}' loading="Loading" min-height="0"}
 
 Fallback.
 
@@ -154,7 +160,16 @@ Fallback.
         "pages/index.md",
         "# GFM\n\n<!--@include: ../partial.md-->\n",
     );
-    for props in ["props='[]'", "props='{bad}'", "props='{}' props='{}'"] {
+    for props in [
+        "props='[]'",
+        "props='{bad}'",
+        "props='{}' props='{}'",
+        "loading=' '",
+        "loading='one' loading='two'",
+        "min-height='-2rem'",
+        "min-height='1px;color:red'",
+        "min-height='1px' min-height='2px'",
+    ] {
         root.write(
             "partial.md",
             format!("::: {{.component name=\"counter\" {props}}}\n\nFallback.\n\n:::\n"),
