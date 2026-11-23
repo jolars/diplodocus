@@ -85,8 +85,15 @@ pub(super) fn records(snapshot: &Snapshot) -> Result<Vec<Record>, SnapshotError>
     if !snapshot.components.is_empty() {
         presentation["component-bundles"] = serde_json::to_value(&snapshot.components)?;
     }
-    if let Some(logo) = &snapshot.logo {
-        presentation["logo-asset"] = serde_json::to_value(logo)?;
+    for (field, logo) in [
+        ("logo-asset", &snapshot.logo),
+        ("logo-dark-asset", &snapshot.logo_dark),
+        ("header-logo-asset", &snapshot.header_logo),
+        ("header-logo-dark-asset", &snapshot.header_logo_dark),
+    ] {
+        if let Some(logo) = logo {
+            presentation[field] = serde_json::to_value(logo)?;
+        }
     }
     if let Some(image) = &snapshot.open_graph {
         presentation["open-graph-asset"] = serde_json::to_value(image)?;

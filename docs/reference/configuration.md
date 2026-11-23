@@ -293,7 +293,7 @@ or HTML.
 | `sidebar` | list or mapping | Automatic directory grouping | Authored navigation order and groups. |
 | `assets` | list | `[]` | Public files retained at explicit publication paths. |
 | `icons` | list | `[]` | Icon and manifest links on every complete HTML page. |
-| `logo` | mapping | Unset | Image beside the site title. |
+| `logo` | mapping | Unset | Homepage hero image and fallback navbar logo. |
 | `open-graph` | mapping | Unset | Shared social preview image. Requires `site-url`. |
 | `redirects` | mapping | `{}` | Permanent redirects from old URL paths to generated pages. |
 | `fragment-aliases` | mapping | `{}` | Legacy fragment IDs attached to maintained headings and API targets, keyed by generated HTML path. |
@@ -311,6 +311,7 @@ extensions. Ambiguous clean routes fail generation. See
   | -------------- | ------ | ----------------------- | ------------------------------------------------------------------------------------------- |
   | `api`          | string | `dropdown`              | `dropdown` groups multiple visible packages under API; `links` shows separate package tabs. |
   | `repositories` | list   | All public repositories | Declared repository IDs to show, in display order. `[]` hides repository links.             |
+  | `logo`         | mapping | `presentation.logo`     | Image beside the site title. See [Logo](#logo).                                               |
 
 API links use a dropdown by default. Set `presentation.header.api: links` to
 show separate package tabs. Guide and project sections remain separate links.
@@ -456,12 +457,13 @@ their original bytes. See [public assets and icons](../guide/presentation.md#pub
 
 ### Logo
 
-Fields in `presentation.logo`:
+Both `presentation.logo` and `presentation.header.logo` accept these fields:
 
 | Option | Type | Default | Purpose |
 | --- | --- | --- | --- |
 | `repository` | string | Required | Repository containing the logo. |
 | `path` | path | Required | Repository-relative SVG, PNG, or JPEG file. |
+| `dark` | mapping | Unset | Dark-mode image with its own `repository` and `path`. Omit to use the same image in both themes. |
 
 Image paths use forward slashes without a leading slash or `.` or `..`
 components. Symlinks must stay in the repository. Images may live outside

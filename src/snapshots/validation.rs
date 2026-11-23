@@ -290,13 +290,21 @@ impl Snapshot {
             )?;
             used_assets.insert(image.fingerprint.value.clone());
         }
-        require(
-            self.presentation.logo.is_some() == self.logo.is_some(),
-            "logo presentation evidence",
-        )?;
-        if let (Some(declaration), Some(logo)) = (&self.presentation.logo, &self.logo) {
+        for ((_, declaration), logo) in self.presentation.logo_images().into_iter().zip([
+            &self.logo,
+            &self.logo_dark,
+            &self.header_logo,
+            &self.header_logo_dark,
+        ]) {
             require(
-                workspace.repositories.contains_key(&declaration.repository),
+                declaration.is_some() == logo.is_some(),
+                "logo presentation evidence",
+            )?;
+            let (Some((repository, _)), Some(logo)) = (declaration, logo) else {
+                continue;
+            };
+            require(
+                workspace.repositories.contains_key(repository),
                 "logo repository",
             )?;
             let stored = self

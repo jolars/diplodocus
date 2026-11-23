@@ -42,6 +42,9 @@ pub struct Snapshot {
     pub(crate) package_mounts: BTreeMap<String, String>,
     pub(crate) public_assets: BTreeMap<String, String>,
     logo: Option<AssetReference>,
+    logo_dark: Option<AssetReference>,
+    header_logo: Option<AssetReference>,
+    header_logo_dark: Option<AssetReference>,
     open_graph: Option<AssetReference>,
     components: BTreeMap<String, crate::components::ComponentBundle>,
     documents: Vec<ResolvedDocument>,
@@ -102,6 +105,9 @@ impl Snapshot {
             package_mounts: sources.bundles.mounts.clone(),
             public_assets: resolved.public_assets.clone(),
             logo: resolved.logo().cloned(),
+            logo_dark: resolved.logo_dark().cloned(),
+            header_logo: resolved.header_logo().cloned(),
+            header_logo_dark: resolved.header_logo_dark().cloned(),
             open_graph: resolved.open_graph().cloned(),
             components: resolved.components.clone(),
             documents: resolved.records().to_vec(),
@@ -141,9 +147,21 @@ impl Snapshot {
     pub fn public_assets(&self) -> &BTreeMap<String, String> {
         &self.public_assets
     }
-    /// Portable navbar image, available without the original repository.
+    /// Portable main logo, available without the original repository.
     pub fn logo(&self) -> Option<&AssetReference> {
         self.logo.as_ref()
+    }
+    /// Dark-mode artwork for the main logo.
+    pub fn logo_dark(&self) -> Option<&AssetReference> {
+        self.logo_dark.as_ref()
+    }
+    /// Dedicated navbar logo retained with the other portable assets.
+    pub fn header_logo(&self) -> Option<&AssetReference> {
+        self.header_logo.as_ref()
+    }
+    /// Dark-mode artwork for the dedicated navbar logo.
+    pub fn header_logo_dark(&self) -> Option<&AssetReference> {
+        self.header_logo_dark.as_ref()
     }
     /// Portable social preview image, available without the original repository.
     pub fn open_graph(&self) -> Option<&AssetReference> {

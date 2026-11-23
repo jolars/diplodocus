@@ -150,7 +150,7 @@ pub struct PresentationDefaults {
     /// Authored navigation trees; omission keeps automatic directory grouping.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sidebar: Option<SidebarConfiguration>,
-    /// Optional image shown before the site title in the navbar's home link.
+    /// Optional homepage hero image and fallback navbar logo.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub logo: Option<LogoDefaults>,
     /// Optional site-wide image and accessible description for link previews.
@@ -188,6 +188,9 @@ pub struct HeaderDefaults {
     /// An empty list hides repository links.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub repositories: Option<Vec<String>>,
+    /// Optional navbar logo that takes precedence over the main logo.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub logo: Option<LogoDefaults>,
 }
 
 impl HeaderDefaults {
@@ -455,6 +458,19 @@ pub struct LogoDefaults {
     pub repository: String,
     /// Normalized repository-relative path to an SVG, PNG, or JPEG file.
     pub path: DiagnosticPath,
+    /// Alternative artwork used in dark mode.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dark: Option<DarkLogoDefaults>,
+}
+
+/// Dark-mode artwork for a branding image.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+pub struct DarkLogoDefaults {
+    /// ID of the repository containing the image.
+    pub repository: String,
+    /// Normalized repository-relative path to an SVG, PNG, or JPEG file.
+    pub path: DiagnosticPath,
 }
 
 /// A checked-in social preview image within an explicitly declared repository.
@@ -469,7 +485,42 @@ pub struct OpenGraphDefaults {
     pub alt: String,
 }
 
+type LogoImage<'a> = (&'static str, Option<(&'a String, &'a DiagnosticPath)>);
+
 impl PresentationDefaults {
+    pub(crate) fn logo_images(&self) -> [LogoImage<'_>; 4] {
+        [
+            (
+                "presentation.logo",
+                self.logo
+                    .as_ref()
+                    .map(|logo| (&logo.repository, &logo.path)),
+            ),
+            (
+                "presentation.logo.dark",
+                self.logo
+                    .as_ref()
+                    .and_then(|logo| logo.dark.as_ref())
+                    .map(|image| (&image.repository, &image.path)),
+            ),
+            (
+                "presentation.header.logo",
+                self.header
+                    .logo
+                    .as_ref()
+                    .map(|logo| (&logo.repository, &logo.path)),
+            ),
+            (
+                "presentation.header.logo.dark",
+                self.header
+                    .logo
+                    .as_ref()
+                    .and_then(|logo| logo.dark.as_ref())
+                    .map(|image| (&image.repository, &image.path)),
+            ),
+        ]
+    }
+
     fn is_default(&self) -> bool {
         self == &Self::default()
     }

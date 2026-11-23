@@ -65,13 +65,18 @@ fn brand(
         escape(&site.url(route, "index.html")),
     )
     .unwrap();
-    if let Some(logo) = site.logo {
+    let (logo, dark) = if let Some(logo) = site.header_logo {
+        (Some(logo), site.header_logo_dark)
+    } else {
+        (site.logo, site.logo_dark)
+    };
+    for (image, theme) in super::images::logo_variants(logo, dark) {
         write!(
             html,
-            "<img class=\"brand-logo\" src=\"{}\" alt=\"\"{}{}>",
-            escape(&site.url(route, &site.asset_route(&logo.fingerprint.value)?)),
-            image_dimensions(site, &logo.fingerprint.value)?,
-            images.attributes(site, route, &logo.fingerprint.value, ImageRole::Logo, true)?
+            "<img class=\"brand-logo\"{theme} src=\"{}\" alt=\"\"{}{}>",
+            escape(&site.url(route, &site.asset_route(&image.fingerprint.value)?)),
+            image_dimensions(site, &image.fingerprint.value)?,
+            images.attributes(site, route, &image.fingerprint.value, ImageRole::Logo, true)?
         )
         .unwrap();
     }
@@ -912,11 +917,14 @@ pub(crate) fn render_reported(
         );
     }
     assets.item("stylesheets and browser scripts");
-    let style = if standalone {
+    let mut style = if standalone {
         format!("{STYLE}\n{}", super::highlighting::stylesheet())
     } else {
         super::highlighting::fragment_stylesheet()
     };
+    if site.logo_dark.is_some() || site.header_logo_dark.is_some() {
+        style.push_str(include_str!("assets/styles/logo.css"));
+    }
     files.insert(
         if standalone {
             "assets/site.css"

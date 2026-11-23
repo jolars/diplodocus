@@ -187,6 +187,9 @@ pub struct ResolvedWorkspace {
     pub(crate) components: BTreeMap<String, crate::components::ComponentBundle>,
     pub(crate) public_assets: BTreeMap<String, String>,
     logo: Option<AssetReference>,
+    logo_dark: Option<AssetReference>,
+    header_logo: Option<AssetReference>,
+    header_logo_dark: Option<AssetReference>,
     open_graph: Option<AssetReference>,
     assets: BTreeMap<String, ContentAsset>,
     diagnostics: BTreeSet<Diagnostic>,
@@ -216,9 +219,21 @@ impl ResolvedWorkspace {
     pub fn assets(&self) -> &BTreeMap<String, ContentAsset> {
         &self.assets
     }
-    /// Validated navbar image retained with the other portable asset bytes.
+    /// Validated main logo retained with the other portable asset bytes.
     pub fn logo(&self) -> Option<&AssetReference> {
         self.logo.as_ref()
+    }
+    /// Dark-mode artwork for the main logo.
+    pub fn logo_dark(&self) -> Option<&AssetReference> {
+        self.logo_dark.as_ref()
+    }
+    /// Dedicated navbar logo retained with the other portable assets.
+    pub fn header_logo(&self) -> Option<&AssetReference> {
+        self.header_logo.as_ref()
+    }
+    /// Dark-mode artwork for the dedicated navbar logo.
+    pub fn header_logo_dark(&self) -> Option<&AssetReference> {
+        self.header_logo_dark.as_ref()
     }
     /// Validated social preview image retained with the other portable assets.
     pub fn open_graph(&self) -> Option<&AssetReference> {
@@ -474,6 +489,9 @@ fn resolve(
             components: BTreeMap::new(),
             public_assets: BTreeMap::new(),
             logo: None,
+            logo_dark: None,
+            header_logo: None,
+            header_logo_dark: None,
             open_graph: None,
             assets: BTreeMap::new(),
             diagnostics: workspace.diagnostics.clone(),
@@ -486,27 +504,27 @@ fn resolve(
         .diagnostics
         .extend(relationships::validate(workspace));
     let presentation = &sources.configuration().presentation;
-    for (field, declaration, raster_only) in [
-        (
-            "presentation.logo.path",
-            presentation
-                .logo
-                .as_ref()
-                .map(|image| (&image.repository, &image.path)),
-            false,
-        ),
-        (
-            "presentation.open-graph.path",
+    let mut logos = [None, None, None, None];
+    let mut open_graph = None;
+    for (field, declaration, destination, raster_only) in presentation
+        .logo_images()
+        .into_iter()
+        .zip(&mut logos)
+        .map(|((field, declaration), destination)| (field, declaration, destination, false))
+        .chain([(
+            "presentation.open-graph",
             presentation
                 .open_graph
                 .as_ref()
                 .map(|image| (&image.repository, &image.path)),
+            &mut open_graph,
             true,
-        ),
-    ] {
+        )])
+    {
         let Some((repository, image_path)) = declaration else {
             continue;
         };
+        let field = format!("{field}.path");
         let root = &sources
             .paths()
             .repositories
@@ -515,7 +533,7 @@ fn resolve(
             .expect("validated presentation image repository")
             .path;
         let path =
-            crate::paths::resolve_input_file(root, field, Path::new(image_path.as_str()), root)
+            crate::paths::resolve_input_file(root, &field, Path::new(image_path.as_str()), root)
                 .map_err(AssemblyError::from)?;
         let asset = resolution
             .collect_asset(
@@ -533,29 +551,30 @@ fn resolve(
                 }
             });
         match asset {
-            Ok(asset) => {
-                if raster_only {
-                    resolution.result.open_graph = Some(asset);
-                } else {
-                    resolution.result.logo = Some(asset);
-                }
-            }
+            Ok(asset) => *destination = Some(asset),
             Err(code) => {
                 resolution.result.diagnostics.insert(
                     Diagnostic::new(
                         code,
                         Severity::Error,
                         if raster_only {
-                            "presentation.open-graph.path must name a valid PNG or JPEG image."
+                            format!("{field} must name a valid PNG or JPEG image.")
                         } else {
-                            "presentation.logo.path must name a valid SVG, PNG, or JPEG image."
+                            format!("{field} must name a valid SVG, PNG, or JPEG image.")
                         },
                     )
-                    .with_entity(DiagnosticEntity::ConfigurationField { path: field.into() }),
+                    .with_entity(DiagnosticEntity::ConfigurationField { path: field }),
                 );
             }
         }
     }
+    [
+        resolution.result.logo,
+        resolution.result.logo_dark,
+        resolution.result.header_logo,
+        resolution.result.header_logo_dark,
+    ] = logos;
+    resolution.result.open_graph = open_graph;
     for declaration in &presentation.assets {
         let root = &sources
             .paths()

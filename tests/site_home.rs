@@ -248,3 +248,76 @@ fn homepage_preserves_authored_body_and_title_anchor_without_a_second_heading() 
     assert!(html.contains("<h1 id=\"welcome\">One &lt;home&gt;</h1>"));
     assert!(html.contains("An authored introduction."));
 }
+
+#[test]
+fn logo_variants_survive_snapshots_and_follow_their_placements() {
+    let main = r#"  logo:
+    repository: docs
+    path: logo.svg
+    dark:
+      repository: docs
+      path: logo-dark.svg
+"#;
+    let header = r#"  header:
+    logo:
+      repository: docs
+      path: mark.svg
+      dark:
+        repository: docs
+        path: mark-dark.svg
+"#;
+    for (settings, expected_header, expected_hero) in [
+        (
+            main.to_owned(),
+            &["logo", "logo-dark"][..],
+            &["logo", "logo-dark"][..],
+        ),
+        (
+            format!("{main}{header}"),
+            &["mark", "mark-dark"][..],
+            &["logo", "logo-dark"][..],
+        ),
+        (header.to_owned(), &["mark", "mark-dark"][..], &[][..]),
+    ] {
+        let root = workspace("file");
+        root.write(
+            "diplodocus.yaml",
+            root.read("diplodocus.yaml")
+                .replace("presentation:\n", &format!("presentation:\n{settings}")),
+        );
+        let logo_url = |name: &str| {
+            let svg = format!(
+                r#"<svg xmlns="http://www.w3.org/2000/svg"><title>{name}</title><rect width="20" height="20"/></svg>"#
+            );
+            root.write(format!("{name}.svg"), &svg);
+            let digest = diplodocus::provenance::fingerprint_bytes(svg.as_bytes()).value;
+            format!("assets/{digest}.svg")
+        };
+        let navbar_urls: Vec<_> = expected_header.iter().map(|name| logo_url(name)).collect();
+        let hero_urls: Vec<_> = expected_hero.iter().map(|name| logo_url(name)).collect();
+        let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
+        let snapshot =
+            Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
+        let artifact = tempfile::tempdir().unwrap();
+        let path = artifact.path().join("snapshot.sqlite");
+        snapshot.publish(&path).unwrap();
+        drop(sources);
+        drop(root);
+        let loaded = Snapshot::load(&path).unwrap();
+        let rendered = render_site(&Site::new(&loaded).unwrap()).unwrap();
+        let home = std::str::from_utf8(&rendered.files()["index.html"].bytes).unwrap();
+        for (theme, url) in ["light", "dark"].into_iter().zip(navbar_urls) {
+            assert!(home.contains(&format!(
+                r#"class="brand-logo" data-logo-theme="{theme}" src="{url}""#
+            )));
+        }
+        if hero_urls.is_empty() {
+            assert!(!home.contains(r#"class="home-artwork""#));
+        }
+        for (theme, url) in ["light", "dark"].into_iter().zip(hero_urls) {
+            assert!(home.contains(&format!(
+                r#"<img data-logo-theme="{theme}" src="{url}" alt="" width="384""#
+            )));
+        }
+    }
+}

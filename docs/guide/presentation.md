@@ -212,26 +212,37 @@ Without `presentation.home`, the root retains the documentation layout.
 
 ## Branding
 
-To add a logo before the title in the leftmost navbar link, declare an image in
-one of your repositories:
+Set `presentation.logo` to add an image to the homepage hero and the navbar.
+Set `presentation.header.logo` to use a dedicated image beside the site title
+in the navbar. Either logo can include alternate artwork for dark mode.
 
 ```yaml
 presentation:
   logo:
     repository: "docs"
     path: "assets/logo.svg"
+    dark:
+      repository: "docs"
+      path: "assets/logo-dark.svg"
+  header:
+    logo:
+      repository: "docs"
+      path: "assets/mark.svg"
+      dark:
+        repository: "docs"
+        path: "assets/mark-dark.svg"
 ```
 
-`repository` must match a declared `repositories` ID. `path` is relative to
-that repository's root and must name an SVG, PNG, or JPEG file. The image can
-live outside a content collection. Use forward slashes without leading slashes
-or `.` or `..` components. Symlinks must stay inside the repository.
+Unless you set `header.logo`, the navbar uses `presentation.logo` and its
+dark-mode artwork. To show a logo only in the navbar, set only `header.logo`.
+The `repository` and `path` fields directly under each `logo` select the
+light-mode image. If you omit `dark`, that image appears in both themes.
 
-Diplodocus validates and embeds the image in the snapshot, so generation needs
-no source checkout. The logo keeps its proportions within the navbar and shares
-the title's link to the homepage. The title supplies the accessible link name.
-Omitting `presentation.logo` leaves the navbar with the title alone. `serve`
-watches the logo file and rebuilds when it changes.
+Each image's `repository` must match a declared `repositories` ID. Its `path`
+is relative to the repository root and must name an SVG, PNG, or JPEG file.
+Images can live outside content collections. Use forward slashes without
+leading slashes or `.` or `..` components. Symlinks must stay inside the
+repository. `serve` rebuilds when any configured logo image changes.
 
 To use a shared image when people post links to your documentation, set
 `site-url` and declare an Open Graph image:

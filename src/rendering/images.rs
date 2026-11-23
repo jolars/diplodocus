@@ -5,6 +5,7 @@ use std::io::Cursor;
 use image::{DynamicImage, ImageDecoder, ImageEncoder, ImageReader};
 
 use crate::documents::PageLayout;
+use crate::ir::AssetReference;
 use crate::provenance::fingerprint_bytes;
 use crate::site::{Site, SiteError};
 use crate::validation::ContentAsset;
@@ -24,6 +25,21 @@ pub(super) enum ImageRole {
     Content,
     Logo,
     Hero,
+}
+
+pub(super) fn logo_variants<'a>(
+    light: Option<&'a AssetReference>,
+    dark: Option<&'a AssetReference>,
+) -> impl Iterator<Item = (&'a AssetReference, &'static str)> {
+    let light_attribute = if dark.is_some() {
+        " data-logo-theme=\"light\""
+    } else {
+        ""
+    };
+    light
+        .map(|logo| (logo, light_attribute))
+        .into_iter()
+        .chain(dark.map(|logo| (logo, " data-logo-theme=\"dark\"")))
 }
 
 #[derive(Default)]

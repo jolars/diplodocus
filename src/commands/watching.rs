@@ -413,10 +413,12 @@ impl Observer {
                 observe_external(asset, &mut observed, &mut self.external_fingerprints);
             }
         }
-        if let Some(logo) = &config.presentation.logo
-            && let Some(root) = roots.get(logo.repository.as_str())
-        {
-            observe(&root.join(logo.path.as_str()), &mut observed);
+        for (_, image) in config.presentation.logo_images() {
+            if let Some((repository, path)) = image
+                && let Some(root) = roots.get(repository.as_str())
+            {
+                observe(&root.join(path.as_str()), &mut observed);
+            }
         }
         if let Some(image) = &config.presentation.open_graph
             && let Some(root) = roots.get(image.repository.as_str())

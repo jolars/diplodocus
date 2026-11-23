@@ -71,32 +71,30 @@ pub fn validate_configuration(configuration: &WorkspaceConfiguration) -> Vec<Dia
             );
         }
     }
-    for (field, repository) in [
-        (
-            "presentation.logo.repository",
-            configuration
-                .presentation
-                .logo
-                .as_ref()
-                .map(|image| &image.repository),
-        ),
-        (
-            "presentation.open-graph.repository",
-            configuration
-                .presentation
+    let presentation = &configuration.presentation;
+    for (field, repository) in presentation
+        .logo_images()
+        .into_iter()
+        .map(|(field, image)| (field, image.map(|(repository, _)| repository)))
+        .chain([(
+            "presentation.open-graph",
+            presentation
                 .open_graph
                 .as_ref()
                 .map(|image| &image.repository),
-        ),
-    ] {
+        )])
+    {
         let Some(repository) = repository else {
             continue;
         };
+        let field = format!("{field}.repository");
         check_repository(
             &repositories,
             repository,
-            field,
-            DiagnosticEntity::ConfigurationField { path: field.into() },
+            &field,
+            DiagnosticEntity::ConfigurationField {
+                path: field.clone(),
+            },
             &mut diagnostics,
         );
     }

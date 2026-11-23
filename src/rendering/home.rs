@@ -56,14 +56,24 @@ pub(super) fn render(
         html.push_str("</div>");
     }
     html.push_str("</div>");
-    if let Some(logo) = site.logo {
-        write!(
-            html,
-            "<div class=\"home-artwork\"><img src=\"{}\" alt=\"\" width=\"384\" height=\"384\"{}></div>",
-            escape(&site.url(route, &site.asset_route(&logo.fingerprint.value)?)),
-            images.attributes(site, route, &logo.fingerprint.value, ImageRole::Hero, standalone)?,
-        )
-        .unwrap();
+    if site.logo.is_some() {
+        html.push_str("<div class=\"home-artwork\">");
+        for (image, theme) in super::images::logo_variants(site.logo, site.logo_dark) {
+            write!(
+                html,
+                "<img{theme} src=\"{}\" alt=\"\" width=\"384\" height=\"384\"{}>",
+                escape(&site.url(route, &site.asset_route(&image.fingerprint.value)?)),
+                images.attributes(
+                    site,
+                    route,
+                    &image.fingerprint.value,
+                    ImageRole::Hero,
+                    standalone
+                )?,
+            )
+            .unwrap();
+        }
+        html.push_str("</div>");
     }
     html.push_str("</section>");
     if !home.features.is_empty() {

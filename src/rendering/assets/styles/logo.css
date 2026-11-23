@@ -1,0 +1,17 @@
+
+:root[data-theme=dark] [data-logo-theme=light],
+:root[data-theme=light] [data-logo-theme=dark] {
+  display: none;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme=dark]) [data-logo-theme=dark] {
+    display: none;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme=light]) [data-logo-theme=light] {
+    display: none;
+  }
+}

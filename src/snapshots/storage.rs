@@ -233,7 +233,7 @@ fn decode(
     let mut workspace = None;
     let mut presentation = None;
     let mut public_assets = BTreeMap::new();
-    let mut logo = None;
+    let mut logos = [None, None, None, None];
     let mut open_graph = None;
     let mut components = BTreeMap::new();
     let mut package_mounts = BTreeMap::new();
@@ -255,8 +255,18 @@ fn decode(
                 if let Some(assets) = object.remove("public-assets") {
                     public_assets = serde_json::from_value(assets)?;
                 }
-                if let Some(asset) = object.remove("logo-asset") {
-                    logo = Some(serde_json::from_value(asset)?);
+                for (field, logo) in [
+                    "logo-asset",
+                    "logo-dark-asset",
+                    "header-logo-asset",
+                    "header-logo-dark-asset",
+                ]
+                .into_iter()
+                .zip(&mut logos)
+                {
+                    if let Some(asset) = object.remove(field) {
+                        *logo = Some(serde_json::from_value(asset)?);
+                    }
                 }
                 if let Some(asset) = object.remove("open-graph-asset") {
                     open_graph = Some(serde_json::from_value(asset)?);
@@ -361,12 +371,16 @@ fn decode(
         }
     }
     documents.sort_by(|a, b| a.document.cmp(&b.document));
+    let [logo, logo_dark, header_logo, header_logo_dark] = logos;
     Ok(Snapshot {
         bundle: false,
         workspace: serde_json::from_value(workspace)?,
         presentation: presentation.ok_or(SnapshotError::Invalid("missing presentation"))?,
         public_assets,
         logo,
+        logo_dark,
+        header_logo,
+        header_logo_dark,
         open_graph,
         components,
         package_mounts,
