@@ -27,6 +27,9 @@ the supervised process group, and incomplete cleanup prevents publication.
 
 The adapter inventories maintained local package inputs, workspace and package
 manifests, Cargo.lock, repository Cargo configuration, and toolchain files.
+During that walk it skips generated environment entries such as `.venv` and
+`.pre-commit-config.yaml` before following symlinks. Declared inputs and
+repository files reported by rustdoc still go through repository-boundary checks.
 A separate rustdoc dependency-info invocation adds compiler-tracked module and
 include inputs. Dependency-info emission suppresses API JSON on this nightly,
 so the JSON invocation runs separately. Inputs and inventory membership are

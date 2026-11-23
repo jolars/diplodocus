@@ -151,6 +151,38 @@ fn extracts_compiler_public_surface_and_native_example_outcomes() {
     assert!(!json.contains("/nix/store"));
 }
 
+#[cfg(unix)]
+#[test]
+fn rustdoc_inputs_under_generated_directories_keep_repository_checks() {
+    let root = support::TestWorkspace::from_fixture("rust-api");
+    std::fs::create_dir(root.path().join(".build")).unwrap();
+    let included = root.path().join(".build/included.md");
+    std::fs::write(&included, "Included documentation.").unwrap();
+    let source = root
+        .read("src/lib.rs")
+        .replace("../included.md", "../.build/included.md");
+    std::fs::write(root.path().join("src/lib.rs"), source).unwrap();
+
+    successful(command(&root, "extract"));
+    let snapshot = Snapshot::load(root.path().join(".diplodocus/documentation.sqlite")).unwrap();
+    assert!(snapshot.workspace().provenance.iter().any(|record| {
+        matches!(&record.activity, ProvenanceActivity::RustDoctests { inputs, .. }
+            if inputs.iter().any(|input| input.source.path.as_str() == ".build/included.md"))
+    }));
+
+    let outside = tempfile::NamedTempFile::new().unwrap();
+    std::fs::write(outside.path(), "External documentation.").unwrap();
+    std::fs::remove_file(&included).unwrap();
+    std::os::unix::fs::symlink(outside.path(), &included).unwrap();
+    let output = command(&root, "check");
+    let diagnostic = String::from_utf8_lossy(&output.stderr);
+    assert!(!output.status.success(), "{diagnostic}");
+    assert!(
+        diagnostic.contains("outside") || diagnostic.contains("boundary"),
+        "{diagnostic}"
+    );
+}
+
 #[test]
 fn explicit_features_select_optional_api_and_ids_survive_source_shifts() {
     let root = support::TestWorkspace::from_fixture("rust-api");

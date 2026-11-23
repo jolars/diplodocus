@@ -60,7 +60,7 @@ in tests and CI results rather than adding another dated ledger.
 
 ## Gaps found in downstream sites
 
-- [ ] Let Rust source discovery skip unrelated generated files before resolving
+- [x] Let Rust source discovery skip unrelated generated files before resolving
   symlinks. Keep repository-boundary checks for declared inputs and files
   reported by rustdoc. Shrinkage patches the inventory and LazyMatrix
   exports a separate source tree to avoid Nix-generated links.

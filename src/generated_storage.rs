@@ -24,6 +24,21 @@ pub(crate) fn is_reserved(path: &Path) -> bool {
     })
 }
 
+/// Generated environment entries skipped during implicit Rust source discovery.
+pub(crate) fn rust_environment_entry(name: &std::ffi::OsStr) -> bool {
+    matches!(
+        name.to_str(),
+        Some(
+            ".build"
+                | ".venv"
+                | ".mypy_cache"
+                | ".pytest_cache"
+                | ".ruff_cache"
+                | ".pre-commit-config.yaml"
+        )
+    )
+}
+
 pub(crate) fn is_generated_file(path: &Path) -> bool {
     if is_reserved(path) || is_snapshot(path) {
         return true;

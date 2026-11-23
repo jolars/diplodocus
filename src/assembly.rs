@@ -475,7 +475,14 @@ async fn rust_results(
         .enumerate()
     {
         let repository = &paths.repositories[package.repository_index];
-        let result_cache = crate::incremental::package_context(&configuration, &paths, index);
+        if !declaration
+            .targets
+            .iter()
+            .any(|target| target.extractor == "rust")
+        {
+            continue;
+        }
+        let result_cache = crate::incremental::rust_package_context(&configuration, &paths, index);
         for (target, selected) in declaration.targets.iter().zip(&package.targets) {
             if target.extractor == "rust" {
                 progress.item(&format!("{}:{}", package.id, target.id));

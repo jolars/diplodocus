@@ -397,6 +397,9 @@ enum Selection {
     #[default]
     All,
     NativeLibraries,
+    RustSources {
+        roots: Vec<PathBuf>,
+    },
     PythonSources {
         roots: Vec<PathBuf>,
     },
@@ -488,6 +491,22 @@ impl Manifest {
         excludes: &[PathBuf],
     ) -> io::Result<Self> {
         Self::capture_selected(paths, environment, excludes, Selection::All)
+    }
+
+    pub(crate) fn capture_rust_sources(
+        paths: &[PathBuf],
+        environment: &[String],
+        excludes: &[PathBuf],
+        mut roots: Vec<PathBuf>,
+    ) -> io::Result<Self> {
+        roots.sort();
+        roots.dedup();
+        Self::capture_selected(
+            paths,
+            environment,
+            excludes,
+            Selection::RustSources { roots },
+        )
     }
 
     pub(crate) fn capture_native_libraries(
@@ -654,7 +673,12 @@ fn visit(
         // other observations, including hidden files used as extra inputs.
         let python_source = matches!(selection, Selection::PythonSources { roots }
             if roots.iter().any(|root| path.starts_with(root)));
+        let rust_source = matches!(selection, Selection::RustSources { roots }
+            if roots.iter().any(|root| path.starts_with(root)));
         for name in directory_observed(&target)?.iter() {
+            if rust_source && crate::generated_storage::rust_environment_entry(name) {
+                continue;
+            }
             if *selection == Selection::NativeLibraries
                 && (!native_library_file(Path::new(name))
                     || resolve_observed(&target.join(name))
@@ -1145,6 +1169,22 @@ fn package_roots(
         roots.extend(r.extra_inputs.iter().map(|path| package.path.join(path)));
     }
     roots
+}
+
+pub(crate) fn rust_package_context(
+    configuration: &WorkspaceConfiguration,
+    paths: &ResolvedWorkspacePaths,
+    index: usize,
+) -> Option<(Store, String, Manifest)> {
+    let package = &configuration.packages[index];
+    if package.incremental.cache == crate::configuration::IncrementalCache::Off {
+        return None;
+    }
+    Some((
+        Store::new(&paths.configuration_directory)?,
+        BuildIdentity::observe().ok()?,
+        supplemental_manifest(configuration, paths, package).ok()?,
+    ))
 }
 
 pub(crate) fn package_context(

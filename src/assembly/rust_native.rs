@@ -1024,6 +1024,12 @@ fn cache_manifest(
         .filter(|package| reached.contains(package.id.as_str()))
         .filter_map(|package| package.manifest_path.parent().map(Path::to_owned))
         .collect();
+    let local_roots = metadata
+        .packages
+        .iter()
+        .filter(|package| package.source.is_none() && reached.contains(package.id.as_str()))
+        .filter_map(|package| package.manifest_path.parent().map(Path::to_owned))
+        .collect();
     roots.extend(extra.iter().cloned());
     roots.extend([native.toolchain.join("bin"), native.toolchain.join("lib")]);
     let cargo_home = std::env::var_os("CARGO_HOME")
@@ -1058,10 +1064,11 @@ fn cache_manifest(
     );
     environment.sort();
     environment.dedup();
-    crate::incremental::Manifest::capture_excluding(
+    crate::incremental::Manifest::capture_rust_sources(
         &roots,
         &environment,
         std::slice::from_ref(&native.build),
+        local_roots,
     )
 }
 
@@ -1187,7 +1194,10 @@ fn inventory(
         }
         for entry in fs::read_dir(canonical)? {
             let entry = entry?;
-            if !excluded(entry.file_name().to_string_lossy().as_ref()) {
+            let name = entry.file_name();
+            if !crate::generated_storage::rust_environment_entry(&name)
+                && !excluded(name.to_string_lossy().as_ref())
+            {
                 walk(&entry.path(), files, visited, repository, generated)?;
             }
         }
@@ -1528,7 +1538,17 @@ mod tests {
             let reporting = Reporting::new(events.clone());
             let mut cancellation: ExecutionCancellation<'_> = Box::pin(std::future::pending());
             let mut previous = None;
-            for run_examples in [false, true, true] {
+            for (index, run_examples) in [false, true, true].into_iter().enumerate() {
+                #[cfg(unix)]
+                if index == 1 {
+                    std::os::unix::fs::symlink(
+                        ".pre-commit-config.yaml",
+                        fixture.package.path.join(".pre-commit-config.yaml"),
+                    )
+                    .unwrap();
+                }
+                #[cfg(not(unix))]
+                let _ = index;
                 let result = extract_target_cached(
                     &fixture.repository,
                     &fixture.package,
@@ -1646,6 +1666,37 @@ mod tests {
             .unwrap(),
             before
         );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn inventory_skips_generated_environment_entries_before_resolution() {
+        use std::os::unix::fs::symlink;
+
+        let fixture = Fixture::new("");
+        let outside = tempfile::tempdir().unwrap();
+        let roots = std::slice::from_ref(&fixture.package.path);
+        let generated = fixture.package.path.join("generated");
+        let capture = || inventory(&fixture.repository, roots, &BTreeSet::new(), &generated);
+        let before = capture().unwrap();
+        for name in [
+            ".build",
+            ".venv",
+            ".mypy_cache",
+            ".pytest_cache",
+            ".ruff_cache",
+        ] {
+            symlink(outside.path(), fixture.package.path.join("src").join(name)).unwrap();
+        }
+        let config = fixture.package.path.join(".pre-commit-config.yaml");
+        symlink(outside.path().join("missing"), &config).unwrap();
+        assert_eq!(capture().unwrap(), before);
+        fs::remove_file(&config).unwrap();
+        symlink(".pre-commit-config.yaml", &config).unwrap();
+        assert_eq!(capture().unwrap(), before);
+
+        symlink(outside.path(), fixture.package.path.join("unrecognized")).unwrap();
+        assert!(capture().is_err());
     }
 
     #[cfg(unix)]
