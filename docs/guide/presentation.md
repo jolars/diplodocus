@@ -181,6 +181,8 @@ presentation:
       - title: "Shared documentation"
         description: "Link across your packages."
         path: "guide/authoring.html"
+      - title: "Portable snapshots"
+        description: "Generate the site from a saved snapshot."
 ```
 
 Mount your guide collection at `guide` to keep it separate from the homepage.
@@ -188,6 +190,8 @@ Mount your guide collection at `guide` to keep it separate from the homepage.
 visible generated HTML pages, including `.html`, even when the site uses clean
 URLs. Diplodocus checks these destinations and renders links using the site's
 URL settings. The first action receives the primary button style.
+Omit a feature's `path` to display its heading and description as a static card
+without a link or arrow.
 
 For an external action, use `url` instead of `path`. Each action requires exactly
 one destination. External URLs must be absolute HTTP or HTTPS URLs without

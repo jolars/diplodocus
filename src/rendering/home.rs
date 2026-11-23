@@ -69,10 +69,21 @@ pub(super) fn render(
     if !home.features.is_empty() {
         html.push_str("<section class=\"home-features\" aria-label=\"Features\">");
         for feature in &home.features {
+            let (arrow, closing_tag) = if let Some(path) = &feature.path {
+                write!(
+                    html,
+                    "<a class=\"home-feature\" href=\"{}\">",
+                    escape(&site.url(route, path.as_str())),
+                )
+                .unwrap();
+                ("<span aria-hidden=\"true\"> &nearr;</span>", "</a>")
+            } else {
+                html.push_str("<article class=\"home-feature\">");
+                ("", "</article>")
+            };
             write!(
                 html,
-                "<a class=\"home-feature\" href=\"{}\"><h2>{}{}<span aria-hidden=\"true\"> &nearr;</span></h2><p>{}</p></a>",
-                escape(&site.url(route, feature.path.as_str())),
+                "<h2>{}{}{arrow}</h2><p>{}</p>{closing_tag}",
                 site.heading_aliases(route, None, &feature.title, false),
                 escape(&feature.title),
                 escape(&feature.description),

@@ -576,7 +576,11 @@ impl<'a> Site<'a> {
                             crate::configuration::HomeActionTarget::Url(_) => None,
                         }),
                 )
-                .chain(home.features.iter().map(|feature| &feature.path))
+                .chain(
+                    home.features
+                        .iter()
+                        .filter_map(|feature| feature.path.as_ref()),
+                )
             {
                 if path.as_str() == "index.html"
                     || !site

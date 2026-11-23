@@ -359,7 +359,7 @@ Fields in `presentation.home`:
 | `description` | string | Required | Introduction below the heading. |
 | `guide` | HTML route | Required | Visible page opened by the navbar's Guide link. |
 | `actions` | list | `[]` | Call-to-action links in display order; the first is emphasized. |
-| `features` | list | `[]` | Linked feature cards in display order. |
+| `features` | list | `[]` | Feature cards in display order. |
 
 Each `presentation.home.actions` entry accepts:
 
@@ -379,7 +379,7 @@ Each `presentation.home.features` entry accepts:
 | --- | --- | --- | --- |
 | `title` | string | Required | Feature heading. |
 | `description` | string | Required | Feature explanation. |
-| `path` | HTML route | Required | Visible generated page. |
+| `path` | HTML route | Unset | Visible generated page. Omit for a static card without an arrow. |
 
 HTML routes are site-relative generated paths such as `guide/index.html`,
 without a leading slash. Include the extension even with clean URLs.

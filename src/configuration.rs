@@ -434,7 +434,7 @@ pub enum HomeActionIcon {
     Terminal,
 }
 
-/// A feature card pointing to its documentation.
+/// A feature card with an optional documentation link.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct HomeFeature {
@@ -442,8 +442,9 @@ pub struct HomeFeature {
     pub title: String,
     /// Explanation, without HTML or Markdown.
     pub description: String,
-    /// Normalized site-relative HTML artifact path, including its extension.
-    pub path: DiagnosticPath,
+    /// Optional site-relative HTML artifact path, including its extension.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub path: Option<DiagnosticPath>,
 }
 
 /// A checked-in branding image within an explicitly declared repository.

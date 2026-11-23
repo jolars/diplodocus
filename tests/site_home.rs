@@ -26,6 +26,8 @@ presentation:
       - title: "One & all"
         description: "Shared <references>."
         path: "guide/index.html"
+      - title: "Plain & simple"
+        description: "Works <offline>."
 repositories:
   - id: "docs"
     path: "."
@@ -81,6 +83,9 @@ fn homepage_survives_snapshot_round_trip_and_respects_url_style() {
         assert!(home.contains(&format!(
             "<a class=\"home-feature\" href=\"{guide_url}\"><h2>One &amp; all<span aria-hidden=\"true\"> &nearr;</span></h2>"
         )));
+        assert!(home.contains(
+            "<article class=\"home-feature\"><h2>Plain &amp; simple</h2><p>Works &lt;offline&gt;.</p></article>"
+        ));
         let guide = std::str::from_utf8(&rendered.files()["guide/index.html"].bytes).unwrap();
         assert!(guide.contains("data-layout=\"docs\""));
         assert!(guide.contains("Welcome to the guide."));
@@ -92,6 +97,10 @@ fn homepage_survives_snapshot_round_trip_and_respects_url_style() {
         let markdown = std::str::from_utf8(&rendered.files()["index.md"].bytes).unwrap();
         assert!(markdown.contains("Read & explore."));
         assert!(markdown.contains(quick_start_url));
+        assert!(markdown.contains(&format!("[Read more](<{guide_url}>)")));
+        assert_eq!(markdown.matches("[Read more]").count(), 1);
+        assert!(markdown.contains(r"Works \<offline\>."));
+        assert!(markdown.contains("## Plain & simple\n\n"));
     }
 }
 
@@ -201,6 +210,10 @@ fn homepage_rejects_missing_and_self_destinations() {
         ("guide/index.html", "missing.html"),
         ("guide/quick-start.html", "missing.html"),
         ("guide/index.html", "index.html"),
+        (
+            "        path: \"guide/index.html\"",
+            "        path: \"missing.html\"",
+        ),
     ] {
         let root = workspace("file");
         let config = root.read("diplodocus.yaml").replace(original, replacement);

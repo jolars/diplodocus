@@ -172,7 +172,7 @@ body:is([data-layout=home], [data-layout=wide], [data-layout=full]) {
   transition: border-color .15s, background .15s;
 }
 
-.home-feature:hover {
+a.home-feature:hover {
   border-color: var(--accent-border);
   background: var(--feature-hover-background);
 }

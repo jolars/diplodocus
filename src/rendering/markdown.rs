@@ -92,12 +92,19 @@ pub(super) fn page(
             output.push_str(&site.heading_aliases(route, None, &feature.title, true));
             writeln!(
                 output,
-                "## {}\n\n{}\n\n[Read more]({})\n",
+                "## {}\n\n{}\n\n",
                 escape(&feature.title),
                 escape(&feature.description),
-                link_url(&site.url(route, feature.path.as_str())),
             )
             .unwrap();
+            if let Some(path) = &feature.path {
+                writeln!(
+                    output,
+                    "[Read more]({})\n",
+                    link_url(&site.url(route, path.as_str()))
+                )
+                .unwrap();
+            }
         }
     }
     if let Some(owner) = &page.owner
