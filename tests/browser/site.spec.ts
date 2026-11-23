@@ -400,10 +400,13 @@ for (const [layout, title] of [["wide", "Project overview"], ["full", "Workspace
   test(`${layout} layout restores documentation navigation`, async ({ page }, info) => {
     if (info.project.name === "desktop") await page.setViewportSize({ width: 1920, height: 900 });
     await page.goto("/");
+    const mobile = info.project.name === "mobile";
+    await expect(page.locator("main")).toHaveCSS("padding-top", mobile ? "40px" : "72px");
     const homeBounds = (await page.locator("main").boundingBox())!;
     const brandBounds = await page.locator(".brand").boundingBox();
     await page.goto(`/${layout}-layout.html`);
     await expect(page.locator("body")).toHaveAttribute("data-layout", layout);
+    await expect(page.locator("main")).toHaveCSS("padding-top", mobile ? "24px" : "32px");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(title);
     await expect(page.locator(".layout > nav")).toBeHidden();
     await expect(page.locator(".nav-disclosure")).toBeHidden();

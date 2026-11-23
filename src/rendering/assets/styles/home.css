@@ -45,7 +45,12 @@ body:is([data-layout=home], [data-layout=wide], [data-layout=full]) {
 [data-layout=full] main {
   max-width: 76rem;
   margin: 0 auto;
-  padding: 4.5rem 2.5rem 5rem;
+  padding-inline: 2.5rem;
+  padding-bottom: 5rem;
+}
+
+.home-page {
+  padding-top: 4.5rem;
 }
 
 [data-layout=full] .layout {
@@ -221,7 +226,12 @@ a.home-feature:hover {
   .home-page,
   [data-layout=wide] main,
   [data-layout=full] main {
-    padding: 2.5rem 1.5rem 3rem;
+    padding-inline: 1.5rem;
+    padding-bottom: 3rem;
+  }
+
+  .home-page {
+    padding-top: 2.5rem;
   }
 
   [data-layout=full] main {
