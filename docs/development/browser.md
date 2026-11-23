@@ -45,8 +45,9 @@ the system preference, including without JavaScript. Explicit choices set
 the color scheme. The inline `src/rendering/theme.js` script restores the
 browser's saved choice before loading CSS, synchronizes the desktop and mobile
 toggles, and shares changes between tabs. Without a saved choice, the theme and
-toggles follow changes to the system preference. Using a toggle saves an explicit
-light or dark choice.
+toggles follow changes to the system preference. The toggle saves an override
+when the selected theme differs from the system preference and clears it when
+they match.
 
 The renderer emits one `assets/site.css` with syntax highlighting appended.
 Cargo tracks the included files, so the preview recompiles when they change.

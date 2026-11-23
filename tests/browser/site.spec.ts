@@ -134,16 +134,23 @@ test("color theme follows the system and explicit choices override it", async ({
     await expect(toggle).not.toBeChecked();
   }
   await chooseTheme(page, info, "dark");
-  await expect(root).toHaveCSS("color-scheme", "dark");
+  await expect(root).toHaveAttribute("data-theme", "system");
+  expect(await page.evaluate(() => localStorage.getItem("diplodocus-theme"))).toBeNull();
   await expect(keyword).toHaveCSS("color", "rgb(255, 123, 114)");
+  await page.reload();
+  await expect(root).toHaveAttribute("data-theme", "system");
+  await page.emulateMedia({ colorScheme: "light" });
+  await expect(keyword).toHaveCSS("color", "rgb(207, 34, 46)");
+  await chooseTheme(page, info, "dark");
+  await expect(root).toHaveAttribute("data-theme", "dark");
   await page.emulateMedia({ colorScheme: "dark" });
   await page.emulateMedia({ colorScheme: "light" });
-  await expect(root).toHaveAttribute("data-theme", "dark");
+  await expect(keyword).toHaveCSS("color", "rgb(255, 123, 114)");
   await chooseTheme(page, info, "light");
-  expect(await page.evaluate(() => localStorage.getItem("diplodocus-theme"))).toBe("light");
+  expect(await page.evaluate(() => localStorage.getItem("diplodocus-theme"))).toBeNull();
   await expect(page.locator("body")).toHaveCSS("background-color", "rgb(255, 255, 255)");
   await page.emulateMedia({ colorScheme: "dark" });
-  await expect(keyword).toHaveCSS("color", "rgb(207, 34, 46)");
+  await expect(keyword).toHaveCSS("color", "rgb(255, 123, 114)");
 });
 
 test("color theme toggle works from the keyboard", async ({ page }, info) => {
@@ -159,7 +166,7 @@ test("color theme toggle works from the keyboard", async ({ page }, info) => {
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await toggle.press("Enter");
   await expect(toggle).not.toBeChecked();
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "system");
 });
 
 test("color theme persists through client navigation and applies before styles load", async ({ page }, info) => {

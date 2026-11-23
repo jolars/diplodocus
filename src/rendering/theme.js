@@ -24,9 +24,15 @@
     apply(preference);
     for (const toggle of document.querySelectorAll('[data-theme-toggle]')) {
       toggle.addEventListener('click', () => {
-        apply(toggle.getAttribute('aria-checked') === 'true' ? 'light' : 'dark');
+        const next = toggle.getAttribute('aria-checked') === 'true' ? 'light' : 'dark';
+        const systemTheme = system.matches ? 'dark' : 'light';
+        apply(next === systemTheme ? 'system' : next);
         try {
-          localStorage.setItem(key, preference);
+          if (preference === 'system') {
+            localStorage.removeItem(key);
+          } else {
+            localStorage.setItem(key, preference);
+          }
         } catch {
           // The theme still works for this visit when storage is unavailable.
         }
