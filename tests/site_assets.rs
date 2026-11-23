@@ -27,8 +27,12 @@ fn workspace(extra: &str) -> support::TestWorkspace {
 fn eunoia() -> support::TestWorkspace {
     // These declarations replace Eunoia's static-file copy and four injected links.
     let root = workspace(
-        "  site-url: https://example.test/docs/\n  canonical-url-style: clean\n  assets:\n    - { repository: docs, path: static/favicon.svg, publish: favicon.svg }\n    - { repository: docs, path: static/favicon.ico, publish: favicon.ico }\n    - { repository: docs, path: static/apple-touch-icon.png, publish: apple-touch-icon.png }\n    - { repository: docs, path: static/site.webmanifest, publish: site.webmanifest }\n    - { repository: docs, path: static/llms.txt, publish: llms.txt }\n    - { repository: docs, path: static/192.png, publish: icons/192.png }\n  icons:\n    - { path: favicon.svg, type: image/svg+xml, sizes: any }\n    - { path: favicon.ico }\n    - { path: apple-touch-icon.png, rel: apple-touch-icon, sizes: 180x180 }\n    - { path: site.webmanifest, rel: manifest }\n",
+        "  site-url: https://example.test/docs/\n  canonical-url-style: clean\n  asset-directories: [{ repository: docs, path: catalog, publish: datasets }]\n  assets:\n    - { repository: docs, path: static/favicon.svg, publish: favicon.svg }\n    - { repository: docs, path: static/favicon.ico, publish: favicon.ico }\n    - { repository: docs, path: static/apple-touch-icon.png, publish: apple-touch-icon.png }\n    - { repository: docs, path: static/site.webmanifest, publish: site.webmanifest }\n    - { repository: docs, path: static/llms.txt, publish: llms.txt }\n    - { repository: docs, path: static/192.png, publish: icons/192.png }\n    - { repository: docs, path: static/site.css, publish: public/site.css }\n    - { repository: docs, path: static/site.js, publish: public/site.js }\n    - { repository: docs, path: static/site.mjs, publish: public/site.mjs }\n  stylesheets: [public/site.css]\n  scripts: [public/site.js, public/site.mjs]\n  apple-mobile-web-app-title: 'Eunoia & docs'\n  icons:\n    - { path: favicon.svg, type: image/svg+xml, sizes: any }\n    - { path: favicon.ico }\n    - { path: apple-touch-icon.png, rel: apple-touch-icon, sizes: 180x180 }\n    - { path: site.webmanifest, rel: manifest }\n",
     );
+    root.write("catalog/nested/item.json", "{}");
+    root.write("static/site.css", "body { color: green; }");
+    root.write("static/site.js", "window.siteLoaded = true;");
+    root.write("static/site.mjs", "export const loaded = true;");
     root.write("static/favicon.svg", SVG);
     root.write("static/favicon.ico", b"\0\0\x01\0icon bytes");
     let mut png = std::io::Cursor::new(Vec::new());
@@ -82,15 +86,43 @@ fn build_and_relocated_snapshot_preserve_public_paths_bytes_and_icon_links() {
     let loaded = Snapshot::load(&relocated).unwrap();
     assert_eq!(public_bytes(&loaded), expected);
     commands::generate(GenerateOptions {
-        input: relocated,
+        input: relocated.clone(),
         output: detached.path().join("site"),
     })
     .unwrap();
+    let inactive = std::fs::read_to_string(detached.path().join("site/guide/start.html")).unwrap();
+    assert!(inactive.contains("href=\"../public/site.css\""));
+    assert!(!inactive.contains("src=\"../public/site.js\""));
+    assert_eq!(
+        std::fs::read(detached.path().join("site/public/site.js")).unwrap(),
+        expected["public/site.js"]
+    );
+    let generated = std::process::Command::new(env!("CARGO_BIN_EXE_diplodocus"))
+        .args(["generate", "--allow-site-scripts", "--input"])
+        .arg(&relocated)
+        .arg("--output")
+        .arg(detached.path().join("site"))
+        .output()
+        .unwrap();
+    assert!(
+        generated.status.success(),
+        "{}",
+        String::from_utf8_lossy(&generated.stderr)
+    );
+    let site = Site::new(&loaded).unwrap().with_site_scripts(true);
+    let fragments = diplodocus::rendering::render_fragments(&site).unwrap();
+    assert_eq!(
+        fragments.files()["public/site.js"].bytes,
+        expected["public/site.js"]
+    );
+    assert!(
+        !String::from_utf8_lossy(&fragments.files()["index.html"].bytes).contains("public/site.")
+    );
     assert_eq!(
         std::fs::read(detached.path().join("site/guide/start.html")).unwrap(),
         original
     );
-    let rendered = render_site(&Site::new(&loaded).unwrap()).unwrap();
+    let rendered = render_site(&site).unwrap();
     for (path, bytes) in &expected {
         assert_eq!(&rendered.files()[path].bytes, bytes);
     }
@@ -108,6 +140,12 @@ fn build_and_relocated_snapshot_preserve_public_paths_bytes_and_icon_links() {
         );
         assert!(html.contains("rel=\"apple-touch-icon\""));
         assert!(html.contains("rel=\"manifest\""));
+        assert!(html.contains("name=\"apple-mobile-web-app-title\" content=\"Eunoia &amp; docs\""));
+        assert!(html.contains(&format!("href=\"{prefix}public/site.css\"")));
+        assert!(html.contains(&format!("<script defer src=\"{prefix}public/site.js\"")));
+        assert!(html.contains(&format!(
+            "<script type=\"module\" src=\"{prefix}public/site.mjs\""
+        )));
     }
 }
 
@@ -115,6 +153,10 @@ fn build_and_relocated_snapshot_preserve_public_paths_bytes_and_icon_links() {
 fn declarations_reject_missing_icons_unknown_repositories_and_unsafe_paths() {
     for extra in [
         "  icons: [{ path: missing.svg }]",
+        "  stylesheets: [https://example.test/site.css]",
+        "  scripts: [../site.js]",
+        "  assets: [{ repository: docs, path: site.js, publish: site.js }]\n  stylesheets: [site.js]",
+        "  assets: [{ repository: docs, path: site.js, publish: site.js }]\n  scripts: [site.js, site.js]",
         "  assets: [{ repository: missing, path: icon.svg, publish: icon.svg }]",
         "  assets: [{ repository: docs, path: icon.svg, publish: ../icon.svg }]",
         "  assets: [{ repository: docs, path: icon.svg, publish: /icon.svg }]",
@@ -165,6 +207,35 @@ fn public_assets_cannot_shadow_generated_artifacts_or_redirects() {
         workspace("  assets: [{ repository: docs, path: static.txt, publish: guide/extra.txt }]");
     root.write("static.txt", "allowed beneath a page directory");
     assert!(Site::new(&snapshot(&root)).is_ok());
+}
+
+#[test]
+fn public_directory_membership_is_revalidated_and_collisions_are_rejected() {
+    let root = workspace(
+        "  asset-directories: [{ repository: docs, path: public, publish: '' }]\n  stylesheets: [theme.css]",
+    );
+    root.write("public/theme.css", "body {}");
+    assert!(matches!(
+        commands::build(BuildOptions {
+            config: root.path().join("diplodocus.yaml"),
+            output: root.path().join("public/site"),
+        }),
+        Err(commands::CommandError::InputOverlap)
+    ));
+    let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
+    let resolved = resolve_workspace(&sources).unwrap();
+    root.write("public/new.txt", "new");
+    assert!(Snapshot::from_sources(&sources, &resolved).is_err());
+    root.write("public/guide/start.html", "collision");
+    assert!(Site::new(&snapshot(&root)).is_err());
+    root.remove("public/theme.css");
+    assert!(resolve_workspace(&sources).is_err());
+    #[cfg(unix)]
+    {
+        root.write("theme.css", "body {}");
+        std::os::unix::fs::symlink("../theme.css", root.path().join("public/theme.css")).unwrap();
+        assert!(resolve_workspace(&sources).is_err());
+    }
 }
 
 #[test]
@@ -290,14 +361,35 @@ async fn native_preview_serves_identical_assets_and_rebuilds_after_edits_and_rec
     assert!(String::from_utf8_lossy(&icon).contains("Content-Type: image/svg+xml\r\n"));
     let page = response(port, "/guide/start").await.unwrap();
     assert!(String::from_utf8_lossy(&page).contains("rel=\"manifest\""));
-    root.write("static/llms.txt", "updated public content");
-    wait_for(port, "/llms.txt", b"updated public content").await;
-    root.remove("static/llms.txt");
+    assert!(String::from_utf8_lossy(&page).contains("src=\"../public/site.js\""));
+    let css = response(port, "/public/site.css").await.unwrap();
+    assert!(String::from_utf8_lossy(&css).contains("Content-Type: text/css; charset=utf-8"));
+    let js = response(port, "/public/site.js").await.unwrap();
+    assert!(String::from_utf8_lossy(&js).contains("Content-Type: text/javascript; charset=utf-8"));
+    root.write("static/site.js", "window.siteLoaded = 'updated';");
+    wait_for(port, "/public/site.js", b"window.siteLoaded = 'updated';").await;
+    root.remove("static/site.js");
     // A failed rebuild must keep the preceding complete generation available.
     tokio::time::sleep(Duration::from_millis(600)).await;
-    wait_for(port, "/llms.txt", b"updated public content").await;
-    root.write("static/llms.txt", "recreated public content");
-    wait_for(port, "/llms.txt", b"recreated public content").await;
+    wait_for(port, "/public/site.js", b"window.siteLoaded = 'updated';").await;
+    root.write("static/site.js", "window.siteLoaded = 'recreated';");
+    wait_for(port, "/public/site.js", b"window.siteLoaded = 'recreated';").await;
+    root.write("catalog/new.json", "[]");
+    wait_for(port, "/datasets/new.json", b"[]").await;
+    root.remove("catalog/new.json");
+    tokio::time::timeout(Duration::from_secs(20), async {
+        loop {
+            if response(port, "/datasets/new.json")
+                .await
+                .is_some_and(|bytes| bytes.starts_with(b"HTTP/1.1 404"))
+            {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(100)).await;
+        }
+    })
+    .await
+    .expect("preview should remove deleted directory entries");
     stop.send(()).unwrap();
     task.await.unwrap().unwrap();
 }

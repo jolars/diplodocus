@@ -110,6 +110,23 @@ pub fn validate_configuration(configuration: &WorkspaceConfiguration) -> Vec<Dia
             &mut diagnostics,
         );
     }
+    for (index, directory) in configuration
+        .presentation
+        .asset_directories
+        .iter()
+        .enumerate()
+    {
+        let field = format!("presentation.asset-directories[{index}].repository");
+        check_repository(
+            &repositories,
+            &directory.repository,
+            &field,
+            DiagnosticEntity::ConfigurationField {
+                path: field.clone(),
+            },
+            &mut diagnostics,
+        );
+    }
     if let Err(message) = crate::site_assets::validate_declarations(&configuration.presentation) {
         diagnostics.push(error(
             DiagnosticCode::InvalidConfiguration,

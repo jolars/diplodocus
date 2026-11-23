@@ -16,6 +16,7 @@ test.beforeAll(async () => {
   await mkdir(join(workspace, "docs/guides"), { recursive: true });
   await mkdir(join(workspace, "docs/images"));
   await mkdir(join(workspace, "docs/reference"));
+  await mkdir(join(workspace, "custom"));
   // Static Rd extraction supplies supported math without executing documentation.
   await mkdir(join(workspace, "r/R"), { recursive: true });
   await mkdir(join(workspace, "r/man"));
@@ -29,7 +30,7 @@ test.beforeAll(async () => {
     writeFile(join(workspace, "r/R/equation.R"), "equation <- function(x) x\n"),
     writeFile(join(workspace, "r/NAMESPACE"), "export(equation)\n"),
     writeFile(join(workspace, "r/man/equation.Rd"), "\\name{equation}\n\\alias{equation}\n\\title{Mathematics}\n\\usage{equation(x)}\n\\arguments{\\item{x}{A value.}}\n\\description{A mathematical equation.}\n\\details{\\deqn{x^2 + y^2 = z^2}}\n\\value{A value.}\n"),
-    copyFile("assets/brand/favicon-96x96.png", join(workspace, "logo.png")),
+    copyFile("assets/public/favicon-96x96.png", join(workspace, "logo.png")),
     writeFile(join(workspace, "site.webmanifest"), '{"name":"URL navigation","icons":[{"src":"public/icon.png","sizes":"96x96","type":"image/png"}]}'),
     writeFile(join(workspace, "llms.txt"), "# Public documentation\n"),
   ]);
@@ -49,6 +50,10 @@ presentation:
     - { repository: docs, path: logo.png, publish: public/icon.png }
     - { repository: docs, path: site.webmanifest, publish: site.webmanifest }
     - { repository: docs, path: llms.txt, publish: llms.txt }
+  asset-directories:
+    - { repository: docs, path: custom, publish: public }
+  stylesheets: [public/custom.css]
+  scripts: [public/custom.js]
   icons:
     - { path: public/icon.png, type: image/png, sizes: 96x96 }
     - { path: public/icon.png, rel: apple-touch-icon }
@@ -98,10 +103,17 @@ content:
     mount: ""
     format: "qmd"
 `);
+    await writeFile(join(workspace, "custom/custom.css"), ":root { --fixture-style: original; }");
+    await writeFile(join(workspace, "custom/custom.js"), "document.documentElement.dataset.siteStarts = Number(document.documentElement.dataset.siteStarts || 0) + 1;");
     const destination = join(workspace, style);
     const built = spawnSync(binary, ["build", "--config", configuration, "--output", destination], { encoding: "utf8" });
     expect(built.status, built.error?.message ?? built.stderr).toBe(0);
     output.set(style, destination);
+    await writeFile(join(workspace, "custom/custom.css"), ":root { --fixture-style: updated; }");
+    const updated = join(workspace, `${style}-updated`);
+    const rebuilt = spawnSync(binary, ["build", "--config", configuration, "--output", updated], { encoding: "utf8" });
+    expect(rebuilt.status, rebuilt.error?.message ?? rebuilt.stderr).toBe(0);
+    output.set(`${style}-updated`, updated);
   }
 });
 
@@ -124,6 +136,7 @@ for (const style of ["file", "clean"]) {
     const errors: string[] = [];
     const missing: string[] = [];
     page.on("pageerror", error => errors.push(error.message));
+    let servedBuild = style;
     let releaseStyle!: () => void;
     let styleRequested!: () => void;
     const stylesheetReady = new Promise<void>(resolve => { releaseStyle = resolve; });
@@ -143,7 +156,7 @@ for (const style of ["file", "clean"]) {
         ".woff2": "font/woff2", ".woff": "font/woff", ".ttf": "font/ttf",
       };
       try {
-        const body = await readFile(join(output.get(style)!, path));
+        const body = await readFile(join(output.get(servedBuild)!, path));
         await route.fulfill({ body, contentType: contentTypes[extname(path)] ?? "application/octet-stream" });
       } catch {
         missing.push(path);
@@ -173,6 +186,8 @@ for (const style of ["file", "clean"]) {
       };
       const stableNavbar = async () => {
         await checkIcons();
+        await expect(page.locator("html")).toHaveAttribute("data-site-starts", "1");
+        await expect(page.locator('link[href$="public/custom.css"]')).toHaveCount(1);
         expect(await identity.evaluate(value => value.document === document && value.elements.every(element => element.isConnected))).toBe(true);
         const boxes = await navbar.evaluateAll(elements => elements.map(element => {
           const { x, y, width, height } = element.getBoundingClientRect();
@@ -229,6 +244,9 @@ for (const style of ["file", "clean"]) {
       await expect(page).toHaveURL(`${origin}${mathPath}`);
       await expect(page.locator(".math-display .katex")).toHaveCount(1);
       expect(await page.locator('link[href$="katex.min.css"]').evaluate((link: HTMLLinkElement) => link.sheet !== null)).toBe(true);
+      expect(await page.locator('head link[rel="stylesheet"]').evaluateAll(links =>
+        links.map(link => new URL((link as HTMLLinkElement).href).pathname.split("/").pop()),
+      )).toEqual(["site.css", "katex.min.css", "custom.css"]);
       await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", publicMathUrl);
       await expect(page.locator('meta[property="og:url"]')).toHaveAttribute("content", publicMathUrl);
       await page.locator(".brand").click();
@@ -258,6 +276,14 @@ for (const style of ["file", "clean"]) {
       });
       expect(manifest.icons[0].src).toBe("public/icon.png");
       expect(await page.evaluate(async () => (await fetch(new URL("llms.txt", document.querySelector<HTMLLinkElement>('link[rel="manifest"]')!.href))).text())).toBe("# Public documentation\n");
+      servedBuild = `${style}-updated`;
+      await Promise.all([
+        page.waitForEvent("domcontentloaded"),
+        page.getByRole("link", { name: "Get started", exact: true }).click(),
+      ]);
+      await expect(page).toHaveURL(`${origin}${nestedPath}`);
+      await expect(page.locator("html")).toHaveAttribute("data-site-starts", "1");
+      expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--fixture-style").trim())).toBe("updated");
       expect(missing, "Generated assets resolve within the hosting prefix").toEqual([]);
       expect(errors, "Client navigation JavaScript errors").toEqual([]);
     } finally {

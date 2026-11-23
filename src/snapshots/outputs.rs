@@ -115,7 +115,7 @@ impl Snapshot {
         let mut snapshot = Self {
             bundle: false,
             workspace,
-            presentation: executed.sources().configuration().presentation.clone(),
+            presentation: resolved.presentation.clone(),
             package_mounts: executed.sources().bundles.mounts.clone(),
             public_assets: resolved.public_assets.clone(),
             logo: resolved.logo().cloned(),

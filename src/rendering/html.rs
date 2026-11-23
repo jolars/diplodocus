@@ -35,6 +35,14 @@ pub fn render_fragments(site: &Site<'_>) -> Result<RenderedSite, SiteError> {
 }
 
 fn render_public_links(html: &mut String, site: &Site<'_>, route: &str) {
+    if let Some(title) = &site.presentation.apple_mobile_web_app_title {
+        write!(
+            html,
+            "<meta name=\"apple-mobile-web-app-title\" content=\"{}\">",
+            escape(title)
+        )
+        .unwrap();
+    }
     for icon in &site.presentation.icons {
         write!(
             html,
@@ -50,6 +58,38 @@ fn render_public_links(html: &mut String, site: &Site<'_>, route: &str) {
             write!(html, " sizes=\"{}\"", escape(sizes)).unwrap();
         }
         html.push('>');
+    }
+}
+
+fn site_scripts<'a>(site: &Site<'a>) -> &'a [crate::diagnostics::DiagnosticPath] {
+    if site.site_scripts_enabled {
+        &site.presentation.scripts
+    } else {
+        &[]
+    }
+}
+
+fn render_site_resources(html: &mut String, site: &Site<'_>, route: &str) {
+    for path in &site.presentation.stylesheets {
+        write!(
+            html,
+            "<link rel=\"stylesheet\" data-diplodocus-site-stylesheet href=\"{}\">",
+            escape(&site.url(route, path.as_str()))
+        )
+        .unwrap();
+    }
+    for path in site_scripts(site) {
+        let kind = if path.as_str().ends_with(".mjs") {
+            "type=\"module\""
+        } else {
+            "defer"
+        };
+        write!(
+            html,
+            "<script {kind} src=\"{}\"></script>",
+            escape(&site.url(route, path.as_str()))
+        )
+        .unwrap();
     }
 }
 
@@ -109,6 +149,20 @@ fn navigation_shell_fingerprint(
     super::navigation::theme_control(&mut shell);
     brand(&mut shell, site, "index.html", images)?;
     render_public_links(&mut shell, site, "index.html");
+    render_site_resources(&mut shell, site, "index.html");
+    for path in site
+        .presentation
+        .stylesheets
+        .iter()
+        .chain(site_scripts(site))
+    {
+        shell.push('\0');
+        shell.push_str(
+            site.public_assets
+                .get(path.as_str())
+                .ok_or(SiteError::Evidence)?,
+        );
+    }
     super::footer::render(&mut shell, site);
     // A retained document must not combine runtimes or styles from different builds.
     let syntax_style = super::highlighting::stylesheet();
@@ -279,6 +333,7 @@ pub(crate) fn render_reported(
                 )
                 .unwrap();
             }
+            render_site_resources(&mut html, site, route);
             write!(html, "</head><body data-diplodocus-navigation=\"1\" data-diplodocus-shell=\"{}\" data-layout=\"{}\"><a class=\"skip-link\" href=\"#main\">Skip to content</a>", shell_fingerprint.as_deref().expect("standalone shell fingerprint"), if home.is_some() { "home" } else { layout.as_str() }).unwrap();
             html.push_str("<header>");
             brand(&mut html, site, route, &images)?;

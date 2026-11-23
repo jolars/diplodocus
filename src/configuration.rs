@@ -128,9 +128,21 @@ pub struct PresentationDefaults {
     /// Public files retained even when no authored document references them.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub assets: Vec<SiteAsset>,
+    /// Repository directories published recursively as public files.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub asset_directories: Vec<SiteAssetDirectory>,
     /// Icon and web manifest links included in every complete HTML page.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub icons: Vec<SiteIcon>,
+    /// Public stylesheet paths in cascade order.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub stylesheets: Vec<DiagnosticPath>,
+    /// Public script paths in head order.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub scripts: Vec<DiagnosticPath>,
+    /// Home screen title for Apple devices.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub apple_mobile_web_app_title: Option<String>,
     /// Site title and branding; `None` uses the workspace's project name.
     pub title: Option<String>,
     /// Default HTML and social description, overridden by page metadata.
@@ -248,6 +260,18 @@ pub struct SiteAsset {
     pub path: DiagnosticPath,
     /// Site-relative publication path, independent of the hosting prefix.
     pub publish: DiagnosticPath,
+}
+
+/// A directory copied from a repository to a site-relative destination.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SiteAssetDirectory {
+    /// Repository containing the directory.
+    pub repository: String,
+    /// Repository-relative source directory.
+    pub path: DiagnosticPath,
+    /// Destination prefix. An empty string publishes at the site root.
+    pub publish: String,
 }
 
 /// A link to a declared public icon or web manifest.

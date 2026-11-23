@@ -50,6 +50,7 @@ pub struct Site<'a> {
     pub(crate) public_assets: &'a BTreeMap<String, String>,
     pub(crate) components: &'a BTreeMap<String, crate::components::ComponentBundle>,
     pub(crate) components_enabled: bool,
+    pub(crate) site_scripts_enabled: bool,
     pub(crate) workspace: &'a Workspace,
     package_mounts: &'a BTreeMap<String, String>,
     pub(crate) presentation: &'a PresentationDefaults,
@@ -149,6 +150,12 @@ impl<'a> Site<'a> {
         self.components_enabled = enabled;
         self
     }
+    /// Enable trusted site-wide scripts for complete site generation.
+    pub fn with_site_scripts(mut self, enabled: bool) -> Self {
+        self.site_scripts_enabled = enabled;
+        self
+    }
+
     /// Assign collision-checked routes and normalize authored cell presentation.
     /// No source files, database connections, or language runtimes are used.
     pub fn new(snapshot: &'a Snapshot) -> Result<Self, SiteError> {
@@ -179,7 +186,7 @@ impl<'a> Site<'a> {
         let site = Self::from_inputs(
             SiteInputs {
                 workspace: sources.workspace(),
-                presentation: &sources.configuration().presentation,
+                presentation: &resolved.presentation,
                 package_mounts: &sources.bundles.mounts,
                 logo: resolved.logo(),
                 logo_dark: resolved.logo_dark(),
@@ -206,6 +213,7 @@ impl<'a> Site<'a> {
             public_assets: inputs.public_assets,
             components: inputs.components,
             components_enabled: false,
+            site_scripts_enabled: false,
             presentation: inputs.presentation,
             package_mounts: inputs.package_mounts,
             logo: inputs.logo,

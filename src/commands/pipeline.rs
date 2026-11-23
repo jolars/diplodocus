@@ -271,13 +271,22 @@ pub(super) async fn build_attempt_observed(
         attempt,
     )
     .await?;
-    generate_attempt(&input, &options.output, false, true, reporting)
+    generate_attempt(
+        &input,
+        &options.output,
+        false,
+        super::GenerateTrust {
+            allow_components: true,
+            allow_site_scripts: true,
+        },
+        reporting,
+    )
 }
 pub(super) fn generate_attempt(
     input: &Path,
     output: &Path,
     report_diagnostics: bool,
-    allow_components: bool,
+    trust: super::GenerateTrust,
     reporting: &Reporting,
 ) -> Result<RenderedSite, CommandError> {
     reject_overlap(output, input)?;
@@ -291,7 +300,8 @@ pub(super) fn generate_attempt(
         .run_phase(Phase::SitePreparation, "Preparing site", || {
             Site::new(&snapshot)
         })?
-        .with_components(allow_components);
+        .with_components(trust.allow_components)
+        .with_site_scripts(trust.allow_site_scripts);
     let rendering = reporting.phase(Phase::Rendering, None, None);
     let rendered = crate::rendering::render_reported(&site, true, reporting)?;
     rendering.finish();
@@ -367,6 +377,12 @@ fn protect_sources(
     reject_overlap(output, config)?;
     let destination = absolute(output)?;
     protect_caches(&sources.paths().configuration_directory, &destination)?;
+    for directory in resolved.public_directory_paths() {
+        if destination.starts_with(directory) {
+            return Err(CommandError::InputOverlap);
+        }
+    }
+
     for input in sources
         .input_paths()
         .chain(resolved.input_paths().map(Path::to_owned))

@@ -211,6 +211,10 @@ impl Snapshot {
             "document record set",
         )?;
         let mut used_assets = BTreeSet::new();
+        require(
+            self.presentation.asset_directories.is_empty(),
+            "unexpanded public asset directories",
+        )?;
         crate::site_assets::validate_declarations(&self.presentation)
             .map_err(|_| SnapshotError::Invalid("public asset declarations"))?;
         require(

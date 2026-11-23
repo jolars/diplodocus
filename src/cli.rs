@@ -110,6 +110,9 @@ pub(super) struct GenerateArgs {
     /// Emit executable browser bundles retained in this trusted snapshot.
     #[arg(long)]
     pub(super) allow_components: bool,
+    /// Load site-wide scripts retained in this trusted snapshot.
+    #[arg(long)]
+    pub(super) allow_site_scripts: bool,
     /// Completed SQLite documentation snapshot.
     #[arg(long, value_name = "PATH")]
     pub(super) input: PathBuf,

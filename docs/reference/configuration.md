@@ -440,11 +440,22 @@ generated pages and their Markdown companions, clean URLs, redirects, or
 reserved outputs: `assets/`, `__diplodocus/`, `.diplodocus-site`, `_redirects`,
 `sitemap.xml`, `robots.txt`, and `documents.json`.
 
+Fields in each `presentation.asset-directories` entry:
+
+| Option | Type | Default | Purpose |
+| --- | --- | --- | --- |
+| `repository` | string | Required | Declared repository containing the directory. |
+| `path` | path | Required | Normalized repository-relative source directory. |
+| `publish` | string | Required | Normalized site-relative destination prefix. Use `""` for the site root. |
+
+Files retain their relative paths within the directory. The same collision rules
+apply to files from all declarations. Symbolic links are rejected.
+
 Fields in each `presentation.icons` entry:
 
 | Option | Type | Default | Purpose |
 | --- | --- | --- | --- |
-| `path` | path | Required | A publication path declared in `presentation.assets`. |
+| `path` | path | Required | A publication path from a declared public file or directory. |
 | `rel` | string | `icon` | `icon`, `apple-touch-icon`, or `manifest`. |
 | `type` | string | Unset | MIME type hint matching the publication extension. |
 | `sizes` | string | Unset | `any` or space-separated positive dimensions, such as `16x16 32x32`. Not allowed for manifests. |
@@ -454,6 +465,17 @@ Icon links require an image extension: `.svg`, `.ico`, `.png`, `.jpg`, `.jpeg`,
 Response MIME types follow publication extensions. Other public files may use
 any extension; unknown extensions use `application/octet-stream`. Files retain
 their original bytes. See [public assets and icons](../guide/presentation.md#public-assets-and-icons).
+
+### Site-wide stylesheets and scripts
+
+| Option | Type | Default | Purpose |
+| --- | --- | --- | --- |
+| `presentation.stylesheets` | list of paths | `[]` | Public `.css` publication paths in cascade order, after built-in styles. |
+| `presentation.scripts` | list of paths | `[]` | Public `.js` or `.mjs` publication paths in head order. Detached generation requires `--allow-site-scripts` to load them. |
+| `presentation.apple-mobile-web-app-title` | string | Unset | Apple home screen title for complete pages. |
+
+Each stylesheet and script must name a distinct publication path from a
+declared public file or directory.
 
 ### Logo {#logo}
 

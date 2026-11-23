@@ -1,6 +1,16 @@
 project:
   name: "Diplodocus"
 presentation:
+  asset-directories:
+    - { repository: diplodocus, path: assets/public, publish: "" }
+  icons:
+    - { path: favicon-96x96.png, type: image/png, sizes: 96x96 }
+    - { path: favicon.svg, type: image/svg+xml }
+    - { path: favicon.ico }
+    - { path: apple-touch-icon.png, rel: apple-touch-icon, sizes: 180x180 }
+    - { path: site.webmanifest, rel: manifest }
+  stylesheets: [docs.css]
+  apple-mobile-web-app-title: Diplodocus
   description: "Guides for building Python, R, Julia, Rust, and C++ documentation with Diplodocus."
   site-url: "https://diplodocus.cc/"
   canonical-url-style: "clean"

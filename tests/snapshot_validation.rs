@@ -696,6 +696,8 @@ fn rejects_forged_public_assets_and_icons_with_valid_fingerprints() {
         "icon",
         "type",
         "sizes",
+        "stylesheet",
+        "script",
     ] {
         let result = changed(&snapshot, |export| {
             let presentation = record(export, "presentation");
@@ -720,6 +722,8 @@ fn rejects_forged_public_assets_and_icons_with_valid_fingerprints() {
                 "icon" => presentation["icons"][0]["path"] = "missing.svg".into(),
                 "type" => presentation["icons"][0]["type"] = "image/png".into(),
                 "sizes" => presentation["icons"][0]["sizes"] = "invalid".into(),
+                "stylesheet" => presentation["stylesheets"] = json!(["favicon.svg"]),
+                "script" => presentation["scripts"] = json!(["missing.js"]),
                 _ => unreachable!(),
             }
         });

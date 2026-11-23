@@ -185,6 +185,8 @@ pub struct ContentAsset {
 pub struct ResolvedWorkspace {
     records: Vec<ResolvedDocument>,
     pub(crate) components: BTreeMap<String, crate::components::ComponentBundle>,
+    pub(crate) presentation: crate::configuration::PresentationDefaults,
+    public_directories: BTreeMap<PathBuf, (PathBuf, Vec<String>)>,
     pub(crate) public_assets: BTreeMap<String, String>,
     logo: Option<AssetReference>,
     logo_dark: Option<AssetReference>,
@@ -248,10 +250,20 @@ impl ResolvedWorkspace {
         self.inputs
             .keys()
             .chain(self.repository_targets.keys())
+            .chain(self.public_directories.keys())
             .map(PathBuf::as_path)
     }
+    pub(crate) fn public_directory_paths(&self) -> impl Iterator<Item = &Path> {
+        self.public_directories.keys().map(PathBuf::as_path)
+    }
+
     /// Recheck asset bytes and repository target containment and type.
     pub fn revalidate(&self) -> Result<(), AssemblyError> {
+        for (selected, (root, files)) in &self.public_directories {
+            if public_directory_files(root, selected)? != *files {
+                return Err(AssemblyError::InputsChanged);
+            }
+        }
         for (selected, observation) in &self.inputs {
             let AssetObservation {
                 path,
@@ -285,6 +297,43 @@ impl ResolvedWorkspace {
         }
         Ok(())
     }
+}
+
+fn public_directory_files(root: &Path, directory: &Path) -> Result<Vec<String>, AssemblyError> {
+    let invalid = |path: &Path| {
+        std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            format!("invalid public asset directory entry: {}", path.display()),
+        )
+    };
+    let mut files = Vec::new();
+    let mut pending = vec![directory.to_owned()];
+    while let Some(path) = pending.pop() {
+        let relative = path.strip_prefix(root).map_err(|_| invalid(&path))?;
+        if crate::paths::resolve_repository_target(relative, root)? != path || !path.is_dir() {
+            return Err(invalid(&path).into());
+        }
+        for entry in fs::read_dir(&path)? {
+            let entry = entry?;
+            let kind = entry.file_type()?;
+            let path = entry.path();
+            if kind.is_dir() {
+                pending.push(path);
+            } else if kind.is_file() {
+                let file = path
+                    .strip_prefix(directory)
+                    .ok()
+                    .and_then(Path::to_str)
+                    .filter(|file| crate::components::safe_path(file))
+                    .ok_or_else(|| invalid(&path))?;
+                files.push(file.to_owned());
+            } else {
+                return Err(invalid(&path).into());
+            }
+        }
+    }
+    files.sort_unstable();
+    Ok(files)
 }
 
 /// Resolution errors, retaining all deterministic source diagnostics.
@@ -487,6 +536,8 @@ fn resolve(
         result: ResolvedWorkspace {
             records: vec![],
             components: BTreeMap::new(),
+            presentation: sources.configuration().presentation.clone(),
+            public_directories: BTreeMap::new(),
             public_assets: BTreeMap::new(),
             logo: None,
             logo_dark: None,
@@ -575,7 +626,56 @@ fn resolve(
         resolution.result.header_logo_dark,
     ] = logos;
     resolution.result.open_graph = open_graph;
-    for declaration in &presentation.assets {
+    let expanded = &mut resolution.result.presentation;
+    for directory in std::mem::take(&mut expanded.asset_directories) {
+        let root = &sources
+            .paths()
+            .repositories
+            .iter()
+            .find(|repository| repository.id == directory.repository)
+            .expect("validated public asset directory repository")
+            .path;
+        let selected = root.join(directory.path.as_str());
+        let files = public_directory_files(root, &selected)?;
+        for file in &files {
+            let path = format!("{}/{file}", directory.path.as_str());
+            let publish = if directory.publish.is_empty() {
+                file.clone()
+            } else {
+                format!("{}/{file}", directory.publish)
+            };
+            expanded.assets.push(crate::configuration::SiteAsset {
+                repository: directory.repository.clone(),
+                path: path.try_into().map_err(|_| AssemblyError::InputsChanged)?,
+                publish: publish
+                    .try_into()
+                    .map_err(|_| AssemblyError::InputsChanged)?,
+            });
+        }
+        if let Some((_, previous)) = resolution.result.public_directories.get(&selected) {
+            if *previous != files {
+                return Err(AssemblyError::InputsChanged.into());
+            }
+        } else {
+            resolution
+                .result
+                .public_directories
+                .insert(selected, (root.clone(), files));
+        }
+    }
+    if let Err(message) = crate::site_assets::validate_declarations(expanded) {
+        return Err(ResolutionError::Diagnostics(vec![
+            Diagnostic::new(
+                DiagnosticCode::InvalidConfiguration,
+                Severity::Error,
+                message,
+            )
+            .with_entity(DiagnosticEntity::ConfigurationField {
+                path: "presentation".into(),
+            }),
+        ]));
+    }
+    for declaration in &expanded.assets {
         let root = &sources
             .paths()
             .repositories

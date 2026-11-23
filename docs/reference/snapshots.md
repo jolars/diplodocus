@@ -96,7 +96,7 @@ branding all travel with the database.
 The loader validates versions, record shapes, semantic relationships, source
 maps, paths, fingerprints, and retained asset bytes. It also reapplies active
 HTML and image policies. Deserializing an output does not make it trusted.
-Component bundles remain inert unless generation explicitly enables them.
+Component bundles and site-wide scripts require separate opt-ins during detached generation.
 
 Snapshots are replaced as complete artifacts. Manual edits are discarded by the
 next extraction. Readers open the database read-only; extraction refuses to

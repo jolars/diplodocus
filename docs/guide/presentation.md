@@ -109,12 +109,27 @@ presentation:
 
 Each source file must stay inside its declared repository. `publish` names a
 file relative to the site root, without a leading slash or hosting prefix.
-Declare individual files; directories and globs are not supported. Generated
+Use `asset-directories` to publish a whole directory. Generated
 pages, Markdown companions, clean URLs, redirects, and reserved output paths
 cannot be replaced by public files. Public files may share a directory with
 generated pages.
 
-Icon paths refer to publication paths in `assets`. Diplodocus checks the link
+To publish all files in a dedicated directory, declare it once:
+
+```yaml
+presentation:
+  asset-directories:
+    - { repository: docs, path: web/public, publish: "" }
+    - { repository: docs, path: generated/catalog, publish: datasets }
+  stylesheets: [site.css]
+```
+
+An empty `publish` puts files at the site root. A destination such as
+`datasets` preserves each file's path below that prefix. Directory publishing
+includes nested files and rejects symbolic links. Preview tracks additions,
+removals, and edits. Snapshots retain the resolved files and their bytes.
+
+Icon paths refer to publication paths from either kind of declaration. Diplodocus checks the link
 relationship, file extension, optional MIME type, and optional sizes, then adds
 escaped links to every complete HTML page. Links resolve correctly from nested
 pages, clean URLs, and sites hosted below a prefix. Fragment bundles retain the
@@ -131,6 +146,33 @@ Snapshots retain declarations, publication paths, and deduplicated file bytes.
 links. Preview watches declared source files outside content collections and
 rebuilds after edits, removal, and recreation. A failed rebuild keeps serving
 the preceding complete site.
+
+## Site-wide stylesheets and scripts
+
+List public asset publication paths to load styles and scripts
+on every complete page.
+
+```yaml
+presentation:
+  assets:
+    - { repository: docs, path: web/site.css, publish: public/site.css }
+    - { repository: docs, path: web/site.js, publish: public/site.js }
+  stylesheets: [public/site.css]
+  scripts: [public/site.js]
+```
+
+Stylesheets load after the built-in styles, in declaration order. A `.js` file
+loads as a deferred classic script, and a `.mjs` file loads as a module. Declare
+dependencies as public assets too, and use relative URLs from the published
+stylesheet or script to refer to them.
+
+Local builds and preview load declared scripts. For a trusted snapshot, pass
+`--allow-site-scripts` to `generate` to load them. Fragment bundles publish the
+files and leave head markup to their frontend.
+
+A script initializes when the browser loads the document. Listen for
+`diplodocus:page-change` on `document` to initialize content inserted by
+client-side navigation.
 
 ## Repository links
 

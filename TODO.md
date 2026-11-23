@@ -64,11 +64,11 @@ in tests and CI results rather than adding another dated ledger.
   symlinks. Keep repository-boundary checks for declared inputs and files
   reported by rustdoc. Shrinkage patches the inventory and LazyMatrix
   exports a separate source tree to avoid Nix-generated links.
-- [ ] Support site-wide stylesheets and scripts backed by declared public
+- [x] Support site-wide stylesheets and scripts backed by declared public
   assets. Include them in preview, snapshots, and generated sites so Eunoia,
   Datamonger, Shrinkage, and the Diplodocus docs can drop their head
   rewrites.
-- [ ] Publish public asset directories with a declared destination prefix. Check
+- [x] Publish public asset directories with a declared destination prefix. Check
   collisions and track membership changes so Datamonger can publish its
   generated catalog JSON through the regular build and preview.
 - [ ] Let browser components declare a loading state and reserve layout space

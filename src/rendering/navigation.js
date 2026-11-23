@@ -229,7 +229,7 @@
         };
         link.addEventListener('load', () => { clearTimeout(timeout); resolve(); }, { once: true });
         link.addEventListener('error', failed, { once: true });
-        document.head.append(link);
+        document.head.insertBefore(link, document.head.querySelector("link[data-diplodocus-site-stylesheet]"));
       });
       styles.set(source.href, loaded);
     }

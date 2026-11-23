@@ -83,9 +83,18 @@ fn dispatch(cli: Cli, runner: &CommandRunner) -> Result<(), CommandError> {
                         "--url-map requires --format fragments".into(),
                     )))
                 }
-                GenerateFormat::Site => {
-                    runner.generate_with_components(options, args.allow_components)
-                }
+                GenerateFormat::Site => runner.generate_with_trust(
+                    options,
+                    diplodocus::commands::GenerateTrust {
+                        allow_components: args.allow_components,
+                        allow_site_scripts: args.allow_site_scripts,
+                    },
+                ),
+                GenerateFormat::Fragments if args.allow_site_scripts => Err(CommandError::Site(
+                    diplodocus::site::SiteError::Presentation(
+                        "--allow-site-scripts requires --format site".into(),
+                    ),
+                )),
                 GenerateFormat::Fragments => runner.generate_fragments(options, args.url_map),
             }
         }

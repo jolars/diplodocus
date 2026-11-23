@@ -206,6 +206,10 @@ Generate a site using only a completed snapshot
 
     Emit executable browser bundles retained in this trusted snapshot
 
+- `--allow-site-scripts`
+
+    Load site-wide scripts retained in this trusted snapshot
+
 - `--input <PATH>`
 
     Completed SQLite documentation snapshot

@@ -18,6 +18,6 @@ magick diplodocus-logo.png -define icon:auto-resize=48,32,16 favicon.ico
 magick diplodocus-logo.png -resize 180x180 -background '#fafbf9' -alpha remove -alpha off apple-touch-icon.png
 ```
 
-The earlier `diplodocus-logo.svg` and `favicon.svg` remain as editable artwork
-for the previous design. Other drafts live in the
+The live favicons, web manifest, and docs stylesheet are in
+[`../public/`](../public/). Other drafts live in the
 [logo concepts](../../docs/design/logo-concepts/README.md) directory.

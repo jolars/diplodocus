@@ -190,6 +190,15 @@ pub fn watch_extract(options: ExtractOptions) -> Result<(), CommandError> {
     CommandRunner::default().watch_extract(options)
 }
 
+/// Opt-ins for executable browser assets in a trusted snapshot.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct GenerateTrust {
+    /// Enable browser component bundles.
+    pub allow_components: bool,
+    /// Enable site-wide scripts.
+    pub allow_site_scripts: bool,
+}
+
 /// Generate and atomically publish a site using only a completed snapshot.
 pub fn generate(options: GenerateOptions) -> Result<(), CommandError> {
     generate_with_components(options, false)

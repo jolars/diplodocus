@@ -430,20 +430,32 @@ impl Observer {
                 observe(&root.join(asset.path.as_str()), &mut observed);
             }
         }
-        for component in &config.components {
-            if let Some(root) = roots.get(component.repository.as_str()) {
-                fn bundle(path: &Path, observed: &mut Observation) {
-                    observe(path, observed);
-                    if path.is_symlink() {
-                        return;
-                    }
-                    if let Ok(entries) = fs::read_dir(path) {
-                        for entry in entries.flatten() {
-                            bundle(&entry.path(), observed);
-                        }
+        fn observe_tree(path: &Path, observed: &mut Observation) {
+            if path.is_symlink() {
+                observed.insert(path.to_owned(), "symlink".into());
+                return;
+            }
+            observe(path, observed);
+            if let Ok(entries) = fs::read_dir(path) {
+                for entry in entries.flatten() {
+                    observe_tree(&entry.path(), observed);
+                }
+            }
+        }
+        for directory in &config.presentation.asset_directories {
+            if let Some(root) = roots.get(directory.repository.as_str()) {
+                let path = root.join(directory.path.as_str());
+                match fs::canonicalize(&path) {
+                    Ok(target) if target == path => observe_tree(&path, &mut observed),
+                    _ => {
+                        observed.insert(path, "unavailable public asset directory".into());
                     }
                 }
-                bundle(&root.join(&component.path), &mut observed);
+            }
+        }
+        for component in &config.components {
+            if let Some(root) = roots.get(component.repository.as_str()) {
+                observe_tree(&root.join(&component.path), &mut observed);
             }
         }
         for package in &config.packages {

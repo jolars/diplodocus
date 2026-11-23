@@ -39,21 +39,66 @@ pub(crate) fn validate_declarations(presentation: &PresentationDefaults) -> Resu
         }
     }
     for path in &paths {
-        if paths
-            .iter()
-            .any(|other| path != other && overlaps(path, other))
+        if path
+            .match_indices('/')
+            .any(|(index, _)| paths.contains(&path[..index]))
         {
             return Err(format!(
                 "public asset file and directory paths conflict: {path:?}"
             ));
         }
     }
+    for directory in &presentation.asset_directories {
+        if !crate::components::safe_path(directory.path.as_str())
+            || (!directory.publish.is_empty() && !crate::components::safe_path(&directory.publish))
+        {
+            return Err(format!(
+                "invalid public asset directory or destination: {:?}",
+                directory.path.as_str()
+            ));
+        }
+    }
+    let is_declared = |path: &str| {
+        crate::components::safe_path(path)
+            && (paths.contains(path)
+                || presentation.asset_directories.iter().any(|directory| {
+                    directory.publish.is_empty()
+                        || path
+                            .strip_prefix(&directory.publish)
+                            .is_some_and(|suffix| suffix.starts_with('/'))
+                }))
+    };
+    for (field, references, extensions) in [
+        ("stylesheets", &presentation.stylesheets, &["css"][..]),
+        ("scripts", &presentation.scripts, &["js", "mjs"][..]),
+    ] {
+        let mut seen = BTreeSet::new();
+        for reference in references {
+            let path = reference.as_str();
+            if !is_declared(path) {
+                return Err(format!(
+                    "presentation.{field} reference {path:?} must name a publication path in presentation.assets or presentation.asset-directories"
+                ));
+            }
+            let extension = Path::new(path).extension().and_then(|value| value.to_str());
+            if !extension.is_some_and(|extension| extensions.contains(&extension)) {
+                return Err(format!(
+                    "presentation.{field} reference {path:?} has an incompatible extension"
+                ));
+            }
+            if !seen.insert(path) {
+                return Err(format!(
+                    "duplicate presentation.{field} reference: {path:?}"
+                ));
+            }
+        }
+    }
     let mut links = BTreeSet::new();
     for icon in &presentation.icons {
         let path = icon.path.as_str();
-        if !paths.contains(path) {
+        if !is_declared(path) {
             return Err(format!(
-                "icon reference {path:?} must name a publication path in presentation.assets"
+                "icon reference {path:?} must name a publication path in presentation.assets or presentation.asset-directories"
             ));
         }
         let media = media_type(path);

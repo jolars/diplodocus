@@ -147,12 +147,27 @@ impl CommandRunner {
         options: GenerateOptions,
         allow_components: bool,
     ) -> Result<(), CommandError> {
+        self.generate_with_trust(
+            options,
+            super::GenerateTrust {
+                allow_components,
+                ..Default::default()
+            },
+        )
+    }
+
+    /// Generate a site with explicit trust for executable browser assets.
+    pub fn generate_with_trust(
+        &self,
+        options: GenerateOptions,
+        trust: super::GenerateTrust,
+    ) -> Result<(), CommandError> {
         let command = self.reporting.command("generate");
         let site = pipeline::generate_attempt(
             &options.input,
             &options.output,
             true,
-            allow_components,
+            trust,
             &self.reporting,
         )?;
         command.finish(Some(&options.output), Some(site.page_count()));
