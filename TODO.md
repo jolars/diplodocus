@@ -57,3 +57,25 @@ an optional `serve --live-reload` feature.
 
 Change this page when a release gate changes. Keep detailed validation evidence
 in tests and CI results rather than adding another dated ledger.
+
+## Gaps found in downstream sites
+
+- [ ] Let Rust source discovery skip unrelated generated files before resolving
+  symlinks. Keep repository-boundary checks for declared inputs and files
+  reported by rustdoc. Shrinkage patches the inventory and LazyMatrix exports a
+  separate source tree to avoid Nix-generated links.
+- [ ] Support site-wide stylesheets and scripts backed by declared public assets.
+  Include them in preview, snapshots, and generated sites so Eunoia, Datamonger,
+  Shrinkage, and the Diplodocus docs can drop their head rewrites.
+- [ ] Publish public asset directories with a declared destination prefix.
+  Check collisions and track membership changes so Datamonger can publish its
+  generated catalog JSON through the regular build and preview.
+- [ ] Let browser components declare a loading state and reserve layout space
+  before their bundle mounts. Preserve the authored fallback without JavaScript.
+  Shrinkage currently inserts its explorer loading indicator after rendering.
+- [ ] Expose the document and asset inventory for fragment generation before
+  rendering. External frontends could build a URL map without generating the
+  fragments twice.
+- [ ] Resolve relative `srcset` candidates against their source page before
+  client-side navigation updates the base URL. Cover retained header images and
+  navigation between nested routes so Eunoia can drop its rewrite.
