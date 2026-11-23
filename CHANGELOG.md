@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.16.0](https://github.com/jolars/diplodocus/compare/v0.15.0...v0.16.0) (2026-11-23)
+
+### Features
+
+- make homepage feature links optional ([`fbc4472`](https://github.com/jolars/diplodocus/commit/fbc4472143bd991a7df3fb4a54380b1b8ef16a89))
+
 ## [0.15.0](https://github.com/jolars/diplodocus/compare/v0.14.0...v0.15.0) (2026-11-20)
 
 ### Breaking changes
