@@ -144,7 +144,6 @@ body:is([data-layout=home], [data-layout=wide], [data-layout=full]) {
   display: grid;
   place-items: center;
   aspect-ratio: 1;
-  background: radial-gradient(ellipse, var(--artwork-glow) 0, var(--artwork-glow-fade) 45%, transparent 70%);
 }
 
 .home-artwork img {

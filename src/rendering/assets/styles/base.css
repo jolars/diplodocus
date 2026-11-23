@@ -23,8 +23,6 @@
   --accent-hover-background: light-dark(#225b51, #aaddce);
   --on-accent: light-dark(white, #10251e);
   --feature-hover-background: light-dark(#f0f4f1, #24362f);
-  --artwork-glow: light-dark(#e3efe6, #1d3d33);
-  --artwork-glow-fade: light-dark(#f1f6eb70, #203d3070);
   --header-height: 74px;
   --layout-width: 96rem;
   --page-gutter: 2rem;

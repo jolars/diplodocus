@@ -121,16 +121,12 @@ presentation:
     features:
       - title: "Five languages, one home"
         description: "Keep related packages together, with API references extracted from Python, R, Julia, Rust, and C++."
-        path: "guide/extraction.html"
       - title: "Write alongside your code"
         description: "Combine Markdown guides with API documentation. Link across packages without stitching sites together."
-        path: "guide/authoring.html"
       - title: "Examples that run"
         description: "Execute QMD cells and verify API examples with native runtimes, then publish their results."
-        path: "guide/execution.html"
       - title: "Preview as you write"
         description: "Check your sources, preview changes locally, and build a static site ready to publish."
-        path: "guide/quick-start.html"
   logo:
     repository: "diplodocus"
     path: "assets/brand/diplodocus-logo-large.png"

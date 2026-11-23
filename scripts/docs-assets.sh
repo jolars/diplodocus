@@ -14,10 +14,11 @@ import sys
 head = Path("scripts/docs-head.html").read_text().strip()
 for page in Path(sys.argv[1]).rglob("*.html"):
     html = page.read_text()
-    # Replace prior favicon declarations so repeated publishing stays idempotent.
+    # Replace prior head additions so repeated publishing stays idempotent.
     html = re.sub(
         r'<link\b(?=[^>]*\brel="(?:icon|shortcut icon|apple-touch-icon|manifest)")[^>]*>\s*'
-        r'|<meta\b(?=[^>]*\bname="apple-mobile-web-app-title")[^>]*>\s*',
+        r'|<meta\b(?=[^>]*\bname="apple-mobile-web-app-title")[^>]*>\s*'
+        r'|<style id="diplodocus-docs-style">[\s\S]*?</style>\s*',
         "",
         html,
     )
