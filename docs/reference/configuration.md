@@ -455,7 +455,7 @@ Response MIME types follow publication extensions. Other public files may use
 any extension; unknown extensions use `application/octet-stream`. Files retain
 their original bytes. See [public assets and icons](../guide/presentation.md#public-assets-and-icons).
 
-### Logo
+### Logo {#logo}
 
 Both `presentation.logo` and `presentation.header.logo` accept these fields:
 
