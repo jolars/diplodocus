@@ -9,6 +9,9 @@ const publicRoot = `https://docs.example.test${prefix}`;
 const output = new Map<string, string>();
 let workspace: string;
 
+// Reuse the four fixture builds across both tests in each browser project.
+test.describe.configure({ mode: "default" });
+
 test.beforeAll(async () => {
   const binary = process.env.DIPLODOCUS_BROWSER_BINARY;
   if (!binary) throw new Error("Run npm run site-test or npm run site-capture.");
@@ -26,7 +29,8 @@ test.beforeAll(async () => {
     writeFile(join(workspace, "docs/reference/cli.qmd"), "# Commands\n\nCLI options.\n\n## Input\n\nUse patterned flags for input.\n\n## Output\n\nUse patterned flags for output.\n"),
     writeFile(join(workspace, "docs/guides/nested.qmd"), "# Nested guide\n\nSee [`rmath::equation`].\n\n[Home](../index.qmd)\n\n![Chart](../images/chart.svg)\n\n![Responsive chart](../images/raster.png)\n"),
     writeFile(join(workspace, "docs/images/chart.svg"), '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 20"><path fill="green" d="M0 20 20 0 40 20Z"/></svg>'),
-    copyFile("assets/brand/og.png", join(workspace, "docs/images/raster.png")),
+    // This uncompressed 512×32 PNG produces one smaller responsive variant.
+    copyFile("tests/fixtures/navigation-responsive.png", join(workspace, "docs/images/raster.png")),
     writeFile(join(workspace, "r/DESCRIPTION"), "Package: navigationmath\nVersion: 1.0.0\nTitle: Navigation Math\nDescription: Static math fixture.\nLicense: MIT\nAuthor: Fixture Authors\nMaintainer: Fixture Authors <fixtures@example.test>\n"),
     writeFile(join(workspace, "r/R/equation.R"), "equation <- function(x) x\n"),
     writeFile(join(workspace, "r/NAMESPACE"), "export(equation)\n"),

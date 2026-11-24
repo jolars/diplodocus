@@ -38,11 +38,13 @@ pub(super) async fn serve_reported(
     let worker = run(options, deadlines, receiver, reporting);
     tokio::pin!(worker);
     tokio::select! {
-        result = &mut worker => result,
+        biased;
+        // Register signal handlers before the worker can announce readiness.
         _ = cancellation => {
             let _ = stop.send(true);
             worker.await
         }
+        result = &mut worker => result,
     }
 }
 
