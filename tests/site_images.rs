@@ -5,7 +5,7 @@ use std::io::Cursor;
 
 use diplodocus::assembly::assemble_workspace;
 use diplodocus::provenance::fingerprint_bytes;
-use diplodocus::rendering::{RenderedSite, render_fragments, render_site};
+use diplodocus::rendering::{RenderedSite, fragment_inventory, render_fragments, render_site};
 use diplodocus::site::{Site, UrlMap};
 use diplodocus::snapshots::Snapshot;
 use diplodocus::validation::resolve_workspace;
@@ -207,11 +207,21 @@ fn responsive_images_preserve_originals_and_export_smaller_content_addressed_var
 #[test]
 fn responsive_fragments_use_mapped_urls_and_conservative_sizes() {
     let (snapshot, _, _) = snapshot(image::ImageFormat::Png, false);
-    let rendered = render_fragments(&Site::new(&snapshot).unwrap()).unwrap();
-    let assets = rendered
-        .files()
-        .keys()
-        .filter(|path| path.starts_with("assets/"))
+    let site = Site::new(&snapshot).unwrap();
+    let inventory = fragment_inventory(&site).unwrap();
+    let rendered = render_fragments(&site).unwrap();
+    assert_eq!(
+        inventory.assets,
+        rendered
+            .files()
+            .keys()
+            .filter(|path| path.starts_with("assets/"))
+            .cloned()
+            .collect::<Vec<_>>()
+    );
+    let assets = inventory
+        .assets
+        .into_iter()
         .map(|path| (path.clone(), format!("https://cdn.example.test/{path}")))
         .collect();
     let site = Site::new(&snapshot)

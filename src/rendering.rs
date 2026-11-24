@@ -3,6 +3,7 @@
 pub(crate) mod anchors;
 pub(crate) mod cpp;
 mod footer;
+mod fragment_images;
 mod fragments;
 mod highlighting;
 mod home;
@@ -23,7 +24,10 @@ mod search_index;
 mod signatures;
 mod sitemap;
 mod social;
-pub use fragments::{FragmentDocument, FragmentIndex};
+pub use fragments::{
+    FragmentDocument, FragmentIndex, FragmentInventory, FragmentInventoryDocument,
+    fragment_inventory,
+};
 pub(crate) use html::render_reported;
 pub use html::{render_fragments, render_site};
 pub use publish::{RenderedFile, RenderedSite};

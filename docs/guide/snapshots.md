@@ -45,8 +45,20 @@ pages include constructors, fields, and methods. Inherited members link to
 their defining class. The Rust equivalents are
 `diplodocus::rendering::render_fragments` and its typed `FragmentIndex`.
 
-Links remain relative by default. A host can read the first manifest, assign
-public URLs, and render again using a version 1 URL map:
+Links remain relative by default. To assign public URLs before rendering, read
+the fragment inventory from the completed snapshot.
+
+```sh
+diplodocus generate --format inventory --input documentation.sqlite > inventory.json
+```
+
+The version 1 inventory lists document routing metadata and sorted asset paths,
+including public files and generated assets. Use each document's `path` and the
+entries in `assets` as keys in a version 1 URL map. Heading locations are
+available in the rendered `documents.json`. Rust consumers can call
+`diplodocus::rendering::fragment_inventory`.
+
+Create a URL map such as this one.
 
 ```json
 {
@@ -65,7 +77,8 @@ diplodocus generate --format fragments --input documentation.sqlite \
   --output fragments --url-map urls.json
 ```
 
-Keys name the original artifact paths. Mapping changes links in HTML, Markdown,
+Generate fragments from the same snapshot used for the inventory. Keys name
+the original artifact paths. Mapping changes links in HTML, Markdown,
 and search without changing artifact filenames. Unknown keys, unsafe URLs, and
 colliding destinations fail before publication. Member and overload anchors
 remain intact, as do external and repository source links. Unmapped paths keep

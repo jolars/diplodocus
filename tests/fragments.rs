@@ -2,7 +2,9 @@ mod support;
 
 use diplodocus::{
     assembly::assemble_workspace,
-    rendering::{FragmentIndex, render_fragments, render_site},
+    rendering::{
+        FragmentIndex, FragmentInventory, fragment_inventory, render_fragments, render_site,
+    },
     site::{Site, UrlMap},
     snapshots::Snapshot,
     validation::resolve_workspace,
@@ -15,12 +17,15 @@ fn detached_snapshot_supplies_content_without_a_site_shell() {
         "diplodocus.yaml",
         format!(
             "{}\ncontent:\n  - id: \"guide\"\n    owner: \"project\"\n    repository: \"demo\"\n    path: \"docs\"\n    mount: \"guide\"\n    format: \"gfm\"\n",
-            root.read("diplodocus.yaml")
+            root.read("diplodocus.yaml").replace(
+                "presentation:\n",
+                "presentation:\n  assets: [{ repository: demo, path: docs/figure.svg, publish: public/figure.svg }]\n",
+            )
         ),
     );
     root.write(
         "docs/index.md",
-        "# A guide\n\n![A retained figure](figure.svg)\n\n[`demo.fetch_data`]\n",
+        "# A guide\n\n![A retained figure](figure.svg)\n\n[`demo.fetch_data`]\n\nInline $x^2$.\n",
     );
     let figure = br#"<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><circle cx="10" cy="10" r="5"/></svg>"#;
     root.write("docs/figure.svg", figure);
@@ -81,22 +86,51 @@ fn detached_snapshot_supplies_content_without_a_site_shell() {
 
     let index: FragmentIndex =
         serde_json::from_slice(&fragments.files()["documents.json"].bytes).unwrap();
+    let inventory = fragment_inventory(&site).unwrap();
+    let mut expected = serde_json::to_value(&index.documents).unwrap();
+    for document in expected.as_array_mut().unwrap() {
+        document.as_object_mut().unwrap().remove("headings");
+    }
+    assert_eq!(
+        serde_json::to_value(&inventory.documents).unwrap(),
+        expected
+    );
+    assert_eq!(
+        inventory.assets,
+        fragments
+            .files()
+            .keys()
+            .filter(|path| { path.starts_with("assets/") || path.starts_with("public/") })
+            .cloned()
+            .collect::<Vec<_>>()
+    );
+    assert!(
+        inventory
+            .assets
+            .iter()
+            .any(|path| path == "public/figure.svg")
+    );
+    assert!(
+        inventory
+            .assets
+            .iter()
+            .any(|path| path == "assets/katex/katex.min.css")
+    );
     let urls = UrlMap {
         format_version: 1,
-        documents: index
+        documents: inventory
             .documents
             .iter()
             .enumerate()
             .map(|(i, d)| (d.path.clone(), format!("/reference/{i}/")))
             .collect(),
-        assets: fragments
-            .files()
-            .keys()
-            .filter(|path| path.starts_with("assets/"))
+        assets: inventory
+            .assets
+            .iter()
             .map(|path| {
                 (
                     path.clone(),
-                    format!("/_api/{}", path.strip_prefix("assets/").unwrap()),
+                    format!("/_api/{}", path.strip_prefix("assets/").unwrap_or(path)),
                 )
             })
             .collect(),
@@ -310,6 +344,59 @@ fn cli_fragment_generation_preserves_output_after_invalid_mapping() {
     drop(root);
     let output = temporary.path().join("fragments");
     let command = || std::process::Command::new(env!("CARGO_BIN_EXE_diplodocus"));
+    let discover = |snapshot: &std::path::Path, extra: &[&str]| {
+        command()
+            .current_dir(temporary.path())
+            .args(["generate", "--format", "inventory", "--input"])
+            .arg(snapshot)
+            .args(extra)
+            .output()
+            .unwrap()
+    };
+    let inventory = discover(&database, &[]);
+    assert!(
+        inventory.status.success(),
+        "{}",
+        String::from_utf8_lossy(&inventory.stderr)
+    );
+    assert_eq!(
+        serde_json::from_slice::<FragmentInventory>(&inventory.stdout)
+            .unwrap()
+            .format_version,
+        1
+    );
+    let quiet = discover(&database, &["--quiet"]);
+    assert!(quiet.status.success());
+    assert_eq!(quiet.stdout, inventory.stdout);
+    assert!(quiet.stderr.is_empty());
+    #[cfg(target_os = "linux")]
+    {
+        let full = std::fs::OpenOptions::new()
+            .write(true)
+            .open("/dev/full")
+            .unwrap();
+        let failed = command()
+            .args(["generate", "--format", "inventory", "--input"])
+            .arg(&database)
+            .stdout(full)
+            .output()
+            .unwrap();
+        let stderr = String::from_utf8_lossy(&failed.stderr);
+        assert!(!failed.status.success());
+        assert!(stderr.contains("command I/O failed"), "{stderr}");
+        assert!(!stderr.contains("Generated"), "{stderr}");
+    }
+    assert!(!temporary.path().join("site").exists());
+    for result in [
+        discover(&database, &["--output", "site"]),
+        discover(&database, &["--url-map", "urls.json"]),
+        discover(&database, &["--allow-components"]),
+        discover(&database, &["--allow-site-scripts"]),
+        discover(&temporary.path().join("missing.sqlite"), &[]),
+    ] {
+        assert!(!result.status.success());
+        assert!(result.stdout.is_empty());
+    }
     let result = command()
         .args(["generate", "--format", "fragments", "--input"])
         .arg(&database)

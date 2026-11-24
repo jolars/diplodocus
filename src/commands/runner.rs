@@ -175,6 +175,50 @@ impl CommandRunner {
         Ok(())
     }
 
+    /// Discover fragment artifact paths from a completed snapshot.
+    pub fn fragment_inventory(
+        &self,
+        input: &Path,
+    ) -> Result<crate::rendering::FragmentInventory, CommandError> {
+        let command = self.reporting.command("generate");
+        let inventory = self.prepare_fragment_inventory(input)?;
+        command.finish(None, Some(inventory.documents.len()));
+        Ok(inventory)
+    }
+
+    /// Write the fragment inventory as JSON and report success after flushing it.
+    pub fn write_fragment_inventory(
+        &self,
+        input: &Path,
+        mut output: impl Write,
+    ) -> Result<(), CommandError> {
+        let command = self.reporting.command("generate");
+        let inventory = self.prepare_fragment_inventory(input)?;
+        let json = serde_json::to_string(&inventory).map_err(std::io::Error::other)?;
+        writeln!(output, "{json}")?;
+        output.flush()?;
+        command.finish(None, Some(inventory.documents.len()));
+        Ok(())
+    }
+
+    fn prepare_fragment_inventory(
+        &self,
+        input: &Path,
+    ) -> Result<crate::rendering::FragmentInventory, CommandError> {
+        let snapshot = self.reporting.run("Loading snapshot", || {
+            crate::snapshots::Snapshot::load(input)
+        })?;
+        let site = self.reporting.run_phase(
+            crate::reporting::Phase::SitePreparation,
+            "Preparing site",
+            || crate::site::Site::new(&snapshot),
+        )?;
+        let inventory = self.reporting.run("Preparing fragment inventory", || {
+            crate::rendering::fragment_inventory(&site)
+        })?;
+        Ok(inventory)
+    }
+
     /// Generate embeddable fragments with an optional public URL map.
     pub fn generate_fragments(
         &self,

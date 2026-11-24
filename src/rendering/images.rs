@@ -62,16 +62,12 @@ impl Images {
         role: ImageRole,
         standalone: bool,
     ) -> Result<String, SiteError> {
-        let asset = site.assets.get(digest).ok_or(SiteError::Evidence)?;
-        if !matches!(asset.media_type.as_str(), "image/png" | "image/jpeg") {
+        self.prepare(site, digest, role)?;
+        let asset = &site.assets[digest];
+        let cache = self.variants.borrow();
+        let Some(variants) = cache.get(&(digest.to_owned(), role)) else {
             return Ok(String::new());
-        }
-        let key = (digest.to_owned(), role);
-        let mut cache = self.variants.borrow_mut();
-        if !cache.contains_key(&key) {
-            cache.insert(key.clone(), variants(asset, role)?);
-        }
-        let variants = &cache[&key];
+        };
         if variants.is_empty() {
             return Ok(String::new());
         }
@@ -105,6 +101,24 @@ impl Images {
             escape(&sources.join(", ")),
             escape(sizes),
         ))
+    }
+
+    pub(super) fn prepare(
+        &self,
+        site: &Site<'_>,
+        digest: &str,
+        role: ImageRole,
+    ) -> Result<(), SiteError> {
+        let asset = site.assets.get(digest).ok_or(SiteError::Evidence)?;
+        if !matches!(asset.media_type.as_str(), "image/png" | "image/jpeg") {
+            return Ok(());
+        }
+        let key = (digest.to_owned(), role);
+        let mut cache = self.variants.borrow_mut();
+        if !cache.contains_key(&key) {
+            cache.insert(key.clone(), variants(asset, role)?);
+        }
+        Ok(())
     }
 
     pub(super) fn into_files(self) -> impl Iterator<Item = (String, RenderedFile)> {

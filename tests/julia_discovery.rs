@@ -5,7 +5,10 @@ use std::collections::BTreeSet;
 use diplodocus::{
     assembly::assemble_workspace,
     ir::{ItemKind, ItemLanguageData, JuliaCallableRole, JuliaDeclaration, Package},
-    rendering::{FragmentDocument, FragmentIndex, RenderedSite, render_fragments, render_site},
+    rendering::{
+        FragmentDocument, FragmentIndex, RenderedSite, fragment_inventory, render_fragments,
+        render_site,
+    },
     site::{Site, UrlMap},
     snapshots::Snapshot,
     validation::{DocumentIdentity, resolve_workspace},
@@ -120,7 +123,12 @@ fn a_private_only_root_respects_package_visibility_without_losing_routes() {
             public_names(&snapshot.workspace().packages["demo"]),
             BTreeSet::from(["Demo"])
         );
-        let fragments = render_fragments(&Site::new(&snapshot).unwrap()).unwrap();
+        let site = Site::new(&snapshot).unwrap();
+        let fragments = render_fragments(&site).unwrap();
+        let inventory = fragment_inventory(&site).unwrap();
+        assert!(inventory.documents.iter().any(|document| {
+            document.qualified_name.as_deref() == Some("Demo.helper") && !document.visible
+        }));
         let index: FragmentIndex =
             serde_json::from_slice(&fragments.files()["documents.json"].bytes).unwrap();
         let module = document(&index, "Demo");

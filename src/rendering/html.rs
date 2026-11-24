@@ -242,38 +242,8 @@ pub(crate) fn render_reported(
         let metadata = site.page_metadata(route, page);
         let home = site.home(route);
         let layout = page.layout();
-        let markdown_path = format!(
-            "{}.md",
-            route.strip_suffix(".html").ok_or(SiteError::Evidence)?
-        );
-        let page_math = page
-            .document
-            .is_some_and(|document| super::math::contains_math(&document.document.blocks))
-            || page.julia_sections.iter().any(|section| {
-                section.members.iter().any(|member| {
-                    site.workspace.packages[&member.package].items[&member.item]
-                        .documentation
-                        .as_ref()
-                        .is_some_and(|document| {
-                            super::math::contains_math(&document.document.blocks)
-                        })
-                })
-            })
-            || page.python_class.as_ref().is_some_and(|class| {
-                class.members.iter().any(|member| {
-                    !member.inherited
-                        && member.item.documentation.as_ref().is_some_and(|document| {
-                            super::math::contains_math(&document.document.blocks)
-                        })
-                })
-            })
-            || page.api_page.as_ref().is_some_and(|rust| {
-                rust.members().any(|member| {
-                    member.item.documentation.as_ref().is_some_and(|document| {
-                        super::math::contains_math(&document.document.blocks)
-                    })
-                })
-            });
+        let markdown_path = super::fragments::markdown_path(route)?;
+        let page_math = super::fragments::page_uses_math(site, page);
         uses_math |= page_math;
         let mut renderer = Renderer {
             images: &images,
@@ -339,7 +309,7 @@ pub(crate) fn render_reported(
             }
             super::social::render(&mut html, site, route, &metadata)?;
             render_public_links(&mut html, site, route);
-            write!(html, "<title>{}</title><link rel=\"stylesheet\" href=\"{}\"><script defer src=\"{}\"></script><script defer src=\"{}\"></script><script defer src=\"{}\"></script><script defer src=\"{}\"></script>", escape(&metadata.title), escape(&site.url(route, "assets/site.css")), escape(&site.url(route, "assets/search.js")), escape(&site.url(route, "assets/nav.js")), escape(&site.url(route, "assets/code.js")), escape(&site.url(route, "assets/tabsets.js"))).unwrap();
+            write!(html, "<title>{}</title><link rel=\"stylesheet\" href=\"{}\"><script defer src=\"{}\"></script><script defer src=\"{}\"></script><script defer src=\"{}\"></script><script defer src=\"{}\"></script>", escape(&metadata.title), escape(&site.url(route, "assets/site.css")), escape(&site.url(route, "assets/search.js")), escape(&site.url(route, "assets/nav.js")), escape(&site.url(route, "assets/code.js")), escape(&site.url(route, super::fragments::TABSETS))).unwrap();
             if page_math {
                 write!(
                     html,
@@ -819,28 +789,10 @@ pub(crate) fn render_reported(
             super::footer::render(&mut html, site);
             html.push_str("</body></html>\n");
         } else {
-            let identities: Vec<_> = site
-                .routes
-                .iter()
-                .filter(|(_, path)| *path == route)
-                .map(|(identity, _)| identity.clone())
-                .collect();
-            documents.push(super::FragmentDocument {
-                path: route.clone(),
-                markdown_path,
-                url: site.url("index.html", route),
-                title: page.title.clone(),
-                package: page.owner.clone(),
-                package_version: page
-                    .owner
-                    .as_ref()
-                    .and_then(|id| site.workspace.packages[id].version.clone()),
-                qualified_name: page.item.map(|item| item.qualified_name.clone()),
-                public_name: page.public_name.clone(),
-                visible: page.visible,
-                identities,
-                headings: renderer.headings,
-            });
+            documents.push(
+                super::FragmentInventoryDocument::new(site, route, page, markdown_path)
+                    .rendered(renderer.headings),
+            );
         }
         if page.visible {
             let package = page.owner.as_ref().map(|id| &site.workspace.packages[id]);
@@ -1025,7 +977,7 @@ pub(crate) fn render_reported(
         if standalone {
             "assets/site.css"
         } else {
-            "assets/content.css"
+            super::fragments::CONTENT_CSS
         }
         .into(),
         file(style.into_bytes(), "text/css; charset=utf-8"),
@@ -1073,14 +1025,14 @@ pub(crate) fn render_reported(
         );
     }
     files.insert(
-        "assets/tabsets.js".into(),
+        super::fragments::TABSETS.into(),
         file(
             include_str!("tabsets.js").as_bytes().to_vec(),
             "text/javascript; charset=utf-8",
         ),
     );
     files.insert(
-        "assets/search.json".into(),
+        super::fragments::SEARCH_INDEX.into(),
         file(
             serde_json::to_vec(&search).map_err(|_| SiteError::Evidence)?,
             "application/json",

@@ -73,11 +73,24 @@ fn dispatch(cli: Cli, runner: &CommandRunner) -> Result<(), CommandError> {
             command: BundleCommand::Export { config, output, .. },
         } => runner.export_bundle(BundleExportOptions { config, output }),
         Command::Generate(args) => {
+            if matches!(args.format, GenerateFormat::Inventory) {
+                if args.output.is_some()
+                    || args.url_map.is_some()
+                    || args.allow_components
+                    || args.allow_site_scripts
+                {
+                    return Err(diplodocus::site::SiteError::Route(
+                        "--format inventory writes to stdout and does not accept --output, --url-map, --allow-components, or --allow-site-scripts".into(),
+                    ).into());
+                }
+                return runner.write_fragment_inventory(&args.input, std::io::stdout().lock());
+            }
             let options = GenerateOptions {
                 input: args.input,
-                output: args.output,
+                output: args.output.unwrap_or_else(|| "./site".into()),
             };
             match args.format {
+                GenerateFormat::Inventory => unreachable!(),
                 GenerateFormat::Site if args.url_map.is_some() => {
                     Err(CommandError::Site(diplodocus::site::SiteError::Route(
                         "--url-map requires --format fragments".into(),

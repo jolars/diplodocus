@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import {
-  access, cp, mkdir, mkdtemp, readFile, readdir, rename, rm, writeFile,
+  access, cp, mkdir, mkdtemp, readFile, rename, rm, writeFile,
 } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -67,16 +67,6 @@ async function exists(path) {
   catch (error) { if (error.code === "ENOENT") return false; throw error; }
 }
 
-async function files(root) {
-  const result = [];
-  for (const entry of await readdir(root, { withFileTypes: true })) {
-    const path = join(root, entry.name);
-    if (entry.isDirectory()) result.push(...await files(path));
-    else result.push(path);
-  }
-  return result.sort();
-}
-
 function pagePath(document) {
   const name = document.public_name ?? document.qualified_name;
   if (name && document.package) {
@@ -133,13 +123,16 @@ async function prepare(root, executable, snapshot) {
     await cp(snapshot, input);
     const fragments = join(staging, "fragments");
     const args = ["generate", "--format", "fragments", "--input", input, "--output", fragments];
-    await run(executable, args);
-    const manifest = JSON.parse(await readFile(join(fragments, "documents.json"), "utf8"));
-    if (manifest.format_version !== 2) throw new Error("Expected fragment format version 2.");
+    const discovery = child(executable, ["generate", "--format", "inventory", "--input", input], "pipe");
+    let json = "";
+    discovery.stdout.setEncoding("utf8").on("data", (data) => { json += data; });
+    await completion(discovery);
+    const inventory = JSON.parse(json);
+    if (inventory.format_version !== 1) throw new Error("Expected fragment inventory version 1.");
     const paths = new Map();
     const urls = new Set();
-    const map = { format_version: 1, documents: {}, assets: {} };
-    for (const document of manifest.documents) {
+    const map = { format_version: 1, documents: {}, assets: Object.create(null) };
+    for (const document of inventory.documents) {
       const path = pagePath(document);
       const url = publicUrl(path);
       if (urls.has(url)) throw new Error(`Duplicate VitePress route: ${url}`);
@@ -147,9 +140,8 @@ async function prepare(root, executable, snapshot) {
       paths.set(document.path, path);
       map.documents[document.path] = url;
     }
-    for (const asset of await files(join(fragments, "assets"))) {
-      const suffix = asset.slice(join(fragments, "assets").length + 1).replaceAll("\\", "/");
-      map.assets[`assets/${suffix}`] = `/_diplodocus/${suffix}`;
+    for (const path of inventory.assets) {
+      map.assets[path] = `/_diplodocus/files/${path.split("/").map(encodeURIComponent).join("/")}`;
     }
     const mapPath = join(staging, "urls.json");
     await writeFile(mapPath, JSON.stringify(map));
@@ -157,7 +149,7 @@ async function prepare(root, executable, snapshot) {
     const reference = join(staging, "reference");
     await mkdir(reference);
     const groups = new Map();
-    for (const document of manifest.documents) {
+    for (const document of inventory.documents) {
       const path = paths.get(document.path);
       const content = await readFile(join(fragments, document.markdown_path), "utf8");
       const destination = join(reference, path);
@@ -173,7 +165,11 @@ async function prepare(root, executable, snapshot) {
     const sidebar = [...groups].map(([text, items]) => ({ text, items }));
     await writeFile(join(reference, "sidebar.json"), JSON.stringify(sidebar));
     const assets = join(staging, "assets");
-    await cp(join(fragments, "assets"), assets, { recursive: true });
+    for (const path of inventory.assets) {
+      const destination = join(assets, "files", path);
+      await mkdir(dirname(destination), { recursive: true });
+      await cp(join(fragments, path), destination);
+    }
     await Promise.all([reference, assets].map((path) => writeFile(join(path, marker), owner)));
     return { staging, directories: [
       [reference, join(root, "docs/reference")],

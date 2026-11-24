@@ -216,17 +216,15 @@ Generate a site using only a completed snapshot
 
 - `--output <PATH>`
 
-    Directory in which to write the generated site
-
-    Default value: `./site`
+    Directory for generated pages or fragments (defaults to ./site)
 
 - `--format <FORMAT>`
 
-    Output complete site pages or embeddable HTML and Markdown fragments
+    Output a complete site, embeddable fragments, or a JSON inventory on stdout
 
     Default value: `site`
 
-    Possible values: `site`, `fragments`
+    Possible values: `site`, `fragments`, `inventory`
 
 - `--url-map <PATH>`
 

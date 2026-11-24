@@ -57,8 +57,8 @@ site build when a selected package revision changes.
 
 `run.mjs` consumes the versioned JSON publication events on `extract --watch`'s
 stdout. Diagnostics remain on stderr. It copies each completed snapshot before
-discovering documents, assigning host URLs, and exporting fragments with the
-existing URL-map interface. Each export therefore uses one coherent snapshot,
+reading the fragment inventory, assigning host URLs, and exporting fragments
+once with the URL map. Each export therefore uses one coherent snapshot,
 even if extraction publishes again during adaptation.
 
 The adapter turns retained heading anchors into VitePress custom heading IDs.

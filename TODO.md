@@ -75,7 +75,7 @@ in tests and CI results rather than adding another dated ledger.
   before their bundle mounts. Preserve the authored fallback without
   JavaScript. Shrinkage currently inserts its explorer loading indicator
   after rendering.
-- [ ] Expose the document and asset inventory for fragment generation before
+- [x] Expose the document and asset inventory for fragment generation before
   rendering. External frontends could build a URL map without generating the
   fragments twice.
 - [ ] Resolve relative `srcset` candidates against their source page before

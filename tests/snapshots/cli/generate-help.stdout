@@ -9,7 +9,7 @@ Options:
       --no-progress         Print stage summaries instead of animated progress bars
       --input <PATH>        Completed SQLite documentation snapshot
   -q, --quiet               Suppress routine status output while retaining warnings and errors
-      --output <PATH>       Directory in which to write the generated site [default: ./site]
-      --format <FORMAT>     Output complete site pages or embeddable HTML and Markdown fragments [default: site] [possible values: site, fragments]
+      --output <PATH>       Directory for generated pages or fragments (defaults to ./site)
+      --format <FORMAT>     Output a complete site, embeddable fragments, or a JSON inventory on stdout [default: site] [possible values: site, fragments, inventory]
       --url-map <PATH>      Public document and asset URL map (requires --format fragments)
   -h, --help                Print help

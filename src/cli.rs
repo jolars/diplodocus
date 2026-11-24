@@ -116,10 +116,10 @@ pub(super) struct GenerateArgs {
     /// Completed SQLite documentation snapshot.
     #[arg(long, value_name = "PATH")]
     pub(super) input: PathBuf,
-    /// Directory in which to write the generated site.
-    #[arg(long, value_name = "PATH", default_value = "./site")]
-    pub(super) output: PathBuf,
-    /// Output complete site pages or embeddable HTML and Markdown fragments.
+    /// Directory for generated pages or fragments (defaults to ./site).
+    #[arg(long, value_name = "PATH")]
+    pub(super) output: Option<PathBuf>,
+    /// Output a complete site, embeddable fragments, or a JSON inventory on stdout.
     #[arg(long, value_enum, default_value = "site")]
     pub(super) format: GenerateFormat,
     /// Public document and asset URL map (requires --format fragments).
@@ -131,6 +131,7 @@ pub(super) struct GenerateArgs {
 pub(super) enum GenerateFormat {
     Site,
     Fragments,
+    Inventory,
 }
 
 #[derive(Debug, Args)]
