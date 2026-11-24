@@ -2078,10 +2078,16 @@ test("tabsets support keyboard navigation, groups, nesting, and fragment links",
   const firstTabs = first.locator(":scope > .tabset-controls");
   const python = firstTabs.getByRole("tab", { name: "Python", exact: true });
   const r = firstTabs.getByRole("tab", { name: "R", exact: true });
+  const tabPositions = () => firstTabs.getByRole("tab").evaluateAll(tabs => tabs.map(tab => {
+    const { x, width } = tab.getBoundingClientRect();
+    return { x, width };
+  }));
   await expect(r).toHaveAttribute("aria-selected", "true");
   await expect(first.getByText("Python content.", { exact: true })).toBeHidden();
+  const positions = await tabPositions();
   await python.click();
   await expect(python).toHaveAttribute("aria-selected", "true");
+  expect(await tabPositions()).toEqual(positions);
   await expect(second.getByRole("tab", { name: "Python", exact: true })).toHaveAttribute("aria-selected", "true");
   await nested.getByRole("tab", { name: "Output", exact: true }).click();
   await expect(nested.getByText("Nested output.", { exact: true })).toBeVisible();
@@ -2089,6 +2095,7 @@ test("tabsets support keyboard navigation, groups, nesting, and fragment links",
   await python.focus();
   await page.keyboard.press("ArrowRight");
   await expect(r).toBeFocused();
+  expect(await tabPositions()).toEqual(positions);
   await expect(second.getByRole("tab", { name: "R", exact: true })).toHaveAttribute("aria-selected", "true");
   await page.keyboard.press("Home");
   await expect(python).toBeFocused();

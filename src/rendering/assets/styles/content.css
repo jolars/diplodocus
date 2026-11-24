@@ -197,6 +197,7 @@ h4 > code {
   background: transparent;
   color: var(--muted);
   font: inherit;
+  font-weight: 650;
   cursor: pointer;
 }
 
@@ -208,7 +209,6 @@ h4 > code {
 .tabset-controls button[aria-selected=true] {
   border-bottom-color: var(--link);
   color: var(--ink);
-  font-weight: 650;
 }
 
 .tabset-controls button:focus-visible,
