@@ -149,6 +149,9 @@ test("color theme follows the system and explicit choices override it", async ({
   await expect(root).toHaveAttribute("data-theme", "system");
   await page.emulateMedia({ colorScheme: "light" });
   await expect(keyword).toHaveCSS("color", "rgb(207, 34, 46)");
+  for (const toggle of await page.locator("[data-theme-toggle]").all()) {
+    await expect(toggle).not.toBeChecked();
+  }
   await chooseTheme(page, info, "dark");
   await expect(root).toHaveAttribute("data-theme", "dark");
   await page.emulateMedia({ colorScheme: "dark" });

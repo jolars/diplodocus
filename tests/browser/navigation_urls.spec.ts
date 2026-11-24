@@ -9,32 +9,26 @@ const publicRoot = `https://docs.example.test${prefix}`;
 const output = new Map<string, string>();
 let workspace: string;
 
-// Reuse the four fixture builds across both tests in each browser project.
+// Reuse the four fixture builds across all tests in each browser project.
 test.describe.configure({ mode: "default" });
 
 test.beforeAll(async () => {
   const binary = process.env.DIPLODOCUS_BROWSER_BINARY;
   if (!binary) throw new Error("Run npm run site-test or npm run site-capture.");
   workspace = await mkdtemp(join(tmpdir(), "diplodocus-navigation-urls-"));
-  await mkdir(join(workspace, "docs/guides"), { recursive: true });
+  await mkdir(join(workspace, "docs/guides/equation"), { recursive: true });
   await mkdir(join(workspace, "docs/images"));
   await mkdir(join(workspace, "docs/reference"));
   await mkdir(join(workspace, "custom"));
-  // Static Rd extraction supplies supported math without executing documentation.
-  await mkdir(join(workspace, "r/R"), { recursive: true });
-  await mkdir(join(workspace, "r/man"));
   await Promise.all([
-    writeFile(join(workspace, "docs/index.qmd"), "# Home\n\n[Read nested guide](guides/nested.qmd)\n"),
-    writeFile(join(workspace, "docs/reference/index.qmd"), "# Reference\n\n[Commands](cli.qmd)\n"),
-    writeFile(join(workspace, "docs/reference/cli.qmd"), "# Commands\n\nCLI options.\n\n## Input\n\nUse patterned flags for input.\n\n## Output\n\nUse patterned flags for output.\n"),
-    writeFile(join(workspace, "docs/guides/nested.qmd"), "# Nested guide\n\nSee [`rmath::equation`].\n\n[Home](../index.qmd)\n\n![Chart](../images/chart.svg)\n\n![Responsive chart](../images/raster.png)\n"),
+    writeFile(join(workspace, "docs/index.md"), "# Home\n\n[Read nested guide](guides/nested.md)\n"),
+    writeFile(join(workspace, "docs/reference/index.md"), "# Reference\n\n[Commands](cli.md)\n"),
+    writeFile(join(workspace, "docs/reference/cli.md"), "# Commands\n\nCLI options.\n\n## Input\n\nUse patterned flags for input.\n\n## Output\n\nUse patterned flags for output.\n"),
+    writeFile(join(workspace, "docs/guides/nested.md"), "# Nested guide\n\nSee [Mathematics](equation/index.md).\n\n[Home](../index.md)\n\n![Chart](../images/chart.svg)\n\n![Responsive chart](../images/raster.png)\n"),
+    writeFile(join(workspace, "docs/guides/equation/index.md"), "# Mathematics\n\n$$\nx^2 + y^2 = z^2\n$$\n"),
     writeFile(join(workspace, "docs/images/chart.svg"), '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 20"><path fill="green" d="M0 20 20 0 40 20Z"/></svg>'),
     // This uncompressed 512×32 PNG produces one smaller responsive variant.
     copyFile("tests/fixtures/navigation-responsive.png", join(workspace, "docs/images/raster.png")),
-    writeFile(join(workspace, "r/DESCRIPTION"), "Package: navigationmath\nVersion: 1.0.0\nTitle: Navigation Math\nDescription: Static math fixture.\nLicense: MIT\nAuthor: Fixture Authors\nMaintainer: Fixture Authors <fixtures@example.test>\n"),
-    writeFile(join(workspace, "r/R/equation.R"), "equation <- function(x) x\n"),
-    writeFile(join(workspace, "r/NAMESPACE"), "export(equation)\n"),
-    writeFile(join(workspace, "r/man/equation.Rd"), "\\name{equation}\n\\alias{equation}\n\\title{Mathematics}\n\\usage{equation(x)}\n\\arguments{\\item{x}{A value.}}\n\\description{A mathematical equation.}\n\\details{\\deqn{x^2 + y^2 = z^2}}\n\\value{A value.}\n"),
     copyFile("assets/public/favicon-96x96.png", join(workspace, "logo.png")),
     writeFile(join(workspace, "site.webmanifest"), '{"name":"URL navigation","icons":[{"src":"public/icon.png","sizes":"96x96","type":"image/png"}]}'),
     writeFile(join(workspace, "llms.txt"), "# Public documentation\n"),
@@ -88,26 +82,13 @@ presentation:
 repositories:
   - id: "docs"
     path: "."
-packages:
-  - id: "rmath"
-    name: "Navigation math"
-    slug: "r"
-    ecosystem: "r"
-    repository: "docs"
-    path: "r"
-    metadata-path: "DESCRIPTION"
-    targets:
-      - id: "api"
-        extractor: "r"
-        path: "."
-        role: "public-api"
 content:
   - id: "guide"
     owner: "project"
     repository: "docs"
     path: "docs"
     mount: ""
-    format: "qmd"
+    format: "gfm"
 `);
     await writeFile(join(workspace, "custom/custom.css"), ":root { --fixture-style: original; }");
     await writeFile(join(workspace, "custom/custom.js"), "document.documentElement.dataset.siteStarts = Number(document.documentElement.dataset.siteStarts || 0) + 1;");
@@ -294,7 +275,7 @@ for (const style of ["file", "clean"]) {
       expect(await chart.getAttribute("src")).toMatch(new RegExp(`^${origin}${prefix}assets/[^/]+\\.svg$`));
       await expect.poll(() => chart.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
       await checkResponsiveImage('img[alt="Responsive chart"]', "guides/nested.html");
-      const mathLink = page.getByRole("main").getByRole("link", { name: "rmath::equation", exact: true });
+      const mathLink = page.getByRole("main").getByRole("link", { name: "Mathematics", exact: true });
       const mathPath = new URL((await mathLink.getAttribute("href"))!, page.url()).pathname;
       const publicMathUrl = `${publicRoot}${mathPath.slice(prefix.length)}`;
       await mathLink.click();
