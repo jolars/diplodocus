@@ -29,7 +29,7 @@ configuration, and generates a standalone site and HTML and Markdown fragments
 with an empty `PATH` and Julia environment settings removed.
 
 ```sh
-devenv shell -- compute run -- python examples/eunoia/julia.py --source ../Eunoia.jl
+devenv shell -- python examples/eunoia/julia.py --source ../Eunoia.jl
 ```
 
 Prepare Julia and the package's dependencies before running the recipe. The
@@ -57,7 +57,7 @@ inline Markdown. Run the focused extraction and detached-fragment regressions
 with:
 
 ```sh
-devenv shell -- compute run -- cargo test --locked --test julia_extraction --test fragments
+devenv shell -- cargo test --locked --test julia_extraction --test fragments
 ```
 
 Static Documenter guides can use a package-owned collection with
@@ -149,7 +149,7 @@ homepage and gallery. Prepare the source checkout's `docs/Project.toml` and
 Eunoia checkout. Then run:
 
 ```sh
-compute run -- python examples/eunoia/julia.py --execute-documenter
+python examples/eunoia/julia.py --execute-documenter
 ```
 
 The recipe retargets the manifest in its disposable source copy, executes all 31

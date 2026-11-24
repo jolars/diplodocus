@@ -10,7 +10,7 @@ and debounce. Browser refresh transport and browser rendering are not measured.
 Build the worker before acquiring exclusive benchmark access:
 
 ```sh
-compute run -- cargo build --locked --release --example pipeline_bench
+cargo build --locked --release --example pipeline_bench
 mkdir -p artifacts/native-adapters
 cp target/release/examples/pipeline_bench artifacts/native-adapters/baseline
 ```
@@ -19,10 +19,9 @@ Apply the candidate change, build again, and compare both executables in a singl
 foreground reservation:
 
 ```sh
-compute run -- cargo build --locked --release --example pipeline_bench
+cargo build --locked --release --example pipeline_bench
 cp target/release/examples/pipeline_bench artifacts/native-adapters/candidate
-compute bench --reason "native adapter baseline and candidate" -- \
-  python scripts/bench-pipeline.py \
+python scripts/bench-pipeline.py \
   --worker baseline=artifacts/native-adapters/baseline \
   --worker candidate=artifacts/native-adapters/candidate \
   --output artifacts/native-adapters/comparison.json
@@ -173,7 +172,7 @@ existing build-fingerprint policy.
 ## Initial results
 
 Recorded on an AMD Ryzen 9 7900 (24 logical CPUs), Linux 6.18.60, with optimized
-workers in one exclusive `compute bench` window. The runtime versions were
+workers in one exclusive measurement session. The runtime versions were
 Python 3.14.7, R 4.6.1, Julia 1.12.7, and Doxygen 1.17.0. Rust extraction used the
 prepared nightly toolchain described in the adapter contract. The baseline
 contains measurement instrumentation; the candidate adds the adapter boundary.
@@ -225,8 +224,8 @@ Candidate monorepo warm-save medians were 1.4–2.8% higher, qualpalr medians we
 1.4–3.0% higher, and Qualpal warm-save medians changed by less than 1%. The
 monorepo difference was concentrated in native processes. This single ordered
 comparison does not establish a causal performance regression or speedup.
-`compute` excludes other participating jobs but does not control CPU frequency,
-thermal state, or unrelated system activity. Keep the measured breakdown as the
+An exclusive measurement session leaves CPU frequency, thermal state, and
+unrelated system activity uncontrolled. Keep the measured breakdown as the
 baseline for native orchestration and package invalidation work.
 
 
@@ -289,7 +288,7 @@ portable latency guarantees.
 ## Incremental workflow results {#incremental-workflow-results}
 
 Recorded on November 17, 2026, on the Intel Core Ultra 7 155U host described
-above. Both optimized workers ran in one exclusive `compute bench` window,
+above. Both optimized workers ran in one exclusive measurement session,
 baseline first. The baseline includes native roxygen2 generation and reruns the
 pipeline on each save. The candidate retains verified package results between
 saves and commands. Both workers received identical prepared inputs.
@@ -364,8 +363,7 @@ from the previous source interpretation, so outputs are compared within each
 worker rather than between workers.
 
 The comparison ran baseline then candidate in one foreground command, with no
-other builds or tests active. An inherited advisory lock in idle Codex services
-prevented an exclusive `compute bench` reservation, so the command ran directly.
+other builds or tests active. The command ran without an exclusive reservation.
 This local sample provides directional costs rather than portable latency or
 precise tail guarantees.
 

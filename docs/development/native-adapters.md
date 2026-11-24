@@ -108,7 +108,7 @@ Python compatibility checks cover Sphinx 9.0.4 with Python 3.11 and Sphinx
 9.1.1 and 9.2.0 with Python 3.14. They exercise generated declarations,
 overloads, reStructuredText, NumPy and Google docstrings, module sections,
 stub-only documentation, changed exports, inert examples, and import failures.
-Run `compute run -- python scripts/test-python-compat.py` in a prepared
+Run `python scripts/test-python-compat.py` in a prepared
 environment, or repeat `--profile SPHINX_VERSION=PYTHON` for prepared
 interpreters. The script does not install dependencies.
 
@@ -135,7 +135,7 @@ checks pass with 7.3.2, 8.0.0, and 8.1.1 using both `pkgload` and `source`.
 These checks cover generation, native reflection, changed exports and deleted
 topics, inert examples, and diagnostic and cleanup handling.
 
-Run `compute run -- python scripts/test-roxygen-compat.py` to check the current
+Run `python scripts/test-roxygen-compat.py` to check the current
 prepared library. Repeat `--profile VERSION=LIBRARY` for each caller-prepared
 version profile. The script exercises both supported loaders, native formals,
 generated documentation, inert examples, and generation-error rejection. It does

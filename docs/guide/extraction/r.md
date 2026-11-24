@@ -60,7 +60,7 @@ generation never falls back to existing Rd files.
 
 The supported roxygen2 range is `>= 7.3.2, < 9`. Compatibility checks pass with
 7.3.2, 8.0.0, and 8.1.1 using both supported loaders. Run
-`compute run -- python scripts/test-roxygen-compat.py` to repeat these checks
+`python scripts/test-roxygen-compat.py` to repeat these checks
 with the prepared R environment. Add `--profile VERSION=LIBRARY` for each
 separately prepared version's R library.
 

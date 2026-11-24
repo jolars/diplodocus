@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Measure the production preview loop using prebuilt pipeline_bench workers.
 
-Run the entire comparison inside one compute bench reservation. Copies and
-validation happen outside measured intervals. No producer checkout is modified.
+Run the entire comparison in one session on an idle machine. Copies and
+validation happen outside measured intervals. The producer checkouts remain
+available for other work.
 """
 
 import argparse

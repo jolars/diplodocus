@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Check the exporter using caller-prepared Python/Sphinx profiles.
 
-Run with ``compute run -- python scripts/test-python-compat.py`` or repeat
+Run with ``python scripts/test-python-compat.py`` or repeat
 ``--profile SPHINX_VERSION=PYTHON``. No packages are installed by this script.
 """
 

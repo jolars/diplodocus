@@ -49,9 +49,9 @@ nightly. Run the workflow manually with `suite: incremental-native` or use
 these local commands when changing native extraction or cache boundaries:
 
 ```sh
-compute run -- cargo test --locked --lib \
+cargo test --locked --lib \
   persistent_discovery_and_doctests_have_independent_cache_entries -- --ignored
-compute run -- cargo test --locked \
+cargo test --locked \
   --test incremental_dependencies --test incremental_execution \
   --test incremental_preparation --test incremental_source_paths \
   --test r_incremental --test python_native -- --ignored

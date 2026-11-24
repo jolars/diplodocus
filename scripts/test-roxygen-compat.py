@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Check the native helper against caller-prepared roxygen2 library profiles.
 
-Run with ``compute run -- python scripts/test-roxygen-compat.py`` for the
+Run with ``python scripts/test-roxygen-compat.py`` for the
 current environment, or repeat ``--profile VERSION=LIBRARY`` for isolated R
 libraries. This script does not install packages or change producer checkouts.
 """
