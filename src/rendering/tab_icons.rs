@@ -1,3 +1,4 @@
+use std::collections::BTreeSet;
 use std::fmt::Write;
 
 use base64::Engine;
@@ -18,25 +19,27 @@ const MONOCHROME: &[(&str, &[u8])] = &[
     ("rust", include_bytes!("assets/tab-icons/rust.svg")),
 ];
 
-pub(super) fn stylesheet() -> String {
-    let mut css = String::from(concat!(
-        "\n/*! Devicon v2.17.0 (https://github.com/devicons/devicon)\n",
-        include_str!("assets/tab-icons/LICENSE"),
-        "*/\n",
-        include_str!("assets/styles/tab-icons.css"),
-    ));
+pub(super) fn stylesheet(used: &BTreeSet<String>) -> String {
+    let mut rules = String::new();
     for (icons, property) in [
         (COLORED, "--tab-icon-background"),
         (MONOCHROME, "--tab-icon-mask"),
     ] {
-        for (name, svg) in icons {
+        for (name, svg) in icons.iter().filter(|(name, _)| used.contains(*name)) {
             writeln!(
-                css,
+                rules,
                 r#".tabset-controls > button[data-tab-icon="{name}"]::before {{ content: ""; {property}: url("data:image/svg+xml;base64,{}"); }}"#,
                 STANDARD.encode(svg),
             )
             .unwrap();
         }
     }
-    css
+    let style = include_str!("assets/styles/tab-icons.css");
+    if rules.is_empty() {
+        return format!("\n{style}");
+    }
+    let license = include_str!("assets/tab-icons/LICENSE");
+    format!(
+        "\n/*! Devicon v2.17.0 (https://github.com/devicons/devicon)\n{license}*/\n{style}{rules}"
+    )
 }

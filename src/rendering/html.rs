@@ -222,10 +222,10 @@ pub(crate) fn render_reported(
     let mut progress = reporting.stage("Rendering pages", Some(site.pages.len()));
     let mut files = BTreeMap::new();
     let images = super::images::Images::default();
-    let tab_icon_style = super::tab_icons::stylesheet();
-    let shell_fingerprint = standalone
-        .then(|| navigation_shell_fingerprint(site, &images, &tab_icon_style))
-        .transpose()?;
+    let mut tab_icons = BTreeSet::new();
+    let mut shell_positions = Vec::new();
+    // Reserve space for the final SHA-256 fingerprint without shifting page bytes later.
+    let shell_placeholder = "0".repeat(64);
     if standalone {
         files.insert(
             "__diplodocus/worker.js".into(),
@@ -250,6 +250,7 @@ pub(crate) fn render_reported(
         uses_math |= page_math;
         let mut renderer = Renderer {
             images: &images,
+            tab_icons: &mut tab_icons,
             standalone,
             site,
             page,
@@ -345,7 +346,19 @@ pub(crate) fn render_reported(
                 .unwrap();
             }
             render_site_resources(&mut html, site, route);
-            write!(html, "</head><body data-diplodocus-navigation=\"1\" data-diplodocus-shell=\"{}\" data-layout=\"{}\"><a class=\"skip-link\" href=\"#main\">Skip to content</a>", shell_fingerprint.as_deref().expect("standalone shell fingerprint"), if home.is_some() { "home" } else { layout.as_str() }).unwrap();
+            html.push_str("</head><body data-diplodocus-navigation=\"1\" data-diplodocus-shell=\"");
+            shell_positions.push((route, html.len()));
+            html.push_str(&shell_placeholder);
+            write!(
+                html,
+                "\" data-layout=\"{}\"><a class=\"skip-link\" href=\"#main\">Skip to content</a>",
+                if home.is_some() {
+                    "home"
+                } else {
+                    layout.as_str()
+                }
+            )
+            .unwrap();
             html.push_str("<header>");
             brand(&mut html, site, route, &images)?;
             super::navigation::sections(&mut html, site, route, "desktop-sections");
@@ -679,6 +692,7 @@ pub(crate) fn render_reported(
                     // Members keep their own resolution context on the owning page.
                     let mut member_renderer = Renderer {
                         images: &images,
+                        tab_icons: renderer.tab_icons,
                         standalone,
                         site,
                         page: member_page,
@@ -960,6 +974,15 @@ pub(crate) fn render_reported(
     }
     progress.finish();
     let assets = reporting.stage("Preparing site assets", None);
+    let tab_icon_style = super::tab_icons::stylesheet(&tab_icons);
+    if standalone {
+        // The shared shell includes the icons collected from every rendered page.
+        let fingerprint = navigation_shell_fingerprint(site, &images, &tab_icon_style)?;
+        for (route, offset) in shell_positions {
+            let html = &mut files.get_mut(route).expect("rendered page").bytes;
+            html[offset..offset + shell_placeholder.len()].copy_from_slice(fingerprint.as_bytes());
+        }
+    }
     if uses_math {
         for (path, bytes, media_type) in super::katex_assets::ASSETS {
             assets.item(path);
@@ -1173,6 +1196,7 @@ fn concept_links(site: &Site<'_>, route: &str, concept: &Concept) -> Result<Stri
 }
 struct Renderer<'a, 'b> {
     images: &'a super::images::Images,
+    tab_icons: &'a mut BTreeSet<String>,
     standalone: bool,
     highlighter: &'a super::highlighting::Highlighter,
     math_context: &'a katex::KatexContext,
@@ -1230,6 +1254,7 @@ impl Renderer<'_, '_> {
             if let Some(document) = page.document {
                 let mut renderer = Renderer {
                     images: self.images,
+                    tab_icons: self.tab_icons,
                     standalone: self.standalone,
                     highlighter: self.highlighter,
                     math_context: self.math_context,
@@ -1355,6 +1380,7 @@ impl Renderer<'_, '_> {
             let mut renderer = Renderer {
                 site: self.site,
                 images: self.images,
+                tab_icons: self.tab_icons,
                 standalone: self.standalone,
                 page,
                 resolved: member.resolved,
@@ -1442,6 +1468,7 @@ impl Renderer<'_, '_> {
                 let mut renderer = Renderer {
                     site: self.site,
                     images: self.images,
+                    tab_icons: self.tab_icons,
                     standalone: self.standalone,
                     page: self.page,
                     resolved: member.resolved,
@@ -1741,6 +1768,7 @@ impl Renderer<'_, '_> {
                 .iter()
                 .find(|pair| pair.key.value == "icon")
             {
+                self.tab_icons.insert(icon.value.value.clone());
                 write!(html, " data-tab-icon=\"{}\"", escape(&icon.value.value)).unwrap();
             }
             write!(

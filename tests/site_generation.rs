@@ -811,6 +811,10 @@ fn tabsets_preserve_snapshot_content_links_and_markdown_fallback() {
     let root = support::TestWorkspace::new();
     root.write("diplodocus.yaml", "project:\n  name: \"Tabs\"\nrepositories:\n  - id: \"docs\"\n    path: \".\"\ncontent:\n  - id: \"guide\"\n    owner: \"project\"\n    repository: \"docs\"\n    path: \"docs\"\n    mount: \"\"\n    format: \"gfm\"\n");
     root.write("docs/index.md", "# Guide\n\n[Read R](#r)\n\n::: {#languages .panel-tabset group=\"language\"}\n\n### Python {icon=\"python\"}\n\n```python\nprint(1)\n```\n\n### R {#r .active}\n\nR content.\n\n:::\n");
+    root.write(
+        "docs/platforms.md",
+        "# Platforms\n\n::: {.panel-tabset}\n\n## Linux {icon=\"linux\"}\n\n### Details {icon=\"windows\"}\n\nRead more.\n\n## Other {icon=\"custom\"}\n\nOther platforms.\n\n:::\n",
+    );
     let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let artifact = tempfile::tempdir().unwrap();
@@ -828,6 +832,10 @@ fn tabsets_preserve_snapshot_content_links_and_markdown_fallback() {
     assert_eq!(html.matches("class=\"tabset-panel\"").count(), 2);
     assert!(html.contains("data-tab-active=\"false\" data-tab-icon=\"python\">Python"));
     assert!(html.contains("id=\"r\" data-tab-active=\"true\""));
+    let platforms = std::str::from_utf8(&rendered.files()["platforms.html"].bytes).unwrap();
+    assert!(platforms.contains("data-tab-icon=\"linux\">Linux"));
+    assert!(platforms.contains("data-tab-icon=\"custom\">Other"));
+    assert_eq!(navigation_shell(html), navigation_shell(platforms));
     assert!(!html.contains("aria-label=\"On this page\""));
     assert!(rendered.files().contains_key("assets/tabsets.js"));
     let markdown = std::str::from_utf8(&rendered.files()["index.md"].bytes).unwrap();
@@ -843,7 +851,8 @@ fn tabsets_preserve_snapshot_content_links_and_markdown_fallback() {
     ] {
         let css = std::str::from_utf8(css).unwrap();
         assert!(css.contains("[data-tab-icon=\"python\"]::before"));
-        assert!(css.contains("url(\"data:image/svg+xml;base64,"));
+        assert!(css.contains("[data-tab-icon=\"linux\"]::before"));
+        assert_eq!(css.matches("url(\"data:image/svg+xml;base64,").count(), 2);
     }
 }
 
@@ -1314,20 +1323,33 @@ fn navigation_shell_changes_with_retained_presentation_but_not_document_content(
     root.write("diplodocus.yaml", configuration);
     root.write("docs/index.md", "# Home\n\nWelcome.\n");
     root.write("docs/guide.md", "# Guide\n\nRead more.\n");
-    let render_fingerprint = || {
+    let render = || {
         let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
         let snapshot =
             Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
-        let rendered =
-            diplodocus::rendering::render_site(&diplodocus::site::Site::new(&snapshot).unwrap())
-                .unwrap();
-        navigation_shell(std::str::from_utf8(&rendered.files()["index.html"].bytes).unwrap())
+        diplodocus::rendering::render_site(&diplodocus::site::Site::new(&snapshot).unwrap())
+            .unwrap()
+    };
+    let render_fingerprint = || {
+        navigation_shell(std::str::from_utf8(&render().files()["index.html"].bytes).unwrap())
             .to_owned()
     };
-    let original = render_fingerprint();
+    let original_site = render();
+    let original =
+        navigation_shell(std::str::from_utf8(&original_site.files()["index.html"].bytes).unwrap());
+    let css = std::str::from_utf8(&original_site.files()["assets/site.css"].bytes).unwrap();
+    assert!(!css.contains("url(\"data:image/svg+xml;base64,"));
     root.write(
         "docs/guide.md",
         "# Updated guide\n\nDifferent page content.\n",
+    );
+    assert_eq!(render_fingerprint(), original);
+    let tabs = "# Guide\n\n::: {.panel-tabset}\n\n## Linux {icon=\"linux\"}\n\nLinux instructions.\n\n:::\n";
+    root.write("docs/guide.md", tabs);
+    assert_ne!(render_fingerprint(), original);
+    root.write(
+        "docs/guide.md",
+        tabs.replace("icon=\"linux\"", "icon=\"custom\""),
     );
     assert_eq!(render_fingerprint(), original);
 
