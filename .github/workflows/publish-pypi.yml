@@ -1,0 +1,166 @@
+name: Publish PyPI
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish the selected release tag to PyPI
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-pypi-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+      - name: Check release ref
+        id: version
+        env:
+          PUBLISH: ${{ github.event_name == 'push' || inputs.publish }}
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          import tomllib
+
+          version = tomllib.loads(Path("Cargo.toml").read_text())["package"]["version"]
+          expected = f"refs/tags/v{version}"
+          ref = os.environ["GITHUB_REF"]
+          if (ref.startswith("refs/tags/") or os.environ["PUBLISH"] == "true") and ref != expected:
+              raise SystemExit(f"Expected release ref {expected}, got {ref}")
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              print(f"version={version}", file=output)
+          PY
+
+  wheels:
+    name: Wheel (${{ matrix.target }})
+    needs: prepare
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-gnu, manylinux: "2_28" }
+          - { os: ubuntu-24.04-arm, target: aarch64-unknown-linux-gnu, manylinux: "2_28" }
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-musl, manylinux: musllinux_1_2, container: "quay.io/pypa/musllinux_1_2_x86_64:latest" }
+          - { os: ubuntu-24.04-arm, target: aarch64-unknown-linux-musl, manylinux: musllinux_1_2, container: "quay.io/pypa/musllinux_1_2_aarch64:latest" }
+          - { os: macos-15-intel, target: x86_64-apple-darwin }
+          - { os: macos-15, target: aarch64-apple-darwin }
+          - { os: windows-latest, target: x86_64-pc-windows-msvc }
+    defaults:
+      run:
+        shell: bash
+    env:
+      RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+      - name: Build wheel
+        uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
+        with:
+          maturin-version: v1.15.0
+          target: ${{ matrix.target }}
+          manylinux: ${{ matrix.manylinux }}
+          container: ${{ matrix.container }}
+          args: --release --locked --out dist
+      - name: Check metadata
+        run: |
+          python -m pip install twine
+          python -m twine check --strict dist/*.whl
+      - name: Install and smoke test wheel
+        if: matrix.manylinux != 'musllinux_1_2'
+        run: |
+          python -m venv smoke-env
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            smoke_python=smoke-env/Scripts/python.exe
+          else
+            smoke_python=smoke-env/bin/python
+          fi
+          "$smoke_python" -m pip install --no-deps dist/*.whl
+          "$smoke_python" scripts/smoke-pypi.py "$RELEASE_VERSION"
+      - name: Install and smoke test wheel on musl
+        if: matrix.manylinux == 'musllinux_1_2'
+        env:
+          MUSL_IMAGE: ${{ matrix.container }}
+        run: |
+          docker run --rm --volume "$PWD:/work:ro" --workdir /work \
+            --env RELEASE_VERSION --entrypoint /bin/sh "$MUSL_IMAGE" -ec '
+              /opt/python/cp311-cp311/bin/python -m venv /tmp/smoke-env
+              /tmp/smoke-env/bin/python -m pip install --no-deps dist/*.whl
+              /tmp/smoke-env/bin/python scripts/smoke-pypi.py "$RELEASE_VERSION"
+            '
+      - uses: actions/upload-artifact@v7
+        with:
+          name: pypi-wheel-${{ matrix.target }}
+          path: dist/*.whl
+          if-no-files-found: error
+
+  sdist:
+    needs: prepare
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+      - name: Build and check source archive
+        run: |
+          python -m pip install 'maturin==1.15.0' twine
+          maturin sdist --out dist
+          python -m twine check --strict dist/*.tar.gz
+      - name: Build and smoke test from source archive
+        run: |
+          cd "$RUNNER_TEMP"
+          python -m venv smoke-env
+          smoke_python=smoke-env/bin/python
+          "$smoke_python" -m pip wheel --no-deps "$GITHUB_WORKSPACE"/dist/*.tar.gz --wheel-dir wheelhouse
+          "$smoke_python" -m pip install --no-deps wheelhouse/*.whl
+          "$smoke_python" "$GITHUB_WORKSPACE/scripts/smoke-pypi.py" "$RELEASE_VERSION"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: pypi-sdist
+          path: dist/*.tar.gz
+          if-no-files-found: error
+
+  publish:
+    if: github.ref_type == 'tag' && (github.event_name == 'push' || inputs.publish)
+    needs: [wheels, sdist]
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/diplodocus/
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: pypi-*
+          merge-multiple: true
+          path: dist
+      - uses: pypa/gh-action-pypi-publish@v1.14.3
+        with:
+          skip-existing: true

@@ -1,0 +1,24 @@
+[build-system]
+requires = ["maturin>=1.15,<2"]
+build-backend = "maturin"
+
+[project]
+name = "diplodocus"
+description = "Build coherent documentation websites for polyglot software projects."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT OR Apache-2.0"
+license-files = ["LICENSE-APACHE", "LICENSE-MIT"]
+dynamic = ["version"]
+classifiers = ["Environment :: Console", "Programming Language :: Rust"]
+
+[project.urls]
+Homepage = "https://diplodocus.cc"
+Documentation = "https://diplodocus.cc/guide/"
+Repository = "https://github.com/jolars/diplodocus"
+Issues = "https://github.com/jolars/diplodocus/issues"
+
+[tool.maturin]
+bindings = "bin"
+locked = true
+strip = true

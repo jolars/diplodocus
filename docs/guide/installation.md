@@ -1,7 +1,20 @@
 # Installation
 
-Starting with the next release, install the latest prebuilt CLI on Linux or
-macOS with:
+## PyPI
+
+Install the CLI with:
+
+```sh
+uv tool install diplodocus
+```
+
+You can also run `pipx install diplodocus`. Prebuilt wheels install the CLI
+without a Rust toolchain. Install the language runtimes and package dependencies
+your documentation needs separately.
+
+## Standalone installers
+
+Install the latest prebuilt CLI on Linux or macOS with:
 
 ```sh
 curl --proto '=https' --tlsv1.2 -LsSf https://diplodocus.cc/install | sh
