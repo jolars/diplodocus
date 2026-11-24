@@ -19,6 +19,7 @@ mod publish;
 pub(crate) mod python;
 pub(crate) mod r_topics;
 pub(crate) mod rust;
+mod search_index;
 mod signatures;
 mod sitemap;
 mod social;

@@ -23,7 +23,7 @@ test.beforeAll(async () => {
   await Promise.all([
     writeFile(join(workspace, "docs/index.qmd"), "# Home\n\n[Read nested guide](guides/nested.qmd)\n"),
     writeFile(join(workspace, "docs/reference/index.qmd"), "# Reference\n\n[Commands](cli.qmd)\n"),
-    writeFile(join(workspace, "docs/reference/cli.qmd"), "# Commands\n\nCLI options.\n"),
+    writeFile(join(workspace, "docs/reference/cli.qmd"), "# Commands\n\nCLI options.\n\n## Input\n\nUse patterned flags for input.\n\n## Output\n\nUse patterned flags for output.\n"),
     writeFile(join(workspace, "docs/guides/nested.qmd"), "# Nested guide\n\nSee [`rmath::equation`].\n\n[Home](../index.qmd)\n\n![Chart](../images/chart.svg)\n"),
     writeFile(join(workspace, "docs/images/chart.svg"), '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 20"><path fill="green" d="M0 20 20 0 40 20Z"/></svg>'),
     writeFile(join(workspace, "r/DESCRIPTION"), "Package: navigationmath\nVersion: 1.0.0\nTitle: Navigation Math\nDescription: Static math fixture.\nLicense: MIT\nAuthor: Fixture Authors\nMaintainer: Fixture Authors <fixtures@example.test>\n"),
@@ -172,9 +172,9 @@ for (const style of ["file", "clean"]) {
       await expect(page.locator('link[href$="katex.min.css"]')).toHaveCount(0);
       const identity = await page.evaluateHandle(() => ({
         document,
-        elements: [...document.querySelectorAll("header, header a, #search")],
+        elements: [...document.querySelectorAll("header, header a, .site-search")],
       }));
-      const navbar = page.locator("header .desktop-sections:visible a, #search, .header-actions > .repository-link:visible");
+      const navbar = page.locator("header .desktop-sections:visible a, .site-search, .header-actions > .repository-link:visible");
       const positions = await navbar.evaluateAll(elements => elements.map(element => {
         const { x, y, width, height } = element.getBoundingClientRect();
         return { x, y, width, height };
@@ -223,6 +223,18 @@ for (const style of ["file", "clean"]) {
       }
       await expect(page.locator('.desktop-sections [aria-current="true"]')).toHaveText("Reference");
       await expect(page.locator(".contextual-nav a")).toHaveText(["Overview", "Commands"]);
+      await page.getByRole("button", { name: "Search documentation" }).click();
+      await page.getByRole("searchbox").fill("patterned flags");
+      const result = page.locator("#search-results > li");
+      await expect(result).toHaveCount(1);
+      await expect(result.locator(".search-context").first()).toHaveText("Reference");
+      await expect(result.locator(".search-page-title")).toHaveText("Commands");
+      await expect(result.locator("mark")).toHaveText(["patterned flags", "patterned flags"]);
+      await expect(result.getByRole("link", { name: "Output", exact: true })).toHaveAttribute(
+        "href", `${origin}${prefix}reference/cli${suffix}#output`,
+      );
+      await page.keyboard.press("Escape");
+
       await page.getByRole("main").getByRole("link", { name: "Commands", exact: true }).click();
       await expect(page.getByRole("heading", { level: 1 })).toHaveText("Commands");
       await expect(page.locator('.desktop-sections [aria-current="true"]')).toHaveText("Reference");

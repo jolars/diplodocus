@@ -187,6 +187,8 @@ fn navigation_shell_fingerprint(
         THEME_SCRIPT,
         NAV_SCRIPT,
         SEARCH,
+        SEARCH_TRIGGER,
+        SEARCH_DIALOG,
         include_str!("code.js"),
         include_str!("tabsets.js"),
         include_str!("components.js"),
@@ -354,7 +356,8 @@ pub(crate) fn render_reported(
             html.push_str("<header>");
             brand(&mut html, site, route, &images)?;
             super::navigation::sections(&mut html, site, route, "desktop-sections");
-            html.push_str("<div class=\"header-actions\"><form class=\"site-search\" role=\"search\"><label class=\"visually-hidden\" for=\"search\">Search documentation</label><div class=\"search-control\"><svg class=\"search-icon\" aria-hidden=\"true\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><circle cx=\"10.5\" cy=\"10.5\" r=\"6.5\"></circle><path d=\"m16 16 4 4\"></path></svg><input id=\"search\" type=\"search\" placeholder=\"Search\" autocomplete=\"off\" aria-controls=\"search-results\"></div><ul id=\"search-results\" aria-live=\"polite\"></ul></form>");
+            html.push_str("<div class=\"header-actions\">");
+            html.push_str(SEARCH_TRIGGER);
             super::navigation::theme_control(&mut html);
             super::navigation::repositories(&mut html, site);
             html.push_str("<details class=\"mobile-menu\"><summary aria-label=\"Navigation menu\"><svg aria-hidden=\"true\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M4 6h16M4 12h16M4 18h16\"></path></svg></summary><div class=\"mobile-menu-panel\">");
@@ -394,6 +397,7 @@ pub(crate) fn render_reported(
         } else if package_overview {
             html.push_str("<div class=\"package-overview\">");
         }
+        let content_start = html.len();
         let julia_method = page.item.filter(|item| {
             item.kind == ItemKind::Method
                 && matches!(&item.language_data, Some(ItemLanguageData::Julia(_)))
@@ -785,6 +789,7 @@ pub(crate) fn render_reported(
         if home.is_some() && page.document.is_some() {
             html.push_str("</div>");
         }
+        let content_end = html.len();
         files.insert(
             markdown_path.clone(),
             file(
@@ -798,6 +803,7 @@ pub(crate) fn render_reported(
                 html.push_str(&renderer.page_navigation());
             }
             html.push_str("</div></div>");
+            html.push_str(SEARCH_DIALOG);
             super::footer::render(&mut html, site);
             html.push_str("</body></html>\n");
         } else {
@@ -962,7 +968,14 @@ pub(crate) fn render_reported(
                 .item
                 .filter(|item| matches!(&item.language_data, Some(ItemLanguageData::R(_))))
                 .map_or(page.title.as_str(), |item| item.qualified_name.as_str());
-            search.push(serde_json::json!({"title": search_title, "path": site.url("index.html",route), "package": package.map(|p| &p.name), "ecosystem": package.map(|p| &p.ecosystem), "api": page.item.is_some(), "text": search_text}));
+            let path = site.url("index.html", route);
+            let (intro, sections) =
+                super::search_index::content(&html[content_start..content_end], &path);
+            let context = package.map(|package| package.name.as_str()).or_else(|| {
+                site.project_section(route)
+                    .map(|section| section.label.as_str())
+            });
+            search.push(serde_json::json!({"title": search_title, "path": path, "package": package.map(|p| &p.name), "ecosystem": package.map(|p| &p.ecosystem), "api": page.item.is_some(), "text": search_text, "context": context, "intro": intro, "sections": sections}));
         }
         super::anchors::validate_html(site, route, &html)?;
         files.insert(
@@ -2330,4 +2343,23 @@ const STYLE: &str = concat!(
 );
 const NAV_SCRIPT: &str = include_str!("navigation.js");
 const THEME_SCRIPT: &str = include_str!("theme.js");
+const SEARCH_TRIGGER: &str = r#"<button type="button" class="site-search" aria-label="Search documentation" aria-haspopup="dialog">
+  <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+    <circle cx="10.5" cy="10.5" r="6.5"></circle>
+    <path d="m16 16 4 4"></path>
+  </svg>
+  <span>Search</span>
+</button>"#;
+const SEARCH_DIALOG: &str = r#"<dialog class="search-dialog" aria-label="Search documentation">
+  <form role="search">
+    <label class="visually-hidden" for="search">Search documentation</label>
+    <input id="search" type="search" placeholder="Search documentation" autocomplete="off" aria-controls="search-results" autofocus>
+    <button type="button" class="search-close" aria-label="Close search">×</button>
+  </form>
+  <div class="search-feedback">
+    <p role="status"></p>
+    <button type="button" class="search-retry" hidden>Retry</button>
+  </div>
+  <ul id="search-results"></ul>
+</dialog>"#;
 const SEARCH: &str = include_str!("search.js");

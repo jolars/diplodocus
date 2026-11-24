@@ -366,8 +366,6 @@
       else delete document.body.dataset.layout;
       updateSidebar(next);
       document.querySelector('.page-content').replaceWith(next.querySelector('.page-content'));
-      document.querySelector('#search').value = '';
-      document.querySelector('#search-results').replaceChildren();
       emit('page-change');
       positionPage(finalUrl, saved, true);
     } catch {

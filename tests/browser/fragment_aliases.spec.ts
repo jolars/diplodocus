@@ -134,6 +134,18 @@ ${paragraphs}
       }
     });
 
+    test("search opens a match in an inactive tab on the same page", async ({ page }) => {
+      await page.goto(`${origin}${guide}`);
+      const tab = page.getByRole("tab", { name: "Second tab" });
+      await expect(tab).toHaveAttribute("aria-selected", "false");
+      await page.getByRole("button", { name: "Search documentation" }).click();
+      await page.getByRole("searchbox").fill("second panel content");
+      await page.getByRole("dialog").getByRole("link", { name: "Second tab", exact: true }).click();
+      await expect(page).toHaveURL(/#second-tab$/);
+      await expect(tab).toHaveAttribute("aria-selected", "true");
+      await expect(page.getByRole("dialog")).toBeHidden();
+    });
+
     test("aliases work without JavaScript", async ({ browser }, info) => {
       const context = await browser.newContext({
         javaScriptEnabled: false,

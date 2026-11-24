@@ -48,7 +48,7 @@ async function fitsViewport(page: Page) {
 }
 
 function navbarControls(page: Page) {
-  return page.locator("header > .brand, header .desktop-sections:visible > ul > li > a, header .api-menu > summary:visible, #search, .header-actions > .repository-link:visible");
+  return page.locator("header > .brand, header .desktop-sections:visible > ul > li > a, header .api-menu > summary:visible, .site-search, .header-actions > .repository-link:visible");
 }
 
 async function chooseTheme(page: Page, info: TestInfo, value: string) {
@@ -56,6 +56,14 @@ async function chooseTheme(page: Page, info: TestInfo, value: string) {
   const toggle = page.getByRole("switch", { name: "Dark mode" });
   if (await toggle.isChecked() !== (value === "dark")) await toggle.click();
   if (info.project.name === "mobile") await page.keyboard.press("Escape");
+}
+
+async function searchFor(page: Page, query: string) {
+  const input = page.getByRole("searchbox");
+  if (!(await input.isVisible())) {
+    await page.getByRole("button", { name: "Search documentation" }).click();
+  }
+  await input.fill(query);
 }
 
 test("wrapped Markdown preserves continuation spacing and nested structure", async ({ page }, info) => {
@@ -292,12 +300,12 @@ test("color theme covers landing pages, search, code controls, and mobile menus"
   await expect(page.locator(".code-block").first()).toHaveCSS("background-color", "rgb(13, 17, 23)");
   await expect(page.locator(".code-toolbar button").first()).toHaveCSS("background-color", "rgb(17, 25, 31)");
   await capture(page, info, "dark-guide");
-  await page.getByRole("searchbox").fill("mean_squared_error");
+  await searchFor(page, "mean_squared_error");
   await expect(page.locator("#search-results a").first()).toBeVisible();
-  await expect(page.locator("#search-results")).toHaveCSS("background-color", "rgb(17, 25, 31)");
+  await expect(page.locator(".search-dialog")).toHaveCSS("background-color", "rgb(17, 25, 31)");
   await capture(page, info, "dark-search", true, false);
-  await page.getByRole("searchbox").fill("");
-  await page.getByRole("searchbox").blur();
+  await searchFor(page, "");
+  await page.keyboard.press("Escape");
   if (info.project.name === "mobile") {
     await page.locator(".mobile-menu > summary").click();
     await expect(page.getByRole("switch", { name: "Dark mode" })).toBeChecked();
@@ -591,7 +599,7 @@ test("landing page shares the navbar with guides and all language sections", asy
   await expect(sections(page, info).locator("[aria-current]")).toHaveCount(0);
   const shell = await page.evaluateHandle(() => ({
     document,
-    elements: [...document.querySelectorAll("header, header a, .brand-logo, #search")],
+    elements: [...document.querySelectorAll("header, header a, .brand-logo, .site-search, .search-dialog")],
   }));
   const geometry = () => navbarControls(page)
     .evaluateAll(elements => elements.map(element => element.getBoundingClientRect().toJSON()));
@@ -638,7 +646,7 @@ test("client navigation keeps the shell and logo mounted while updating the page
   await expect.poll(() => logo.evaluate((element: HTMLImageElement) => element.naturalWidth)).toBeGreaterThan(0);
   const shell = await page.evaluateHandle(() => ({
     document,
-    elements: ["header", ".desktop-sections", ".mobile-sections", ".layout > nav", ".brand", ".brand-logo", "#search"]
+    elements: ["header", ".desktop-sections", ".mobile-sections", ".layout > nav", ".brand", ".brand-logo", ".site-search", ".search-dialog"]
       .map(selector => document.querySelector(selector)!),
   }));
   const before = await brand.boundingBox();
@@ -678,18 +686,19 @@ test("client navigation keeps the shell and logo mounted while updating the page
     if (info.project.name === "mobile") {
       await expect(page.locator(".nav-disclosure")).not.toHaveAttribute("open");
     }
-    await page.getByRole("searchbox").fill("mean_squared_error");
+    await searchFor(page, "mean_squared_error");
     await page.locator("#search-results").getByRole("link", {
-      name: "mean_squared_error · Tiny Stats for R", exact: true,
+      name: "mean_squared_error", exact: true,
     }).click();
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Mean squared error");
     await expect(page).toHaveTitle("Mean squared error · Tiny Stats");
     expect(await shell.evaluate(value => value.document === document && value.elements.every(element => element.isConnected))).toBe(true);
     expect(loads).toBe(0);
-    await page.getByRole("searchbox").fill("Choosing a metric");
+    await searchFor(page, "Choosing a metric");
     await expect(page.locator("#search-results").getByRole("link", { name: "Choosing a metric", exact: true })).toBeVisible();
-    await page.getByRole("searchbox").fill("");
+    await searchFor(page, "");
     await expect(page.locator("#search-results > li")).toHaveCount(0);
+    await page.keyboard.press("Escape");
     await capture(page, info, "client-navigation-shell");
   } finally {
     release();
@@ -1114,61 +1123,125 @@ test("phone menu contains sections and repository links and dismisses", async ({
   await expect(page.locator(".mobile-sections")).toBeHidden();
   await expect(summary).toBeFocused();
   await summary.tap();
-  await page.getByRole("searchbox").tap();
+  await page.getByRole("button", { name: "Search documentation" }).tap();
   await expect(page.locator(".mobile-sections")).toBeHidden();
-  await page.locator(".brand").focus();
+  await page.keyboard.press("Escape");
   await summary.tap();
   await menu.getByRole("link", { name: "Python", exact: true }).tap();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Tiny Stats for Python");
   await expect(page.locator(".mobile-sections")).toBeHidden();
 });
 
-test("phone search expands from an icon and collapses after leaving", async ({ page }, info) => {
+test("phone search opens a centered dialog", async ({ page }, info) => {
   test.skip(info.project.name !== "mobile", "The compact search control is shown on phones.");
   await page.goto("/");
   const search = page.getByRole("searchbox");
-  const brand = page.locator("header > .brand");
-  await expect(brand).toHaveAccessibleName("Tiny Stats");
-  await expect(brand.locator(".brand-logo")).toBeVisible();
-  const branding = (await brand.boundingBox())!;
-  const control = (await search.boundingBox())!;
-  expect(branding.x + branding.width).toBeLessThan(control.x);
-  expect(branding.y + branding.height / 2).toBeCloseTo(control.y + control.height / 2, 0);
-  await expect(search).toHaveCSS("width", "42px");
-  await capture(page, info, "phone-search-collapsed");
-  await search.tap();
+  const trigger = page.getByRole("button", { name: "Search documentation" });
+  const dialog = page.getByRole("dialog", { name: "Search documentation" });
+  await expect(trigger).toHaveCSS("width", "44px");
+  await trigger.tap();
   await expect(search).toBeFocused();
-  expect((await search.boundingBox())!.width).toBeGreaterThan(200);
   await search.fill("mean_squared_error");
-  await expect(page.locator("#search-results a").first()).toBeVisible();
-  const results = (await page.locator("#search-results").boundingBox())!;
-  expect(results.x).toBeGreaterThanOrEqual(0);
-  expect(results.x + results.width).toBeLessThanOrEqual(page.viewportSize()!.width);
-  await capture(page, info, "phone-search-expanded");
-  await page.locator(".brand").focus();
-  await expect(search).toHaveCSS("width", "42px");
-  await expect(page.locator("#search-results")).toBeHidden();
+  await expect(dialog.getByRole("link").first()).toBeVisible();
+  const bounds = (await dialog.boundingBox())!;
+  const viewport = page.viewportSize()!;
+  expect(bounds.x + bounds.width / 2).toBeCloseTo(viewport.width / 2, 0);
+  expect(bounds.y + bounds.height / 2).toBeCloseTo(viewport.height / 2, 0);
+  await capture(page, info, "phone-search-expanded", true, false);
+  await page.touchscreen.tap(2, 2);
+  await expect(dialog).toBeHidden();
+  await expect(trigger).toBeFocused();
+});
+
+test("search groups matching sections and links to their anchors", async ({ page }, info) => {
+  await page.goto("/");
+  await searchFor(page, "errors");
+  const group = page.locator("#search-results > li").filter({ hasText: "Choosing a metric" })
+    .filter({ has: page.getByRole("link", { name: "Check systematic bias", exact: true }) });
+  await expect(group).toHaveCount(1);
+  await expect(group.locator("mark").first()).toContainText(/errors/i);
+  await expect(group.getByRole("link", { name: "Measure typical error" })).toBeVisible();
+  await capture(page, info, "search-section-results", true, false);
+  await group.getByRole("link", { name: "Check systematic bias", exact: true }).click();
+  await expect(page).toHaveURL(/#check-systematic-bias$/);
+  await expect(page.getByRole("dialog", { name: "Search documentation" })).toBeHidden();
+});
+
+test("search shares equally ranked results across guides and exposes page context", async ({ page }) => {
+  const guide = (path: string, title: string, count: number) => ({
+    path,
+    title,
+    text: "Recovery steps",
+    sections: Array.from({ length: count }, (_, index) => ({
+      path: `${path}#recovery-${index}`,
+      headings: ["Recovery"],
+      text: "Recovery steps",
+    })),
+  });
+  await page.route("**/assets/search.json", route => route.fulfill({
+    json: [guide("linux.html", "Linux guide", 12), guide("macos.html", "macOS guide", 1)],
+  }));
+  await page.goto("/");
+  await searchFor(page, "recovery");
+  const groups = page.locator("#search-results > li");
+  await expect(groups).toHaveCount(2);
+  const links = groups.getByRole("link", { name: "Recovery", exact: true });
+  await expect(links).toHaveCount(7);
+
+  await page.keyboard.press("ArrowDown");
+  await expect(links.first()).toBeFocused();
+  await expect(links.first()).toHaveAccessibleDescription("Linux guide");
+  await links.nth(5).focus();
+  await page.keyboard.press("ArrowDown");
+  const macos = links.last();
+  await expect(macos).toBeFocused();
+  await expect(macos).toHaveAccessibleDescription("macOS guide");
+});
+
+test("search retries a failed index request and caches the successful response", async ({ page, browserErrors }) => {
+  let requests = 0;
+  await page.route("**/assets/search.json", async route => {
+    requests++;
+    if (requests === 1) await route.fulfill({ status: 503 });
+    else await route.continue();
+  });
+  await page.goto("/");
+  const trigger = page.getByRole("button", { name: "Search documentation" });
+  expect(requests).toBe(0);
+  await searchFor(page, "choosing a metric");
+  const dialog = page.getByRole("dialog", { name: "Search documentation" });
+  await expect(dialog.getByRole("status")).toHaveText("Search could not load.");
+  const expectedError = browserErrors.findIndex(error => error.includes("/assets/search.json") && error.includes("503"));
+  if (expectedError !== -1) browserErrors.splice(expectedError, 1);
+  await dialog.getByRole("button", { name: "Retry" }).click();
+  await expect(dialog.getByRole("link", { name: "Choosing a metric", exact: true })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(trigger).toBeFocused();
+  await trigger.click();
+  await expect(dialog.getByRole("searchbox")).toHaveValue("");
+  await expect(dialog.getByRole("link")).toHaveCount(0);
+  expect(requests).toBe(2);
 });
 
 test("search finds all four APIs and follows a result", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("searchbox").fill("mean_squared_error");
+  await searchFor(page, "mean_squared_error");
   const results = page.locator("#search-results");
-  const python = results.getByRole("link", { name: "tinystats.mean_squared_error · Tiny Stats for Python", exact: true });
+  const python = results.getByRole("link", { name: "tinystats.mean_squared_error", exact: true });
   await expect(python).toBeVisible();
   await expect(python.locator("code")).toHaveText("tinystats.mean_squared_error");
-  await expect(results.getByRole("link", { name: "mean_squared_error · Tiny Stats for R", exact: true })).toBeVisible();
-  await expect(results.getByRole("link", { name: "TinyStats.mean_squared_error · Tiny Stats for Julia", exact: true })).toBeVisible();
-  await expect(results.getByRole("link", { name: "tinystats::mean_squared_error · Tiny Stats for Rust", exact: true })).toBeVisible();
+  await expect(results.getByRole("link", { name: "mean_squared_error", exact: true })).toBeVisible();
+  await expect(results.getByRole("link", { name: "TinyStats.mean_squared_error", exact: true })).toBeVisible();
+  await expect(results.getByRole("link", { name: "tinystats::mean_squared_error", exact: true })).toBeVisible();
   await python.click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("tinystats.mean_squared_error");
 });
 
 test("Python overloads have one searchable page with every signature", async ({ page }, info) => {
   await page.goto("/");
-  await page.getByRole("searchbox").fill("fetch_data");
+  await searchFor(page, "fetch_data");
   const result = page.locator("#search-results").getByRole("link", {
-    name: "tinystats.fetch_data · Tiny Stats for Python", exact: true,
+    name: "tinystats.fetch_data", exact: true,
   });
   await expect(result).toHaveCount(1);
   await result.click();
@@ -1187,9 +1260,9 @@ test("Python overloads have one searchable page with every signature", async ({ 
   await capture(page, info, "python-overloads");
   const destination = page.url();
   await closeNavigation(page, info);
-  await page.getByRole("searchbox").fill("tinystats._api.fetch_data");
+  await searchFor(page, "tinystats._api.fetch_data");
   const canonicalResult = page.locator("#search-results").getByRole("link", {
-    name: "tinystats.fetch_data · Tiny Stats for Python", exact: true,
+    name: "tinystats.fetch_data", exact: true,
   });
   await expect(canonicalResult).toHaveCount(1);
   await canonicalResult.click();
@@ -1199,13 +1272,13 @@ test("Python overloads have one searchable page with every signature", async ({ 
 
 test("Python classes retain overloaded methods on their class page", async ({ page }, info) => {
   await page.goto("/");
-  await page.getByRole("searchbox").fill("Reader.read");
+  await searchFor(page, "Reader.read");
   const result = page.locator("#search-results").getByRole("link", {
-    name: "tinystats.Reader · Tiny Stats for Python", exact: true,
+    name: "tinystats.Reader", exact: true,
   });
   await expect(result).toHaveCount(1);
   await expect(page.locator("#search-results").getByRole("link", {
-    name: "tinystats.Reader.read · Tiny Stats for Python", exact: true,
+    name: "tinystats.Reader.read", exact: true,
   })).toHaveCount(0);
   await result.click();
   const main = page.getByRole("main");
@@ -1225,9 +1298,9 @@ test("Python classes retain overloaded methods on their class page", async ({ pa
 
 test("Rust type pages group fields and methods with searchable anchors", async ({ page }, info) => {
   await page.goto("/");
-  await page.getByRole("searchbox").fill("tinystats::Score");
+  await searchFor(page, "tinystats::Score");
   await page.locator("#search-results").getByRole("link", {
-    name: "tinystats::Score · Tiny Stats for Rust", exact: true,
+    name: "tinystats::Score", exact: true,
   }).click();
   const main = page.getByRole("main");
   await expect(main.getByRole("heading", { level: 1 })).toHaveText("tinystats::Score");
@@ -1240,9 +1313,9 @@ test("Rust type pages group fields and methods with searchable anchors", async (
   const pageUrl = new URL(page.url());
   await fitsViewport(page);
   await capture(page, info, "rust-type");
-  await page.getByRole("searchbox").fill("tinystats::Score::mse");
+  await searchFor(page, "tinystats::Score::mse");
   await page.locator("#search-results").getByRole("link", {
-    name: "tinystats::Score::mse · Tiny Stats for Rust", exact: true,
+    name: "tinystats::Score::mse", exact: true,
   }).click();
   const methodUrl = new URL(page.url());
   expect(methodUrl.pathname).toBe(pageUrl.pathname);
@@ -1345,8 +1418,8 @@ for (const [language, published, content] of [
 
 test("R package overview is searchable by DESCRIPTION content", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("searchbox").fill("Small Statistics Example");
-  await page.locator("#search-results").getByRole("link", { name: "Tiny Stats for R · Tiny Stats for R", exact: true }).click();
+  await searchFor(page, "Small Statistics Example");
+  await page.locator("#search-results").getByRole("link", { name: "Tiny Stats for R", exact: true }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Tiny Stats for R");
 });
 
@@ -1360,7 +1433,7 @@ test("internal R helpers and grid hooks remain addressable but undiscoverable", 
     await expect(navigation.getByRole("link", { name, exact: true })).toHaveCount(0);
     await expect(page.getByRole("main").getByRole("link", { name, exact: true })).toHaveCount(0);
     expect(search.some((entry: { title: string }) => entry.title === name)).toBe(false);
-    await page.getByRole("searchbox").fill(name);
+    await searchFor(page, name);
     await expect(page.locator("#search-results").getByRole("link")).toHaveCount(0);
   }
   await page.goto("/packages/r/reference/setup_gpar.html");
@@ -1378,8 +1451,8 @@ for (const [name, format, source] of [
 ]) {
   test(`R dataset ${name} appears in search and retains its documentation`, async ({ page }, info) => {
     await page.goto("/packages/r/");
-    await page.getByRole("searchbox").fill(name!);
-    await page.locator("#search-results").getByRole("link", { name: `${name} · Tiny Stats for R`, exact: true }).click();
+    await searchFor(page, name!);
+    await page.locator("#search-results").getByRole("link", { name: `${name}`, exact: true }).click();
     await expect(page.getByRole("heading", { level: 1 })).toHaveText({ fruits: "Fruits", organisms: "Organisms", pain: "Pain distribution data", plants: "Plants" }[name!]);
     const main = page.getByRole("main");
     await expect(main.getByRole("heading", { name: "Usage", exact: true })).toBeVisible();
@@ -1528,18 +1601,13 @@ test("search and result navigation work with the keyboard", async ({ page }) => 
   await page.goto("/");
   await page.keyboard.press("Tab");
   await expect(page.getByRole("link", { name: "Skip to content" })).toBeFocused();
-  // Section links and the API disclosure are reachable before search on desktop.
-  const headerStops = await page.locator("header a:visible, header summary:visible").count() + 1;
-  for (let step = 0; step < headerStops; step++) {
-    await page.keyboard.press("Tab");
-    if (await page.getByRole("searchbox").evaluate(element => element === document.activeElement)) break;
-  }
+  await page.keyboard.press("Control+k");
   await expect(page.getByRole("searchbox")).toBeFocused();
   await page.keyboard.type("mean_squared_error");
   const result = page.locator("#search-results").getByRole("link").first();
   await expect(result).toBeVisible();
   const destination = await result.getAttribute("href");
-  await page.keyboard.press("Tab");
+  await page.keyboard.press("ArrowDown");
   await expect(result).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(destination!);
@@ -1708,8 +1776,9 @@ test("compact page TOC overlays content and dismisses after use", async ({ page 
     await expect(summary).toBeFocused();
     await page.keyboard.press("Enter");
     await expect(list).toBeVisible();
-    await page.getByRole("searchbox").click();
+    await page.getByRole("button", { name: "Search documentation" }).click();
     await expect(toc).toHaveJSProperty("open", false);
+    await page.keyboard.press("Escape");
 
     await summary.click();
     await firstLink.click();
@@ -1728,13 +1797,13 @@ test("compact page TOC overlays content and dismisses after use", async ({ page 
 
 test("Julia types group fields and constructors on one page", async ({ page }, info) => {
   await page.goto("/");
-  await page.getByRole("searchbox").fill("TinyStats.Sample.values");
+  await searchFor(page, "TinyStats.Sample.values");
   const results = page.locator("#search-results");
   await expect(results.getByRole("link", {
-    name: "TinyStats.Sample.values · Tiny Stats for Julia", exact: true,
+    name: "TinyStats.Sample.values", exact: true,
   })).toHaveCount(0);
   await results.getByRole("link", {
-    name: "TinyStats.Sample · Tiny Stats for Julia", exact: true,
+    name: "TinyStats.Sample", exact: true,
   }).click();
   const main = page.getByRole("main");
   await expect(main.getByRole("heading", { level: 1 })).toHaveText("TinyStats.Sample");
@@ -2177,9 +2246,9 @@ test("responsive images download smaller candidates at standard and high pixel d
 
 test("C++ overload families retain documentation and member anchors", async ({ page }, info) => {
   await page.goto("/");
-  await page.getByRole("searchbox").fill("demo::Builder::setWhitePoint");
+  await searchFor(page, "demo::Builder::setWhitePoint");
   const result = page.locator("#search-results").getByRole("link", {
-    name: "demo::Builder::setWhitePoint · C++ API example", exact: true,
+    name: "demo::Builder::setWhitePoint", exact: true,
   });
   await expect(result).toHaveCount(1);
   await result.click();
