@@ -144,7 +144,10 @@ impl WorkspaceSources {
                     )
                 })
             {
-                return Err(AssemblyError::InputsChanged);
+                return Err(AssemblyError::inputs_changed(
+                    "Documenter example provenance verification",
+                    page.path.display().to_string(),
+                ));
             }
             let project = self.paths.content[page.collection]
                 .julia_project
@@ -261,7 +264,12 @@ impl WorkspaceSources {
                         })
                         .collect(),
                 })
-                .map_err(|_| AssemblyError::InputsChanged)?,
+                .map_err(|_| {
+                    AssemblyError::inputs_changed(
+                        "Documenter example request serialization",
+                        page.path.display().to_string(),
+                    )
+                })?,
             )?;
             let mut command = tokio::process::Command::new("julia");
             command
@@ -361,7 +369,10 @@ impl WorkspaceSources {
                 }
             });
             if replaced.len() != examples.len() {
-                return Err(AssemblyError::InputsChanged);
+                return Err(AssemblyError::inputs_changed(
+                    "Documenter example replacement verification",
+                    page.path.display().to_string(),
+                ));
             }
             document.provenance.push(Provenance {
                 activity: ProvenanceActivity::DocumenterExamples {

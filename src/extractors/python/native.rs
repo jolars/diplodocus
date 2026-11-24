@@ -38,7 +38,16 @@ pub(crate) struct Observations {
     pub environment: serde_json::Value,
     pub inputs: BTreeMap<PathBuf, Fingerprint>,
     pub input_aliases: BTreeMap<PathBuf, PathBuf>,
-    pub inputs_changed: bool,
+    pub input_change: Option<InputChange>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct InputChange {
+    pub path: PathBuf,
+    pub digest: String,
+    pub alias: Option<PathBuf>,
+    pub target: Option<PathBuf>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

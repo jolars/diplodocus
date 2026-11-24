@@ -305,16 +305,40 @@ pub(super) async fn results(
             }
             let observed: Observations = serde_json::from_slice(&fs::read(&output)?)
                 .map_err(|error| failure(format!("Invalid Python native observations: {error}")))?;
-            if observed.inputs_changed
-                || parsed.inputs.values().any(|input| {
-                    let path = repository.path.join(input.source.path.as_str());
-                    observed
-                        .inputs
-                        .get(&path)
-                        .is_some_and(|fingerprint| fingerprint != &input.fingerprint)
-                })
-            {
-                return Err(AssemblyError::InputsChanged);
+            for input in parsed.inputs.values() {
+                let path = repository.path.join(input.source.path.as_str());
+                if let Some(fingerprint) = observed.inputs.get(&path)
+                    && fingerprint != &input.fingerprint
+                {
+                    return Err(AssemblyError::fingerprint_changed(
+                        "Python static and runtime input comparison",
+                        path.display(),
+                        Some(&input.fingerprint),
+                        Some(fingerprint),
+                    ));
+                }
+            }
+            if let Some(change) = &observed.input_change {
+                let digest = Fingerprint {
+                    algorithm: "sha256".into(),
+                    value: change.digest.clone(),
+                };
+                let expected = observed.inputs.get(&change.path);
+                let input = match (&change.alias, &change.target) {
+                    (Some(alias), Some(target)) => format!(
+                        "{} (expected target {}, observed target {})",
+                        alias.display(),
+                        change.path.display(),
+                        target.display(),
+                    ),
+                    _ => change.path.display().to_string(),
+                };
+                return Err(AssemblyError::fingerprint_changed(
+                    "Python worker input verification",
+                    input,
+                    expected,
+                    Some(&digest),
+                ));
             }
             // TMPDIR may be inside the selected target or a runtime input.
             staging.close()?;
@@ -324,15 +348,16 @@ pub(super) async fn results(
                 None
             } else {
                 let paths: Vec<_> = observed.input_aliases.keys().cloned().collect();
-                let inputs =
-                    Manifest::capture(&paths, &[]).map_err(|_| AssemblyError::InputsChanged)?;
-                if !observed.input_aliases.iter().all(|(path, target)| {
-                    observed
-                        .inputs
-                        .get(target)
-                        .is_some_and(|digest| inputs.matches_file(path, target, digest))
-                }) {
-                    return Err(AssemblyError::InputsChanged);
+                let inputs = Manifest::capture(&paths, &[]).map_err(|error| {
+                    AssemblyError::inputs_changed("Python input alias capture", error.to_string())
+                })?;
+                for (path, target) in &observed.input_aliases {
+                    inputs.verify_file(
+                        "Python input alias resolution",
+                        path,
+                        target,
+                        observed.inputs.get(target),
+                    )?;
                 }
                 Some(inputs)
             };
@@ -344,18 +369,24 @@ pub(super) async fn results(
                 python::native::normalize(parsed, &observed, repository, package)
                     .map_err(failure)?;
             reject_errors(extraction.diagnostics.clone())?;
-            if !packages::evidence_current(&extraction.provenance, repository)
-                || !crate::incremental::verification_scope(|| {
-                    selection.verify()
-                        && aliases.as_ref().is_none_or(Manifest::verify)
-                        && context
-                            .as_ref()
-                            .is_none_or(|(_, _, inputs)| inputs.verify())
-                        && before.as_ref().is_none_or(|(_, inputs)| inputs.verify())
-                })
-            {
-                return Err(AssemblyError::InputsChanged);
-            }
+            packages::verify_evidence(
+                "Python extraction provenance verification",
+                &extraction.provenance,
+                repository,
+            )?;
+            crate::incremental::verification_scope(|| {
+                selection.verify_input("Python source selection verification")?;
+                if let Some(aliases) = &aliases {
+                    aliases.verify_input("Python input alias verification")?;
+                }
+                if let Some((_, _, inputs)) = &context {
+                    inputs.verify_input("Python supplemental cache input verification")?;
+                }
+                if let Some((_, inputs)) = &before {
+                    inputs.verify_input("Python runtime environment verification")?;
+                }
+                Ok::<(), AssemblyError>(())
+            })?;
             let mut observations = vec![selection.clone()];
             observations.extend(aliases);
             if let Some((_, _, inputs)) = &context {

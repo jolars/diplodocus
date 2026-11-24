@@ -64,8 +64,12 @@ impl WorkspaceSources {
                     .declared_environment_inputs
                     .iter()
                     .map(|path| {
-                        RepositoryFile::new(&collection.repository, path)
-                            .map_err(|_| AssemblyError::InputsChanged)
+                        RepositoryFile::new(&collection.repository, path).map_err(|_| {
+                            AssemblyError::inputs_changed(
+                                "execution input path validation",
+                                path.display().to_string(),
+                            )
+                        })
                     })
                     .collect::<Result<Vec<_>, _>>()?;
                 let mut engine = JupyterEngine::new(repositories.clone(), declared)

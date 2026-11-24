@@ -35,7 +35,10 @@ pub(in crate::assembly) fn inputs(
                 .iter()
                 .map(|v| match v {
                     MetadataValue::Scalar { value, .. } => Ok(value),
-                    _ => Err(AssemblyError::InputsChanged),
+                    _ => Err(AssemblyError::inputs_changed(
+                        "citation input declaration validation",
+                        path.display().to_string(),
+                    )),
                 })
                 .collect::<Result<_, _>>()?,
             _ => {

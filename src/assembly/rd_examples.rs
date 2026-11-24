@@ -72,7 +72,10 @@ impl WorkspaceSources {
                     .any(|record| matches!(record.activity, ProvenanceActivity::RdExamples { .. }))
             })
         {
-            return Err(AssemblyError::InputsChanged);
+            return Err(AssemblyError::inputs_changed(
+                "Rd example provenance verification",
+                "examples have already been executed",
+            ));
         }
         self.native_assets = execute(self, deadlines, cancellation).await?;
         Ok(())

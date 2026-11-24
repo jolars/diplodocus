@@ -164,7 +164,12 @@ pub(super) fn assemble(
                 .or_default()
                 .push(
                     path.strip_prefix(&repository.path)
-                        .map_err(|_| AssemblyError::InputsChanged)?
+                        .map_err(|_| {
+                            AssemblyError::inputs_changed(
+                                "package documentation boundary verification",
+                                path.display().to_string(),
+                            )
+                        })?
                         .to_owned(),
                 );
         }

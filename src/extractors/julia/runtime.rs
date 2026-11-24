@@ -1,6 +1,6 @@
 //! Normalize the checked-out Julia runtime's API and match authored evidence.
 
-use std::io;
+use crate::assembly::AssemblyError;
 
 use super::signatures::{ParsedSignature, parse_header};
 use super::source::{Declarations, Draft, DraftDeclaration, Export, Import, qualify};
@@ -154,27 +154,60 @@ impl Observation {
             .collect()
     }
 
-    pub(crate) fn verify(&self, package: &ResolvedPackagePaths) -> io::Result<bool> {
-        let verify = |path: &Path, canonical: &Path, digest: &str| -> io::Result<bool> {
-            Ok(fs::canonicalize(path)? == canonical
-                && fingerprint_bytes(&fs::read(path)?).value == digest)
-        };
-        let project = package.path.join("Project.toml");
-        if !fs::canonicalize(&project)?.starts_with(&package.path)
-            || fingerprint_bytes(&fs::read(&project)?).value != self.project_digest
-        {
-            return Ok(false);
-        }
+    pub(crate) fn verify(&self, package: &ResolvedPackagePaths) -> Result<(), AssemblyError> {
+        let verify =
+            |path: &Path, expected_digest: &str, matches_target: &dyn Fn(&Path) -> bool| {
+                const CHECK: &str = "Julia worker input verification";
+                let expected = Fingerprint {
+                    algorithm: "sha256".into(),
+                    value: expected_digest.into(),
+                };
+                let target = fs::canonicalize(path).map_err(|error| {
+                    AssemblyError::inputs_changed(
+                        CHECK,
+                        format!(
+                            "{}: {error}",
+                            crate::assembly::fingerprint_difference(
+                                path.display(),
+                                Some(&expected),
+                                None
+                            )
+                        ),
+                    )
+                })?;
+                if !matches_target(&target) {
+                    return Err(AssemblyError::fingerprint_changed(
+                        CHECK,
+                        format_args!("{} resolved to {}", path.display(), target.display()),
+                        Some(&expected),
+                        None,
+                    ));
+                }
+                let observed = fs::read(path).ok().map(|bytes| fingerprint_bytes(&bytes));
+                if observed.as_ref() != Some(&expected) {
+                    return Err(AssemblyError::fingerprint_changed(
+                        CHECK,
+                        path.display(),
+                        Some(&expected),
+                        observed.as_ref(),
+                    ));
+                }
+                Ok(())
+            };
+        verify(
+            &package.path.join("Project.toml"),
+            &self.project_digest,
+            &|path| path.starts_with(&package.path),
+        )?;
         for input in &self.inputs {
-            if !verify(
+            let canonical = package.path.join(input.canonical.as_str());
+            verify(
                 &package.path.join(input.path.as_str()),
-                &package.path.join(input.canonical.as_str()),
                 &input.digest,
-            )? {
-                return Ok(false);
-            }
+                &|path| path == canonical,
+            )?;
         }
-        Ok(true)
+        Ok(())
     }
 }
 

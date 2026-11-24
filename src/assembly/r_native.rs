@@ -73,10 +73,17 @@ impl RObservation {
     }
 
     pub(super) fn verify(&self) -> Result<(), AssemblyError> {
-        if inventory(&self.repository, &self.root, &self.extra_roots)? != self.inputs
-            || self.dependencies.iter().any(|manifest| !manifest.verify())
-        {
-            return Err(AssemblyError::InputsChanged);
+        let current = inventory(&self.repository, &self.root, &self.extra_roots)?;
+        if let Some((path, expected, observed)) = fingerprint_map_change(&self.inputs, &current) {
+            return Err(AssemblyError::fingerprint_changed(
+                "R source inventory verification",
+                path.display(),
+                expected,
+                observed,
+            ));
+        }
+        for manifest in &self.dependencies {
+            manifest.verify_input("R dependency verification")?;
         }
         Ok(())
     }
@@ -231,7 +238,12 @@ pub(super) async fn results(
                 let resolved = resolved_output(package, output)?;
                 Ok(resolved
                     .strip_prefix(&package.path)
-                    .map_err(|_| AssemblyError::InputsChanged)?
+                    .map_err(|_| {
+                        AssemblyError::inputs_changed(
+                            "R generated output boundary verification",
+                            resolved.display().to_string(),
+                        )
+                    })?
                     .to_owned())
             })
             .collect::<Result<Vec<_>, AssemblyError>>()?;
@@ -244,10 +256,20 @@ pub(super) async fn results(
         extra_roots.extend(declared_outputs);
         extra_roots.push(package.metadata_path.clone());
         let before = inventory(repository, &package.path, &extra_roots)?;
-        if before.get(&package.metadata_path) != Some(&fingerprint_bytes(metadata_text.as_bytes()))
-            || before.get(&descriptor_path) != Some(&fingerprint_bytes(descriptor_text.as_bytes()))
-        {
-            return Err(AssemblyError::InputsChanged);
+        for (path, text) in [
+            (&package.metadata_path, &metadata_text),
+            (&descriptor_path, &descriptor_text),
+        ] {
+            let expected = fingerprint_bytes(text.as_bytes());
+            let observed = before.get(path);
+            if observed != Some(&expected) {
+                return Err(AssemblyError::fingerprint_changed(
+                    "R metadata and descriptor verification",
+                    path.display(),
+                    Some(&expected),
+                    observed,
+                ));
+            }
         }
         let owned: BTreeSet<_> = before
             .keys()
@@ -366,11 +388,8 @@ pub(super) async fn results(
                 dependencies,
             };
             observation.verify()?;
-            if supplemental
-                .as_ref()
-                .is_some_and(|manifest| !manifest.verify())
-            {
-                return Err(AssemblyError::InputsChanged);
+            if let Some(manifest) = &supplemental {
+                manifest.verify_input("R supplemental cache input verification")?;
             }
             reporting.cache("r-discovery", &package.id, true, None);
             cache_timing.finish();
@@ -416,7 +435,7 @@ pub(super) async fn results(
         let collate = intent
             .as_ref()
             .is_some_and(|generation| generation.roclets.iter().any(|roclet| roclet == "collate"));
-        let maintained_unchanged = acknowledge(
+        let maintained_change = acknowledge(
             repository,
             package,
             &options,
@@ -429,8 +448,13 @@ pub(super) async fn results(
             journal,
         )?;
         let native = native?;
-        if !maintained_unchanged {
-            return Err(AssemblyError::InputsChanged);
+        if let Some(path) = maintained_change {
+            return Err(AssemblyError::fingerprint_changed(
+                "R maintained input verification after native execution",
+                path.display(),
+                before.get(path),
+                after.get(path),
+            ));
         }
         if native.complete != "r-native-v1"
             || native.observation.package_name != metadata.name
@@ -562,11 +586,8 @@ pub(super) async fn results(
             );
         }
         observation.verify()?;
-        if supplemental
-            .as_ref()
-            .is_some_and(|manifest| !manifest.verify())
-        {
-            return Err(AssemblyError::InputsChanged);
+        if let Some(manifest) = &supplemental {
+            manifest.verify_input("R supplemental cache input verification")?;
         }
         if let (Some(store), Some(key), Some(environment)) =
             (&store, identity(&after), &environment)
@@ -1184,7 +1205,10 @@ pub(super) fn resolved_output(
         }
         ancestor = path.parent();
     }
-    Err(AssemblyError::InputsChanged)
+    Err(AssemblyError::inputs_changed(
+        "R output ancestor lookup",
+        absolute.display().to_string(),
+    ))
 }
 
 fn inventory(
@@ -1302,26 +1326,26 @@ fn generated_output(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn acknowledge(
+fn acknowledge<'a>(
     repository: &ResolvedRepositoryPaths,
     package: &ResolvedPackagePaths,
     options: &RPackageConfiguration,
     metadata: &RMetadata,
-    before: &BTreeMap<PathBuf, Fingerprint>,
-    after: &BTreeMap<PathBuf, Fingerprint>,
+    before: &'a BTreeMap<PathBuf, Fingerprint>,
+    after: &'a BTreeMap<PathBuf, Fingerprint>,
     generate: bool,
     collate: bool,
     owned: &BTreeSet<PathBuf>,
     journal: &mut GeneratedWrites,
-) -> Result<bool, AssemblyError> {
+) -> Result<Option<&'a PathBuf>, AssemblyError> {
     let keys: BTreeSet<_> = before.keys().chain(after.keys()).collect();
-    let mut unchanged = true;
+    let mut changed = None;
     for path in keys {
         if before.get(path) == after.get(path) {
             continue;
         }
         if !generate || !generated_output(package, options, path) {
-            unchanged = false;
+            changed.get_or_insert(path);
             continue;
         }
         let relative = path.strip_prefix(&package.path).expect("contained input");
@@ -1337,7 +1361,7 @@ fn acknowledge(
             && !owned.contains(path)
             && !roxygen_owned(path)
         {
-            unchanged = false;
+            changed.get_or_insert(path);
             continue;
         }
         if path == &package.path.join("DESCRIPTION") {
@@ -1361,13 +1385,13 @@ fn acknowledge(
                 .is_none_or(|parsed| maintained(parsed) != maintained(metadata))
                 || !diagnostics.is_empty()
             {
-                unchanged = false;
+                changed.get_or_insert(path);
                 continue;
             }
         }
         journal.insert(path.clone(), after.get(path).cloned());
     }
-    Ok(unchanged)
+    Ok(changed)
 }
 
 fn fingerprints(
@@ -1376,9 +1400,12 @@ fn fingerprints(
 ) -> Result<Vec<InputFingerprint>, AssemblyError> {
     let mut result = vec![];
     for (path, fingerprint) in inputs {
-        let relative = path
-            .strip_prefix(&repository.path)
-            .map_err(|_| AssemblyError::InputsChanged)?;
+        let relative = path.strip_prefix(&repository.path).map_err(|_| {
+            AssemblyError::inputs_changed(
+                "R fingerprint input boundary verification",
+                path.display().to_string(),
+            )
+        })?;
         let path =
             crate::paths::portable_relative_path(&repository.path, "native R input", relative)?;
         result.push(InputFingerprint {
@@ -1407,9 +1434,9 @@ fn roxygen_owned(path: &Path) -> bool {
 }
 
 fn contained(path: &Path, boundary: &Path) -> Result<PathBuf, AssemblyError> {
-    let relative = path
-        .strip_prefix(boundary)
-        .map_err(|_| AssemblyError::InputsChanged)?;
+    let relative = path.strip_prefix(boundary).map_err(|_| {
+        AssemblyError::inputs_changed("R input boundary verification", path.display().to_string())
+    })?;
     let relative = if relative.as_os_str().is_empty() {
         Path::new(".")
     } else {

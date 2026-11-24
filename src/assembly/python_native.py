@@ -262,7 +262,7 @@ class InputObservations:
         self.stage = stage
         self.fingerprints = {}
         self.targets = {}
-        self.changed = set()
+        self.changed = {}
         self.reading = threading.local()
 
     def audit(self, event, args):
@@ -291,10 +291,10 @@ class InputObservations:
         finally:
             self.reading.active = False
         if self.fingerprints.setdefault(path, digest) != digest:
-            self.changed.add(path)
+            self.changed.setdefault(path, {"path": str(path), "digest": digest})
         previous = self.targets.setdefault(logical, path)
         if previous != path:
-            self.changed.add(previous)
+            self.changed.setdefault(previous, {"path": str(previous), "alias": str(logical), "target": str(path), "digest": digest})
 
 
 def run(request_path, output_path, observe_only=False):
@@ -1047,7 +1047,7 @@ def run(request_path, output_path, observe_only=False):
         "inputs": fingerprints,
         "input_aliases": {str(logical): str(path) for logical, path in sorted(checkout_inputs.targets.items())
                           if logical != path and path in inputs},
-        "inputs_changed": bool(inputs & checkout_inputs.changed),
+        "input_change": next((checkout_inputs.changed[path] for path in sorted(inputs & checkout_inputs.changed.keys())), None),
     }
     Path(output_path).write_text(json.dumps(result, ensure_ascii=False), encoding="utf-8")
 

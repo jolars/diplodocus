@@ -538,7 +538,7 @@ fn overrides_skip_invalid_overview_news_and_license_documents() {
         root.write(format!("r/{source}"), [0xff]);
         assert!(matches!(
             sources.revalidate(),
-            Err(AssemblyError::InputsChanged)
+            Err(AssemblyError::InputsChanged { .. })
         ));
         assert!(
             check(CheckOptions {
@@ -644,13 +644,13 @@ fn revalidation_detects_new_files_and_edits_and_hidden_packages_stay_out_of_sear
     root.write("r/README.md", "# New overview\n");
     assert!(matches!(
         sources.revalidate(),
-        Err(AssemblyError::InputsChanged)
+        Err(AssemblyError::InputsChanged { .. })
     ));
     let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     root.write("r/README.md", "# Edited overview\n");
     assert!(matches!(
         sources.revalidate(),
-        Err(AssemblyError::InputsChanged)
+        Err(AssemblyError::InputsChanged { .. })
     ));
     root.write(
         "diplodocus.yaml",

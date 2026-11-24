@@ -193,8 +193,26 @@ impl ImportedBundles {
 
     pub(super) fn revalidate(&self) -> Result<(), AssemblyError> {
         for (selected, canonical, digest) in &self.observations {
-            if fs::canonicalize(selected)? != *canonical || bundle_digest(canonical)? != *digest {
-                return Err(AssemblyError::InputsChanged);
+            let current = fs::canonicalize(selected)?;
+            if current != *canonical {
+                return Err(AssemblyError::inputs_changed(
+                    "bundle target verification",
+                    format!(
+                        "{} (expected target {}, observed target {})",
+                        selected.display(),
+                        canonical.display(),
+                        current.display()
+                    ),
+                ));
+            }
+            let observed = bundle_digest(canonical)?;
+            if observed != *digest {
+                return Err(AssemblyError::fingerprint_changed(
+                    "bundle fingerprint verification",
+                    selected.display(),
+                    Some(digest),
+                    Some(&observed),
+                ));
             }
         }
         Ok(())

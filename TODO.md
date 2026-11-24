@@ -87,9 +87,8 @@ in tests and CI results rather than adding another dated ledger.
 - [x] Make the Nix package link SQLite with the nixpkgs revision used by
   consumers. Eunoia still supplies SQLite through a local package override
   because its build fails to resolve `-lsqlite3`.
-- [ ] Identify which check raises `InputsChanged` and report the input path
-  and expected and observed fingerprints when available. Qualpal's
-  cache-enabled production build failed in an isolated checkout, while
-  `build --no-cache` and a cold-cache `serve` passed. Use the diagnostics to
-  determine whether the build observes a real input change or invalidates its
-  own inputs.
+- [x] Identify which check raises `InputsChanged` and report the input path
+  and expected and observed fingerprints when available. In Qualpal's
+  cache-enabled build, Doxygen's package cache inventory sees two files the
+  build itself changes. R discovery updates `qualpalr/DESCRIPTION` through
+  roxygen2, and a Python API example writes `qualpal-py/palette.png`.

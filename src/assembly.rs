@@ -94,8 +94,13 @@ pub enum AssemblyError {
     #[error("workspace source or staging I/O failed: {0}")]
     Io(#[from] std::io::Error),
     /// A consumed input no longer agrees with the assembled evidence.
-    #[error("workspace inputs changed during assembly or execution")]
-    InputsChanged,
+    #[error("workspace inputs changed during {check}: {details}")]
+    InputsChanged {
+        /// Verification check that detected the difference.
+        check: &'static str,
+        /// Any available input observations.
+        details: String,
+    },
     /// The caller canceled the workspace operation between active page sessions.
     #[error("workspace execution was canceled")]
     Cancelled,
@@ -110,6 +115,94 @@ pub enum AssemblyError {
         /// Staging cleanup error.
         source: std::io::Error,
     },
+}
+
+impl AssemblyError {
+    pub(crate) fn inputs_changed(check: &'static str, details: impl Into<String>) -> Self {
+        Self::InputsChanged {
+            check,
+            details: details.into(),
+        }
+    }
+
+    pub(crate) fn fingerprint_changed(
+        check: &'static str,
+        input: impl std::fmt::Display,
+        expected: Option<&Fingerprint>,
+        observed: Option<&Fingerprint>,
+    ) -> Self {
+        Self::inputs_changed(check, fingerprint_difference(input, expected, observed))
+    }
+}
+
+pub(crate) fn fingerprint_difference(
+    input: impl std::fmt::Display,
+    expected: Option<&Fingerprint>,
+    observed: Option<&Fingerprint>,
+) -> String {
+    fn describe(fingerprint: Option<&Fingerprint>) -> String {
+        match fingerprint {
+            Some(fingerprint) => format!("{}:{}", fingerprint.algorithm, fingerprint.value),
+            None => "unavailable".to_owned(),
+        }
+    }
+    format!(
+        "{input} (expected fingerprint {}, observed fingerprint {})",
+        describe(expected),
+        describe(observed),
+    )
+}
+
+fn fingerprint_map_change<'a, K: Ord>(
+    expected: &'a BTreeMap<K, Fingerprint>,
+    observed: &'a BTreeMap<K, Fingerprint>,
+) -> Option<(&'a K, Option<&'a Fingerprint>, Option<&'a Fingerprint>)> {
+    if expected == observed {
+        return None;
+    }
+    expected
+        .iter()
+        .find_map(|(path, expected)| {
+            let observed = observed.get(path);
+            (observed != Some(expected)).then_some((path, Some(expected), observed))
+        })
+        .or_else(|| {
+            observed
+                .iter()
+                .find(|(path, _)| !expected.contains_key(*path))
+                .map(|(path, observed)| (path, None, Some(observed)))
+        })
+}
+
+fn verify_source_fingerprints(
+    check: &'static str,
+    repository: &crate::paths::ResolvedRepositoryPaths,
+    expected: &[crate::ir::InputFingerprint],
+    observed: &[crate::ir::InputFingerprint],
+) -> Result<(), AssemblyError> {
+    if expected == observed {
+        return Ok(());
+    }
+    let fingerprints = |inputs: &[crate::ir::InputFingerprint]| {
+        inputs
+            .iter()
+            .map(|input| (input.source.path.clone(), input.fingerprint.clone()))
+            .collect::<BTreeMap<_, _>>()
+    };
+    let expected = fingerprints(expected);
+    let observed = fingerprints(observed);
+    if let Some((path, expected, observed)) = fingerprint_map_change(&expected, &observed) {
+        return Err(AssemblyError::fingerprint_changed(
+            check,
+            repository.path.join(path.as_str()).display(),
+            expected,
+            observed,
+        ));
+    }
+    Err(AssemblyError::inputs_changed(
+        check,
+        repository.path.display().to_string(),
+    ))
 }
 
 impl From<includes::IncludeError> for AssemblyError {
@@ -296,12 +389,8 @@ impl WorkspaceSources {
     }
 
     fn revalidate_inner(&self) -> Result<(), AssemblyError> {
-        if self
-            .cache_observations
-            .iter()
-            .any(|manifest| !manifest.verify())
-        {
-            return Err(AssemblyError::InputsChanged);
+        for manifest in self.cache_observations.iter() {
+            manifest.verify_input("workspace cache input verification")?;
         }
         for observation in &self.r_observations {
             observation.verify()?;
@@ -309,8 +398,14 @@ impl WorkspaceSources {
         for observation in &self.doxygen_observations {
             observation.verify()?;
         }
-        if fs::read(&self.configuration_path)? != self.configuration_source.as_bytes() {
-            return Err(AssemblyError::InputsChanged);
+        let configuration = fs::read(&self.configuration_path)?;
+        if configuration != self.configuration_source.as_bytes() {
+            return Err(AssemblyError::fingerprint_changed(
+                "workspace configuration content verification",
+                self.configuration_path.display(),
+                Some(&fingerprint_bytes(self.configuration_source.as_bytes())),
+                Some(&fingerprint_bytes(&configuration)),
+            ));
         }
         let mut configuration =
             parse_configuration(&self.configuration_source).map_err(|source| {
@@ -324,36 +419,82 @@ impl WorkspaceSources {
             rmarkdown::collections(&self.configuration_path, &mut configuration)?;
         }
         if configuration != self.configuration {
-            return Err(AssemblyError::InputsChanged);
+            return Err(AssemblyError::inputs_changed(
+                "workspace configuration expansion verification",
+                self.configuration_path.display().to_string(),
+            ));
         }
         let paths = resolve_workspace_paths(&self.configuration_path, &self.configuration)?;
         if paths != self.paths {
-            return Err(AssemblyError::InputsChanged);
+            return Err(AssemblyError::inputs_changed(
+                "workspace path resolution verification",
+                self.configuration_path.display().to_string(),
+            ));
         }
         for (index, collection) in self.configuration.content.iter().enumerate() {
             let content = &paths.content[index];
-            if authored::discover(
+            let observed = authored::discover(
                 &content.path,
                 collection.format,
                 &paths.repositories[content.repository_index],
-            )? != self.selections.content[&collection.id]
-            {
-                return Err(AssemblyError::InputsChanged);
+            )?;
+            let expected = &self.selections.content[&collection.id];
+            if observed != *expected {
+                let member = expected
+                    .iter()
+                    .find(|path| !observed.contains(path))
+                    .or_else(|| observed.iter().find(|path| !expected.contains(path)));
+                let changed = member.map_or_else(
+                    || content.path.clone(),
+                    |member| {
+                        if content.path.is_file() {
+                            content.path.clone()
+                        } else {
+                            content.path.join(member)
+                        }
+                    },
+                );
+                return Err(AssemblyError::inputs_changed(
+                    "authored content inventory verification",
+                    changed.display().to_string(),
+                ));
             }
         }
         if package_docs::discover(&paths, &self.workspace)? != self.package_files {
-            return Err(AssemblyError::InputsChanged);
+            return Err(AssemblyError::inputs_changed(
+                "package documentation inventory verification",
+                self.configuration_path.display().to_string(),
+            ));
         }
         if rmarkdown::inputs(&paths, &self.configuration)? != self.rmd_inputs {
-            return Err(AssemblyError::InputsChanged);
+            return Err(AssemblyError::inputs_changed(
+                "R Markdown inventory verification",
+                self.configuration_path.display().to_string(),
+            ));
         }
         let current = collect_static_provenance(
             &self.configuration_path,
             &self.configuration,
             &self.selections,
         )?;
+        for repository in &paths.repositories {
+            let empty = BTreeMap::new();
+            let expected = self.evidence.inputs.get(&repository.id).unwrap_or(&empty);
+            let observed = current.inputs.get(&repository.id).unwrap_or(&empty);
+            if let Some((path, expected, observed)) = fingerprint_map_change(expected, observed) {
+                return Err(AssemblyError::fingerprint_changed(
+                    "workspace static provenance verification",
+                    repository.path.join(path.as_str()).display(),
+                    expected,
+                    observed,
+                ));
+            }
+        }
         if current.inputs != self.evidence.inputs {
-            return Err(AssemblyError::InputsChanged);
+            return Err(AssemblyError::inputs_changed(
+                "workspace static provenance verification",
+                "repository input sets changed",
+            ));
         }
         Ok(())
     }
@@ -626,7 +767,9 @@ async fn assemble_with_native(
             .and_then(|s| s.to_str())
             .unwrap_or("diplodocus.yaml"),
     )
-    .map_err(|_| AssemblyError::InputsChanged)?;
+    .map_err(|_| {
+        AssemblyError::inputs_changed("configuration path encoding", path.display().to_string())
+    })?;
     reject_errors(validate_configuration_with_source(
         &configuration,
         config_name.clone(),
@@ -768,13 +911,17 @@ async fn assemble_with_native(
 
     let evidence = collect_static_provenance(path, &configuration, &selections)?;
     for ((repository, path), fingerprint) in observed {
-        if evidence
+        let current = evidence
             .inputs
             .get(&repository)
-            .and_then(|inputs| inputs.get(&path))
-            != Some(&fingerprint)
-        {
-            return Err(AssemblyError::InputsChanged);
+            .and_then(|inputs| inputs.get(&path));
+        if current != Some(&fingerprint) {
+            return Err(AssemblyError::fingerprint_changed(
+                "assembled and collected source comparison",
+                format_args!("{repository}:{}", path.as_str()),
+                Some(&fingerprint),
+                current,
+            ));
         }
     }
     workspace.repositories = evidence.repositories.clone();
@@ -832,14 +979,17 @@ fn observe(
     source: &SourceLocation,
     fingerprint: Fingerprint,
 ) -> Result<(), AssemblyError> {
-    if inputs
-        .insert(
-            (source.repository.clone(), source.path.clone()),
-            fingerprint.clone(),
-        )
-        .is_some_and(|old| old != fingerprint)
+    if let Some(expected) = inputs.insert(
+        (source.repository.clone(), source.path.clone()),
+        fingerprint.clone(),
+    ) && expected != fingerprint
     {
-        return Err(AssemblyError::InputsChanged);
+        return Err(AssemblyError::fingerprint_changed(
+            "repeated source observation comparison",
+            format_args!("{}:{}", source.repository, source.path.as_str()),
+            Some(&expected),
+            Some(&fingerprint),
+        ));
     }
     Ok(())
 }
@@ -857,14 +1007,24 @@ fn diagnostic(code: DiagnosticCode, message: impl Into<String>) -> Diagnostic {
 }
 
 fn portable(path: &Path) -> Result<DiagnosticPath, AssemblyError> {
-    DiagnosticPath::try_from(path.to_str().ok_or(AssemblyError::InputsChanged)?)
-        .map_err(|_| AssemblyError::InputsChanged)
+    DiagnosticPath::try_from(path.to_str().ok_or_else(|| {
+        AssemblyError::inputs_changed("source path encoding", path.display().to_string())
+    })?)
+    .map_err(|_| {
+        AssemblyError::inputs_changed(
+            "portable source path validation",
+            path.display().to_string(),
+        )
+    })
 }
 
 fn relative(path: &Path, base: &Path) -> Result<Option<DiagnosticPath>, AssemblyError> {
-    let relative = path
-        .strip_prefix(base)
-        .map_err(|_| AssemblyError::InputsChanged)?;
+    let relative = path.strip_prefix(base).map_err(|_| {
+        AssemblyError::inputs_changed(
+            "source path boundary verification",
+            path.display().to_string(),
+        )
+    })?;
     if relative.as_os_str().is_empty() {
         Ok(None)
     } else {

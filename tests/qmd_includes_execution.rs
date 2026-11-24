@@ -298,7 +298,10 @@ async fn a_later_page_cannot_change_an_earlier_pages_included_input() {
         })
         .await
         .unwrap_err();
-    assert!(matches!(error, AssemblyError::InputsChanged), "{error:?}");
+    assert!(
+        matches!(error, AssemblyError::InputsChanged { .. }),
+        "{error:?}"
+    );
     assert_eq!(std::fs::read_dir(staging.path()).unwrap().count(), 0);
 }
 

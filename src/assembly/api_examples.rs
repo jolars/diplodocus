@@ -291,7 +291,10 @@ impl WorkspaceSources {
                     .iter()
                     .any(|p| matches!(p.activity, ProvenanceActivity::ApiExamples { .. }))
                 {
-                    return Err(AssemblyError::InputsChanged);
+                    return Err(AssemblyError::inputs_changed(
+                        "API example provenance verification",
+                        package.path.display().to_string(),
+                    ));
                 }
                 let raw = document.raw_source.as_deref().unwrap_or_default();
                 let execution_source = doctest.as_ref().map_or(raw, |plan| plan.source.as_str());
@@ -414,13 +417,20 @@ impl WorkspaceSources {
                         source: execution_source,
                         portable_source: (execution_source != raw).then_some(raw),
                     })
-                    .map_err(|_| AssemblyError::InputsChanged)?,
+                    .map_err(|_| {
+                        AssemblyError::inputs_changed(
+                            "API example request serialization",
+                            package.path.display().to_string(),
+                        )
+                    })?,
                 )?;
                 let mut command = if language == "python" {
-                    let python = self
-                        .python_interpreter
-                        .as_ref()
-                        .ok_or(AssemblyError::InputsChanged)?;
+                    let python = self.python_interpreter.as_ref().ok_or_else(|| {
+                        AssemblyError::inputs_changed(
+                            "Python example interpreter selection",
+                            package.path.display().to_string(),
+                        )
+                    })?;
                     super::python_native::command(python, staging.path())
                 } else {
                     tokio::process::Command::new("julia")

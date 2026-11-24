@@ -458,9 +458,12 @@ pub(super) async fn extract_target_cached(
             "Cargo returned invalid package metadata.",
         )
     })?;
-    if inventory(repository, &initial_roots, &BTreeSet::new(), &native.build)? != initial {
-        return Err(AssemblyError::InputsChanged);
-    }
+    verify_source_fingerprints(
+        "Rust Cargo metadata input verification",
+        repository,
+        &initial,
+        &inventory(repository, &initial_roots, &BTreeSet::new(), &native.build)?,
+    )?;
     let selected = metadata
         .packages
         .iter()
@@ -614,9 +617,12 @@ pub(super) async fn extract_target_cached(
                 cancellation,
             )
             .await?;
-        if inventory(repository, &roots, &extra, &native.build)? != before {
-            return Err(AssemblyError::InputsChanged);
-        }
+        verify_source_fingerprints(
+            "Rust documentation input verification",
+            repository,
+            &before,
+            &inventory(repository, &roots, &extra, &native.build)?,
+        )?;
         for path in dependency_paths(&fs::read_to_string(&dep_info)?) {
             let absolute = if path.is_absolute() {
                 path
@@ -655,9 +661,12 @@ pub(super) async fn extract_target_cached(
                 cancellation,
             )
             .await?;
-        if inventory(repository, &roots, &extra, &native.build)? != inputs {
-            return Err(AssemblyError::InputsChanged);
-        }
+        verify_source_fingerprints(
+            "Rust compiler input verification",
+            repository,
+            &inputs,
+            &inventory(repository, &roots, &extra, &native.build)?,
+        )?;
         let json_path = native
             .build
             .join(host)
@@ -761,11 +770,8 @@ pub(super) async fn extract_target_cached(
                 ("diplodocus".into(), env!("CARGO_PKG_VERSION").into()),
             ]),
         };
-        if observation
-            .as_ref()
-            .is_some_and(|manifest| !manifest.verify())
-        {
-            return Err(AssemblyError::InputsChanged);
+        if let Some(manifest) = &observation {
+            manifest.verify_input("Rust cache input verification")?;
         }
         if let (Some((store, _, supplemental)), Some(key), Some(observation)) =
             (cache, &cache_key, &observation)
@@ -809,9 +815,12 @@ pub(super) async fn extract_target_cached(
         } else {
             let timing = reporting.phase(Phase::Examples, Some(&package.id), Some(&target.id));
             let examples = execute_doctests(&native, selected, host, cancellation).await?;
-            if inventory(repository, &roots, &extra, &native.build)? != inputs {
-                return Err(AssemblyError::InputsChanged);
-            }
+            verify_source_fingerprints(
+                "Rust doctest input verification",
+                repository,
+                &inputs,
+                &inventory(repository, &roots, &extra, &native.build)?,
+            )?;
             timing.finish();
             let completed = Provenance {
                 activity: ProvenanceActivity::RustDoctests {
@@ -848,13 +857,17 @@ pub(super) async fn extract_target_cached(
     } else {
         None
     };
-    if inventory(repository, &roots, &extra, &native.build)? != inputs
-        || observation
-            .as_ref()
-            .is_some_and(|manifest| !manifest.verify())
-        || cache.is_some_and(|(_, _, supplemental)| !supplemental.verify())
-    {
-        return Err(AssemblyError::InputsChanged);
+    verify_source_fingerprints(
+        "Rust final source inventory verification",
+        repository,
+        &inputs,
+        &inventory(repository, &roots, &extra, &native.build)?,
+    )?;
+    if let Some(manifest) = &observation {
+        manifest.verify_input("Rust cache input verification")?;
+    }
+    if let Some((_, _, supplemental)) = cache {
+        supplemental.verify_input("Rust supplemental cache input verification")?;
     }
     Ok(RustNativeExtraction {
         extraction,
@@ -1170,9 +1183,12 @@ fn inventory(
         repository: &ResolvedRepositoryPaths,
         generated: &Path,
     ) -> Result<(), AssemblyError> {
-        let relative = path
-            .strip_prefix(&repository.path)
-            .map_err(|_| AssemblyError::InputsChanged)?;
+        let relative = path.strip_prefix(&repository.path).map_err(|_| {
+            AssemblyError::inputs_changed(
+                "Rust input lexical boundary verification",
+                path.display().to_string(),
+            )
+        })?;
         let relative = if relative.as_os_str().is_empty() {
             Path::new(".")
         } else {
@@ -1183,7 +1199,10 @@ fn inventory(
             return Ok(());
         }
         if !canonical.starts_with(&repository.path) {
-            return Err(AssemblyError::InputsChanged);
+            return Err(AssemblyError::inputs_changed(
+                "Rust input canonical boundary verification",
+                canonical.display().to_string(),
+            ));
         }
         if canonical.is_file() {
             files.insert(canonical);

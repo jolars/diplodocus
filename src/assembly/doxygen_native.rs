@@ -32,26 +32,37 @@ pub(super) struct DoxygenObservation {
     roots: Vec<PathBuf>,
     configuration: BTreeSet<PathBuf>,
     inputs: Vec<InputFingerprint>,
-    cache_inputs: Vec<crate::incremental::Manifest>,
+    cache_inputs: Vec<(&'static str, crate::incremental::Manifest)>,
     working: PathBuf,
     executable: Option<PathBuf>,
 }
 
 impl DoxygenObservation {
     pub(super) fn roots(&self) -> impl Iterator<Item = &PathBuf> {
-        self.roots
-            .iter()
-            .chain(self.cache_inputs.iter().flat_map(|inputs| inputs.paths()))
+        self.roots.iter().chain(
+            self.cache_inputs
+                .iter()
+                .flat_map(|(_, inputs)| inputs.paths()),
+        )
     }
     pub(super) fn verify(&self) -> Result<(), AssemblyError> {
-        if inventory(&self.repository, &self.roots, &self.configuration)? != self.inputs {
-            return Err(AssemblyError::InputsChanged);
+        verify_source_fingerprints(
+            "Doxygen source inventory verification",
+            &self.repository,
+            &self.inputs,
+            &inventory(&self.repository, &self.roots, &self.configuration)?,
+        )?;
+        for (check, inputs) in &self.cache_inputs {
+            inputs.verify_input(check)?;
         }
-        if self.cache_inputs.iter().any(|inputs| !inputs.verify()) {
-            return Err(AssemblyError::InputsChanged);
-        }
-        if self.executable.is_some() && executable(&self.working) != self.executable {
-            return Err(AssemblyError::InputsChanged);
+        if let Some(expected) = &self.executable {
+            let observed = executable(&self.working);
+            if observed.as_ref() != Some(expected) {
+                return Err(AssemblyError::inputs_changed(
+                    "Doxygen executable resolution",
+                    format!("expected {}, observed {observed:?}", expected.display()),
+                ));
+            }
         }
         Ok(())
     }
@@ -244,9 +255,12 @@ pub(super) async fn extract_target(
     roots.sort();
     roots.dedup();
     let before = inventory(repository, &roots, &config_files)?;
-    if inventory(repository, &[], &config_files)? != config_before {
-        return Err(AssemblyError::InputsChanged);
-    }
+    verify_source_fingerprints(
+        "Doxygen configuration fingerprint verification",
+        repository,
+        &config_before,
+        &inventory(repository, &[], &config_files)?,
+    )?;
     let eligible = cache_eligible(&settings);
     if cache.is_some() && !eligible {
         reporting.cache(
@@ -298,9 +312,14 @@ pub(super) async fn extract_target(
         ))
     });
     let cache_inputs: Vec<_> = cache
-        .map(|(_, _, supplemental)| supplemental.clone())
+        .map(|(_, _, supplemental)| {
+            (
+                "Doxygen package cache inventory verification",
+                supplemental.clone(),
+            )
+        })
         .into_iter()
-        .chain(tool_inputs)
+        .chain(tool_inputs.map(|inputs| ("Doxygen tool cache inventory verification", inputs)))
         .collect();
     if let Some(((store, _, _), key)) = cache.zip(cache_key.as_ref()) {
         let candidate: Option<CachedDoxygen> = store.load("doxygen", key);
@@ -310,7 +329,7 @@ pub(super) async fn extract_target(
                 .diagnostics
                 .iter()
                 .any(|diagnostic| diagnostic.severity == Severity::Error)
-            && cache_inputs.iter().all(|inputs| inputs.verify())
+            && cache_inputs.iter().all(|(_, inputs)| inputs.verify())
             && executable(&package.path) == native.executable
         {
             let observation = DoxygenObservation {
@@ -441,8 +460,14 @@ pub(super) async fn extract_target(
             &mut vec![],
         )?;
     }
-    if current_configs != observation.configuration {
-        return Err(AssemblyError::InputsChanged);
+    if let Some(path) = current_configs
+        .symmetric_difference(&observation.configuration)
+        .next()
+    {
+        return Err(AssemblyError::inputs_changed(
+            "Doxygen configuration include membership verification",
+            path.display().to_string(),
+        ));
     }
     let optional = |key| {
         let value = metadata_settings.value(key, "");
@@ -501,7 +526,7 @@ pub(super) async fn extract_target(
     let cache_valid = observation
         .cache_inputs
         .iter()
-        .all(|inputs| inputs.verify())
+        .all(|(_, inputs)| inputs.verify())
         && executable(&package.path) == native.executable;
     staging.close()?;
     if let Some(((store, _, _), key)) = cache.zip(cache_key.as_ref())
@@ -557,9 +582,12 @@ fn executable(working: &Path) -> Option<PathBuf> {
 }
 
 fn within(repository: &ResolvedRepositoryPaths, path: &Path) -> Result<PathBuf, AssemblyError> {
-    let relative = path
-        .strip_prefix(&repository.path)
-        .map_err(|_| AssemblyError::InputsChanged)?;
+    let relative = path.strip_prefix(&repository.path).map_err(|_| {
+        AssemblyError::inputs_changed(
+            "Doxygen input boundary verification",
+            path.display().to_string(),
+        )
+    })?;
     Ok(crate::paths::resolve_repository_target(
         if relative.as_os_str().is_empty() {
             Path::new(".")

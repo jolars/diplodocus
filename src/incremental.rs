@@ -556,6 +556,86 @@ impl Manifest {
     }
 
     pub(crate) fn verify(&self) -> bool {
+        self.current().is_ok_and(|current| *current == *self)
+    }
+
+    pub(crate) fn verify_input(
+        &self,
+        check: &'static str,
+    ) -> Result<(), crate::assembly::AssemblyError> {
+        use crate::assembly::{AssemblyError, fingerprint_difference};
+
+        let current = self.current().map_err(|error| {
+            AssemblyError::inputs_changed(check, format!("could not recapture inputs: {error}"))
+        })?;
+        if *current == *self {
+            return Ok(());
+        }
+        for (path, expected) in &self.inputs {
+            let observed = current.inputs.get(path);
+            if observed != Some(expected) {
+                let digest = fingerprint_difference(
+                    path.display(),
+                    expected.digest.as_ref(),
+                    observed.and_then(|input| input.digest.as_ref()),
+                );
+                let details = if let Some(observed) = observed {
+                    if expected.target != observed.target
+                        || expected.directory != observed.directory
+                        || expected.permissions != observed.permissions
+                    {
+                        format!(
+                            "{digest}; input metadata changed (expected target {:?}, directory {}, permissions {:?}; observed target {:?}, directory {}, permissions {:?})",
+                            expected.target,
+                            expected.directory,
+                            expected.permissions,
+                            observed.target,
+                            observed.directory,
+                            observed.permissions,
+                        )
+                    } else {
+                        digest
+                    }
+                } else {
+                    format!("{digest}; input left the inventory")
+                };
+                return Err(AssemblyError::inputs_changed(check, details));
+            }
+        }
+        if let Some((path, observed)) = current
+            .inputs
+            .iter()
+            .find(|(path, _)| !self.inputs.contains_key(*path))
+        {
+            return Err(AssemblyError::inputs_changed(
+                check,
+                format!(
+                    "{}; input entered the inventory",
+                    fingerprint_difference(path.display(), None, observed.digest.as_ref())
+                ),
+            ));
+        }
+        for (name, expected) in &self.environment {
+            let observed = current.environment.get(name).and_then(Option::as_ref);
+            if expected.as_ref() != observed {
+                return Err(AssemblyError::fingerprint_changed(
+                    check,
+                    format_args!("environment variable {name}"),
+                    expected.as_ref(),
+                    observed,
+                ));
+            }
+        }
+        Err(AssemblyError::inputs_changed(
+            check,
+            format!(
+                "inventory exclusions changed (expected {:?}, observed {:?})",
+                self.excludes, current.excludes
+            ),
+        ))
+    }
+
+    fn current(&self) -> io::Result<Arc<Self>> {
         let spec = InventorySpec::new(
             &self.roots,
             &self.environment.keys().cloned().collect::<Vec<_>>(),
@@ -563,31 +643,45 @@ impl Manifest {
             self.selection.clone(),
         );
         observing(|| {
-            let current = observed(|state| state.inventories.get(&spec).cloned());
-            let current = match current {
-                Some(current) => current,
-                None => {
-                    let Ok(current) = Self::capture_inventory(&spec) else {
-                        return false;
-                    };
-                    let current = Arc::new(current);
-                    remember(|state| {
-                        state.inventories.insert(spec, current.clone());
-                    });
-                    current
-                }
-            };
-            *current == *self
+            if let Some(current) = observed(|state| state.inventories.get(&spec).cloned()) {
+                return Ok(current);
+            }
+            let current = Arc::new(Self::capture_inventory(&spec)?);
+            remember(|state| {
+                state.inventories.insert(spec, current.clone());
+            });
+            Ok(current)
         })
     }
 
     pub(crate) fn paths(&self) -> impl Iterator<Item = &PathBuf> {
         self.inputs.keys()
     }
-    pub(crate) fn matches_file(&self, path: &Path, target: &Path, digest: &Fingerprint) -> bool {
-        self.inputs.get(path).is_some_and(|input| {
-            input.target.as_deref() == Some(target) && input.digest.as_ref() == Some(digest)
-        })
+    pub(crate) fn verify_file(
+        &self,
+        check: &'static str,
+        path: &Path,
+        target: &Path,
+        expected: Option<&Fingerprint>,
+    ) -> Result<(), crate::assembly::AssemblyError> {
+        use crate::assembly::AssemblyError;
+
+        let input = self.inputs.get(path);
+        let observed_target = input.and_then(|input| input.target.as_deref());
+        let observed = input.and_then(|input| input.digest.as_ref());
+        if observed_target == Some(target) && expected.is_some() && expected == observed {
+            return Ok(());
+        }
+        Err(AssemblyError::fingerprint_changed(
+            check,
+            format_args!(
+                "{} (expected target {}, observed target {observed_target:?})",
+                path.display(),
+                target.display()
+            ),
+            expected,
+            observed,
+        ))
     }
     pub(crate) fn resolved_paths(&self) -> impl Iterator<Item = &PathBuf> {
         self.inputs
@@ -618,7 +712,9 @@ fn visit(
     {
         return Ok(());
     }
-    let target = match resolve_observed(path)? {
+    let at_path =
+        |error: io::Error| io::Error::new(error.kind(), format!("{}: {error}", path.display()));
+    let target = match resolve_observed(path).map_err(at_path)? {
         Some(path) => path,
         None => {
             inputs.insert(
@@ -633,7 +729,7 @@ fn visit(
             return Ok(());
         }
     };
-    let metadata = metadata_observed(&target)?;
+    let metadata = metadata_observed(&target).map_err(at_path)?;
     #[cfg(unix)]
     let permissions = {
         use std::os::unix::fs::PermissionsExt;
@@ -650,7 +746,7 @@ fn visit(
                 path.to_owned(),
                 Input {
                     target: Some(target.clone()),
-                    digest: Some(file_digest(&target)?),
+                    digest: Some(file_digest(&target).map_err(at_path)?),
                     directory: false,
                     permissions: Some(permissions),
                 },
@@ -667,7 +763,7 @@ fn visit(
             },
         );
         if !seen.insert(target.clone()) {
-            return Err(io::Error::other("cyclic cache input directory"));
+            return Err(at_path(io::Error::other("cyclic cache input directory")));
         }
         // Python discovery traverses `target` and `node_modules`. Retain the
         // other observations, including hidden files used as extra inputs.
@@ -675,7 +771,7 @@ fn visit(
             if roots.iter().any(|root| path.starts_with(root)));
         let rust_source = matches!(selection, Selection::RustSources { roots }
             if roots.iter().any(|root| path.starts_with(root)));
-        for name in directory_observed(&target)?.iter() {
+        for name in directory_observed(&target).map_err(at_path)?.iter() {
             if rust_source && crate::generated_storage::rust_environment_entry(name) {
                 continue;
             }
@@ -701,9 +797,9 @@ fn visit(
         }
         seen.remove(&target);
     } else {
-        return Err(io::Error::other(
+        return Err(at_path(io::Error::other(
             "cache input is not a regular file or directory",
-        ));
+        )));
     }
     Ok(())
 }
@@ -1839,6 +1935,35 @@ mod tests {
         assert!(!manifest.verify());
         fs::remove_file(missing).unwrap();
         assert!(!manifest.verify());
+    }
+
+    #[test]
+    fn manifest_diagnostic_names_the_check_path_and_observed_digest_for_a_new_file() {
+        let root = tempfile::tempdir().unwrap();
+        let inputs = Manifest::capture(&[root.path().to_owned()], &[]).unwrap();
+        let file = root.path().join("palette.png");
+        let bytes = b"generated output";
+        fs::write(&file, bytes).unwrap();
+
+        let error = inputs
+            .verify_input("package cache inventory verification")
+            .unwrap_err();
+        let message = error.to_string();
+        let digest = fingerprint_bytes(bytes);
+        assert!(
+            message.contains("package cache inventory verification"),
+            "{message}"
+        );
+        assert!(message.contains(&file.display().to_string()), "{message}");
+        assert!(message.contains("input entered the inventory"), "{message}");
+        assert!(
+            message.contains("expected fingerprint unavailable"),
+            "{message}"
+        );
+        assert!(
+            message.contains(&format!("observed fingerprint sha256:{}", digest.value)),
+            "{message}"
+        );
     }
 
     #[test]

@@ -34,8 +34,12 @@ pub(super) fn assemble(
             metadata: None,
             repository: declaration.repository.clone(),
             path: relative(&resolved.path, &repository.path)?,
-            metadata_path: relative(&resolved.metadata_path, &resolved.path)?
-                .ok_or(AssemblyError::InputsChanged)?,
+            metadata_path: relative(&resolved.metadata_path, &resolved.path)?.ok_or_else(|| {
+                AssemblyError::inputs_changed(
+                    "package metadata path verification",
+                    resolved.metadata_path.display().to_string(),
+                )
+            })?,
             kind: declaration.kind,
             visibility: declaration.visibility,
             extraction_targets: BTreeMap::new(),
@@ -63,19 +67,34 @@ pub(super) fn assemble(
                     let result = native
                         .doxygen
                         .remove(&(declaration.id.clone(), target.id.clone()))
-                        .ok_or(AssemblyError::InputsChanged)?;
+                        .ok_or_else(|| {
+                            AssemblyError::inputs_changed(
+                                "Doxygen extraction result lookup",
+                                selected.path.display().to_string(),
+                            )
+                        })?;
                     result.into()
                 }
                 "rust" => native
                     .rust
                     .remove(&(declaration.id.clone(), target.id.clone()))
-                    .ok_or(AssemblyError::InputsChanged)?
+                    .ok_or_else(|| {
+                        AssemblyError::inputs_changed(
+                            "Rust extraction result lookup",
+                            selected.path.display().to_string(),
+                        )
+                    })?
                     .into(),
                 "julia" => {
                     let result = native
                         .julia
                         .remove(&(declaration.id.clone(), target.id.clone()))
-                        .ok_or(AssemblyError::InputsChanged)?;
+                        .ok_or_else(|| {
+                            AssemblyError::inputs_changed(
+                                "Julia extraction result lookup",
+                                selected.path.display().to_string(),
+                            )
+                        })?;
                     let mut fragment = AdapterOutput::from(result.extraction);
                     fragment.evidence.completed.push(result.completed);
                     fragment
@@ -84,7 +103,12 @@ pub(super) fn assemble(
                     let result = native
                         .python
                         .remove(&(declaration.id.clone(), target.id.clone()))
-                        .ok_or(AssemblyError::InputsChanged)?;
+                        .ok_or_else(|| {
+                            AssemblyError::inputs_changed(
+                                "Python extraction result lookup",
+                                selected.path.display().to_string(),
+                            )
+                        })?;
                     support_items = result.support_items;
                     target_doctests = result.doctests;
                     let mut fragment = AdapterOutput::from(result.extraction);
@@ -95,7 +119,12 @@ pub(super) fn assemble(
                     let result = native
                         .r
                         .remove(&(declaration.id.clone(), target.id.clone()))
-                        .ok_or(AssemblyError::InputsChanged)?;
+                        .ok_or_else(|| {
+                            AssemblyError::inputs_changed(
+                                "R extraction result lookup",
+                                selected.path.display().to_string(),
+                            )
+                        })?;
                     let mut fragment = AdapterOutput::from(result.extraction);
                     fragment.evidence.completed = result.completed;
                     fragment
@@ -119,7 +148,10 @@ pub(super) fn assemble(
             };
             let reference = fragment.evidence.target();
             if reference.package != declaration.id || reference.target != target.id {
-                return Err(AssemblyError::InputsChanged);
+                return Err(AssemblyError::inputs_changed(
+                    "package extraction target identity verification",
+                    selected.path.display().to_string(),
+                ));
             }
             workspace.diagnostics.extend(fragment.diagnostics);
             if let Some(mut metadata) = fragment.metadata {
@@ -235,7 +267,10 @@ pub(super) fn assemble(
                 let mut selected_inputs = vec![];
                 for (repository_id, inputs) in inputs {
                     if repository_id != &repository.id {
-                        return Err(AssemblyError::InputsChanged);
+                        return Err(AssemblyError::inputs_changed(
+                            "extraction input repository identity verification",
+                            repository_id.clone(),
+                        ));
                     }
                     for (path, input) in inputs {
                         let location = SourceLocation {
@@ -254,7 +289,10 @@ pub(super) fn assemble(
                                 .or_default()
                                 .push(PathBuf::from(path.as_str()));
                         } else {
-                            return Err(AssemblyError::InputsChanged);
+                            return Err(AssemblyError::inputs_changed(
+                                "extraction input package boundary verification",
+                                absolute.display().to_string(),
+                            ));
                         }
                     }
                 }
@@ -344,14 +382,39 @@ pub(super) fn evidence_current(
     provenance: &crate::ir::Provenance,
     repository: &crate::paths::ResolvedRepositoryPaths,
 ) -> bool {
+    verify_evidence("extraction provenance verification", provenance, repository).is_ok()
+}
+
+pub(super) fn verify_evidence(
+    check: &'static str,
+    provenance: &crate::ir::Provenance,
+    repository: &crate::paths::ResolvedRepositoryPaths,
+) -> Result<(), AssemblyError> {
     let crate::ir::ProvenanceActivity::Extraction { inputs, .. } = &provenance.activity else {
-        return false;
+        return Err(AssemblyError::inputs_changed(
+            check,
+            "extraction evidence is missing",
+        ));
     };
-    inputs.iter().all(|(id, inputs)| {
-        id == &repository.id
-            && inputs.iter().all(|(path, input)| {
-                fs::read(repository.path.join(path.as_str()))
-                    .is_ok_and(|bytes| fingerprint_bytes(&bytes) == input.fingerprint)
-            })
-    })
+    for (id, inputs) in inputs {
+        if id != &repository.id {
+            return Err(AssemblyError::inputs_changed(
+                check,
+                format!("unexpected repository {id}"),
+            ));
+        }
+        for (path, input) in inputs {
+            let path = repository.path.join(path.as_str());
+            let observed = fs::read(&path).ok().map(|bytes| fingerprint_bytes(&bytes));
+            if observed.as_ref() != Some(&input.fingerprint) {
+                return Err(AssemblyError::fingerprint_changed(
+                    check,
+                    path.display(),
+                    Some(&input.fingerprint),
+                    observed.as_ref(),
+                ));
+            }
+        }
+    }
+    Ok(())
 }

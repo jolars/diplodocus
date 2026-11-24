@@ -169,7 +169,7 @@ async fn a_later_page_cannot_change_an_already_executed_input() {
     let stage = tempfile::tempdir().unwrap();
     let failure = source.execute(settings(stage.path())).await.unwrap_err();
     assert!(
-        matches!(failure, AssemblyError::InputsChanged),
+        matches!(failure, AssemblyError::InputsChanged { .. }),
         "{failure:?}"
     );
     assert_eq!(std::fs::read_dir(stage.path()).unwrap().count(), 0);

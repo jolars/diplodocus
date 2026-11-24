@@ -253,12 +253,9 @@ pub(super) async fn results(
                     })?;
                 let observed_paths = observation.input_paths(package);
                 let inputs = Manifest::capture(&observed_paths, &[])?;
-                if !before.verify()
-                    || !project_inputs.verify()
-                    || !observation.verify(package).unwrap_or(false)
-                {
-                    return Err(AssemblyError::InputsChanged);
-                }
+                before.verify_input("Julia pre-extraction inventory verification")?;
+                project_inputs.verify_input("Julia project input verification")?;
+                observation.verify(package)?;
                 let cache_complete = observation.complete
                     && cache.as_ref().is_some_and(|cache| {
                         let covered: BTreeSet<_> =
@@ -281,13 +278,14 @@ pub(super) async fn results(
                     });
                 }
                 reject_errors(extraction.diagnostics.clone())?;
-                if !inputs.verify()
-                    || !before.verify()
-                    || !project_inputs.verify()
-                    || !super::packages::evidence_current(&extraction.provenance, repository)
-                {
-                    return Err(AssemblyError::InputsChanged);
-                }
+                inputs.verify_input("Julia worker inventory verification")?;
+                before.verify_input("Julia pre-extraction inventory verification")?;
+                project_inputs.verify_input("Julia project input verification")?;
+                super::packages::verify_evidence(
+                    "Julia extraction provenance verification",
+                    &extraction.provenance,
+                    repository,
+                )?;
                 timing.finish();
                 staging.close()?;
                 let value = Cached {

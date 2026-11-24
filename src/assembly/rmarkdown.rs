@@ -41,7 +41,12 @@ pub(super) fn collections(
             repository: package.repository.clone(),
             path: root
                 .strip_prefix(&repository.path)
-                .map_err(|_| AssemblyError::InputsChanged)?
+                .map_err(|_| {
+                    AssemblyError::inputs_changed(
+                        "R Markdown collection boundary verification",
+                        root.display().to_string(),
+                    )
+                })?
                 .to_owned(),
             mount: "vignettes".into(),
             format: AuthoredFormat::Rmd,
@@ -96,7 +101,10 @@ pub(super) fn inputs(
             }
             let kind = entry.file_type()?;
             if kind.is_symlink() && fs::metadata(&path)?.is_dir() {
-                return Err(AssemblyError::InputsChanged);
+                return Err(AssemblyError::inputs_changed(
+                    "R Markdown directory symlink verification",
+                    path.display().to_string(),
+                ));
             }
             if kind.is_dir() {
                 walk(&path, repository, output)?;
@@ -171,7 +179,10 @@ impl WorkspaceSources {
                 .generated_source
                 .is_some()
             {
-                return Err(AssemblyError::InputsChanged);
+                return Err(AssemblyError::inputs_changed(
+                    "R Markdown generated source verification",
+                    page.path.display().to_string(),
+                ));
             }
             let collection = &self.configuration.content[page.collection];
             let package = self
@@ -344,9 +355,7 @@ impl WorkspaceSources {
                 &[],
             )?;
             citations::resolve(&mut parsed.document, &page.path, repository)?;
-            if !references.verify() {
-                return Err(AssemblyError::InputsChanged);
-            }
+            references.verify_input("R Markdown citation input verification")?;
             self.revalidate()?;
             let document = &mut self.workspace.pages.get_mut(&id).expect("article").document;
             let page_title =

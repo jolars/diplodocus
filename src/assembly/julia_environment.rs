@@ -251,9 +251,7 @@ pub(super) async fn observe(
     let Ok(inputs) = Manifest::capture(&selectors, &environment_names) else {
         return Ok(None);
     };
-    if !selected.verify() {
-        return Err(AssemblyError::InputsChanged);
-    }
+    selected.verify_input("Julia environment selection verification")?;
     let environment = Environment {
         identity: crate::incremental::key(&observation.identity),
         inputs,

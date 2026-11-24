@@ -160,11 +160,30 @@ fn single_file_inputs_detect_edits_without_selecting_siblings() {
     let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     root.write("IGNORED.md", "# Changed unselected page\n");
     sources.revalidate().unwrap();
-    root.write("CHANGELOG.md", "# Changed changelog\n");
-    assert!(matches!(
-        sources.revalidate(),
-        Err(AssemblyError::InputsChanged)
-    ));
+    let path = root.path().join("CHANGELOG.md");
+    let fingerprint = |bytes: &[u8]| diplodocus::provenance::fingerprint_bytes(bytes).value;
+    let expected = fingerprint(&std::fs::read(&path).unwrap());
+    let edited = "# Changed changelog\n";
+    root.write("CHANGELOG.md", edited);
+    let error = sources.revalidate().unwrap_err();
+    assert!(matches!(error, AssemblyError::InputsChanged { .. }));
+    let message = error.to_string();
+    assert!(
+        message.contains("workspace static provenance verification"),
+        "{message}"
+    );
+    assert!(message.contains(&path.display().to_string()), "{message}");
+    assert!(
+        message.contains(&format!("expected fingerprint sha256:{expected}")),
+        "{message}"
+    );
+    assert!(
+        message.contains(&format!(
+            "observed fingerprint sha256:{}",
+            fingerprint(edited.as_bytes())
+        )),
+        "{message}"
+    );
 }
 
 #[test]

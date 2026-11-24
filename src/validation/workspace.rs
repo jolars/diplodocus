@@ -261,7 +261,10 @@ impl ResolvedWorkspace {
     pub fn revalidate(&self) -> Result<(), AssemblyError> {
         for (selected, (root, files)) in &self.public_directories {
             if public_directory_files(root, selected)? != *files {
-                return Err(AssemblyError::InputsChanged);
+                return Err(AssemblyError::inputs_changed(
+                    "public asset directory membership verification",
+                    selected.display().to_string(),
+                ));
             }
         }
         for (selected, observation) in &self.inputs {
@@ -271,28 +274,53 @@ impl ResolvedWorkspace {
                 fingerprint,
             } = observation;
             if fs::canonicalize(selected)? != *path {
-                return Err(AssemblyError::InputsChanged);
+                return Err(AssemblyError::inputs_changed(
+                    "asset symlink target verification",
+                    selected.display().to_string(),
+                ));
             }
             let resolved = crate::paths::resolve_input_file(
                 boundary,
                 "asset",
-                path.strip_prefix(boundary)
-                    .map_err(|_| AssemblyError::InputsChanged)?,
+                path.strip_prefix(boundary).map_err(|_| {
+                    AssemblyError::inputs_changed(
+                        "asset boundary verification",
+                        selected.display().to_string(),
+                    )
+                })?,
                 boundary,
             )?;
-            if resolved != *path || fingerprint_bytes(&fs::read(path)?) != *fingerprint {
-                return Err(AssemblyError::InputsChanged);
+            if resolved != *path {
+                return Err(AssemblyError::inputs_changed(
+                    "asset target verification",
+                    selected.display().to_string(),
+                ));
+            }
+            let observed = fingerprint_bytes(&fs::read(path)?);
+            if observed != *fingerprint {
+                return Err(AssemblyError::fingerprint_changed(
+                    "asset content verification",
+                    selected.display(),
+                    Some(fingerprint),
+                    Some(&observed),
+                ));
             }
         }
         for (selected, observation) in &self.repository_targets {
             let resolved = crate::paths::resolve_repository_target(
-                selected
-                    .strip_prefix(&observation.boundary)
-                    .map_err(|_| AssemblyError::InputsChanged)?,
+                selected.strip_prefix(&observation.boundary).map_err(|_| {
+                    AssemblyError::inputs_changed(
+                        "repository target boundary verification",
+                        selected.display().to_string(),
+                    )
+                })?,
                 &observation.boundary,
             )?;
             if resolved != observation.path || resolved.is_dir() != observation.directory {
-                return Err(AssemblyError::InputsChanged);
+                return Err(AssemblyError::inputs_changed(
+                    "repository target resolution verification",
+                    selected.display().to_string(),
+                ));
             }
         }
         Ok(())
@@ -384,13 +412,25 @@ pub fn resolve_executed_workspace(
                 .validated()
                 .referenced_assets()
                 .find(|asset| asset.reference == staged.reference)
-                .ok_or(AssemblyError::InputsChanged)?;
+                .ok_or_else(|| {
+                    AssemblyError::inputs_changed(
+                        "executed asset reference lookup",
+                        staged.path.display().to_string(),
+                    )
+                })?;
             let bytes = fs::read(&staged.path).map_err(AssemblyError::from)?;
-            if fingerprint_bytes(&bytes) != asset.reference.fingerprint
+            let observed = fingerprint_bytes(&bytes);
+            if observed != asset.reference.fingerprint
                 || bytes.len() as u64 != asset.byte_size
                 || validate_image_bytes(&asset.media_type, &bytes).is_err()
             {
-                return Err(AssemblyError::InputsChanged.into());
+                return Err(AssemblyError::fingerprint_changed(
+                    "executed asset verification",
+                    staged.path.display(),
+                    Some(&asset.reference.fingerprint),
+                    Some(&observed),
+                )
+                .into());
             }
             generated.insert(
                 asset.reference.path.clone(),
@@ -646,15 +686,27 @@ fn resolve(
             };
             expanded.assets.push(crate::configuration::SiteAsset {
                 repository: directory.repository.clone(),
-                path: path.try_into().map_err(|_| AssemblyError::InputsChanged)?,
-                publish: publish
-                    .try_into()
-                    .map_err(|_| AssemblyError::InputsChanged)?,
+                path: path.try_into().map_err(|_| {
+                    AssemblyError::inputs_changed(
+                        "public asset source path validation",
+                        selected.display().to_string(),
+                    )
+                })?,
+                publish: publish.try_into().map_err(|_| {
+                    AssemblyError::inputs_changed(
+                        "public asset destination validation",
+                        selected.display().to_string(),
+                    )
+                })?,
             });
         }
         if let Some((_, previous)) = resolution.result.public_directories.get(&selected) {
             if *previous != files {
-                return Err(AssemblyError::InputsChanged.into());
+                return Err(AssemblyError::inputs_changed(
+                    "repeated public directory inventory",
+                    selected.display().to_string(),
+                )
+                .into());
             }
         } else {
             resolution
@@ -712,9 +764,21 @@ fn resolve(
             fingerprint,
         };
         if let Some(previous) = resolution.result.inputs.get_mut(&selected) {
-            if previous.path != observation.path || previous.fingerprint != observation.fingerprint
-            {
-                return Err(AssemblyError::InputsChanged.into());
+            if previous.path != observation.path {
+                return Err(AssemblyError::inputs_changed(
+                    "repeated public asset target resolution",
+                    selected.display().to_string(),
+                )
+                .into());
+            }
+            if previous.fingerprint != observation.fingerprint {
+                return Err(AssemblyError::fingerprint_changed(
+                    "repeated public asset content observation",
+                    selected.display(),
+                    Some(&previous.fingerprint),
+                    Some(&observation.fingerprint),
+                )
+                .into());
             }
             // Shared branding and public files must retain the narrower read boundary.
             if observation.boundary.starts_with(&previous.boundary) {
@@ -725,8 +789,12 @@ fn resolve(
         }
     }
     for asset in &sources.bundles.assets {
-        insert_asset(&mut resolution.result.assets, asset.clone())
-            .map_err(|_| AssemblyError::InputsChanged)?;
+        insert_asset(&mut resolution.result.assets, asset.clone()).map_err(|_| {
+            AssemblyError::inputs_changed(
+                "bundle asset identity verification",
+                asset.fingerprint.value.clone(),
+            )
+        })?;
     }
     let component_names = sources
         .configuration()
@@ -856,8 +924,12 @@ fn resolve(
     }
     // Rich alternatives can own assets without an inline Markdown reference.
     for asset in resolution.generated.values() {
-        insert_asset(&mut resolution.result.assets, asset.clone())
-            .map_err(|_| AssemblyError::InputsChanged)?;
+        insert_asset(&mut resolution.result.assets, asset.clone()).map_err(|_| {
+            AssemblyError::inputs_changed(
+                "generated asset identity verification",
+                asset.fingerprint.value.clone(),
+            )
+        })?;
     }
     if resolution
         .result

@@ -324,9 +324,20 @@ async fn assemble(
         return Err(primary.unwrap_or(AssemblyError::Cancelled));
     }
 
-    if fs::read(path)? != text.as_bytes() || resolve_workspace_paths(path, &configuration)? != paths
-    {
-        return Err(AssemblyError::InputsChanged);
+    let current = fs::read(path)?;
+    if current != text.as_bytes() {
+        return Err(AssemblyError::fingerprint_changed(
+            "native extraction configuration verification",
+            path.display(),
+            Some(&fingerprint_bytes(text.as_bytes())),
+            Some(&fingerprint_bytes(&current)),
+        ));
+    }
+    if resolve_workspace_paths(path, &configuration)? != paths {
+        return Err(AssemblyError::inputs_changed(
+            "native extraction path verification",
+            path.display().to_string(),
+        ));
     }
     let sources = assemble_with_native(
         path,
@@ -346,7 +357,10 @@ async fn assemble(
     .await?;
     if sources.paths.repositories != paths.repositories || sources.paths.packages != paths.packages
     {
-        return Err(AssemblyError::InputsChanged);
+        return Err(AssemblyError::inputs_changed(
+            "assembled and native extraction path comparison",
+            path.display().to_string(),
+        ));
     }
     Ok(sources)
 }
@@ -440,7 +454,10 @@ packages:
                     }),
                     run(Extractor::Python, 0, &status, async |_| {
                         running.await.unwrap();
-                        Err::<(), _>(AssemblyError::InputsChanged)
+                        Err::<(), _>(AssemblyError::inputs_changed(
+                            "test input verification",
+                            "simulated Python input change",
+                        ))
                     }),
                     run(Extractor::Julia, Extractor::R.bit(), &status, async |_| {
                         unreachable!("dependent extractor started after failure");
@@ -450,7 +467,7 @@ packages:
             .await
             .expect("independent extractors must overlap and finish cleanup");
         assert_eq!(r.unwrap(), "cleaned up");
-        assert!(matches!(python, Err(AssemblyError::InputsChanged)));
+        assert!(matches!(python, Err(AssemblyError::InputsChanged { .. })));
         assert!(matches!(waiting, Err(AssemblyError::Cancelled)));
         assert_eq!(status.borrow().failed, Some(Extractor::Python));
     }
