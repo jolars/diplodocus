@@ -676,7 +676,9 @@ test("client navigation keeps the shell and logo mounted while updating the page
     release();
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Comparing predictions");
     await expect(page).toHaveTitle("Comparing predictions · Tiny Stats");
-    await expect(page.getByRole("main")).toBeFocused();
+    const heading = page.getByRole("main").getByRole("heading", { level: 1 });
+    await expect(heading).toBeFocused();
+    await expect(heading).toHaveAttribute("tabindex", "-1");
     await openNavigation(page, info);
     await expect(page.locator('.contextual-nav [aria-current="page"]')).toHaveText("Comparing predictions");
     await openSections(page, info);

@@ -288,8 +288,9 @@
     const request = sequence;
     let active = true;
     const target = url.hash ? fragmentTarget(url) : undefined;
+    const main = document.querySelector('#main');
     if (narrow.matches) closeDrawer();
-    if (moveFocus && (changedPage || target)) focus(target || document.querySelector('#main'));
+    if (moveFocus && (changedPage || target)) focus(target || main.querySelector('h1') || main);
     const correct = () => {
       if (!active || request !== sequence) return;
       if (saved) {
@@ -320,7 +321,6 @@
       if (request === sequence) recordPosition();
     };
     pendingPosition = finish;
-    const main = document.querySelector('#main');
     const observer = new ResizeObserver(correct);
     observer.observe(main);
     cleanup.push(() => observer.disconnect());
