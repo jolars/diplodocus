@@ -84,7 +84,7 @@ in tests and CI results rather than adding another dated ledger.
 - [x] Allow per-page indexing directives in presentation metadata. Eunoia keeps
   some API routes available for compatibility and currently injects
   `noindex` into their generated HTML.
-- [ ] Make the Nix package link SQLite with the nixpkgs revision used by
+- [x] Make the Nix package link SQLite with the nixpkgs revision used by
   consumers. Eunoia still supplies SQLite through a local package override
   because its build fails to resolve `-lsqlite3`.
 - [ ] Identify which check raises `InputsChanged` and report the input path

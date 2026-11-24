@@ -52,6 +52,11 @@
           };
           cargoLock.lockFile = ./Cargo.lock;
 
+          nativeBuildInputs = [ pkgs.pkg-config ];
+          buildInputs = [ pkgs.sqlite ];
+          # Use nixpkgs SQLite even though Cargo enables the bundled feature.
+          env.LIBSQLITE3_SYS_USE_PKG_CONFIG = "1";
+
           # Execution tests need the prepared language environments supplied by devenv.
           doCheck = false;
           doInstallCheck = true;
