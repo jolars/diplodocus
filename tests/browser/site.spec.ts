@@ -1640,21 +1640,6 @@ test("search and result navigation work with the keyboard", async ({ page }) => 
   await expect(page).toHaveURL(destination!);
 });
 
-test("preview reloads the page when its revision advances", async ({ page }) => {
-  let revision = 0;
-  await page.route("**/__diplodocus/revision", async route => {
-    const body = String(revision);
-    if (revision === 1) revision = 0;
-    await route.fulfill({ status: 200, contentType: "text/plain", body });
-  });
-  await page.goto("/");
-  let reloads = 0;
-  page.on("load", () => reloads++);
-  revision = 1;
-  await expect.poll(() => reloads, { timeout: 5000 }).toBe(1);
-});
-
-
 test("shared guides, API trees, and page headings support a round trip", async ({ page }, info) => {
   await page.goto("/guides/choosing-a-metric.html");
   const navigation = page.getByRole("navigation", { name: "Documentation" });

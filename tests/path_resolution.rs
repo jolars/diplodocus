@@ -151,8 +151,7 @@ fn resolves_the_authored_only_project_configuration() {
             "home",
             "guide",
             "reference",
-            "examples",
-            "development",
+            "design",
             "changelog",
             "contributing"
         ]

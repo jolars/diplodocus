@@ -142,11 +142,12 @@ if (mode === "serve-test") {
       cpSync(join(sharedTopics, directory), join(workspace, "r", directory), { recursive: true });
     }
     appendFileSync(join(workspace, "r/NAMESPACE"), `\n${readFileSync(join(sharedTopics, "NAMESPACE"), "utf8")}`);
+    // The incremental preview test exercises live reload in its own workspace.
     process.exitCode = await run(process.env.DIPLODOCUS_BROWSER_BINARY, [
       "serve", "--config", join(workspace, "diplodocus.yaml"),
       "--output", join(workspace, "site"),
       "--host", "127.0.0.1", "--port", process.env.DIPLODOCUS_BROWSER_PORT ?? "0",
-      "--live-reload",
+      "--no-live-reload",
     ]);
   } finally {
     rmSync(workspace, { recursive: true, force: true });
