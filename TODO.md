@@ -78,7 +78,7 @@ in tests and CI results rather than adding another dated ledger.
 - [x] Expose the document and asset inventory for fragment generation before
   rendering. External frontends could build a URL map without generating the
   fragments twice.
-- [ ] Resolve relative `srcset` candidates against their source page before
+- [x] Resolve relative `srcset` candidates against their source page before
   client-side navigation updates the base URL. Cover retained header images
   and navigation between nested routes so Eunoia can drop its rewrite.
 - [ ] Allow per-page indexing directives in presentation metadata. Eunoia keeps

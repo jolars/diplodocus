@@ -109,6 +109,34 @@
   if (protocol !== '1' || !shell) return;
   document.documentElement.dataset.diplodocusRouter = 'true';
 
+  const normalizeSrcset = (srcset, base) => {
+    // A URL token can contain commas, including the comma in a data URL.
+    const urlToken = /[,\t\n\f\r ]*([^\t\n\f\r ,][^\t\n\f\r ]*)/gy;
+    const descriptors = /(?:[^,(]+|\([^)]*(?:\)|$))*/y;
+    let normalized = '';
+    let end = 0;
+    for (let match; (match = urlToken.exec(srcset));) {
+      const token = match[1];
+      const url = token.replace(/,+$/, '');
+      const start = urlToken.lastIndex - token.length;
+      normalized += srcset.slice(end, start);
+      try {
+        normalized += new URL(url, base).href;
+      } catch {
+        // Leave invalid candidates for the browser to ignore.
+        normalized += url;
+      }
+      end = start + url.length;
+      // A trailing comma ends a candidate without descriptors.
+      if (url === token) {
+        descriptors.lastIndex = urlToken.lastIndex;
+        descriptors.exec(srcset);
+        urlToken.lastIndex = descriptors.lastIndex;
+      }
+    }
+    return normalized + srcset.slice(end);
+  };
+
   const normalizeUrls = (root, base) => {
     for (const element of root.querySelectorAll('[href], [src]')) {
       for (const attribute of ['href', 'src']) {
@@ -117,8 +145,13 @@
         }
       }
     }
+    for (const element of root.querySelectorAll('[srcset]')) {
+      const srcset = element.getAttribute('srcset');
+      const normalized = normalizeSrcset(srcset, base);
+      if (normalized !== srcset) element.setAttribute('srcset', normalized);
+    }
   };
-  // Retained elements must keep their destinations when pushState changes the base URL.
+  // Retained elements must keep their URLs when navigation changes the document URL.
   normalizeUrls(document, location.href);
   document.querySelector('.skip-link').setAttribute('href', '#main');
   const home = document.querySelector('.brand').href;

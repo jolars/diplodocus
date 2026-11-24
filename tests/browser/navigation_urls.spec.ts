@@ -24,8 +24,9 @@ test.beforeAll(async () => {
     writeFile(join(workspace, "docs/index.qmd"), "# Home\n\n[Read nested guide](guides/nested.qmd)\n"),
     writeFile(join(workspace, "docs/reference/index.qmd"), "# Reference\n\n[Commands](cli.qmd)\n"),
     writeFile(join(workspace, "docs/reference/cli.qmd"), "# Commands\n\nCLI options.\n\n## Input\n\nUse patterned flags for input.\n\n## Output\n\nUse patterned flags for output.\n"),
-    writeFile(join(workspace, "docs/guides/nested.qmd"), "# Nested guide\n\nSee [`rmath::equation`].\n\n[Home](../index.qmd)\n\n![Chart](../images/chart.svg)\n"),
+    writeFile(join(workspace, "docs/guides/nested.qmd"), "# Nested guide\n\nSee [`rmath::equation`].\n\n[Home](../index.qmd)\n\n![Chart](../images/chart.svg)\n\n![Responsive chart](../images/raster.png)\n"),
     writeFile(join(workspace, "docs/images/chart.svg"), '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 20"><path fill="green" d="M0 20 20 0 40 20Z"/></svg>'),
+    copyFile("assets/brand/og.png", join(workspace, "docs/images/raster.png")),
     writeFile(join(workspace, "r/DESCRIPTION"), "Package: navigationmath\nVersion: 1.0.0\nTitle: Navigation Math\nDescription: Static math fixture.\nLicense: MIT\nAuthor: Fixture Authors\nMaintainer: Fixture Authors <fixtures@example.test>\n"),
     writeFile(join(workspace, "r/R/equation.R"), "equation <- function(x) x\n"),
     writeFile(join(workspace, "r/NAMESPACE"), "export(equation)\n"),
@@ -133,6 +134,8 @@ for (const style of ["file", "clean"]) {
     const suffix = style === "file" ? ".html" : "";
     const homePath = `${prefix}${style === "file" ? "index.html" : ""}`;
     const nestedPath = `${prefix}guides/nested${suffix}`;
+    const inlineImage = "data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%274%27%20height=%274%27/%3E";
+    const pictureSrcset = `../public/icon.png?variant=1,2, ${inlineImage} 2x`;
     const errors: string[] = [];
     const missing: string[] = [];
     page.on("pageerror", error => errors.push(error.message));
@@ -156,7 +159,16 @@ for (const style of ["file", "clean"]) {
         ".woff2": "font/woff2", ".woff": "font/woff", ".ttf": "font/ttf",
       };
       try {
-        const body = await readFile(join(output.get(servedBuild)!, path));
+        let body = await readFile(join(output.get(servedBuild)!, path));
+        if (path === "reference/cli.html") {
+          // Exercise a source element and commas inside candidate URLs.
+          body = Buffer.from(body.toString().replace("</main>", `
+<picture id="responsive-picture">
+  <source srcset="${pictureSrcset}">
+  <img src="../public/icon.png" alt="Responsive picture">
+</picture>
+</main>`));
+        }
         await route.fulfill({ body, contentType: contentTypes[extname(path)] ?? "application/octet-stream" });
       } catch {
         missing.push(path);
@@ -172,7 +184,7 @@ for (const style of ["file", "clean"]) {
       await expect(page.locator('link[href$="katex.min.css"]')).toHaveCount(0);
       const identity = await page.evaluateHandle(() => ({
         document,
-        elements: [...document.querySelectorAll("header, header a, .site-search")],
+        elements: [...document.querySelectorAll("header, header a, .brand-logo, .site-search")],
       }));
       const navbar = page.locator("header .desktop-sections:visible a, .site-search, .header-actions > .repository-link:visible");
       const positions = await navbar.evaluateAll(elements => elements.map(element => {
@@ -184,8 +196,29 @@ for (const style of ["file", "clean"]) {
         await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveAttribute("href", `${origin}${prefix}public/icon.png`);
         await expect(page.locator('link[rel="manifest"]')).toHaveAttribute("href", `${origin}${prefix}site.webmanifest`);
       };
+      const checkResponsiveImage = async (selector: string, artifact: string) => {
+        const html = await readFile(join(output.get(style)!, artifact), "utf8");
+        const staticSrcset = await page.evaluate(({ html, selector }) =>
+          new DOMParser().parseFromString(html, "text/html").querySelector(selector)!.getAttribute("srcset")!,
+        { html, selector });
+        const candidates = staticSrcset.split(", ").map(candidate => {
+          const [url, width] = candidate.split(" ");
+          expect(url).toMatch(/^(?:\.\.\/)*assets\//);
+          return `${new URL(url, page.url()).href} ${width}`;
+        });
+        const image = page.locator(selector);
+        const srcset = candidates.join(", ");
+        await expect(image).toHaveAttribute("srcset", srcset);
+        const sources = candidates.map(candidate => candidate.split(" ")[0]);
+        await expect.poll(() => image.evaluate((element: HTMLImageElement, candidates) =>
+          element.naturalWidth > 0 && candidates.includes(element.currentSrc), sources,
+        )).toBe(true);
+        return srcset;
+      };
+      const logoCandidates = await checkResponsiveImage(".brand-logo", "index.html");
       const stableNavbar = async () => {
         await checkIcons();
+        await expect(page.locator(".brand-logo")).toHaveAttribute("srcset", logoCandidates);
         await expect(page.locator("html")).toHaveAttribute("data-site-starts", "1");
         await expect(page.locator('link[href$="public/custom.css"]')).toHaveCount(1);
         expect(await identity.evaluate(value => value.document === document && value.elements.every(element => element.isConnected))).toBe(true);
@@ -237,14 +270,23 @@ for (const style of ["file", "clean"]) {
 
       await page.getByRole("main").getByRole("link", { name: "Commands", exact: true }).click();
       await expect(page.getByRole("heading", { level: 1 })).toHaveText("Commands");
+      const pictureUrl = `${origin}${prefix}public/icon.png?variant=1,2`;
+      await expect(page.locator("#responsive-picture source")).toHaveAttribute(
+        "srcset", `${pictureUrl}, ${inlineImage} 2x`,
+      );
+      await expect.poll(() => page.getByRole("img", { name: "Responsive picture" }).evaluate(
+        (element: HTMLImageElement, sources) => element.naturalWidth > 0 && sources.includes(element.currentSrc),
+        [pictureUrl, inlineImage],
+      )).toBe(true);
       await expect(page.locator('.desktop-sections [aria-current="true"]')).toHaveText("Reference");
       await stableNavbar();
       await openSection("Guide");
       await expect(page.getByRole("heading", { level: 1 })).toHaveText("Nested guide");
       await expect(page.locator(".contextual-nav")).not.toContainText("Commands");
-      const chart = page.getByRole("img", { name: "Chart" });
+      const chart = page.getByRole("img", { name: "Chart", exact: true });
       expect(await chart.getAttribute("src")).toMatch(new RegExp(`^${origin}${prefix}assets/[^/]+\\.svg$`));
       await expect.poll(() => chart.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
+      await checkResponsiveImage('img[alt="Responsive chart"]', "guides/nested.html");
       const mathLink = page.getByRole("main").getByRole("link", { name: "rmath::equation", exact: true });
       const mathPath = new URL((await mathLink.getAttribute("href"))!, page.url()).pathname;
       const publicMathUrl = `${publicRoot}${mathPath.slice(prefix.length)}`;
@@ -277,6 +319,8 @@ for (const style of ["file", "clean"]) {
       await stableNavbar();
       await page.reload();
       await expect(page.locator("body")).toHaveAttribute("data-layout", "docs");
+      const nestedLogoCandidates = await checkResponsiveImage(".brand-logo", "guides/nested.html");
+      expect(nestedLogoCandidates).toBe(logoCandidates);
       await page.locator(".brand").click();
       await expect(page.locator("body")).toHaveAttribute("data-layout", "home");
       await page.reload();
