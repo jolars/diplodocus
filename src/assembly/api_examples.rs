@@ -45,6 +45,8 @@ pub(super) struct PythonEnvironment {
     search_paths: Vec<PathBuf>,
     runtime_paths: Vec<PathBuf>,
     used_paths: Vec<PathBuf>,
+    #[serde(default)]
+    loaded_files: Vec<PathBuf>,
     flags: Vec<i64>,
     eligible: bool,
 }
@@ -76,8 +78,23 @@ impl PythonEnvironment {
         if !self.eligible {
             return None;
         }
+        Self::observe_paths(&self.runtime_paths).ok()
+    }
+
+    pub(super) fn observe_used(&self) -> std::io::Result<crate::incremental::Manifest> {
+        let paths: Vec<_> = self
+            .used_paths
+            .iter()
+            .chain(&self.loaded_files)
+            .filter(|path| !path.is_dir())
+            .cloned()
+            .collect();
+        Self::observe_paths(&paths)
+    }
+
+    fn observe_paths(paths: &[PathBuf]) -> std::io::Result<crate::incremental::Manifest> {
         crate::incremental::Manifest::capture(
-            &self.runtime_paths,
+            paths,
             &[
                 "PATH",
                 "LANG",
@@ -96,7 +113,6 @@ impl PythonEnvironment {
             ]
             .map(str::to_owned),
         )
-        .ok()
     }
 }
 
@@ -532,12 +548,8 @@ impl WorkspaceSources {
                             base.covers(environment, &[runtime, inputs])
                         })
                 });
-                if !covered
-                    && let Some(environment) = results
-                        .environment
-                        .and_then(|environment| environment.observe())
-                {
-                    self.cache_observations.push(environment);
+                if !covered && let Some(environment) = results.environment {
+                    self.cache_observations.push(environment.observe_used()?);
                 }
                 let provenance = Provenance {
                     activity,
@@ -581,5 +593,42 @@ impl WorkspaceSources {
             }
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn used_python_environment_tracks_loaded_files_without_inventorying_search_roots() {
+        let directory = tempfile::tempdir().unwrap();
+        let root = directory.path();
+        let module = root.join("used.py");
+        let library = root.join("loaded.so");
+        let unrelated = root.join("unrelated.py");
+        fs::write(&module, "loaded module").unwrap();
+        fs::write(&library, "loaded library").unwrap();
+
+        let environment = PythonEnvironment {
+            search_paths: vec![root.to_owned()],
+            runtime_paths: vec![root.to_owned()],
+            used_paths: vec![module.clone()],
+            loaded_files: vec![library.clone()],
+            flags: Vec::new(),
+            eligible: true,
+        };
+        let used = environment.observe_used().unwrap();
+        let full = environment.observe().unwrap();
+        assert_eq!(used.paths().count(), 2);
+        fs::write(unrelated, "unrelated module").unwrap();
+        assert!(used.verify());
+        assert!(!full.verify());
+
+        fs::write(&library, "replaced library").unwrap();
+        assert!(!used.verify());
+        let used = environment.observe_used().unwrap();
+        fs::write(module, "replaced module").unwrap();
+        assert!(!used.verify());
     }
 }

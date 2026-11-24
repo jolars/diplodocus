@@ -122,12 +122,15 @@ def observe_environment(request_path, root, repository_root, tracked_source_path
         pathlib.Path(path).is_file() for path in mapped_libraries
     )
     used_paths = set()
+    loaded_files = set(mapped_libraries)
     for module in list(sys.modules.values()):
         module_path = getattr(module, "__file__", None)
         if module_path is not None:
-            module_path = pathlib.Path(module_path).resolve()
+            logical = cwd / module_path
+            module_path = logical.resolve()
             if not module_path.is_relative_to(staging_root):
                 used_paths.add(str(module_path))
+                loaded_files.add(str(logical))
             if not any(module_path.is_relative_to(base) for base in covered_roots):
                 eligible = False
         elif getattr(getattr(module, "__spec__", None), "origin", None) not in (
@@ -138,6 +141,7 @@ def observe_environment(request_path, root, repository_root, tracked_source_path
         "search_paths": list(map(str, search_paths)),
         "runtime_paths": list(map(str, runtime_paths)),
         "used_paths": sorted(used_paths),
+        "loaded_files": sorted(loaded_files),
         "flags": [int(flag) for flag in sys.flags],
         "eligible": eligible,
     }

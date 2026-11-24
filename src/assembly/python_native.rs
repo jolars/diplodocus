@@ -368,10 +368,10 @@ pub(super) async fn results(
             });
             if let Some((_, inputs)) = &completed_environment {
                 observations.push(inputs.clone());
-            } else if let Some(inputs) = environment.observe() {
-                // Keep watch inputs for fresh output with uncertain coverage.
-                // This later inventory cannot authorize result reuse.
-                observations.push(inputs);
+            } else {
+                // A fresh result still tracks the runtime files observed by discovery.
+                // A post-extraction observation cannot authorize cache reuse.
+                observations.push(environment.observe_used()?);
             }
             let result = PythonNativeExtraction {
                 extraction,
