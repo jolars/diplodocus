@@ -810,7 +810,7 @@ fn page_navigation_preserves_authored_ids_and_disambiguates_repeated_headings() 
 fn tabsets_preserve_snapshot_content_links_and_markdown_fallback() {
     let root = support::TestWorkspace::new();
     root.write("diplodocus.yaml", "project:\n  name: \"Tabs\"\nrepositories:\n  - id: \"docs\"\n    path: \".\"\ncontent:\n  - id: \"guide\"\n    owner: \"project\"\n    repository: \"docs\"\n    path: \"docs\"\n    mount: \"\"\n    format: \"gfm\"\n");
-    root.write("docs/index.md", "# Guide\n\n[Read R](#r)\n\n::: {#languages .panel-tabset group=\"language\"}\n\n### Python\n\n```python\nprint(1)\n```\n\n### R {#r .active}\n\nR content.\n\n:::\n");
+    root.write("docs/index.md", "# Guide\n\n[Read R](#r)\n\n::: {#languages .panel-tabset group=\"language\"}\n\n### Python {icon=\"python\"}\n\n```python\nprint(1)\n```\n\n### R {#r .active}\n\nR content.\n\n:::\n");
     let sources = assemble_workspace(root.path().join("diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let artifact = tempfile::tempdir().unwrap();
@@ -826,6 +826,7 @@ fn tabsets_preserve_snapshot_content_links_and_markdown_fallback() {
         html.contains("class=\"panel-tabset\" id=\"languages\" data-tabset-group=\"language\"")
     );
     assert_eq!(html.matches("class=\"tabset-panel\"").count(), 2);
+    assert!(html.contains("data-tab-active=\"false\" data-tab-icon=\"python\">Python"));
     assert!(html.contains("id=\"r\" data-tab-active=\"true\""));
     assert!(!html.contains("aria-label=\"On this page\""));
     assert!(rendered.files().contains_key("assets/tabsets.js"));
@@ -833,6 +834,17 @@ fn tabsets_preserve_snapshot_content_links_and_markdown_fallback() {
     assert!(markdown.contains("### Python"));
     assert!(markdown.contains("### R"));
     assert!(markdown.contains("R content."));
+    assert!(!markdown.contains("icon="));
+
+    let fragments = diplodocus::rendering::render_fragments(&site).unwrap();
+    for css in [
+        &rendered.files()["assets/site.css"].bytes,
+        &fragments.files()["assets/content.css"].bytes,
+    ] {
+        let css = std::str::from_utf8(css).unwrap();
+        assert!(css.contains("[data-tab-icon=\"python\"]::before"));
+        assert!(css.contains("url(\"data:image/svg+xml;base64,"));
+    }
 }
 
 #[test]

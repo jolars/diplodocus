@@ -24,6 +24,7 @@ mod search_index;
 mod signatures;
 mod sitemap;
 mod social;
+mod tab_icons;
 pub use fragments::{
     FragmentDocument, FragmentIndex, FragmentInventory, FragmentInventoryDocument,
     fragment_inventory,

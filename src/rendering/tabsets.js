@@ -45,6 +45,7 @@
         const button = document.createElement('button');
         button.type = 'button';
         button.textContent = heading.textContent;
+        if (heading.dataset.tabIcon) button.dataset.tabIcon = heading.dataset.tabIcon;
         button.id = uniqueId(`${heading.id}-tab`);
         panel.id = uniqueId(`${heading.id}-panel`);
         button.setAttribute('role', 'tab');

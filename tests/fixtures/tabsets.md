@@ -2,7 +2,7 @@
 
 :::: {.panel-tabset group="language"}
 
-### Python {#first-python}
+### Python {#first-python icon="python"}
 
 Python content.
 
@@ -18,7 +18,7 @@ Nested output.
 
 :::
 
-### R {#first-r .active}
+### R {#first-r .active icon="r"}
 
 R content.
 
@@ -37,6 +37,22 @@ Second Python content.
 ### R {#second-r}
 
 Second R content.
+
+:::
+
+::: {#platforms .panel-tabset}
+
+### Linux {icon="linux"}
+
+Linux example.
+
+### macOS {icon="macos"}
+
+macOS example.
+
+### Windows {icon="windows"}
+
+Windows example.
 
 :::
 

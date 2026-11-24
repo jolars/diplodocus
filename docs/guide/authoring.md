@@ -166,13 +166,13 @@ headings remain inside their panels. This syntax works in GFM, QMD, and R Markdo
 ````markdown
 ::: {.panel-tabset group="language"}
 
-### Python
+### Python {icon="python"}
 
 ```python
 print("Hello")
 ```
 
-### R {.active}
+### R {.active icon="r"}
 
 ```r
 print("Hello")
@@ -187,6 +187,11 @@ in other tabsets in the same group on the page. Readers can switch tabs with the
 arrow keys, Home, or End. Links into a hidden panel reveal it automatically.
 Without JavaScript, all panels appear in document order under their headings.
 Markdown exports retain every panel as ordinary sections.
+
+The optional `icon` attribute adds a decorative icon beside a tab label.
+Use `cpp`, `julia`, `python`, `r`, or `rust` for languages, and `linux`,
+`macos`, or `windows` for platforms. Keep the label in the heading, for
+example `### macOS {icon="macos"}`.
 
 ## Links and assets
 

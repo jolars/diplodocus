@@ -768,9 +768,11 @@ test("client navigation initializes code and tabsets on every visit without dupl
   for (let visit = 0; visit < 2; visit++) {
     await followFixtureLink(page, "/tabsets.html");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Tabsets");
-    await expect(page.locator(".tabset-controls")).toHaveCount(3);
+    await expect(page.locator(".tabset-controls")).toHaveCount(4);
     const first = page.locator(".panel-tabset").first();
-    await first.getByRole("tab", { name: "Python", exact: true }).click();
+    const python = first.getByRole("tab", { name: "Python", exact: true });
+    await expect(python).toHaveAttribute("data-tab-icon", "python");
+    await python.click();
     await expect(first.getByText("Python content.", { exact: true })).toBeVisible();
     await first.getByRole("tab", { name: "Python", exact: true }).press("ArrowRight");
     await expect(first.getByRole("tab", { name: "R", exact: true })).toBeFocused();
@@ -2069,7 +2071,7 @@ test("copy buttons preserve highlighted code and support keyboard and fallback c
 });
 
 
-test("tabsets support keyboard navigation, groups, nesting, and fragment links", async ({ page }) => {
+test("tabsets support keyboard navigation, groups, nesting, and fragment links", async ({ page }, info) => {
   await page.goto("/tabsets.html");
   const sets = page.locator(".panel-tabset");
   const first = sets.nth(0);
@@ -2111,7 +2113,20 @@ test("tabsets support keyboard navigation, groups, nesting, and fragment links",
   await page.goto("/tabsets.html#nested-output");
   await expect(nested.getByText("Nested output.", { exact: true })).toBeVisible();
   await expect(page.getByText("Content without tab headings remains visible.")).toBeVisible();
+  const platforms = page.locator("#platforms");
+  for (const label of ["Linux", "macOS", "Windows"]) {
+    const tab = platforms.getByRole("tab", { name: label, exact: true });
+    await expect(tab).toHaveAttribute("data-tab-icon", label.toLowerCase());
+    expect(await tab.evaluate(element => {
+      const style = getComputedStyle(element, "::before");
+      const image = style.maskImage === "none" ? style.backgroundImage : style.maskImage;
+      return style.content === '\"\"' && image.startsWith('url(\"data:image/svg+xml;base64,');
+    })).toBe(true);
+  }
+  await platforms.getByRole("tab", { name: "Windows" }).click();
+  await expect(platforms.getByRole("tabpanel").getByText("Windows example.")).toBeVisible();
   await fitsViewport(page);
+  await capture(page, info, "platform-tabset");
 });
 
 test("Tiny Stats residuals guide presents Python and R as tabs", async ({ page }, info) => {

@@ -164,6 +164,7 @@ if ('IntersectionObserver' in window) {
 fn navigation_shell_fingerprint(
     site: &Site<'_>,
     images: &super::images::Images,
+    tab_icon_style: &str,
 ) -> Result<String, SiteError> {
     // Render from one route so page selection and relative URLs cannot split a shell.
     let mut shell = String::new();
@@ -196,6 +197,7 @@ fn navigation_shell_fingerprint(
     for source in [
         STYLE,
         &syntax_style,
+        tab_icon_style,
         THEME_SCRIPT,
         NAV_SCRIPT,
         SEARCH,
@@ -220,8 +222,9 @@ pub(crate) fn render_reported(
     let mut progress = reporting.stage("Rendering pages", Some(site.pages.len()));
     let mut files = BTreeMap::new();
     let images = super::images::Images::default();
+    let tab_icon_style = super::tab_icons::stylesheet();
     let shell_fingerprint = standalone
-        .then(|| navigation_shell_fingerprint(site, &images))
+        .then(|| navigation_shell_fingerprint(site, &images, &tab_icon_style))
         .transpose()?;
     if standalone {
         files.insert(
@@ -977,6 +980,7 @@ pub(crate) fn render_reported(
     } else {
         super::highlighting::fragment_stylesheet()
     };
+    style.push_str(&tab_icon_style);
     if site.logo_dark.is_some() || site.header_logo_dark.is_some() {
         style.push_str(include_str!("assets/styles/logo.css"));
     }
@@ -1731,7 +1735,22 @@ impl Renderer<'_, '_> {
                 .iter()
                 .any(|class| class.value == "active");
             let heading_level = (*heading_level + self.heading_offset).clamp(1, 6);
-            write!(html, "<section class=\"tabset-panel\"><h{heading_level} class=\"tabset-heading\" id=\"{}\" data-tab-active=\"{active}\">{}{}</h{heading_level}>", escape(&identifier), self.site.heading_aliases(self.route, Some(&identifier), &label, false), self.inlines(inlines)?).unwrap();
+            write!(html, "<section class=\"tabset-panel\"><h{heading_level} class=\"tabset-heading\" id=\"{}\" data-tab-active=\"{active}\"", escape(&identifier)).unwrap();
+            if let Some(icon) = attributes
+                .key_values
+                .iter()
+                .find(|pair| pair.key.value == "icon")
+            {
+                write!(html, " data-tab-icon=\"{}\"", escape(&icon.value.value)).unwrap();
+            }
+            write!(
+                html,
+                ">{}{}</h{heading_level}>",
+                self.site
+                    .heading_aliases(self.route, Some(&identifier), &label, false),
+                self.inlines(inlines)?
+            )
+            .unwrap();
             panel_open = true;
             start = index + 1;
         }
