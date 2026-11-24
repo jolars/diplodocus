@@ -1139,7 +1139,7 @@ test("phone menu contains sections and repository links and dismisses", async ({
   await expect(page.locator(".mobile-sections")).toBeHidden();
 });
 
-test("phone search opens a centered dialog", async ({ page }, info) => {
+test("phone search opens a horizontally centered dialog", async ({ page }, info) => {
   test.skip(info.project.name !== "mobile", "The compact search control is shown on phones.");
   await page.goto("/");
   const search = page.getByRole("searchbox");
@@ -1153,11 +1153,31 @@ test("phone search opens a centered dialog", async ({ page }, info) => {
   const bounds = (await dialog.boundingBox())!;
   const viewport = page.viewportSize()!;
   expect(bounds.x + bounds.width / 2).toBeCloseTo(viewport.width / 2, 0);
-  expect(bounds.y + bounds.height / 2).toBeCloseTo(viewport.height / 2, 0);
   await capture(page, info, "phone-search-expanded", true, false);
   await page.touchscreen.tap(2, 2);
   await expect(dialog).toBeHidden();
   await expect(trigger).toBeFocused();
+});
+
+test("search input stays in place as results change", async ({ page }) => {
+  await page.goto("/");
+  const dialog = page.getByRole("dialog", { name: "Search documentation" });
+  const search = dialog.getByRole("searchbox");
+  const status = dialog.getByRole("status");
+  await searchFor(page, "");
+  const initialTop = (await search.boundingBox())!.y;
+
+  await search.fill("mean_squared_error");
+  await expect(dialog.getByRole("link", { name: "tinystats.mean_squared_error", exact: true })).toBeVisible();
+  expect((await search.boundingBox())!.y).toBe(initialTop);
+
+  await search.fill("no-search-matches-expected");
+  await expect(status).toHaveText("No results found.");
+  expect((await search.boundingBox())!.y).toBe(initialTop);
+
+  await search.clear();
+  await expect(status).toBeEmpty();
+  expect((await search.boundingBox())!.y).toBe(initialTop);
 });
 
 test("search groups matching sections and links to their anchors", async ({ page }, info) => {

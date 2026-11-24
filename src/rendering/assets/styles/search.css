@@ -20,10 +20,12 @@
 
 .search-dialog {
   box-sizing: border-box;
+  position: fixed;
+  inset: min(4rem, 10dvh) 0 auto;
   width: min(38rem, calc(100% - 2rem));
   max-width: none;
   max-height: min(80dvh, 42rem);
-  margin: auto;
+  margin: 0 auto;
   padding: 1rem;
   border: 1px solid var(--border);
   border-radius: .85rem;
