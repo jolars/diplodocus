@@ -3,7 +3,11 @@ name = "diplodocus"
 version = "0.16.0"
 edition = "2024"
 rust-version = "1.98.0"
-authors = ["Johan Larsson <johan@jolars.co>"]
+authors = [
+  "Johan Larsson <johan@jolars.co>",
+  "Nikolaj Fabricius-Bjerre",
+  "Frederik Fabricius-Bjerre",
+]
 description = "Build coherent documentation websites for polyglot software projects."
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/jolars/diplodocus"
