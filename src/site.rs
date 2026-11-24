@@ -110,6 +110,7 @@ pub(crate) struct PageModel<'a> {
 pub(crate) struct ResolvedPageMetadata<'a> {
     pub title: String,
     pub description: Option<&'a str>,
+    pub robots: Option<&'a str>,
 }
 
 impl PageModel<'_> {
@@ -774,7 +775,12 @@ impl<'a> Site<'a> {
         let description = metadata
             .and_then(|metadata| metadata.description.as_deref())
             .or(self.presentation.description.as_deref());
-        ResolvedPageMetadata { title, description }
+        let robots = metadata.and_then(|metadata| metadata.robots.as_deref());
+        ResolvedPageMetadata {
+            title,
+            description,
+            robots,
+        }
     }
 
     /// Warn when multiple visible pages have the same rendered HTML title.

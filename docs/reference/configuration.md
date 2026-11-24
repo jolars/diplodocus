@@ -358,6 +358,7 @@ path includes `.html` with either URL style and must name an existing page.
 | --- | --- | --- | --- |
 | `title` | string | Page title with site suffix | Complete HTML and social card title. No suffix is added to overrides. Must not be blank. |
 | `description` | string | `presentation.description` | HTML and social card description. An empty string emits empty description tags. |
+| `robots` | string | Unset | Comma-separated directives for the HTML robots meta tag. Pages with `noindex` or `none` are omitted from the sitemap. |
 
 Overrides affect head metadata. Headings, navigation, search, and Markdown keep
 their existing titles. Without an override, matching page and site titles appear

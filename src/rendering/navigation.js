@@ -247,7 +247,7 @@
     }
   };
 
-  const metadata = 'meta[name="description"], meta[property^="og:"], meta[name^="twitter:"], link[rel="canonical"], link[rel="alternate"][type="text/markdown"]';
+  const metadata = 'meta[name="description"], meta[name="robots"], meta[property^="og:"], meta[name^="twitter:"], link[rel="canonical"], link[rel="alternate"][type="text/markdown"]';
   const styles = new Map(Array.from(document.querySelectorAll('link[rel="stylesheet"]'), link => [link.href, Promise.resolve()]));
   const loadStyles = next => Promise.all(Array.from(next.querySelectorAll('link[rel="stylesheet"]'), source => {
     if (!styles.has(source.href)) {

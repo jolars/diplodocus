@@ -2,6 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write;
 
 use super::{RenderedFile, html::escape};
+use crate::configuration::PageMetadata;
 use crate::site::{Site, SiteError};
 
 const MAX_URLS: usize = 50_000;
@@ -18,7 +19,14 @@ pub(super) fn render(
     let locations: BTreeSet<_> = site
         .pages
         .iter()
-        .filter(|(_, page)| page.visible)
+        .filter(|(route, page)| {
+            page.visible
+                && !site
+                    .presentation
+                    .pages
+                    .get(*route)
+                    .is_some_and(PageMetadata::excludes_from_index)
+        })
         .map(|(route, _)| site.canonical_urls[route].as_str())
         .collect();
     let sitemap = document(locations, MAX_URLS, MAX_BYTES)?;

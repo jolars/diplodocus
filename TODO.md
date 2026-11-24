@@ -81,7 +81,7 @@ in tests and CI results rather than adding another dated ledger.
 - [x] Resolve relative `srcset` candidates against their source page before
   client-side navigation updates the base URL. Cover retained header images
   and navigation between nested routes so Eunoia can drop its rewrite.
-- [ ] Allow per-page indexing directives in presentation metadata. Eunoia keeps
+- [x] Allow per-page indexing directives in presentation metadata. Eunoia keeps
   some API routes available for compatibility and currently injects
   `noindex` into their generated HTML.
 - [ ] Make the Nix package link SQLite with the nixpkgs revision used by

@@ -95,7 +95,7 @@ fn page_metadata_overrides_head_tags_and_preserves_authored_content() {
             &root,
             json!({
                 "index.html": {"title": "Eunoia"},
-                "guide.html": {"title": "Guide <&> · Eunoia", "description": "Fit <sets> & \"regions\"."}
+                "guide.html": {"title": "Guide <&> · Eunoia", "description": "Fit <sets> & \"regions\".", "robots": "none"}
             }),
         );
         let snapshot = snapshot(&root);
@@ -114,6 +114,15 @@ fn page_metadata_overrides_head_tags_and_preserves_authored_content() {
         );
         let before = html(&original, "guide.html");
         let after = html(&rendered, "guide.html");
+        assert!(after.contains(r#"<meta name="robots" content="none">"#));
+        let guide_url = if style == "clean" {
+            "guide"
+        } else {
+            "guide.html"
+        };
+        let location = format!("<loc>https://example.test/manual/{guide_url}</loc>");
+        assert!(html(&original, "sitemap.xml").contains(&location));
+        assert!(!html(&rendered, "sitemap.xml").contains(&location));
         assert_eq!(
             before.split("</head>").nth(1),
             after.split("</head>").nth(1)
@@ -172,7 +181,7 @@ packages:
         &root,
         json!({
             "packages/python/index.html": {"title": "Eunoia for Python · Eunoia", "description": "Python package documentation."},
-            api.clone(): {"title": "Fit diagrams · Eunoia", "description": "Fit circles & ellipses."}
+            api.clone(): {"title": "Fit diagrams · Eunoia", "description": "Fit circles & ellipses.", "robots": "NOINDEX, nofollow"}
         }),
     );
     commands::check(CheckOptions {
@@ -199,7 +208,17 @@ packages:
         &output.path().join("generated"),
     );
     let snapshot = Snapshot::load(relocated).unwrap();
-    let rendered = render_site(&Site::new(&snapshot).unwrap()).unwrap();
+    let site = Site::new(&snapshot).unwrap();
+    let rendered = render_site(&site).unwrap();
+    let api_html = html(&rendered, &api);
+    let head = api_html.split("</head>").next().unwrap();
+    assert!(head.contains(r#"<meta name="robots" content="NOINDEX, nofollow">"#));
+    assert!(!html(&rendered, "packages/python/index.html").contains("name=\"robots\""));
+    let sitemap = html(&rendered, "sitemap.xml");
+    assert!(sitemap.contains("https://example.test/manual/packages/python/"));
+    assert!(!sitemap.contains(api.trim_end_matches(".html")));
+    assert!(html(&rendered, "robots.txt").contains("Allow: /"));
+    assert!(!html(&render_fragments(&site).unwrap(), &api).contains("name=\"robots\""));
     assert_metadata(
         &html(&rendered, "packages/python/index.html"),
         "Eunoia for Python · Eunoia",

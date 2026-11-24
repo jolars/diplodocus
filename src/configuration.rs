@@ -294,6 +294,19 @@ pub struct PageMetadata {
     /// Page description; omission inherits the site description.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    /// Comma-separated directives for the HTML robots meta tag.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub robots: Option<String>,
+}
+
+impl PageMetadata {
+    pub(crate) fn excludes_from_index(&self) -> bool {
+        self.robots.as_deref().is_some_and(|robots| {
+            robots.split(',').map(str::trim).any(|directive| {
+                directive.eq_ignore_ascii_case("noindex") || directive.eq_ignore_ascii_case("none")
+            })
+        })
+    }
 }
 
 /// A public file copied from a declared repository to an explicit site path.

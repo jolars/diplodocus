@@ -47,6 +47,7 @@ presentation:
     guides/nested.html:
       title: "Explore diagrams · URL navigation"
       description: 'Fit circles & "ellipses".'
+      robots: noindex
   assets:
     - { repository: docs, path: logo.png, publish: public/icon.png }
     - { repository: docs, path: site.webmanifest, publish: site.webmanifest }
@@ -237,6 +238,7 @@ for (const style of ["file", "clean"]) {
       await expect(page.locator("body")).toHaveAttribute("data-layout", "docs");
       await stableNavbar();
       await expect(page).toHaveTitle("Explore diagrams · URL navigation");
+      await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", "noindex");
       await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", `${publicRoot}guides/nested${suffix}`);
       await expect(page.locator('link[rel="alternate"][type="text/markdown"]')).toHaveAttribute("href", `${origin}${prefix}guides/nested.md`);
       await expect(page.locator('meta[property="og:url"]')).toHaveAttribute("content", `${publicRoot}guides/nested${suffix}`);
@@ -251,6 +253,7 @@ for (const style of ["file", "clean"]) {
       await openSection("Reference");
       await expect(page.getByRole("heading", { level: 1 })).toHaveText("Reference");
       await expect(page).toHaveTitle("Reference · URL navigation");
+      await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
       for (const selector of ['meta[name="description"]', 'meta[property="og:description"]', 'meta[name="twitter:description"]']) {
         await expect(page.locator(selector)).toHaveAttribute("content", "Nested documentation");
       }

@@ -304,6 +304,14 @@ pub(crate) fn render_reported(
                 )
                 .unwrap();
             }
+            if let Some(robots) = metadata.robots {
+                write!(
+                    html,
+                    "<meta name=\"robots\" content=\"{}\">",
+                    escape(robots)
+                )
+                .unwrap();
+            }
             if let Some(url) = site.canonical_urls.get(route) {
                 write!(html, "<link rel=\"canonical\" href=\"{}\">", escape(url)).unwrap();
             }

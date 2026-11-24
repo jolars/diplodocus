@@ -47,6 +47,7 @@ presentation:
       description: Fit Euler diagrams with the Eunoia.jl package.
     packages/python/license.html:
       title: Python license · Eunoia
+      robots: noindex
 ```
 
 Keys name generated HTML paths relative to the site root, including `.html`.
@@ -68,6 +69,12 @@ omitted. An empty string clears the description by emitting empty tags. Titles
 and descriptions are plain text and are escaped for HTML. The resolved values
 supply the HTML title and description, Open Graph, and Twitter cards. Social
 cards still require `presentation.open-graph`.
+
+Set `robots: noindex` to ask search engines to keep a page out of their results.
+The page remains available at its URL and in site search. Combine directives in
+a comma-separated string such as `robots: "noindex, nofollow"`. Diplodocus
+omits pages with `noindex` or `none` from the sitemap and keeps them crawlable
+so search engines can read the directive.
 
 Snapshots retain these declarations. `build`, detached `generate`, and native
 `serve` resolve the same metadata. Preview rebuilds after configuration edits.
@@ -353,9 +360,9 @@ not you include its trailing slash. Omitting `site-url` omits all three forms of
 crawler metadata.
 
 The sitemap lists the homepage, authored pages, package overviews, API pages,
-and concepts. It follows search visibility: public and internal package pages
-appear, and hidden package pages do not. Assets do not appear. Entries contain
-URLs only; Diplodocus does not infer modification dates from build times.
+and concepts. It excludes assets, hidden package pages, and pages with a
+`noindex` or `none` robots directive. Entries contain URLs only. Diplodocus
+does not infer modification dates from build times.
 
 `canonical-url-style` defaults to `file`, which retains generated filenames such
 as `/docs/index.html` and `/docs/installation.html`. Use `clean` when your host
