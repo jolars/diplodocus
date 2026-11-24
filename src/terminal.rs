@@ -1,15 +1,15 @@
 use std::collections::HashMap;
 use std::ffi::OsString;
-use std::io::{IsTerminal, Write};
+use std::io::{self, Write};
 use std::sync::Mutex;
 use std::time::Duration;
 
 use clap::ColorChoice;
-use console::Style;
+use console::{Style, Term};
 use diplodocus::commands::format_diagnostic;
 use diplodocus::diagnostics::Severity;
 use diplodocus::reporting::{Event, Reporter};
-use indicatif::{MultiProgress, ProgressBar, ProgressDrawTarget, ProgressStyle};
+use indicatif::{MultiProgress, ProgressBar, ProgressDrawTarget, ProgressStyle, TermLike};
 
 #[derive(Clone, Copy)]
 struct Capabilities {
@@ -20,7 +20,11 @@ struct Capabilities {
 
 impl Capabilities {
     fn detect(color: ColorChoice) -> Self {
-        let interactive = std::io::stderr().is_terminal() && !plain_environment();
+        let terminal = Term::stderr();
+        let interactive = terminal.is_term()
+            && !console::is_dumb()
+            && !plain_environment()
+            && terminal.size_checked().is_some();
         Self {
             interactive,
             colors: match color {
@@ -65,6 +69,53 @@ pub(super) fn early_color(arguments: &[OsString]) -> ColorChoice {
     match color {
         ColorChoice::Auto if plain_environment() || no_color() => ColorChoice::Never,
         _ => color,
+    }
+}
+
+#[derive(Debug)]
+struct ProgressTerminal(Term);
+
+impl TermLike for ProgressTerminal {
+    fn width(&self) -> u16 {
+        // Indicatif pads to this width. Leave room for an echoed keystroke
+        // so it does not immediately wrap and move the cursor off the bar.
+        self.0.size().1.saturating_sub(1).max(1)
+    }
+
+    fn height(&self) -> u16 {
+        self.0.size().0
+    }
+
+    fn move_cursor_up(&self, n: usize) -> io::Result<()> {
+        self.0.move_cursor_up(n)
+    }
+
+    fn move_cursor_down(&self, n: usize) -> io::Result<()> {
+        self.0.move_cursor_down(n)
+    }
+
+    fn move_cursor_right(&self, n: usize) -> io::Result<()> {
+        self.0.move_cursor_right(n)
+    }
+
+    fn move_cursor_left(&self, n: usize) -> io::Result<()> {
+        self.0.move_cursor_left(n)
+    }
+
+    fn write_line(&self, text: &str) -> io::Result<()> {
+        self.0.write_line(text)
+    }
+
+    fn write_str(&self, text: &str) -> io::Result<()> {
+        self.0.write_str(text)
+    }
+
+    fn clear_line(&self) -> io::Result<()> {
+        self.0.clear_line()
+    }
+
+    fn flush(&self) -> io::Result<()> {
+        self.0.flush()
     }
 }
 
@@ -114,7 +165,10 @@ impl ConsoleReporter {
             animate,
             quiet,
             progress: MultiProgress::with_draw_target(if animate {
-                ProgressDrawTarget::stderr_with_hz(10)
+                ProgressDrawTarget::term_like_with_hz(
+                    Box::new(ProgressTerminal(Term::buffered_stderr())),
+                    10,
+                )
             } else {
                 ProgressDrawTarget::hidden()
             }),
