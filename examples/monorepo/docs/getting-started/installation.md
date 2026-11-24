@@ -7,7 +7,7 @@ Run these commands from the repository root.
 
 Install the local package into your Python environment:
 
-```console
+```sh
 python -m pip install ./examples/monorepo/python
 ```
 
@@ -15,7 +15,7 @@ python -m pip install ./examples/monorepo/python
 
 Install the local R package:
 
-```console
+```sh
 R CMD INSTALL examples/monorepo/r
 ```
 

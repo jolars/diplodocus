@@ -25,7 +25,7 @@ The [getting started tutorial](quick-start.md) takes you from an empty directory
 to a local preview. Follow [installation](installation.md) first if you need the
 CLI. The usual workflow is:
 
-```console
+```sh
 diplodocus check
 diplodocus serve
 diplodocus build

@@ -87,7 +87,7 @@ monorepo/
 
 From the **Diplodocus repository root**, enter `devenv shell` and run:
 
-```console
+```sh
 task preview
 ```
 
@@ -99,7 +99,7 @@ after a successful rebuild. Stop the server with Ctrl-C. To choose a port, run
 
 The equivalent commands without go-task are:
 
-```console
+```sh
 cargo run --locked -- check --config examples/monorepo/diplodocus.yaml
 cargo run --locked -- build --config examples/monorepo/diplodocus.yaml --output site/monorepo
 cargo run --locked -- serve --config examples/monorepo/diplodocus.yaml --output site/monorepo --port 0 --live-reload
@@ -136,7 +136,7 @@ their syntax without evaluating them. Generation from a snapshot needs no R.
 
 Extraction and generation can run separately:
 
-```console
+```sh
 cargo run --locked -- extract --config examples/monorepo/diplodocus.yaml
 cargo run --locked -- generate --input examples/monorepo/.diplodocus/documentation.sqlite --output site/monorepo
 ```
@@ -155,14 +155,14 @@ removed. Generation runs with an empty `PATH`.
 
 From the repository root inside `devenv shell`, run the Python tests and examples:
 
-```console
+```sh
 PYTHONPATH=examples/monorepo/python/src python -m unittest discover -s examples/monorepo/python/tests
 python -m doctest examples/monorepo/python/src/tinystats/__init__.py
 ```
 
 After installing the R package into your R library, run:
 
-```console
+```sh
 Rscript examples/monorepo/r/tests/metrics.R
 ```
 

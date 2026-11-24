@@ -20,7 +20,7 @@ irm https://diplodocus.cc/install.ps1 | iex
 You can also build the CLI from a source checkout with the pinned Rust toolchain
 and dependencies:
 
-```console
+```sh
 git clone https://github.com/jolars/diplodocus.git
 cd diplodocus
 devenv shell

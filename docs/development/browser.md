@@ -15,7 +15,7 @@ checks templates, overloaded methods, links, and member anchors in the browser.
 
 From the repository root:
 
-```console
+```sh
 devenv shell
 npm ci --ignore-scripts
 ```
@@ -54,7 +54,7 @@ Cargo tracks the included files, so the preview recompiles when they change.
 
 ## Preview, test, and capture
 
-```console
+```sh
 site-dev
 ```
 
@@ -67,7 +67,7 @@ Ctrl-C.
 The preview task enters devenv so the watcher is available when launched from an
 editor with an older environment.
 
-```console
+```sh
 site-test
 site-test --project desktop --grep search
 site-capture
@@ -145,7 +145,7 @@ Each run prints a unique directory under `artifacts/browser/`, containing:
 
 Open a report or trace with the locally installed Playwright runner:
 
-```console
+```sh
 npx --no-install playwright show-report artifacts/browser/<run>/report
 npx --no-install playwright show-trace artifacts/browser/<run>/results/<test>/trace.zip
 ```
@@ -161,7 +161,7 @@ The official [Playwright CLI skill](https://github.com/jolars/diplodocus/blob/ma
 is installed in the repository and is available to agents on their next turn.
 With `site-dev` running in another terminal:
 
-```console
+```sh
 playwright-cli -s=review open http://127.0.0.1:8000/
 playwright-cli -s=review snapshot
 playwright-cli -s=review resize 390 844
@@ -205,7 +205,7 @@ The source copy is removed when its server stops. To choose locations explicitly
 
 For two interactive previews, choose different ports and site directories:
 
-```console
+```sh
 DIPLODOCUS_SITE_PORT=8001 DIPLODOCUS_SITE_OUTPUT=site/review site-dev
 ```
 

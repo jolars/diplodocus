@@ -7,7 +7,7 @@ features, executes native doctests, checks representative public APIs, removes
 the disposable source copy, and generates both a standalone site and HTML and
 Markdown fragments from the SQLite snapshot:
 
-```console
+```sh
 devenv shell -- python examples/eunoia/rust.py --source ../eunoia
 ```
 
@@ -28,7 +28,7 @@ snapshot. It then relocates the snapshot, removes the staged sources and
 configuration, and generates a standalone site and HTML and Markdown fragments
 with an empty `PATH` and Julia environment settings removed.
 
-```console
+```sh
 devenv shell -- compute run -- python examples/eunoia/julia.py --source ../Eunoia.jl
 ```
 
@@ -56,7 +56,7 @@ Diplodocus pins `fatou-parser` 0.9.0, which supports nested fences and wrapped
 inline Markdown. Run the focused extraction and detached-fragment regressions
 with:
 
-```console
+```sh
 devenv shell -- compute run -- cargo test --locked --test julia_extraction --test fragments
 ```
 
@@ -107,7 +107,7 @@ From the Diplodocus checkout, enter `devenv shell`. Supply sibling checkouts of
 `npm/` package. Eulerr must have its compiled checkout extension in `src/`.
 The shell supplies `pkgload` and `evaluate` for its Rd examples.
 
-```console
+```sh
 python examples/eunoia/experiment.py
 ```
 
@@ -130,13 +130,13 @@ running, visit:
 
 To consume an already extracted database without preparing or executing packages:
 
-```console
+```sh
 python examples/eunoia/experiment.py --snapshot /path/to/documentation.sqlite
 ```
 
 The fragment export can also run independently:
 
-```console
+```sh
 cargo run --locked --example export-fragments -- \
   --input documentation.sqlite --output fragments
 ```
@@ -148,7 +148,7 @@ homepage and gallery. Prepare the source checkout's `docs/Project.toml` and
 `docs/Manifest.toml` first, including CairoMakie and a path dependency on that
 Eunoia checkout. Then run:
 
-```console
+```sh
 compute run -- python examples/eunoia/julia.py --execute-documenter
 ```
 
@@ -164,7 +164,7 @@ Markdown, in all three detached outputs.
 The host adapter checks route collisions and rejects local links it cannot map.
 Its focused tests run with:
 
-```console
+```sh
 python -m unittest discover -s examples/eunoia -p 'test_*.py'
 ```
 
@@ -173,7 +173,7 @@ desktop and mobile layouts, cross-language navigation, figures, source links,
 the existing Svelte component, rendering without JavaScript, and the downloadable
 database. Screenshots go to the specified directory:
 
-```console
+```sh
 node examples/eunoia/browser.mjs http://127.0.0.1:4173 /tmp/eunoia-screenshots
 ```
 

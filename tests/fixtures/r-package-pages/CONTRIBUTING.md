@@ -15,7 +15,7 @@ Read the document that owns the behavior:
    artifact, location, decoder, and task metadata.
 3. Let the tool retrieve and verify every location:
 
-   ```console
+   ```sh
    tool draft.yaml \
      --output registry/datasets/example.yaml
    ```

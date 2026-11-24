@@ -12,7 +12,7 @@ local search, and development server.
 From the Diplodocus repository root, use the pinned environment and install the
 frontend dependencies:
 
-```console
+```sh
 devenv shell
 npm ci --ignore-scripts
 npm run vitepress-dev
@@ -37,7 +37,7 @@ more selective hot updates can be added without changing the snapshot contract.
 
 ## Build
 
-```console
+```sh
 npm run vitepress-build
 ```
 
@@ -45,7 +45,7 @@ This runs extraction, fragment export, host adaptation, and `vitepress build` in
 that order. The static site is in `examples/vitepress/docs/.vitepress/dist/`.
 For generation without the package sources or runtimes, provide a snapshot:
 
-```console
+```sh
 npm run vitepress-build -- --snapshot /path/to/documentation.sqlite
 ```
 
@@ -81,7 +81,7 @@ The example pins VitePress 1.6.4. The root npm overrides select patched Vite
 
 ## Verify
 
-```console
+```sh
 npm run vitepress-test
 ```
 

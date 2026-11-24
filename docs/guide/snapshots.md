@@ -32,7 +32,7 @@ consumer can query these records directly and choose its own presentation.
 The fragment renderer reuses the built-in API presentation without its page
 shell. Export HTML and Markdown with the normal command-line interface:
 
-```console
+```sh
 diplodocus generate --format fragments \
   --input documentation.sqlite --output fragments
 ```
@@ -60,7 +60,7 @@ public URLs, and render again using a version 1 URL map:
 }
 ```
 
-```console
+```sh
 diplodocus generate --format fragments --input documentation.sqlite \
   --output fragments --url-map urls.json
 ```
@@ -120,7 +120,7 @@ client accepts Markdown. Set `Content-Type: text/markdown; charset=utf-8` and
 without negotiation can still serve the advertised `.md` URLs directly.
 No token estimate is emitted because Diplodocus does not select a tokenizer.
 
-```console
+```sh
 curl -H 'Accept: text/markdown' https://your-site.example/guide/index.html
 ```
 
@@ -130,7 +130,7 @@ In each producer environment, prepare the package sources and the tools needed
 for its normal extraction. Use a configuration with one repository, one
 package, and its extraction targets, then export the package:
 
-```console
+```sh
 diplodocus bundle export --config diplodocus.yaml --output qualpal.sqlite
 ```
 

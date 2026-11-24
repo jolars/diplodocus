@@ -8,7 +8,7 @@ to find predictions that need attention.
 
 From the Diplodocus repository root, install the example package:
 
-```console
+```sh
 python -m pip install examples/monorepo/python
 ```
 

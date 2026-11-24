@@ -29,7 +29,7 @@ for the command, including every attempt in a watch session. Package and content
 
 For example, extract once and generate from the completed snapshot:
 
-```console
+```sh
 diplodocus extract --output documentation.sqlite
 diplodocus generate --input documentation.sqlite --output site
 ```

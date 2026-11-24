@@ -34,9 +34,9 @@ content:
     format: "gfm"
 ```
 
-The repository path `.` means the directory containing the configuration.
-The collection reads Markdown files from `docs`. Its empty `mount` puts the
-pages at the site root.
+The repository path `.` means the directory containing the configuration. The
+collection reads Markdown files from `docs`. Its empty `mount` puts the pages at
+the site root.
 
 ## Write two pages
 
@@ -67,7 +67,7 @@ links into site links. Both pages appear in the sidebar and search.
 
 From `my-project/`, run:
 
-```console
+```sh
 diplodocus check
 diplodocus serve
 ```
@@ -76,16 +76,15 @@ Add `--open` to open your browser after the first successful build. The preview
 continues running if the browser launcher is unavailable, including in
 noninteractive sessions.
 
-Open the local URL printed in the terminal, normally
-`http://127.0.0.1:8000/`. Edit `docs/tutorial.md` and save it. Diplodocus
-rebuilds the site and refreshes the browser after a successful build. Stop the
-preview with Ctrl-C.
+Open the local URL printed in the terminal, normally `http://127.0.0.1:8000/`.
+Edit `docs/tutorial.md` and save it. Diplodocus rebuilds the site and refreshes
+the browser after a successful build. Stop the preview with Ctrl-C.
 
 ## Build for publishing
 
 Run:
 
-```console
+```sh
 diplodocus build
 ```
 
@@ -101,7 +100,7 @@ the [configuration guide](configuration.md#add-a-package), then the extraction
 guide for [Python](extraction/python.md), [R](extraction/r.md),
 [Julia](extraction/julia.md), or [Rust](extraction/rust.md).
 
-For a complete project using all four languages, see the
-[monorepo example](https://github.com/jolars/diplodocus/tree/main/examples/monorepo).
+For a complete project using all four languages, see the [monorepo
+example](https://github.com/jolars/diplodocus/tree/main/examples/monorepo).
 Continue with [writing pages](authoring.md) and [navigation](navigation.md) to
 shape the guide for your readers.

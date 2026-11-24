@@ -3,7 +3,7 @@
 Build Diplodocus with `cargo build --locked`, then run the recipe from the
 Diplodocus checkout in a prepared environment:
 
-```console
+```sh
 python examples/qualpal/bundles.py
 ```
 
@@ -67,7 +67,7 @@ from the R help examples.
 To assemble bundles downloaded from independent producer runs, use the same
 Diplodocus revision that exported them and pass the two files to the recipe:
 
-```console
+```sh
 python3 examples/qualpal/bundles.py \
   --assemble bundles/qualpal.sqlite bundles/qualpalr.sqlite \
   --output assembly
