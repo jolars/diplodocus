@@ -1,5 +1,44 @@
 # Changelog
 
+## [0.17.0](https://github.com/jolars/diplodocus/compare/v0.16.0...v0.17.0) (2026-11-24)
+
+### Features
+
+- **web:** add language and platform icons to tabsets ([`91fee32`](https://github.com/jolars/diplodocus/commit/91fee3264a5eb40cc85849bd26bb472c0f790ebc))
+- **ui:** rename ecosystem specifier from page breadcrumbs ([`afdaa0f`](https://github.com/jolars/diplodocus/commit/afdaa0f14d06fc1cb78a056108896f9cda0644df))
+- **site:** support per-page `robots` directives ([`a6c3518`](https://github.com/jolars/diplodocus/commit/a6c35189624b9639d395a1f2d4435abb4a058068))
+- expose fragment inventory before rendering ([`ab503ca`](https://github.com/jolars/diplodocus/commit/ab503ca550110040f1305ce89e794eb24409571c))
+- publish Windows ARM64 builds ([`97495ed`](https://github.com/jolars/diplodocus/commit/97495ed1e780c80f9e0274656db6e8157a11e591))
+- publish Diplodocus on npm ([`0678803`](https://github.com/jolars/diplodocus/commit/06788033d7916e379fe5929a16d2688706fa746d))
+- publish Diplodocus on PyPI ([`1212226`](https://github.com/jolars/diplodocus/commit/12122261bbe28d78ba2d2af68d4d3751c7b99864))
+- **site:** add Umami analytics integration ([`f19fcdf`](https://github.com/jolars/diplodocus/commit/f19fcdfdc0e86f5b6e7b0d4d627b6bad7ece6287)), closes [#38](https://github.com/jolars/diplodocus/issues/38)
+- **search:** add a search dialog with section previews ([`d824ae2`](https://github.com/jolars/diplodocus/commit/d824ae2e9222e7bb5a5fe09ac2eaaec0fa39554c))
+- **components:** add loading states and reserve layout space ([`eb067a1`](https://github.com/jolars/diplodocus/commit/eb067a129f6ace6672f4a93bdd3b018a125fa528))
+- **style:** modify padding for full pages ([`04cec86`](https://github.com/jolars/diplodocus/commit/04cec8683d3996b4eef3abeb338d4bf40c357d8c))
+- **site:** support public asset directories and site-wide CSS and scripts ([`f7d1e69`](https://github.com/jolars/diplodocus/commit/f7d1e694fd12e1821891f5a3fa1d9aedf8650482))
+- **style:** remove default glow behind logo ([`38e397d`](https://github.com/jolars/diplodocus/commit/38e397d864e756319007a36859f0c06043388b91))
+- support dedicated navbar logos and dark mode variants ([`cb9386e`](https://github.com/jolars/diplodocus/commit/cb9386e5c9a41209619359a8748923d7055921fb))
+
+### Bug Fixes
+
+- anchor search dialog ([`8b9a568`](https://github.com/jolars/diplodocus/commit/8b9a56880b578b72afa4bf972669ac44932564eb))
+- **web:** keep tab widths stable when switching tabs ([`c427324`](https://github.com/jolars/diplodocus/commit/c4273240928b5fe3b0985b685e90d7f5ecd8d2d7))
+- **web:** focus the page heading after navigation ([`339878e`](https://github.com/jolars/diplodocus/commit/339878e72fc1d08c55ae4aedc1373ca491853993))
+- omit HTML comments from rendered Markdown ([`7349a1a`](https://github.com/jolars/diplodocus/commit/7349a1ae609203e78f544fc49699bf5706652dd5))
+- report failed input verification checks ([`499fb9c`](https://github.com/jolars/diplodocus/commit/499fb9c15941572301973587eb7b7b5ea1297125))
+- **flake:** if sqlite3 integration ([`90c896c`](https://github.com/jolars/diplodocus/commit/90c896c327036380787c4d230f35cfcf09e23603))
+- **ci:** stabilize preview shutdown and browser fixtures ([`cc6c9e3`](https://github.com/jolars/diplodocus/commit/cc6c9e316e579bf84bad071c20a11a3c689d9614))
+- **site:** resolve `srcset` before client-side navigation ([`dbdc4f5`](https://github.com/jolars/diplodocus/commit/dbdc4f541385604687ed71e263ea0d0b10f966bd))
+- **cli:** prevent progress redraws from wrapping on echoed input ([`3b75f76`](https://github.com/jolars/diplodocus/commit/3b75f76a67ab2eb141fcc76a567ec0d228cdde3e))
+- **theme:** restore automatic mode when the toggle matches the system ([`110a4c6`](https://github.com/jolars/diplodocus/commit/110a4c6dce01e6bb1a6d79749662acf77ae299fb))
+- **rust:** skip generated environment entries during discovery ([`a0634a7`](https://github.com/jolars/diplodocus/commit/a0634a7b3376bc7aabe42f9db896d668ee25c0dd))
+
+### Performance Improvements
+
+- **web:** emit only used tab icons ([`3c8497e`](https://github.com/jolars/diplodocus/commit/3c8497e59728db399adc0a9e64f43a68fdeb38f3))
+- **python:** narrow verification for uncached API results ([`da58099`](https://github.com/jolars/diplodocus/commit/da580993e47d825569f9b2260ec68fa896f9fb6e))
+- **assembly:** run independent API extractors concurrently ([`87a81c2`](https://github.com/jolars/diplodocus/commit/87a81c28d77a10f432d7959d67fbaf41e125b3a2))
+
 ## [0.16.0](https://github.com/jolars/diplodocus/compare/v0.15.0...v0.16.0) (2026-11-23)
 
 ### Features
