@@ -32,6 +32,8 @@ jobs:
        startsWith(github.event.workflow_run.head_branch, 'v') &&
        !contains(github.event.workflow_run.head_branch, '-'))
     runs-on: ubuntu-latest
+    outputs:
+      windows-arm64: ${{ steps.platforms.outputs.windows-arm64 }}
     env:
       TAG: ${{ inputs.tag || github.event.workflow_run.head_branch }}
     steps:
@@ -55,15 +57,72 @@ jobs:
             "$RUNNER_TEMP/npm"/diplodocus-*.tgz \
             "$RUNNER_TEMP/npm"/jolars-diplodocus-linux-x64-*.tgz
           test "$(./node_modules/.bin/diplodocus --version)" = "diplodocus ${TAG#v}"
+      - name: Check for Windows ARM64 package
+        id: platforms
+        run: |
+          if compgen -G "$RUNNER_TEMP/npm/jolars-diplodocus-win32-arm64-*.tgz" >/dev/null; then
+            echo 'windows-arm64=true' >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/upload-artifact@v7
         with:
           name: npm-packages
           path: ${{ runner.temp }}/npm/*.tgz
           if-no-files-found: error
 
-  publish:
-    if: github.event_name == 'workflow_run' || inputs.publish
+  smoke-windows-arm64:
     needs: package
+    if: needs.package.outputs.windows-arm64 == 'true'
+    runs-on: windows-11-arm
+    env:
+      TAG: ${{ inputs.tag || github.event.workflow_run.head_branch }}
+    steps:
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          architecture: arm64
+          package-manager-cache: false
+      - uses: actions/download-artifact@v8
+        with:
+          name: npm-packages
+          path: packages
+      - name: Test npm and PowerShell installs
+        shell: pwsh
+        run: |
+          if ((node -p process.arch) -ne 'arm64') { throw 'Expected native ARM64 Node.js' }
+          $cli = (Get-Item packages/diplodocus-*.tgz).FullName
+          $platform = (Get-Item packages/jolars-diplodocus-win32-arm64-*.tgz).FullName
+          npm install --offline --ignore-scripts --no-audit $cli $platform
+          if ($LASTEXITCODE -ne 0) { throw 'npm install failed' }
+          $expected = "diplodocus $($env:TAG.Substring(1))"
+          if ((& ./node_modules/.bin/diplodocus.cmd --version) -ne $expected -or $LASTEXITCODE -ne 0) {
+            throw 'Unexpected npm CLI version'
+          }
+
+          $env:CARGO_HOME = Join-Path $env:RUNNER_TEMP 'diplodocus-cargo-home'
+          $url = "https://github.com/$env:GITHUB_REPOSITORY/releases/download/$env:TAG/diplodocus-installer.ps1"
+          & ([scriptblock]::Create((Invoke-RestMethod -Uri $url))) -NoModifyPath
+          $standalone = Join-Path $env:CARGO_HOME 'bin/diplodocus.exe'
+          if ((& $standalone --version) -ne $expected -or $LASTEXITCODE -ne 0) {
+            throw 'Unexpected standalone CLI version'
+          }
+          $npmExe = './node_modules/@jolars/diplodocus-win32-arm64/diplodocus.exe'
+          $bytes = [IO.File]::ReadAllBytes((Resolve-Path $npmExe).Path)
+          $pe = [BitConverter]::ToInt32($bytes, 0x3c)
+          if ([BitConverter]::ToUInt32($bytes, $pe) -ne 0x4550 -or
+              [BitConverter]::ToUInt16($bytes, $pe + 4) -ne 0xaa64) {
+            throw 'Expected an ARM64 PE executable'
+          }
+          if ((Get-FileHash $standalone).Hash -ne (Get-FileHash $npmExe).Hash) {
+            throw 'PowerShell and npm installed different executables'
+          }
+
+  publish:
+    if: >-
+      always() && !cancelled() && needs.package.result == 'success' &&
+      (needs.smoke-windows-arm64.result == 'success' ||
+       (needs.smoke-windows-arm64.result == 'skipped' && needs.package.outputs.windows-arm64 != 'true')) &&
+      (github.event_name == 'workflow_run' || inputs.publish)
+    needs: [package, smoke-windows-arm64]
     runs-on: ubuntu-latest
     environment: npm
     permissions:

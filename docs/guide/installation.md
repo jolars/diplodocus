@@ -20,9 +20,10 @@ With Node.js 22 or later, install the CLI with:
 npm install --global diplodocus
 ```
 
-npm installs a prebuilt binary for Linux or macOS on x64 and ARM64, or for
-Windows on x64. Keep optional dependencies enabled so npm installs the binary
-for your platform.
+npm installs a prebuilt binary for Linux, macOS, or Windows on x64 and ARM64.
+Keep optional dependencies enabled so npm can install the binary that matches
+your Node.js architecture. On Windows, PyPI also provides x64 and ARM64 wheels
+that match your Python architecture.
 
 ## Standalone installers
 

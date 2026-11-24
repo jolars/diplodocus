@@ -27,6 +27,11 @@ const targets = [
   ["darwin", "arm64", "aarch64-apple-darwin"],
   ["win32", "x64", "x86_64-pc-windows-msvc"],
 ];
+// Releases through v0.16.0 predate Windows ARM64 archives.
+const [major, minor, patch] = tag.slice(1).split(".").map(Number);
+if (major > 0 || minor > 16 || (minor === 16 && patch > 0)) {
+  targets.push(["win32", "arm64", "aarch64-pc-windows-msvc"]);
+}
 const common = {
   version: tag.slice(1),
   license: "MIT OR Apache-2.0",

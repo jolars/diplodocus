@@ -63,6 +63,7 @@ jobs:
           - { os: macos-15-intel, target: x86_64-apple-darwin }
           - { os: macos-15, target: aarch64-apple-darwin }
           - { os: windows-latest, target: x86_64-pc-windows-msvc }
+          - { os: windows-11-arm, target: aarch64-pc-windows-msvc, python-arch: arm64 }
     defaults:
       run:
         shell: bash
@@ -75,6 +76,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
+          architecture: ${{ matrix.python-arch }}
       - name: Build wheel
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
@@ -83,6 +85,11 @@ jobs:
           manylinux: ${{ matrix.manylinux }}
           container: ${{ matrix.container }}
           args: --release --locked --out dist
+      - name: Verify Windows ARM64 wheel
+        if: matrix.target == 'aarch64-pc-windows-msvc'
+        run: |
+          python -c 'import sysconfig; assert sysconfig.get_platform() == "win-arm64"'
+          compgen -G 'dist/*-win_arm64.whl'
       - name: Check metadata
         run: |
           python -m pip install twine
