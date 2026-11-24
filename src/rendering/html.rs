@@ -432,9 +432,8 @@ pub(crate) fn render_reported(
             let package = &site.workspace.packages[owner];
             write!(
                 html,
-                "<p class=\"package\">{} · {}{}{}</p>",
+                "<p class=\"package\">{}{}{}</p>",
                 escape(&package.name),
-                escape(&package.ecosystem),
                 package
                     .version
                     .as_ref()
