@@ -12,6 +12,18 @@ You can also run `pipx install diplodocus`. Prebuilt wheels install the CLI
 without a Rust toolchain. Install the language runtimes and package dependencies
 your documentation needs separately.
 
+## npm
+
+With Node.js 22 or later, install the CLI with:
+
+```sh
+npm install --global diplodocus
+```
+
+npm installs a prebuilt binary for Linux or macOS on x64 and ARM64, or for
+Windows on x64. Keep optional dependencies enabled so npm installs the binary
+for your platform.
+
 ## Standalone installers
 
 Install the latest prebuilt CLI on Linux or macOS with:

@@ -1,0 +1,95 @@
+name: Publish npm
+
+on:
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Published stable release to package (for example, v0.16.0)
+        required: true
+        type: string
+      publish:
+        description: Publish the tested packages to npm
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-npm-${{ inputs.tag || github.event.workflow_run.head_branch }}
+  cancel-in-progress: false
+
+jobs:
+  package:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_repository.full_name == github.repository &&
+       startsWith(github.event.workflow_run.head_branch, 'v') &&
+       !contains(github.event.workflow_run.head_branch, '-'))
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ inputs.tag || github.event.workflow_run.head_branch }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - name: Package GitHub release binaries
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: node npm/pack.mjs "$TAG" "$RUNNER_TEMP/npm"
+      - name: Install and test packed CLI
+        run: |
+          mkdir "$RUNNER_TEMP/npm-smoke"
+          cd "$RUNNER_TEMP/npm-smoke"
+          npm install --offline --ignore-scripts --no-audit \
+            "$RUNNER_TEMP/npm"/diplodocus-*.tgz \
+            "$RUNNER_TEMP/npm"/jolars-diplodocus-linux-x64-*.tgz
+          test "$(./node_modules/.bin/diplodocus --version)" = "diplodocus ${TAG#v}"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: npm-packages
+          path: ${{ runner.temp }}/npm/*.tgz
+          if-no-files-found: error
+
+  publish:
+    if: github.event_name == 'workflow_run' || inputs.publish
+    needs: package
+    runs-on: ubuntu-latest
+    environment: npm
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - uses: actions/download-artifact@v8
+        with:
+          name: npm-packages
+          path: packages
+      - name: Publish platform packages, then the CLI
+        run: |
+          for package in packages/jolars-diplodocus-*.tgz packages/diplodocus-*.tgz; do
+            manifest=$(tar -xOzf "$package" package/package.json)
+            spec=$(jq -r '.name + "@" + .version' <<< "$manifest")
+            if published=$(npm view "$spec" dist.integrity) && [[ -n "$published" ]]; then
+              integrity="sha512-$(openssl dgst -sha512 -binary "$package" | openssl base64 -A)"
+              if [[ "$published" != "$integrity" ]]; then
+                echo "::error::$spec already exists with different contents"
+                exit 1
+              fi
+            else
+              npm publish "$package" --access public
+            fi
+          done

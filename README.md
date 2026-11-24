@@ -11,6 +11,7 @@ shared navigation, cross-references, and search.
 ## Installation
 
 Install from PyPI with `uv tool install diplodocus` or `pipx install diplodocus`.
+With npm, run `npm install --global diplodocus`.
 
 On Linux or macOS, install the latest release with:
 
