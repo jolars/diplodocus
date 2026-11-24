@@ -385,6 +385,41 @@ fn description_supplies_overview_and_metadata_without_optional_files() {
 }
 
 #[test]
+fn readme_comments_are_omitted_from_package_overviews() {
+    let root = fixture();
+    root.write(
+        "r/README.md",
+        "<!-- badge marker -->\n\n# Models\n\n<!-- generated file\nnotice -->\n\n\
+         ![Badge](https://example.org/badge.svg)<!-- -->\n\n\
+         Compare<!-- inline note --> models.\n\n\
+         > <!-- quoted note -->\n         > Visible quotation.\n\n\
+         Use `<!-- example -->` for a comment.\n",
+    );
+    let report = check(CheckOptions {
+        config: root.path().join("diplodocus.yaml"),
+    })
+    .unwrap();
+    assert!(report.diagnostics.is_empty(), "{:?}", report.diagnostics);
+
+    let site = rendered(&root);
+    let overview = html(&site, "packages/r/index.html");
+    assert!(overview.contains("alt=\"Badge\""));
+    assert!(overview.contains("Compare models."));
+    assert!(overview.contains("Visible quotation."));
+    assert!(overview.contains("<code>&lt;!-- example --&gt;</code>"));
+    for hidden in [
+        "Unsupported content",
+        "badge marker",
+        "generated file",
+        "inline note",
+        "quoted note",
+        "&lt;!-- --&gt;",
+    ] {
+        assert!(!overview.contains(hidden), "{hidden}");
+    }
+}
+
+#[test]
 fn readme_links_assets_headings_and_news_are_portable() {
     let root = fixture();
     root.write("r/README.md", "# A different README title\n\n![Diagram](diagram.svg)\n\n[Release notes](NEWS.md#changes)\n\n# Another heading\n");

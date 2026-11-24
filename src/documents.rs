@@ -5,9 +5,10 @@ use std::collections::HashMap;
 use panache_parser::syntax::{
     AlertKind as PanacheAlertKind, AstNode, AttributeEntry, AttributeNode, BlockNode,
     CalloutKind as PanacheCalloutKind, CellOptionResolution as PanacheOptionResolution,
-    ChunkOptionSource, CodeBlock, InlineNode, ListKind, Table as PanacheTable,
-    TableAlignment as PanacheTableAlignment, TextRange, YamlBlockMap, YamlBlockMapEntry,
-    YamlBlockSequence, YamlFlowMap, YamlFlowMapEntry, YamlFlowSequence, YamlNode,
+    ChunkOptionSource, CodeBlock, InlineHtml, InlineNode, ListKind, SyntaxKind,
+    Table as PanacheTable, TableAlignment as PanacheTableAlignment, TextRange, YamlBlockMap,
+    YamlBlockMapEntry, YamlBlockSequence, YamlFlowMap, YamlFlowMapEntry, YamlFlowSequence,
+    YamlNode,
 };
 use panache_parser::{Flavor, ParserOptions, normalize_reference_label};
 use serde::{Deserialize, Serialize};
@@ -524,6 +525,19 @@ impl AdapterContext<'_> {
             }
             BlockNode::TexBlock(node) => Some(self.unsupported_syntax(node.syntax())),
             BlockNode::MystDirective(node) => Some(self.unsupported_syntax(node.syntax())),
+            // GFM includes any trailing content on the closing line in the HTML block.
+            BlockNode::Unknown(node)
+                if matches!(
+                    node.syntax_kind(),
+                    SyntaxKind::HTML_BLOCK | SyntaxKind::HTML_BLOCK_RAW
+                ) && fallback_raw
+                    .trim_start()
+                    .strip_prefix("<!--")
+                    .and_then(|comment| comment.split_once("-->"))
+                    .is_some_and(|(_, trailing)| trailing.trim().is_empty()) =>
+            {
+                None
+            }
             BlockNode::Unknown(node) => {
                 Some(self.unsupported(node.syntax_name(), node.source_text(), node.text_range()))
             }
@@ -724,7 +738,14 @@ impl AdapterContext<'_> {
         // Container prefixes retain source indentation and quote markers. The
         // parser emits separate breaks, which preserve continuation spacing.
         nodes
-            .filter(|node| node.syntax_kind() != panache_parser::syntax::SyntaxKind::LINE_PREFIX)
+            .filter(|node| node.syntax_kind() != SyntaxKind::LINE_PREFIX)
+            .filter(|node| {
+                !matches!(node, InlineNode::Unknown(node) if node.syntax_element()
+                    .as_node()
+                    .cloned()
+                    .and_then(InlineHtml::cast)
+                    .is_some_and(|html| html.is_comment()))
+            })
             .map(|node| self.inline(node))
             .collect()
     }
