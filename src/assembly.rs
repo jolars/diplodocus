@@ -37,7 +37,8 @@ mod documenter_examples;
 mod doxygen_native;
 mod julia_environment;
 mod julia_runtime;
-pub(crate) use julia_runtime::assemble_for_extraction;
+mod native;
+pub(crate) use native::{assemble_for_check, assemble_for_extraction};
 #[cfg(target_os = "linux")]
 mod execution;
 mod package_docs;
@@ -447,24 +448,16 @@ pub fn assemble_workspace(path: impl AsRef<Path>) -> Result<WorkspaceSources, As
 }
 
 async fn rust_results(
-    path: &Path,
+    configuration: &WorkspaceConfiguration,
+    paths: &ResolvedWorkspacePaths,
     run_examples: bool,
     deadlines: ExecutionDeadlines,
     cancellation: &mut ExecutionCancellation<'_>,
     reporting: &Reporting,
 ) -> Result<BTreeMap<(String, String), rust_native::RustNativeExtraction>, AssemblyError> {
-    let loading = reporting.stage("Loading workspace", None);
-    let configuration_source = fs::read(path)?;
-    let configuration = crate::configuration::load_configuration(path)?;
-    reject_errors(validate_configuration_with_source(
-        &configuration,
-        "diplodocus.yaml".try_into().unwrap(),
-    ))?;
-    let paths = resolve_workspace_paths(path, &configuration)?;
-    loading.finish();
     let mut progress = reporting.stage(
         "Extracting Rust APIs",
-        Some(target_count(&configuration, "rust")),
+        Some(target_count(configuration, "rust")),
     );
     let cache = paths.configuration_directory.join(".diplodocus/cache");
     let mut results = BTreeMap::new();
@@ -482,7 +475,7 @@ async fn rust_results(
         {
             continue;
         }
-        let result_cache = crate::incremental::rust_package_context(&configuration, &paths, index);
+        let result_cache = crate::incremental::rust_package_context(configuration, paths, index);
         for (target, selected) in declaration.targets.iter().zip(&package.targets) {
             if target.extractor == "rust" {
                 progress.item(&format!("{}:{}", package.id, target.id));
@@ -504,63 +497,20 @@ async fn rust_results(
             }
         }
     }
-    if fs::read(path)? != configuration_source {
-        return Err(AssemblyError::InputsChanged);
-    }
     progress.finish();
     Ok(results)
 }
 
-pub(crate) async fn assemble_for_check(
-    path: &Path,
-    deadlines: ExecutionDeadlines,
-    cancellation: &mut ExecutionCancellation<'_>,
-    reporting: &Reporting,
-) -> Result<WorkspaceSources, AssemblyError> {
-    let rust = rust_results(path, false, deadlines, cancellation, reporting).await?;
-    let doxygen = doxygen_results(path, deadlines, cancellation, reporting).await?;
-    let r = r_results(
-        path,
-        deadlines,
-        cancellation,
-        reporting,
-        &mut r_native::GeneratedWrites::default(),
-    )
-    .await?;
-    let python = python_native::results(path, deadlines, cancellation, reporting).await?;
-    let julia = julia_runtime::results(path, deadlines, cancellation, reporting).await?;
-    assemble_with_native(
-        path,
-        NativeExtractions {
-            julia,
-            rust,
-            doxygen,
-            r,
-            python,
-        },
-        false,
-        reporting,
-        cancellation,
-    )
-    .await
-}
-
 async fn doxygen_results(
-    path: &Path,
+    configuration: &WorkspaceConfiguration,
+    paths: &ResolvedWorkspacePaths,
     deadlines: ExecutionDeadlines,
     cancellation: &mut ExecutionCancellation<'_>,
     reporting: &Reporting,
 ) -> Result<BTreeMap<(String, String), doxygen_native::DoxygenNativeExtraction>, AssemblyError> {
-    let before = fs::read(path)?;
-    let configuration = crate::configuration::load_configuration(path)?;
-    reject_errors(validate_configuration_with_source(
-        &configuration,
-        "diplodocus.yaml".try_into().unwrap(),
-    ))?;
-    let paths = resolve_workspace_paths(path, &configuration)?;
     let mut progress = reporting.stage(
         "Extracting C++ APIs",
-        Some(target_count(&configuration, "doxygen")),
+        Some(target_count(configuration, "doxygen")),
     );
     let mut results = BTreeMap::new();
     for (index, (declaration, package)) in configuration
@@ -570,7 +520,7 @@ async fn doxygen_results(
         .enumerate()
     {
         let repository = &paths.repositories[package.repository_index];
-        let cache = crate::incremental::package_context(&configuration, &paths, index);
+        let cache = crate::incremental::package_context(configuration, paths, index);
         for (target, selected) in declaration.targets.iter().zip(&package.targets) {
             if target.extractor == "doxygen" {
                 progress.item(&format!("{}:{}", package.id, target.id));
@@ -591,27 +541,19 @@ async fn doxygen_results(
             }
         }
     }
-    if fs::read(path)? != before {
-        return Err(AssemblyError::InputsChanged);
-    }
     progress.finish();
     Ok(results)
 }
 
 async fn r_results(
     path: &Path,
+    configuration: &WorkspaceConfiguration,
+    paths: &ResolvedWorkspacePaths,
     deadlines: ExecutionDeadlines,
     cancellation: &mut ExecutionCancellation<'_>,
     reporting: &Reporting,
     journal: &mut r_native::GeneratedWrites,
 ) -> Result<BTreeMap<(String, String), r_native::RNativeExtraction>, AssemblyError> {
-    let before = fs::read(path)?;
-    let configuration = crate::configuration::load_configuration(path)?;
-    reject_errors(validate_configuration_with_source(
-        &configuration,
-        "diplodocus.yaml".try_into().unwrap(),
-    ))?;
-    let paths = resolve_workspace_paths(path, &configuration)?;
     let configuration_path = fs::canonicalize(path)?;
     for (declaration, package) in configuration.packages.iter().zip(&paths.packages) {
         if let Some(settings) = &declaration.r {
@@ -651,17 +593,14 @@ async fn r_results(
         }
     }
     let results = r_native::results(
-        &configuration,
-        &paths,
+        configuration,
+        paths,
         deadlines,
         cancellation,
         reporting,
         journal,
     )
     .await?;
-    if fs::read(path)? != before {
-        return Err(AssemblyError::InputsChanged);
-    }
     Ok(results)
 }
 
@@ -675,20 +614,13 @@ struct NativeExtractions {
 
 async fn assemble_with_native(
     path: &Path,
+    text: String,
+    mut configuration: WorkspaceConfiguration,
     mut native: NativeExtractions,
     bundle_export: bool,
     reporting: &Reporting,
     cancellation: &mut ExecutionCancellation<'_>,
 ) -> Result<WorkspaceSources, AssemblyError> {
-    let text = fs::read_to_string(path).map_err(|source| ConfigurationError::Read {
-        path: path.to_owned(),
-        source,
-    })?;
-    let mut configuration =
-        parse_configuration(&text).map_err(|source| ConfigurationError::Parse {
-            path: path.to_owned(),
-            source,
-        })?;
     let config_name = DiagnosticPath::try_from(
         path.file_name()
             .and_then(|s| s.to_str())

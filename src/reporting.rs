@@ -13,7 +13,8 @@ pub use timing::Phase;
 /// Receives synchronous notifications without taking ownership of pipeline work.
 ///
 /// Implementations should return promptly. Events may arrive from different
-/// threads, and borrowed event data is valid only during this call.
+/// threads. Events from concurrent stages may interleave. Borrowed event data
+/// is valid only during this call.
 pub trait Reporter: Send + Sync {
     /// Observe one pipeline or command event.
     fn report(&self, event: Event<'_>);

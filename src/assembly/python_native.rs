@@ -99,23 +99,17 @@ impl Staging {
 }
 
 pub(super) async fn results(
-    path: &Path,
+    configuration: &WorkspaceConfiguration,
+    paths: &ResolvedWorkspacePaths,
     deadlines: ExecutionDeadlines,
     cancellation: &mut ExecutionCancellation<'_>,
     reporting: &Reporting,
 ) -> Result<BTreeMap<(String, String), PythonNativeExtraction>, AssemblyError> {
-    let configuration_source = fs::read(path)?;
-    let configuration = crate::configuration::load_configuration(path)?;
-    reject_errors(validate_configuration_with_source(
-        &configuration,
-        "diplodocus.yaml".try_into().unwrap(),
-    ))?;
-    let paths = resolve_workspace_paths(path, &configuration)?;
     let mut results = BTreeMap::new();
     let mut selected_python = None;
     let mut progress = reporting.stage(
         "Extracting Python APIs",
-        Some(target_count(&configuration, "python")),
+        Some(target_count(configuration, "python")),
     );
     for (index, package) in paths.packages.iter().enumerate() {
         let declaration = &configuration.packages[index];
@@ -140,7 +134,7 @@ pub(super) async fn results(
                     ),
                 ])
             };
-            let context = crate::incremental::package_context(&configuration, &paths, index);
+            let context = crate::incremental::package_context(configuration, paths, index);
             if selected_python.is_none() {
                 // Keep the absolute logical executable. Resolving its symlink
                 // before launch would bypass a virtual environment's entry point.
@@ -396,9 +390,6 @@ pub(super) async fn results(
             results.insert((package.id.clone(), target.id.clone()), result);
             progress.advance();
         }
-    }
-    if fs::read(path)? != configuration_source {
-        return Err(AssemblyError::InputsChanged);
     }
     progress.finish();
     Ok(results)

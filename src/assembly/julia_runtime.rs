@@ -53,29 +53,16 @@ pub(super) fn portable_error(text: &str) -> String {
 
 pub(super) async fn results(
     path: &Path,
+    configuration: &WorkspaceConfiguration,
+    paths: &ResolvedWorkspacePaths,
     deadlines: ExecutionDeadlines,
     cancellation: &mut ExecutionCancellation<'_>,
     reporting: &Reporting,
 ) -> Result<BTreeMap<(String, String), JuliaNativeExtraction>, AssemblyError> {
-    let configuration_source =
-        fs::read_to_string(path).map_err(|source| ConfigurationError::Read {
-            path: path.to_owned(),
-            source,
-        })?;
-    let configuration =
-        parse_configuration(&configuration_source).map_err(|source| ConfigurationError::Parse {
-            path: path.to_owned(),
-            source,
-        })?;
-    reject_errors(validate_configuration_with_source(
-        &configuration,
-        "diplodocus.yaml".try_into().unwrap(),
-    ))?;
-    let paths = resolve_workspace_paths(path, &configuration)?;
     let config_input = Manifest::capture(&[std::path::absolute(path)?], &[])?;
     let mut progress = reporting.stage(
         "Extracting Julia APIs",
-        Some(target_count(&configuration, "julia")),
+        Some(target_count(configuration, "julia")),
     );
     let mut results = BTreeMap::new();
     for (package_index, (declaration, package)) in configuration
@@ -111,7 +98,7 @@ pub(super) async fn results(
         project_paths.push(package.metadata_path.clone());
         let project_inputs = Manifest::capture(&project_paths, &[])?;
         let extraction_cache =
-            crate::incremental::package_context(&configuration, &paths, package_index);
+            crate::incremental::package_context(configuration, paths, package_index);
         let environment = if extraction_cache.is_some() {
             let validation = reporting.phase(Phase::CacheValidation, Some(&package.id), None);
             let environment = super::julia_environment::observe(
@@ -327,41 +314,6 @@ pub(super) async fn results(
             progress.advance();
         }
     }
-    if configuration_source.as_bytes() != fs::read(path)? {
-        return Err(AssemblyError::InputsChanged);
-    }
     progress.finish();
     Ok(results)
-}
-
-pub(crate) async fn assemble_for_extraction(
-    path: &Path,
-    deadlines: ExecutionDeadlines,
-    cancellation: &mut ExecutionCancellation<'_>,
-    reporting: &Reporting,
-    journal: &mut super::r_native::GeneratedWrites,
-    bundle_export: bool,
-) -> Result<WorkspaceSources, AssemblyError> {
-    if bundle_export {
-        super::bundles::validate_export(&crate::configuration::load_configuration(path)?)?;
-    }
-    let julia = results(path, deadlines, cancellation, reporting).await?;
-    let rust = super::rust_results(path, true, deadlines, cancellation, reporting).await?;
-    let doxygen = super::doxygen_results(path, deadlines, cancellation, reporting).await?;
-    let r = super::r_results(path, deadlines, cancellation, reporting, journal).await?;
-    let python = super::python_native::results(path, deadlines, cancellation, reporting).await?;
-    super::assemble_with_native(
-        path,
-        super::NativeExtractions {
-            julia,
-            rust,
-            doxygen,
-            r,
-            python,
-        },
-        bundle_export,
-        reporting,
-        cancellation,
-    )
-    .await
 }
