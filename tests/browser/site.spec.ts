@@ -1018,7 +1018,7 @@ test("footer identifies the docs and exposes project, license, and generator lin
     await expect(repository.locator("svg")).toBeVisible();
     if (info.project.name === "mobile") await page.locator(".mobile-menu > summary").click();
     await expect(footer).toContainText("Docs: dev");
-    await expect(footer).toContainText("© 2026 Johan Larsson");
+    await expect(footer).toContainText("© 2026 Diplodocus contributors");
     await expect(footer).toContainText("MIT or Apache-2.0");
     for (const [label, url] of [
       ["Report an issue", "https://github.com/jolars/diplodocus/issues"],

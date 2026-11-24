@@ -146,7 +146,7 @@ presentation:
     alt: "Diplodocus: Polyglot documentation for monorepos. A dinosaur writes in an open book."
   footer:
     docs-version: "dev"
-    copyright: "© 2026 Johan Larsson"
+    copyright: "© 2026 Diplodocus contributors"
     licenses:
       - label: "MIT"
         url: "https://github.com/jolars/diplodocus/blob/main/LICENSE-MIT"
