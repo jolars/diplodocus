@@ -168,6 +168,7 @@ impl CommandRunner {
             &options.output,
             true,
             trust,
+            pipeline::SiteMode::Publish,
             &self.reporting,
         )?;
         command.finish(Some(&options.output), Some(site.page_count()));

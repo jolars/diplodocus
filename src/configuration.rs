@@ -184,9 +184,55 @@ pub struct PresentationDefaults {
     /// Legacy fragment IDs attached to headings or API targets on generated HTML pages.
     #[serde(skip_serializing_if = "BTreeMap::is_empty")]
     pub fragment_aliases: BTreeMap<String, BTreeMap<String, FragmentAliasTarget>>,
+    /// Analytics providers for complete HTML pages.
+    #[serde(skip_serializing_if = "AnalyticsDefaults::is_default")]
+    pub analytics: AnalyticsDefaults,
     /// Optional notices and links shown at the bottom of every page.
     #[serde(skip_serializing_if = "FooterDefaults::is_default")]
     pub footer: FooterDefaults,
+}
+
+/// Optional analytics providers for the site.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, rename_all = "kebab-case", deny_unknown_fields)]
+pub struct AnalyticsDefaults {
+    /// Umami tracker settings.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub umami: Option<UmamiConfiguration>,
+}
+
+impl AnalyticsDefaults {
+    fn is_default(&self) -> bool {
+        self.umami.is_none()
+    }
+}
+
+/// Values copied from a website's Umami tracking code.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+pub struct UmamiConfiguration {
+    /// Absolute URL of the tracker script.
+    #[serde(deserialize_with = "deserialize_external_url")]
+    pub script_url: String,
+    /// Website ID assigned by Umami.
+    #[serde(deserialize_with = "deserialize_umami_website_id")]
+    pub website_id: String,
+}
+
+fn deserialize_umami_website_id<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<String, D::Error> {
+    let value = String::deserialize(deserializer)?;
+    if value.is_empty()
+        || value
+            .chars()
+            .any(|ch| ch.is_whitespace() || ch.is_control())
+    {
+        return Err(D::Error::custom(
+            "Umami website ID must be nonempty and contain no whitespace or control characters",
+        ));
+    }
+    Ok(value)
 }
 
 /// Portable header navigation settings.

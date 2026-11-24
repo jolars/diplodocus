@@ -295,6 +295,7 @@ or HTML.
 | `icons` | list | `[]` | Icon and manifest links on every complete HTML page. |
 | `logo` | mapping | Unset | Homepage hero image and fallback navbar logo. |
 | `open-graph` | mapping | Unset | Shared social preview image. Requires `site-url`. |
+| `analytics` | mapping | Unset | Optional analytics for complete HTML pages. |
 | `redirects` | mapping | `{}` | Permanent redirects from old URL paths to generated pages. |
 | `fragment-aliases` | mapping | `{}` | Legacy fragment IDs attached to maintained headings and API targets, keyed by generated HTML path. |
 | `footer` | mapping | No footer | Documentation version, notices, and links. |
@@ -304,6 +305,20 @@ parameters, fragments, or whitespace. Diplodocus treats it as a directory root.
 Clean URLs require hosting support; output filenames keep their `.html`
 extensions. Ambiguous clean routes fail generation. See
 [site appearance](../guide/presentation.md) for examples and deployment details.
+
+### Analytics
+
+Set `presentation.analytics.umami` to enable Umami. Both fields are required
+when you declare this mapping.
+
+| Option | Type | Purpose |
+| --- | --- | --- |
+| `script-url` | URL | Full HTTP or HTTPS tracker URL without credentials or whitespace. |
+| `website-id` | string | Umami website ID. Must be nonempty and contain no whitespace or control characters. |
+
+The tracker is included in `build` output and in standalone `generate` output
+with `--allow-site-scripts`. Preview and fragment output omit it. See the
+[Umami setup example](../guide/presentation.md#umami-analytics).
 
 ### Header
 

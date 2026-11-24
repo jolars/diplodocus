@@ -361,6 +361,33 @@ fn presentation_site_urls_require_absolute_http_urls_without_request_metadata() 
 }
 
 #[test]
+fn umami_requires_a_tracker_url_and_website_id() {
+    let minimal = "project: {name: Docs}\n";
+    let defaults = parse_configuration(minimal).unwrap();
+    for declaration in ["analytics: {}", "analytics: {umami: null}"] {
+        assert_eq!(
+            parse_configuration(&format!("{minimal}presentation: {{{declaration}}}\n")).unwrap(),
+            defaults
+        );
+    }
+
+    for invalid in [
+        "{}",
+        "{website-id: demo}",
+        "{script-url: https://stats.example.test/script.js}",
+        "{script-url: /script.js, website-id: demo}",
+        "{script-url: javascript:alert(1), website-id: demo}",
+        "{script-url: https://user:password@stats.example.test/script.js, website-id: demo}",
+        "{script-url: https://stats.example.test/script.js, website-id: ''}",
+        "{script-url: https://stats.example.test/script.js, website-id: 'a b'}",
+        "{script-url: https://stats.example.test/script.js, website-id: demo, extra: true}",
+    ] {
+        let source = format!("{minimal}presentation:\n  analytics:\n    umami: {invalid}\n");
+        assert!(parse_configuration(&source).is_err(), "{source}");
+    }
+}
+
+#[test]
 fn presentation_settings_accept_only_portable_display_metadata() {
     for settings in [
         "title: 42",

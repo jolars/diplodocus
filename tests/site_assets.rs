@@ -12,6 +12,8 @@ use diplodocus::snapshots::Snapshot;
 use diplodocus::validation::resolve_workspace;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
+const UMAMI_TAG: &str = "<script defer src=\"https://stats.example.test/script.js?v=1&amp;other=2\" data-website-id=\"test&amp;site\"></script>";
+
 const SVG: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><path style="fill:#073984" d="M0 0h32v32H0z"/></svg>"##;
 
 fn workspace(extra: &str) -> support::TestWorkspace {
@@ -27,7 +29,7 @@ fn workspace(extra: &str) -> support::TestWorkspace {
 fn eunoia() -> support::TestWorkspace {
     // These declarations replace Eunoia's static-file copy and four injected links.
     let root = workspace(
-        "  site-url: https://example.test/docs/\n  canonical-url-style: clean\n  asset-directories: [{ repository: docs, path: catalog, publish: datasets }]\n  assets:\n    - { repository: docs, path: static/favicon.svg, publish: favicon.svg }\n    - { repository: docs, path: static/favicon.ico, publish: favicon.ico }\n    - { repository: docs, path: static/apple-touch-icon.png, publish: apple-touch-icon.png }\n    - { repository: docs, path: static/site.webmanifest, publish: site.webmanifest }\n    - { repository: docs, path: static/llms.txt, publish: llms.txt }\n    - { repository: docs, path: static/192.png, publish: icons/192.png }\n    - { repository: docs, path: static/site.css, publish: public/site.css }\n    - { repository: docs, path: static/site.js, publish: public/site.js }\n    - { repository: docs, path: static/site.mjs, publish: public/site.mjs }\n  stylesheets: [public/site.css]\n  scripts: [public/site.js, public/site.mjs]\n  apple-mobile-web-app-title: 'Eunoia & docs'\n  icons:\n    - { path: favicon.svg, type: image/svg+xml, sizes: any }\n    - { path: favicon.ico }\n    - { path: apple-touch-icon.png, rel: apple-touch-icon, sizes: 180x180 }\n    - { path: site.webmanifest, rel: manifest }\n",
+        "  analytics:\n    umami:\n      script-url: https://stats.example.test/script.js?v=1&other=2\n      website-id: test&site\n  site-url: https://example.test/docs/\n  canonical-url-style: clean\n  asset-directories: [{ repository: docs, path: catalog, publish: datasets }]\n  assets:\n    - { repository: docs, path: static/favicon.svg, publish: favicon.svg }\n    - { repository: docs, path: static/favicon.ico, publish: favicon.ico }\n    - { repository: docs, path: static/apple-touch-icon.png, publish: apple-touch-icon.png }\n    - { repository: docs, path: static/site.webmanifest, publish: site.webmanifest }\n    - { repository: docs, path: static/llms.txt, publish: llms.txt }\n    - { repository: docs, path: static/192.png, publish: icons/192.png }\n    - { repository: docs, path: static/site.css, publish: public/site.css }\n    - { repository: docs, path: static/site.js, publish: public/site.js }\n    - { repository: docs, path: static/site.mjs, publish: public/site.mjs }\n  stylesheets: [public/site.css]\n  scripts: [public/site.js, public/site.mjs]\n  apple-mobile-web-app-title: 'Eunoia & docs'\n  icons:\n    - { path: favicon.svg, type: image/svg+xml, sizes: any }\n    - { path: favicon.ico }\n    - { path: apple-touch-icon.png, rel: apple-touch-icon, sizes: 180x180 }\n    - { path: site.webmanifest, rel: manifest }\n",
     );
     root.write("catalog/nested/item.json", "{}");
     root.write("static/site.css", "body { color: green; }");
@@ -92,6 +94,7 @@ fn build_and_relocated_snapshot_preserve_public_paths_bytes_and_icon_links() {
     .unwrap();
     let inactive = std::fs::read_to_string(detached.path().join("site/guide/start.html")).unwrap();
     assert!(inactive.contains("href=\"../public/site.css\""));
+    assert!(!inactive.contains("data-website-id"));
     assert!(!inactive.contains("src=\"../public/site.js\""));
     assert_eq!(
         std::fs::read(detached.path().join("site/public/site.js")).unwrap(),
@@ -118,6 +121,10 @@ fn build_and_relocated_snapshot_preserve_public_paths_bytes_and_icon_links() {
     assert!(
         !String::from_utf8_lossy(&fragments.files()["index.html"].bytes).contains("public/site.")
     );
+    assert!(
+        !String::from_utf8_lossy(&fragments.files()["index.html"].bytes)
+            .contains("data-website-id")
+    );
     assert_eq!(
         std::fs::read(detached.path().join("site/guide/start.html")).unwrap(),
         original
@@ -133,6 +140,9 @@ fn build_and_relocated_snapshot_preserve_public_paths_bytes_and_icon_links() {
     assert_eq!(rendered.files()["favicon.ico"].media_type, "image/x-icon");
     for (route, prefix) in [("index.html", ""), ("guide/start.html", "../")] {
         let html = std::str::from_utf8(&rendered.files()[route].bytes).unwrap();
+        let head = html.split_once("</head>").unwrap().0;
+        assert_eq!(html.matches("data-website-id").count(), 1);
+        assert!(head.contains(UMAMI_TAG));
         // Clean URLs resolve assets relative to their public location.
         assert!(
             html.contains(&format!("href=\"{prefix}favicon.svg\"")),
@@ -360,6 +370,7 @@ async fn native_preview_serves_identical_assets_and_rebuilds_after_edits_and_rec
     let icon = response(port, "/favicon.svg").await.unwrap();
     assert!(String::from_utf8_lossy(&icon).contains("Content-Type: image/svg+xml\r\n"));
     let page = response(port, "/guide/start").await.unwrap();
+    assert!(!String::from_utf8_lossy(&page).contains("data-website-id"));
     assert!(String::from_utf8_lossy(&page).contains("rel=\"manifest\""));
     assert!(String::from_utf8_lossy(&page).contains("src=\"../public/site.js\""));
     let css = response(port, "/public/site.css").await.unwrap();
@@ -368,6 +379,9 @@ async fn native_preview_serves_identical_assets_and_rebuilds_after_edits_and_rec
     assert!(String::from_utf8_lossy(&js).contains("Content-Type: text/javascript; charset=utf-8"));
     root.write("static/site.js", "window.siteLoaded = 'updated';");
     wait_for(port, "/public/site.js", b"window.siteLoaded = 'updated';").await;
+    let rebuilt = response(port, "/guide/start").await.unwrap();
+    assert!(!String::from_utf8_lossy(&rebuilt).contains("data-website-id"));
+    assert!(String::from_utf8_lossy(&rebuilt).contains("src=\"../public/site.js\""));
     root.remove("static/site.js");
     // A failed rebuild must keep the preceding complete generation available.
     tokio::time::sleep(Duration::from_millis(600)).await;

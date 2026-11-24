@@ -91,6 +91,18 @@ fn render_site_resources(html: &mut String, site: &Site<'_>, route: &str) {
         )
         .unwrap();
     }
+    if site.site_scripts_enabled
+        && !site.preview
+        && let Some(umami) = &site.presentation.analytics.umami
+    {
+        write!(
+            html,
+            "<script defer src=\"{}\" data-website-id=\"{}\"></script>",
+            escape(&umami.script_url),
+            escape(&umami.website_id)
+        )
+        .unwrap();
+    }
 }
 
 fn brand(

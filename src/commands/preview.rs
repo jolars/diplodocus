@@ -69,6 +69,7 @@ async fn run(
         Box::pin(cancelled(stop.clone())),
         reporting,
         &mut attempt,
+        pipeline::SiteMode::Preview,
     )
     .await;
     watcher.acknowledge(attempt);
@@ -122,7 +123,7 @@ async fn run(
             _ = watcher.next_change() => {
                 let command = reporting.command("rebuild");
                 let mut attempt = pipeline::AttemptState::watching();
-                let result = pipeline::build_attempt_observed(&build, deadlines, Box::pin(cancelled(stop.clone())), reporting, &mut attempt).await;
+                let result = pipeline::build_attempt_observed(&build, deadlines, Box::pin(cancelled(stop.clone())), reporting, &mut attempt, pipeline::SiteMode::Preview).await;
                 watcher.acknowledge(attempt);
                 match result {
                     Ok(site) => {

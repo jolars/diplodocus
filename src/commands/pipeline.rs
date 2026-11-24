@@ -248,8 +248,15 @@ pub(super) async fn build_attempt(
         cancellation,
         reporting,
         &mut AttemptState::default(),
+        SiteMode::Publish,
     )
     .await
+}
+
+#[derive(Clone, Copy)]
+pub(super) enum SiteMode {
+    Publish,
+    Preview,
 }
 
 pub(super) async fn build_attempt_observed(
@@ -258,6 +265,7 @@ pub(super) async fn build_attempt_observed(
     cancellation: ExecutionCancellation<'_>,
     reporting: &Reporting,
     attempt: &mut AttemptState,
+    mode: SiteMode,
 ) -> Result<RenderedSite, CommandError> {
     let input = extract_attempt_observed(
         ExtractOptions {
@@ -279,6 +287,7 @@ pub(super) async fn build_attempt_observed(
             allow_components: true,
             allow_site_scripts: true,
         },
+        mode,
         reporting,
     )
 }
@@ -287,6 +296,7 @@ pub(super) fn generate_attempt(
     output: &Path,
     report_diagnostics: bool,
     trust: super::GenerateTrust,
+    mode: SiteMode,
     reporting: &Reporting,
 ) -> Result<RenderedSite, CommandError> {
     reject_overlap(output, input)?;
@@ -296,12 +306,13 @@ pub(super) fn generate_attempt(
             reporting.emit(Event::Diagnostic(diagnostic));
         }
     }
-    let site = reporting
+    let mut site = reporting
         .run_phase(Phase::SitePreparation, "Preparing site", || {
             Site::new(&snapshot)
         })?
         .with_components(trust.allow_components)
         .with_site_scripts(trust.allow_site_scripts);
+    site.preview = matches!(mode, SiteMode::Preview);
     let rendering = reporting.phase(Phase::Rendering, None, None);
     let rendered = crate::rendering::render_reported(&site, true, reporting)?;
     rendering.finish();

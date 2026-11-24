@@ -174,6 +174,25 @@ A script initializes when the browser loads the document. Listen for
 `diplodocus:page-change` on `document` to initialize content inserted by
 client-side navigation.
 
+## Umami analytics {#umami-analytics}
+
+Open your website's tracking code in Umami and copy the script URL and website
+ID into `diplodocus.yaml`.
+
+```yaml
+presentation:
+  analytics:
+    umami:
+      script-url: "https://stats.example.com/script.js"
+      website-id: "94db1cb1-74f4-4a40-ad6c-962362670409"
+```
+
+Use the full tracker URL from your self-hosted instance or Umami Cloud.
+`diplodocus build` adds the tracker to every complete page. When generating
+from a trusted snapshot, pass `--allow-site-scripts` to include it.
+`diplodocus serve` omits the tracker so preview visits stay out of analytics.
+If you generate fragments, configure Umami in your frontend.
+
 ## Repository links
 
 The navbar includes repositories with public HTTP or HTTPS URLs. One repository
