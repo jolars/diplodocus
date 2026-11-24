@@ -10,6 +10,3 @@ Use the reference to look up exact commands and configuration fields:
 
 For a walkthrough, start with [getting started](../guide/quick-start.md) or the
 [configuration guide](../guide/configuration.md).
-
-The [development section](../development/index.md) covers the design,
-contributing, browser workflows, and changelog.

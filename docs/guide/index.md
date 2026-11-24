@@ -38,13 +38,12 @@ files, and rebuilds when they change. `build` writes a static site for publishin
 
 Use the **Authoring** section to [configure your project](configuration.md),
 [write pages](authoring.md), [arrange navigation](navigation.md), and
-[customize the site's appearance](presentation.md). Add
-[executable examples](execution.md) when you want to publish results alongside
-the code that produced them.
+[customize the site's appearance](presentation.md).
 
 Use the **Extraction** section to add API documentation for
 [Python](extraction/python.md), [R](extraction/r.md),
-[Julia](extraction/julia.md), or [Rust](extraction/rust.md).
+[Julia](extraction/julia.md), [Rust](extraction/rust.md), or
+[C++](extraction/cpp.md).
 Each language guide describes its inputs, environment, and supported examples.
 
 The [CLI Reference](../reference/cli.md) and

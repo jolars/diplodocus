@@ -1,227 +1,82 @@
 # Design
 
-Diplodocus brings related packages into one documentation site. A library might
-have a C++ core, Python bindings, and an R package, each with its own
-conventions and release cycle. Readers should be able to move between those
-packages without learning a different documentation system for each one.
+A project might have a C++ library, Python bindings, and an R package. Each API
+has its own language conventions, but readers often need to move between them.
+Diplodocus brings their API references and authored guides into one site with
+shared navigation, links, and search.
 
-That goal shapes the architecture. Diplodocus extracts APIs and authored pages
-into a shared documentation model, resolves their relationships, and renders
-them together. Navigation, search, links, and presentation belong to the whole
-site. Each language adapter contributes structured documentation rather than
-pages from a separate documentation generator.
+## Describe the workspace
 
-## A workspace describes the documentation
+The workspace configuration tells Diplodocus which checkouts to read, which
+packages to document, and where to find authored pages. The packages can share
+a repository or come from different checkouts. You prepare the checkouts and
+choose their revisions.
 
-A workspace explicitly names its source repositories, packages, and authored
-content collections. These can live in one monorepo or several local checkouts.
-The caller supplies those checkouts and chooses their revisions. Diplodocus does
-not fetch repositories or resolve a set of package releases.
+A package represents an API. For example, a Python module that calls C++ can
+have its own Python reference. If you also publish the C++ interface, declare
+it as a separate package. Authored pages can belong to either package or to the
+project as a whole. A guide can live anywhere in a declared repository. Its
+owner gives it a context for navigation and links, while its collection's
+mount determines its URL.
 
-A package represents a documented API, so its language follows that API. A
-Python package implemented with a Rust extension is usually one Python
-documentation target. The Rust interface can be documented separately when it is
-useful to readers. Packages can also be internal or hidden while remaining
-available as semantic link targets.
+## Extract APIs in a prepared environment {#extraction-works-in-a-prepared-environment}
 
-Content ownership is independent of file location. A project-level tutorial can
-live beside one package's source, and a package guide can live in a shared
-documentation repository. Ownership gives pages their navigation and reference
-context; collection mounts determine where they appear on the site.
+Each language adapter reads sources and uses the tools that understand that
+language. In this example, Doxygen supplies C++ declarations and comment text,
+Python helps discover the loaded package's public API, and R supplies exports
+and help topics from the prepared checkout. Julia uses its runtime to discover
+methods and docstrings, and Rust uses rustdoc to obtain the compiler-selected
+API.
 
-## One model preserves language differences
+The adapters hand structured documentation, source locations, and diagnostics
+to Diplodocus. You supply their runtimes, dependencies, and any required build
+artifacts. Some tools run code even during discovery. Python and R can load
+packages, Rust can compile dependencies and run build scripts, and Doxygen can
+invoke configured filters. The [language guides](../guide/extraction.md)
+describe how to prepare each environment.
 
-The intermediate representation, or IR, describes packages, API items,
-signatures, documents, and relationships. API documentation and authored guides
-share document blocks and inline elements, so both participate in the same
-reference resolution, search, and rendering.
+## Put guides and APIs in one model
 
-The common model leaves room for language-specific meaning. A Julia generic
-function has methods; a Python callable can have overloads; an R generic has
-dispatch relationships; a Rust trait has associated items. Adapters retain those
-distinctions in structured signatures and language records. The renderer can
-present them appropriately within a common visual system.
+Diplodocus stores API declarations and authored pages in a common documentation
+model. This lets a Python tutorial link to a C++ class or a package guide link
+to an R help topic. Each declaration keeps its own identity within its package.
+A reexport can refer to the same underlying item, and individual overloads
+remain addressable. Diplodocus resolves those references before choosing site
+URLs, so changes to navigation or routes can keep the links intact.
 
-Semantic identities also stay separate from names and URLs. An API item has a
-stable identity scoped to its package. Reexports can name the same item, and
-overloads remain individually addressable. Rendering chooses routes later, so a
-presentation change does not redefine what a reference means. Authors can group
-corresponding APIs into explicit concepts, marking them as equivalent,
-analogous, or related without assuming that similar names mean the same thing.
+The model keeps the information each language needs. A C++ callable can have
+overloads with different signatures, a Julia function can have several methods,
+and an R generic can dispatch to methods for different classes. All three can
+share site navigation and search while presenting their API on its own terms.
 
-Source evidence accompanies the model. Locations identify a repository and a
-relative path, with ranges where the input supports them. Runtime observations
-remain distinguishable from source declarations. Adapters report unsupported or
-ambiguous constructs rather than silently inventing an interpretation.
+`check` validates sources and resolves links without running documentation
+examples. `extract` also runs the examples required by the configured sources.
+For example, extraction checks Python doctests and evaluates R vignettes.
+Authored QMD cells run when their collection enables execution. Code that runs
+during discovery or execution has the permissions of the process building the
+site.
 
-## Extraction works in a prepared environment
+## Save a snapshot and generate the site
 
-The caller prepares the runtimes, dependencies, and build artifacts needed to
-use the documented packages. Diplodocus combines source analysis with native
-tools where they help establish API semantics or check examples. Python uses
-the loaded checkout and Sphinx autodoc/Napoleon for declarations and documentation,
-with maintained stubs supplying public signatures and source parsers supplying
-evidence. Native Python verifies doctests. R combines roxygen2 generation or maintained Rd
-with native exports, formals, and dispatch evidence, supplemental source
-attribution, and example execution. Julia uses the loaded checkout's bindings,
-method tables, and registered documentation, with Fatou for source evidence
-and Julia Markdown. Julia also verifies native doctests. Rust uses rustdoc
-JSON, and C++ uses Doxygen XML.
+`extract` writes a [portable snapshot](../guide/snapshots.md), a SQLite file
+with the assembled documentation, resolved references, execution results, and
+local assets. You can move that file to another machine and run `generate`
+using only the snapshot. This lets CI extract documentation in a prepared
+environment and generate it elsewhere. Other frontends can also use exported
+HTML and Markdown fragments or read the [snapshot format](../reference/snapshots.md)
+directly.
 
-These integrations stop short of delegating the site to another generator.
-Rustdoc and Doxygen supply API structure; their HTML does not become the site.
-Parser and native-tool details stay inside adapters that return Diplodocus-owned
-records and diagnostics.
+`generate` uses the snapshot to assign page URLs and build navigation and
+search. It renders a complete static site. `build` runs extraction and
+generation in sequence for the common case where you want the site immediately.
 
-The [native adapter contract](native-adapters.md) defines that common handoff,
-including command behavior, observed inputs, and current migration gaps.
+## Rebuild during preview {#incremental-work-retains-verified-results}
 
-Diplodocus does not install dependencies or kernels. Rust is an exception to the
-usual requirement for prepared build artifacts: its native documentation tools
-may compile dependencies and run build scripts, using a prepared nightly
-toolchain and Cargo's locked, offline mode. The language guides describe the
-[requirements and supported behavior](../guide/extraction.md).
+`serve` watches sources and rebuilds the site when you save. Diplodocus can
+reuse completed work for a package or page when the tool, source, and observed
+inputs still match. It checks links again and regenerates navigation and search
+for the whole site. A failed build keeps the last successful site available so
+you can fix the source and save again.
 
-## Authored pages join the same pipeline
-
-Markdown parsing runs in-process through Panache and translates directly into
-the document IR. Named authoring profiles define the supported GFM, QMD, R
-Markdown, and Documenter surfaces. Compatibility with a profile does not imply
-support for every extension of its upstream tool.
-
-Includes compose source before document preparation. The composed page keeps a
-map back to the original files, so a diagnostic in a partial identifies that
-partial, and its relative images and links resolve from its own directory.
-Including a file does not create another page or change the owning page's
-metadata or execution environment.
-
-Execution follows the input format. API doctests and Rd examples run during
-extraction. R Markdown articles use native knitr execution. QMD and Documenter
-pages currently require explicit collection execution settings. A QMD page uses
-one Jupyter session, allowing later cells to use earlier state. Separate pages
-have separate sessions. Expected-output mismatches, unexpected errors, missing
-prerequisites, and cleanup failures prevent publication.
-
-Execution produces structured results and retained assets. Ordinary output stays
-text; supported rich output passes validation before it can render. Generated
-Markdown is an inert fragment and cannot introduce more executable cells. Stored
-HTML must pass the active sanitizer again when loaded. These boundaries protect
-published content; package code and examples still run with the caller's
-privileges and can change files or use the network.
-
-The QMD cache stores successful whole-page results because cells can depend on
-earlier state. Its identity covers source, effective options, kernel and
-toolchain identity, validation policy, and declared environment inputs. A hit
-still verifies kernel readiness and revalidates the retained outputs. The cache
-is disposable local state, separate from the portable snapshot.
-
-## Incremental work retains verified results {#incremental-work-retains-verified-results}
-
-Normal source commands keep disposable results in
-`.diplodocus/cache/incremental/` beside the workspace configuration. Each adapter
-invalidates at package granularity. Authored preparation has a separate page
-cache, and documentation generation and example execution have separate entries.
-These caches persist across commands and server restarts. `--no-cache` bypasses
-reads and writes; package and collection `incremental.cache: off` disables reuse
-for that unit.
-
-A cache identity includes the executable build, relevant configuration, source
-bytes and directory membership, native environment evidence, dependencies, and
-declared extra inputs and environment variables. Declared package dependencies
-propagate transitively. Adapters decline reuse when dependency coverage is
-uncertain. An edit to a comment still changes package inputs because inheritance,
-loaders, and evaluated documentation can read source text.
-
-Restored records remain candidates. Assembly reconstructs local paths and
-observations, resolves references again, and applies the normal semantic and
-output validators. Generated assets retain owned, digest-checked bytes; cache
-records cannot borrow a previous attempt's temporary staging. Failed native work
-does not produce a successful cache entry or replace completed execution evidence.
-
-The watcher polls every 100 ms and debounces saves for 200 ms. It discovers
-configured inputs without running an extra assembly, then extends subscriptions
-with inputs observed during the attempted build. Generated writes are
-acknowledged by their exact fingerprints so concurrent source edits remain
-pending. Missing includes and assets remain subscribed for recovery.
-
-Maintained checkout files are hashed on each scan. For external dependency files,
-the watcher reuses hashes while file and symlink metadata match. On Unix the
-signature includes inode, size, modification time, and change time. The memo is
-limited to current subscriptions, and directory observations detect membership
-changes. Dynamic library search directories inspect matching libraries one level
-deep. Verification also reuses digests and snapshot classifications for canonical
-Nix store files when their complete metadata signatures still match. Mutable
-checkout inputs retain exact content hashing at the build boundary.
-
-Each verification boundary shares current file observations and directory
-inventories across overlapping dependency manifests. Assembly compares every
-retained manifest against those observations, including conflicting earlier
-observations, then drops the shared state before the next native operation.
-Ordinary paths reuse their resolved parent within that boundary; symlinks retain
-normal target resolution. Watcher captures also deduplicate paths before reading
-them and share metadata-guarded hashes between an attempt's subscription captures.
-These local optimizations preserve separate symlink bindings, missing paths, and
-directory membership checks. Commands without watching skip subscription capture.
-
-Every build recomputes workspace references, routes, navigation, and search, and
-renders a complete site. Atomic output replacement removes deleted pages and
-unused assets. Browser refresh is enabled by default for `serve` and occurs only
-after successful publication; `--no-live-reload` disables it. No provisional
-execution evidence or persistent language worker is introduced.
-
-## A snapshot separates extraction from generation
-
-`extract` assembles and validates the documentation, completes execution, and
-publishes a standalone SQLite snapshot. It contains the structured records,
-resolved references, presentation defaults, provenance, and local asset bytes.
-Source locations remain evidence rather than files that generation must open.
-
-`generate` reads that completed snapshot without the checkouts, configuration,
-language runtimes, or execution caches. This lets extraction run in a prepared
-CI environment and generation run elsewhere. It also makes the snapshot useful
-to other frontends: consumers can query its records or use the exported HTML and
-Markdown fragments. The [snapshot guide](../guide/snapshots.md) describes those
-workflows, and the [format reference](../reference/snapshots.md) covers direct
-SQL access.
-
-Snapshot compatibility has separate versions for storage, semantic IR, and
-canonical encoding. Readers reject unsupported versions. Content fingerprints
-describe logical records and assets, independent of SQLite's physical layout.
-Refreshing a snapshot replaces the complete result, preserving retained semantic
-identities and removing deleted entities and unused assets.
-
-A snapshot preserves the results obtained, including execution provenance. It
-cannot make arbitrary code deterministic: reproducibility still depends on
-controlling randomness, time, network access, and other external inputs.
-
-## Rendering and publication finish the build
-
-Generation validates the snapshot and constructs a site model with routes,
-navigation, search entries, and presentation settings. The renderer consumes
-that model without parsing language source or querying SQLite. The default
-output is a static site with complete HTML pages, local assets, and Markdown
-representations. Browser navigation and search enhance those pages.
-
-Authored browser components are a separate explicit capability. Authors supply
-prebuilt bundles and a Markdown fallback; Diplodocus retains the bundles but
-does not compile them. Generating from a snapshot requires the caller to enable
-the components. Notebook output does not acquire this ability.
-
-Publication stages completed artifacts before replacing their destinations.
-Failed extraction preserves the previous snapshot, and failed generation
-preserves the previous site. `build` runs extraction and generation in sequence;
-`serve` watches inputs and keeps the last successful site available after a
-failed rebuild. Publication cannot undo side effects from executed code.
-
-`check` validates sources and references without running documentation examples
-or publishing artifacts. It can still invoke native extraction tools, including
-roxygen2 generation and package loading, Rust compilation, and Doxygen filters.
-It does not prove that example execution
-will succeed.
-
-The boundaries between adapters, assembly, snapshots, the site model, and
-rendering also organize the code in `src/`. They allow changes to one language
-or frontend without making every other part understand its implementation.
-External plugin interfaces, selective page rendering, and historical release
-assembly remain future work; the current design centers on one complete
-documentation snapshot of the supplied sources.
+See [Contributing](../../CONTRIBUTING.md) for development commands and browser
+checks.

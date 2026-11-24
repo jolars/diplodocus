@@ -175,7 +175,7 @@ explicit entry file, such as `src/MyPackage.jl` or `src/lib.rs`.
 C++ packages use `ecosystem: cpp` and `extractor: doxygen`. Both
 `metadata-path` and the extraction target `path` identify Doxyfiles, with paths
 inside each Doxyfile resolved from the package root. See
-[C++ extraction](../guide/extraction.md#cpp-with-doxygen) for setup.
+[C++ extraction](../guide/extraction/cpp.md) for setup.
 
 ### Julia target settings
 
@@ -233,7 +233,7 @@ case beneath the mount, so `CHANGELOG.md` with `mount: reference` produces
 change routes, content, search, or sitemap inclusion. Explicit sidebars can
 still link to those pages. See [navigation](../guide/navigation.md).
 
-### Collection execution
+### Collection execution {#collection-execution}
 
 Fields in `content[].execution`:
 
@@ -273,7 +273,12 @@ keys. These fields are invalid with `mode: never`.
 Document metadata can disable QMD execution but cannot enable it for a
 collection. API doctests and R help-topic examples have their own native
 execution rules and do not use these settings. See
-[executable examples](../guide/execution.md).
+[Writing pages](../guide/authoring.md#choose-a-format) for setup by format.
+
+During extraction, enabled cells and native examples run with the builder's
+permissions. They can read and change files and use the network. The
+`diplodocus check` command validates sources and links without running
+documentation examples.
 
 ## `presentation` {#presentation}
 

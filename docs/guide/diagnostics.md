@@ -26,6 +26,7 @@ configuration in the reported collection. `serve` keeps the last successful site
 available after a failed rebuild. Snapshot or output publication failures also
 preserve the previous completed artifact.
 
-See [authored pages](authoring.md) for supported syntax,
-[extraction](extraction.md) for static API limits, and [execution](execution.md)
-for kernel failures and permissions.
+See [Writing pages](authoring.md) for supported syntax and QMD setup, the
+[language guides](extraction.md) for extraction requirements, and the
+[configuration reference](../reference/configuration.md#collection-execution)
+for collection execution settings.

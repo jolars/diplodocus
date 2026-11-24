@@ -1,16 +1,10 @@
 # Writing pages
 
-Declare each source directory or individual file as a collection in `content`
-in [workspace configuration](configuration.md). Set `format: "gfm"` for `.md` files or
-`format: "qmd"` for `.qmd` files, or `format: "rmd"` for R Markdown articles.
-Use `format: "documenter"` for Julia Markdown pages with Documenter references
-and directives. A collection's `mount` determines its URL prefix; an empty mount
-places its `index.md` at the site root. The `owner`
-determines whether pages appear in project or package navigation.
-
-Individual files keep their basename beneath the mount, so `CHANGELOG.md` with
-`mount: project` becomes `/project/CHANGELOG.html`. Links and images resolve
-from the original source directory.
+Declare each source directory or individual file as a collection in
+[`content`](configuration.md#add-pages). The collection's `owner` places pages
+in project or package navigation, and its `mount` sets their URL prefix. For
+example, a project-owned `CHANGELOG.md` with `mount: project` becomes
+`/project/CHANGELOG.html`. Links and images resolve from the source directory.
 
 ## Write a page
 
@@ -30,18 +24,41 @@ print(sum(values))
 Return to the [overview](index.md).
 ````
 
-The page appears at `guide/tutorial.html`. Code fences display source without
-running it. Run `diplodocus check` to catch broken links, then use
-`diplodocus serve` to preview edits. See
-[executable examples](execution.md) when you want evaluated code and results.
+The page appears at `guide/tutorial.html`. Run `diplodocus check` to catch
+broken links, then use `diplodocus serve` to preview edits.
+
+## Choose a format {#choose-a-format}
+
+| `format` | Source | Use it for |
+| --- | --- | --- |
+| `gfm` | `.md` | Markdown guides with display-only code fences. |
+| `qmd` | `.qmd` | Quarto Markdown callouts and optionally executable code cells. |
+| `rmd` | `.Rmd`, `.rmd` | [R Markdown articles](extraction/r.md#r-markdown-articles) evaluated with knitr. |
+| `documenter` | `.md` | [Julia Documenter pages](extraction/julia.md#documenter-pages) with API links and directives. |
+
+### QMD cells
+
+QMD cells use braces around the language, such as `{python}` on the opening
+fence. They display code by default. To run them, install the Jupyter kernel
+you need and set the collection's
+[`execution`](../reference/configuration.md#collection-execution) to
+`mode: execute`, `engine: jupyter`, and a `kernel` such as `python3`.
+Cells on a page share one kernel session.
+
+Set cell options in the fence's info string or in `#|` lines inside the fence.
+The `#|` lines take precedence. Use `eval: false` to skip a cell or
+`echo: false` to hide its source. Other supported options are `include`,
+`output`, `error`, `label`, `fig-alt`, `fig-cap`, and `fig-subcap`.
+
+`diplodocus check` validates pages and links without running code cells.
+During extraction, enabled cells run with the permissions of the user or CI
+job building the site. Review the source before building a workspace that
+executes code.
 
 ## Package landing pages {#package-landing-pages}
 
-Every package has a landing page at `/packages/<slug>/`. A compact information
-block above the content shows the package's available metadata and links. It
-uses the same centered reading column as the page content, including on wide
-screens. Missing metadata fields are omitted. Link icons distinguish source
-repositories, issue trackers, websites, and supporting documents.
+Every package has a landing page at `/packages/<slug>/`. It shows available
+package metadata and links above the content.
 
 When a license page is available, the license value links to it. Diplodocus
 renders conventional `LICENSE`, `LICENSE.md`, `LICENCE`, `LICENCE.md`,
@@ -93,40 +110,21 @@ Their routes are `news.html`, `authors.html`, `license.html`, and
 Page headings provide titles, and directories provide automatic sidebar groups.
 To choose your own order, labels, and nested groups, set
 `presentation.sidebar`. Follow the [navigation guide](navigation.md) for a
-complete example. The sidebar can differ between sections such as Guide and
-Reference without changing your source layout.
+complete example.
 
 ## Supported writing surface
 
-GFM pages support headings, paragraphs, emphasis, links, images, lists, quotes,
-tables, thematic breaks, inline `$...$` math, display `$$...$$` math, and
-display-only code fences. Equations render during the build with native KaTeX,
-including HTML and MathML, bundled CSS, and local fonts. GFM pages need no
-browser math renderer or R runtime. Escape literal dollar signs with a
-backslash or put them in code spans. GFM, QMD, and R Markdown support YAML front
-matter with a `layout` option. QMD pages add callouts and braced code cells.
-The supported QMD document metadata includes `title`, `audience`, `layout`, and
-execution settings. Supported cell options
-include `eval`, `echo`, `include`, `output`, `error`, `label`, `fig-alt`,
-`fig-cap`, and `fig-subcap`. Cell options may appear in a fence's info string or
-in `#|` lines; the latter take precedence.
+Use Markdown headings, links, images, lists, quotes, and tables. Write inline
+math with `$...$` and display math with `$$...$$`. Escape literal dollar signs
+with a backslash or put them in code spans.
 
-Add a language label such as `python`, `r`, `julia`, or `rust` to a code fence to enable
-syntax highlighting. Diplodocus also highlights visible QMD cell source and API
-signature blocks. Highlighting follows the site's light or dark theme and works without
-JavaScript. Unlabeled fences, unknown languages, and `text` fences remain plain.
-Plain-text execution output and errors also remain unhighlighted.
-
-Diplodocus implements these selected profiles, not the full Quarto or Pandoc
-languages. Unsupported constructs remain visible as placeholders and produce
-diagnostics. Raw authored HTML and arbitrary directives are outside the supported surface.
-R Markdown additionally supports math, footnotes, citations, simple tables, and
-definition lists. Run `diplodocus check` after editing
-a page to see parser and link diagnostics before any cell executes.
+Add a language label such as `python` to a code fence for syntax highlighting.
+Use `text` for plain output. Run `diplodocus check` to see diagnostics for
+unsupported markup, including raw HTML and unrecognized directives.
 
 ## Page layout
 
-Choose a page layout in YAML front matter:
+Choose a page layout in YAML front matter for GFM, QMD, or R Markdown:
 
   | Layout | Width and navigation                                                                     |
   | ------ | ---------------------------------------------------------------------------------------- |
@@ -146,16 +144,9 @@ layout: wide
 Your page content goes here.
 ```
 
-Use `layout: full` when tables or plots need the same width as the navbar. Both
-`wide` and `full` work in `.md`, `.qmd`, and `.Rmd` pages. The navbar, search,
-and configured footer remain available. The page keeps its title and content
-without adding the homepage hero. Its links, search entry, and appearance in
-other pages' sidebars are unchanged. Omit `layout` or set `layout: docs` for the
-default documentation layout. At the site root, `presentation.home` takes
-precedence and keeps the landing page's wide container.
-
-The former `full` layout is now `wide`. Change existing pages to `layout: wide`
-to preserve their previous width.
+Use `layout: full` when tables or plots need the same width as the navbar.
+Both wider layouts retain the navbar, search, and footer. At the site root,
+`presentation.home` takes precedence over the page layout.
 
 ## Tabsets
 
@@ -201,92 +192,24 @@ reference in another collection.
 Local fragment links must name an existing heading anchor. Keep images and other
 local assets inside a declared source boundary and link to them with relative
 paths. Diplodocus validates local destinations and copies accepted assets into
-the generated site. Rendered PNG and JPEG images include their intrinsic width
-and height so browsers can reserve space before loading them. Diplodocus
-preserves the original image bytes for downloads and fallback rendering.
-
-During generation, Diplodocus also creates smaller PNG and JPEG variants for
-large images and adds `srcset` and `sizes` to the HTML. Browsers can download a
-variant that suits the display width and pixel density. Content variants have
-widths of 480, 960, 1440, and 1920 pixels; navbar logos use 32, 64, and 96 pixels.
-Diplodocus never enlarges images and only offers variants smaller in bytes than
-the original. PNG variants retain transparency, and JPEG variants use
-quality 90. Variants retain embedded ICC color profiles. SVGs, animated PNGs, and images
-with an EXIF rotation or reflection remain unchanged.
-
-Variants are generated from snapshot bytes, so generation does not need the
-source checkout or another execution run. Original assets and Open Graph links
-keep their existing URLs. Fragment output includes the variants and uses
-`100vw` as a conservative size for the embedding site's unknown layout.
-External HTTP links remain external.
+the generated site. It creates smaller variants of large PNG and JPEG images
+and keeps the originals available. Readers' browsers load remote HTTP and
+HTTPS images from their original hosts.
 
 ### SVG conversion
 
-Local SVG images must satisfy the inert SVG allowlist. Diplodocus rejects DTDs,
-style sheets and attributes, definitions, references, clipping paths, scripts,
-and external resources. A rejected image produces `invalid-content-image` at the
-reference's source location, including the asset path. A missing file still
-produces `unresolved-document-reference`.
-
-For static Matplotlib figures, convert the SVG to PNG before linking it. The
-repository provides [`scripts/convert-svg.py`](../../scripts/convert-svg.py),
-using CairoSVG 2.8.2 with an explicit resource fetcher that rejects every
-secondary resource request. It retains local definitions, glyph references,
-styles, clipping, and transparency. It ignores the unused Matplotlib DTD without
-fetching it, rejects XML entities, active elements, and event handlers, and
-removes metadata and XML processing instructions. Conversion preserves the
-drawing at a fixed pixel density; it does not retain vector scaling or SVG
-accessibility metadata. Keep meaningful alternative text on the Markdown image.
-
-Install Cairo's shared library and `uv` first. From the Diplodocus checkout,
-convert figures in a disposable copy of the source documentation:
+Local SVGs must use supported static markup. If Diplodocus reports
+`invalid-content-image` for a plotting tool's SVG, export the figure as a PNG
+or convert it with the repository's
+[`convert-svg.py`](../../scripts/convert-svg.py) helper. With Cairo and `uv`
+installed, run this command from a Diplodocus checkout:
 
 ```sh
-trial=$(mktemp -d)
-cp -R ../qualpal/docs "$trial/docs"
-uv run scripts/convert-svg.py "$trial"/docs/images/examples/*.svg
+uv run scripts/convert-svg.py /path/to/docs/images/plot.svg
 ```
 
-On NixOS, expose Cairo's library to the Python process:
-
-```sh
-export LD_LIBRARY_PATH="$(nix build --no-link --print-out-paths nixpkgs#cairo)/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-```
-
-Run that export before conversion. `uv` installs the Python dependencies
-declared in the script. The converter writes a sibling `.png` for each `.svg`,
-refuses to overwrite existing PNGs, and reports failures per input with a
-nonzero exit status. The default `--scale 2` renders twice the SVG's nominal
-pixel dimensions; increase it up to 8 for larger displays. Inspect the converted
-figures before publishing them.
-
-In the disposable guide files, change image destinations such as
-`images/examples/hsl_pal.svg` to `images/examples/hsl_pal.png`. Convert each
-distinct image once, including images referenced by multiple guides. Keep the
-PNGs inside the declared content boundary, run `diplodocus check --config PATH`,
-and then extract and generate normally. Snapshots retain the PNG bytes, so
-detached generation needs neither the original SVGs nor CairoSVG. Conversion is
-an explicit preparation step; Diplodocus does not invoke the converter during
-extraction or generation.
-
-Run the converter's regression tests with `uv run scripts/convert-svg.test.py`
-in an environment with Cairo available. The resource boundary uses CairoSVG's
-[renderer fetch
-hook](https://github.com/Kozea/CairoSVG/blob/2.8.2/cairosvg/surface.py) and [XML
-parser
-protections](https://github.com/Kozea/CairoSVG/blob/2.8.2/cairosvg/parser.py).
-
-Authored images can also use HTTP or HTTPS URLs, including linked README
-badges. Diplodocus preserves these URLs in HTML and Markdown exports without
-downloading, validating, or copying the remote image bytes. Browsers load those
-images from their original hosts, so their contents can change and they require
-a network connection. Remote images do not receive local image dimensions or
-responsive variants. Generated execution output still requires validated local
-image assets.
-
-Code fences in GFM and API documentation are always display-only. R Markdown chunks execute during extraction. QMD cells run
-only when their collection explicitly authorizes execution; see [executable examples](execution.md) before enabling them.
-
+The helper writes `plot.png` beside the SVG. Update the Markdown link to the
+PNG, keep meaningful alternative text, and run `diplodocus check`.
 
 ## Include shared content
 
@@ -351,20 +274,6 @@ with an option-like comment.
 `include-code` is a Diplodocus extension. Whole-file Markdown directives remain
 literal inside fences. Code directives inside indented code, block quotes,
 and lists also remain literal.
-
-## R Markdown articles
-
-Use R Markdown for articles that evaluate R chunks and inline expressions with
-knitr. Diplodocus discovers package vignettes automatically, and you can also
-declare an `rmd` collection. The [R Markdown guide](authoring/rmarkdown.md)
-describes the environment, supported syntax, citations, and results.
-
-## Documenter pages {#documenter-pages}
-
-Use the Documenter format for Julia Markdown pages with `@ref` links, `@docs`
-and `@autodocs` API assembly, and optional native `@example` execution. The
-[Julia Documenter guide](authoring/documenter.md) describes each directive and
-shows how to select a prepared Julia environment.
 
 ## Browser components
 

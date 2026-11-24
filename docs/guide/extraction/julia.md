@@ -47,3 +47,26 @@ artifacts, and runtime libraries. Declare other reads and environment choices
 through the [incremental settings](../../reference/configuration.md). Use
 `incremental.cache: off` for uncontrolled external state, or `--no-cache` to
 force fresh discovery and execution.
+
+## Documenter pages {#documenter-pages}
+
+To publish Julia Markdown pages with Documenter syntax, declare a collection
+with `format: documenter` and point its `path` to the directory of `.md` files.
+Use `owner: project` for shared guides or the Julia package ID for package
+guides. Use `@ref` for links, `@docs` to insert documentation for selected
+bindings or methods, `@autodocs` to select documented items from named modules,
+and `@index` to list the entries assembled in the collection.
+
+For example, `[setup](@ref install)` links to a heading with the
+`@id install` anchor. An `@autodocs` block requires `Modules` and can filter
+by `Pages`, `Public`, and `Private`.
+
+The collection displays Julia example fences as code by default. To run
+`@example` blocks during extraction, set `mode: execute`, `engine: julia`, and
+`julia-project` under the collection's
+[`execution` settings](../../reference/configuration.md#collection-execution).
+Point `julia-project` to a prepared project file in the repository. Each page
+uses a fresh Julia process with the builder's permissions. Blocks with the same
+name share state on that page. A trailing `# hide` runs the line while hiding it
+from the displayed source. `diplodocus check` validates examples without running
+them. API docstring doctests follow the separate extraction workflow above.

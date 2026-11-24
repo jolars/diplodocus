@@ -26,7 +26,7 @@ checkout, so one site can document packages from several repositories. Other
 declarations refer to a repository by its `id`. The optional `url` provides
 links back to your source repository.
 
-## Add pages
+## Add pages {#add-pages}
 
 A content collection declares a directory or individual file to publish:
 
@@ -76,8 +76,9 @@ links and other configuration; the `slug` places its documentation under
 `packages/python/`.
 
 Use the [Python](extraction/python.md), [R](extraction/r.md),
-[Julia](extraction/julia.md), or [Rust](extraction/rust.md) guide to choose the
-metadata file, target, and required environment for your package. Declare
+[Julia](extraction/julia.md), [Rust](extraction/rust.md), or
+[C++](extraction/cpp.md) guide to choose the metadata file, target, and required
+environment for your package. Declare
 `targets: []` if you want a package landing page and authored documentation
 without API extraction. Diplodocus does not discover undeclared packages or
 infer extraction targets.
@@ -94,8 +95,8 @@ The [navigation guide](navigation.md) walks through both.
 
 Use `presentation` for the site title, logo, homepage, footer, and public URL.
 The [site appearance guide](presentation.md) provides examples you can adapt.
-Execution settings belong to each content collection; follow
-[executable examples](execution.md) when adding runnable pages.
+Use the [collection execution settings](../reference/configuration.md#collection-execution)
+when adding runnable pages.
 
 ## Validate your changes
 

@@ -2,7 +2,7 @@
 
 This document describes the QMD execution policy. API examples and native
 articles have separate execution paths, described in the
-[execution guide](../guide/execution.md). The
+[language guides](../guide/extraction.md). The
 [design overview](../development/design.md) explains the shared boundaries.
 
 ## Outcome

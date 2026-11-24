@@ -68,14 +68,14 @@ alternate-feature suite nightly or on demand with `suite: snapshots`.
 
 Keep fast regression tests in the default suite. New slow native acceptance
 tests should remain opt-in rather than adding minutes to routine testing.
-Pipeline benchmarks also remain manual; see the
-[benchmark workflow](docs/development/pipeline-baseline.md).
+Run [pipeline benchmarks](https://github.com/jolars/diplodocus/blob/main/docs/development/pipeline-baseline.md)
+manually when comparing changes to build or preview performance.
 
 For presentation changes, install browser tools with `npm ci --ignore-scripts`,
 run `npm run site-test`, and inspect screenshots from `npm run site-capture`.
 Run `npm run vitepress-test` for changes to the external frontend integration.
-The [browser development guide](docs/development/browser.md) describes these
-workflows.
+The repository's [browser development guide](https://github.com/jolars/diplodocus/blob/main/docs/development/browser.md)
+describes setup, preview, and capture options.
 
 ## Pull requests
 

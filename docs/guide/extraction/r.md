@@ -7,8 +7,7 @@ source parsers retain attribution and supported supplemental evidence.
 `check`, `extract`, `build`, and `serve` use the same API discovery rules and may
 load the package. `extract`, `build`, and `serve` also execute Rd examples as a
 required step. `check` never executes documentation examples.
-R Markdown vignettes are also discovered and executed; see
-[authored articles](../authoring/rmarkdown.md).
+Diplodocus also discovers and evaluates [R Markdown vignettes](#r-markdown-articles).
 
 Prepare a working checkout with R, `pkgload`, `jsonlite`, `evaluate`, the package dependencies,
 and the dependencies used by its examples. Compile native extensions beforehand;
@@ -158,6 +157,24 @@ dependencies; supplemental import analysis uses installed metadata. Documented h
 receive native signatures without requiring exports. Topics marked
 `\keyword{internal}` have addressable pages but stay out of navigation and search.
 See the R extraction contract below for discovery and import limits.
+
+## R Markdown articles {#r-markdown-articles}
+
+Diplodocus publishes `.Rmd` and `.rmd` files from the package's `vignettes/`
+directory under `vignettes` in the site. To choose another mount, declare a
+package-owned collection with `format: rmd`. The explicit collection takes
+precedence for the files it covers.
+
+Prepare R, pkgload, evaluate, knitr, and the package's dependencies and native
+extensions. During extraction, knitr evaluates each article in a fresh R process
+with the builder's permissions. Chunks and inline expressions share state in
+that article, and relative data paths resolve from the article's directory.
+Use `eval = FALSE` to display a chunk without running it. `diplodocus check`
+validates article sources and links without evaluating them.
+
+Articles support Markdown, PNG figures, and citations from local BibTeX files
+set with `bibliography`. See the
+[collection execution settings](../../reference/configuration.md#collection-execution).
 
 ## Package landing pages {#package-landing-pages}
 

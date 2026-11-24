@@ -20,7 +20,7 @@ surface. A small compatibility layer reads exact `Base.Docs` attachments, method
 metadata, and loader source observations. The GitHub Actions version matrix
 checks this interface on every supported Julia minor. Discovery uses the
 standard library. Authored Documenter pages and example execution use
-Diplodocus's [Documenter support](../guide/authoring/documenter.md).
+Diplodocus's [Documenter support](../guide/extraction/julia.md#documenter-pages).
 
 The CLI commands and Rust library workspace assembly share native discovery.
 `check` loads the package and validates references and presentation. Extraction commands also

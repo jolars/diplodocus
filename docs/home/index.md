@@ -14,9 +14,7 @@ configuration](../guide/configuration.md).
 ## Write, check, and publish
 
 Write [pages](../guide/authoring.md) alongside your packages and link
-them to the [extracted API references](../guide/extraction.md). Enable
-[execution](../guide/execution.md) when you want examples to run as part of the
-build.
+them to the [extracted API references](../guide/extraction.md).
 
 Choose the order of your pages in [navigation](../guide/navigation.md) and add
 your branding in [site appearance](../guide/presentation.md). The

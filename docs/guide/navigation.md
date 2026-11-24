@@ -124,8 +124,8 @@ presentation:
           items:
             - text: Overview
               link: guide/authoring.html
-            - text: Executable examples
-              link: guide/execution.html
+            - text: Navigation
+              link: guide/navigation.html
 ```
 
 Every item needs `text` and either a `link`, nonempty `items`, or both. A group
