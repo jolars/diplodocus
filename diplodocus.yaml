@@ -126,6 +126,8 @@ presentation:
     description: "Bring your Python, R, Julia, Rust, and C++ packages together. Build API references and guides with shared navigation, cross-references, and search."
     guide: "guide/index.html"
     actions:
+      - label: "What is Diplodocus?"
+        path: "guide/index.html"
       - label: "Get started"
         path: "guide/quick-start.html"
       - label: "Explore the guide"
