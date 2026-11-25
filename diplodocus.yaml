@@ -64,8 +64,7 @@ presentation:
   sidebar:
     - text: "Introduction"
       items:
-        - text: "Overview"
-          link: "guide/index.html"
+        - link: "guide/index.html"
         - text: "Getting started"
           link: "guide/quick-start.html"
         - text: "Installation"

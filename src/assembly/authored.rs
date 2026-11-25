@@ -1,9 +1,11 @@
 use super::*;
 use crate::diagnostics::DiagnosticEntity;
-use crate::documents::{AuthoredFormat, prepare_collection_document_with_resources};
+use crate::documents::{
+    AuthoredFormat, document_title, prepare_collection_document_with_resources,
+};
 use crate::ir::{
-    Block, ContentCollection, ContentOwner, Document, DocumentFormat, MetadataValue, Page,
-    PageKind, Provenance, ProvenanceActivity, SourcedDocument,
+    ContentCollection, ContentOwner, DocumentFormat, Page, PageKind, Provenance,
+    ProvenanceActivity, SourcedDocument,
 };
 use crate::provenance::builtin_tools;
 
@@ -267,7 +269,8 @@ pub(super) fn assemble(
                 relative.as_str().len(),
                 relative.as_str()
             );
-            let title = title(&parsed.document).unwrap_or_else(|| relative.as_str().to_owned());
+            let title =
+                document_title(&parsed.document).unwrap_or_else(|| relative.as_str().to_owned());
             let mut tools = builtin_tools();
             if collection.format == AuthoredFormat::Documenter {
                 tools.insert(
@@ -389,22 +392,6 @@ pub(super) fn discover(
     visit(root, root, format, repository, &mut files)?;
     files.sort();
     Ok(files)
-}
-
-fn title(document: &Document) -> Option<String> {
-    if let Some(MetadataValue::Mapping { entries, .. }) = &document.frontmatter {
-        for entry in entries {
-            if entry.key.value == "title"
-                && let MetadataValue::Scalar { value, .. } = &entry.value
-            {
-                return Some(value.clone());
-            }
-        }
-    }
-    document.blocks.iter().find_map(|block| match block {
-        Block::Heading { inlines, .. } => Some(inline_text(inlines)),
-        _ => None,
-    })
 }
 
 pub(super) use crate::documents::inline_text;

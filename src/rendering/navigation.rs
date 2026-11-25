@@ -311,12 +311,16 @@ fn sidebar_items(
     top: bool,
 ) {
     for (index, item) in items.iter().enumerate() {
+        let label = item.text.as_deref().unwrap_or_else(|| {
+            let link = item.link.as_ref().expect("validated sidebar link");
+            &site.pages[link.as_str()].title
+        });
+        let label = escape(label);
         let key = format!("{parent}{index}");
         if top {
             write!(
                 html,
-                "<section class=\"nav-group sidebar-group\" role=\"group\" aria-label=\"{}\">",
-                escape(&item.text)
+                "<section class=\"nav-group sidebar-group\" role=\"group\" aria-label=\"{label}\">"
             )
             .unwrap();
         } else {
@@ -326,7 +330,7 @@ fn sidebar_items(
             if top {
                 html.push_str("<ul><li>");
             }
-            sidebar_label(html, site, route, item);
+            sidebar_label(html, site, route, item, &label);
             if top {
                 html.push_str("</li></ul>");
             }
@@ -342,7 +346,7 @@ fn sidebar_items(
             }
             let heading = if top { "h2" } else { "span" };
             write!(html, "<{heading} class=\"sidebar-heading\">").unwrap();
-            sidebar_label(html, site, route, item);
+            sidebar_label(html, site, route, item, &label);
             write!(html, "</{heading}>").unwrap();
             if item.collapsed.is_some() {
                 html.push_str("</summary>");
@@ -377,7 +381,7 @@ fn sidebar_contains(item: &SidebarItem, route: &str) -> bool {
             .any(|child| sidebar_contains(child, route))
 }
 
-fn sidebar_label(html: &mut String, site: &Site<'_>, route: &str, item: &SidebarItem) {
+fn sidebar_label(html: &mut String, site: &Site<'_>, route: &str, item: &SidebarItem, label: &str) {
     if let Some(link) = &item.link {
         let active = if link.as_str() == route {
             " aria-current=\"page\""
@@ -386,13 +390,12 @@ fn sidebar_label(html: &mut String, site: &Site<'_>, route: &str, item: &Sidebar
         };
         write!(
             html,
-            "<a href=\"{}\"{active}>{}</a>",
-            escape(&site.url(route, link.as_str())),
-            escape(&item.text)
+            "<a href=\"{}\"{active}>{label}</a>",
+            escape(&site.url(route, link.as_str()))
         )
         .unwrap();
     } else {
-        html.push_str(&escape(&item.text));
+        html.push_str(label);
     }
 }
 

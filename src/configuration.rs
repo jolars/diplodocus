@@ -521,8 +521,9 @@ impl SidebarConfiguration {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct SidebarItem {
-    /// Visible label, rendered as plain text.
-    pub text: String,
+    /// Visible label as plain text. Defaults to the linked page title.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub text: Option<String>,
     /// Generated site-relative HTML route, independent of the public URL style.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub link: Option<DiagnosticPath>,

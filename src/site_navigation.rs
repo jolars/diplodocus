@@ -2,6 +2,7 @@
 
 use crate::configuration::{SidebarConfiguration, SidebarItem};
 use crate::diagnostics::DiagnosticPath;
+use crate::documents::document_title;
 
 use super::{Site, SiteError};
 
@@ -49,7 +50,10 @@ impl Site<'_> {
         }
         for (index, item) in items.iter().enumerate() {
             let field = format!("{field}[{index}]");
-            if item.text.trim().is_empty()
+            if item
+                .text
+                .as_deref()
+                .is_some_and(|text| text.trim().is_empty())
                 || (item.link.is_none() && item.items.is_empty())
                 || (item.collapsed.is_some() && item.items.is_empty())
             {
@@ -57,15 +61,30 @@ impl Site<'_> {
                     "sidebar items need text and a link or children; collapsed requires children: {field}"
                 )));
             }
-            if let Some(link) = &item.link
-                && !self
-                    .pages
-                    .get(link.as_str())
-                    .is_some_and(|page| page.visible)
-            {
+            if let Some(link) = &item.link {
+                let Some(page) = self.pages.get(link.as_str()).filter(|page| page.visible) else {
+                    return Err(SiteError::Presentation(format!(
+                        "sidebar link must name a visible generated page: {field}.link: {}",
+                        link.as_str()
+                    )));
+                };
+                if item.text.is_none()
+                    && (page.title.trim().is_empty()
+                        || (page
+                            .resolved
+                            .is_some_and(|document| document.collection_path.is_some())
+                            && page
+                                .document
+                                .and_then(|document| document_title(&document.document))
+                                .is_none_or(|title| title.trim().is_empty())))
+                {
+                    return Err(SiteError::Presentation(format!(
+                        "sidebar items need text when the linked page has no title: {field}"
+                    )));
+                }
+            } else if item.text.is_none() {
                 return Err(SiteError::Presentation(format!(
-                    "sidebar link must name a visible generated page: {field}.link: {}",
-                    link.as_str()
+                    "sidebar groups without a link need text: {field}"
                 )));
             }
             self.validate_sidebar_items(&item.items, &format!("{field}.items"), depth + 1)?;

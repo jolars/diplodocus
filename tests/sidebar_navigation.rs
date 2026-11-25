@@ -159,6 +159,30 @@ fn root_prefix_sidebar_matches_pages_outside_more_specific_directories() {
 }
 
 #[test]
+fn sidebar_labels_default_to_linked_page_titles() {
+    let root = workspace(
+        "[{link: intro/index.html, items: [{link: intro/start.html}, {text: Overview, link: reference/index.html}]}]",
+        "file",
+    );
+    root.write(
+        "guide/intro/index.md",
+        "---\ntitle: 'Introduction & basics'\n---\n\n# Intro heading\n",
+    );
+    let loaded = snapshot(&root);
+    let rendered = render_site(&Site::new(&loaded).unwrap()).unwrap();
+    let nav = sidebar(&rendered, "index.html");
+    assert!(nav.contains("aria-label=\"Introduction &amp; basics\""));
+    assert!(nav.contains(">Introduction &amp; basics</a>"));
+    assert!(nav.contains(">Getting started</a>"));
+    assert!(nav.contains(">Overview</a>"));
+
+    root.write("guide/intro/start.md", "A page without a heading.\n");
+    assert!(
+        matches!(Site::new(&snapshot(&root)), Err(SiteError::Presentation(error)) if error.contains("linked page has no title") && error.contains("sidebar[0].items[0]"))
+    );
+}
+
+#[test]
 fn invalid_sidebar_items_and_prefixes_report_presentation_errors() {
     for (config, message) in [
         (
@@ -167,6 +191,10 @@ fn invalid_sidebar_items_and_prefixes_report_presentation_errors() {
         ),
         ("[{text: ' ', link: index.html}]", "need text"),
         ("[{text: Empty}]", "link or children"),
+        (
+            "[{items: [{link: index.html}]}]",
+            "groups without a link need text",
+        ),
         (
             "[{text: Leaf, link: index.html, collapsed: false}]",
             "collapsed requires children",

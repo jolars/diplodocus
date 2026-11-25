@@ -14,12 +14,11 @@ presentation:
   sidebar:
     - text: Introduction
       items:
-        - text: Overview
+        - text: Project overview
           link: guide/index.html
         - text: Getting started
           link: guide/quick-start.html
-        - text: Installation
-          link: guide/installation.html
+        - link: guide/installation.html
     - text: Advanced
       collapsed: true
       items:
@@ -27,8 +26,8 @@ presentation:
           link: guide/diagnostics.html
 ```
 
-Use routes that exist on your site. Labels and order come from this list;
-links name generated HTML paths, even when your host uses clean URLs. The
+Use routes that exist on your site. The Installation link uses the page title.
+Set `text` to give a link a custom label, as with **Project overview**. The
 current page's group opens automatically.
 
 ## Control automatic navigation
@@ -126,10 +125,13 @@ presentation:
               link: guide/navigation.html
 ```
 
-Every item needs `text` and either a `link`, nonempty `items`, or both. A group
-with a link has a clickable heading. Links name generated HTML routes relative
-to the site root, without a leading slash, even when the site uses clean URLs or
-a hosting prefix. They must identify existing, visible pages. External URLs,
+Every item needs a `link`, nonempty `items`, or both. If you omit `text`, the
+label uses the linked page title. For Markdown pages, Diplodocus uses the
+front matter `title` or falls back to the first heading. Set `text` for groups
+without a link and links to pages without a title. A group with a link has a
+clickable heading. Links name generated HTML routes relative to the site root,
+without a leading slash, even when the site uses clean URLs or a hosting prefix.
+They must identify existing, visible pages. External URLs,
 fragments, and source paths such as `guide/index.md` are not accepted.
 
 Top-level groups appear beneath headings. Nested groups indent their children

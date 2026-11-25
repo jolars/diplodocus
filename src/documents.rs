@@ -1198,6 +1198,22 @@ fn span(range: TextRange) -> SourceSpan {
     }
 }
 
+pub(crate) fn document_title(document: &Document) -> Option<String> {
+    if let Some(MetadataValue::Mapping { entries, .. }) = &document.frontmatter {
+        for entry in entries {
+            if entry.key.value == "title"
+                && let MetadataValue::Scalar { value, .. } = &entry.value
+            {
+                return Some(value.clone());
+            }
+        }
+    }
+    document.blocks.iter().find_map(|block| match block {
+        Block::Heading { inlines, .. } => Some(inline_text(inlines)),
+        _ => None,
+    })
+}
+
 pub(crate) fn inline_text(inlines: &[Inline]) -> String {
     inlines
         .iter()
