@@ -149,6 +149,6 @@ jobs:
                 exit 1
               fi
             else
-              npm publish "$package" --access public
+              npm publish "./$package" --access public
             fi
           done
