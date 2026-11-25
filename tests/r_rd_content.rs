@@ -527,7 +527,7 @@ fn qualpal_deprecated_topic_content_and_links_survive_without_sources() {
     );
     workspace.write("r/man/qualpal-deprecated.Rd", r"\name{qualpal-deprecated}\alias{qualpal-deprecated}\title{Deprecated palette API}\description{Earlier palette API.}");
 
-    let sources = assemble_workspace(workspace.path().join("workspace/diplodocus.yaml")).unwrap();
+    let sources = assemble_workspace(workspace.path().join("core/diplodocus.yaml")).unwrap();
     let resolved = resolve_workspace(&sources).unwrap();
     for (spelling, identity) in [
         (

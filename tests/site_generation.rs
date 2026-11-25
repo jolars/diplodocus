@@ -605,7 +605,7 @@ fn shared_r_topics_and_method_navigation_survive_generation_without_sources() {
     use diplodocus::validation::resolve_item;
 
     let root = support::shared_r_workspace();
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
+    let sources = assemble_workspace(root.path().join("core/diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let artifact = tempfile::tempdir().unwrap();
     let path = artifact.path().join("snapshot.sqlite");

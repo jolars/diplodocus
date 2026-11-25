@@ -152,7 +152,7 @@
     "repositories": [
       {
         "id": "core",
-        "path": "../core",
+        "path": ".",
         "url": "https://github.com/example/foo-core"
       },
       {

@@ -369,7 +369,7 @@ fn eulerr_native_discovery_resolves_registered_generics_and_documented_helpers()
             .expect("Set DIPLODOCUS_EULERR_PATH to a prepared eulerr checkout"),
     );
     let workspace = small("", "", "");
-    let path = workspace.path().join("workspace/diplodocus.yaml");
+    let path = workspace.path().join("core/diplodocus.yaml");
     let mut config = diplodocus::configuration::load_configuration(&path).unwrap();
     let package = config.packages.iter_mut().find(|p| p.id == "rfoo").unwrap();
     package.r.get_or_insert_with(Default::default).documentation =

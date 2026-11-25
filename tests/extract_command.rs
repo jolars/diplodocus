@@ -168,7 +168,7 @@ fn cli_paths_and_completed_snapshot_match_the_contract() {
 fn generated_snapshots_never_become_sources_or_change_input_fingerprints() {
     let root = support::shared_r_workspace();
     let configuration = root
-        .read("workspace/diplodocus.yaml")
+        .read("core/diplodocus.yaml")
         .replace("packages:\n", "  - id: core\n    path: .\npackages:\n");
     root.write(
         CONFIG,

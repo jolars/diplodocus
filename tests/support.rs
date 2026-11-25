@@ -127,7 +127,7 @@ pub fn discover_api(config: &Path, package: &str) -> ApiDiscovery {
 }
 
 pub fn discover_r_api(workspace: &TestWorkspace) -> ApiDiscovery {
-    let directory = workspace.path().join("workspace");
+    let directory = workspace.path().join("core");
     let mut config =
         diplodocus::configuration::load_configuration(directory.join("diplodocus.yaml")).unwrap();
     config.packages.retain(|package| package.id == "rfoo");
@@ -191,7 +191,7 @@ pub fn prepared_python_overloads_workspace() -> TestWorkspace {
 
 pub fn shared_r_workspace() -> TestWorkspace {
     let workspace = TestWorkspace::new();
-    workspace.write("workspace/diplodocus.yaml", "project:\n  name: \"Shared R help\"\nrepositories:\n  - id: \"r\"\n    path: \"../r\"\npackages:\n  - id: \"rfoo\"\n    name: \"Shared help\"\n    slug: \"r\"\n    ecosystem: \"r\"\n    repository: \"r\"\n    path: \".\"\n    metadata-path: \"DESCRIPTION\"\n    targets:\n      - id: \"api\"\n        extractor: \"r\"\n        path: \".\"\n        role: \"public-api\"\n");
+    workspace.write("core/diplodocus.yaml", "project:\n  name: \"Shared R help\"\nrepositories:\n  - id: \"r\"\n    path: \"../r\"\npackages:\n  - id: \"rfoo\"\n    name: \"Shared help\"\n    slug: \"r\"\n    ecosystem: \"r\"\n    repository: \"r\"\n    path: \".\"\n    metadata-path: \"DESCRIPTION\"\n    targets:\n      - id: \"api\"\n        extractor: \"r\"\n        path: \".\"\n        role: \"public-api\"\n");
     workspace.write(
         "r/DESCRIPTION",
         "Package: sharedhelp\nVersion: 1.0.0\nTitle: Shared Help Fixtures\n\
