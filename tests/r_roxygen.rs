@@ -339,7 +339,14 @@ async fn generation_timeout_and_cancellation_preserve_the_previous_snapshot() {
         success(command(&root, &["extract"]));
         let database = root.path().join(".diplodocus/documentation.sqlite");
         let previous = fs::read(&database).unwrap();
-        root.write("package/man/roxygen/meta.R", "writeLines(as.character(Sys.getpid()), 'generation-pid')\nSys.sleep(120)\nlist(markdown = TRUE)\n");
+        // Cancellation can interrupt R as soon as the marker is visible.
+        root.write(
+            "package/man/roxygen/meta.R",
+            "writeLines(as.character(Sys.getpid()), 'generation-pid.tmp')\n\
+             stopifnot(file.rename('generation-pid.tmp', 'generation-pid'))\n\
+             Sys.sleep(120)\n\
+             list(markdown = TRUE)\n",
+        );
         let marker = root.path().join("package/generation-pid");
         let cancellation_marker = marker.clone();
         let cancellation = Box::pin(async move {
@@ -377,12 +384,15 @@ async fn generation_timeout_and_cancellation_preserve_the_previous_snapshot() {
             ));
         }
         assert_eq!(previous, fs::read(database).unwrap());
-        if cfg!(target_os = "linux")
-            && let Ok(pid) = fs::read_to_string(marker)
-        {
+        if cfg!(target_os = "linux") && (cancel || marker.exists()) {
+            let pid = fs::read_to_string(marker)
+                .expect("generation should have published its PID")
+                .trim()
+                .parse::<u32>()
+                .expect("generation marker should contain a PID");
             assert!(
-                !std::path::Path::new(&format!("/proc/{}", pid.trim())).exists(),
-                "generation process survived cleanup"
+                !std::path::Path::new(&format!("/proc/{pid}")).exists(),
+                "generation process {pid} survived cleanup (cancel: {cancel})"
             );
         }
     }
