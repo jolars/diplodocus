@@ -608,6 +608,25 @@ body:has(.documentation-drawer[open]) {
   margin: .25rem 0 .6rem;
 }
 
+.sidebar-items {
+  border-inline-start: 1px solid var(--border);
+  padding-inline-start: 1rem;
+}
+
+.sidebar-items > li > a[aria-current=page] {
+  position: relative;
+  color: var(--link);
+  background: transparent;
+}
+
+.sidebar-items > li > a[aria-current=page]::before {
+  content: "";
+  position: absolute;
+  inset-block: .2rem;
+  inset-inline-start: calc(-.55rem - 1px);
+  border-inline-start: 2px solid currentColor;
+}
+
 .sidebar-disclosure > summary {
   padding: .2rem 0;
   cursor: pointer;
@@ -620,7 +639,6 @@ body:has(.documentation-drawer[open]) {
 .sidebar-heading {
   display: block;
   padding: .2rem .45rem;
-  font-weight: 650;
 }
 
 .sidebar-group h2.sidebar-heading {
