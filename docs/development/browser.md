@@ -74,8 +74,10 @@ site-capture
 ```
 
 `site-test` builds the current binary, copies the example into a temporary
-workspace, and starts its own server on a free port. Playwright waits for the
-server's ready message, then runs desktop and mobile projects with two workers.
+workspace, and starts its own server on a free port. The shared server builds
+the site once. Tests that exercise rebuilds start their own preview server.
+Playwright waits for the server's ready message, then runs desktop and mobile
+projects with two workers.
 Tests cover titles, images, layout width, search, equivalent APIs, and keyboard
 navigation.
 JavaScript and console errors fail tests, except the browser's automatic request

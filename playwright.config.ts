@@ -27,7 +27,7 @@ export default defineConfig({
     { name: "mobile", use: { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } },
   ],
   webServer: {
-    command: "node scripts/site.mjs serve-test",
+    command: "node scripts/site.mjs serve-test --playwright",
     wait: { stderr: /Serving http:\/\/127\.0\.0\.1:(?<DIPLODOCUS_PREVIEW_PORT>\d+)/ },
     reuseExistingServer: false,
     // Fresh workspaces run native extraction and examples before the server listens.

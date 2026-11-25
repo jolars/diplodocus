@@ -39,11 +39,12 @@ pub(super) struct DoxygenObservation {
 
 impl DoxygenObservation {
     pub(super) fn roots(&self) -> impl Iterator<Item = &PathBuf> {
-        self.roots.iter().chain(
-            self.cache_inputs
-                .iter()
-                .flat_map(|(_, inputs)| inputs.paths()),
-        )
+        self.roots.iter().chain(self.dependency_paths())
+    }
+    pub(super) fn dependency_paths(&self) -> impl Iterator<Item = &PathBuf> {
+        self.cache_inputs
+            .iter()
+            .flat_map(|(_, inputs)| inputs.paths())
     }
     pub(super) fn verify(&self) -> Result<(), AssemblyError> {
         verify_source_fingerprints(

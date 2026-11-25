@@ -2,6 +2,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { appendFileSync, cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { finished } from "node:stream";
 import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
@@ -27,12 +28,26 @@ function build() {
   return join(JSON.parse(metadata.stdout).target_directory, "debug", "diplodocus");
 }
 
-async function run(command, arguments_) {
-  const child = spawn(command, arguments_, { stdio: "inherit" });
+async function run(command, arguments_, { stopOnInputClose = false } = {}) {
+  const child = spawn(command, arguments_, {
+    stdio: stopOnInputClose ? ["ignore", "inherit", "inherit"] : "inherit",
+  });
   const interrupt = () => child.kill("SIGINT");
   const terminate = () => child.kill("SIGTERM");
   process.on("SIGINT", interrupt);
   process.on("SIGTERM", terminate);
+  let shutdownTimer;
+  let unwatchInput;
+  if (stopOnInputClose) {
+    // Playwright owns the writer. EOF also reaches this detached helper when
+    // Playwright dies before it can tear down its web server.
+    unwatchInput = finished(process.stdin, { writable: false }, () => {
+      terminate();
+      // Give the server time to stop any native extraction and execution.
+      shutdownTimer = setTimeout(() => child.kill("SIGKILL"), 30_000).unref();
+    });
+    process.stdin.resume();
+  }
   try {
     return await new Promise((resolve, reject) => {
       child.once("error", reject);
@@ -41,6 +56,11 @@ async function run(command, arguments_) {
   } finally {
     process.off("SIGINT", interrupt);
     process.off("SIGTERM", terminate);
+    if (unwatchInput) {
+      unwatchInput();
+      process.stdin.pause();
+    }
+    clearTimeout(shutdownTimer);
   }
 }
 
@@ -147,8 +167,8 @@ if (mode === "serve-test") {
       "serve", "--config", join(workspace, "diplodocus.yaml"),
       "--output", join(workspace, "site"),
       "--host", "127.0.0.1", "--port", process.env.DIPLODOCUS_BROWSER_PORT ?? "0",
-      "--no-live-reload",
-    ]);
+      "--no-watch",
+    ], { stopOnInputClose: args.includes("--playwright") });
   } finally {
     rmSync(workspace, { recursive: true, force: true });
   }

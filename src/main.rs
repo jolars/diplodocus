@@ -111,14 +111,21 @@ fn dispatch(cli: Cli, runner: &CommandRunner) -> Result<(), CommandError> {
                 GenerateFormat::Fragments => runner.generate_fragments(options, args.url_map),
             }
         }
-        Command::Serve(args) => runner.serve(ServeOptions {
-            config: workspace_config(args.config)?,
-            output: args.output,
-            host: args.host,
-            port: args.port,
-            live_reload: args.live_reload && !args.no_live_reload,
-            open: args.open,
-        }),
+        Command::Serve(args) => {
+            let options = ServeOptions {
+                config: workspace_config(args.config)?,
+                output: args.output,
+                host: args.host,
+                port: args.port,
+                live_reload: args.live_reload && !args.no_live_reload,
+                open: args.open,
+            };
+            if args.no_watch {
+                runner.serve_once(options)
+            } else {
+                runner.serve(options)
+            }
+        }
     }
 }
 

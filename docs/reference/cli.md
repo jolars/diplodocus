@@ -62,9 +62,10 @@ connects these events to an existing frontend's development server.
 `serve` listens on `127.0.0.1:8000` by default. Use `--host` and `--port` to
 change the address. The ready message shows a clickable URL in terminals that
 support hyperlinks and a plain URL elsewhere. Open pages refresh after each
-successful rebuild. Use `--no-live-reload` to disable refresh; `--live-reload`
-remains accepted. Add `--open` to open the local URL in
-your default browser once the first build succeeds and the server is ready.
+successful rebuild. Use `--no-live-reload` to turn off browser refresh, or
+`--no-watch` to build once and serve that version until you stop the server.
+Add `--open` to open the local URL in your default browser once the server is
+ready.
 With `--port 0`, the URL uses the assigned
 port; wildcard hosts (`0.0.0.0` or `::`) open through the corresponding loopback
 address. Browser opening is opt-in, requires no terminal input, and uses the
@@ -267,6 +268,10 @@ Build and serve a site, rebuilding when declared inputs change
 - `--no-live-reload`
 
     Disable automatic browser refresh after successful rebuilds
+
+- `--no-watch`
+
+    Build once and serve the result without watching for changes
 
 - `--open`
 

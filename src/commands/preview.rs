@@ -32,10 +32,11 @@ pub(super) async fn serve_reported(
     options: ServeOptions,
     deadlines: ExecutionDeadlines,
     cancellation: ExecutionCancellation<'_>,
+    watch_sources: bool,
     reporting: &Reporting,
 ) -> Result<(), CommandError> {
     let (stop, receiver) = watch::channel(false);
-    let worker = run(options, deadlines, receiver, reporting);
+    let worker = run(options, deadlines, receiver, watch_sources, reporting);
     tokio::pin!(worker);
     tokio::select! {
         biased;
@@ -52,6 +53,7 @@ async fn run(
     options: ServeOptions,
     deadlines: ExecutionDeadlines,
     stop: watch::Receiver<bool>,
+    watch_sources: bool,
     reporting: &Reporting,
 ) -> Result<(), CommandError> {
     let setup = reporting.stage("Starting preview", None);
@@ -61,10 +63,15 @@ async fn run(
         config: options.config.clone(),
         output: options.output.clone(),
     };
-    let mut watcher = Watcher::new(&options.config, &options.output, reporting)?;
+    let mut watcher = watch_sources
+        .then(|| Watcher::new(&options.config, &options.output, reporting))
+        .transpose()?;
     setup.finish();
     let command = reporting.command("build");
-    let mut attempt = pipeline::AttemptState::watching();
+    let mut attempt = pipeline::AttemptState {
+        watch_sources,
+        ..Default::default()
+    };
     let initial = pipeline::build_attempt_observed(
         &build,
         deadlines,
@@ -74,7 +81,9 @@ async fn run(
         pipeline::SiteMode::Preview,
     )
     .await;
-    watcher.acknowledge(attempt);
+    if let Some(watcher) = &mut watcher {
+        watcher.acknowledge(attempt);
+    }
     let initial = match initial {
         Ok(site) => site,
         Err(error) if *stop.borrow() && clean_cancellation(&error) => return Ok(()),
@@ -92,15 +101,17 @@ async fn run(
     let http = tokio::spawn(http(
         listener,
         current.clone(),
-        options.live_reload,
+        options.live_reload && watch_sources,
         stop.clone(),
     ));
     let mut http = AbortOnDrop(http);
     let url = preview_url(address);
     reporting.emit(Event::Serving { url: &url });
-    reporting.emit(Event::Watching {
-        retained_previous: false,
-    });
+    if watch_sources {
+        reporting.emit(Event::Watching {
+            retained_previous: false,
+        });
+    }
     let browser_reporting = reporting.clone();
     let _browser = options.open.then(|| {
         AbortOnDrop(tokio::spawn(async move {
@@ -122,7 +133,11 @@ async fn run(
                     Err(error) => Err(std::io::Error::other(error).into()),
                 };
             }
-            _ = watcher.next_change() => {
+            Some(watcher) = async {
+                let watcher = watcher.as_mut()?;
+                watcher.next_change().await;
+                Some(watcher)
+            } => {
                 let command = reporting.command("rebuild");
                 let mut attempt = pipeline::AttemptState::watching();
                 let result = pipeline::build_attempt_observed(&build, deadlines, Box::pin(cancelled(stop.clone())), reporting, &mut attempt, pipeline::SiteMode::Preview).await;

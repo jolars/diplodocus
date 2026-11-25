@@ -110,8 +110,7 @@ pub(super) struct Watcher {
     reporting: Reporting,
     observer: Observer,
     attempted: Observation,
-    pending: Observation,
-    changed: Instant,
+    pending: Option<(Observation, Instant)>,
     interval: tokio::time::Interval,
 }
 
@@ -128,9 +127,8 @@ impl Watcher {
         Ok(Self {
             reporting: reporting.clone(),
             observer,
-            pending: attempted.clone(),
+            pending: None,
             attempted,
-            changed: Instant::now(),
             interval: tokio::time::interval(Duration::from_millis(100)),
         })
     }
@@ -210,35 +208,49 @@ impl Watcher {
                 }
             }
         }
-        self.pending = self.attempted.clone();
+        self.pending = None;
         timing.finish();
     }
 
     pub(super) async fn next_change(&mut self) -> BTreeSet<PathBuf> {
         loop {
             self.interval.tick().await;
+            let poll_started = Instant::now();
             let timing = self.reporting.phase(Phase::WatchPoll, None, None);
             let observed = self.observer.capture();
             timing.finish();
             // Wait a full period after scanning. A build or a slow scan can
             // leave ticks perpetually overdue and starve shutdown in select!.
-            self.interval.reset();
-            if observed != self.pending {
-                self.pending = observed;
-                self.changed = Instant::now();
+            if observed == self.attempted {
+                self.pending = None;
+                // Expensive idle scans need time between polls. Bound the
+                // delay so source edits still reach the usual debounce promptly.
+                let pause = (poll_started.elapsed() * 3)
+                    .max(self.interval.period())
+                    .min(Duration::from_secs(3));
+                self.interval.reset_after(pause);
+                continue;
             }
-            if self.pending == self.attempted || self.changed.elapsed() < Duration::from_millis(200)
-            {
+            self.interval.reset();
+            let changed = match &self.pending {
+                Some((pending, changed)) if *pending == observed => *changed,
+                _ => {
+                    self.pending = Some((observed, Instant::now()));
+                    continue;
+                }
+            };
+            if changed.elapsed() < Duration::from_millis(200) {
                 continue;
             }
             let paths = self
                 .attempted
                 .keys()
-                .chain(self.pending.keys())
-                .filter(|path| self.attempted.get(*path) != self.pending.get(*path))
+                .chain(observed.keys())
+                .filter(|path| self.attempted.get(*path) != observed.get(*path))
                 .cloned()
                 .collect();
-            self.attempted = self.pending.clone();
+            self.attempted = observed;
+            self.pending = None;
             return paths;
         }
     }
@@ -813,13 +825,20 @@ impl SourceWatchInputs {
         let mut inputs = Self::from_previous(previous);
         inputs.native_roots = native_roots;
         inputs.native_library_roots = native_library_roots;
-        inputs.observe_paths(sources.input_paths(), |path| {
+        inputs.observe_paths(
             sources
-                .paths()
-                .repositories
-                .iter()
-                .any(|root| path.starts_with(&root.path))
-        });
+                .input_paths()
+                // The first poll also visits Doxygen's executable candidates.
+                // Record their current state, including missing candidates.
+                .chain(sources.doxygen_dependency_paths().cloned()),
+            |path| {
+                sources
+                    .paths()
+                    .repositories
+                    .iter()
+                    .any(|root| path.starts_with(&root.path))
+            },
+        );
         let documents = workspace
             .pages
             .values()
@@ -1251,9 +1270,8 @@ mod tests {
         Watcher {
             reporting: Reporting::default(),
             observer,
-            pending: attempted.clone(),
+            pending: None,
             attempted,
-            changed: Instant::now(),
             interval: tokio::time::interval(Duration::from_millis(100)),
         }
     }
@@ -1749,17 +1767,17 @@ mod tests {
         tokio::time::advance(Duration::from_secs(60)).await;
         fs::write(&config, "project:\n  name: First edit\n").unwrap();
         poll_change_once(&mut watcher).await;
-        let first = watcher.pending.clone();
+        let first = watcher.pending.as_ref().unwrap().0.clone();
         assert_ne!(first, watcher.attempted);
 
         fs::write(&config, "project:\n  name: Second edit\n").unwrap();
         tokio::task::yield_now().await;
         poll_change_once(&mut watcher).await;
-        assert_eq!(watcher.pending, first);
+        assert_eq!(watcher.pending.as_ref().unwrap().0, first);
 
         tokio::time::advance(Duration::from_millis(100)).await;
         poll_change_once(&mut watcher).await;
-        assert_ne!(watcher.pending, first);
+        assert_ne!(watcher.pending.as_ref().unwrap().0, first);
     }
 
     #[test]

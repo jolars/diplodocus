@@ -198,6 +198,57 @@ async fn browser_refresh_can_be_disabled() {
 }
 
 #[tokio::test]
+async fn build_once_serves_the_initial_site_after_source_edits() {
+    let root = workspace();
+    let (mut child, mut lines, url) = start(command(&root, 0).arg("--no-watch")).await;
+    let page = request(&url);
+    assert!(page.contains("First generation"));
+    assert!(!page.contains("/__diplodocus/revision"));
+
+    root.write("guide/index.md", "# Second generation\n");
+    assert!(
+        tokio::time::timeout(Duration::from_secs(1), lines.next_line())
+            .await
+            .is_err()
+    );
+    assert_eq!(request(&url), page);
+    let pid = rustix::process::Pid::from_raw(child.id().unwrap() as i32).unwrap();
+    rustix::process::kill_process(pid, rustix::process::Signal::TERM).unwrap();
+    assert!(
+        tokio::time::timeout(Duration::from_secs(5), child.wait())
+            .await
+            .unwrap()
+            .unwrap()
+            .success()
+    );
+}
+
+#[tokio::test]
+async fn doxygen_tool_subscriptions_only_rebuild_after_a_change() {
+    let root = TestWorkspace::from_fixture("doxygen-api");
+    let candidates = tempfile::tempdir().unwrap();
+    let path = std::env::var_os("PATH").unwrap();
+    let doxygen = std::env::split_paths(&path)
+        .find_map(|directory| std::fs::canonicalize(directory.join("doxygen")).ok())
+        .expect("Doxygen needs to be on PATH");
+    let path = std::env::join_paths(
+        std::iter::once(candidates.path().to_owned()).chain(std::env::split_paths(&path)),
+    )
+    .unwrap();
+    let (mut child, mut lines, _) = start(command(&root, 0).env("PATH", path)).await;
+    line_containing(&mut lines, "Watching for changes").await;
+
+    assert!(
+        tokio::time::timeout(Duration::from_secs(1), lines.next_line())
+            .await
+            .is_err()
+    );
+    std::os::unix::fs::symlink(doxygen, candidates.path().join("doxygen")).unwrap();
+    line_containing(&mut lines, "Rebuilt ").await;
+    child.kill().await.unwrap();
+}
+
+#[tokio::test]
 async fn startup_failures_never_invoke_the_browser() {
     let root = workspace();
     root.write("diplodocus.yaml", "project: [");

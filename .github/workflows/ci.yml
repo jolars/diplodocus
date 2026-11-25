@@ -124,6 +124,8 @@ jobs:
         run: devenv shell -- npm ci --ignore-scripts
       - name: Test Markdown negotiation in Workers
         run: devenv shell -- node --test scripts/markdown-worker.test.mjs
+      - name: Test browser fixture shutdown
+        run: devenv shell -- node --test scripts/site.test.mjs
       - name: Test and capture the example site
         run: devenv shell -- site-capture
       - name: Test watched extraction with VitePress

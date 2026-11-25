@@ -353,6 +353,12 @@ impl WorkspaceSources {
             .flat_map(|observation| observation.roots())
     }
 
+    pub(crate) fn doxygen_dependency_paths(&self) -> impl Iterator<Item = &PathBuf> {
+        self.doxygen_observations
+            .iter()
+            .flat_map(|observation| observation.dependency_paths())
+    }
+
     pub(crate) fn dependency_watch_roots(&self) -> impl Iterator<Item = &PathBuf> {
         self.cache_observations
             .iter()

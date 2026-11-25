@@ -157,6 +157,9 @@ pub(super) struct ServeArgs {
     /// Disable automatic browser refresh after successful rebuilds.
     #[arg(long, conflicts_with = "live_reload")]
     pub(super) no_live_reload: bool,
+    /// Build once and serve the result without watching for changes.
+    #[arg(long, conflicts_with = "live_reload")]
+    pub(super) no_watch: bool,
     /// Open the local preview in a browser after the first successful build.
     #[arg(long)]
     pub(super) open: bool,
@@ -208,6 +211,7 @@ mod tests {
         assert_eq!(args.port, 8000);
         assert!(args.live_reload);
         assert!(!args.no_live_reload);
+        assert!(!args.no_watch);
         assert!(!args.open);
     }
 

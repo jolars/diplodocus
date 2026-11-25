@@ -13,5 +13,6 @@ Options:
       --port <PORT>     Port on which to serve the generated site [default: 8000]
       --live-reload     Refresh open browser pages after successful rebuilds (enabled by default)
       --no-live-reload  Disable automatic browser refresh after successful rebuilds
+      --no-watch        Build once and serve the result without watching for changes
       --open            Open the local preview in a browser after the first successful build
   -h, --help            Print help

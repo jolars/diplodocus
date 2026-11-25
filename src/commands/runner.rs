@@ -245,6 +245,20 @@ impl CommandRunner {
         ))
     }
 
+    /// Build once and serve the result until shutdown.
+    pub fn serve_once(&self, options: ServeOptions) -> Result<(), CommandError> {
+        pipeline::runtime()?.block_on(scope_async(
+            self.cache_policy,
+            preview::serve_reported(
+                options,
+                ExecutionDeadlines::default(),
+                Box::pin(watching::termination()),
+                false,
+                &self.reporting,
+            ),
+        ))
+    }
+
     /// Serve a preview with explicit execution limits and cooperative shutdown.
     pub async fn serve_with(
         &self,
@@ -254,7 +268,7 @@ impl CommandRunner {
     ) -> Result<(), CommandError> {
         scope_async(
             self.cache_policy,
-            preview::serve_reported(options, deadlines, cancellation, &self.reporting),
+            preview::serve_reported(options, deadlines, cancellation, true, &self.reporting),
         )
         .await
     }
