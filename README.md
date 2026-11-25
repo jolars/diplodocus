@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/jolars/diplodocus/actions/workflows/ci.yml/badge.svg)](https://github.com/jolars/diplodocus/actions/workflows/ci.yml)
 [![crates.io](https://img.shields.io/crates/v/diplodocus.svg)](https://crates.io/crates/diplodocus)
+[![npm](https://img.shields.io/npm/v/diplodocus)](https://www.npmjs.com/package/diplodocus)
+[![PyPI](https://img.shields.io/pypi/v/diplodocus?label=PyPI)](https://pypi.org/project/diplodocus/)
 
 Diplodocus builds a shared documentation site for Python, R, Julia, Rust, and
 C++ packages. It brings package API references and Markdown and Quarto guides
