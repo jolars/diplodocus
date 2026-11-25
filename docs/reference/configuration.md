@@ -15,7 +15,7 @@ strings, for boolean options.
 
 | Option | Type | Default | Purpose |
 | --- | --- | --- | --- |
-| `project` | mapping | Required | Project identity. |
+| `project` | mapping | Inferred for a root R package | Project identity. |
 | `presentation` | mapping | Built-in presentation | Site metadata, navigation, branding, and footer. |
 | `repositories` | list | `[]` | Named source checkouts, typically for packages outside the configuration checkout. |
 | `packages` | list | `[]` | Packages or components to document. |
@@ -31,6 +31,13 @@ strings, for boolean options.
 | --- | --- | --- | --- |
 | `name` | string | Required | Project display name and default site title. |
 | `repository-url` | string | Unset | Upstream URL for the configuration checkout. GitHub URLs support automatic source links. |
+
+When `packages` is omitted, Diplodocus checks the workspace root for an R
+package. Use `packages: []` to publish authored pages without an API.
+
+Set `presentation.primary-package` to the ID of a public R package to use its
+overview as the default site homepage. Diplodocus sets this automatically
+when it discovers the root R package.
 
 ## `repositories`
 

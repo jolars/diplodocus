@@ -71,9 +71,9 @@ pub(super) struct BuildArgs {
     /// Recompute results without reading or writing incremental caches.
     #[arg(long)]
     pub(super) no_cache: bool,
-    /// Path to the workspace configuration file.
-    #[arg(long, value_name = "PATH", default_value = "./diplodocus.yaml")]
-    pub(super) config: PathBuf,
+    /// Path to the workspace configuration file. Omit to use diplodocus.yaml or discover a root R package.
+    #[arg(long, value_name = "PATH")]
+    pub(super) config: Option<PathBuf>,
     /// Directory in which to write the generated site.
     #[arg(long, value_name = "PATH", default_value = "./site")]
     pub(super) output: PathBuf,
@@ -84,9 +84,9 @@ pub(super) struct CheckArgs {
     /// Recompute results without reading or writing incremental caches.
     #[arg(long)]
     pub(super) no_cache: bool,
-    /// Path to the workspace configuration file.
-    #[arg(long, value_name = "PATH", default_value = "./diplodocus.yaml")]
-    pub(super) config: PathBuf,
+    /// Path to the workspace configuration file. Omit to use diplodocus.yaml or discover a root R package.
+    #[arg(long, value_name = "PATH")]
+    pub(super) config: Option<PathBuf>,
 }
 
 #[derive(Debug, Args)]
@@ -94,9 +94,9 @@ pub(super) struct ExtractArgs {
     /// Recompute results without reading or writing incremental caches.
     #[arg(long)]
     pub(super) no_cache: bool,
-    /// Path to the workspace configuration file.
-    #[arg(long, value_name = "PATH", default_value = "./diplodocus.yaml")]
-    pub(super) config: PathBuf,
+    /// Path to the workspace configuration file. Omit to use diplodocus.yaml or discover a root R package.
+    #[arg(long, value_name = "PATH")]
+    pub(super) config: Option<PathBuf>,
     /// Snapshot destination (defaults to .diplodocus/documentation.sqlite beside the configuration).
     #[arg(long, value_name = "PATH")]
     pub(super) output: Option<PathBuf>,
@@ -139,9 +139,9 @@ pub(super) struct ServeArgs {
     /// Recompute results without reading or writing incremental caches.
     #[arg(long)]
     pub(super) no_cache: bool,
-    /// Path to the workspace configuration file.
-    #[arg(long, value_name = "PATH", default_value = "./diplodocus.yaml")]
-    pub(super) config: PathBuf,
+    /// Path to the workspace configuration file. Omit to use diplodocus.yaml or discover a root R package.
+    #[arg(long, value_name = "PATH")]
+    pub(super) config: Option<PathBuf>,
     /// Directory in which to write the generated site.
     #[arg(long, value_name = "PATH", default_value = "./site")]
     pub(super) output: PathBuf,
@@ -172,7 +172,7 @@ mod tests {
         let Command::Build(args) = cli.command else {
             panic!("expected the build command");
         };
-        assert_eq!(args.config, PathBuf::from("./diplodocus.yaml"));
+        assert_eq!(args.config, None);
         assert_eq!(args.output, PathBuf::from("./site"));
     }
 
@@ -182,7 +182,7 @@ mod tests {
         let Command::Check(args) = cli.command else {
             panic!("expected the check command");
         };
-        assert_eq!(args.config, PathBuf::from("./diplodocus.yaml"));
+        assert_eq!(args.config, None);
     }
 
     #[test]
@@ -191,7 +191,7 @@ mod tests {
         let Command::Extract(args) = cli.command else {
             panic!("expected the extract command");
         };
-        assert_eq!(args.config, PathBuf::from("./diplodocus.yaml"));
+        assert_eq!(args.config, None);
         assert!(args.output.is_none());
         assert!(!args.watch);
     }
@@ -202,7 +202,7 @@ mod tests {
         let Command::Serve(args) = cli.command else {
             panic!("expected the serve command");
         };
-        assert_eq!(args.config, PathBuf::from("./diplodocus.yaml"));
+        assert_eq!(args.config, None);
         assert_eq!(args.output, PathBuf::from("./site"));
         assert_eq!(args.host, IpAddr::from([127, 0, 0, 1]));
         assert_eq!(args.port, 8000);

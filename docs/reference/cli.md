@@ -112,9 +112,7 @@ Build a static documentation site
 
 - `--config <PATH>`
 
-    Path to the workspace configuration file
-
-    Default value: `./diplodocus.yaml`
+    Path to the workspace configuration file. Omit to use diplodocus.yaml or discover a root R package
 
 - `--output <PATH>`
 
@@ -136,9 +134,7 @@ Check documentation without writing a site
 
 - `--config <PATH>`
 
-    Path to the workspace configuration file
-
-    Default value: `./diplodocus.yaml`
+    Path to the workspace configuration file. Omit to use diplodocus.yaml or discover a root R package
 
 ## `diplodocus extract`
 
@@ -154,9 +150,7 @@ Extract a portable SQLite documentation snapshot
 
 - `--config <PATH>`
 
-    Path to the workspace configuration file
-
-    Default value: `./diplodocus.yaml`
+    Path to the workspace configuration file. Omit to use diplodocus.yaml or discover a root R package
 
 - `--output <PATH>`
 
@@ -244,9 +238,7 @@ Build and serve a site, rebuilding when declared inputs change
 
 - `--config <PATH>`
 
-    Path to the workspace configuration file
-
-    Default value: `./diplodocus.yaml`
+    Path to the workspace configuration file. Omit to use diplodocus.yaml or discover a root R package
 
 - `--output <PATH>`
 

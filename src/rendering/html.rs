@@ -715,6 +715,19 @@ pub(crate) fn render_reported(
         }
         html.push_str(&renderer.python_members()?);
         html.push_str(&renderer.api_members()?);
+        if site.generated_articles_index(route) {
+            html.push_str("<ul>");
+            for (destination, title) in &site.articles {
+                write!(
+                    html,
+                    "<li><a href=\"{}\">{}</a></li>",
+                    escape(&site.url(route, destination)),
+                    escape(title)
+                )
+                .unwrap();
+            }
+            html.push_str("</ul>");
+        }
         if page.reference_index {
             html.push_str(&super::r_topics::index(
                 site,
@@ -1073,6 +1086,25 @@ pub(crate) fn render_reported(
         ),
     );
     if standalone {
+        if let Some(id) = site.presentation.primary_package.as_deref()
+            && site.package_overview(id) == "index.html"
+        {
+            let alias = format!("{}/index.html", site.package_root(id));
+            let url = site.url(&alias, "index.html");
+            let canonical = escape(
+                site.canonical_urls
+                    .get("index.html")
+                    .map_or(url.as_str(), String::as_str),
+            );
+            let url = escape(&url);
+            let html = format!(
+                "<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><title>Package overview</title><link rel=\"canonical\" href=\"{canonical}\"><meta http-equiv=\"refresh\" content=\"0;url={url}\"><a href=\"{url}\">Package overview</a></html>"
+            );
+            if files.contains_key(&alias) {
+                return Err(SiteError::Route(alias));
+            }
+            files.insert(alias, file(html.into_bytes(), "text/html; charset=utf-8"));
+        }
         super::sitemap::render(site, &mut files)?;
         if !site.redirects.is_empty() {
             files.insert(

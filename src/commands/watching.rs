@@ -318,6 +318,7 @@ impl MetadataSignature {
 
 struct Observer {
     config: PathBuf,
+    allow_missing_config: bool,
     output: PathBuf,
     configuration: Option<WorkspaceConfiguration>,
     assets: BTreeSet<PathBuf>,
@@ -328,6 +329,7 @@ struct Observer {
 impl Observer {
     fn new(config: &Path, output: &Path) -> Result<Self, CommandError> {
         let observer = Self {
+            allow_missing_config: config == Path::new(crate::configuration::DEFAULT_WORKSPACE),
             config: pipeline::absolute(
                 config
                     .parent()
@@ -347,8 +349,11 @@ impl Observer {
     fn capture(&mut self) -> Observation {
         let mut observed = BTreeMap::new();
         observe(&self.config, &mut observed);
-        if let Ok(text) = fs::read_to_string(&self.config)
-            && let Ok(config) = crate::configuration::parse_configuration(&text)
+        let root = self.config.parent().expect("absolute config");
+        observe(&root.join("DESCRIPTION"), &mut observed);
+        observe(&root.join("docs/index.md"), &mut observed);
+        if let Ok((_, config)) =
+            crate::configuration::resolve_configuration(&self.config, self.allow_missing_config)
         {
             self.configuration = Some(config);
         }
@@ -783,6 +788,7 @@ impl SourceWatchInputs {
         let progress = reporting.stage("Tracking preview inputs", None);
         let timing = reporting.phase(Phase::WatchCapture, None, None);
         let observer = Observer {
+            allow_missing_config: false,
             config: PathBuf::new(),
             output: output.to_owned(),
             configuration: None,
@@ -1232,6 +1238,7 @@ mod tests {
         .unwrap();
         // Build the observer directly so these bookkeeping tests never load a package.
         let mut observer = Observer {
+            allow_missing_config: false,
             config,
             output: root.join("site"),
             configuration: None,

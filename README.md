@@ -33,8 +33,9 @@ installation options.
 
 ## Getting started
 
-Create a `diplodocus.yaml` file to declare your packages and documentation
-pages. Use the [configuration guide](https://diplodocus.cc/guide/configuration)
+From an R package checkout, run `diplodocus serve` to preview its package
+overview, reference, and vignettes. For other projects or to customize the site,
+create a `diplodocus.yaml` file. Use the [configuration guide](https://diplodocus.cc/guide/configuration)
 to set up your project, or adapt the [Python, R, Julia, and Rust
 example](examples/monorepo/README.md).
 

@@ -70,6 +70,18 @@ pub(super) fn page(
             &renderer.blocks(&page.document.expect("authored title").document.blocks[..1])?,
         );
     }
+    if site.generated_articles_index(route) {
+        for (destination, title) in &site.articles {
+            writeln!(
+                output,
+                "- [{}]({})",
+                escape(title),
+                link_url(&site.url(route, destination))
+            )
+            .unwrap();
+        }
+        output.push('\n');
+    }
     if let Some(home) = site.home(route) {
         writeln!(
             output,

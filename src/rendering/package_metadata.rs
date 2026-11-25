@@ -7,7 +7,7 @@ use crate::site::Site;
 use super::html::escape;
 
 pub(super) fn is_overview(site: &Site<'_>, route: &str, owner: Option<&str>) -> bool {
-    owner.is_some_and(|id| route == format!("{}/index.html", site.package_root(id)))
+    owner.is_some_and(|id| route == site.package_overview(id))
 }
 
 struct Summary {

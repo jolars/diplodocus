@@ -174,3 +174,56 @@ fn authored_reference_overviews_keep_their_content() {
     assert!(page.contains("href=\"fit.html\"><code>rfoo::fit</code></a>"));
     assert!(!page.contains("class=\"reference-topics\""));
 }
+
+#[test]
+fn inferred_r_site_keeps_reference_routes_and_uses_package_navigation() {
+    let root = support::shared_r_workspace();
+    let package = root.path().join("r");
+    let binary = env!("CARGO_BIN_EXE_diplodocus");
+    let command = |args: &[&str]| {
+        std::process::Command::new(binary)
+            .current_dir(&package)
+            .args(args)
+            .output()
+            .unwrap()
+    };
+    let missing = command(&["check", "--config", "diplodocus.yaml"]);
+    assert!(!missing.status.success());
+    assert!(String::from_utf8_lossy(&missing.stderr).contains("could not read configuration"));
+
+    root.write("r/docs/index.md", "# Welcome\n\nA custom R homepage.\n");
+    root.write(
+        "r/vignettes/example.Rmd",
+        "---\ntitle: Example vignette\n---\n\nA worked example.\n",
+    );
+    let written = command(&["build", "--output", "site"]);
+    assert!(
+        written.status.success(),
+        "{}",
+        String::from_utf8_lossy(&written.stderr)
+    );
+    let package_name = root
+        .read("r/DESCRIPTION")
+        .lines()
+        .find_map(|line| line.strip_prefix("Package: "))
+        .unwrap()
+        .to_owned();
+    let base = format!("r/site/packages/{package_name}");
+    let home = root.read("r/site/index.html");
+    assert!(home.contains("A custom R homepage."));
+    assert!(home.contains(">Reference</a>"));
+    assert!(home.contains(">Articles</a>"));
+    assert!(home.contains("aria-label=\"API reference\""));
+    assert!(
+        root.read(format!("{base}/index.html"))
+            .contains("http-equiv=\"refresh\"")
+    );
+    assert!(
+        root.read(format!("{base}/vignettes/index.html"))
+            .contains("Example vignette")
+    );
+    assert!(
+        root.read(format!("{base}/reference/index.html"))
+            .contains("reference-topics")
+    );
+}

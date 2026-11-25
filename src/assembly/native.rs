@@ -187,15 +187,23 @@ async fn assemble(
     run_examples: bool,
 ) -> Result<WorkspaceSources, AssemblyError> {
     let loading = reporting.stage("Loading workspace", None);
-    let text = fs::read_to_string(path).map_err(|source| ConfigurationError::Read {
-        path: path.to_owned(),
-        source,
-    })?;
-    let mut configuration =
-        parse_configuration(&text).map_err(|source| ConfigurationError::Parse {
-            path: path.to_owned(),
+    let (text, mut configuration) = if bundle_export {
+        let text = fs::read_to_string(path).map_err(|source| ConfigurationError::Read {
+            path: path.into(),
             source,
         })?;
+        let configuration =
+            parse_configuration(&text).map_err(|source| ConfigurationError::Parse {
+                path: path.into(),
+                source,
+            })?;
+        (Some(text), configuration)
+    } else {
+        crate::configuration::resolve_configuration(
+            path,
+            path == Path::new(crate::configuration::DEFAULT_WORKSPACE),
+        )?
+    };
     let config_name = portable(Path::new(
         path.file_name()
             .and_then(|name| name.to_str())
@@ -325,13 +333,15 @@ async fn assemble(
         return Err(primary.unwrap_or(AssemblyError::Cancelled));
     }
 
-    let current = fs::read(path)?;
-    if current != text.as_bytes() {
-        return Err(AssemblyError::fingerprint_changed(
+    let current = match fs::read_to_string(path) {
+        Ok(current) => Some(current),
+        Err(error) if text.is_none() && error.kind() == std::io::ErrorKind::NotFound => None,
+        Err(error) => return Err(error.into()),
+    };
+    if current != text {
+        return Err(AssemblyError::inputs_changed(
             "native extraction configuration verification",
-            path.display(),
-            Some(&fingerprint_bytes(text.as_bytes())),
-            Some(&fingerprint_bytes(&current)),
+            path.display().to_string(),
         ));
     }
     if resolve_workspace_paths(path, &configuration)? != paths {

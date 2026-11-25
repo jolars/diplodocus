@@ -248,7 +248,7 @@ pub struct WorkspaceSources {
     workspace: Workspace,
     configuration: WorkspaceConfiguration,
     configuration_path: PathBuf,
-    configuration_source: String,
+    configuration_source: Option<String>,
     paths: ResolvedWorkspacePaths,
     prepared_pages: BTreeMap<String, PreparedPage>,
     package_files: BTreeMap<String, package_docs::PackageFiles>,
@@ -398,22 +398,26 @@ impl WorkspaceSources {
         for observation in &self.doxygen_observations {
             observation.verify()?;
         }
-        let configuration = fs::read(&self.configuration_path)?;
-        if configuration != self.configuration_source.as_bytes() {
-            return Err(AssemblyError::fingerprint_changed(
-                "workspace configuration content verification",
-                self.configuration_path.display(),
-                Some(&fingerprint_bytes(self.configuration_source.as_bytes())),
-                Some(&fingerprint_bytes(&configuration)),
-            ));
-        }
-        let mut configuration =
-            parse_configuration(&self.configuration_source).map_err(|source| {
-                ConfigurationError::Parse {
+        let (text, mut configuration) = if self.bundle_export {
+            let text = fs::read_to_string(&self.configuration_path)?;
+            let configuration =
+                parse_configuration(&text).map_err(|source| ConfigurationError::Parse {
                     path: self.configuration_path.clone(),
                     source,
-                }
-            })?;
+                })?;
+            (Some(text), configuration)
+        } else {
+            crate::configuration::resolve_configuration(
+                &self.configuration_path,
+                self.configuration_source.is_none(),
+            )?
+        };
+        if text != self.configuration_source {
+            return Err(AssemblyError::inputs_changed(
+                "workspace configuration content verification",
+                self.configuration_path.display().to_string(),
+            ));
+        }
         self.bundles.revalidate()?;
         if self.bundle_export {
             bundles::prepare_export(&mut configuration)?;
@@ -697,7 +701,18 @@ async fn r_results(
     reporting: &Reporting,
     journal: &mut r_native::GeneratedWrites,
 ) -> Result<BTreeMap<(String, String), r_native::RNativeExtraction>, AssemblyError> {
-    let configuration_path = fs::canonicalize(path)?;
+    let configuration_path = match fs::canonicalize(path) {
+        Ok(path) => path,
+        Err(error)
+            if error.kind() == std::io::ErrorKind::NotFound
+                && path == Path::new(crate::configuration::DEFAULT_WORKSPACE) =>
+        {
+            paths
+                .configuration_directory
+                .join(crate::configuration::DEFAULT_WORKSPACE)
+        }
+        Err(error) => return Err(error.into()),
+    };
     for (declaration, package) in configuration.packages.iter().zip(&paths.packages) {
         if let Some(settings) = &declaration.r {
             for output in &settings.generated_outputs {
@@ -757,7 +772,7 @@ struct NativeExtractions {
 
 async fn assemble_with_native(
     path: &Path,
-    text: String,
+    text: Option<String>,
     mut configuration: WorkspaceConfiguration,
     mut native: NativeExtractions,
     bundle_export: bool,

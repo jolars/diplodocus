@@ -50,17 +50,17 @@ fn dispatch(cli: Cli, runner: &CommandRunner) -> Result<(), CommandError> {
     });
     match cli.command {
         Command::Build(args) => runner.build(BuildOptions {
-            config: args.config,
+            config: workspace_config(args.config)?,
             output: args.output,
         }),
         Command::Check(args) => runner
             .check(CheckOptions {
-                config: args.config,
+                config: workspace_config(args.config)?,
             })
             .map(|_| ()),
         Command::Extract(args) => {
             let options = ExtractOptions {
-                config: args.config,
+                config: workspace_config(args.config)?,
                 output: args.output,
             };
             if args.watch {
@@ -112,12 +112,19 @@ fn dispatch(cli: Cli, runner: &CommandRunner) -> Result<(), CommandError> {
             }
         }
         Command::Serve(args) => runner.serve(ServeOptions {
-            config: args.config,
+            config: workspace_config(args.config)?,
             output: args.output,
             host: args.host,
             port: args.port,
             live_reload: args.live_reload && !args.no_live_reload,
             open: args.open,
         }),
+    }
+}
+
+fn workspace_config(path: Option<std::path::PathBuf>) -> std::io::Result<std::path::PathBuf> {
+    match path {
+        Some(path) => std::path::absolute(path),
+        None => Ok("./diplodocus.yaml".into()),
     }
 }

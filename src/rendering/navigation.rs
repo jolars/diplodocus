@@ -120,14 +120,29 @@ pub(super) fn sections(html: &mut String, site: &Site<'_>, route: &str, class: &
     )
     .unwrap();
     let owner = site.pages[route].owner.as_deref();
-    section_link(
-        html,
-        site,
-        route,
-        site.guide_route(),
-        "Guide",
-        owner.is_none() && site.project_section(route).is_none() && site.home(route).is_none(),
-    );
+    let guide = if site.presentation.primary_package.is_none() || site.presentation.home.is_some() {
+        Some(site.guide_route())
+    } else {
+        site.pages.iter().find_map(|(path, page)| {
+            (path != "index.html"
+                && page.visible
+                && page.owner.is_none()
+                && page.document.is_some()
+                && page.concept.is_none()
+                && site.project_section(path).is_none())
+            .then_some(path.as_str())
+        })
+    };
+    if let Some(guide) = guide {
+        section_link(
+            html,
+            site,
+            route,
+            guide,
+            "Guide",
+            owner.is_none() && site.project_section(route).is_none() && site.home(route).is_none(),
+        );
+    }
     for section in &site.presentation.sections {
         section_link(
             html,
@@ -142,8 +157,9 @@ pub(super) fn sections(html: &mut String, site: &Site<'_>, route: &str, class: &
         .workspace
         .packages
         .iter()
-        .filter(|(_, package)| {
-            package.visibility != crate::configuration::PackageVisibility::Hidden
+        .filter(|(_, package)| match site.presentation.primary_package {
+            Some(_) => package.visibility == crate::configuration::PackageVisibility::Public,
+            None => package.visibility != crate::configuration::PackageVisibility::Hidden,
         })
         .collect();
     packages.sort_by_key(|(id, package)| {
@@ -157,6 +173,27 @@ pub(super) fn sections(html: &mut String, site: &Site<'_>, route: &str, class: &
         };
         (language, &package.name, *id)
     });
+    if let [(id, _)] = packages.as_slice()
+        && site.presentation.primary_package.as_ref() == Some(id)
+    {
+        for (label, suffix) in [("Reference", "reference"), ("Articles", "vignettes")] {
+            let path = format!("{}/{suffix}/index.html", site.package_root(id));
+            if site.pages.contains_key(&path)
+                && (suffix != "vignettes" || !site.articles.is_empty())
+            {
+                section_link(
+                    html,
+                    site,
+                    route,
+                    &path,
+                    label,
+                    route.starts_with(path.trim_end_matches("index.html")),
+                );
+            }
+        }
+        html.push_str("</ul></nav>");
+        return;
+    }
     let grouped = site.presentation.header.api == ApiNavigation::Dropdown && packages.len() > 1;
     if grouped {
         if class == "desktop-sections" {
@@ -171,7 +208,7 @@ pub(super) fn sections(html: &mut String, site: &Site<'_>, route: &str, class: &
             html,
             site,
             route,
-            &format!("{}/index.html", site.package_root(id)),
+            &site.package_overview(id),
             package_label(site, package),
             owner == Some(id.as_str()),
         );
@@ -367,13 +404,13 @@ fn document_groups(
     label: &str,
     base: &str,
 ) {
-    let overview = if owner.is_none() {
+    let overview = if let Some(id) = owner {
+        site.package_overview(id)
+    } else {
         site.project_section(route).map_or_else(
             || site.guide_route().to_owned(),
             |section| section.path.as_str().to_owned(),
         )
-    } else {
-        format!("{base}index.html")
     };
     let mut root = Vec::new();
     if site.pages.get(&overview).is_none_or(|page| page.navigation) {
@@ -419,6 +456,7 @@ fn document_groups(
         let label = site
             .pages
             .get(&overview)
+            .filter(|_| !site.generated_articles_index(&overview))
             .map(|page| page.title.clone())
             .unwrap_or_else(|| {
                 let name = directory.replace(['-', '_'], " ");
@@ -471,7 +509,11 @@ fn package_pages(html: &mut String, site: &Site<'_>, route: &str, id: &str) {
         site,
         route,
         Some(id),
-        package_label(site, package),
+        if site.presentation.primary_package.as_deref() == Some(id) {
+            &package.name
+        } else {
+            package_label(site, package)
+        },
         &format!("{}/", site.package_root(id)),
     );
     package_api_pages(html, site, route, id);

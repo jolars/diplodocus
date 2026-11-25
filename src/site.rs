@@ -60,6 +60,7 @@ pub struct Site<'a> {
     pub(crate) header_logo: Option<&'a AssetReference>,
     pub(crate) header_logo_dark: Option<&'a AssetReference>,
     pub(crate) open_graph: Option<&'a AssetReference>,
+    pub(crate) articles: Vec<(String, String)>,
     pub(crate) pages: BTreeMap<String, PageModel<'a>>,
     pub(crate) embedded_pages: BTreeMap<ItemReference, PageModel<'a>>,
     pub(crate) routes: BTreeMap<DocumentIdentity, String>,
@@ -224,6 +225,7 @@ impl<'a> Site<'a> {
             header_logo: inputs.header_logo,
             header_logo_dark: inputs.header_logo_dark,
             open_graph: inputs.open_graph,
+            articles: Vec::new(),
             pages: BTreeMap::new(),
             embedded_pages: BTreeMap::new(),
             routes: BTreeMap::new(),
@@ -586,6 +588,31 @@ impl<'a> Site<'a> {
             site.insert(route.clone(), model)?;
             site.routes.insert(identity, route);
         }
+        if let Some(id) = &site.presentation.primary_package {
+            if !site.workspace.packages.get(id).is_some_and(|package| {
+                package.ecosystem == "r" && package.visibility == PackageVisibility::Public
+            }) {
+                return Err(SiteError::Presentation(format!(
+                    "primary-package must name a public R package: {id}"
+                )));
+            }
+            site.articles = site.article_pages(id);
+            let articles_index = format!("{}/vignettes/index.html", site.package_root(id));
+            if !site.articles.is_empty() && !site.pages.contains_key(&articles_index) {
+                site.insert(
+                    articles_index,
+                    PageModel::empty("Articles".into(), Some(id.clone()), true),
+                )?;
+            }
+            if site.presentation.home.is_none() && !site.pages.contains_key("index.html") {
+                let overview = format!("{}/index.html", site.package_root(id));
+                let page = site.pages.remove(&overview).ok_or(SiteError::Evidence)?;
+                site.insert("index.html".into(), page)?;
+                for route in site.routes.values_mut().filter(|route| **route == overview) {
+                    *route = "index.html".into();
+                }
+            }
+        }
         if !site.pages.contains_key("index.html") {
             site.insert(
                 "index.html".into(),
@@ -724,6 +751,56 @@ impl<'a> Site<'a> {
             .get(id)
             .cloned()
             .unwrap_or_else(|| format!("packages/{}", self.workspace.packages[id].slug))
+    }
+
+    pub(crate) fn package_overview(&self, id: &str) -> String {
+        if self
+            .pages
+            .get("index.html")
+            .and_then(|page| page.owner.as_deref())
+            == Some(id)
+        {
+            "index.html".into()
+        } else {
+            format!("{}/index.html", self.package_root(id))
+        }
+    }
+
+    pub(crate) fn generated_articles_index(&self, route: &str) -> bool {
+        self.presentation
+            .primary_package
+            .as_deref()
+            .is_some_and(|id| {
+                !self.articles.is_empty()
+                    && route == format!("{}/vignettes/index.html", self.package_root(id))
+                    && self.pages[route].document.is_none()
+            })
+    }
+
+    fn article_pages(&self, id: &str) -> Vec<(String, String)> {
+        let mut articles = self
+            .workspace
+            .pages
+            .iter()
+            .filter_map(|(page_id, page)| {
+                let PageKind::Authored { collection } = &page.kind else {
+                    return None;
+                };
+                if self.workspace.content_collections[collection].format
+                    != crate::documents::AuthoredFormat::Rmd
+                {
+                    return None;
+                }
+                let route = self.routes.get(&DocumentIdentity::Page {
+                    page: page_id.clone(),
+                })?;
+                let model = &self.pages[route];
+                (model.visible && model.owner.as_deref() == Some(id))
+                    .then(|| (route.clone(), model.title.clone()))
+            })
+            .collect::<Vec<_>>();
+        articles.sort();
+        articles
     }
 
     pub(crate) fn url(&self, from: &str, to: &str) -> String {

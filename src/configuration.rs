@@ -57,15 +57,16 @@ pub struct WorkspaceConfiguration {
 #[derive(Deserialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 struct WorkspaceDeclaration {
-    project: ProjectConfiguration,
+    #[serde(default, deserialize_with = "deserialize_declared")]
+    project: Option<ProjectConfiguration>,
     #[serde(default)]
     presentation: PresentationDefaults,
     #[serde(default)]
     repositories: Vec<RepositoryConfiguration>,
     #[serde(default)]
     components: Vec<crate::components::ComponentConfiguration>,
-    #[serde(default)]
-    packages: Vec<PackageConfiguration>,
+    #[serde(default, deserialize_with = "deserialize_declared")]
+    packages: Option<Vec<PackageConfiguration>>,
     #[serde(default)]
     package_bundles: Vec<PackageBundleConfiguration>,
     #[serde(default, deserialize_with = "deserialize_content")]
@@ -76,16 +77,22 @@ struct WorkspaceDeclaration {
     relationships: Vec<RelationshipConfiguration>,
 }
 
+fn deserialize_declared<'de, D: Deserializer<'de>, T: Deserialize<'de>>(
+    deserializer: D,
+) -> Result<Option<T>, D::Error> {
+    T::deserialize(deserializer).map(Some)
+}
+
 impl TryFrom<WorkspaceDeclaration> for WorkspaceConfiguration {
     type Error = String;
 
     fn try_from(declaration: WorkspaceDeclaration) -> Result<Self, Self::Error> {
         let mut workspace = Self {
-            project: declaration.project,
+            project: declaration.project.ok_or("missing field `project`")?,
             presentation: declaration.presentation,
             repositories: declaration.repositories,
             components: declaration.components,
-            packages: declaration.packages,
+            packages: declaration.packages.unwrap_or_default(),
             package_bundles: declaration.package_bundles,
             content: declaration.content,
             concepts: declaration.concepts,
@@ -246,6 +253,9 @@ pub struct PresentationDefaults {
     /// Home screen title for Apple devices.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub apple_mobile_web_app_title: Option<String>,
+    /// Public R package whose overview serves as the default homepage.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub primary_package: Option<String>,
     /// Site title and branding; `None` uses the workspace's project name.
     pub title: Option<String>,
     /// Default HTML and social description, overridden by page metadata.
@@ -1722,4 +1732,108 @@ pub fn load_configuration(
         path: path.to_owned(),
         source,
     })
+}
+
+pub(crate) const DEFAULT_WORKSPACE: &str = "./diplodocus.yaml";
+
+pub(crate) fn resolve_configuration(
+    path: &Path,
+    allow_missing: bool,
+) -> Result<(Option<String>, WorkspaceConfiguration), ConfigurationError> {
+    let read_error = |source| ConfigurationError::Read {
+        path: path.into(),
+        source,
+    };
+    let invalid = |message: &str| {
+        read_error(std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            message,
+        ))
+    };
+    let source = match fs::read_to_string(path) {
+        Ok(source) => Some(source),
+        Err(error) if allow_missing && error.kind() == std::io::ErrorKind::NotFound => None,
+        Err(error) => return Err(read_error(error)),
+    };
+    let mut declarations: WorkspaceDeclaration = serde_saphyr::from_str_with_options(
+        source.as_deref().unwrap_or("{}"),
+        serde_saphyr::options! { no_schema: true, strict_booleans: true },
+    )
+    .map_err(|source| ConfigurationError::Parse {
+        path: path.into(),
+        source: Box::new(source),
+    })?;
+    if declarations.packages.is_none() {
+        let root = path.parent().unwrap_or(Path::new("."));
+        let descriptor = root.join("DESCRIPTION");
+        match fs::read_to_string(&descriptor) {
+            Ok(text) => {
+                let location = crate::ir::SourceLocation {
+                    repository: local_repository_id(),
+                    path: "DESCRIPTION".try_into().expect("portable path"),
+                    span: None,
+                };
+                let mut diagnostics = Vec::new();
+                let metadata =
+                    crate::extractors::r::validate_metadata(&text, &location, &mut diagnostics)
+                        .filter(|metadata| {
+                            metadata
+                                .fields
+                                .get("Type")
+                                .is_none_or(|field| field.value == "Package")
+                        })
+                        .ok_or_else(|| {
+                            invalid("root DESCRIPTION must describe a valid R package")
+                        })?;
+                let id = metadata.name;
+                declarations
+                    .project
+                    .get_or_insert_with(|| ProjectConfiguration {
+                        name: id.clone(),
+                        repository_url: None,
+                    });
+                declarations
+                    .presentation
+                    .primary_package
+                    .get_or_insert_with(|| id.clone());
+                let overview = root
+                    .join("docs/index.md")
+                    .is_file()
+                    .then(|| PathBuf::from("docs/index.md"));
+                declarations.packages = Some(vec![PackageConfiguration {
+                    id: id.clone(),
+                    name: id.clone(),
+                    slug: id,
+                    ecosystem: "r".into(),
+                    repository: local_repository_id(),
+                    path: ".".into(),
+                    metadata_path: "DESCRIPTION".into(),
+                    overview,
+                    incremental: Default::default(),
+                    r: None,
+                    kind: Default::default(),
+                    visibility: Default::default(),
+                    content: Vec::new(),
+                    targets: vec![ExtractionTargetConfiguration {
+                        id: "api".into(),
+                        extractor: "r".into(),
+                        path: ".".into(),
+                        role: "public-api".into(),
+                        rust: None,
+                        julia: None,
+                    }],
+                }]);
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => return Err(read_error(error)),
+        }
+    }
+    let config = WorkspaceConfiguration::try_from(declarations).map_err(|message| {
+        invalid(if source.is_none() {
+            "expected diplodocus.yaml or a root R package DESCRIPTION"
+        } else {
+            &message
+        })
+    })?;
+    Ok((source, config))
 }
