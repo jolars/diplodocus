@@ -131,12 +131,10 @@ presentation:
       - label: "Explore the guide"
         path: "guide/index.html"
     features:
-      - title: "Five languages, one home"
-        description: "Keep related packages together, with API references extracted from Python, R, Julia, Rust, and C++."
+      - title: "Many languages, one home"
+        description: "Keep related packages together, with API references extracted from multiple languages, such as Python, R, Julia, Rust, and C++."
       - title: "Write alongside your code"
         description: "Combine Markdown guides with API documentation. Link across packages without stitching sites together."
-      - title: "Examples that run"
-        description: "Execute QMD cells and verify API examples with native runtimes, then publish their results."
       - title: "Preview as you write"
         description: "Check your sources, preview changes locally, and build a static site ready to publish."
   logo:
