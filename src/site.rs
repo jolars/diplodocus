@@ -3,7 +3,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::configuration::{
-    CanonicalUrlStyle, ExecutionMode, PackageVisibility, PresentationDefaults,
+    CanonicalUrlStyle, ExecutionMode, PackageVisibility, PresentationDefaults, SidebarConfiguration,
 };
 use crate::diagnostics::DiagnosticPath;
 use crate::documents::{PageLayout, prepare_collection_document};
@@ -55,6 +55,7 @@ pub struct Site<'a> {
     pub(crate) workspace: &'a Workspace,
     package_mounts: &'a BTreeMap<String, String>,
     pub(crate) presentation: &'a PresentationDefaults,
+    pub(crate) sidebar: Option<SidebarConfiguration>,
     pub(crate) logo: Option<&'a AssetReference>,
     pub(crate) logo_dark: Option<&'a AssetReference>,
     pub(crate) header_logo: Option<&'a AssetReference>,
@@ -219,6 +220,7 @@ impl<'a> Site<'a> {
             site_scripts_enabled: false,
             preview: false,
             presentation: inputs.presentation,
+            sidebar: None,
             package_mounts: inputs.package_mounts,
             logo: inputs.logo,
             logo_dark: inputs.logo_dark,
@@ -694,7 +696,7 @@ impl<'a> Site<'a> {
             }
             section_prefixes.push(prefix);
         }
-        site.validate_sidebar()?;
+        site.sidebar = site.resolve_sidebar()?;
         Ok(site)
     }
 

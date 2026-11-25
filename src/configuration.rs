@@ -524,7 +524,7 @@ pub struct SidebarItem {
     /// Visible label as plain text. Defaults to the linked page title.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub text: Option<String>,
-    /// Generated site-relative HTML route, independent of the public URL style.
+    /// Repository-relative Markdown source path or generated site-relative HTML route.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub link: Option<DiagnosticPath>,
     /// Children in display order; groups may also link to a landing page.

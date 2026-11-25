@@ -448,14 +448,15 @@ Each sidebar item, including nested `items`, accepts:
 | Option | Type | Default | Purpose |
 | --- | --- | --- | --- |
 | `text` | string | Required | Visible label. |
-| `link` | HTML route | Unset | Existing, visible generated page. |
+| `link` | path | Unset | Repository-relative `.md` or `.qmd` source path, or a generated HTML route. |
 | `items` | list | `[]` | Child links or groups, in display order. |
 | `collapsed` | boolean | Unset | `true` starts closed; `false` adds a toggle that starts open. Omission keeps the group expanded without a toggle. |
 
 An item needs a `link`, nonempty `items`, or both. A group can link to its own
 landing page. Nesting is limited to six levels, including the top level. Links
-use generated HTML routes without a leading slash; external URLs, fragments,
-and source Markdown paths are invalid. The current page's ancestors open
+must point to a visible page. Source paths resolve to the page's published route,
+including its mount. If multiple visible pages share a source path, use the
+generated HTML route. Write paths without a leading slash. The current page's ancestors open
 automatically. Explicit sidebars replace automatic authored and shared-concept
 groups; package API trees still appear. See
 [navigation](../guide/navigation.md) for examples.

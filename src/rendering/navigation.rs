@@ -270,7 +270,6 @@ fn package_label<'a>(site: &Site<'_>, package: &'a Package) -> &'a str {
 
 pub(super) fn contextual(html: &mut String, site: &Site<'_>, route: &str) {
     if let Some((_, items)) = site
-        .presentation
         .sidebar
         .as_ref()
         .and_then(|sidebar| sidebar.for_route(route))

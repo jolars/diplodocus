@@ -65,7 +65,7 @@ const TREE: &str = r#"
       collapsed: true
       items:
         - text: Start <here>
-          link: intro/start.html
+          link: guide/intro/start.md
         - text: Default Theme
           items:
             - text: Overview
@@ -74,7 +74,7 @@ const TREE: &str = r#"
               collapsed: false
               items:
                 - text: Nested topic
-                  link: intro/deep/topic.html
+                  link: notes/topic.qmd
     - text: Reference
       items:
         - text: Reference overview
@@ -85,6 +85,12 @@ const TREE: &str = r#"
 fn nested_sidebar_survives_snapshots_without_sources_and_respects_url_styles() {
     for style in ["file", "clean"] {
         let root = workspace(TREE, style);
+        root.write(
+            "diplodocus.yaml",
+            root.read("diplodocus.yaml")
+                + "  - id: notes\n    repository: docs\n    path: notes\n    mount: extras\n    format: qmd\n",
+        );
+        root.write("notes/topic.qmd", "# Nested topic\n");
         let original = snapshot(&root);
         let portable = support::TestWorkspace::new();
         let path = portable.path().join("snapshot.sqlite");
@@ -109,6 +115,15 @@ fn nested_sidebar_survives_snapshots_without_sources_and_respects_url_styles() {
             "../intro/start"
         };
         assert!(nav.contains(&format!("href=\"{destination}\"")), "{nav}");
+        let quarto = if style == "file" {
+            "../extras/topic.html"
+        } else {
+            "../extras/topic"
+        };
+        assert!(
+            nav.contains(&format!("href=\"{quarto}\">Nested topic")),
+            "{nav}"
+        );
         let active = sidebar(&rendered, "intro/start.html");
         assert!(active.contains("data-sidebar-key=\"0\" open>"));
         assert!(active.contains("aria-current=\"page\">Start &lt;here&gt;</a>"));
@@ -188,6 +203,10 @@ fn invalid_sidebar_items_and_prefixes_report_presentation_errors() {
         (
             "[{text: Missing, link: missing.html}]",
             "visible generated page",
+        ),
+        (
+            "[{text: Missing, link: intro/start.qmd}]",
+            "visible generated page or its source file",
         ),
         ("[{text: ' ', link: index.html}]", "need text"),
         ("[{text: Empty}]", "link or children"),

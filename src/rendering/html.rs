@@ -379,8 +379,7 @@ pub(crate) fn render_reported(
                 html,
                 "<div class=\"contextual-nav\" data-section=\"{}\">",
                 escape(
-                    site.presentation
-                        .sidebar
+                    site.sidebar
                         .as_ref()
                         .and_then(|sidebar| sidebar.for_route(route))
                         .map(|(prefix, _)| prefix)

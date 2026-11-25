@@ -15,18 +15,20 @@ presentation:
     - text: Introduction
       items:
         - text: Project overview
-          link: guide/index.html
+          link: docs/guide/index.md
         - text: Getting started
-          link: guide/quick-start.html
-        - link: guide/installation.html
+          link: docs/guide/quick-start.md
+        - link: docs/guide/installation.md
     - text: Advanced
       collapsed: true
       items:
         - text: Troubleshooting
-          link: guide/diagnostics.html
+          link: docs/guide/diagnostics.md
 ```
 
-Use routes that exist on your site. The Installation link uses the page title.
+Use repository-relative `.md` or `.qmd` paths for source files, such as
+`docs/guide/index.md`. You can also link to a generated HTML route, such as
+`guide/index.html`. The Installation link uses the page title.
 Set `text` to give a link a custom label, as with **Project overview**. The
 current page's group opens automatically.
 
@@ -129,10 +131,9 @@ Every item needs a `link`, nonempty `items`, or both. If you omit `text`, the
 label uses the linked page title. For Markdown pages, Diplodocus uses the
 front matter `title` or falls back to the first heading. Set `text` for groups
 without a link and links to pages without a title. A group with a link has a
-clickable heading. Links name generated HTML routes relative to the site root,
-without a leading slash, even when the site uses clean URLs or a hosting prefix.
-They must identify existing, visible pages. External URLs,
-fragments, and source paths such as `guide/index.md` are not accepted.
+clickable heading. Links must identify visible pages by repository-relative
+Markdown source path or site-relative HTML route. Diplodocus uses your
+published URL style when it renders the link.
 
 Top-level groups appear beneath headings. Nested groups indent their children
 and add a vertical guide line. Items retain declaration order and may nest up to
