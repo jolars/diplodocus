@@ -216,9 +216,9 @@ impl Reporter for ConsoleReporter {
                         None => ProgressBar::new_spinner(),
                     });
                     let template = if total.is_some() {
-                        "  {spinner} {prefix} {pos}/{len} [{bar:12}] {elapsed} {wide_msg}"
+                        "{spinner} {prefix} {pos}/{len} [{bar:12}] {elapsed} {wide_msg}"
                     } else {
-                        "  {spinner} {prefix} {elapsed} {wide_msg}"
+                        "{spinner} {prefix} {elapsed} {wide_msg}"
                     };
                     bar.set_style(
                         ProgressStyle::with_template(template)
@@ -232,7 +232,7 @@ impl Reporter for ConsoleReporter {
                 } else {
                     self.line(
                         &mut state,
-                        &format!("  {}...", self.paint(label, Style::new().cyan())),
+                        &format!("{}...", self.paint(label, Style::new().cyan())),
                     );
                     None
                 };
@@ -286,7 +286,7 @@ impl Reporter for ConsoleReporter {
                     self.line(
                         &mut state,
                         &format!(
-                            "  {} {}{count} {timing}",
+                            "{} {}{count} {timing}",
                             self.paint(word, style),
                             stage.label
                         ),
@@ -442,8 +442,8 @@ mod tests {
         });
         let bytes = buffer.0.lock().unwrap();
         let text = String::from_utf8_lossy(&bytes);
-        assert!(text.contains("Rendering pages...\nwarning: a warning\n"));
-        assert!(text.contains("Failed Rendering pages (1/2) [1.0s]"));
+        assert!(text.starts_with("Rendering pages...\nwarning: a warning\n"));
+        assert!(text.contains("\nFailed Rendering pages (1/2) [1.0s]\n"));
         assert!(text.contains("Serving http://127.0.0.1:8000/"));
         assert!(!text.contains('\x1b'));
         assert!(reporter.state.lock().unwrap().stages.is_empty());
