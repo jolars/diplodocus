@@ -892,23 +892,33 @@ async fn assemble_with_native(
         &mut native,
         reporting,
     )?;
-    let prepared_pages = authored::assemble(
+    let package_files = package_docs::discover(&paths, &workspace)?;
+    let package_document_count = package_files
+        .values()
+        .map(|files| files.paths().count())
+        .sum();
+    let (prepared_pages, mut reading) = authored::assemble(
         &configuration,
         &paths,
         &mut workspace,
         &mut selections,
         &mut observed,
+        package_document_count,
         reporting,
     )?;
 
-    let package_files = package_docs::assemble(
+    package_docs::assemble(
         &paths,
         &mut workspace,
         &prepared_pages,
         &mut selections,
         &mut observed,
+        &package_files,
+        &mut reading,
     )?;
+    reading.finish();
 
+    let verification = reporting.stage("Verifying source inputs", None);
     let evidence = collect_static_provenance(path, &configuration, &selections)?;
     for ((repository, path), fingerprint) in observed {
         let current = evidence
@@ -960,6 +970,7 @@ async fn assemble_with_native(
         native_assets: BTreeMap::new(),
     };
     result.revalidate()?;
+    verification.finish();
     Ok(result)
 }
 

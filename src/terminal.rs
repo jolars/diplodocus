@@ -139,6 +139,10 @@ struct ActiveStage {
     bar: Option<ProgressBar>,
 }
 
+fn transient_stage(label: &str) -> bool {
+    matches!(label, "Tracking preview inputs" | "Verifying source inputs")
+}
+
 impl ConsoleReporter {
     pub(super) fn new(color: ColorChoice, no_progress: bool, quiet: bool) -> Self {
         let mut capabilities = Capabilities::detect(color);
@@ -215,25 +219,29 @@ impl Reporter for ConsoleReporter {
                         Some(total) => ProgressBar::new(total as u64),
                         None => ProgressBar::new_spinner(),
                     });
-                    let template = if total.is_some() {
-                        "{spinner} {prefix} {pos}/{len} [{bar:12}] {elapsed} {wide_msg}"
-                    } else {
-                        "{spinner} {prefix} {elapsed} {wide_msg}"
+                    let template = match total {
+                        Some(1) => "{spinner} {prefix} ({pos}/{len}) {elapsed} {wide_msg}",
+                        Some(_) => {
+                            "{spinner} {prefix} ({pos}/{len}) [{bar:12}] {elapsed} {wide_msg}"
+                        }
+                        None => "{spinner} {prefix} {elapsed} {wide_msg}",
                     };
                     bar.set_style(
                         ProgressStyle::with_template(template)
                             .expect("static progress template")
-                            .tick_chars("-\\|/-")
+                            .tick_chars("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏✓")
                             .progress_chars("=>-"),
                     );
                     bar.set_prefix(self.paint(label, Style::new().cyan().bold()));
                     bar.enable_steady_tick(Duration::from_millis(100));
                     Some(bar)
                 } else {
-                    self.line(
-                        &mut state,
-                        &format!("{}...", self.paint(label, Style::new().cyan())),
-                    );
+                    if !transient_stage(label) {
+                        self.line(
+                            &mut state,
+                            &format!("{}...", self.paint(label, Style::new().cyan())),
+                        );
+                    }
                     None
                 };
                 state.stages.insert(
@@ -256,7 +264,7 @@ impl Reporter for ConsoleReporter {
                     if let Some(bar) = &stage.bar {
                         bar.set_position(completed as u64);
                         if let Some(item) = item {
-                            bar.set_message(safe(item));
+                            bar.set_message(self.paint(&safe(item), Style::new().dim()));
                         }
                     }
                 }
@@ -270,27 +278,27 @@ impl Reporter for ConsoleReporter {
                     if let Some(bar) = stage.bar {
                         bar.finish_and_clear();
                     }
-                    let (word, style) = if success {
-                        ("Finished", Style::new().green())
-                    } else {
-                        ("Failed", Style::new().red())
-                    };
+                    if success
+                        && transient_stage(stage.label)
+                        && elapsed < Duration::from_millis(500)
+                    {
+                        return;
+                    }
                     let count = stage
                         .total
                         .map(|total| format!(" ({}/{total})", stage.completed))
                         .unwrap_or_default();
+                    let label = format!("{}{count}", stage.label);
+                    let summary = if success {
+                        format!("{} {label}", self.paint("✓", Style::new().green()))
+                    } else {
+                        self.paint(&format!("✗ {label}"), Style::new().red())
+                    };
                     let timing = self.paint(
                         &format!("[{:.1}s]", elapsed.as_secs_f64()),
                         Style::new().dim(),
                     );
-                    self.line(
-                        &mut state,
-                        &format!(
-                            "{} {}{count} {timing}",
-                            self.paint(word, style),
-                            stage.label
-                        ),
-                    );
+                    self.line(&mut state, &format!("{summary} {timing}"));
                 }
             }
             Event::CommandFinished {
@@ -443,10 +451,46 @@ mod tests {
         let bytes = buffer.0.lock().unwrap();
         let text = String::from_utf8_lossy(&bytes);
         assert!(text.starts_with("Rendering pages...\nwarning: a warning\n"));
-        assert!(text.contains("\nFailed Rendering pages (1/2) [1.0s]\n"));
+        assert!(text.contains("\n✗ Rendering pages (1/2) [1.0s]\n"));
         assert!(text.contains("Serving http://127.0.0.1:8000/"));
         assert!(!text.contains('\x1b'));
         assert!(reporter.state.lock().unwrap().stages.is_empty());
+    }
+
+    #[test]
+    fn transient_stages_keep_slow_completions_and_failures() {
+        let buffer = Buffer::default();
+        let reporter = ConsoleReporter::with_writer(
+            Capabilities {
+                interactive: false,
+                colors: false,
+                hyperlinks: false,
+            },
+            false,
+            false,
+            Box::new(buffer.clone()),
+        );
+        for (id, label, elapsed, success) in [
+            (1, "Tracking preview inputs", Duration::ZERO, true),
+            (2, "Tracking preview inputs", Duration::from_secs(1), true),
+            (3, "Verifying source inputs", Duration::ZERO, false),
+        ] {
+            reporter.report(Event::StageStarted {
+                id,
+                label,
+                total: None,
+            });
+            reporter.report(Event::StageFinished {
+                id,
+                elapsed,
+                success,
+            });
+        }
+        let bytes = buffer.0.lock().unwrap();
+        assert_eq!(
+            String::from_utf8_lossy(&bytes),
+            "✓ Tracking preview inputs [1.0s]\n✗ Verifying source inputs [0.0s]\n"
+        );
     }
 
     #[test]

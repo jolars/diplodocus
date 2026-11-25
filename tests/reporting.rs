@@ -77,7 +77,7 @@ impl Reporter for Recording {
 
 fn workspace() -> support::TestWorkspace {
     let root = support::TestWorkspace::new();
-    root.write("diplodocus.yaml", "project:\n  name: Reporting\nrepositories:\n  - id: docs\n    path: .\ncontent:\n  - id: guide\n    owner: project\n    repository: docs\n    path: docs\n    mount: \"\"\n    format: gfm\n");
+    root.write("diplodocus.yaml", "project:\n  name: Reporting\nrepositories:\n  - id: docs\n    path: .\ncontent:\n  - id: guide\n    owner: project\n    repository: docs\n    path: docs/index.md\n    mount: \"\"\n    format: gfm\n  - id: second\n    owner: project\n    repository: docs\n    path: docs/second.md\n    mount: \"\"\n    format: gfm\n");
     root.write("docs/index.md", "# Welcome\n");
     root.write("docs/second.md", "# Second\n");
     root
@@ -158,11 +158,14 @@ fn builds_report_real_counts_and_one_completion_after_publication() {
         Some(Recorded::CommandFinished(true))
     ));
     for label in ["Reading documentation", "Rendering pages"] {
-        assert!(
-            events.iter().any(
-                |event| matches!(event, Recorded::Started(_, name, Some(2)) if *name == label)
-            )
-        );
+        let totals: Vec<_> = events
+            .iter()
+            .filter_map(|event| match event {
+                Recorded::Started(_, name, total) if *name == label => Some(*total),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(totals, [Some(2)], "{label}");
     }
     assert!(events.iter().any(
         |event| matches!(event, Recorded::Progress(_, 0, Some(item)) if item.contains("index.md"))

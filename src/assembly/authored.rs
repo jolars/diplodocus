@@ -21,15 +21,15 @@ pub(super) fn assemble(
     workspace: &mut Workspace,
     selections: &mut DeclaredSourceInputs,
     observed: &mut ObservedInputs,
+    package_document_count: usize,
     reporting: &Reporting,
-) -> Result<BTreeMap<String, PreparedPage>, AssemblyError> {
+) -> Result<(BTreeMap<String, PreparedPage>, crate::reporting::Stage), AssemblyError> {
     let mut pages = BTreeMap::new();
     let mut seen = std::collections::BTreeSet::new();
+    let mut selected_collections = Vec::new();
     for (index, collection) in configuration.content.iter().enumerate() {
         let resolved = &paths.content[index];
         let repository = &paths.repositories[resolved.repository_index];
-        let preparation_cache =
-            crate::incremental::content_preparation_context(configuration, paths, index);
         let owner = if collection.owner == "project" {
             ContentOwner::Project
         } else {
@@ -108,9 +108,24 @@ pub(super) fn assemble(
                 continue;
             }
             seen.insert(key);
-            selected.push((relative, path, location));
+            selected.push((relative.clone(), path, location));
         }
-        let mut progress = reporting.stage("Reading documentation", Some(selected.len()));
+        selections.content.insert(collection.id.clone(), files);
+        selected_collections.push((index, owner, selected));
+    }
+
+    let total = selected_collections
+        .iter()
+        .map(|(_, _, selected)| selected.len())
+        .sum::<usize>()
+        + package_document_count;
+    let mut progress = reporting.stage("Reading documentation", Some(total));
+    for (index, owner, selected) in selected_collections {
+        let collection = &configuration.content[index];
+        let resolved = &paths.content[index];
+        let repository = &paths.repositories[resolved.repository_index];
+        let preparation_cache =
+            crate::incremental::content_preparation_context(configuration, paths, index);
         for (relative, path, location) in selected {
             progress.item(&format!(
                 "{}:{}",
@@ -136,7 +151,7 @@ pub(super) fn assemble(
                     .push(PathBuf::from(input.path.as_str()));
             }
             let text = expanded.text;
-            let relative = portable(relative)?;
+            let relative = portable(&relative)?;
             let cache_key = preparation_cache.as_ref().map(|(_, build, supplemental)| {
                 crate::incremental::key(&(
                     "authored-preparation-v1",
@@ -300,10 +315,8 @@ pub(super) fn assemble(
             );
             progress.advance();
         }
-        progress.finish();
-        selections.content.insert(collection.id.clone(), files);
     }
-    Ok(pages)
+    Ok((pages, progress))
 }
 
 pub(super) fn discover(

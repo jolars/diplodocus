@@ -144,7 +144,10 @@ fn finite_commands_keep_operational_output_on_stderr_and_support_quiet() {
         );
         assert!(output.stdout.is_empty());
         let stderr = String::from_utf8_lossy(&output.stderr);
-        assert!(stderr.contains("Finished "), "{stderr}");
+        assert!(
+            stderr.lines().any(|line| line.starts_with("✓ ")),
+            "{stderr}"
+        );
         assert!(!stderr.contains('\x1b'));
         let quiet = std::process::Command::new(cargo_bin("diplodocus"))
             .args(&arguments)

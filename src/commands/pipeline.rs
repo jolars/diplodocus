@@ -159,16 +159,17 @@ async fn extract_attempt_observed_inner(
             attempt.watch_inputs.take(),
         ));
     }
-    let resolved = reporting.run_phase(
-        Phase::ReferenceResolution,
-        "Validating documentation",
-        || resolve_workspace(&sources),
-    )?;
-    protect_sources(&sources, &resolved, &options.config, &output)?;
-    if let Some(site) = site_output {
-        protect_sources(&sources, &resolved, &options.config, site)?;
-        reject_overlap(site, &output)?;
-    }
+    reporting.run("Validating documentation", || {
+        let timing = reporting.phase(Phase::ReferenceResolution, None, None);
+        let resolved = resolve_workspace(&sources)?;
+        timing.finish();
+        protect_sources(&sources, &resolved, &options.config, &output)?;
+        if let Some(site) = site_output {
+            protect_sources(&sources, &resolved, &options.config, site)?;
+            reject_overlap(site, &output)?;
+        }
+        Ok::<_, CommandError>(())
+    })?;
     complete_api(&mut sources, deadlines, &mut cancellation).await?;
     sources
         .execute_rmarkdown(deadlines, &mut cancellation)
@@ -197,15 +198,16 @@ async fn extract_attempt_observed_inner(
                 attempt.watch_inputs.take(),
             ));
         }
-        let resolved = reporting.run_phase(
-            Phase::ReferenceResolution,
-            "Validating executed documentation",
-            || resolve_executed_workspace(&executed),
-        )?;
-        protect_sources(executed.sources(), &resolved, &options.config, &output)?;
-        if let Some(site) = site_output {
-            protect_sources(executed.sources(), &resolved, &options.config, site)?;
-        }
+        let resolved = reporting.run("Validating executed documentation", || {
+            let timing = reporting.phase(Phase::ReferenceResolution, None, None);
+            let resolved = resolve_executed_workspace(&executed)?;
+            timing.finish();
+            protect_sources(executed.sources(), &resolved, &options.config, &output)?;
+            if let Some(site) = site_output {
+                protect_sources(executed.sources(), &resolved, &options.config, site)?;
+            }
+            Ok::<_, CommandError>(resolved)
+        })?;
         let snapshot = reporting.run("Preparing snapshot", || {
             Snapshot::from_executed(&executed, &resolved)
         })?;

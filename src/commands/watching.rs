@@ -778,6 +778,7 @@ impl SourceWatchInputs {
         reporting: &Reporting,
         previous: Option<Self>,
     ) -> Self {
+        let progress = reporting.stage("Tracking preview inputs", None);
         let timing = reporting.phase(Phase::WatchCapture, None, None);
         let observer = Observer {
             config: PathBuf::new(),
@@ -848,6 +849,7 @@ impl SourceWatchInputs {
         }
         inputs.retire_fingerprints();
         timing.finish();
+        progress.finish();
         inputs
     }
 

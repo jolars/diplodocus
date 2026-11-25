@@ -19,7 +19,7 @@ pub(super) struct PackageFiles {
 }
 
 impl PackageFiles {
-    fn paths(&self) -> impl Iterator<Item = &PathBuf> {
+    pub(super) fn paths(&self) -> impl Iterator<Item = &PathBuf> {
         self.overview
             .iter()
             .chain(self.news.iter())
@@ -145,9 +145,10 @@ pub(super) fn assemble(
     prepared_pages: &BTreeMap<String, PreparedPage>,
     selections: &mut DeclaredSourceInputs,
     observed: &mut ObservedInputs,
-) -> Result<BTreeMap<String, PackageFiles>, AssemblyError> {
-    let files = discover(paths, workspace)?;
-    for (id, selected) in &files {
+    files: &BTreeMap<String, PackageFiles>,
+    progress: &mut crate::reporting::Stage,
+) -> Result<(), AssemblyError> {
+    for (id, selected) in files {
         let package = paths
             .packages
             .iter()
@@ -156,6 +157,11 @@ pub(super) fn assemble(
         let repository = &paths.repositories[package.repository_index];
         for path in selected.paths() {
             let location = repository.source_location(path, None)?;
+            progress.item(&format!(
+                "{}:{}",
+                location.repository,
+                location.path.as_str()
+            ));
             let bytes = fs::read(path)?;
             observe(observed, &location, fingerprint_bytes(&bytes))?;
             selections
@@ -172,6 +178,7 @@ pub(super) fn assemble(
                         })?
                         .to_owned(),
                 );
+            progress.advance();
         }
         let overview_overridden = register_authored_override(
             workspace,
@@ -388,7 +395,7 @@ pub(super) fn assemble(
             );
         }
     }
-    Ok(files)
+    Ok(())
 }
 
 fn already_authored(
