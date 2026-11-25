@@ -807,3 +807,27 @@ fn execution_producer_canonicalizes_environment_order_and_retains_context() {
         serde_json::to_vec(&second).unwrap()
     );
 }
+
+#[test]
+fn records_assets_from_the_implicit_checkout() {
+    let workspace = TestWorkspace::new();
+    workspace.write("logo.svg", "<svg/>");
+    let config =
+        parse_configuration("project: {name: Docs}\npresentation:\n  logo: {path: logo.svg}\n")
+            .unwrap();
+    let logo = config.presentation.logo.as_ref().unwrap();
+    let selections = DeclaredSourceInputs {
+        package_documentation: BTreeMap::from([(logo.repository.clone(), vec!["logo.svg".into()])]),
+        ..Default::default()
+    };
+    let evidence = collect_static_provenance(
+        workspace.path().join("diplodocus.yaml"),
+        &config,
+        &selections,
+    )
+    .unwrap();
+    assert_eq!(
+        evidence.inputs[&logo.repository][&DiagnosticPath::try_from("logo.svg").unwrap()],
+        fingerprint_bytes(b"<svg/>")
+    );
+}

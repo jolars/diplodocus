@@ -537,7 +537,7 @@ fn footer_omits_unconfigured_content_and_credit_is_optional() {
 fn eulerr_datasets_survive_snapshots_and_render_bare_usage_format_and_source() {
     let root = support::prepared_acceptance_workspace();
     support::add_r_datasets(&root);
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
+    let sources = assemble_workspace(root.path().join("core/diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let artifact = tempfile::tempdir().unwrap();
     let path = artifact.path().join("snapshot.sqlite");
@@ -709,7 +709,7 @@ fn internal_r_topics_survive_snapshots_without_public_navigation_or_search() {
             root.read("r/NAMESPACE")
         ),
     );
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
+    let sources = assemble_workspace(root.path().join("core/diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let artifact = tempfile::tempdir().unwrap();
     let path = artifact.path().join("snapshot.sqlite");
@@ -758,7 +758,7 @@ fn unsupported_rd_renders_compact_markers_and_authored_source_stays_visible() {
         "python/docs/fallbacks.qmd",
         "# Authored fallbacks\n\n<aside>Authored block</aside>\n\nText $x^2$.\n",
     );
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
+    let sources = assemble_workspace(root.path().join("core/diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let artifact = tempfile::tempdir().unwrap();
     let path = artifact.path().join("snapshot.sqlite");
@@ -896,7 +896,7 @@ fn authored_titles_reuse_matching_headings_and_preserve_their_anchors() {
 #[test]
 fn static_site_uses_only_snapshot_bytes_and_preserves_output_on_failure() {
     let root = support::prepared_acceptance_workspace();
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
+    let sources = assemble_workspace(root.path().join("core/diplodocus.yaml")).unwrap();
     let resolved = resolve_workspace(&sources).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolved).unwrap();
     drop(root);
@@ -941,7 +941,7 @@ fn all_rendered_local_links_and_images_resolve_beneath_a_hosting_prefix() {
         }
     }
     let root = support::prepared_acceptance_workspace();
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
+    let sources = assemble_workspace(root.path().join("core/diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let rendered =
         diplodocus::rendering::render_site(&diplodocus::site::Site::new(&snapshot).unwrap())

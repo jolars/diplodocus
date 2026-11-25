@@ -33,7 +33,7 @@ packages:
         role: "public-api"
 content:
   - id: "guide"
-    owner: "project"
+    owner: "pkg"
     repository: "source"
     path: "docs"
     mount: "guide"
@@ -108,7 +108,7 @@ fn resolves_each_base_without_changing_portable_declarations() {
 #[test]
 fn resolves_acceptance_sibling_checkouts_in_declaration_order() {
     let workspace = support::acceptance_workspace();
-    let path = workspace.path().join("workspace/diplodocus.yaml");
+    let path = workspace.path().join("core/diplodocus.yaml");
     let config = load_configuration(&path).unwrap();
     let resolved = resolve_workspace_paths(path, &config).unwrap();
     assert_eq!(
@@ -139,22 +139,27 @@ fn resolves_acceptance_sibling_checkouts_in_declaration_order() {
 fn resolves_the_authored_only_project_configuration() {
     let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("diplodocus.yaml");
     let config = load_configuration(&path).unwrap();
-    let resolved = resolve_workspace_paths(path, &config).unwrap();
+    let resolved = resolve_workspace_paths(&path, &config).unwrap();
     assert!(resolved.packages.is_empty());
+    assert!(config.repositories.is_empty());
+    assert_eq!(resolved.repositories.len(), 1);
     assert_eq!(
         resolved
             .content
             .iter()
-            .map(|content| content.id.as_str())
+            .map(|content| content
+                .path
+                .strip_prefix(&resolved.configuration_directory)
+                .unwrap())
             .collect::<Vec<_>>(),
         [
-            "home",
-            "guide",
-            "reference",
-            "design",
-            "changelog",
-            "contributing"
+            "docs/guide",
+            "docs/reference",
+            "docs/development/design.md",
+            "CHANGELOG.md",
+            "CONTRIBUTING.md",
         ]
+        .map(Path::new)
     );
 }
 
@@ -702,4 +707,65 @@ fn package_overview_rejects_symlinks_outside_the_package() {
             .kind,
         PathResolutionErrorKind::OutsideBoundary { .. }
     ));
+}
+
+#[test]
+fn project_and_package_sources_use_their_own_checkouts() {
+    let workspace = TestWorkspace::new();
+    workspace.write("site/docs/index.md", "# Site");
+    workspace.write("site/local/pyproject.toml", "[project]");
+    workspace.write("package/nested/pyproject.toml", "[project]");
+    workspace.write("package/nested/guides/index.md", "# Package guide");
+    let source = r#"project:
+  name: Docs
+repositories:
+  - { id: external, path: ../package }
+content: docs
+packages:
+  - id: local
+    name: Local
+    slug: local
+    ecosystem: python
+    path: local
+    metadata-path: pyproject.toml
+    targets: []
+  - id: external
+    name: External
+    slug: external
+    ecosystem: python
+    repository: external
+    path: nested
+    metadata-path: pyproject.toml
+    targets: []
+    content:
+      - { path: guides, mount: guides }
+"#;
+    workspace.write("site/diplodocus.yaml", source);
+    let path = workspace.path().join("site/diplodocus.yaml");
+    let config = load_configuration(&path).unwrap();
+    let paths = resolve_workspace_paths(&path, &config).unwrap();
+    assert_eq!(paths.content[0].path, canonical(&workspace, "site/docs"));
+    assert_eq!(config.content[0].mount, "");
+    assert_eq!(paths.packages[0].path, canonical(&workspace, "site/local"));
+    assert_eq!(
+        paths.content[1].path,
+        canonical(&workspace, "package/nested/guides")
+    );
+    assert_eq!(config.content[1].owner, "external");
+    assert_eq!(
+        parse_configuration(&serde_saphyr::to_string(&config).unwrap()).unwrap(),
+        config
+    );
+
+    let outside = source.replace(
+        "content: docs",
+        "content:\n  - { repository: external, path: nested/guides, mount: guide }",
+    );
+    let error =
+        resolve_workspace_paths(&path, &parse_configuration(&outside).unwrap()).unwrap_err();
+    assert!(
+        error
+            .to_string()
+            .contains("project content must be in the configuration checkout")
+    );
 }

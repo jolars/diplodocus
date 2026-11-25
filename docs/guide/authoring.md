@@ -1,8 +1,8 @@
 # Writing pages
 
-Declare each source directory or individual file as a collection in
-[`content`](configuration.md#add-pages). The collection's `owner` places pages
-in project or package navigation, and its `mount` sets their URL prefix. For
+Declare shared pages under [`content`](configuration.md#add-pages) and
+package pages under `packages[].content`. A collection selects a source
+directory or file, and its `mount` sets the URL prefix. For
 example, a project-owned `CHANGELOG.md` with `mount: project` becomes
 `/project/CHANGELOG.html`. Links and images resolve from the source directory.
 
@@ -66,7 +66,7 @@ renders conventional `LICENSE`, `LICENSE.md`, `LICENCE`, `LICENCE.md`,
 `license.html` for every package. The snapshot retains their contents, and an
 authored package page at `license.html` takes precedence.
 
-To author the page, use a package-owned collection with an empty mount and an
+To author the page, add a collection under the package with an empty mount and an
 `index.md` or `index.qmd` file. The page keeps its authored title
 and the collection's normal execution settings. The package-information block
 appears above the authored body.
@@ -80,7 +80,6 @@ packages:
     name: "Models for Python"
     slug: "python"
     ecosystem: "python"
-    repository: "core"
     path: "python"
     metadata-path: "pyproject.toml"
     overview: "docs/introduction.md"

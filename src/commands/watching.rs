@@ -369,9 +369,11 @@ impl Observer {
                 observed.insert(sidecar, state);
             }
         }
+        let local = config.implicit_repository();
         let roots: BTreeMap<_, _> = config
             .repositories
             .iter()
+            .chain(&local)
             .filter_map(|r| {
                 pipeline::absolute(&parent.join(&r.path))
                     .ok()

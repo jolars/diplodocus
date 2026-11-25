@@ -38,10 +38,8 @@ fn assert_error(diagnostic: &Diagnostic, code: DiagnosticCode) {
 
 #[test]
 fn acceptance_metadata_cannot_authorize_execution() {
-    let config = parse_configuration(&support::load_fixture(
-        "acceptance/workspace/diplodocus.yaml",
-    ))
-    .unwrap();
+    let config =
+        parse_configuration(&support::load_fixture("acceptance/core/diplodocus.yaml")).unwrap();
     let collection = config
         .content
         .iter()

@@ -13,7 +13,7 @@ use serde_json::{Value, json};
 
 fn snapshot() -> Snapshot {
     let root = support::prepared_acceptance_workspace();
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
+    let sources = assemble_workspace(root.path().join("core/diplodocus.yaml")).unwrap();
     let resolved = resolve_workspace(&sources).unwrap();
     Snapshot::from_sources(&sources, &resolved).unwrap()
 }
@@ -1340,7 +1340,7 @@ fn rejects_invalid_image_contents_even_with_recomputed_asset_digests() {
 fn round_trips_page_links_with_empty_fragments() {
     let root = support::prepared_acceptance_workspace();
     root.write("core/docs/link.md", "[Home](index.md#)\n");
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
+    let sources = assemble_workspace(root.path().join("core/diplodocus.yaml")).unwrap();
     let resolved = resolve_workspace(&sources).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolved).unwrap();
     let target = tempfile::tempdir().unwrap();
@@ -1388,7 +1388,7 @@ fn legacy_rd_fallback_payloads_never_render_as_document_copies() {
 \description{Before \Sexpr{1} and \out{x} after.}
 \examples{\Sexpr{stop('must not execute')}}";
     root.write("r/man/experimental_summary.Rd", rd);
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
+    let sources = assemble_workspace(root.path().join("core/diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let legacy = changed(&snapshot, |export| {
         assert_eq!(restore_legacy_payloads(export, rd), 3);
@@ -1419,7 +1419,7 @@ fn legacy_rd_fallback_payloads_never_render_as_document_copies() {
 fn rejects_changed_rd_help_destinations_and_invalid_candidate_evidence() {
     let root = support::prepared_acceptance_workspace();
     support::add_r_rd_content(&root);
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
+    let sources = assemble_workspace(root.path().join("core/diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     for case in [
         "destination",
@@ -1474,7 +1474,7 @@ fn rejects_changed_rd_help_destinations_and_invalid_candidate_evidence() {
 async fn rejects_rd_example_evidence_that_disagrees_with_its_source_or_package() {
     use diplodocus::execution::{ExecutionCancellation, ExecutionDeadlines};
     let root = support::prepared_acceptance_workspace();
-    let mut sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
+    let mut sources = assemble_workspace(root.path().join("core/diplodocus.yaml")).unwrap();
     let mut cancellation: ExecutionCancellation<'_> = Box::pin(std::future::pending());
     sources
         .execute_rd_examples(ExecutionDeadlines::default(), &mut cancellation)

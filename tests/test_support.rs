@@ -49,16 +49,16 @@ fn acceptance_workspaces_are_isolated_from_checked_in_fixtures() {
     assert_ne!(temporary, checked_in);
 
     let checked_in_configuration =
-        fs::read(checked_in.join("workspace/diplodocus.yaml")).expect("fixture should be readable");
-    workspace.write("workspace/diplodocus.yaml", "temporary mutation\n");
+        fs::read(checked_in.join("core/diplodocus.yaml")).expect("fixture should be readable");
+    workspace.write("core/diplodocus.yaml", "temporary mutation\n");
 
     assert_eq!(
-        fs::read(checked_in.join("workspace/diplodocus.yaml"))
+        fs::read(checked_in.join("core/diplodocus.yaml"))
             .expect("checked-in fixture should remain readable"),
         checked_in_configuration
     );
     assert_eq!(
-        workspace.read("workspace/diplodocus.yaml"),
+        workspace.read("core/diplodocus.yaml"),
         "temporary mutation\n"
     );
 }
@@ -102,7 +102,7 @@ fn acceptance_fixture_has_gfm_and_qmd_authored_content() {
             .is_file()
     );
 
-    let configuration = support::fixture_configuration(&workspace, "workspace/diplodocus.yaml");
+    let configuration = support::fixture_configuration(&workspace, "core/diplodocus.yaml");
     for (id, owner, repository, path, format) in [
         ("guide", "project", "core", "docs", "gfm"),
         ("python-guide", "pyfoo", "python", "docs", "qmd"),
@@ -179,7 +179,7 @@ fn acceptance_fixture_has_executable_python_and_r_qmd_pages() {
         ),
     ];
 
-    let configuration = workspace.read("workspace/diplodocus.yaml");
+    let configuration = workspace.read("core/diplodocus.yaml");
     for (source, language, kernel, environment_input, constructs) in cases {
         assert!(
             workspace.path().join(source).is_file(),
@@ -239,7 +239,7 @@ fn acceptance_fixture_has_execution_authority_variants() {
         );
     }
 
-    let configuration = support::fixture_configuration(&workspace, "workspace/diplodocus.yaml");
+    let configuration = support::fixture_configuration(&workspace, "core/diplodocus.yaml");
     let defaulted_collection = configuration["content"]
         .as_array()
         .unwrap()
@@ -327,7 +327,7 @@ fn acceptance_fixture_has_output_safety_variants() {
 #[test]
 fn acceptance_configuration_declares_cross_language_callable_concepts() {
     let workspace = acceptance_workspace();
-    let configuration = workspace.read("workspace/diplodocus.yaml");
+    let configuration = workspace.read("core/diplodocus.yaml");
 
     let configuration: serde_json::Value = serde_saphyr::from_str(&configuration).unwrap();
     assert_eq!(
@@ -400,7 +400,7 @@ fn acceptance_fixture_has_visibility_and_relationship_variants() {
 #[test]
 fn acceptance_configuration_covers_the_design_model() {
     let acceptance = acceptance_workspace();
-    let configuration_path = acceptance.path().join("workspace/diplodocus.yaml");
+    let configuration_path = acceptance.path().join("core/diplodocus.yaml");
     let configuration = fs::read_to_string(&configuration_path)
         .expect("acceptance configuration should be readable");
 
@@ -420,7 +420,7 @@ fn acceptance_configuration_covers_the_design_model() {
         .parent()
         .expect("acceptance configuration should have a parent");
     let workspace = fs::canonicalize(workspace).expect("workspace should be canonicalizable");
-    for repository in ["../core", "../python", "../r"] {
+    for repository in [".", "../python", "../r"] {
         assert!(configuration.contains(&format!("path: \"{repository}\"")));
         let root = fs::canonicalize(workspace.join(Path::new(repository)))
             .expect("repository root should be canonicalizable");

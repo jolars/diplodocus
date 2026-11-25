@@ -139,7 +139,7 @@ fn sitemap_and_canonical_links_share_encoded_urls_in_both_styles() {
 #[test]
 fn sitemap_matches_search_visibility_for_packages_and_concepts() {
     let root = support::prepared_acceptance_workspace();
-    let mut config = support::fixture_configuration(&root, "workspace/diplodocus.yaml");
+    let mut config = support::fixture_configuration(&root, "core/diplodocus.yaml");
     config.as_object_mut().unwrap().insert(
         "presentation".into(),
         serde_json::Value::Object(serde_json::Map::from_iter([(
@@ -156,10 +156,10 @@ fn sitemap_matches_search_visibility_for_packages_and_concepts() {
         .unwrap()
         .insert("visibility".into(), "hidden".into());
     root.write(
-        "workspace/diplodocus.yaml",
+        "core/diplodocus.yaml",
         serde_saphyr::to_string(&config).unwrap(),
     );
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
+    let sources = assemble_workspace(root.path().join("core/diplodocus.yaml")).unwrap();
     let snapshot = Snapshot::from_sources(&sources, &resolve_workspace(&sources).unwrap()).unwrap();
     let rendered = render(&snapshot);
     let urls = locations(&rendered);

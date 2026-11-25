@@ -17,7 +17,11 @@ use crate::validation::ContentAsset;
 pub struct ComponentConfiguration {
     /// Identifier used by authored component blocks.
     pub id: String,
-    /// Declared repository containing the bundle.
+    /// Repository containing the bundle, defaulting to the configuration checkout.
+    #[serde(
+        default = "crate::configuration::local_repository_id",
+        skip_serializing_if = "crate::configuration::is_local_repository"
+    )]
     pub repository: String,
     /// Repository-relative directory containing the complete built bundle.
     pub path: PathBuf,

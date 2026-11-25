@@ -282,3 +282,46 @@ fn pinned_release_cache_and_local_override_keep_the_mount() {
         assert!(page.contains(title), "missing {title} in {name}");
     }
 }
+
+#[test]
+fn bundles_exported_from_implicit_checkouts_can_be_combined() {
+    let temporary = tempfile::tempdir().unwrap();
+    let root = temporary.path();
+    for package in ["one", "two"] {
+        fs::write(
+            root.join(format!("{package}.yaml")),
+            format!(
+                "project: {{name: Test}}
+packages:
+  - id: {package}
+    name: {package}
+    slug: {package}
+    ecosystem: cpp
+    path: {package}
+    metadata-path: manifest
+    targets: []
+"
+            ),
+        )
+        .unwrap();
+        fs::create_dir(root.join(package)).unwrap();
+        fs::write(root.join(package).join("manifest"), "").unwrap();
+        export(root, package);
+    }
+    fs::write(
+        root.join("diplodocus.yaml"),
+        "project: {name: Test}
+package-bundles:
+  - {package: one, path: one.sqlite}
+  - {package: two, path: two.sqlite}
+",
+    )
+    .unwrap();
+    success(cli(root, &["build", "--output", "site"], true));
+    for package in ["one", "two"] {
+        assert!(
+            root.join(format!("site/packages/{package}/index.html"))
+                .is_file()
+        );
+    }
+}

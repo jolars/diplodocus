@@ -191,10 +191,11 @@ async fn assemble(
         path: path.to_owned(),
         source,
     })?;
-    let configuration = parse_configuration(&text).map_err(|source| ConfigurationError::Parse {
-        path: path.to_owned(),
-        source,
-    })?;
+    let mut configuration =
+        parse_configuration(&text).map_err(|source| ConfigurationError::Parse {
+            path: path.to_owned(),
+            source,
+        })?;
     let config_name = portable(Path::new(
         path.file_name()
             .and_then(|name| name.to_str())
@@ -205,7 +206,7 @@ async fn assemble(
         config_name,
     ))?;
     if bundle_export {
-        bundles::validate_export(&configuration)?;
+        bundles::prepare_export(&mut configuration)?;
     }
     let paths = resolve_workspace_paths(path, &configuration)?;
     let order = if run_examples {

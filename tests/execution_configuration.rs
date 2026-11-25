@@ -40,16 +40,14 @@ fn assert_rejected(source: &str, message: &str) {
 }
 
 #[test]
-fn every_collection_requires_a_supported_explicit_format() {
+fn collections_default_to_gfm_and_reject_unsupported_formats() {
     for format in ["gfm", "qmd"] {
         parse_configuration(&configuration(format, "")).unwrap();
     }
     let missing = configuration("qmd", "").replace("format: \"qmd\"\n", "");
-    assert!(
-        parse_configuration(&missing)
-            .unwrap_err()
-            .to_string()
-            .contains("missing field `format`")
+    assert_eq!(
+        parse_configuration(&missing).unwrap().content[0].format,
+        AuthoredFormat::Gfm
     );
     for format in ["", "markdown", "quarto", "GFM", "QMD"] {
         assert!(

@@ -6,48 +6,37 @@ add packages and collections as your documentation grows. This guide explains
 the main choices; the [configuration reference](../reference/configuration.md)
 lists every option, default, and required field.
 
-## Name the project and its repositories
+## Add pages {#add-pages}
 
-The project name appears in the site header. A repository identifies a local
-source checkout. For a project whose configuration lives at its repository
-root, use:
+Name the project and select a directory of Markdown pages beside
+`diplodocus.yaml`:
 
 ```yaml
 project:
-  name: "My project"
-repositories:
-  - id: "core"
-    path: "."
-    url: "https://github.com/example/my-project"
+  name: My project
+content: docs
 ```
 
-`path` is relative to the configuration file. It can also point to a sibling
-checkout, so one site can document packages from several repositories. Other
-declarations refer to a repository by its `id`. The optional `url` provides
-links back to your source repository.
-
-## Add pages {#add-pages}
-
-A content collection declares a directory or individual file to publish:
+This publishes the contents of `docs` at the site root. To select individual
+sources or change where they publish, give each source a path and URL prefix:
 
 ```yaml
 content:
-  - id: "guide"
-    owner: "project"
-    repository: "core"
-    path: "docs"
-    mount: "guide"
-    format: "gfm"
+  - path: docs
+    mount: guide
+  - path: CHANGELOG.md
+    mount: development
 ```
 
-Here, `path` is relative to the `core` repository, and `mount` is a URL prefix.
-For example, `docs/installation.md` becomes `guide/installation.html`. An empty
-mount puts pages at the site's root. The `project` owner makes this a shared
-guide; a package ID makes the collection part of that package's documentation.
+Here, `docs/installation.md` becomes `guide/installation.html` and
+`CHANGELOG.md` becomes `development/CHANGELOG.html`. An empty mount publishes
+at the site root. Paths are relative to the configuration directory and must
+stay in the local checkout. Set `project.repository-url` to add links to the
+checkout on GitHub.
 
-Use `gfm` for ordinary Markdown, `qmd` for Quarto Markdown, `rmd` for R Markdown,
-or `documenter` for Julia Documenter pages. Start with GFM unless you need
-another format's features. See [writing pages](authoring.md) for examples.
+Collections use GFM by default. Set `format` to `qmd` for Quarto Markdown,
+`rmd` for R Markdown, or `documenter` for Julia Documenter pages. See
+[writing pages](authoring.md) for examples.
 
 ## Add a package {#add-a-package}
 
@@ -60,7 +49,6 @@ packages:
     name: "My Python package"
     slug: "python"
     ecosystem: "python"
-    repository: "core"
     path: "python"
     metadata-path: "pyproject.toml"
     targets:
@@ -70,10 +58,15 @@ packages:
         role: "public-api"
 ```
 
-The package `path` is relative to the repository. `metadata-path` and each
-target's `path` are relative to the package. The `id` identifies the package in
+The package `path` is relative to the configuration directory by default.
+`metadata-path` and each target's `path` are relative to the package. The `id` identifies the package in
 links and other configuration; the `slug` places its documentation under
 `packages/python/`.
+
+If the package lives in another checkout, declare it under `repositories`
+and select it with `packages[].repository`. Add package-owned pages under the
+package's `content` list. Their source paths start at the package root and
+their mounts start at the package's documentation URL.
 
 Use the [Python](extraction/python.md), [R](extraction/r.md),
 [Julia](extraction/julia.md), [Rust](extraction/rust.md), or

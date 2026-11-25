@@ -13,7 +13,7 @@ fn identical_image_and_download_bytes_share_one_asset() {
         "core/docs/index.md",
         "[download](assets/download.bin) ![image](assets/workspace.svg)\n",
     );
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
+    let sources = assemble_workspace(root.path().join("core/diplodocus.yaml")).unwrap();
     let resolved = resolve_workspace(&sources).unwrap();
     assert_eq!(resolved.assets().len(), 1);
     assert_eq!(
@@ -27,7 +27,7 @@ fn identical_image_and_download_bytes_share_one_asset() {
 async fn generated_reference_errors_point_to_the_authored_cell() {
     let root = support::prepared_acceptance_workspace();
     root.write("python/execution/generated-markdown.qmd", "# Generated reference\n\nA paragraph before the responsible cell.\n\n```{python}\nfrom IPython.display import Markdown, display\nhandle = display(Markdown('Initial display'), display_id=True)\n```\n\n```{python}\nhandle.update(Markdown('[`missing-generated-reference`]'))\n```\n");
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
+    let sources = assemble_workspace(root.path().join("core/diplodocus.yaml")).unwrap();
     let cell_span = sources
         .prepared_pages()
         .values()
@@ -65,7 +65,7 @@ fn encoded_local_names_and_external_urls_preserve_their_meaning() {
         "core/docs/index.md",
         "[download](assets/a%23b.txt) [external](https://example.com/a%2Fb)\n",
     );
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
+    let sources = assemble_workspace(root.path().join("core/diplodocus.yaml")).unwrap();
     let resolved = resolve_workspace(&sources).unwrap();
     assert!(resolved.records().iter().flat_map(|d| &d.references).any(|r| matches!(&r.target, ReferenceTarget::External { url } if url == "https://example.com/a%2Fb")));
 }
@@ -90,7 +90,7 @@ fn links_can_target_anchors_in_pages_visited_earlier() {
     let root = support::prepared_acceptance_workspace();
     root.write("python/docs/aa.qmd", "# Target {#target}\n");
     root.write("python/docs/zz.qmd", "[target](aa.qmd#target)\n");
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
+    let sources = assemble_workspace(root.path().join("core/diplodocus.yaml")).unwrap();
     assert!(resolve_workspace(&sources).is_ok());
 }
 
@@ -103,7 +103,7 @@ fn retargeted_asset_aliases_invalidate_resolution() {
     let alias = root.path().join("core/docs/assets/alias.txt");
     std::os::unix::fs::symlink("first.txt", &alias).unwrap();
     root.write("core/docs/index.md", "[download](assets/alias.txt)\n");
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
+    let sources = assemble_workspace(root.path().join("core/diplodocus.yaml")).unwrap();
     let resolved = resolve_workspace(&sources).unwrap();
     std::fs::remove_file(&alias).unwrap();
     std::os::unix::fs::symlink("second.txt", &alias).unwrap();
@@ -114,8 +114,8 @@ fn retargeted_asset_aliases_invalidate_resolution() {
 fn acceptance_references_and_assets_resolve_without_execution_or_output() {
     let first = support::prepared_acceptance_workspace();
     let second = support::prepared_acceptance_workspace();
-    let a = assemble_workspace(first.path().join("workspace/diplodocus.yaml")).unwrap();
-    let b = assemble_workspace(second.path().join("workspace/diplodocus.yaml")).unwrap();
+    let a = assemble_workspace(first.path().join("core/diplodocus.yaml")).unwrap();
+    let b = assemble_workspace(second.path().join("core/diplodocus.yaml")).unwrap();
     let resolved = resolve_workspace(&a).unwrap();
     assert_eq!(resolved.records(), resolve_workspace(&b).unwrap().records());
     assert_eq!(resolved.assets().len(), 1);
@@ -137,8 +137,8 @@ fn acceptance_references_and_assets_resolve_without_execution_or_output() {
             .iter()
             .any(|r| matches!(&r.target, ReferenceTarget::Asset { .. }))
     );
-    assert!(!first.path().join("workspace/.diplodocus").exists());
-    assert!(!first.path().join("workspace/site").exists());
+    assert!(!first.path().join("core/.diplodocus").exists());
+    assert!(!first.path().join("core/site").exists());
     let portable = serde_json::to_string(resolved.records()).unwrap();
     assert!(!portable.contains(first.path().to_str().unwrap()));
 }
@@ -146,7 +146,7 @@ fn acceptance_references_and_assets_resolve_without_execution_or_output() {
 #[test]
 fn item_resolution_prefers_the_owner_then_requires_workspace_uniqueness() {
     let root = support::prepared_acceptance_workspace();
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
+    let sources = assemble_workspace(root.path().join("core/diplodocus.yaml")).unwrap();
     let mut workspace = sources.workspace().clone();
     let pyfit = resolve_item(&workspace, Some("pyfoo"), "foo.fit").unwrap();
     assert_eq!(
@@ -211,7 +211,7 @@ fn missing_semantic_page_and_anchor_targets_are_errors_with_portable_context() {
         "core/docs/bad.md",
         "# Bad\n\n[`not-found`] [missing](missing.md) [anchor](index.md#absent)\n",
     );
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
+    let sources = assemble_workspace(root.path().join("core/diplodocus.yaml")).unwrap();
     let error = resolve_workspace(&sources).unwrap_err();
     let diagnostics = error.diagnostics();
     for code in [
@@ -231,7 +231,7 @@ fn missing_semantic_page_and_anchor_targets_are_errors_with_portable_context() {
 #[test]
 fn local_assets_are_rechecked_and_active_images_are_rejected() {
     let root = support::prepared_acceptance_workspace();
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
+    let sources = assemble_workspace(root.path().join("core/diplodocus.yaml")).unwrap();
     let resolved = resolve_workspace(&sources).unwrap();
     root.write("core/docs/assets/workspace.svg", "changed");
     assert!(resolved.revalidate().is_err());
@@ -257,7 +257,7 @@ fn invalid_content_images_report_validation_failures_with_source_context() {
             "core/docs/index.md",
             format!("# Palette\n\n![Palette](assets/{filename})\n"),
         );
-        let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
+        let sources = assemble_workspace(root.path().join("core/diplodocus.yaml")).unwrap();
         let error = resolve_workspace(&sources).unwrap_err();
         let diagnostic = error
             .diagnostics()
@@ -363,7 +363,7 @@ fn local_asset_links_cannot_escape_declared_sources_through_symlinks() {
         "[download](assets/outside/private.txt)\n",
     );
     // Directory symlinks are already rejected by authored discovery.
-    assert!(assemble_workspace(root.path().join("workspace/diplodocus.yaml")).is_err());
+    assert!(assemble_workspace(root.path().join("core/diplodocus.yaml")).is_err());
     std::fs::remove_file(root.path().join("core/docs/assets/outside")).unwrap();
     std::os::unix::fs::symlink(
         outside.path().join("private.txt"),
@@ -371,6 +371,6 @@ fn local_asset_links_cannot_escape_declared_sources_through_symlinks() {
     )
     .unwrap();
     root.write("core/docs/index.md", "[download](assets/private.txt)\n");
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
+    let sources = assemble_workspace(root.path().join("core/diplodocus.yaml")).unwrap();
     assert!(resolve_workspace(&sources).is_err());
 }

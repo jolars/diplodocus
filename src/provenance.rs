@@ -13,7 +13,9 @@ use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::configuration::{ExecutionConfigurationError, WorkspaceConfiguration};
+use crate::configuration::{
+    ExecutionConfigurationError, RepositoryConfiguration, WorkspaceConfiguration,
+};
 use crate::configuration_validation::validate_configuration;
 use crate::diagnostics::{Diagnostic, DiagnosticPath};
 use crate::ir::{Fingerprint, InputFingerprint, Repository, TargetReference};
@@ -153,7 +155,8 @@ pub fn collect_static_provenance(
                 source,
             })?;
     }
-    validate_selections(configuration, selections)?;
+    let local = configuration.implicit_repository();
+    validate_selections(configuration, local.as_ref(), selections)?;
     let resolved = resolve_workspace_paths(configuration_path, configuration)?;
     let mut result = StaticProvenance {
         repositories: BTreeMap::new(),
@@ -276,7 +279,7 @@ pub fn collect_static_provenance(
     for (index, (repository, declaration)) in resolved
         .repositories
         .iter()
-        .zip(&configuration.repositories)
+        .zip(configuration.repositories.iter().chain(&local))
         .enumerate()
     {
         let observation = observe_repository(repository, declaration.revision.as_deref());
@@ -330,6 +333,7 @@ fn sorted(files: &[PathBuf]) -> Vec<&PathBuf> {
 
 fn validate_selections(
     configuration: &WorkspaceConfiguration,
+    local: Option<&RepositoryConfiguration>,
     selections: &DeclaredSourceInputs,
 ) -> Result<(), ProvenanceError> {
     for key in selections.extraction.keys() {
@@ -347,6 +351,7 @@ fn validate_selections(
         if !configuration
             .repositories
             .iter()
+            .chain(local)
             .any(|repository| repository.id == *key)
         {
             return Err(ProvenanceError::UnknownSelection {

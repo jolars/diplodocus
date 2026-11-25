@@ -3,7 +3,9 @@
 use std::collections::BTreeMap;
 use std::collections::btree_map::Entry;
 
-use crate::configuration::{ExecutionMode, IncrementalConfiguration, WorkspaceConfiguration};
+use crate::configuration::{
+    ExecutionMode, IncrementalConfiguration, WorkspaceConfiguration, is_local_repository,
+};
 use crate::diagnostics::{
     Diagnostic, DiagnosticCode, DiagnosticEntity, DiagnosticPath, DiagnosticSource, Severity,
 };
@@ -17,7 +19,7 @@ use crate::documents::AuthoredFormat;
 /// are compared exactly as declared, without normalization or inference. Each
 /// later duplicate names its field and the first declaration's field.
 ///
-/// Package and content repository references must name declared repositories.
+/// Explicit repository references must name workspace repositories.
 /// Content owners must be the reserved `project` owner or a declared package ID.
 /// Executable Documenter collections with a package owner require a local checkout.
 /// Concept members must name declared packages; resolving their items requires
@@ -46,6 +48,19 @@ pub fn validate_configuration(configuration: &WorkspaceConfiguration) -> Vec<Dia
     let mut concepts = Names::new(DiagnosticCode::DuplicateConceptId);
 
     for (index, repository) in configuration.repositories.iter().enumerate() {
+        if is_local_repository(&repository.id) {
+            let field = format!("repositories[{index}].id");
+            diagnostics.push(error(
+                DiagnosticCode::InvalidConfiguration,
+                format!(
+                    "{field}: repository ID `{}` is reserved for the configuration checkout",
+                    repository.id
+                ),
+                DiagnosticEntity::Repository {
+                    id: repository.id.clone(),
+                },
+            ));
+        }
         repositories.declare(
             &repository.id,
             format!("repositories[{index}].id"),
@@ -542,7 +557,7 @@ fn check_repository(
     entity: DiagnosticEntity,
     diagnostics: &mut Vec<Diagnostic>,
 ) {
-    if !repositories.contains(repository) {
+    if !is_local_repository(repository) && !repositories.contains(repository) {
         diagnostics.push(error(
             DiagnosticCode::InvalidRepositoryReference,
             format!(

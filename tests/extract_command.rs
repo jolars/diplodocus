@@ -9,8 +9,8 @@ use diplodocus::commands::format_diagnostic;
 use diplodocus::snapshots::Snapshot;
 use diplodocus::validation::resolve_workspace;
 
-const CONFIG: &str = "workspace/diplodocus.yaml";
-const DEFAULT_OUTPUT: &str = "workspace/.diplodocus/documentation.sqlite";
+const CONFIG: &str = "core/diplodocus.yaml";
+const DEFAULT_OUTPUT: &str = "core/.diplodocus/documentation.sqlite";
 
 fn extract(root: &Path, output: Option<&Path>, without_runtimes: bool) -> Output {
     let mut command = Command::new(env!("CARGO_BIN_EXE_diplodocus"));
@@ -145,12 +145,12 @@ fn cli_paths_and_completed_snapshot_match_the_contract() {
         );
         assert!(!default.exists());
     }
-    assert!(!root.path().join("workspace/exports").exists());
+    assert!(!root.path().join("core/exports").exists());
     assert!(!root.path().join("site").exists());
     assert!(
         !root
             .path()
-            .join("workspace/.diplodocus/cache/execution")
+            .join("core/.diplodocus/cache/execution")
             .exists()
     );
     drop(root);
@@ -167,10 +167,9 @@ fn cli_paths_and_completed_snapshot_match_the_contract() {
 #[test]
 fn generated_snapshots_never_become_sources_or_change_input_fingerprints() {
     let root = support::shared_r_workspace();
-    let configuration = root.read(CONFIG).replace(
-        "packages:\n",
-        "  - id: core\n    path: ../core\npackages:\n",
-    );
+    let configuration = root
+        .read("workspace/diplodocus.yaml")
+        .replace("packages:\n", "  - id: core\n    path: .\npackages:\n");
     root.write(
         CONFIG,
         format!(
@@ -419,7 +418,7 @@ fn cli_rejects_every_kind_of_declared_input_before_execution() {
         "python/environment.lock",
         "core/docs",
         "python/python/foo",
-        "workspace",
+        "core",
         ".",
     ] {
         failure(
@@ -433,7 +432,7 @@ fn cli_rejects_every_kind_of_declared_input_before_execution() {
     assert_eq!(
         support::files_under(root.path())
             .into_iter()
-            .filter(|path| !path.starts_with("workspace/.diplodocus/cache/incremental"))
+            .filter(|path| !path.starts_with("core/.diplodocus/cache/incremental"))
             .collect::<Vec<_>>(),
         before.into_iter().map(|(path, _)| path).collect::<Vec<_>>()
     );
@@ -441,7 +440,7 @@ fn cli_rejects_every_kind_of_declared_input_before_execution() {
     assert!(
         !root
             .path()
-            .join("workspace/.diplodocus/cache/execution")
+            .join("core/.diplodocus/cache/execution")
             .exists()
     );
 }
@@ -460,7 +459,7 @@ fn cli_rejects_input_aliases_and_a_default_destination_that_is_an_input() {
         root.path().join("docs-alias"),
     )
     .unwrap();
-    fs::create_dir_all(root.path().join("workspace/.diplodocus")).unwrap();
+    fs::create_dir_all(root.path().join("core/.diplodocus")).unwrap();
     symlink(&asset, root.path().join(DEFAULT_OUTPUT)).unwrap();
     for output in [
         Some(Path::new("asset-alias.sqlite")),
@@ -574,9 +573,9 @@ fn cli_executes_python_and_r_and_publishes_portable_outputs_and_assets() {
 #[cfg(target_os = "linux")]
 fn executable_workspace() -> support::TestWorkspace {
     let root = support::TestWorkspace::new();
-    root.write(CONFIG, "project:\n  name: \"Extraction\"\nrepositories:\n  - id: \"docs\"\n    path: \"../repo\"\ncontent:\n  - id: \"guide\"\n    owner: \"project\"\n    repository: \"docs\"\n    path: \"docs\"\n    mount: \"\"\n    format: \"qmd\"\n    execution:\n      mode: \"execute\"\n      engine: \"jupyter\"\n      kernel: \"python3\"\n");
+    root.write(CONFIG, "project:\n  name: \"Extraction\"\ncontent:\n  - id: \"guide\"\n    path: \"docs\"\n    mount: \"\"\n    format: \"qmd\"\n    execution:\n      mode: \"execute\"\n      engine: \"jupyter\"\n      kernel: \"python3\"\n");
     root.write(
-        "repo/docs/index.qmd",
+        "core/docs/index.qmd",
         "# Before execution {#before-execution}\n",
     );
     root
@@ -610,7 +609,7 @@ fn cli_execution_and_generated_reference_failures_preserve_the_previous_snapshot
     ] {
         root.write(CONFIG, config.replace("python3", kernel));
         root.write(
-            "repo/docs/index.qmd",
+            "core/docs/index.qmd",
             format!("# Failure\n\n```{{python}}\n{figure}\n```\n\n```{{python}}\n{code}\n```\n"),
         );
         failure(&extract(root.path(), None, false), diagnostic);
@@ -630,7 +629,7 @@ fn cli_execution_and_generated_reference_failures_preserve_the_previous_snapshot
     }
     root.write(CONFIG, config);
     root.write(
-        "repo/docs/index.qmd",
+        "core/docs/index.qmd",
         format!("# Recovered\n\n```{{python}}\n{figure}\n```\n"),
     );
     success(&extract(root.path(), None, false));
@@ -643,17 +642,17 @@ fn cli_protects_assets_referenced_only_by_generated_markdown() {
     use diplodocus::validation::ReferenceTarget;
 
     let root = executable_workspace();
-    root.write("repo/docs/download.bin", "keep this download");
-    root.write("repo/docs/nested/generated.qmd", "# Generated references\n\n```{python}\nfrom IPython.display import Markdown, display\ndisplay(Markdown('[Download](../download.bin) [Page](../index.qmd#before-execution)'))\n```\n");
+    root.write("core/docs/download.bin", "keep this download");
+    root.write("core/docs/nested/generated.qmd", "# Generated references\n\n```{python}\nfrom IPython.display import Markdown, display\ndisplay(Markdown('[Download](../download.bin) [Page](../index.qmd#before-execution)'))\n```\n");
     failure(
         &extract(
             root.path(),
-            Some(Path::new("repo/docs/download.bin")),
+            Some(Path::new("core/docs/download.bin")),
             false,
         ),
         "output overlaps a declared input",
     );
-    assert_eq!(root.read("repo/docs/download.bin"), "keep this download");
+    assert_eq!(root.read("core/docs/download.bin"), "keep this download");
     assert!(!root.path().join(DEFAULT_OUTPUT).exists());
     success(&extract(root.path(), None, false));
     let portable = tempfile::tempdir().unwrap();

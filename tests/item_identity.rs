@@ -222,8 +222,8 @@ fn relocation_source_edits_and_url_changes_do_not_enter_identity_inputs() {
         })
     };
     b.write(
-        "workspace/diplodocus.yaml",
-        b.read("workspace/diplodocus.yaml")
+        "core/diplodocus.yaml",
+        b.read("core/diplodocus.yaml")
             .replace("slug: \"python\"", "slug: \"new-python-route\""),
     );
     assert_eq!(identities(&a), identities(&b));

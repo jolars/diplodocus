@@ -10,7 +10,7 @@ use diplodocus::documents::AuthoredFormat;
 mod support;
 
 const COMPLETE: &str = include_str!("fixtures/configuration/complete.yaml");
-const ACCEPTANCE: &str = include_str!("fixtures/acceptance/workspace/diplodocus.yaml");
+const ACCEPTANCE: &str = include_str!("fixtures/acceptance/core/diplodocus.yaml");
 
 #[test]
 fn header_api_navigation_defaults_to_dropdown_and_round_trips() {
@@ -413,16 +413,20 @@ fn presentation_settings_accept_only_portable_display_metadata() {
 }
 
 #[test]
-fn logo_declarations_require_a_repository_and_portable_image_path() {
+fn logo_declarations_accept_local_images_and_require_portable_paths() {
     let source = "project:\n  name: \"Docs\"\npresentation:\n  logo:\n    repository: \"docs\"\n    path: \"assets/logo.svg\"\n";
     let config = parse_configuration(source).unwrap();
+    let local = parse_configuration(&source.replace("    repository: \"docs\"\n", "")).unwrap();
+    assert_eq!(
+        local.presentation.logo.unwrap().path.as_str(),
+        "assets/logo.svg"
+    );
     assert_eq!(
         parse_configuration(&serde_saphyr::to_string(&config).unwrap()).unwrap(),
         config
     );
     for settings in [
         "repository: \"docs\"",
-        "path: \"logo.svg\"",
         "repository: \"docs\"\npath: 42",
         "repository: \"docs\"\npath: \"/logo.svg\"",
         "repository: \"docs\"\npath: \"../logo.svg\"",
@@ -674,12 +678,9 @@ fn omitted_and_explicitly_empty_workspace_inputs_are_equivalent() {
 #[test]
 fn loading_populated_sources_never_discovers_workspace_inputs() {
     let workspace = support::acceptance_workspace();
-    let path = workspace.path().join("workspace/diplodocus.yaml");
+    let path = workspace.path().join("core/diplodocus.yaml");
 
-    workspace.write(
-        "workspace/diplodocus.yaml",
-        "project:\n  name: \"Minimal\"\n",
-    );
+    workspace.write("core/diplodocus.yaml", "project:\n  name: \"Minimal\"\n");
     let minimal = load_configuration(&path).unwrap();
     assert!(minimal.repositories.is_empty());
     assert!(minimal.packages.is_empty());
@@ -693,7 +694,7 @@ fn loading_populated_sources_never_discovers_workspace_inputs() {
         .unwrap()
         .retain(|collection| collection["owner"].as_str() == Some("project"));
     workspace.write(
-        "workspace/diplodocus.yaml",
+        "core/diplodocus.yaml",
         serde_saphyr::to_string(&value).unwrap(),
     );
     let docs_only = load_configuration(&path).unwrap();
@@ -709,7 +710,7 @@ fn loading_populated_sources_never_discovers_workspace_inputs() {
         .unwrap()
         .insert("packages".into(), packages);
     workspace.write(
-        "workspace/diplodocus.yaml",
+        "core/diplodocus.yaml",
         serde_saphyr::to_string(&value).unwrap(),
     );
     let config = load_configuration(&path).unwrap();
@@ -729,11 +730,11 @@ fn loading_populated_sources_never_discovers_workspace_inputs() {
 #[test]
 fn loading_requires_explicit_targets_even_when_package_sources_are_present() {
     let workspace = support::acceptance_workspace();
-    let path = workspace.path().join("workspace/diplodocus.yaml");
+    let path = workspace.path().join("core/diplodocus.yaml");
     let mut value: serde_json::Value = serde_saphyr::from_str(ACCEPTANCE).unwrap();
     table_mut(&mut value, &["packages"]).remove("targets");
     workspace.write(
-        "workspace/diplodocus.yaml",
+        "core/diplodocus.yaml",
         serde_saphyr::to_string(&value).unwrap(),
     );
 
@@ -775,7 +776,6 @@ const TABLES: &[(&[&str], &[&str])] = &[
             "name",
             "slug",
             "ecosystem",
-            "repository",
             "path",
             "metadata-path",
             "targets",
@@ -785,10 +785,7 @@ const TABLES: &[(&[&str], &[&str])] = &[
         &["packages", "targets"],
         &["id", "extractor", "path", "role"],
     ),
-    (
-        &["content"],
-        &["id", "owner", "repository", "path", "mount", "format"],
-    ),
+    (&["content"], &["path", "mount"]),
     (&["content", "execution"], &[]),
     (&["concepts"], &["id", "kind", "members"]),
     (&["concepts", "members"], &["package", "item"]),

@@ -415,7 +415,9 @@ impl WorkspaceSources {
                 }
             })?;
         self.bundles.revalidate()?;
-        if !self.bundle_export {
+        if self.bundle_export {
+            bundles::prepare_export(&mut configuration)?;
+        } else {
             rmarkdown::collections(&self.configuration_path, &mut configuration)?;
         }
         if configuration != self.configuration {

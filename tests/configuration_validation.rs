@@ -7,7 +7,7 @@ use diplodocus::diagnostics::{
 };
 
 const COMPLETE: &str = include_str!("fixtures/configuration/complete.yaml");
-const ACCEPTANCE: &str = include_str!("fixtures/acceptance/workspace/diplodocus.yaml");
+const ACCEPTANCE: &str = include_str!("fixtures/acceptance/core/diplodocus.yaml");
 
 fn configuration() -> WorkspaceConfiguration {
     parse_configuration(COMPLETE).unwrap()

@@ -10,7 +10,7 @@ use support::{AcceptanceRegistry, TestWorkspace};
 #[test]
 fn baseline_authored_pages_have_no_parser_diagnostics() {
     let workspace = support::acceptance_workspace();
-    let declared = ["workspace/diplodocus.yaml", "julia/diplodocus.yaml"]
+    let declared = ["core/diplodocus.yaml", "julia/diplodocus.yaml"]
         .into_iter()
         .flat_map(|config| support::authored_sources(&workspace, config))
         .map(|(path, _)| path)
@@ -541,10 +541,7 @@ fn validate_local_links(workspace: &TestWorkspace, config: &str) {
 
 #[test]
 fn baseline_has_resolvable_local_links_and_assets() {
-    validate_local_links(
-        &support::acceptance_workspace(),
-        "workspace/diplodocus.yaml",
-    );
+    validate_local_links(&support::acceptance_workspace(), "core/diplodocus.yaml");
 }
 
 #[test]
@@ -552,9 +549,7 @@ fn missing_authored_assets_fail_the_corpus_check() {
     let workspace = support::acceptance_workspace();
     workspace.remove("core/docs/assets/workspace.svg");
     assert!(
-        std::panic::catch_unwind(|| {
-            validate_local_links(&workspace, "workspace/diplodocus.yaml")
-        })
-        .is_err()
+        std::panic::catch_unwind(|| { validate_local_links(&workspace, "core/diplodocus.yaml") })
+            .is_err()
     );
 }

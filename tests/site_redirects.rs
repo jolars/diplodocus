@@ -229,7 +229,7 @@ fn hosting_limits_fail_before_rules_are_silently_dropped() {
 fn redirect_destinations_follow_package_visibility() {
     for visibility in ["public", "internal", "hidden"] {
         let root = support::prepared_acceptance_workspace();
-        let mut configuration = support::fixture_configuration(&root, "workspace/diplodocus.yaml");
+        let mut configuration = support::fixture_configuration(&root, "core/diplodocus.yaml");
         configuration["packages"][1]
             .as_object_mut()
             .unwrap()
@@ -241,11 +241,11 @@ fn redirect_destinations_follow_package_visibility() {
             }),
         );
         root.write(
-            "workspace/diplodocus.yaml",
+            "core/diplodocus.yaml",
             serde_saphyr::to_string(&configuration).unwrap(),
         );
         let result = commands::check(CheckOptions {
-            config: root.path().join("workspace/diplodocus.yaml"),
+            config: root.path().join("core/diplodocus.yaml"),
         });
         if visibility == "hidden" {
             assert!(

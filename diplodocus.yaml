@@ -1,8 +1,9 @@
 project:
   name: "Diplodocus"
+  repository-url: https://github.com/jolars/diplodocus
 presentation:
   asset-directories:
-    - { repository: diplodocus, path: assets/public, publish: "" }
+    - { path: assets/public, publish: "" }
   icons:
     - { path: favicon-96x96.png, type: image/png, sizes: 96x96 }
     - { path: favicon.svg, type: image/svg+xml }
@@ -140,10 +141,8 @@ presentation:
       - title: "Preview as you write"
         description: "Check your sources, preview changes locally, and build a static site ready to publish."
   logo:
-    repository: "diplodocus"
     path: "assets/brand/diplodocus-logo-large.png"
   open-graph:
-    repository: "diplodocus"
     path: "assets/brand/og.png"
     alt: "Diplodocus: Polyglot documentation for monorepos. A dinosaur writes in an open book."
   footer:
@@ -160,38 +159,9 @@ presentation:
       - label: "Report an issue"
         url: "https://github.com/jolars/diplodocus/issues"
     built-with: true
-repositories:
-  - id: "diplodocus"
-    path: "."
-    url: "https://github.com/jolars/diplodocus"
 content:
-  - id: "guide"
-    owner: "project"
-    repository: "diplodocus"
-    path: "docs/guide"
-    mount: "guide"
-    format: "gfm"
-  - id: "reference"
-    owner: "project"
-    repository: "diplodocus"
-    path: "docs/reference"
-    mount: "reference"
-    format: "gfm"
-  - id: "design"
-    owner: "project"
-    repository: "diplodocus"
-    path: "docs/development/design.md"
-    mount: "development"
-    format: "gfm"
-  - id: "changelog"
-    owner: "project"
-    repository: "diplodocus"
-    path: "CHANGELOG.md"
-    mount: "development"
-    format: "gfm"
-  - id: "contributing"
-    owner: "project"
-    repository: "diplodocus"
-    path: "CONTRIBUTING.md"
-    mount: "development"
-    format: "gfm"
+  - { path: docs/guide, mount: guide }
+  - { path: docs/reference, mount: reference }
+  - { path: docs/development/design.md, mount: development }
+  - { path: CHANGELOG.md, mount: development }
+  - { path: CONTRIBUTING.md, mount: development }

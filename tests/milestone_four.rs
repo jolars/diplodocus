@@ -7,8 +7,7 @@ use diplodocus::ir::{
 #[test]
 fn native_python_discovery_retains_stub_signatures_and_parser_provenance() {
     let workspace = support::prepared_acceptance_workspace();
-    let result =
-        support::discover_api(&workspace.path().join("workspace/diplodocus.yaml"), "pyfoo");
+    let result = support::discover_api(&workspace.path().join("core/diplodocus.yaml"), "pyfoo");
     let extraction = result.extraction();
     let ProvenanceActivity::Extraction { mode, parsers, .. } = &extraction.activity else {
         panic!("extraction");

@@ -22,21 +22,11 @@ In `diplodocus.yaml`, declare the project and its documentation directory:
 ```yaml
 project:
   name: "My project"
-repositories:
-  - id: "project"
-    path: "."
-content:
-  - id: "guide"
-    owner: "project"
-    repository: "project"
-    path: "docs"
-    mount: ""
-    format: "gfm"
+content: docs
 ```
 
-The repository path `.` means the directory containing the configuration. The
-collection reads Markdown files from `docs`. Its empty `mount` puts the pages at
-the site root.
+Diplodocus reads Markdown from `docs` beside the configuration file and
+publishes those pages at the site root.
 
 ## Write two pages
 

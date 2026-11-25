@@ -36,10 +36,11 @@ pub use preparation::{PreparedDocument, QmdPreparation, prepare_collection_docum
 pub use rmarkdown::{RmdPreparation, parse_evaluated_rmd, prepare_rmd_document};
 
 /// Authored Markdown profile selected by a content collection.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum AuthoredFormat {
     /// Diplodocus's safe GitHub Flavored Markdown profile.
+    #[default]
     Gfm,
     /// Diplodocus's documented Quarto Markdown profile.
     Qmd,

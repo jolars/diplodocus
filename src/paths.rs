@@ -389,8 +389,10 @@ pub fn resolve_workspace_paths(
         PathType::Directory,
     )?;
 
-    let mut repositories = Vec::with_capacity(configuration.repositories.len());
-    for (index, repository) in configuration.repositories.iter().enumerate() {
+    let local = configuration.implicit_repository();
+    let mut repositories =
+        Vec::with_capacity(configuration.repositories.len() + usize::from(local.is_some()));
+    for (index, repository) in configuration.repositories.iter().chain(&local).enumerate() {
         let field = format!("repositories[{index}] (`{}`).path", repository.id);
         let path = resolver.resolve_path(
             &field,
@@ -508,6 +510,15 @@ pub fn resolve_workspace_paths(
             &repositories,
         )?;
         let root = &repositories[repository_index].path;
+        if collection.owner == "project" && !root.starts_with(&configuration_directory) {
+            return Err(resolver.error(
+                &format!("{field}.repository"),
+                PathResolutionErrorKind::InvalidPath {
+                    path: root.clone(),
+                    reason: "project content must be in the configuration checkout; move these pages beside the configuration or declare them as package content",
+                },
+            ));
+        }
         let path = resolver.child(
             &format!("{field}.path"),
             &collection.path,

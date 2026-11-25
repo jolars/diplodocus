@@ -14,10 +14,10 @@ choose their revisions.
 
 A package represents an API. For example, a Python module that calls C++ can
 have its own Python reference. If you also publish the C++ interface, declare
-it as a separate package. Authored pages can belong to either package or to the
-project as a whole. A guide can live anywhere in a declared repository. Its
-owner gives it a context for navigation and links, while its collection's
-mount determines its URL.
+it as a separate package. Shared guides live in the configuration checkout.
+Packages can also publish guides from their own sources. The owner gives a
+guide its context for navigation and links, and the collection's mount
+determines its URL.
 
 ## Extract APIs in a prepared environment {#extraction-works-in-a-prepared-environment}
 

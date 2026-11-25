@@ -8,20 +8,20 @@ use snapbox::cmd::{Command, cargo_bin};
 fn check_runs_the_static_pipeline_with_missing_kernels_and_preserves_sources() {
     let root = support::prepared_acceptance_workspace();
     let config = root
-        .read("workspace/diplodocus.yaml")
+        .read("core/diplodocus.yaml")
         .replace("kernel: \"python3\"", "kernel: \"must-not-be-discovered\"")
         .replace("kernel: \"ir\"", "kernel: \"also-missing\"");
-    root.write("workspace/diplodocus.yaml", config);
+    root.write("core/diplodocus.yaml", config);
     root.write("python/execution/must-not-run.qmd", "```{python}\nfrom pathlib import Path\nPath('execution-marker').write_text('executed')\n```\n");
     let before = tree(root.path());
     check(CheckOptions {
-        config: root.path().join("workspace/diplodocus.yaml"),
+        config: root.path().join("core/diplodocus.yaml"),
     })
     .unwrap();
     assert_eq!(tree(root.path()), before);
     Command::new(cargo_bin("diplodocus"))
         .current_dir(root.path())
-        .args(["check", "--config", "workspace/diplodocus.yaml"])
+        .args(["check", "--config", "core/diplodocus.yaml"])
         .assert()
         .success()
         .stdout_eq("");
@@ -37,7 +37,7 @@ fn check_reports_reference_failures_repeatedly_without_publishing() {
     for _ in 0..2 {
         let result = std::process::Command::new(cargo_bin("diplodocus"))
             .current_dir(root.path())
-            .args(["check", "--quiet", "--config", "workspace/diplodocus.yaml"])
+            .args(["check", "--quiet", "--config", "core/diplodocus.yaml"])
             .output()
             .unwrap();
         assert_eq!(result.status.code(), Some(1));

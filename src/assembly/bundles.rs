@@ -46,8 +46,29 @@ fn failure(path: &Path, message: impl ToString) -> AssemblyError {
     }
 }
 
+pub(super) fn prepare_export(config: &mut WorkspaceConfiguration) -> Result<(), AssemblyError> {
+    if let [package] = config.packages.as_mut_slice()
+        && config.repositories.is_empty()
+        && crate::configuration::is_local_repository(&package.repository)
+    {
+        // Bundles from different packages need distinct repository identities when imported together.
+        let id = format!("@local:{}", package.id);
+        config
+            .repositories
+            .push(crate::configuration::RepositoryConfiguration {
+                id: id.clone(),
+                path: ".".into(),
+                url: config.project.repository_url.take(),
+                source_link_template: None,
+                revision: None,
+            });
+        package.repository = id;
+    }
+    validate_export(config)
+}
+
 pub(super) fn validate_export(config: &WorkspaceConfiguration) -> Result<(), AssemblyError> {
-    if config.repositories.len() != 1
+    if config.repositories.len() + usize::from(config.implicit_repository().is_some()) != 1
         || config.packages.len() != 1
         || !config.package_bundles.is_empty()
         || !config.content.is_empty()

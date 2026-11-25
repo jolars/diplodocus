@@ -6,7 +6,7 @@ use diplodocus::validation::resolve_workspace;
 
 fn snapshot() -> Snapshot {
     let root = support::prepared_acceptance_workspace();
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
+    let sources = assemble_workspace(root.path().join("core/diplodocus.yaml")).unwrap();
     let resolved = resolve_workspace(&sources).unwrap();
     Snapshot::from_sources(&sources, &resolved).unwrap()
 }
@@ -14,7 +14,7 @@ fn snapshot() -> Snapshot {
 #[test]
 fn portable_snapshot_round_trip_needs_no_sources_or_sidecars() {
     let root = support::prepared_acceptance_workspace();
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
+    let sources = assemble_workspace(root.path().join("core/diplodocus.yaml")).unwrap();
     let resolved = resolve_workspace(&sources).unwrap();
     let mut workspace = sources.workspace().clone();
     workspace.diagnostics = resolved.diagnostics().clone();
@@ -144,7 +144,7 @@ fn rejects_malformed_json_before_record_fingerprint_validation() {
 #[test]
 fn refresh_replaces_records_and_failed_publication_preserves_destination() {
     let root = support::prepared_acceptance_workspace();
-    let config = root.path().join("workspace/diplodocus.yaml");
+    let config = root.path().join("core/diplodocus.yaml");
     let target = tempfile::tempdir().unwrap();
     let path = target.path().join("snapshot.sqlite");
     let refresh = || {

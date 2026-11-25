@@ -19,8 +19,8 @@ fn simple_workspace() -> support::TestWorkspace {
 fn assembly_combines_declared_packages_pages_concepts_and_evidence_portably() {
     let first = support::prepared_acceptance_workspace();
     let second = support::prepared_acceptance_workspace();
-    let a = assemble_workspace(first.path().join("workspace/diplodocus.yaml")).unwrap();
-    let b = assemble_workspace(second.path().join("workspace/diplodocus.yaml")).unwrap();
+    let a = assemble_workspace(first.path().join("core/diplodocus.yaml")).unwrap();
+    let b = assemble_workspace(second.path().join("core/diplodocus.yaml")).unwrap();
     assert_eq!(a.workspace(), b.workspace());
     let workspace = a.workspace();
     assert_eq!(workspace.packages.len(), 2);
@@ -52,13 +52,13 @@ fn assembly_combines_declared_packages_pages_concepts_and_evidence_portably() {
             .unwrap()
             .contains(first.path().to_str().unwrap())
     );
-    assert!(!first.path().join("workspace/.diplodocus").exists());
+    assert!(!first.path().join("core/.diplodocus").exists());
 }
 
 #[test]
 fn overlapping_targets_fail_instead_of_selecting_one_fragment() {
     let root = support::prepared_acceptance_workspace();
-    let mut configuration = support::fixture_configuration(&root, "workspace/diplodocus.yaml");
+    let mut configuration = support::fixture_configuration(&root, "core/diplodocus.yaml");
     let mut overlap = configuration["packages"][0]["targets"][0].clone();
     overlap["id"] = "overlap".into();
     configuration["packages"][0]["targets"]
@@ -66,11 +66,11 @@ fn overlapping_targets_fail_instead_of_selecting_one_fragment() {
         .unwrap()
         .push(overlap);
     root.write(
-        "workspace/diplodocus.yaml",
+        "core/diplodocus.yaml",
         serde_saphyr::to_string(&configuration).unwrap(),
     );
     let AssemblyError::Diagnostics(diagnostics) =
-        assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap_err()
+        assemble_workspace(root.path().join("core/diplodocus.yaml")).unwrap_err()
     else {
         panic!("expected assembly diagnostics")
     };
@@ -110,7 +110,7 @@ async fn execution_projects_typed_outputs_and_staging_is_owned_by_the_workspace(
 #[tokio::test]
 async fn acceptance_workspace_executes_only_the_four_authorized_python_and_r_pages() {
     let root = support::prepared_acceptance_workspace();
-    let sources = assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap();
+    let sources = assemble_workspace(root.path().join("core/diplodocus.yaml")).unwrap();
     let stage = tempfile::tempdir().unwrap();
     let result = sources.execute(settings(stage.path())).await.unwrap();
     assert_eq!(result.executed_pages().len(), 4);
@@ -234,12 +234,12 @@ async fn disabled_vetoed_and_candidate_free_pages_never_discover_or_stage() {
 fn invalid_static_inputs_and_unknown_concept_members_stop_assembly() {
     let root = support::prepared_acceptance_workspace();
     root.write(
-        "workspace/diplodocus.yaml",
-        root.read("workspace/diplodocus.yaml")
+        "core/diplodocus.yaml",
+        root.read("core/diplodocus.yaml")
             .replace("item: \"foo.fit\"", "item: \"foo.missing\""),
     );
     let AssemblyError::Diagnostics(diagnostics) =
-        assemble_workspace(root.path().join("workspace/diplodocus.yaml")).unwrap_err()
+        assemble_workspace(root.path().join("core/diplodocus.yaml")).unwrap_err()
     else {
         panic!("diagnostics")
     };

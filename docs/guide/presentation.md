@@ -306,8 +306,9 @@ dark-mode artwork. To show a logo only in the navbar, set only `header.logo`.
 The `repository` and `path` fields directly under each `logo` select the
 light-mode image. If you omit `dark`, that image appears in both themes.
 
-Each image's `repository` must match a declared `repositories` ID. Its `path`
-is relative to the repository root and must name an SVG, PNG, or JPEG file.
+Image paths are relative to the configuration directory by default. To select a
+different checkout, set `repository` to a declared repository ID. Logo files
+must be SVG, PNG, or JPEG.
 Images can live outside content collections. Use forward slashes without
 leading slashes or `.` or `..` components. Symlinks must stay inside the
 repository. `serve` rebuilds when any configured logo image changes.

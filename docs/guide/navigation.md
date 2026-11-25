@@ -39,8 +39,6 @@ whose index already links to its entries, show only the collection's root index:
 ```yaml
 content:
   - id: datasets
-    owner: project
-    repository: docs
     path: generated/datasets
     mount: datasets
     format: gfm

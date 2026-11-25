@@ -52,8 +52,7 @@ force fresh discovery and execution.
 
 To publish Julia Markdown pages with Documenter syntax, declare a collection
 with `format: documenter` and point its `path` to the directory of `.md` files.
-Use `owner: project` for shared guides or the Julia package ID for package
-guides. Use `@ref` for links, `@docs` to insert documentation for selected
+Use top-level `content` for shared guides or the package's `content` list for package guides. Use `@ref` for links, `@docs` to insert documentation for selected
 bindings or methods, `@autodocs` to select documented items from named modules,
 and `@index` to list the entries assembled in the collection.
 

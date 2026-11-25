@@ -17,10 +17,10 @@ strings, for boolean options.
 | --- | --- | --- | --- |
 | `project` | mapping | Required | Project identity. |
 | `presentation` | mapping | Built-in presentation | Site metadata, navigation, branding, and footer. |
-| `repositories` | list | `[]` | Local source checkouts. |
+| `repositories` | list | `[]` | Named source checkouts, typically for packages outside the configuration checkout. |
 | `packages` | list | `[]` | Packages or components to document. |
 | `package-bundles` | list | `[]` | API bundles, each with a producer `package` ID and either a config-relative `path` or a pinned `github-release`. |
-| `content` | list | `[]` | Authored page collections. |
+| `content` | path or list | `[]` | Project documentation directory or authored collections. |
 | `components` | list | `[]` | Prebuilt browser bundles used by authored pages. |
 | `concepts` | list | `[]` | Groups of corresponding API items. |
 | `relationships` | list | `[]` | Implementation and dependency relationships between packages. |
@@ -30,10 +30,12 @@ strings, for boolean options.
 | Option | Type | Default | Purpose |
 | --- | --- | --- | --- |
 | `name` | string | Required | Project display name and default site title. |
+| `repository-url` | string | Unset | Upstream URL for the configuration checkout. GitHub URLs support automatic source links. |
 
 ## `repositories`
 
-Each entry declares one local checkout. Repository IDs must be unique.
+Each entry names a local source checkout. Repository IDs must be unique.
+Sources beside the configuration can omit the repository field.
 
 | Option | Type | Default | Purpose |
 | --- | --- | --- | --- |
@@ -83,9 +85,10 @@ boundaries.
 | `name` | string | Required | Package display name. |
 | `slug` | string | Required | URL segment beneath `packages/`. |
 | `ecosystem` | string | Required | Package language: `python`, `r`, `julia`, `rust`, or `cpp`. |
-| `repository` | string | Required | Declared repository ID. |
+| `repository` | string | Configuration checkout | Checkout containing the package. |
 | `path` | path | Required | Package root, relative to its repository. |
 | `metadata-path` | path | Required | Metadata file, relative to the package root. |
+| `content` | list | `[]` | [Authored collections](#content) relative to this package root. |
 | `overview` | path | `README.md`, then package description | Optional `.md` file relative to the package root. An authored package index takes precedence. |
 | `kind` | string | `package` | `package` for a distribution or `component` for an internal component. |
 | `visibility` | string | `public` | Navigation and search visibility, described below. |
@@ -206,22 +209,27 @@ Features must be individual, nonempty Cargo feature names, without commas,
 whitespace, control characters, or a leading `-`. All features are never
 enabled implicitly. See [Rust extraction](../guide/extraction/rust.md).
 
-## `content`
+## `content` {#content}
 
-Each entry declares a directory or a single authored file. Collection IDs must
-be unique.
+Set `content: docs` to publish the GFM pages in `docs` at the site root.
+Use a list to select specific files or directories, set mounts, or choose a
+different format. Project pages must stay within the configuration checkout.
+Package pages belong under `packages[].content`, where source and execution
+paths are relative to the package and mounts are relative to its site URL.
 
 | Option | Type | Default | Purpose |
 | --- | --- | --- | --- |
-| `id` | string | Required | Collection identifier. |
-| `owner` | string | Required | `project` for shared pages, or a declared package ID. |
-| `repository` | string | Required | Declared repository ID. |
-| `path` | path | Required | Source directory or file, relative to the repository. |
+| `id` | string | Derived from owner, path, and mount | Workspace-wide collection identifier. Set an explicit ID to retain page identities when moving or remounting the collection. |
+| `path` | path | Required | Source directory or file, relative to the config directory for project pages or the package root for package pages. |
 | `mount` | string | Required | URL directory beneath the owner's documentation root. `""` uses that root. |
-| `format` | string | Required | `gfm`, `qmd`, `rmd`, or `documenter`. |
+| `format` | string | `gfm` | `gfm`, `qmd`, `rmd`, or `documenter`. |
 | `navigation` | string | `all` | `all`, `index`, or `none` for automatic sidebar inclusion. |
 | `incremental` | mapping | Automatic reuse | Tracked dependencies and extra inputs; see [incremental preparation](#incremental-preparation). |
 | `execution` | mapping | Depends on format | Collection execution settings, described below. |
+
+Existing top-level collections can still declare `owner` and `repository`.
+Their paths start at the selected checkout. A project collection's selected
+root must stay within the configuration checkout.
 
 Formats select `.md` files for `gfm` and `documenter`, `.qmd` for `qmd`, and
 `.Rmd` or `.rmd` for `rmd`. A single-file collection retains its basename and
@@ -235,15 +243,15 @@ still link to those pages. See [navigation](../guide/navigation.md).
 
 ### Collection execution {#collection-execution}
 
-Fields in `content[].execution`:
+Fields in a collection’s `execution` mapping:
 
 | Option | Type | Default | Purpose |
 | --- | --- | --- | --- |
 | `mode` | string | `execute` for `rmd`; `never` otherwise | `never` keeps code illustrative; `execute` requests evaluation. |
 | `engine` | string | `knitr` for `rmd`; unset otherwise | `jupyter`, `knitr`, or `julia`, as allowed by the format. |
 | `kernel` | string | Unset | Required Jupyter kernelspec name for executable QMD. |
-| `julia-project` | path | Unset | Required prepared project file for executable Documenter pages, relative to the repository. |
-| `declared-environment-inputs` | list of paths | `[]` | Additional repository-relative files recorded as execution inputs. |
+| `julia-project` | path | Unset | Required prepared project file for executable Documenter pages, relative to the collection’s path base. |
+| `declared-environment-inputs` | list of paths | `[]` | Additional files recorded as execution inputs, relative to the collection’s path base. |
 
 The supported combinations are:
 
@@ -451,7 +459,7 @@ Fields in each `presentation.assets` entry:
 
 | Option | Type | Default | Purpose |
 | --- | --- | --- | --- |
-| `repository` | string | Required | Declared repository containing the file. |
+| `repository` | string | Configuration checkout | Repository containing the file. |
 | `path` | path | Required | Normalized repository-relative source file path. |
 | `publish` | path | Required | Normalized site-relative publication path, without a hosting prefix. |
 
@@ -465,7 +473,7 @@ Fields in each `presentation.asset-directories` entry:
 
 | Option | Type | Default | Purpose |
 | --- | --- | --- | --- |
-| `repository` | string | Required | Declared repository containing the directory. |
+| `repository` | string | Configuration checkout | Repository containing the directory. |
 | `path` | path | Required | Normalized repository-relative source directory. |
 | `publish` | string | Required | Normalized site-relative destination prefix. Use `""` for the site root. |
 
@@ -504,7 +512,7 @@ Both `presentation.logo` and `presentation.header.logo` accept these fields:
 
 | Option | Type | Default | Purpose |
 | --- | --- | --- | --- |
-| `repository` | string | Required | Repository containing the logo. |
+| `repository` | string | Configuration checkout | Repository containing the logo. |
 | `path` | path | Required | Repository-relative SVG, PNG, or JPEG file. |
 | `dark` | mapping | Unset | Dark-mode image with its own `repository` and `path`. Omit to use the same image in both themes. |
 
@@ -518,7 +526,7 @@ Fields in `presentation.open-graph`:
 
 | Option | Type | Default | Purpose |
 | --- | --- | --- | --- |
-| `repository` | string | Required | Repository containing the preview image. |
+| `repository` | string | Configuration checkout | Repository containing the preview image. |
 | `path` | path | Required | Repository-relative PNG or JPEG file. |
 | `alt` | string | Required | Nonempty accessible description of the image. |
 
@@ -610,7 +618,7 @@ Each entry declares a prebuilt browser bundle:
 | Option | Type | Default | Purpose |
 | --- | --- | --- | --- |
 | `id` | string | Required | Name used in authored component blocks. |
-| `repository` | string | Required | Repository containing the bundle. |
+| `repository` | string | Configuration checkout | Repository containing the bundle. |
 | `path` | path | Required | Repository-relative bundle directory. |
 | `module` | path | Required | Bundle-relative ES module exporting `mount`. |
 | `stylesheets` | list of paths | `[]` | Bundle-relative stylesheets loaded before mounting. |

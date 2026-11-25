@@ -108,7 +108,7 @@ fn tabsets_retain_attributes_content_and_source_spans_in_each_profile() {
 #[test]
 fn acceptance_authored_output_matches_goldens() {
     let workspace = support::acceptance_workspace();
-    for (path, profile) in support::authored_sources(&workspace, "workspace/diplodocus.yaml") {
+    for (path, profile) in support::authored_sources(&workspace, "core/diplodocus.yaml") {
         let format = if profile == "gfm" {
             AuthoredFormat::Gfm
         } else {

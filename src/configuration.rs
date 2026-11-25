@@ -12,7 +12,7 @@ use std::collections::{BTreeMap, HashMap};
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use serde::de::Error as _;
+use serde::de::{Error as _, SeqAccess, Visitor, value::SeqAccessDeserializer};
 use serde::{Deserialize, Deserializer, Serialize};
 use thiserror::Error;
 
@@ -24,7 +24,7 @@ use crate::ir::SourceSpan;
 
 /// The declarations in a root `diplodocus.yaml` file, in source order.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+#[serde(rename_all = "kebab-case", try_from = "WorkspaceDeclaration")]
 pub struct WorkspaceConfiguration {
     /// Project-wide identity.
     pub project: ProjectConfiguration,
@@ -52,6 +52,106 @@ pub struct WorkspaceConfiguration {
     /// Implementation and release relationships between packages.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub relationships: Vec<RelationshipConfiguration>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+struct WorkspaceDeclaration {
+    project: ProjectConfiguration,
+    #[serde(default)]
+    presentation: PresentationDefaults,
+    #[serde(default)]
+    repositories: Vec<RepositoryConfiguration>,
+    #[serde(default)]
+    components: Vec<crate::components::ComponentConfiguration>,
+    #[serde(default)]
+    packages: Vec<PackageConfiguration>,
+    #[serde(default)]
+    package_bundles: Vec<PackageBundleConfiguration>,
+    #[serde(default, deserialize_with = "deserialize_content")]
+    content: Vec<ContentConfiguration>,
+    #[serde(default)]
+    concepts: Vec<ConceptConfiguration>,
+    #[serde(default)]
+    relationships: Vec<RelationshipConfiguration>,
+}
+
+impl TryFrom<WorkspaceDeclaration> for WorkspaceConfiguration {
+    type Error = String;
+
+    fn try_from(declaration: WorkspaceDeclaration) -> Result<Self, Self::Error> {
+        let mut workspace = Self {
+            project: declaration.project,
+            presentation: declaration.presentation,
+            repositories: declaration.repositories,
+            components: declaration.components,
+            packages: declaration.packages,
+            package_bundles: declaration.package_bundles,
+            content: declaration.content,
+            concepts: declaration.concepts,
+            relationships: declaration.relationships,
+        };
+        for package in &mut workspace.packages {
+            for authored in std::mem::take(&mut package.content) {
+                workspace
+                    .content
+                    .push(authored.into_package_content(package)?);
+            }
+        }
+        Ok(workspace)
+    }
+}
+
+const LOCAL_REPOSITORY: &str = "@local";
+
+pub(crate) fn local_repository_id() -> String {
+    LOCAL_REPOSITORY.into()
+}
+
+pub(crate) fn is_local_repository(id: &str) -> bool {
+    id == LOCAL_REPOSITORY
+}
+
+impl WorkspaceConfiguration {
+    pub(crate) fn implicit_repository(&self) -> Option<RepositoryConfiguration> {
+        let presentation = &self.presentation;
+        let used = self.project.repository_url.is_some()
+            || self
+                .packages
+                .iter()
+                .any(|p| is_local_repository(&p.repository))
+            || self
+                .content
+                .iter()
+                .any(|c| is_local_repository(&c.repository))
+            || self
+                .components
+                .iter()
+                .any(|c| is_local_repository(&c.repository))
+            || presentation
+                .assets
+                .iter()
+                .any(|a| is_local_repository(&a.repository))
+            || presentation
+                .asset_directories
+                .iter()
+                .any(|a| is_local_repository(&a.repository))
+            || presentation.logo_images().iter().any(|(_, image)| {
+                image.is_some_and(|(repository, _)| is_local_repository(repository))
+            })
+            || presentation
+                .open_graph
+                .as_ref()
+                .is_some_and(|image| is_local_repository(&image.repository));
+
+        used.then(|| RepositoryConfiguration {
+            id: local_repository_id(),
+            path: ".".into(),
+            url: self.project.repository_url.clone(),
+            source_link_template: None,
+            revision: None,
+        })
+    }
 }
 
 /// A package bundle source and its expected package identity.
@@ -116,6 +216,9 @@ pub(crate) fn valid_package_mount(path: &str) -> bool {
 pub struct ProjectConfiguration {
     /// Display name of the project.
     pub name: String,
+    /// Optional upstream URL for sources beside the configuration file.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub repository_url: Option<String>,
 }
 
 /// Portable site metadata, independent of extraction and execution policy.
@@ -314,6 +417,10 @@ impl PageMetadata {
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct SiteAsset {
     /// Repository containing the source file.
+    #[serde(
+        default = "local_repository_id",
+        skip_serializing_if = "is_local_repository"
+    )]
     pub repository: String,
     /// Repository-relative source file path.
     pub path: DiagnosticPath,
@@ -326,6 +433,10 @@ pub struct SiteAsset {
 #[serde(deny_unknown_fields)]
 pub struct SiteAssetDirectory {
     /// Repository containing the directory.
+    #[serde(
+        default = "local_repository_id",
+        skip_serializing_if = "is_local_repository"
+    )]
     pub repository: String,
     /// Repository-relative source directory.
     pub path: DiagnosticPath,
@@ -538,6 +649,10 @@ pub struct HomeFeature {
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct LogoDefaults {
     /// ID of the repository containing the image.
+    #[serde(
+        default = "local_repository_id",
+        skip_serializing_if = "is_local_repository"
+    )]
     pub repository: String,
     /// Normalized repository-relative path to an SVG, PNG, or JPEG file.
     pub path: DiagnosticPath,
@@ -551,6 +666,10 @@ pub struct LogoDefaults {
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct DarkLogoDefaults {
     /// ID of the repository containing the image.
+    #[serde(
+        default = "local_repository_id",
+        skip_serializing_if = "is_local_repository"
+    )]
     pub repository: String,
     /// Normalized repository-relative path to an SVG, PNG, or JPEG file.
     pub path: DiagnosticPath,
@@ -561,6 +680,10 @@ pub struct DarkLogoDefaults {
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct OpenGraphDefaults {
     /// ID of the repository containing the image.
+    #[serde(
+        default = "local_repository_id",
+        skip_serializing_if = "is_local_repository"
+    )]
     pub repository: String,
     /// Normalized repository-relative path to a PNG or JPEG file.
     pub path: DiagnosticPath,
@@ -787,6 +910,10 @@ pub struct PackageConfiguration {
     /// Package ecosystem identifier.
     pub ecosystem: String,
     /// Identifier of the repository containing the package.
+    #[serde(
+        default = "local_repository_id",
+        skip_serializing_if = "is_local_repository"
+    )]
     pub repository: String,
     /// Package root, relative to its repository.
     pub path: PathBuf,
@@ -811,6 +938,9 @@ pub struct PackageConfiguration {
     /// An empty list disables API extraction for this package. Targets are never
     /// inferred from the ecosystem or files.
     pub targets: Vec<ExtractionTargetConfiguration>,
+    // The workspace resolves these relative to the package into its collection list.
+    #[serde(default, skip_serializing)]
+    content: Vec<ContentDeclaration>,
 }
 
 /// Documentation preparation for an R package, shared by its targets.
@@ -987,72 +1117,167 @@ pub struct ContentConfiguration {
     pub execution: ExecutionConfiguration,
 }
 
-impl<'de> Deserialize<'de> for ContentConfiguration {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        // Validation needs both the profile and the completed execution table,
-        // regardless of their order in the source or the deserialization entry point.
-        #[derive(Default, Deserialize)]
-        #[serde(rename_all = "kebab-case", deny_unknown_fields)]
-        struct ExecutionDeclaration {
-            mode: Option<ExecutionMode>,
-            engine: Option<ExecutionEngine>,
-            kernel: Option<String>,
-            julia_project: Option<PathBuf>,
-            #[serde(default)]
-            declared_environment_inputs: Vec<PathBuf>,
-        }
-        #[derive(Deserialize)]
-        #[serde(rename_all = "kebab-case", deny_unknown_fields)]
-        struct Declaration {
-            id: String,
-            owner: String,
-            repository: String,
-            path: PathBuf,
-            mount: String,
-            format: AuthoredFormat,
-            #[serde(default)]
-            navigation: ContentNavigation,
-            #[serde(default)]
-            incremental: IncrementalConfiguration,
-            #[serde(default)]
-            execution: Option<ExecutionDeclaration>,
-        }
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+struct ExecutionDeclaration {
+    mode: Option<ExecutionMode>,
+    engine: Option<ExecutionEngine>,
+    kernel: Option<String>,
+    julia_project: Option<PathBuf>,
+    #[serde(default)]
+    declared_environment_inputs: Vec<PathBuf>,
+}
 
-        let declaration = Declaration::deserialize(deserializer)?;
-        let collection = Self {
-            id: declaration.id,
-            owner: declaration.owner,
-            repository: declaration.repository,
-            path: declaration.path,
-            mount: declaration.mount,
-            format: declaration.format,
-            navigation: declaration.navigation,
-            incremental: declaration.incremental,
-            execution: {
-                let execution = declaration.execution.unwrap_or_default();
-                let rmd = declaration.format == AuthoredFormat::Rmd;
-                ExecutionConfiguration {
-                    mode: execution.mode.unwrap_or(if rmd {
-                        ExecutionMode::Execute
-                    } else {
-                        ExecutionMode::Never
-                    }),
-                    engine: execution.engine.or(if rmd {
-                        Some(ExecutionEngine::Knitr)
-                    } else {
-                        None
-                    }),
-                    kernel: execution.kernel,
-                    julia_project: execution.julia_project,
-                    declared_environment_inputs: execution.declared_environment_inputs,
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+struct ContentDeclaration {
+    id: Option<String>,
+    owner: Option<String>,
+    repository: Option<String>,
+    path: PathBuf,
+    mount: String,
+    #[serde(default)]
+    format: AuthoredFormat,
+    #[serde(default)]
+    navigation: ContentNavigation,
+    #[serde(default)]
+    incremental: IncrementalConfiguration,
+    #[serde(default)]
+    execution: Option<ExecutionDeclaration>,
+}
+
+impl ContentDeclaration {
+    fn into_package_content(
+        mut self,
+        package: &PackageConfiguration,
+    ) -> Result<ContentConfiguration, String> {
+        if self.owner.is_some() || self.repository.is_some() {
+            return Err(format!(
+                "packages.{}.content inherits its owner and repository from the package",
+                package.id
+            ));
+        }
+        self.owner = Some(package.id.clone());
+        self.repository = Some(package.repository.clone());
+        self.resolve(Some(&package.path))
+    }
+
+    fn resolve(mut self, package_path: Option<&Path>) -> Result<ContentConfiguration, String> {
+        let owner = self.owner.unwrap_or_else(|| "project".into());
+        let id = self.id.unwrap_or_else(|| {
+            let path = self
+                .path
+                .components()
+                .filter(|component| *component != std::path::Component::CurDir)
+                .collect::<PathBuf>();
+            let path = path
+                .to_string_lossy()
+                .replace(std::path::MAIN_SEPARATOR, "/");
+            format!(
+                "content:{}:{owner}:{}:{path}:{}",
+                owner.len(),
+                path.len(),
+                self.mount
+            )
+        });
+        if let Some(package_path) = package_path {
+            let join = |path: &Path| {
+                if path.as_os_str().is_empty()
+                    || path.components().any(|component| {
+                        !matches!(
+                            component,
+                            std::path::Component::Normal(_) | std::path::Component::CurDir
+                        )
+                    })
+                {
+                    return Err(format!(
+                        "content `{id}`: expected a package-relative path within the package, got `{}`",
+                        path.display()
+                    ));
                 }
+                Ok(package_path.join(path))
+            };
+            self.path = join(&self.path)?;
+            if let Some(execution) = &mut self.execution {
+                execution.julia_project =
+                    execution.julia_project.as_deref().map(join).transpose()?;
+                execution.declared_environment_inputs = execution
+                    .declared_environment_inputs
+                    .iter()
+                    .map(|path| join(path))
+                    .collect::<Result<_, _>>()?;
+            }
+        }
+        let execution = self.execution.unwrap_or_default();
+        let rmd = self.format == AuthoredFormat::Rmd;
+        let collection = ContentConfiguration {
+            id,
+            owner,
+            repository: self.repository.unwrap_or_else(local_repository_id),
+            path: self.path,
+            mount: self.mount,
+            format: self.format,
+            navigation: self.navigation,
+            incremental: self.incremental,
+            execution: ExecutionConfiguration {
+                mode: execution.mode.unwrap_or(if rmd {
+                    ExecutionMode::Execute
+                } else {
+                    ExecutionMode::Never
+                }),
+                engine: execution.engine.or(if rmd {
+                    Some(ExecutionEngine::Knitr)
+                } else {
+                    None
+                }),
+                kernel: execution.kernel,
+                julia_project: execution.julia_project,
+                declared_environment_inputs: execution.declared_environment_inputs,
             },
         };
         collection
             .validate_execution()
-            .map_err(|error| D::Error::custom(format!("content `{}`: {error}", collection.id)))?;
+            .map_err(|error| format!("content `{}`: {error}", collection.id))?;
         Ok(collection)
     }
+}
+
+impl<'de> Deserialize<'de> for ContentConfiguration {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        ContentDeclaration::deserialize(deserializer)?
+            .resolve(None)
+            .map_err(D::Error::custom)
+    }
+}
+
+fn deserialize_content<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Vec<ContentConfiguration>, D::Error> {
+    struct ContentVisitor;
+
+    impl<'de> Visitor<'de> for ContentVisitor {
+        type Value = Vec<ContentConfiguration>;
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            formatter.write_str("a documentation path or a sequence of content collections")
+        }
+
+        fn visit_str<E: serde::de::Error>(self, path: &str) -> Result<Self::Value, E> {
+            let collection = ContentDeclaration {
+                path: path.into(),
+                ..ContentDeclaration::default()
+            }
+            .resolve(None)
+            .map_err(E::custom)?;
+            Ok(vec![collection])
+        }
+
+        fn visit_seq<A: SeqAccess<'de>>(self, sequence: A) -> Result<Self::Value, A::Error> {
+            Vec::deserialize(SeqAccessDeserializer::new(sequence))
+        }
+    }
+
+    deserializer.deserialize_any(ContentVisitor)
 }
 
 impl ContentConfiguration {

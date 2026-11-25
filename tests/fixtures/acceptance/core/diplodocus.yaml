@@ -2,7 +2,7 @@ project:
   name: "Foo"
 repositories:
   - id: "core"
-    path: "../core"
+    path: "."
     url: "https://github.com/example/foo-core"
   - id: "python"
     path: "../python"
