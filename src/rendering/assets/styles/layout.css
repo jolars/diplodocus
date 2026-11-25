@@ -17,7 +17,7 @@ header {
   border-bottom: 1px solid var(--border);
   background: var(--background);
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(12rem, 22rem);
+  grid-template-columns: minmax(0, 1fr) minmax(0, max-content);
   gap: 2.5rem;
   align-items: center;
 }

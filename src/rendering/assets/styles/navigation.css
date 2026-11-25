@@ -412,7 +412,7 @@ nav [aria-current=page] {
 
 @media (min-width: 761px) {
   header:has(.api-menu) {
-    grid-template-columns: minmax(9rem, 1fr) minmax(12rem, 22rem);
+    grid-template-columns: minmax(9rem, 1fr) minmax(0, max-content);
   }
 
   header > .brand {

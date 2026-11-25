@@ -177,6 +177,11 @@ for (const style of ["file", "clean"]) {
         const { x, y, width, height } = element.getBoundingClientRect();
         return { x, y, width, height };
       }));
+      if (info.project.name === "desktop") {
+        const search = (await page.getByRole("button", { name: "Search documentation" }).boundingBox())!;
+        const actions = (await page.locator(".header-actions").boundingBox())!;
+        expect(search.x).toBeCloseTo(actions.x);
+      }
       const checkIcons = async () => {
         await expect(page.locator('link[rel="icon"]')).toHaveAttribute("href", `${origin}${prefix}public/icon.png`);
         await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveAttribute("href", `${origin}${prefix}public/icon.png`);
