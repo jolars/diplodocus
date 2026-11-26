@@ -205,16 +205,26 @@ pub(super) fn validate_html(site: &Site<'_>, route: &str, html: &str) -> Result<
     Ok(())
 }
 
+#[derive(PartialEq, Eq)]
 struct Entry {
     target: Target,
     anchor: Option<String>,
     heading: Option<String>,
 }
 
-#[derive(Default)]
+#[derive(Default, PartialEq, Eq)]
 struct Inventory {
     targets: Vec<Entry>,
     occupied: BTreeMap<String, usize>,
+}
+
+pub(super) fn same_inventory(
+    site: &Site<'_>,
+    route: &str,
+    previous: &PageModel<'_>,
+    updated: &PageModel<'_>,
+) -> Result<bool, SiteError> {
+    Ok(Inventory::page(site, route, previous)? == Inventory::page(site, route, updated)?)
 }
 
 struct DocumentHeadings<'a> {

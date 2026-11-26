@@ -142,9 +142,9 @@ pub(super) struct ServeArgs {
     /// Path to the workspace configuration file. Omit to use diplodocus.yaml or discover a root R package.
     #[arg(long, value_name = "PATH")]
     pub(super) config: Option<PathBuf>,
-    /// Directory in which to write the generated site.
-    #[arg(long, value_name = "PATH", default_value = "./site")]
-    pub(super) output: PathBuf,
+    /// Write the generated site to this directory as well as serving it.
+    #[arg(long, value_name = "PATH")]
+    pub(super) output: Option<PathBuf>,
     /// Address on which to serve the generated site.
     #[arg(long, value_name = "ADDRESS", default_value = "127.0.0.1")]
     pub(super) host: IpAddr,
@@ -206,7 +206,7 @@ mod tests {
             panic!("expected the serve command");
         };
         assert_eq!(args.config, None);
-        assert_eq!(args.output, PathBuf::from("./site"));
+        assert!(args.output.is_none());
         assert_eq!(args.host, IpAddr::from([127, 0, 0, 1]));
         assert_eq!(args.port, 8000);
         assert!(args.live_reload);

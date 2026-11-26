@@ -168,7 +168,6 @@ impl CommandRunner {
             &options.output,
             true,
             trust,
-            pipeline::SiteMode::Publish,
             &self.reporting,
         )?;
         command.finish(Some(&options.output), Some(site.page_count()));
@@ -247,13 +246,22 @@ impl CommandRunner {
 
     /// Build once and serve the result until shutdown.
     pub fn serve_once(&self, options: ServeOptions) -> Result<(), CommandError> {
+        self.serve_preview(options.into(), false)
+    }
+
+    /// Serve with optional disk publication and optional source watching.
+    pub fn serve_preview(
+        &self,
+        options: ServeOptions<Option<PathBuf>>,
+        watch_sources: bool,
+    ) -> Result<(), CommandError> {
         pipeline::runtime()?.block_on(scope_async(
             self.cache_policy,
             preview::serve_reported(
                 options,
                 ExecutionDeadlines::default(),
                 Box::pin(watching::termination()),
-                false,
+                watch_sources,
                 &self.reporting,
             ),
         ))
@@ -268,7 +276,13 @@ impl CommandRunner {
     ) -> Result<(), CommandError> {
         scope_async(
             self.cache_policy,
-            preview::serve_reported(options, deadlines, cancellation, true, &self.reporting),
+            preview::serve_reported(
+                options.into(),
+                deadlines,
+                cancellation,
+                true,
+                &self.reporting,
+            ),
         )
         .await
     }

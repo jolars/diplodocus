@@ -1,6 +1,9 @@
 use super::*;
 use std::borrow::Cow;
+use std::collections::BTreeMap;
+use std::fs;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr};
+use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use std::sync::Arc;
 use std::time::Duration;
@@ -10,9 +13,12 @@ use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::watch;
 
 use crate::execution::{ExecutionCancellation, ExecutionDeadlines};
-use crate::rendering::RenderedSite;
+use crate::provenance::fingerprint_bytes;
+use crate::rendering::{ImageCache, RenderedFile, RenderedSite};
+use crate::site::Site;
 
-use super::watching::{Watcher, cancelled, clean_cancellation};
+use super::preview_edits::{PreviewSources, SearchEntries};
+use super::watching::{FileEvents, PreviewChange, Watcher, cancelled, clean_cancellation};
 use crate::reporting::{Event, Reporting};
 
 /// Run the production preview loop with explicit deadlines and shutdown signal.
@@ -29,7 +35,7 @@ pub async fn serve_with(
 }
 
 pub(super) async fn serve_reported(
-    options: ServeOptions,
+    options: ServeOptions<Option<PathBuf>>,
     deadlines: ExecutionDeadlines,
     cancellation: ExecutionCancellation<'_>,
     watch_sources: bool,
@@ -50,7 +56,7 @@ pub(super) async fn serve_reported(
 }
 
 async fn run(
-    options: ServeOptions,
+    options: ServeOptions<Option<PathBuf>>,
     deadlines: ExecutionDeadlines,
     stop: watch::Receiver<bool>,
     watch_sources: bool,
@@ -59,116 +65,309 @@ async fn run(
     let setup = reporting.stage("Starting preview", None);
     let listener = TcpListener::bind((options.host, options.port)).await?;
     let address = listener.local_addr()?;
-    let build = BuildOptions {
-        config: options.config.clone(),
-        output: options.output.clone(),
-    };
+    let mut listener = Some(listener);
     let mut watcher = watch_sources
-        .then(|| Watcher::new(&options.config, &options.output, reporting))
+        .then(|| {
+            Watcher::new(
+                &options.config,
+                options
+                    .output
+                    .as_deref()
+                    .unwrap_or(Path::new(".diplodocus")),
+                reporting,
+            )
+        })
         .transpose()?;
     setup.finish();
-    let command = reporting.command("build");
-    let mut attempt = pipeline::AttemptState {
-        watch_sources,
-        ..Default::default()
-    };
-    let mut images = crate::rendering::ImageCache::default();
-    let initial = pipeline::build_attempt_observed(
-        &build,
-        deadlines,
-        Box::pin(cancelled(stop.clone())),
-        reporting,
-        &mut attempt,
-        pipeline::SiteMode::Preview(&mut images),
-    )
-    .await;
-    if let Some(watcher) = &mut watcher {
-        watcher.acknowledge(attempt);
-    }
-    let initial = match initial {
-        Ok(site) => site,
-        Err(error) if *stop.borrow() && clean_cancellation(&error) => return Ok(()),
-        Err(error) => return Err(error),
-    };
-    if *stop.borrow() {
-        return Ok(());
-    }
-    command.finish(Some(&build.output), Some(initial.page_count()));
-    let (current, generations) = watch::channel(Arc::new(ServedGeneration {
-        site: initial,
-        // Open pages must also detect a new server after the generator recompiles.
-        revision: getrandom::u64().map_err(std::io::Error::other)?,
-    }));
-    let http = tokio::spawn(http(
-        listener,
-        generations,
-        options.live_reload && watch_sources,
-        stop.clone(),
-    ));
-    let mut http = AbortOnDrop(http);
-    let url = preview_url(address);
-    reporting.emit(Event::Serving { url: &url });
-    if watch_sources {
-        reporting.emit(Event::Watching {
-            retained_previous: false,
-        });
-    }
-    let browser_reporting = reporting.clone();
-    let _browser = options.open.then(|| {
-        AbortOnDrop(tokio::spawn(async move {
-            if let Err(error) = open_browser(&url).await {
-                browser_reporting.emit(Event::Warning(&format!(
-                    "could not open browser for {url}: {error}"
-                )));
+    let mut images = ImageCache::default();
+    let mut server: Option<PreviewServer> = None;
+    let mut events = None;
+
+    loop {
+        let command = reporting.command(if server.is_some() { "rebuild" } else { "build" });
+        let mut attempt = pipeline::AttemptState {
+            watch_sources,
+            ..Default::default()
+        };
+        let snapshot = pipeline::prepare_snapshot(
+            ExtractOptions {
+                config: options.config.clone(),
+                output: None,
+            },
+            options.output.as_deref(),
+            deadlines,
+            Box::pin(cancelled(stop.clone())),
+            reporting,
+            &mut attempt,
+            false,
+        )
+        .await;
+        let sources = attempt.preview.take();
+        if let Some(watcher) = &mut watcher {
+            watcher.acknowledge(attempt);
+        }
+        let owned;
+        let rendered = match snapshot {
+            Ok((snapshot_path, snapshot)) => {
+                owned = snapshot;
+                options
+                    .output
+                    .as_deref()
+                    .map_or(Ok(()), |output| {
+                        pipeline::reject_overlap(output, &snapshot_path)
+                    })
+                    .and_then(|()| {
+                        render_full(&owned, options.output.as_deref(), &mut images, reporting)
+                    })
             }
-        }))
-    });
-    let mut http_finished = false;
-    let result = loop {
-        tokio::select! {
-            _ = cancelled(stop.clone()) => break Ok(()),
-            result = &mut http.0 => {
-                http_finished = true;
-                break match result {
-                    Ok(result) => result.map_err(CommandError::from),
-                    Err(error) => Err(std::io::Error::other(error).into()),
-                };
-            }
-            Some(watcher) = async {
-                let watcher = watcher.as_mut()?;
-                watcher.next_change().await;
-                Some(watcher)
-            } => {
-                let command = reporting.command("rebuild");
-                let mut attempt = pipeline::AttemptState::watching();
-                let result = pipeline::build_attempt_observed(&build, deadlines, Box::pin(cancelled(stop.clone())), reporting, &mut attempt, pipeline::SiteMode::Preview(&mut images)).await;
-                watcher.acknowledge(attempt);
-                match result {
-                    Ok(site) => {
-                        let pages = site.page_count();
-                        let revision = current.borrow().revision.wrapping_add(1);
-                        current.send_replace(Arc::new(ServedGeneration { site, revision }));
-                        command.finish(Some(&build.output), Some(pages));
-                        reporting.emit(Event::Rebuilt);
-                        reporting.emit(Event::Watching { retained_previous: false });
+            Err(error) => Err(error),
+        };
+        let (site, rendered) = match rendered {
+            Ok(success) => success,
+            Err(error) => {
+                drop(command);
+                if *stop.borrow() && clean_cancellation(&error) {
+                    if let Some(server) = &mut server {
+                        server.stop().await;
                     }
-                    Err(error) => {
-                        drop(command);
-                        if *stop.borrow() && clean_cancellation(&error) { break Ok(()); }
-                        reporting.error(&error);
-                        if *stop.borrow() { break Err(error); }
-                        reporting.emit(Event::Watching { retained_previous: true });
-                    }
+                    return Ok(());
                 }
+                let Some(server) = &mut server else {
+                    return Err(error);
+                };
+                reporting.error(&error);
+                if *stop.borrow() {
+                    server.stop().await;
+                    return Err(error);
+                }
+                reporting.emit(Event::Watching {
+                    retained_previous: true,
+                });
+                if server
+                    .next_change(watcher.as_mut(), &mut events, None, &stop)
+                    .await?
+                    .is_none()
+                {
+                    return Ok(());
+                }
+                continue;
+            }
+        };
+        if *stop.borrow() {
+            if let Some(server) = &mut server {
+                server.stop().await;
+            }
+            return Ok(());
+        }
+        let pages = rendered.page_count();
+        let base = Arc::new(rendered);
+        events = watcher
+            .as_mut()
+            .and_then(|watcher| watcher.file_events(sources.as_ref()));
+        if let Some(server) = &mut server {
+            server.advance(base.clone(), BTreeMap::new(), None);
+            command.finish(options.output.as_deref(), Some(pages));
+            reporting.emit(Event::Rebuilt);
+        } else {
+            command.finish(options.output.as_deref(), Some(pages));
+            server = Some(PreviewServer::start(
+                listener.take().expect("initial listener"),
+                base.clone(),
+                preview_url(address),
+                options.live_reload && watch_sources,
+                options.open,
+                stop.clone(),
+                reporting,
+            )?);
+        }
+        if watch_sources {
+            reporting.emit(Event::Watching {
+                retained_previous: false,
+            });
+        }
+        let server = server.as_mut().expect("preview started");
+        let mut search = None;
+
+        loop {
+            let Some(change) = server
+                .next_change(watcher.as_mut(), &mut events, sources.as_ref(), &stop)
+                .await?
+            else {
+                return Ok(());
+            };
+            let PreviewChange::Page(path) = change else {
+                break;
+            };
+            let watcher = watcher.as_mut().expect("watching page edits");
+            let command = reporting.command("rebuild");
+            let update = (|| -> Result<bool, CommandError> {
+                let source = fs::read_to_string(&path)?;
+                let Some((route, page)) = sources.as_ref().expect("known page").render(
+                    &site,
+                    &path,
+                    source.clone(),
+                    &base,
+                    &images,
+                )?
+                else {
+                    return Ok(false);
+                };
+                if *stop.borrow()
+                    || !watcher.can_commit_page(
+                        events.as_mut().expect("event watcher"),
+                        &path,
+                        source.as_bytes(),
+                    )
+                {
+                    return Ok(false);
+                }
+                let mut changes = server.current.borrow().changes.clone();
+                changes.insert(route.clone(), Arc::new(page.html));
+                changes.insert(page.markdown.0, Arc::new(page.markdown.1));
+                if let Some(entry) = page.search {
+                    if search.is_none() {
+                        search = Some(SearchEntries::load(&base)?);
+                    }
+                    search
+                        .as_mut()
+                        .expect("search entries")
+                        .replace(entry, &mut changes)?;
+                }
+                if let Some(output) = &options.output {
+                    base.publish_with(output, reporting, &changes)?;
+                }
+                watcher.acknowledge_page(path, fingerprint_bytes(source.as_bytes()).value);
+                server.advance(base.clone(), changes, Some(format!("/{route}")));
+                Ok(true)
+            })();
+            if matches!(update, Ok(true)) {
+                command.finish(options.output.as_deref(), Some(pages));
+                reporting.emit(Event::Rebuilt);
+                reporting.emit(Event::Watching {
+                    retained_previous: false,
+                });
+            } else {
+                drop(command);
+                if *stop.borrow() {
+                    server.stop().await;
+                    return Ok(());
+                }
+                watcher.reconcile();
+                break;
             }
         }
-    };
-    // The task owns only HTTP connections. Kernel supervision has already completed.
-    if !http_finished {
-        http.0.abort();
-        let _ = (&mut http.0).await;
     }
-    result
+}
+
+fn render_full<'a>(
+    snapshot: &'a crate::snapshots::Snapshot,
+    output: Option<&Path>,
+    images: &mut ImageCache,
+    reporting: &Reporting,
+) -> Result<(Site<'a>, RenderedSite), CommandError> {
+    use crate::reporting::Phase;
+    let site = reporting
+        .run_phase(Phase::SitePreparation, "Preparing site", || {
+            Site::preview(snapshot)
+        })?
+        .with_components(true)
+        .with_site_scripts(true);
+    let rendering = reporting.phase(Phase::Rendering, None, None);
+    let rendered = crate::rendering::render_with_image_cache(&site, true, reporting, Some(images))?;
+    rendering.finish();
+    if let Some(output) = output {
+        let publication = reporting.phase(Phase::Publication, None, None);
+        rendered.publish_reported(output, reporting)?;
+        publication.finish();
+    }
+    Ok((site, rendered))
+}
+
+struct PreviewServer {
+    current: watch::Sender<Arc<ServedGeneration>>,
+    http: AbortOnDrop<std::io::Result<()>>,
+    _browser: Option<AbortOnDrop<()>>,
+}
+
+impl PreviewServer {
+    fn start(
+        listener: TcpListener,
+        site: Arc<RenderedSite>,
+        url: String,
+        live_reload: bool,
+        open: bool,
+        stop: watch::Receiver<bool>,
+        reporting: &Reporting,
+    ) -> Result<Self, CommandError> {
+        let (current, generations) = watch::channel(Arc::new(ServedGeneration {
+            site,
+            changes: BTreeMap::new(),
+            changed_route: None,
+            revision: getrandom::u64().map_err(std::io::Error::other)?,
+        }));
+        let http = AbortOnDrop(tokio::spawn(http(listener, generations, live_reload, stop)));
+        reporting.emit(Event::Serving { url: &url });
+        let reporting = reporting.clone();
+        let browser = open.then(|| {
+            AbortOnDrop(tokio::spawn(async move {
+                if let Err(error) = open_browser(&url).await {
+                    reporting.emit(Event::Warning(&format!(
+                        "could not open browser for {url}: {error}"
+                    )));
+                }
+            }))
+        });
+        Ok(Self {
+            current,
+            http,
+            _browser: browser,
+        })
+    }
+
+    fn advance(
+        &self,
+        site: Arc<RenderedSite>,
+        changes: BTreeMap<String, Arc<RenderedFile>>,
+        changed_route: Option<String>,
+    ) {
+        let revision = self.current.borrow().revision.wrapping_add(1);
+        self.current.send_replace(Arc::new(ServedGeneration {
+            site,
+            changes,
+            revision,
+            changed_route,
+        }));
+    }
+
+    async fn stop(&mut self) {
+        self.http.0.abort();
+        let _ = (&mut self.http.0).await;
+    }
+
+    async fn next_change(
+        &mut self,
+        watcher: Option<&mut Watcher>,
+        events: &mut Option<FileEvents>,
+        sources: Option<&PreviewSources>,
+        stop: &watch::Receiver<bool>,
+    ) -> Result<Option<PreviewChange>, CommandError> {
+        tokio::select! {
+            _ = cancelled(stop.clone()) => {
+                self.stop().await;
+                Ok(None)
+            },
+            result = &mut self.http.0 => {
+                result.map_err(std::io::Error::other)??;
+                Ok(None)
+            }
+            change = async {
+                match watcher {
+                    Some(watcher) => watcher.next_preview_change(events, sources).await,
+                    None => std::future::pending().await,
+                }
+            } => Ok(Some(change)),
+        }
+    }
 }
 
 fn preview_url(mut address: SocketAddr) -> String {
@@ -214,8 +413,19 @@ async fn open_browser(url: &str) -> std::io::Result<()> {
 
 struct AbortOnDrop<T>(tokio::task::JoinHandle<T>);
 struct ServedGeneration {
-    site: RenderedSite,
+    site: Arc<RenderedSite>,
+    changes: BTreeMap<String, Arc<RenderedFile>>,
     revision: u64,
+    changed_route: Option<String>,
+}
+
+impl ServedGeneration {
+    fn file(&self, path: &str) -> Option<&RenderedFile> {
+        self.changes
+            .get(path)
+            .map(Arc::as_ref)
+            .or_else(|| self.site.files().get(path))
+    }
 }
 impl<T> Drop for AbortOnDrop<T> {
     fn drop(&mut self) {
@@ -264,12 +474,13 @@ async fn response(
     let method = parts.next().unwrap_or("");
     let target = parts.next().unwrap_or("");
     let (request_path, query) = target.split_once('?').unwrap_or((target, ""));
+    let since = query
+        .strip_prefix("since=")
+        .and_then(|value| value.parse::<u64>().ok());
     if live_reload
         && method == "GET"
         && request_path == "/__diplodocus/revision"
-        && let Some(revision) = query
-            .strip_prefix("since=")
-            .and_then(|value| value.parse::<u64>().ok())
+        && let Some(revision) = since
     {
         // Return as soon as a newer generation is published. Bound the wait so a
         // browser on an idle site periodically releases and renews its request.
@@ -332,15 +543,13 @@ async fn response(
     let file = path
         .as_ref()
         .filter(|p| crate::diagnostics::DiagnosticPath::try_from(p.as_str()).is_ok())
-        .and_then(|p| generation.site.files().get(p));
+        .and_then(|p| generation.file(p));
     let negotiable = file.is_some_and(|file| file.media_type.starts_with("text/html"))
         && markdown_path
             .as_ref()
             .is_some_and(|p| generation.site.files().contains_key(p));
     let file = if negotiable && markdown {
-        markdown_path
-            .as_ref()
-            .and_then(|p| generation.site.files().get(p))
+        markdown_path.as_ref().and_then(|p| generation.file(p))
     } else {
         file
     };
@@ -352,11 +561,27 @@ async fn response(
             Cow::Borrowed(b"Method not allowed\n".as_slice()),
         )
     } else if live_reload && path.as_deref() == Some("__diplodocus/revision") {
-        (
-            "200 OK",
-            "text/plain; charset=utf-8",
-            Cow::Owned(generation.revision.to_string().into_bytes()),
-        )
+        if accept.trim() == "application/json" {
+            let route = generation
+                .changed_route
+                .as_deref()
+                .filter(|_| since == Some(generation.revision.wrapping_sub(1)));
+            let update = serde_json::json!({
+                "revision": generation.revision.to_string(),
+                "route": route,
+            });
+            (
+                "200 OK",
+                "application/json",
+                Cow::Owned(update.to_string().into_bytes()),
+            )
+        } else {
+            (
+                "200 OK",
+                "text/plain; charset=utf-8",
+                Cow::Owned(generation.revision.to_string().into_bytes()),
+            )
+        }
     } else if let Some(file) = file {
         let content = if live_reload && file.media_type.starts_with("text/html") {
             Cow::Owned(with_live_reload(&file.bytes, generation.revision))
@@ -418,16 +643,25 @@ fn with_live_reload(html: &[u8], revision: u64) -> Vec<u8> {
 const LIVE_RELOAD: &str = r#"<script>
 (() => {
   const served='__REVISION__';
+  let revision = served;
 
   async function check() {
     while (true) {
       try {
-        const response = await fetch('/__diplodocus/revision?since=' + served, { cache: 'no-store' });
+        const response = await fetch('/__diplodocus/revision?since=' + revision, {
+          cache: 'no-store', headers: { Accept: 'application/json' },
+        });
         if (response.ok) {
-          if (await response.text() !== served) {
+          const update = await response.json();
+          if (update.revision === revision) continue;
+          const detail = { route: update.route, applied: null };
+          if (detail.route) document.dispatchEvent(new CustomEvent('diplodocus:preview-update', { detail }));
+          if (!(await detail.applied)) {
             location.reload();
             return;
           }
+          revision = update.revision;
+          document.dispatchEvent(new Event('diplodocus:preview-search'));
           continue;
         }
       } catch {}
@@ -482,7 +716,9 @@ mod tests {
         .unwrap();
         let site = crate::site::Site::new(&snapshot).unwrap();
         let (_, generations) = watch::channel(Arc::new(ServedGeneration {
-            site: crate::rendering::render_site(&site).unwrap(),
+            site: Arc::new(crate::rendering::render_site(&site).unwrap()),
+            changes: BTreeMap::new(),
+            changed_route: None,
             revision: 7,
         }));
         for (method, target, accept, media) in [
@@ -579,7 +815,10 @@ mod tests {
         .unwrap();
         let (_, generations) = watch::channel(Arc::new(ServedGeneration {
             site: crate::rendering::render_site(&crate::site::Site::new(&snapshot).unwrap())
-                .unwrap(),
+                .unwrap()
+                .into(),
+            changes: BTreeMap::new(),
+            changed_route: None,
             revision: 1,
         }));
         for (method, target, expected_status, destination) in [

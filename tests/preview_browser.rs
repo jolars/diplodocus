@@ -165,7 +165,7 @@ async fn opens_ready_local_url_once_with_assigned_port_and_live_reload() {
     assert!(!url.ends_with(":0/"));
     until(async || root.path().join("browser.ready").exists()).await;
     assert_eq!(root.read("browser.log"), format!("{url}\n"));
-    assert!(root.path().join("site/index.html").is_file());
+    assert!(!root.path().join("site").exists());
     root.write("guide/index.md", "# Second generation\n");
     until(async || request(&url).contains("Second generation")).await;
     assert_eq!(root.read("browser.log"), format!("{url}\n"));

@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
+use std::sync::Arc;
 
 /// A generated response, with a content type independent of the source filename.
 #[derive(Debug, Clone)]
@@ -14,6 +15,7 @@ pub struct RenderedFile {
 #[derive(Debug)]
 pub struct RenderedSite {
     pub(super) page_count: usize,
+    pub(super) preview_icons: BTreeMap<String, std::collections::BTreeSet<String>>,
     pub(super) files: BTreeMap<String, RenderedFile>,
     pub(super) redirects: BTreeMap<String, String>,
 }
@@ -44,6 +46,15 @@ impl RenderedSite {
         output: &Path,
         reporting: &crate::reporting::Reporting,
     ) -> Result<(), crate::site::SiteError> {
+        self.publish_with(output, reporting, &BTreeMap::new())
+    }
+
+    pub(crate) fn publish_with(
+        &self,
+        output: &Path,
+        reporting: &crate::reporting::Reporting,
+        overrides: &BTreeMap<String, Arc<RenderedFile>>,
+    ) -> Result<(), crate::site::SiteError> {
         use crate::site::SiteError;
         let mut progress = reporting.stage("Publishing site", Some(self.files.len()));
         let parent = output
@@ -65,6 +76,7 @@ impl RenderedSite {
             .tempdir_in(parent)?;
         for (path, file) in &self.files {
             progress.item(path);
+            let file = overrides.get(path).map(Arc::as_ref).unwrap_or(file);
             let path = stage.path().join(path);
             if let Some(parent) = path.parent() {
                 fs::create_dir_all(parent)?;

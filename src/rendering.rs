@@ -29,8 +29,8 @@ pub use fragments::{
     FragmentDocument, FragmentIndex, FragmentInventory, FragmentInventoryDocument,
     fragment_inventory,
 };
+pub(crate) use html::{PreviewPage, render_preview_page, render_reported, render_with_image_cache};
 pub use html::{render_fragments, render_site};
-pub(crate) use html::{render_reported, render_with_image_cache};
 pub(crate) use images::ImageCache;
 pub use publish::{RenderedFile, RenderedSite};
 

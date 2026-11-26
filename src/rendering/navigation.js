@@ -348,7 +348,27 @@
     window.addEventListener(event, () => pendingPosition?.(false), { passive: true, capture: true });
   }
 
-  const navigate = async (destination, traversal = false, state) => {
+  const readPage = async (response, hash) => {
+    if (!response.ok || response.headers.get('content-type')?.split(';')[0].trim().toLowerCase() !== 'text/html'
+        || response.headers.get('content-disposition')?.toLowerCase().startsWith('attachment')) {
+      throw new Error('Destination is not a documentation page.');
+    }
+    const finalUrl = new URL(response.url);
+    if (finalUrl.origin !== location.origin) throw new Error('Destination is outside this site.');
+    finalUrl.hash ||= hash;
+    const html = await response.text();
+    const next = new DOMParser().parseFromString(html, 'text/html');
+    normalizeUrls(next, finalUrl);
+    if (next.body.dataset.diplodocusNavigation !== protocol || next.body.dataset.diplodocusShell !== shell
+        || next.querySelector('.brand')?.href !== home || !next.querySelector('.contextual-nav')
+        || !next.querySelector('.page-content main#main') || !next.querySelector('.desktop-sections')
+        || !next.querySelector('.mobile-sections') || !next.querySelector('title')) {
+      throw new Error('Destination has an incompatible site shell.');
+    }
+    return { next, finalUrl };
+  };
+
+  const navigatePage = async (destination, traversal = false, state) => {
     const request = ++sequence;
     const positioning = !!pendingPosition;
     cancelPosition();
@@ -368,23 +388,8 @@
       }
       const response = await fetch(destination, { signal, headers: { Accept: 'text/html' } });
       if (!current()) return;
-      if (!response.ok || response.headers.get('content-type')?.split(';')[0].trim().toLowerCase() !== 'text/html'
-          || response.headers.get('content-disposition')?.toLowerCase().startsWith('attachment')) {
-        throw new Error('Destination is not a documentation page.');
-      }
-      const finalUrl = new URL(response.url);
-      if (finalUrl.origin !== location.origin) throw new Error('Destination is outside this site.');
-      finalUrl.hash = finalUrl.hash || destination.hash;
-      const html = await response.text();
+      const { next, finalUrl } = await readPage(response, destination.hash);
       if (!current()) return;
-      const next = new DOMParser().parseFromString(html, 'text/html');
-      normalizeUrls(next, finalUrl);
-      if (next.body.dataset.diplodocusNavigation !== protocol || next.body.dataset.diplodocusShell !== shell
-          || next.querySelector('.brand')?.href !== home || !next.querySelector('.contextual-nav')
-          || !next.querySelector('.page-content main#main') || !next.querySelector('.desktop-sections')
-          || !next.querySelector('.mobile-sections') || !next.querySelector('title')) {
-        throw new Error('Destination has an incompatible site shell.');
-      }
       await loadStyles(next);
       if (!current()) return;
       rememberAssets(next);
@@ -407,6 +412,43 @@
       else location.assign(destination.href);
     }
   };
+
+  let navigation;
+  const navigate = (...args) => {
+    const pending = navigatePage(...args);
+    navigation = pending;
+    void pending.then(() => { if (navigation === pending) navigation = undefined; });
+    return pending;
+  };
+
+  const routeOf = doc => {
+    const alternate = doc.querySelector('link[rel="alternate"][type="text/markdown"]');
+    return alternate && decodeURIComponent(new URL(alternate.href).pathname).replace(/\.md$/, '.html');
+  };
+
+  async function updatePreview(route) {
+    while (true) {
+      if (navigation) await navigation;
+      if (routeOf(document) !== route) return true;
+      const request = sequence;
+      const response = await fetch(mountedUrl, { cache: 'no-store', headers: { Accept: 'text/html' } });
+      if (request !== sequence) continue;
+      const { next } = await readPage(response, mountedUrl.hash);
+      if (request !== sequence) continue;
+      if (routeOf(next) !== route || next.title !== document.title) return false;
+      const position = [scrollX, scrollY];
+      rememberAssets(next);
+      emit('before-page-change', { preview: true });
+      document.querySelector('.page-content').replaceWith(next.querySelector('.page-content'));
+      emit('page-change', { preview: true });
+      scrollTo(...position);
+      return true;
+    }
+  }
+
+  document.addEventListener('diplodocus:preview-update', ({ detail }) => {
+    detail.applied = updatePreview(detail.route).catch(() => false);
+  });
 
   document.addEventListener('click', event => {
     if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;

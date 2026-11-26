@@ -120,11 +120,7 @@ fn dispatch(cli: Cli, runner: &CommandRunner) -> Result<(), CommandError> {
                 live_reload: args.live_reload && !args.no_live_reload,
                 open: args.open,
             };
-            if args.no_watch {
-                runner.serve_once(options)
-            } else {
-                runner.serve(options)
-            }
+            runner.serve_preview(options, !args.no_watch)
         }
     }
 }

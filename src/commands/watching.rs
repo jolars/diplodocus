@@ -264,6 +264,217 @@ impl Watcher {
     }
 }
 
+pub(super) enum PreviewChange {
+    Page(PathBuf),
+    Full,
+}
+
+pub(super) struct FileEvents {
+    _watcher: notify::RecommendedWatcher,
+    events: tokio::sync::mpsc::Receiver<notify::Result<notify::Event>>,
+    overflow: std::sync::Arc<std::sync::atomic::AtomicBool>,
+}
+
+impl Watcher {
+    pub(super) fn file_events(
+        &mut self,
+        sources: Option<&super::preview_edits::PreviewSources>,
+    ) -> Option<FileEvents> {
+        let events = sources.and_then(|sources| FileEvents::new(&self.attempted, &sources.roots));
+        self.interval = tokio::time::interval(if events.is_some() {
+            Duration::from_secs(1)
+        } else {
+            WATCH_POLL_INTERVAL
+        });
+        events
+    }
+
+    pub(super) async fn next_preview_change(
+        &mut self,
+        events: &mut Option<FileEvents>,
+        sources: Option<&super::preview_edits::PreviewSources>,
+    ) -> PreviewChange {
+        loop {
+            let Some(native) = events.as_mut() else {
+                self.next_change().await;
+                return PreviewChange::Full;
+            };
+            tokio::select! {
+                biased;
+                batch = native.batch() => {
+                    if batch.is_none() {
+                        *events = self.file_events(None);
+                    }
+                    match self.changed_paths(batch) {
+                        Some(paths) if paths.is_empty() => continue,
+                        Some(paths) if paths.len() == 1 => {
+                            let path = paths.into_iter().next().expect("one changed path");
+                            if sources.is_some_and(|sources| sources.contains(&path)) {
+                                return PreviewChange::Page(path);
+                            }
+                        }
+                        _ => {}
+                    }
+                    self.reconcile();
+                    return PreviewChange::Full;
+                }
+                _ = self.next_change() => return PreviewChange::Full,
+            }
+        }
+    }
+
+    pub(super) fn reconcile(&mut self) {
+        self.attempted = self.observer.capture();
+        self.pending = None;
+    }
+
+    pub(super) fn acknowledge_page(&mut self, path: PathBuf, digest: String) {
+        self.attempted.insert(path, digest);
+        self.pending = None;
+    }
+
+    pub(super) fn can_commit_page(
+        &self,
+        events: &mut FileEvents,
+        path: &Path,
+        source: &[u8],
+    ) -> bool {
+        self.changed_paths(events.drain(Vec::new()))
+            .is_some_and(|paths| paths.iter().all(|changed| changed == path))
+            && fs::canonicalize(path).is_ok_and(|canonical| canonical == path)
+            && fs::read(path).is_ok_and(|bytes| bytes == source)
+    }
+
+    fn changed_paths(&self, events: Option<Vec<notify::Event>>) -> Option<BTreeSet<PathBuf>> {
+        let mut changed = BTreeSet::new();
+        for event in events? {
+            for path in event.paths {
+                if path.starts_with(&self.observer.output)
+                    || path.components().any(|part| {
+                        part.as_os_str().to_str().is_some_and(|part| {
+                            part == ".git"
+                                || part.starts_with(".diplodocus-site-")
+                                || part.starts_with(".diplodocus-old-")
+                        })
+                    })
+                    || crate::generated_storage::is_reserved(&path)
+                {
+                    continue;
+                }
+                if let Some(previous) = self.attempted.get(&path) {
+                    let mut observed = Observation::new();
+                    observe(&path, &mut observed);
+                    if observed.get(&path) != Some(previous)
+                        || (path.is_symlink()
+                            && matches!(
+                                event.kind,
+                                notify::EventKind::Modify(notify::event::ModifyKind::Name(_))
+                            ))
+                    {
+                        changed.insert(path);
+                    }
+                } else if (path.exists()
+                    && (path.is_dir()
+                        || path.extension().is_some_and(|ext| {
+                            matches!(ext.to_str(), Some("md" | "qmd" | "Rmd" | "rmd"))
+                        })
+                        || path.ancestors().skip(1).any(|parent| {
+                            self.attempted
+                                .get(parent)
+                                .is_some_and(|value| value == "Other")
+                        })))
+                    || self
+                        .attempted
+                        .range(path.clone()..)
+                        .next()
+                        .is_some_and(|(known, _)| known.starts_with(&path))
+                {
+                    changed.insert(path);
+                }
+            }
+        }
+        Some(changed)
+    }
+}
+
+impl FileEvents {
+    fn new(paths: &Observation, roots: &BTreeSet<PathBuf>) -> Option<Self> {
+        use notify::{RecursiveMode, Watcher as _};
+        use std::sync::atomic::{AtomicBool, Ordering};
+
+        let (sender, events) = tokio::sync::mpsc::channel(256);
+        let overflow = std::sync::Arc::new(AtomicBool::new(false));
+        let lost = overflow.clone();
+        let mut watcher = notify::RecommendedWatcher::new(
+            move |event: notify::Result<notify::Event>| {
+                use notify::event::{AccessKind, AccessMode};
+                if event.as_ref().is_ok_and(|event| {
+                    matches!(event.kind, notify::EventKind::Access(kind)
+                        if kind != AccessKind::Close(AccessMode::Write))
+                        && !event.need_rescan()
+                }) {
+                    return;
+                }
+                if sender.try_send(event).is_err() {
+                    lost.store(true, Ordering::Relaxed);
+                }
+            },
+            notify::Config::default().with_follow_symlinks(false),
+        )
+        .ok()?;
+
+        for root in roots {
+            watcher.watch(root, RecursiveMode::Recursive).ok()?;
+        }
+        let parents: BTreeSet<_> = paths
+            .keys()
+            .chain(roots)
+            .filter_map(|path| path.ancestors().skip(1).find(|dir| dir.is_dir()))
+            .filter(|parent| !roots.iter().any(|root| parent.starts_with(root)))
+            .collect();
+        for parent in parents {
+            watcher.watch(parent, RecursiveMode::NonRecursive).ok()?;
+        }
+        Some(Self {
+            _watcher: watcher,
+            events,
+            overflow,
+        })
+    }
+
+    async fn batch(&mut self) -> Option<Vec<notify::Event>> {
+        let first = self.events.recv().await?;
+        // A save can generate several data, close, and rename notifications.
+        tokio::time::sleep(Duration::from_millis(1)).await;
+        self.drain(vec![first])
+    }
+
+    fn drain(
+        &mut self,
+        mut batch: Vec<notify::Result<notify::Event>>,
+    ) -> Option<Vec<notify::Event>> {
+        for _ in 0..self.events.max_capacity() {
+            let Ok(event) = self.events.try_recv() else {
+                break;
+            };
+            batch.push(event);
+        }
+        if !self.events.is_empty() {
+            return None;
+        }
+        if self
+            .overflow
+            .swap(false, std::sync::atomic::Ordering::Relaxed)
+        {
+            return None;
+        }
+        batch
+            .into_iter()
+            .map(|event| event.ok().filter(|event| !event.need_rescan()))
+            .collect()
+    }
+}
+
 pub(super) async fn cancelled(mut receiver: watch::Receiver<bool>) {
     if !*receiver.borrow() {
         let _ = receiver.wait_for(|value| *value).await;

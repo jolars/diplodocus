@@ -10,12 +10,16 @@ use diplodocus::execution::ExecutionDeadlines;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 async fn request(port: u16, path: &str) -> Option<String> {
+    request_as(port, path, "*/*").await
+}
+
+async fn request_as(port: u16, path: &str, accept: &str) -> Option<String> {
     let mut stream = tokio::net::TcpStream::connect((std::net::Ipv4Addr::LOCALHOST, port))
         .await
         .ok()?;
     stream
         .write_all(
-            format!("GET {path} HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n")
+            format!("GET {path} HTTP/1.1\r\nHost: localhost\r\nAccept: {accept}\r\nConnection: close\r\n\r\n")
                 .as_bytes(),
         )
         .await
@@ -538,5 +542,185 @@ async fn preview_tracks_missing_assets_and_configuration_changes() {
             .contains(&format!("const served='{restarted_revision}'"))
     );
     stop.send(()).unwrap();
+    task.await.unwrap().unwrap();
+}
+
+#[tokio::test]
+async fn page_revision_keeps_http_and_disk_consistent_through_failure_and_recovery() {
+    use diplodocus::commands::CommandRunner;
+    use diplodocus::reporting::{Event, Reporter};
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicBool, Ordering};
+
+    #[derive(Default)]
+    struct Reports(AtomicBool);
+    impl Reporter for Reports {
+        fn report(&self, event: Event<'_>) {
+            if matches!(
+                event,
+                Event::Watching {
+                    retained_previous: true
+                }
+            ) {
+                self.0.store(true, Ordering::Relaxed);
+            }
+        }
+    }
+
+    let root = support::TestWorkspace::new();
+    let config = root.path().join("diplodocus.yaml");
+    let output = root.path().join("site");
+    root.write(
+        "diplodocus.yaml",
+        "project:
+  name: Preview
+content:
+  - path: docs
+    mount: ''
+",
+    );
+    root.write(
+        "docs/index.md",
+        "# First page
+
+Original marker.
+",
+    );
+    root.write(
+        "docs/next.md",
+        "# Next page
+
+A second page.
+",
+    );
+    let port = std::net::TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0))
+        .unwrap()
+        .local_addr()
+        .unwrap()
+        .port();
+    let (stop, stopped) = tokio::sync::oneshot::channel();
+    let reports = Arc::new(Reports::default());
+    let runner = CommandRunner::with_reporter(reports.clone());
+    let options = ServeOptions {
+        config,
+        output: output.clone(),
+        host: std::net::Ipv4Addr::LOCALHOST.into(),
+        port,
+        live_reload: true,
+        open: false,
+    };
+    let task = tokio::spawn(async move {
+        runner
+            .serve_with(
+                options,
+                ExecutionDeadlines::default(),
+                Box::pin(async {
+                    let _ = stopped.await;
+                }),
+            )
+            .await
+    });
+    until(async || {
+        request(port, "/")
+            .await
+            .is_some_and(|html| html.contains("Original marker."))
+    })
+    .await;
+    let first = revision(port).await;
+    root.write(
+        "docs/temporary",
+        "# First page
+
+Replacement marker.
+",
+    );
+    std::fs::rename(
+        root.path().join("docs/temporary"),
+        root.path().join("docs/index.md"),
+    )
+    .unwrap();
+    until(async || revision(port).await != first).await;
+    let edited = revision(port).await;
+    assert_eq!(edited, first.wrapping_add(1));
+    let notice = request_as(
+        port,
+        &format!("/__diplodocus/revision?since={first}"),
+        "application/json",
+    )
+    .await
+    .unwrap();
+    let notice: serde_json::Value =
+        serde_json::from_str(notice.split_once("\r\n\r\n").unwrap().1).unwrap();
+    assert_eq!(notice["route"], "/index.html");
+    assert_eq!(notice["revision"], edited.to_string());
+
+    let published = files(&output);
+    assert!(
+        std::str::from_utf8(&published[Path::new("index.html")])
+            .unwrap()
+            .contains("Replacement marker.")
+    );
+    for path in ["index.md", "assets/search.json"] {
+        let response = request(port, &format!("/{path}")).await.unwrap();
+        assert_eq!(
+            response.split_once("\r\n\r\n").unwrap().1.as_bytes(),
+            published[Path::new(path)]
+        );
+        assert!(response.contains("Replacement marker."));
+    }
+
+    root.write(
+        "docs/index.md",
+        "# First page
+
+[Broken link](missing.md)
+",
+    );
+    until(async || reports.0.load(Ordering::Relaxed)).await;
+    assert_eq!(revision(port).await, edited);
+    assert_eq!(files(&output), published);
+    assert!(
+        request(port, "/")
+            .await
+            .unwrap()
+            .contains("Replacement marker.")
+    );
+    assert!(
+        request(port, "/assets/search.json")
+            .await
+            .unwrap()
+            .contains("Replacement marker.")
+    );
+
+    root.write(
+        "docs/index.md",
+        "# First page
+
+Recovered marker.
+",
+    );
+    root.write(
+        "docs/next.md",
+        "# Next page
+
+Another save.
+",
+    );
+    until(async || {
+        request(port, "/")
+            .await
+            .is_some_and(|html| html.contains("Recovered marker."))
+            && request(port, "/next")
+                .await
+                .is_some_and(|html| html.contains("Another save."))
+    })
+    .await;
+    assert!(
+        request(port, "/assets/search.json")
+            .await
+            .unwrap()
+            .contains("Another save.")
+    );
+    let _ = stop.send(());
     task.await.unwrap().unwrap();
 }

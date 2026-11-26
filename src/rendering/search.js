@@ -13,6 +13,7 @@
   let loading = false;
   let failed = false;
   let opener;
+  let indexRevision = 0;
 
   function excerpt(text, query) {
     const fragment = document.createDocumentFragment();
@@ -144,6 +145,7 @@
 
   async function load() {
     if (entries || loading) return;
+    const revision = indexRevision;
     loading = true;
     failed = false;
     search();
@@ -151,6 +153,7 @@
       const response = await fetch(new URL('search.json', script.src));
       if (!response.ok) throw new Error('Search index unavailable');
       const index = await response.json();
+      if (revision !== indexRevision) return;
       if (!Array.isArray(index)) throw new Error('Invalid search index');
       for (const entry of index) {
         if (entry.path.includes('#')) continue;
@@ -161,12 +164,16 @@
       }
       entries = index;
     } catch {
-      pages.clear();
-      sections.clear();
-      failed = true;
+      if (revision === indexRevision) {
+        pages.clear();
+        sections.clear();
+        failed = true;
+      }
     } finally {
-      loading = false;
-      if (dialog.open) search();
+      if (revision === indexRevision) {
+        loading = false;
+        if (dialog.open) search();
+      }
     }
   }
 
@@ -202,7 +209,18 @@
     }
   });
   const close = () => { if (dialog.open) dialog.close(); };
-  document.addEventListener('diplodocus:before-page-change', close);
+  document.addEventListener('diplodocus:before-page-change', event => {
+    if (!event.detail?.preview) close();
+  });
+  document.addEventListener('diplodocus:preview-search', () => {
+    indexRevision++;
+    entries = undefined;
+    loading = false;
+    failed = false;
+    pages.clear();
+    sections.clear();
+    if (dialog.open) void load();
+  });
   window.addEventListener('popstate', close);
   document.addEventListener('keydown', event => {
     if ((event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'k') {

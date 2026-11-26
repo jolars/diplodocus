@@ -233,8 +233,7 @@ pub(crate) fn render_with_image_cache(
     let images = super::images::Images::new(image_cache.as_deref());
     let mut tab_icons = BTreeSet::new();
     let mut shell_positions = Vec::new();
-    // Reserve space for the final SHA-256 fingerprint without shifting page bytes later.
-    let shell_placeholder = "0".repeat(64);
+    let mut preview_icons = BTreeMap::new();
     if standalone {
         files.insert(
             "__diplodocus/worker.js".into(),
@@ -249,25 +248,261 @@ pub(crate) fn render_with_image_cache(
     let mut uses_math = false;
     let math_context = katex::KatexContext::default();
     let highlighter = super::highlighting::Highlighter::new();
+    let context = PageRenderer {
+        site,
+        standalone,
+        images: &images,
+        math_context: &math_context,
+        highlighter: &highlighter,
+    };
     for (route, page) in &site.pages {
         progress.item(route);
+        let mut page_icons = BTreeSet::new();
+        let rendered = context.render(route, page, &mut page_icons, &mut search)?;
+        tab_icons.extend(page_icons.iter().cloned());
+        if site.preview && !page_icons.is_empty() {
+            preview_icons.insert(route.clone(), page_icons);
+        }
+        uses_math |= rendered.uses_math;
+        shell_positions.extend(rendered.shell_position.map(|position| (route, position)));
+        documents.extend(rendered.fragment);
+        files.insert(rendered.markdown_path, rendered.markdown);
+        files.insert(route.clone(), rendered.html);
+        progress.advance();
+    }
+    progress.finish();
+    let assets = reporting.stage("Preparing site assets", None);
+    let tab_icon_style = super::tab_icons::stylesheet(&tab_icons);
+    if standalone {
+        // The shared shell includes the icons collected from every rendered page.
+        let fingerprint = navigation_shell_fingerprint(site, &images, &tab_icon_style)?;
+        for (route, offset) in shell_positions {
+            let html = &mut files.get_mut(route).expect("rendered page").bytes;
+            html[offset..offset + SHELL_PLACEHOLDER.len()].copy_from_slice(fingerprint.as_bytes());
+        }
+    }
+    if uses_math {
+        for (path, bytes, media_type) in super::katex_assets::ASSETS {
+            assets.item(path);
+            files.insert((*path).into(), file(bytes.to_vec(), media_type));
+        }
+    }
+    let images = images.into_cache();
+    if let Some(cache) = image_cache {
+        files.extend(
+            images
+                .files()
+                .map(|(path, file)| (path.to_owned(), file.clone())),
+        );
+        *cache = images;
+    } else {
+        files.extend(images.into_files());
+    }
+    for (digest, asset) in site.assets {
+        assets.item(digest);
+        files.insert(
+            site.asset_route(digest)?,
+            file(asset.bytes.clone(), &asset.media_type),
+        );
+    }
+    assets.item("stylesheets and browser scripts");
+    let mut style = if standalone {
+        format!("{STYLE}\n{}", super::highlighting::stylesheet())
+    } else {
+        super::highlighting::fragment_stylesheet()
+    };
+    style.push_str(&tab_icon_style);
+    if site.logo_dark.is_some() || site.header_logo_dark.is_some() {
+        style.push_str(include_str!("assets/styles/logo.css"));
+    }
+    files.insert(
+        if standalone {
+            "assets/site.css"
+        } else {
+            super::fragments::CONTENT_CSS
+        }
+        .into(),
+        file(style.into_bytes(), "text/css; charset=utf-8"),
+    );
+    if standalone && site.components_enabled && !site.components.is_empty() {
+        files.insert(
+            "assets/components.js".into(),
+            file(
+                include_str!("components.js").as_bytes().to_vec(),
+                "text/javascript; charset=utf-8",
+            ),
+        );
+        for (id, bundle) in site.components {
+            assets.item(id);
+            let prefix = bundle.prefix(id);
+            for (path, digest) in &bundle.files {
+                files.insert(
+                    format!("{prefix}{path}"),
+                    file(
+                        site.assets[digest].bytes.clone(),
+                        crate::components::media_type(path),
+                    ),
+                );
+            }
+        }
+    }
+    if standalone {
+        files.insert(
+            "assets/search.js".into(),
+            file(SEARCH.as_bytes().to_vec(), "text/javascript; charset=utf-8"),
+        );
+        files.insert(
+            "assets/nav.js".into(),
+            file(
+                NAV_SCRIPT.as_bytes().to_vec(),
+                "text/javascript; charset=utf-8",
+            ),
+        );
+        files.insert(
+            "assets/code.js".into(),
+            file(
+                include_str!("code.js").as_bytes().to_vec(),
+                "text/javascript; charset=utf-8",
+            ),
+        );
+    }
+    files.insert(
+        super::fragments::TABSETS.into(),
+        file(
+            include_str!("tabsets.js").as_bytes().to_vec(),
+            "text/javascript; charset=utf-8",
+        ),
+    );
+    files.insert(
+        super::fragments::SEARCH_INDEX.into(),
+        file(
+            serde_json::to_vec(&search).map_err(|_| SiteError::Evidence)?,
+            "application/json",
+        ),
+    );
+    if standalone {
+        if let Some(id) = site.presentation.primary_package.as_deref()
+            && site.package_overview(id) == "index.html"
+        {
+            let alias = format!("{}/index.html", site.package_root(id));
+            let url = site.url(&alias, "index.html");
+            let canonical = escape(
+                site.canonical_urls
+                    .get("index.html")
+                    .map_or(url.as_str(), String::as_str),
+            );
+            let url = escape(&url);
+            let html = format!(
+                "<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><title>Package overview</title><link rel=\"canonical\" href=\"{canonical}\"><meta http-equiv=\"refresh\" content=\"0;url={url}\"><a href=\"{url}\">Package overview</a></html>"
+            );
+            if files.contains_key(&alias) {
+                return Err(SiteError::Route(alias));
+            }
+            files.insert(alias, file(html.into_bytes(), "text/html; charset=utf-8"));
+        }
+        super::sitemap::render(site, &mut files)?;
+        if !site.redirects.is_empty() {
+            files.insert(
+                "_redirects".into(),
+                file(
+                    site.redirect_rules().into_bytes(),
+                    "text/plain; charset=utf-8",
+                ),
+            );
+        }
+    } else {
+        files.insert(
+            "documents.json".into(),
+            file(
+                serde_json::to_vec(&super::FragmentIndex {
+                    format_version: 2,
+                    documents,
+                })
+                .map_err(|_| SiteError::Evidence)?,
+                "application/json",
+            ),
+        );
+    }
+    for (path, digest) in site.public_assets {
+        assets.item(path);
+        if files.contains_key(path) {
+            return Err(SiteError::Presentation(format!(
+                "public asset {path:?} conflicts with generated output"
+            )));
+        }
+        let asset = site.assets.get(digest).ok_or(SiteError::Evidence)?;
+        files.insert(
+            path.clone(),
+            file(asset.bytes.clone(), crate::site_assets::media_type(path)),
+        );
+    }
+    if let Some(map) = &site.url_map {
+        map.validate_assets(&files)?;
+    }
+    assets.finish();
+    Ok(RenderedSite {
+        page_count: site.pages.len(),
+        preview_icons,
+        files,
+        redirects: if standalone {
+            site.redirects.clone()
+        } else {
+            BTreeMap::new()
+        },
+    })
+}
+
+// Reserve space for the final SHA-256 fingerprint without shifting page bytes later.
+const SHELL_PLACEHOLDER: &str = "0000000000000000000000000000000000000000000000000000000000000000";
+
+struct PageRenderer<'a, 'b> {
+    site: &'a Site<'b>,
+    standalone: bool,
+    images: &'a super::images::Images<'a>,
+    math_context: &'a katex::KatexContext,
+    highlighter: &'a super::highlighting::Highlighter,
+}
+
+struct RenderedPage {
+    html: RenderedFile,
+    markdown_path: String,
+    markdown: RenderedFile,
+    shell_position: Option<usize>,
+    fragment: Option<super::fragments::FragmentDocument>,
+    uses_math: bool,
+}
+
+impl PageRenderer<'_, '_> {
+    fn render(
+        &self,
+        route: &str,
+        page: &PageModel<'_>,
+        tab_icons: &mut BTreeSet<String>,
+        search: &mut Vec<serde_json::Value>,
+    ) -> Result<RenderedPage, SiteError> {
+        let PageRenderer {
+            site,
+            standalone,
+            images,
+            math_context,
+            highlighter,
+        } = *self;
         let metadata = site.page_metadata(route, page);
         let home = site.home(route);
         let layout = page.layout();
         let markdown_path = super::fragments::markdown_path(route)?;
         let page_math = super::fragments::page_uses_math(site, page);
-        uses_math |= page_math;
         let mut renderer = Renderer {
-            images: &images,
-            tab_icons: &mut tab_icons,
+            images,
+            tab_icons,
             standalone,
             site,
             page,
             resolved: page.resolved,
             route,
             document_route: route,
-            math_context: &math_context,
-            highlighter: &highlighter,
+            math_context,
+            highlighter,
             cell: 0,
             headings: Vec::new(),
             identifiers: page
@@ -305,6 +540,7 @@ pub(crate) fn render_with_image_cache(
         let package_overview =
             super::package_metadata::is_overview(site, route, page.owner.as_deref());
         let mut html = String::new();
+        let mut shell_position = None;
         if standalone {
             html = format!(
                 "<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><script>{THEME_SCRIPT}</script>",
@@ -356,8 +592,8 @@ pub(crate) fn render_with_image_cache(
             }
             render_site_resources(&mut html, site, route);
             html.push_str("</head><body data-diplodocus-navigation=\"1\" data-diplodocus-shell=\"");
-            shell_positions.push((route, html.len()));
-            html.push_str(&shell_placeholder);
+            shell_position = Some(html.len());
+            html.push_str(SHELL_PLACEHOLDER);
             write!(
                 html,
                 "\" data-layout=\"{}\"><a class=\"skip-link\" href=\"#main\">Skip to content</a>",
@@ -369,7 +605,7 @@ pub(crate) fn render_with_image_cache(
             )
             .unwrap();
             html.push_str("<header>");
-            brand(&mut html, site, route, &images)?;
+            brand(&mut html, site, route, images)?;
             super::navigation::sections(&mut html, site, route, "desktop-sections");
             html.push_str("<div class=\"header-actions\">");
             html.push_str(SEARCH_TRIGGER);
@@ -427,7 +663,7 @@ pub(crate) fn render_with_image_cache(
                 )
             });
         if let Some(home) = home {
-            super::home::render(&mut html, site, route, home, &images, standalone)?;
+            super::home::render(&mut html, site, route, home, images, standalone)?;
             if page.document.is_some() {
                 html.push_str("<div class=\"home-content\">");
             }
@@ -699,7 +935,7 @@ pub(crate) fn render_with_image_cache(
                 if let Some(document) = &item.documentation {
                     // Members keep their own resolution context on the owning page.
                     let mut member_renderer = Renderer {
-                        images: &images,
+                        images,
                         tab_icons: renderer.tab_icons,
                         standalone,
                         site,
@@ -707,8 +943,8 @@ pub(crate) fn render_with_image_cache(
                         resolved: member_page.resolved,
                         route,
                         document_route: route,
-                        math_context: &math_context,
-                        highlighter: &highlighter,
+                        math_context,
+                        highlighter,
                         cell: 0,
                         headings: Vec::new(),
                         identifiers: BTreeSet::new(),
@@ -817,13 +1053,11 @@ pub(crate) fn render_with_image_cache(
             html.push_str("</div>");
         }
         let content_end = html.len();
-        files.insert(
-            markdown_path.clone(),
-            file(
-                super::markdown::page(site, route, page)?.into_bytes(),
-                "text/markdown; charset=utf-8",
-            ),
+        let markdown = file(
+            super::markdown::page(site, route, page)?.into_bytes(),
+            "text/markdown; charset=utf-8",
         );
+        let mut fragment = None;
         if standalone {
             html.push_str("</main>");
             if home.is_none() && layout == PageLayout::Docs {
@@ -834,8 +1068,8 @@ pub(crate) fn render_with_image_cache(
             super::footer::render(&mut html, site);
             html.push_str("</body></html>\n");
         } else {
-            documents.push(
-                super::FragmentInventoryDocument::new(site, route, page, markdown_path)
+            fragment = Some(
+                super::FragmentInventoryDocument::new(site, route, page, markdown_path.clone())
                     .rendered(renderer.headings),
             );
         }
@@ -987,191 +1221,66 @@ pub(crate) fn render_with_image_cache(
             search.push(serde_json::json!({"title": search_title, "path": path, "package": package.map(|p| &p.name), "ecosystem": package.map(|p| &p.ecosystem), "api": page.item.is_some(), "text": search_text, "context": context, "intro": intro, "sections": sections}));
         }
         super::anchors::validate_html(site, route, &html)?;
-        files.insert(
-            route.clone(),
-            file(html.into_bytes(), "text/html; charset=utf-8"),
-        );
-        progress.advance();
+        Ok(RenderedPage {
+            html: file(html.into_bytes(), "text/html; charset=utf-8"),
+            markdown_path,
+            markdown,
+            shell_position,
+            fragment,
+            uses_math: page_math,
+        })
     }
-    progress.finish();
-    let assets = reporting.stage("Preparing site assets", None);
-    let tab_icon_style = super::tab_icons::stylesheet(&tab_icons);
-    if standalone {
-        // The shared shell includes the icons collected from every rendered page.
-        let fingerprint = navigation_shell_fingerprint(site, &images, &tab_icon_style)?;
-        for (route, offset) in shell_positions {
-            let html = &mut files.get_mut(route).expect("rendered page").bytes;
-            html[offset..offset + shell_placeholder.len()].copy_from_slice(fingerprint.as_bytes());
-        }
+}
+
+pub(crate) struct PreviewPage {
+    pub html: RenderedFile,
+    pub markdown: (String, RenderedFile),
+    pub search: Option<serde_json::Value>,
+}
+
+pub(crate) fn render_preview_page(
+    site: &Site<'_>,
+    route: &str,
+    page: &PageModel<'_>,
+    baseline: &RenderedSite,
+    cache: &super::ImageCache,
+) -> Result<Option<PreviewPage>, SiteError> {
+    let previous = &site.pages[route];
+    if !super::anchors::same_inventory(site, route, previous, page)?
+        || super::fragments::page_uses_math(site, previous)
+            != super::fragments::page_uses_math(site, page)
+    {
+        return Ok(None);
     }
-    if uses_math {
-        for (path, bytes, media_type) in super::katex_assets::ASSETS {
-            assets.item(path);
-            files.insert((*path).into(), file(bytes.to_vec(), media_type));
-        }
-    }
-    let images = images.into_cache();
-    if let Some(cache) = image_cache {
-        files.extend(
-            images
-                .files()
-                .map(|(path, file)| (path.to_owned(), file.clone())),
-        );
-        *cache = images;
-    } else {
-        files.extend(images.into_files());
-    }
-    for (digest, asset) in site.assets {
-        assets.item(digest);
-        files.insert(
-            site.asset_route(digest)?,
-            file(asset.bytes.clone(), &asset.media_type),
-        );
-    }
-    assets.item("stylesheets and browser scripts");
-    let mut style = if standalone {
-        format!("{STYLE}\n{}", super::highlighting::stylesheet())
-    } else {
-        super::highlighting::fragment_stylesheet()
+    let context = PageRenderer {
+        site,
+        standalone: true,
+        images: &super::images::Images::new(Some(cache)),
+        math_context: &katex::KatexContext::default(),
+        highlighter: &super::highlighting::Highlighter::new(),
     };
-    style.push_str(&tab_icon_style);
-    if site.logo_dark.is_some() || site.header_logo_dark.is_some() {
-        style.push_str(include_str!("assets/styles/logo.css"));
+    let mut search = Vec::new();
+    let mut icons = BTreeSet::new();
+    let mut rendered = context.render(route, page, &mut icons, &mut search)?;
+    if !icons
+        .iter()
+        .eq(baseline.preview_icons.get(route).into_iter().flatten())
+    {
+        return Ok(None);
     }
-    files.insert(
-        if standalone {
-            "assets/site.css"
-        } else {
-            super::fragments::CONTENT_CSS
-        }
-        .into(),
-        file(style.into_bytes(), "text/css; charset=utf-8"),
-    );
-    if standalone && site.components_enabled && !site.components.is_empty() {
-        files.insert(
-            "assets/components.js".into(),
-            file(
-                include_str!("components.js").as_bytes().to_vec(),
-                "text/javascript; charset=utf-8",
-            ),
-        );
-        for (id, bundle) in site.components {
-            assets.item(id);
-            let prefix = bundle.prefix(id);
-            for (path, digest) in &bundle.files {
-                files.insert(
-                    format!("{prefix}{path}"),
-                    file(
-                        site.assets[digest].bytes.clone(),
-                        crate::components::media_type(path),
-                    ),
-                );
-            }
-        }
-    }
-    if standalone {
-        files.insert(
-            "assets/search.js".into(),
-            file(SEARCH.as_bytes().to_vec(), "text/javascript; charset=utf-8"),
-        );
-        files.insert(
-            "assets/nav.js".into(),
-            file(
-                NAV_SCRIPT.as_bytes().to_vec(),
-                "text/javascript; charset=utf-8",
-            ),
-        );
-        files.insert(
-            "assets/code.js".into(),
-            file(
-                include_str!("code.js").as_bytes().to_vec(),
-                "text/javascript; charset=utf-8",
-            ),
-        );
-    }
-    files.insert(
-        super::fragments::TABSETS.into(),
-        file(
-            include_str!("tabsets.js").as_bytes().to_vec(),
-            "text/javascript; charset=utf-8",
-        ),
-    );
-    files.insert(
-        super::fragments::SEARCH_INDEX.into(),
-        file(
-            serde_json::to_vec(&search).map_err(|_| SiteError::Evidence)?,
-            "application/json",
-        ),
-    );
-    if standalone {
-        if let Some(id) = site.presentation.primary_package.as_deref()
-            && site.package_overview(id) == "index.html"
-        {
-            let alias = format!("{}/index.html", site.package_root(id));
-            let url = site.url(&alias, "index.html");
-            let canonical = escape(
-                site.canonical_urls
-                    .get("index.html")
-                    .map_or(url.as_str(), String::as_str),
-            );
-            let url = escape(&url);
-            let html = format!(
-                "<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><title>Package overview</title><link rel=\"canonical\" href=\"{canonical}\"><meta http-equiv=\"refresh\" content=\"0;url={url}\"><a href=\"{url}\">Package overview</a></html>"
-            );
-            if files.contains_key(&alias) {
-                return Err(SiteError::Route(alias));
-            }
-            files.insert(alias, file(html.into_bytes(), "text/html; charset=utf-8"));
-        }
-        super::sitemap::render(site, &mut files)?;
-        if !site.redirects.is_empty() {
-            files.insert(
-                "_redirects".into(),
-                file(
-                    site.redirect_rules().into_bytes(),
-                    "text/plain; charset=utf-8",
-                ),
-            );
-        }
-    } else {
-        files.insert(
-            "documents.json".into(),
-            file(
-                serde_json::to_vec(&super::FragmentIndex {
-                    format_version: 2,
-                    documents,
-                })
-                .map_err(|_| SiteError::Evidence)?,
-                "application/json",
-            ),
-        );
-    }
-    for (path, digest) in site.public_assets {
-        assets.item(path);
-        if files.contains_key(path) {
-            return Err(SiteError::Presentation(format!(
-                "public asset {path:?} conflicts with generated output"
-            )));
-        }
-        let asset = site.assets.get(digest).ok_or(SiteError::Evidence)?;
-        files.insert(
-            path.clone(),
-            file(asset.bytes.clone(), crate::site_assets::media_type(path)),
-        );
-    }
-    if let Some(map) = &site.url_map {
-        map.validate_assets(&files)?;
-    }
-    assets.finish();
-    Ok(RenderedSite {
-        page_count: site.pages.len(),
-        files,
-        redirects: if standalone {
-            site.redirects.clone()
-        } else {
-            BTreeMap::new()
-        },
-    })
+    let marker = "data-diplodocus-shell=\"";
+    let shell = std::str::from_utf8(&baseline.files[route].bytes)
+        .ok()
+        .and_then(|html| html.split_once(marker))
+        .and_then(|(_, rest)| rest.get(..SHELL_PLACEHOLDER.len()))
+        .ok_or(SiteError::Evidence)?;
+    let offset = rendered.shell_position.expect("standalone page");
+    rendered.html.bytes[offset..offset + shell.len()].copy_from_slice(shell.as_bytes());
+    Ok(Some(PreviewPage {
+        html: rendered.html,
+        markdown: (rendered.markdown_path, rendered.markdown),
+        search: search.pop(),
+    }))
 }
 
 pub(super) fn julia_documentation_signatures(item: &Item) -> &[crate::ir::SourcedSignature] {

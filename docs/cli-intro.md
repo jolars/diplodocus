@@ -1,7 +1,7 @@
 `check`, `extract`, `build`, and `serve` use `./diplodocus.yaml` unless given
 `--config PATH`. Extraction writes `.diplodocus/documentation.sqlite` beside
 that configuration; `extract --output PATH` changes the snapshot destination.
-`generate` requires `--input PATH`. `generate`, `build`, and `serve` write to
+`generate` requires `--input PATH`. `generate` and `build` write to
 `./site` unless given `--output PATH`. Relative command-line paths resolve from
 the working directory.
 
@@ -55,14 +55,16 @@ Stopping the watcher waits for active example execution to clean up. The
 [VitePress example](https://github.com/jolars/diplodocus/tree/main/examples/vitepress)
 connects these events to an existing frontend's development server.
 
-`serve` renders from memory and writes the preview site to its output directory.
-Use `extract` or `build` to write a SQLite snapshot.
+`serve` serves the preview from memory. Pass `--output PATH` to also write the
+site to disk. Use `extract` or `build` to write a SQLite snapshot.
 
 `serve` listens on `127.0.0.1:8000` by default. Use `--host` and `--port` to
 change the address. The ready message shows a clickable URL in terminals that
-support hyperlinks and a plain URL elsewhere. Open pages refresh after each
-successful rebuild. Use `--no-live-reload` to turn off browser refresh, or
-`--no-watch` to build once and serve that version until you stop the server.
+support hyperlinks and a plain URL elsewhere. The browser updates an edited
+Markdown page in place when the edit affects only that page and preserves its
+route, title, and anchors. A full rebuild refreshes open pages.
+Use `--no-live-reload` to turn off browser refresh, or `--no-watch` to build
+once and serve that version until you stop the server.
 Add `--open` to open the local URL in your default browser once the server is
 ready.
 With `--port 0`, the URL uses the assigned

@@ -253,6 +253,15 @@ impl ResolvedWorkspace {
             .chain(self.public_directories.keys())
             .map(PathBuf::as_path)
     }
+    pub(crate) fn shared_file_targets(&self) -> impl Iterator<Item = &Path> {
+        self.input_paths()
+            .chain(self.inputs.values().map(|entry| entry.path.as_path()))
+            .chain(
+                self.repository_targets
+                    .values()
+                    .map(|entry| entry.path.as_path()),
+            )
+    }
     pub(crate) fn public_directory_paths(&self) -> impl Iterator<Item = &Path> {
         self.public_directories.keys().map(PathBuf::as_path)
     }

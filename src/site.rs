@@ -125,6 +125,18 @@ impl PageModel<'_> {
             .unwrap_or(PageLayout::Docs)
     }
 
+    pub(crate) fn with_authored_document<'a>(
+        &self,
+        document: &'a SourcedDocument,
+        resolved: &'a ResolvedDocument,
+    ) -> PageModel<'a> {
+        let mut page = PageModel::empty(self.title.clone(), self.owner.clone(), self.visible);
+        page.navigation = self.navigation;
+        page.document = Some(document);
+        page.resolved = Some(resolved);
+        page
+    }
+
     fn empty(title: String, owner: Option<String>, visible: bool) -> Self {
         Self {
             title,
@@ -163,6 +175,14 @@ impl<'a> Site<'a> {
     /// Assign collision-checked routes and normalize authored cell presentation.
     /// No source files, database connections, or language runtimes are used.
     pub fn new(snapshot: &'a Snapshot) -> Result<Self, SiteError> {
+        Self::from_snapshot(snapshot, false)
+    }
+
+    pub(crate) fn preview(snapshot: &'a Snapshot) -> Result<Self, SiteError> {
+        Self::from_snapshot(snapshot, true)
+    }
+
+    fn from_snapshot(snapshot: &'a Snapshot, preview: bool) -> Result<Self, SiteError> {
         Self::from_inputs(
             SiteInputs {
                 workspace: snapshot.workspace(),
@@ -179,6 +199,7 @@ impl<'a> Site<'a> {
                 assets: snapshot.assets(),
             },
             |id| snapshot.executed_page(id),
+            preview,
         )
     }
 
@@ -203,6 +224,7 @@ impl<'a> Site<'a> {
                 assets: resolved.assets(),
             },
             |_| None,
+            false,
         )?;
         Ok(site.title_diagnostics())
     }
@@ -210,6 +232,7 @@ impl<'a> Site<'a> {
     fn from_inputs(
         inputs: SiteInputs<'a>,
         executed_page: impl Fn(&str) -> Option<&'a ValidatedPage>,
+        preview: bool,
     ) -> Result<Self, SiteError> {
         let workspace = inputs.workspace;
         let mut site = Self {
@@ -218,7 +241,7 @@ impl<'a> Site<'a> {
             components: inputs.components,
             components_enabled: false,
             site_scripts_enabled: false,
-            preview: false,
+            preview,
             presentation: inputs.presentation,
             sidebar: None,
             package_mounts: inputs.package_mounts,
@@ -287,46 +310,50 @@ impl<'a> Site<'a> {
                     format!("{}/", collection.mount)
                 };
                 model.mode = collection.execution.mode;
-                let config = crate::configuration::ContentConfiguration {
-                    id: match &page.kind {
-                        PageKind::Authored { collection } => collection.clone(),
-                        _ => unreachable!(),
-                    },
-                    owner: owner.clone().unwrap_or_else(|| "project".into()),
-                    repository: collection.repository.clone(),
-                    path: ".".into(),
-                    mount: collection.mount.clone(),
-                    format: collection.format,
-                    navigation: collection.navigation,
-                    incremental: Default::default(),
-                    execution: crate::configuration::ExecutionConfiguration {
-                        mode: collection.execution.mode,
-                        engine: collection.execution.engine,
-                        kernel: collection.execution.kernel.clone(),
-                        julia_project: collection
-                            .execution
-                            .julia_project
-                            .as_ref()
-                            .map(|path| path.as_str().into()),
-                        declared_environment_inputs: Vec::new(),
-                    },
-                };
-                let raw = page
-                    .document
-                    .raw_source
-                    .as_deref()
-                    .ok_or(SiteError::Evidence)?;
-                let prepared =
-                    prepare_collection_document(raw, &config).map_err(|_| SiteError::Evidence)?;
-                if prepared
-                    .parsed
-                    .diagnostics
-                    .iter()
-                    .any(|d| d.severity == crate::diagnostics::Severity::Error)
-                {
-                    return Err(SiteError::Evidence);
+                // The preview snapshot came from live source assembly, which already
+                // parsed GFM. Only Quarto produces prepared cells.
+                if !preview || collection.format != crate::documents::AuthoredFormat::Gfm {
+                    let config = crate::configuration::ContentConfiguration {
+                        id: match &page.kind {
+                            PageKind::Authored { collection } => collection.clone(),
+                            _ => unreachable!(),
+                        },
+                        owner: owner.clone().unwrap_or_else(|| "project".into()),
+                        repository: collection.repository.clone(),
+                        path: ".".into(),
+                        mount: collection.mount.clone(),
+                        format: collection.format,
+                        navigation: collection.navigation,
+                        incremental: Default::default(),
+                        execution: crate::configuration::ExecutionConfiguration {
+                            mode: collection.execution.mode,
+                            engine: collection.execution.engine,
+                            kernel: collection.execution.kernel.clone(),
+                            julia_project: collection
+                                .execution
+                                .julia_project
+                                .as_ref()
+                                .map(|path| path.as_str().into()),
+                            declared_environment_inputs: Vec::new(),
+                        },
+                    };
+                    let raw = page
+                        .document
+                        .raw_source
+                        .as_deref()
+                        .ok_or(SiteError::Evidence)?;
+                    let prepared = prepare_collection_document(raw, &config)
+                        .map_err(|_| SiteError::Evidence)?;
+                    if prepared
+                        .parsed
+                        .diagnostics
+                        .iter()
+                        .any(|d| d.severity == crate::diagnostics::Severity::Error)
+                    {
+                        return Err(SiteError::Evidence);
+                    }
+                    model.cells = prepared.preparation.map(|p| p.cells).unwrap_or_default();
                 }
-                model.cells = prepared.preparation.map(|p| p.cells).unwrap_or_default();
                 format!("{base}{mount}{stem}.html")
             } else if let PageKind::PackageDocumentation { role } = &page.kind {
                 let package = owner.as_ref().ok_or(SiteError::Evidence)?;

@@ -12,6 +12,7 @@ use crate::validation::{ResolutionError, resolve_workspace};
 
 mod pipeline;
 mod preview;
+mod preview_edits;
 mod runner;
 mod watching;
 pub use pipeline::extract_with;
@@ -37,11 +38,11 @@ pub struct BuildOptions {
 
 /// Options for building and serving a documentation site locally.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ServeOptions {
+pub struct ServeOptions<Output = PathBuf> {
     /// Path to the workspace configuration file.
     pub config: PathBuf,
     /// Directory in which to write the generated site.
-    pub output: PathBuf,
+    pub output: Output,
     /// Address on which to serve the generated site.
     pub host: IpAddr,
     /// Port on which to serve the generated site.
@@ -50,6 +51,19 @@ pub struct ServeOptions {
     pub live_reload: bool,
     /// Open the local preview in a browser after the first successful build.
     pub open: bool,
+}
+
+impl From<ServeOptions> for ServeOptions<Option<PathBuf>> {
+    fn from(options: ServeOptions) -> Self {
+        Self {
+            config: options.config,
+            output: Some(options.output),
+            host: options.host,
+            port: options.port,
+            live_reload: options.live_reload,
+            open: options.open,
+        }
+    }
 }
 
 /// An error returned by a Diplodocus command operation.
