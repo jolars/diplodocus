@@ -1001,7 +1001,7 @@
         "tests/snapshot_refresh.rs"
       ],
       "action": "Build and serve a successful site; fail extraction after changing sources, then allow extraction but introduce a route collision or site publication failure. Repair the fault and retry generation or a watched rebuild.",
-      "expected": "A failed extraction preserves the previous snapshot and site and never generates from stale records. A failed build generation preserves the newly extracted snapshot and last successful site. Serve leaves snapshots untouched, retains the last successful site, and recovers on the same server.",
+      "expected": "A failed extraction preserves the previous snapshot and site and never generates from stale records. A failed build generation preserves the newly extracted snapshot and last successful site. Generation can be retried using that snapshot. Serve leaves snapshots untouched, retains the last successful site, and recovers on the same server.",
       "milestone": 9
     },
     {

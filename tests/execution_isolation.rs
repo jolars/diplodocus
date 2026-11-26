@@ -383,7 +383,7 @@ fn never_extract_build_and_watched_serve_leave_execution_untouched() {
             }
             let mut child = fixture
                 .command(cargo_bin("diplodocus"))
-                .args(["serve", "--port", "0"])
+                .args(["serve", "--port", "0", "--output", "site"])
                 .stdout(Stdio::null())
                 .stderr(Stdio::piped())
                 .spawn()
