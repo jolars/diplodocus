@@ -49,11 +49,24 @@ pub(crate) fn watch_inputs(
     repository: &crate::paths::ResolvedRepositoryPaths,
     format: AuthoredFormat,
 ) -> Vec<PathBuf> {
+    match include_prefix(format) {
+        Some(prefix) if !text.contains(prefix) => return vec![path.to_owned()],
+        None => return Vec::new(),
+        _ => {}
+    }
     let mut inputs = Vec::new();
     let _ = expand_with_inputs(text, path, root, repository, format, &mut |input| {
         inputs.push(input.to_owned());
     });
     inputs
+}
+
+fn include_prefix(format: AuthoredFormat) -> Option<&'static str> {
+    match format {
+        AuthoredFormat::Gfm => Some("<!--@include"),
+        AuthoredFormat::Qmd => Some("{{< include"),
+        _ => None,
+    }
 }
 
 fn expand_with_inputs(
@@ -117,6 +130,14 @@ impl Context<'_> {
         self.expanded
             .inputs
             .push((location.clone(), text.to_owned()));
+        let prefix = include_prefix(self.format).expect("include-capable format");
+        // A top-level document without directive markers needs only its
+        // identity source map. Partials still need the frontmatter check.
+        if self.chain.is_empty() && !text.contains(prefix) {
+            self.copy(text, 0, text.len(), &location);
+            self.active.pop();
+            return Ok(());
+        }
         let flavor = if self.format == AuthoredFormat::Gfm {
             Flavor::Gfm
         } else {
@@ -131,11 +152,6 @@ impl Context<'_> {
                 "Included files cannot declare frontmatter.",
             ));
         }
-        let prefix = if self.format == AuthoredFormat::Gfm {
-            "<!--@include"
-        } else {
-            "{{< include"
-        };
         let (code_prefix, _) = code_delimiters(self.format);
         let mut cursor = 0;
         for block in parsed.document().block_nodes() {

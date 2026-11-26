@@ -22,7 +22,6 @@ impl WorkspaceSources {
         mut options: WorkspaceExecution<'_>,
     ) -> Result<ExecutedWorkspace, AssemblyError> {
         check_cancellation(&mut options.cancellation).await?;
-        self.revalidate()?;
         let mut staging: Option<tempfile::TempDir> = None;
         let mut pages = BTreeMap::new();
         let timing = self.reporting.phase(Phase::Examples, None, None);
@@ -43,6 +42,11 @@ impl WorkspaceSources {
                 })
                 .collect();
             order.sort_by_key(|(_, page)| (page.collection, &page.relative));
+            // Empty runs still verify inputs at completion. Only a run that
+            // can start a kernel needs a separate check before execution.
+            if !order.is_empty() {
+                self.revalidate()?;
+            }
             let mut progress = self
                 .reporting
                 .stage("Executing QMD pages", Some(order.len()));

@@ -114,6 +114,9 @@ pub(super) struct Watcher {
     interval: tokio::time::Interval,
 }
 
+const WATCH_POLL_INTERVAL: Duration = Duration::from_millis(50);
+const WATCH_DEBOUNCE: Duration = Duration::from_millis(50);
+
 impl Watcher {
     pub(super) fn new(
         config: &Path,
@@ -129,7 +132,7 @@ impl Watcher {
             observer,
             pending: None,
             attempted,
-            interval: tokio::time::interval(Duration::from_millis(100)),
+            interval: tokio::time::interval(WATCH_POLL_INTERVAL),
         })
     }
 
@@ -231,15 +234,19 @@ impl Watcher {
                 self.interval.reset_after(pause);
                 continue;
             }
-            self.interval.reset();
-            let changed = match &self.pending {
-                Some((pending, changed)) if *pending == observed => *changed,
-                _ => {
-                    self.pending = Some((observed, Instant::now()));
-                    continue;
-                }
+            let Some((_, changed)) = self
+                .pending
+                .as_ref()
+                .filter(|(pending, _)| *pending == observed)
+            else {
+                self.pending = Some((observed, Instant::now()));
+                self.interval.reset_after(WATCH_DEBOUNCE);
+                continue;
             };
-            if changed.elapsed() < Duration::from_millis(200) {
+            if let Some(delay) = WATCH_DEBOUNCE.checked_sub(changed.elapsed())
+                && !delay.is_zero()
+            {
+                self.interval.reset_after(delay);
                 continue;
             }
             let paths = self
@@ -251,6 +258,7 @@ impl Watcher {
                 .collect();
             self.attempted = observed;
             self.pending = None;
+            self.interval.reset();
             return paths;
         }
     }
@@ -289,6 +297,13 @@ pub(super) async fn termination() {
 
 type Observation = BTreeMap<PathBuf, String>;
 type ExternalFingerprints = BTreeMap<PathBuf, (ExternalSignature, String)>;
+type CollectionReferences = BTreeMap<PathBuf, AuthoredReferences>;
+
+#[derive(Default)]
+struct AuthoredReferences {
+    digest: String,
+    files: Vec<String>,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct MetadataSignature {
@@ -337,6 +352,7 @@ struct Observer {
     native_roots: Vec<PathBuf>,
     native_library_roots: Vec<PathBuf>,
     external_fingerprints: ExternalFingerprints,
+    authored_references: BTreeMap<usize, CollectionReferences>,
 }
 impl Observer {
     fn new(config: &Path, output: &Path) -> Result<Self, CommandError> {
@@ -355,6 +371,7 @@ impl Observer {
             native_roots: Vec::new(),
             native_library_roots: Vec::new(),
             external_fingerprints: BTreeMap::new(),
+            authored_references: BTreeMap::new(),
         };
         Ok(observer)
     }
@@ -366,7 +383,9 @@ impl Observer {
         observe(&root.join("docs/index.md"), &mut observed);
         if let Ok((_, config)) =
             crate::configuration::resolve_configuration(&self.config, self.allow_missing_config)
+            && self.configuration.as_ref() != Some(&config)
         {
+            self.authored_references.clear();
             self.configuration = Some(config);
         }
         let Some(config) = &self.configuration else {
@@ -609,7 +628,7 @@ impl Observer {
                 );
             }
         }
-        for content in &config.content {
+        for (index, content) in config.content.iter().enumerate() {
             let Some(root) = roots.get(content.repository.as_str()) else {
                 continue;
             };
@@ -618,6 +637,19 @@ impl Observer {
                 observe(&root.join(input), &mut observed);
             }
             let mut pages = Vec::new();
+            let collection = pipeline::absolute(&root.join(&content.path)).ok();
+            let source_root = collection.as_deref().map(|path| {
+                if path.is_file() {
+                    path.parent().expect("absolute collection")
+                } else {
+                    path
+                }
+            });
+            let repository = crate::paths::ResolvedRepositoryPaths {
+                id: content.repository.clone(),
+                path: root.clone(),
+            };
+            let references = self.authored_references.entry(index).or_default();
             discover(
                 &root.join(&content.path),
                 &self.output,
@@ -634,8 +666,17 @@ impl Observer {
                 {
                     continue;
                 }
-                self.authored_assets(&page, content, root, &mut observed);
+                authored_assets(
+                    &self.output,
+                    &page,
+                    content,
+                    &repository,
+                    source_root,
+                    references,
+                    &mut observed,
+                );
             }
+            references.retain(|path, entry| observed.get(path) == Some(&entry.digest));
         }
         self.external_fingerprints
             .retain(|path, _| observed.contains_key(path));
@@ -663,92 +704,91 @@ impl Observer {
         self.assets = inputs.assets.into_keys().collect();
         self.native_roots = inputs.native_roots;
     }
-    fn authored_assets(
-        &self,
-        path: &Path,
-        content: &ContentConfiguration,
-        root: &Path,
-        observed: &mut Observation,
-    ) {
-        if !fs::metadata(path).is_ok_and(|m| m.is_file()) {
-            return;
-        }
-        let Ok(text) = fs::read_to_string(path) else {
-            return;
-        };
-        let repository = crate::paths::ResolvedRepositoryPaths {
-            id: content.repository.clone(),
-            path: root.to_owned(),
-        };
-        if let Ok(collection) = pipeline::absolute(&root.join(&content.path)) {
-            let source_root = if collection.is_file() {
-                collection.parent().expect("absolute collection")
-            } else {
-                &collection
-            };
-            for input in crate::assembly::include_watch_inputs(
-                &text,
-                path,
-                source_root,
-                &repository,
-                content.format,
-            ) {
-                if let Ok(input) = pipeline::absolute(&input)
-                    && input.starts_with(root)
-                    && !input.starts_with(&self.output)
-                    && !crate::generated_storage::is_generated_file(&input)
-                {
-                    observe(&input, observed);
-                }
+}
+
+fn authored_assets(
+    output: &Path,
+    path: &Path,
+    content: &ContentConfiguration,
+    repository: &crate::paths::ResolvedRepositoryPaths,
+    source_root: Option<&Path>,
+    references: &mut CollectionReferences,
+    observed: &mut Observation,
+) {
+    if !fs::metadata(path).is_ok_and(|m| m.is_file()) {
+        return;
+    }
+    let Ok(text) = fs::read_to_string(path) else {
+        return;
+    };
+    if let Some(source_root) = source_root {
+        for input in crate::assembly::include_watch_inputs(
+            &text,
+            path,
+            source_root,
+            repository,
+            content.format,
+        ) {
+            if let Ok(input) = pipeline::absolute(&input)
+                && input.starts_with(&repository.path)
+                && !input.starts_with(output)
+                && !crate::generated_storage::is_generated_file(&input)
+            {
+                observe(&input, observed);
             }
         }
-        let Ok(prepared) = crate::documents::prepare_collection_document(&text, content) else {
-            return;
-        };
-        self.document_assets(path, &prepared.parsed.document, root, observed);
     }
-    fn document_assets(
-        &self,
-        path: &Path,
-        document: &crate::ir::Document,
-        root: &Path,
-        observed: &mut Observation,
-    ) {
-        crate::validation::document_references(
-            &document.blocks,
-            None,
-            &mut |kind, spelling, _, _| {
-                if kind == crate::validation::ReferenceKind::Semantic
-                    || url::Url::parse(spelling).is_ok()
-                {
-                    return;
-                }
-                let file = spelling.split('#').next().unwrap_or("");
-                if file.is_empty() {
-                    return;
-                }
-                let Ok(file) = percent_encoding::percent_decode_str(file).decode_utf8() else {
-                    return;
-                };
-                if Path::new(file.as_ref()).is_absolute() {
-                    return;
-                }
-                let Some(parent) = path.parent() else {
-                    return;
-                };
-                let Ok(candidate) = pipeline::absolute(&parent.join(file.as_ref())) else {
-                    return;
-                };
-                let Ok(root) = pipeline::absolute(root) else {
-                    return;
-                };
-                if candidate.starts_with(root) && !candidate.starts_with(&self.output) {
-                    observe(&candidate, observed);
-                }
-            },
-        );
+
+    // Reuse only the parsed destinations. Nested includes, missing targets
+    // and symlinks can change even while the referring document is unchanged.
+    let digest = fingerprint_bytes(text.as_bytes()).value;
+    let entry = references.entry(path.to_owned()).or_default();
+    if entry.digest != digest {
+        entry.digest = digest;
+        entry.files.clear();
+        if let Ok(prepared) = crate::documents::prepare_collection_document(&text, content) {
+            document_paths(&prepared.parsed.document, |file| {
+                entry.files.push(file.to_owned())
+            });
+        }
+    }
+    if let Some(parent) = path.parent() {
+        for file in &entry.files {
+            observe_document_path(output, parent, &repository.path, file, observed);
+        }
     }
 }
+
+fn document_paths(document: &crate::ir::Document, mut visit: impl FnMut(&str)) {
+    crate::validation::document_references(&document.blocks, None, &mut |kind, spelling, _, _| {
+        if kind == crate::validation::ReferenceKind::Semantic || url::Url::parse(spelling).is_ok() {
+            return;
+        }
+        let file = spelling.split('#').next().unwrap_or("");
+        if !file.is_empty()
+            && let Ok(file) = percent_encoding::percent_decode_str(file).decode_utf8()
+            && !Path::new(file.as_ref()).is_absolute()
+        {
+            visit(&file);
+        }
+    });
+}
+
+fn observe_document_path(
+    output: &Path,
+    parent: &Path,
+    root: &Path,
+    file: &str,
+    observed: &mut Observation,
+) {
+    if let Ok(candidate) = pipeline::absolute(&parent.join(file))
+        && candidate.starts_with(root)
+        && !candidate.starts_with(output)
+    {
+        observe(&candidate, observed);
+    }
+}
+
 #[derive(Default)]
 pub(super) struct SourceWatchInputs {
     assets: Observation,
@@ -799,16 +839,6 @@ impl SourceWatchInputs {
     ) -> Self {
         let progress = reporting.stage("Tracking preview inputs", None);
         let timing = reporting.phase(Phase::WatchCapture, None, None);
-        let observer = Observer {
-            allow_missing_config: false,
-            config: PathBuf::new(),
-            output: output.to_owned(),
-            configuration: None,
-            assets: BTreeSet::new(),
-            native_roots: Vec::new(),
-            native_library_roots: Vec::new(),
-            external_fingerprints: BTreeMap::new(),
-        };
         let workspace = sources.workspace();
         let native_roots = minimize_native_roots(
             sources
@@ -867,12 +897,14 @@ impl SourceWatchInputs {
             else {
                 continue;
             };
-            observer.document_assets(
-                &root.path.join(source.path.as_str()),
-                &document.document,
-                &root.path,
-                &mut inputs.assets,
-            );
+            let path = root.path.join(source.path.as_str());
+            if let Some(parent) = path.parent()
+                && let Ok(boundary) = pipeline::absolute(&root.path)
+            {
+                document_paths(&document.document, |file| {
+                    observe_document_path(output, parent, &boundary, file, &mut inputs.assets);
+                });
+            }
         }
         inputs.retire_fingerprints();
         timing.finish();
@@ -1265,6 +1297,7 @@ mod tests {
             native_roots: Vec::new(),
             native_library_roots: Vec::new(),
             external_fingerprints: BTreeMap::new(),
+            authored_references: BTreeMap::new(),
         };
         let attempted = observer.capture();
         Watcher {
@@ -1847,8 +1880,15 @@ mod tests {
         )
         .unwrap();
         assert_ne!(observer.capture(), with_image);
-        fs::write(&page, "# Updated changelog\n\n![Plot](plot.svg)\n").unwrap();
-        assert_ne!(observer.capture(), with_image);
+        fs::write(&page, "# Changelog\n\n![Plot](new-.svg)\n").unwrap();
+        let changed_link = observer.capture();
+        assert!(!changed_link.contains_key(&image));
+        assert_eq!(
+            changed_link
+                .get(&root.path().join("new-.svg"))
+                .map(String::as_str),
+            Some("NotFound"),
+        );
         fs::remove_file(page).unwrap();
         assert_eq!(observer.capture(), missing);
     }

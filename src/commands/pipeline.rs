@@ -194,7 +194,7 @@ async fn prepare_snapshot_inner(
             attempt.watch_inputs.take(),
         ));
     }
-    reporting.run("Validating documentation", || {
+    let resolved = reporting.run("Validating documentation", || {
         let timing = reporting.phase(Phase::ReferenceResolution, None, None);
         let resolved = resolve_workspace(&sources)?;
         timing.finish();
@@ -205,8 +205,28 @@ async fn prepare_snapshot_inner(
             protect_sources(&sources, &resolved, &options.config, site)?;
             reject_overlap(site, &output)?;
         }
-        Ok::<_, CommandError>(())
+        Ok::<_, CommandError>(resolved)
     })?;
+    if !publish_snapshot
+        && sources.workspace().packages.is_empty()
+        && sources.configuration().content.iter().all(|collection| {
+            collection.format != crate::documents::AuthoredFormat::Rmd
+                && collection.execution.mode == crate::configuration::ExecutionMode::Never
+        })
+    {
+        // Without package or page execution, the initial resolution already
+        // describes the preview. Snapshot construction still rechecks inputs.
+        tokio::select! {
+            biased;
+            _ = &mut cancellation => return Err(AssemblyError::Cancelled.into()),
+            _ = std::future::ready(()) => {}
+        }
+        let snapshot = reporting.run("Preparing snapshot", || {
+            Snapshot::from_sources(&sources, &resolved)
+        })?;
+        return Ok((output, snapshot));
+    }
+    drop(resolved);
     complete_api(&mut sources, deadlines, &mut cancellation).await?;
     sources
         .execute_rmarkdown(deadlines, &mut cancellation)
@@ -400,7 +420,17 @@ pub(super) fn generate_fragments_attempt(
 
 /// Resolve existing ancestors, including symlink aliases, without creating a path.
 pub(super) fn absolute(path: &Path) -> Result<PathBuf, CommandError> {
-    let absolute = std::env::current_dir()?.join(path);
+    // The common case needs one lookup for the whole path. Walk its prefixes
+    // only when resolving an incomplete path or preserving the fallback's error.
+    #[cfg(unix)]
+    if let Ok(resolved) = fs::canonicalize(path) {
+        return Ok(resolved);
+    }
+    let absolute = if path.is_absolute() {
+        path.to_owned()
+    } else {
+        std::env::current_dir()?.join(path)
+    };
     let mut current = PathBuf::new();
     for part in absolute.components() {
         match part {
@@ -422,9 +452,11 @@ pub(super) fn absolute(path: &Path) -> Result<PathBuf, CommandError> {
     Ok(current)
 }
 pub(super) fn reject_overlap(output: &Path, input: &Path) -> Result<(), CommandError> {
-    let output = absolute(output)?;
-    let input = absolute(input)?;
-    if input.starts_with(&output) || output == input {
+    reject_overlap_with_resolved_output(&absolute(output)?, input)
+}
+
+fn reject_overlap_with_resolved_output(output: &Path, input: &Path) -> Result<(), CommandError> {
+    if absolute(input)?.starts_with(output) {
         return Err(CommandError::InputOverlap);
     }
     Ok(())
@@ -435,8 +467,8 @@ fn protect_sources(
     config: &Path,
     output: &Path,
 ) -> Result<(), CommandError> {
-    reject_overlap(output, config)?;
     let destination = absolute(output)?;
+    reject_overlap_with_resolved_output(&destination, config)?;
     protect_caches(&sources.paths().configuration_directory, &destination)?;
     for directory in resolved.public_directory_paths() {
         if destination.starts_with(directory) {
@@ -448,7 +480,7 @@ fn protect_sources(
         .input_paths()
         .chain(resolved.input_paths().map(Path::to_owned))
     {
-        reject_overlap(output, &input)?;
+        reject_overlap_with_resolved_output(&destination, &input)?;
     }
     for (declaration, package) in sources
         .configuration()
@@ -476,7 +508,7 @@ fn protect_sources(
             .iter()
             .flat_map(|p| p.targets.iter().map(|t| &t.path)),
     ) {
-        reject_overlap(output, root)?;
+        reject_overlap_with_resolved_output(&destination, root)?;
     }
     Ok(())
 }
