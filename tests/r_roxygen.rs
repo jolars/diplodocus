@@ -299,15 +299,16 @@ async fn plain_serve_regenerates_once_and_recovers_after_generation_failure() {
             .await
             .is_err()
     );
-    let previous = fs::read(root.path().join(".diplodocus/documentation.sqlite")).unwrap();
     root.write(
         "package/R/api.R",
         api("Bad documentation.", "3L").replace("@param value A value.", "@param"),
     );
     watching(&mut receiver, true).await;
-    assert_eq!(
-        previous,
-        fs::read(root.path().join(".diplodocus/documentation.sqlite")).unwrap()
+    assert!(
+        !root
+            .path()
+            .join(".diplodocus/documentation.sqlite")
+            .exists()
     );
     assert!(
         tokio::time::timeout(Duration::from_millis(600), receiver.recv())

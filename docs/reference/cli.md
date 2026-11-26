@@ -59,6 +59,9 @@ Stopping the watcher waits for active example execution to clean up. The
 [VitePress example](https://github.com/jolars/diplodocus/tree/main/examples/vitepress)
 connects these events to an existing frontend's development server.
 
+`serve` renders from memory and writes the preview site to its output directory.
+Use `extract` or `build` to write a SQLite snapshot.
+
 `serve` listens on `127.0.0.1:8000` by default. Use `--host` and `--port` to
 change the address. The ready message shows a clickable URL in terminals that
 support hyperlinks and a plain URL elsewhere. Open pages refresh after each

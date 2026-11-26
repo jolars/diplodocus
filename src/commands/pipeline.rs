@@ -98,25 +98,27 @@ pub(super) async fn extract_attempt_observed(
     reporting: &Reporting,
     attempt: &mut AttemptState,
 ) -> Result<PathBuf, CommandError> {
-    extract_snapshot(
+    prepare_snapshot(
         options,
         site_output,
         deadlines,
         cancellation,
         reporting,
         attempt,
+        true,
     )
     .await
     .map(|(path, _)| path)
 }
 
-async fn extract_snapshot(
+async fn prepare_snapshot(
     options: ExtractOptions,
     site_output: Option<&Path>,
     deadlines: ExecutionDeadlines,
     cancellation: ExecutionCancellation<'_>,
     reporting: &Reporting,
     attempt: &mut AttemptState,
+    publish_snapshot: bool,
 ) -> Result<(PathBuf, Snapshot), CommandError> {
     let mut outputs = Vec::new();
     if let Some(site) = site_output {
@@ -134,27 +136,40 @@ async fn extract_snapshot(
     for destination in &outputs {
         protect_caches(&configuration_directory, destination)?;
     }
-    crate::incremental::scope_outputs(
+    let (output, snapshot) = crate::incremental::scope_outputs(
         outputs,
-        extract_attempt_observed_inner(
+        prepare_snapshot_inner(
             options,
             site_output,
             deadlines,
             cancellation,
             reporting,
             attempt,
+            publish_snapshot,
         ),
     )
-    .await
+    .await?;
+    let snapshot = if publish_snapshot {
+        reporting.run_phase(Phase::Publication, "Publishing snapshot", || {
+            snapshot.publish_verified(&output)
+        })?
+    } else {
+        snapshot
+    };
+    for diagnostic in &snapshot.workspace().diagnostics {
+        reporting.emit(Event::Diagnostic(diagnostic));
+    }
+    Ok((output, snapshot))
 }
 
-async fn extract_attempt_observed_inner(
+async fn prepare_snapshot_inner(
     options: ExtractOptions,
     site_output: Option<&Path>,
     deadlines: ExecutionDeadlines,
     mut cancellation: ExecutionCancellation<'_>,
     reporting: &Reporting,
     attempt: &mut AttemptState,
+    publish_snapshot: bool,
 ) -> Result<(PathBuf, Snapshot), CommandError> {
     let mut sources = crate::assembly::assemble_for_extraction(
         &options.config,
@@ -183,7 +198,9 @@ async fn extract_attempt_observed_inner(
         let timing = reporting.phase(Phase::ReferenceResolution, None, None);
         let resolved = resolve_workspace(&sources)?;
         timing.finish();
-        protect_sources(&sources, &resolved, &options.config, &output)?;
+        if publish_snapshot {
+            protect_sources(&sources, &resolved, &options.config, &output)?;
+        }
         if let Some(site) = site_output {
             protect_sources(&sources, &resolved, &options.config, site)?;
             reject_overlap(site, &output)?;
@@ -222,7 +239,9 @@ async fn extract_attempt_observed_inner(
             let timing = reporting.phase(Phase::ReferenceResolution, None, None);
             let resolved = resolve_executed_workspace(&executed)?;
             timing.finish();
-            protect_sources(executed.sources(), &resolved, &options.config, &output)?;
+            if publish_snapshot {
+                protect_sources(executed.sources(), &resolved, &options.config, &output)?;
+            }
             if let Some(site) = site_output {
                 protect_sources(executed.sources(), &resolved, &options.config, site)?;
             }
@@ -249,12 +268,6 @@ async fn extract_attempt_observed_inner(
             Snapshot::from_sources(&sources, &resolved)
         })?
     };
-    let snapshot = reporting.run_phase(Phase::Publication, "Publishing snapshot", || {
-        snapshot.publish_verified(&output)
-    })?;
-    for diagnostic in &snapshot.workspace().diagnostics {
-        reporting.emit(Event::Diagnostic(diagnostic));
-    }
     Ok((output, snapshot))
 }
 
@@ -288,7 +301,7 @@ pub(super) async fn build_attempt_observed(
     attempt: &mut AttemptState,
     mode: SiteMode<'_>,
 ) -> Result<RenderedSite, CommandError> {
-    let (input, snapshot) = extract_snapshot(
+    let (input, snapshot) = prepare_snapshot(
         ExtractOptions {
             config: options.config.clone(),
             output: None,
@@ -298,6 +311,7 @@ pub(super) async fn build_attempt_observed(
         cancellation,
         reporting,
         attempt,
+        matches!(&mode, SiteMode::Publish),
     )
     .await?;
     reject_overlap(&options.output, &input)?;

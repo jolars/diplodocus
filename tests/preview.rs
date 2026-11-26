@@ -146,7 +146,6 @@ async fn preview_recovers_from_missing_nested_partials(format: &str) {
         .await;
         assert_eq!(revision(port).await, initial_revision.wrapping_add(1));
         let previous = files(&root.path().join("site"));
-        let snapshot = std::fs::read(root.path().join(".diplodocus/documentation.sqlite")).unwrap();
         let previous_revision = revision(port).await;
 
         root.write(
@@ -162,9 +161,11 @@ async fn preview_recovers_from_missing_nested_partials(format: &str) {
         );
         assert_eq!(revision(port).await, previous_revision);
         assert_eq!(files(&root.path().join("site")), previous);
-        assert_eq!(
-            std::fs::read(root.path().join(".diplodocus/documentation.sqlite")).unwrap(),
-            snapshot
+        assert!(
+            !root
+                .path()
+                .join(".diplodocus/documentation.sqlite")
+                .exists()
         );
 
         // Recovery must discover a second missing target without a successful build in between.
@@ -187,7 +188,6 @@ async fn preview_recovers_from_missing_nested_partials(format: &str) {
         assert_eq!(revision(port).await, previous_revision.wrapping_add(1));
 
         let previous = files(&root.path().join("site"));
-        let snapshot = std::fs::read(root.path().join(".diplodocus/documentation.sqlite")).unwrap();
         let previous_revision = revision(port).await;
         root.remove(format!("{partials}/new/deeper.md"));
         tokio::time::sleep(Duration::from_millis(700)).await;
@@ -199,9 +199,11 @@ async fn preview_recovers_from_missing_nested_partials(format: &str) {
         );
         assert_eq!(revision(port).await, previous_revision);
         assert_eq!(files(&root.path().join("site")), previous);
-        assert_eq!(
-            std::fs::read(root.path().join(".diplodocus/documentation.sqlite")).unwrap(),
-            snapshot
+        assert!(
+            !root
+                .path()
+                .join(".diplodocus/documentation.sqlite")
+                .exists()
         );
         root.write(
             format!("{partials}/new/deeper.md"),
@@ -290,7 +292,6 @@ async fn watched_timeout_keeps_serving_the_complete_site_and_recovers() {
     let first_process = process(root.path()).unwrap();
     assert!(gone(&first_process));
     let previous = files(&root.path().join("site"));
-    let snapshot = std::fs::read(root.path().join(".diplodocus/documentation.sqlite")).unwrap();
     root.remove("next-cell");
     root.write("guide/index.qmd", code("timeout generation", true));
     until(async || process(root.path()).is_some_and(|p| p.0 != first_process.0)).await;
@@ -300,9 +301,11 @@ async fn watched_timeout_keeps_serving_the_complete_site_and_recovers() {
     until(async || gone(&failed_process)).await;
     assert!(!root.path().join("next-cell").exists());
     assert_eq!(files(&root.path().join("site")), previous);
-    assert_eq!(
-        std::fs::read(root.path().join(".diplodocus/documentation.sqlite")).unwrap(),
-        snapshot
+    assert!(
+        !root
+            .path()
+            .join(".diplodocus/documentation.sqlite")
+            .exists()
     );
     assert!(
         request(port, "/")
@@ -371,6 +374,11 @@ async fn preview_tracks_missing_assets_and_configuration_changes() {
     let config = "project:\n  name: \"Static preview\"\npresentation:\n  site-url: \"https://example.test/docs\"\n  canonical-url-style: \"clean\"\nrepositories:\n  - id: \"docs\"\n    path: \".\"\ncontent:\n  - id: \"guide\"\n    owner: \"project\"\n    repository: \"docs\"\n    path: \"guide\"\n    mount: \"\"\n    format: \"gfm\"\n";
     root.write("diplodocus.yaml", config);
     root.write("guide/index.md", "# Original\n");
+    root.write(".diplodocus/documentation.sqlite", "existing snapshot");
+    root.write(
+        ".diplodocus/documentation.sqlite-journal",
+        "existing journal",
+    );
     let port = std::net::TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0))
         .unwrap()
         .local_addr()
@@ -458,6 +466,14 @@ async fn preview_tracks_missing_assets_and_configuration_changes() {
     let notification = notification.await.unwrap().unwrap();
     assert!(notification.ends_with(&format!("\r\n\r\n{}", initial_revision.wrapping_add(1))));
     assert_eq!(revision(port).await, initial_revision.wrapping_add(1));
+    assert_eq!(
+        root.read(".diplodocus/documentation.sqlite"),
+        "existing snapshot"
+    );
+    assert_eq!(
+        root.read(".diplodocus/documentation.sqlite-journal"),
+        "existing journal"
+    );
     root.write(
         "guide/new.svg",
         "<svg xmlns='http://www.w3.org/2000/svg'><circle r='5'/></svg>",

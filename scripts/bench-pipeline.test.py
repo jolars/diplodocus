@@ -14,6 +14,13 @@ spec.loader.exec_module(bench)
 
 
 class BenchmarkTests(unittest.TestCase):
+    def test_preview_without_a_snapshot_does_not_create_one(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / ".diplodocus").mkdir()
+            self.assertIsNone(bench.snapshot_info(root)["fingerprint"])
+            self.assertEqual(list((root / ".diplodocus").iterdir()), [])
+
     def test_idle_poll_phases_stay_balanced_at_sample_boundaries(self):
         worker = bench.Worker.__new__(bench.Worker)
         worker.events = []

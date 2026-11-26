@@ -201,6 +201,12 @@ async fn browser_refresh_can_be_disabled() {
 async fn build_once_serves_the_initial_site_after_source_edits() {
     let root = workspace();
     let (mut child, mut lines, url) = start(command(&root, 0).arg("--no-watch")).await;
+    assert!(
+        !root
+            .path()
+            .join(".diplodocus/documentation.sqlite")
+            .exists()
+    );
     let page = request(&url);
     assert!(page.contains("First generation"));
     assert!(!page.contains("/__diplodocus/revision"));

@@ -360,13 +360,33 @@ async fn native_preview_keeps_aliases_and_the_last_successful_generation() {
         live_reload: false,
         open: false,
     };
-    let server = tokio::spawn(commands::serve_with(
-        options,
-        ExecutionDeadlines::default(),
-        Box::pin(async {
-            let _ = stopped.await;
-        }),
-    ));
+    struct FailureReporter(tokio::sync::mpsc::UnboundedSender<()>);
+    impl diplodocus::reporting::Reporter for FailureReporter {
+        fn report(&self, event: diplodocus::reporting::Event<'_>) {
+            if matches!(
+                event,
+                diplodocus::reporting::Event::Watching {
+                    retained_previous: true
+                }
+            ) {
+                let _ = self.0.send(());
+            }
+        }
+    }
+    let (failed, mut failures) = tokio::sync::mpsc::unbounded_channel();
+    let runner =
+        commands::CommandRunner::with_reporter(std::sync::Arc::new(FailureReporter(failed)));
+    let server = tokio::spawn(async move {
+        runner
+            .serve_with(
+                options,
+                ExecutionDeadlines::default(),
+                Box::pin(async {
+                    let _ = stopped.await;
+                }),
+            )
+            .await
+    });
     assert!(
         request(port, "/guide/start")
             .await
@@ -398,15 +418,10 @@ async fn native_preview_keeps_aliases_and_the_last_successful_generation() {
         &root,
         json!({"fragment-aliases":{"guide/start.html":{"old":{"heading":"Missing"}}}}),
     );
-    tokio::time::timeout(Duration::from_secs(30),async {
-        loop {
-            if let Ok(snapshot) = Snapshot::load(root.path().join(".diplodocus/documentation.sqlite"))
-                && matches!(snapshot.presentation().fragment_aliases.get("guide/start.html").and_then(|aliases| aliases.get("old")),Some(diplodocus::configuration::FragmentAliasTarget::Heading(label)) if label == "Missing") {
-                break;
-            }
-            tokio::time::sleep(Duration::from_millis(50)).await;
-        }
-    }).await.unwrap();
+    tokio::time::timeout(Duration::from_secs(30), failures.recv())
+        .await
+        .unwrap()
+        .unwrap();
     assert_eq!(request(port, "/guide/start").await, before);
     stop.send(()).unwrap();
     server.await.unwrap().unwrap();

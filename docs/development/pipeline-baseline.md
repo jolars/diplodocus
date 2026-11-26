@@ -45,7 +45,8 @@ Use `--scenario python` for the Python migration profile. It copies the
 monorepo's Python package, adds an authored page, and measures authored prose,
 API docstring prose, and return-annotation saves. Native Python workers need
 Sphinx in the prepared interpreter. Add `--warm-restart` to verify that retained
-caches preserve the completed site and snapshot after restarting the worker.
+caches preserve the completed site after restarting the worker. Reports also
+compare snapshot fingerprints for older workers that publish snapshots.
 
 Each executable receives equivalent temporary copies. The Qualpal profile uses
 a headers-only Doxyfile. The qualpalr profile selects maintained API inputs,

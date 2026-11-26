@@ -233,7 +233,10 @@ class Worker:
 
 
 def snapshot_info(root):
-    with sqlite3.connect(root / ".diplodocus/documentation.sqlite") as connection:
+    path = root / ".diplodocus/documentation.sqlite"
+    if not path.exists():
+        return {"fingerprint": None, "tools": {}, "activities": [], "tool_observations": {}}
+    with sqlite3.connect(path.resolve().as_uri() + "?mode=ro", uri=True) as connection:
         fingerprint, = connection.execute("SELECT content_fingerprint FROM manifest").fetchone()
         tools = {}
         observations = {}
@@ -293,7 +296,8 @@ def generation_recovery(worker, root, args):
     source = root / "package/R/qualpal.R"
     original = source.read_bytes()
     before_site = inventory(root / "site")
-    before_snapshot = digest(root / ".diplodocus/documentation.sqlite")
+    snapshot = root / ".diplodocus/documentation.sqlite"
+    before_snapshot = digest(snapshot) if snapshot.exists() else None
     offset = len(worker.events)
     try:
         source.write_bytes(original + b"\n.diplodocus_benchmark_failure <- (\n")
@@ -301,7 +305,7 @@ def generation_recovery(worker, root, args):
         worker.until("watching", args.timeout, allow_failure=True)
         if not worker.events[-1]["retained_previous"]:
             raise RuntimeError("Generation error did not retain the previous site")
-        if before_site != inventory(root / "site") or before_snapshot != digest(root / ".diplodocus/documentation.sqlite"):
+        if before_site != inventory(root / "site") or before_snapshot != (digest(snapshot) if snapshot.exists() else None):
             raise RuntimeError("Generation error changed the published site or snapshot")
         assert_idle(worker)
         source.write_bytes(original)
@@ -333,7 +337,11 @@ def measure(binary, scenario, args, result):
                 worker.until("watching", args.timeout)
                 startup = {"kind": "startup", "seconds": ready - worker.started,
                            "events": list(worker.events), **snapshot_info(root)}
-                generated = scenario == "qualpalr" and "r-documentation" in startup["activities"]
+                generated = scenario == "qualpalr" and (
+                    "r-documentation" in startup["activities"]
+                    or any(event["event"] == "cache" and event.get("stage") == "r-generation"
+                           for event in startup["events"])
+                )
                 if scenario == "qualpalr":
                     result["api_generation"] = "roxygen2" if generated else "maintained-rd"
                     if generated:
