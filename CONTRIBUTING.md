@@ -77,6 +77,36 @@ Run `npm run vitepress-test` for changes to the external frontend integration.
 The repository's [browser development guide](https://github.com/jolars/diplodocus/blob/main/docs/development/browser.md)
 describes setup, preview, and capture options.
 
+## Compare site generator performance
+
+In the development shell, install the locked npm dependencies and build the
+release binary before running the benchmark:
+
+```sh
+npm ci --ignore-scripts
+cargo build --locked --release --bin diplodocus
+npm run site-bench
+```
+
+Both tools build the same 50-page and 500-page Markdown sites with local search
+enabled. The benchmark measures production build time, preview startup until a
+guide paragraph is visible in Chromium, and the time from saving an edit until
+the open tab shows the new text. Builds and preview startups use fresh project
+workspaces. The trials share warmed system caches, and saves reuse the running
+server and tab. The runner pauses 300 ms between saves so each watcher can settle.
+Each tool runs once as a warm-up before five measured trials
+per site size, with three measured saves per preview trial.
+
+Run on an idle machine for comparable measurements. The report contains raw
+timings, medians, ranges, corpus fingerprints, and tool and host details. It
+goes under `artifacts/site-benchmark/` unless you supply `--output PATH`.
+Set `DIPLODOCUS_BIN` to compare a different release binary, or use a short run to
+check the setup:
+
+```sh
+npm run site-bench -- --pages 10 --samples 1 --saves 1
+```
+
 ## Pull requests
 
 Follow the existing Rust and JavaScript styles, document public Rust APIs, and

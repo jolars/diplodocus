@@ -9,7 +9,8 @@
     "browser": "node scripts/browser.mjs",
     "vitepress-dev": "node examples/vitepress/run.mjs dev",
     "vitepress-build": "node examples/vitepress/run.mjs build",
-    "vitepress-test": "node examples/vitepress/browser.mjs"
+    "vitepress-test": "node examples/vitepress/browser.mjs",
+    "site-bench": "node scripts/bench-site.mjs"
   },
   "devDependencies": {
     "@playwright/cli": "0.1.14",
