@@ -98,6 +98,26 @@ pub(super) async fn extract_attempt_observed(
     reporting: &Reporting,
     attempt: &mut AttemptState,
 ) -> Result<PathBuf, CommandError> {
+    extract_snapshot(
+        options,
+        site_output,
+        deadlines,
+        cancellation,
+        reporting,
+        attempt,
+    )
+    .await
+    .map(|(path, _)| path)
+}
+
+async fn extract_snapshot(
+    options: ExtractOptions,
+    site_output: Option<&Path>,
+    deadlines: ExecutionDeadlines,
+    cancellation: ExecutionCancellation<'_>,
+    reporting: &Reporting,
+    attempt: &mut AttemptState,
+) -> Result<(PathBuf, Snapshot), CommandError> {
     let mut outputs = Vec::new();
     if let Some(site) = site_output {
         outputs.push(absolute(site)?);
@@ -135,7 +155,7 @@ async fn extract_attempt_observed_inner(
     mut cancellation: ExecutionCancellation<'_>,
     reporting: &Reporting,
     attempt: &mut AttemptState,
-) -> Result<PathBuf, CommandError> {
+) -> Result<(PathBuf, Snapshot), CommandError> {
     let mut sources = crate::assembly::assemble_for_extraction(
         &options.config,
         deadlines,
@@ -229,13 +249,13 @@ async fn extract_attempt_observed_inner(
             Snapshot::from_sources(&sources, &resolved)
         })?
     };
-    reporting.run_phase(Phase::Publication, "Publishing snapshot", || {
-        snapshot.publish(&output)
+    let snapshot = reporting.run_phase(Phase::Publication, "Publishing snapshot", || {
+        snapshot.publish_verified(&output)
     })?;
     for diagnostic in &snapshot.workspace().diagnostics {
         reporting.emit(Event::Diagnostic(diagnostic));
     }
-    Ok(output)
+    Ok((output, snapshot))
 }
 
 pub(super) async fn build_attempt(
@@ -255,10 +275,9 @@ pub(super) async fn build_attempt(
     .await
 }
 
-#[derive(Clone, Copy)]
-pub(super) enum SiteMode {
+pub(super) enum SiteMode<'a> {
     Publish,
-    Preview,
+    Preview(&'a mut crate::rendering::ImageCache),
 }
 
 pub(super) async fn build_attempt_observed(
@@ -267,9 +286,9 @@ pub(super) async fn build_attempt_observed(
     cancellation: ExecutionCancellation<'_>,
     reporting: &Reporting,
     attempt: &mut AttemptState,
-    mode: SiteMode,
+    mode: SiteMode<'_>,
 ) -> Result<RenderedSite, CommandError> {
-    let input = extract_attempt_observed(
+    let (input, snapshot) = extract_snapshot(
         ExtractOptions {
             config: options.config.clone(),
             output: None,
@@ -281,10 +300,10 @@ pub(super) async fn build_attempt_observed(
         attempt,
     )
     .await?;
-    generate_attempt(
-        &input,
+    reject_overlap(&options.output, &input)?;
+    render_snapshot(
+        &snapshot,
         &options.output,
-        false,
         super::GenerateTrust {
             allow_components: true,
             allow_site_scripts: true,
@@ -298,7 +317,7 @@ pub(super) fn generate_attempt(
     output: &Path,
     report_diagnostics: bool,
     trust: super::GenerateTrust,
-    mode: SiteMode,
+    mode: SiteMode<'_>,
     reporting: &Reporting,
 ) -> Result<RenderedSite, CommandError> {
     reject_overlap(output, input)?;
@@ -308,15 +327,30 @@ pub(super) fn generate_attempt(
             reporting.emit(Event::Diagnostic(diagnostic));
         }
     }
+    render_snapshot(&snapshot, output, trust, mode, reporting)
+}
+
+fn render_snapshot(
+    snapshot: &Snapshot,
+    output: &Path,
+    trust: super::GenerateTrust,
+    mode: SiteMode<'_>,
+    reporting: &Reporting,
+) -> Result<RenderedSite, CommandError> {
     let mut site = reporting
         .run_phase(Phase::SitePreparation, "Preparing site", || {
-            Site::new(&snapshot)
+            Site::new(snapshot)
         })?
         .with_components(trust.allow_components)
         .with_site_scripts(trust.allow_site_scripts);
-    site.preview = matches!(mode, SiteMode::Preview);
+    site.preview = matches!(mode, SiteMode::Preview(_));
     let rendering = reporting.phase(Phase::Rendering, None, None);
-    let rendered = crate::rendering::render_reported(&site, true, reporting)?;
+    let rendered = match mode {
+        SiteMode::Publish => crate::rendering::render_reported(&site, true, reporting)?,
+        SiteMode::Preview(images) => {
+            crate::rendering::render_with_image_cache(&site, true, reporting, Some(images))?
+        }
+    };
     rendering.finish();
     let publication = reporting.phase(Phase::Publication, None, None);
     rendered.publish_reported(output, reporting)?;

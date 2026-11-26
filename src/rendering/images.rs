@@ -1,6 +1,7 @@
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::io::Cursor;
+use std::sync::Arc;
 
 use image::{DynamicImage, ImageDecoder, ImageEncoder, ImageReader};
 
@@ -43,17 +44,29 @@ pub(super) fn logo_variants<'a>(
 }
 
 #[derive(Default)]
-pub(super) struct Images {
-    variants: RefCell<BTreeMap<(String, ImageRole), Vec<Variant>>>,
+pub(crate) struct ImageCache(BTreeMap<(String, ImageRole), Arc<Vec<Variant>>>);
+
+#[derive(Default)]
+pub(super) struct Images<'a> {
+    previous: Option<&'a ImageCache>,
+    current: RefCell<ImageCache>,
 }
 
+#[derive(Clone)]
 struct Variant {
     width: u32,
     path: String,
     file: RenderedFile,
 }
 
-impl Images {
+impl<'a> Images<'a> {
+    pub(super) fn new(previous: Option<&'a ImageCache>) -> Self {
+        Self {
+            previous,
+            current: RefCell::default(),
+        }
+    }
+
     pub(super) fn attributes(
         &self,
         site: &Site<'_>,
@@ -64,8 +77,8 @@ impl Images {
     ) -> Result<String, SiteError> {
         self.prepare(site, digest, role)?;
         let asset = &site.assets[digest];
-        let cache = self.variants.borrow();
-        let Some(variants) = cache.get(&(digest.to_owned(), role)) else {
+        let cache = self.current.borrow();
+        let Some(variants) = cache.0.get(&(digest.to_owned(), role)) else {
             return Ok(String::new());
         };
         if variants.is_empty() {
@@ -114,19 +127,35 @@ impl Images {
             return Ok(());
         }
         let key = (digest.to_owned(), role);
-        let mut cache = self.variants.borrow_mut();
-        if !cache.contains_key(&key) {
-            cache.insert(key.clone(), variants(asset, role)?);
+        let mut cache = self.current.borrow_mut();
+        if let std::collections::btree_map::Entry::Vacant(entry) = cache.0.entry(key) {
+            let prepared = match self.previous.and_then(|cache| cache.0.get(entry.key())) {
+                Some(previous) => Arc::clone(previous),
+                None => Arc::new(variants(asset, role)?),
+            };
+            entry.insert(prepared);
         }
         Ok(())
     }
 
+    pub(super) fn into_cache(self) -> ImageCache {
+        self.current.into_inner()
+    }
+}
+
+impl ImageCache {
     pub(super) fn into_files(self) -> impl Iterator<Item = (String, RenderedFile)> {
-        self.variants
-            .into_inner()
+        self.0
             .into_values()
-            .flatten()
+            .flat_map(Arc::unwrap_or_clone)
             .map(|variant| (variant.path, variant.file))
+    }
+
+    pub(super) fn files(&self) -> impl Iterator<Item = (&str, &RenderedFile)> {
+        self.0
+            .values()
+            .flat_map(|variants| variants.iter())
+            .map(|variant| (variant.path.as_str(), &variant.file))
     }
 }
 

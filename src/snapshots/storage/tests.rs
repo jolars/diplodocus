@@ -33,7 +33,7 @@ fn validation_failure_preserves_the_previous_file_and_cleans_staging() {
 
     // Exercise both input validation and validation of a fully written database.
     // Calling the storage writer directly bypasses the public preflight check.
-    for result in [snapshot.publish(&path), publish(&snapshot, &path)] {
+    for result in [snapshot.publish(&path), publish(&snapshot, &path).map(drop)] {
         assert!(matches!(
             result,
             Err(SnapshotError::Invalid("missing producer"))

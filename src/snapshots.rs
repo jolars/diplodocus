@@ -191,8 +191,12 @@ impl Snapshot {
     /// The caller must protect declared input paths before selecting the target
     /// and prevent external SQLite writers from modifying it during publication.
     pub fn publish(&self, path: impl AsRef<Path>) -> Result<(), SnapshotError> {
+        self.publish_verified(path.as_ref()).map(drop)
+    }
+
+    pub(crate) fn publish_verified(&self, path: &Path) -> Result<Self, SnapshotError> {
         self.validate()?;
-        storage::publish(self, path.as_ref())
+        storage::publish(self, path)
     }
     /// Canonical readable records and asset bytes, independent of SQLite layout.
     ///

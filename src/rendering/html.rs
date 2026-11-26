@@ -109,7 +109,7 @@ fn brand(
     html: &mut String,
     site: &Site<'_>,
     route: &str,
-    images: &super::images::Images,
+    images: &super::images::Images<'_>,
 ) -> Result<(), SiteError> {
     write!(
         html,
@@ -163,7 +163,7 @@ if ('IntersectionObserver' in window) {
 
 fn navigation_shell_fingerprint(
     site: &Site<'_>,
-    images: &super::images::Images,
+    images: &super::images::Images<'_>,
     tab_icon_style: &str,
 ) -> Result<String, SiteError> {
     // Render from one route so page selection and relative URLs cannot split a shell.
@@ -219,9 +219,18 @@ pub(crate) fn render_reported(
     standalone: bool,
     reporting: &Reporting,
 ) -> Result<RenderedSite, SiteError> {
+    render_with_image_cache(site, standalone, reporting, None)
+}
+
+pub(crate) fn render_with_image_cache(
+    site: &Site<'_>,
+    standalone: bool,
+    reporting: &Reporting,
+    image_cache: Option<&mut super::images::ImageCache>,
+) -> Result<RenderedSite, SiteError> {
     let mut progress = reporting.stage("Rendering pages", Some(site.pages.len()));
     let mut files = BTreeMap::new();
-    let images = super::images::Images::default();
+    let images = super::images::Images::new(image_cache.as_deref());
     let mut tab_icons = BTreeSet::new();
     let mut shell_positions = Vec::new();
     // Reserve space for the final SHA-256 fingerprint without shifting page bytes later.
@@ -1001,7 +1010,17 @@ pub(crate) fn render_reported(
             files.insert((*path).into(), file(bytes.to_vec(), media_type));
         }
     }
-    files.extend(images.into_files());
+    let images = images.into_cache();
+    if let Some(cache) = image_cache {
+        files.extend(
+            images
+                .files()
+                .map(|(path, file)| (path.to_owned(), file.clone())),
+        );
+        *cache = images;
+    } else {
+        files.extend(images.into_files());
+    }
     for (digest, asset) in site.assets {
         assets.item(digest);
         files.insert(
@@ -1226,7 +1245,7 @@ fn concept_links(site: &Site<'_>, route: &str, concept: &Concept) -> Result<Stri
     Ok(html)
 }
 struct Renderer<'a, 'b> {
-    images: &'a super::images::Images,
+    images: &'a super::images::Images<'a>,
     tab_icons: &'a mut BTreeSet<String>,
     standalone: bool,
     highlighter: &'a super::highlighting::Highlighter,

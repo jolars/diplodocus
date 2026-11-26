@@ -436,6 +436,15 @@ async fn preview_tracks_missing_assets_and_configuration_changes() {
     assert!(request(port, "/").await.unwrap().contains("Original"));
     assert_eq!(revision(port).await, initial_revision);
     assert_eq!(files(&root.path().join("site")), previous);
+    let notification = tokio::spawn(async move {
+        request(
+            port,
+            &format!("/__diplodocus/revision?since={initial_revision}"),
+        )
+        .await
+    });
+    tokio::time::sleep(Duration::from_millis(100)).await;
+    assert!(!notification.is_finished());
     root.write(
         "guide/new.svg",
         "<svg xmlns='http://www.w3.org/2000/svg'><circle r='2'/></svg>",
@@ -446,6 +455,8 @@ async fn preview_tracks_missing_assets_and_configuration_changes() {
             .is_some_and(|s| s.contains("Added asset"))
     })
     .await;
+    let notification = notification.await.unwrap().unwrap();
+    assert!(notification.ends_with(&format!("\r\n\r\n{}", initial_revision.wrapping_add(1))));
     assert_eq!(revision(port).await, initial_revision.wrapping_add(1));
     root.write(
         "guide/new.svg",

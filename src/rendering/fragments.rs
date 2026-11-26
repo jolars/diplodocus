@@ -147,7 +147,7 @@ pub fn fragment_inventory(site: &Site<'_>) -> Result<FragmentInventory, SiteErro
     super::fragment_images::prepare(site, &images)?;
     let mut assets =
         std::collections::BTreeSet::from([CONTENT_CSS.into(), TABSETS.into(), SEARCH_INDEX.into()]);
-    assets.extend(images.into_files().map(|(path, _)| path));
+    assets.extend(images.into_cache().into_files().map(|(path, _)| path));
     for digest in site.assets.keys() {
         assets.insert(site.asset_route(digest)?);
     }

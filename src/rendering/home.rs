@@ -13,7 +13,7 @@ pub(super) fn render(
     site: &Site<'_>,
     route: &str,
     home: &HomeDefaults,
-    images: &Images,
+    images: &Images<'_>,
     standalone: bool,
 ) -> Result<(), SiteError> {
     // Preserve links to the authored title when the hero supplies its heading.

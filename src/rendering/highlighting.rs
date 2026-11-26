@@ -1,3 +1,5 @@
+use std::sync::LazyLock;
+
 use syntect::html::{ClassStyle, ClassedHTMLGenerator};
 use syntect::parsing::SyntaxSet;
 use syntect::util::LinesWithEndings;
@@ -6,15 +8,14 @@ const CLASS_STYLE: ClassStyle = ClassStyle::SpacedPrefixed { prefix: "syntax-" }
 const LIGHT_STYLE: &str = include_str!("assets/highlighting/github-light.css");
 const DARK_STYLE: &str = include_str!("assets/highlighting/github-dark.css");
 
-pub(super) struct Highlighter {
-    syntaxes: SyntaxSet,
-}
+// Syntect compiles grammar regexes on demand. Keep them warm across renders.
+static SYNTAXES: LazyLock<SyntaxSet> = LazyLock::new(two_face::syntax::extra_newlines);
+
+pub(super) struct Highlighter;
 
 impl Highlighter {
     pub(super) fn new() -> Self {
-        Self {
-            syntaxes: two_face::syntax::extra_newlines(),
-        }
+        Self
     }
 
     pub(super) fn render_signature(&self, source: &str, language: Option<&str>) -> String {
@@ -25,13 +26,13 @@ impl Highlighter {
 
     pub(super) fn render(&self, source: &str, language: Option<&str>) -> String {
         let syntax = language
-            .and_then(|language| self.syntaxes.find_syntax_by_token(language.trim()))
+            .and_then(|language| SYNTAXES.find_syntax_by_token(language.trim()))
             .filter(|syntax| syntax.name != "Plain Text");
         let Some(syntax) = syntax else {
             return super::render_preformatted_text(source);
         };
         let mut generator =
-            ClassedHTMLGenerator::new_with_class_style(syntax, &self.syntaxes, CLASS_STYLE);
+            ClassedHTMLGenerator::new_with_class_style(syntax, &SYNTAXES, CLASS_STYLE);
         for line in LinesWithEndings::from(source) {
             if generator
                 .parse_html_for_line_which_includes_newline(line)

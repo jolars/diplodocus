@@ -11,7 +11,7 @@ use crate::provenance::fingerprint_bytes;
 #[cfg(test)]
 mod tests;
 
-pub(super) fn publish(snapshot: &Snapshot, path: &Path) -> Result<(), SnapshotError> {
+pub(super) fn publish(snapshot: &Snapshot, path: &Path) -> Result<Snapshot, SnapshotError> {
     ensure_no_sidecars(path)?;
     let parent = path
         .parent()
@@ -75,10 +75,10 @@ pub(super) fn publish(snapshot: &Snapshot, path: &Path) -> Result<(), SnapshotEr
     temporary.as_file().sync_all()?;
     // Close and validate the standalone artifact before the publication point.
     ensure_no_sidecars(temporary.path())?;
-    load_kind(temporary.path(), snapshot.bundle)?;
+    let verified = load_kind(temporary.path(), snapshot.bundle)?;
     ensure_no_sidecars(path)?;
     temporary.persist(path).map_err(|error| error.error)?;
-    Ok(())
+    Ok(verified)
 }
 
 fn ensure_no_sidecars(path: &Path) -> Result<(), SnapshotError> {

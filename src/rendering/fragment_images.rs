@@ -69,7 +69,7 @@ pub(super) fn prepare(site: &Site<'_>, images: &Images) -> Result<(), SiteError>
 // Each embedded document starts with its own reference context and cell ordinal.
 struct Visitor<'a, 'site> {
     site: &'a Site<'site>,
-    images: &'a Images,
+    images: &'a Images<'a>,
     resolved: Option<&'a ResolvedDocument>,
     executed: Option<&'a ValidatedPage>,
     cell: usize,

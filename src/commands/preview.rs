@@ -2,7 +2,7 @@ use super::*;
 use std::borrow::Cow;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::process::Stdio;
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 use std::time::Duration;
 
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -72,13 +72,14 @@ async fn run(
         watch_sources,
         ..Default::default()
     };
+    let mut images = crate::rendering::ImageCache::default();
     let initial = pipeline::build_attempt_observed(
         &build,
         deadlines,
         Box::pin(cancelled(stop.clone())),
         reporting,
         &mut attempt,
-        pipeline::SiteMode::Preview,
+        pipeline::SiteMode::Preview(&mut images),
     )
     .await;
     if let Some(watcher) = &mut watcher {
@@ -93,14 +94,14 @@ async fn run(
         return Ok(());
     }
     command.finish(Some(&build.output), Some(initial.page_count()));
-    let current = Arc::new(RwLock::new(Arc::new(ServedGeneration {
+    let (current, generations) = watch::channel(Arc::new(ServedGeneration {
         site: initial,
         // Open pages must also detect a new server after the generator recompiles.
         revision: getrandom::u64().map_err(std::io::Error::other)?,
-    })));
+    }));
     let http = tokio::spawn(http(
         listener,
-        current.clone(),
+        generations,
         options.live_reload && watch_sources,
         stop.clone(),
     ));
@@ -140,18 +141,13 @@ async fn run(
             } => {
                 let command = reporting.command("rebuild");
                 let mut attempt = pipeline::AttemptState::watching();
-                let result = pipeline::build_attempt_observed(&build, deadlines, Box::pin(cancelled(stop.clone())), reporting, &mut attempt, pipeline::SiteMode::Preview).await;
+                let result = pipeline::build_attempt_observed(&build, deadlines, Box::pin(cancelled(stop.clone())), reporting, &mut attempt, pipeline::SiteMode::Preview(&mut images)).await;
                 watcher.acknowledge(attempt);
                 match result {
                     Ok(site) => {
                         let pages = site.page_count();
-                        {
-                            let mut current = current.write().expect("preview generation lock");
-                            *current = Arc::new(ServedGeneration {
-                                site,
-                                revision: current.revision.wrapping_add(1),
-                            });
-                        }
+                        let revision = current.borrow().revision.wrapping_add(1);
+                        current.send_replace(Arc::new(ServedGeneration { site, revision }));
                         command.finish(Some(&build.output), Some(pages));
                         reporting.emit(Event::Rebuilt);
                         reporting.emit(Event::Watching { retained_previous: false });
@@ -229,7 +225,7 @@ impl<T> Drop for AbortOnDrop<T> {
 
 async fn http(
     listener: TcpListener,
-    site: Arc<RwLock<Arc<ServedGeneration>>>,
+    generations: watch::Receiver<Arc<ServedGeneration>>,
     live_reload: bool,
     stop: watch::Receiver<bool>,
 ) -> std::io::Result<()> {
@@ -239,8 +235,8 @@ async fn http(
             _ = cancelled(stop.clone()) => return Ok(()),
             accepted = listener.accept() => {
                 let (socket, _) = accepted?;
-                let site = site.read().expect("preview generation lock").clone();
-                requests.spawn(async move { let _ = tokio::time::timeout(Duration::from_secs(5), response(socket, &site, live_reload)).await; });
+                let generations = generations.clone();
+                requests.spawn(async move { let _ = tokio::time::timeout(Duration::from_secs(5), response(socket, generations, live_reload)).await; });
             }
             _ = requests.join_next(), if !requests.is_empty() => {}
         }
@@ -248,7 +244,7 @@ async fn http(
 }
 async fn response(
     mut socket: TcpStream,
-    generation: &ServedGeneration,
+    mut generations: watch::Receiver<Arc<ServedGeneration>>,
     live_reload: bool,
 ) -> std::io::Result<()> {
     let mut bytes = Vec::new();
@@ -267,14 +263,29 @@ async fn response(
     let mut parts = line.split_ascii_whitespace();
     let method = parts.next().unwrap_or("");
     let target = parts.next().unwrap_or("");
-    let request_path = target.split('?').next().unwrap_or("");
+    let (request_path, query) = target.split_once('?').unwrap_or((target, ""));
+    if live_reload
+        && method == "GET"
+        && request_path == "/__diplodocus/revision"
+        && let Some(revision) = query
+            .strip_prefix("since=")
+            .and_then(|value| value.parse::<u64>().ok())
+    {
+        // Return as soon as a newer generation is published. Bound the wait so a
+        // browser on an idle site periodically releases and renews its request.
+        let _ = tokio::time::timeout(
+            Duration::from_secs(4),
+            generations.wait_for(|generation| generation.revision != revision),
+        )
+        .await;
+    }
+    let generation = generations.borrow().clone();
     let decoded = percent_encoding::percent_decode_str(request_path)
         .decode_utf8()
         .ok();
     if matches!(method, "GET" | "HEAD")
         && let Some(destination) = generation.site.redirects().get(request_path)
     {
-        let query = target.split_once('?').map_or("", |(_, query)| query);
         let location = if query.is_empty() {
             destination.clone()
         } else {
@@ -404,7 +415,29 @@ fn with_live_reload(html: &[u8], revision: u64) -> Vec<u8> {
     content.extend_from_slice(&html[position..]);
     content
 }
-const LIVE_RELOAD: &str = r#"<script>(()=>{const served='__REVISION__';async function check(){try{const response=await fetch('/__diplodocus/revision',{cache:'no-store'});if(response.ok&&await response.text()!==served){location.reload();return}}catch{}setTimeout(check,1000)}setTimeout(check,1000)})()</script>"#;
+const LIVE_RELOAD: &str = r#"<script>
+(() => {
+  const served='__REVISION__';
+
+  async function check() {
+    while (true) {
+      try {
+        const response = await fetch('/__diplodocus/revision?since=' + served, { cache: 'no-store' });
+        if (response.ok) {
+          if (await response.text() !== served) {
+            location.reload();
+            return;
+          }
+          continue;
+        }
+      } catch {}
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  }
+
+  check();
+})();
+</script>"#;
 
 #[cfg(test)]
 mod tests {
@@ -448,10 +481,10 @@ mod tests {
         )
         .unwrap();
         let site = crate::site::Site::new(&snapshot).unwrap();
-        let generation = ServedGeneration {
+        let (_, generations) = watch::channel(Arc::new(ServedGeneration {
             site: crate::rendering::render_site(&site).unwrap(),
             revision: 7,
-        };
+        }));
         for (method, target, accept, media) in [
             ("GET", "/guide/", "text/markdown", "text/markdown"),
             (
@@ -481,7 +514,7 @@ mod tests {
             let request = format!(
                 "{method} {target} HTTP/1.1\r\nHost: localhost\r\nAccept: {accept}\r\n\r\n"
             );
-            let server = response(socket, &generation, true);
+            let server = response(socket, generations.clone(), true);
             let client = async {
                 client.write_all(request.as_bytes()).await.unwrap();
                 let mut bytes = Vec::new();
@@ -544,11 +577,11 @@ mod tests {
             &resolve_workspace(&sources).unwrap(),
         )
         .unwrap();
-        let generation = ServedGeneration {
+        let (_, generations) = watch::channel(Arc::new(ServedGeneration {
             site: crate::rendering::render_site(&crate::site::Site::new(&snapshot).unwrap())
                 .unwrap(),
             revision: 1,
-        };
+        }));
         for (method, target, expected_status, destination) in [
             ("GET", "/old", "301", Some("/guide/start")),
             ("HEAD", "/old.html", "301", Some("/guide/start")),
@@ -573,7 +606,7 @@ mod tests {
                 .await
                 .unwrap();
             let (socket, _) = listener.accept().await.unwrap();
-            let server = response(socket, &generation, true);
+            let server = response(socket, generations.clone(), true);
             let client = async {
                 client.write_all(format!("{method} {target} HTTP/1.1\r\nHost: localhost\r\nAccept: text/markdown\r\n\r\n").as_bytes()).await.unwrap();
                 let mut bytes = Vec::new();
