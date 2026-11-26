@@ -11,6 +11,7 @@ use crate::validation::{
 };
 
 mod documenter;
+mod guide_examples;
 mod links;
 mod python;
 mod r;
@@ -52,6 +53,7 @@ impl Snapshot {
         python::validate(&self.workspace)?;
         r::validate(&self.workspace)?;
         documenter::validate(self)?;
+        guide_examples::validate(self)?;
         let outputs = self.restore_outputs()?;
         let workspace = &self.workspace;
         require(

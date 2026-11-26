@@ -24,6 +24,7 @@ use crate::ir::{
 };
 pub(crate) mod documenter;
 mod fragments;
+pub(crate) mod guide_examples;
 pub(crate) mod includes;
 mod layout;
 mod preparation;
@@ -98,7 +99,7 @@ pub fn parse_authored_document(source: &str, format: AuthoredFormat) -> Document
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
-enum ParseMode {
+pub(crate) enum ParseMode {
     Authored,
     Fragment,
     Collection,
@@ -109,7 +110,7 @@ fn parse_document(source: &str, format: AuthoredFormat, mode: ParseMode) -> Docu
     parse_document_with_resources(source, format, mode, &|target, _| target.to_owned())
 }
 
-fn parse_document_with_resources(
+pub(crate) fn parse_document_with_resources(
     source: &str,
     format: AuthoredFormat,
     mode: ParseMode,

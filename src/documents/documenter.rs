@@ -148,24 +148,7 @@ pub(crate) fn rendered(example: &Example, outcome: &DocumenterExampleOutcome) ->
     let outputs = outcome
         .outputs
         .iter()
-        .map(|output| match output {
-            DocumenterOutput::Text { text } => Block::CodeBlock {
-                language: None,
-                source: text.clone(),
-                source_segments: Vec::new(),
-                span,
-            },
-            DocumenterOutput::Image { asset, .. } => Block::Paragraph {
-                inlines: vec![Inline::Image {
-                    alt: Vec::new(),
-                    target: asset.path.as_str().into(),
-                    title: None,
-                    attributes: Attributes::default(),
-                    span,
-                }],
-                span,
-            },
-        })
+        .map(|output| rendered_output(output, span))
         .collect::<Vec<_>>();
     if !outputs.is_empty() {
         blocks.push(Block::Container {
@@ -180,6 +163,27 @@ pub(crate) fn rendered(example: &Example, outcome: &DocumenterExampleOutcome) ->
         identifier: None,
         blocks,
         span,
+    }
+}
+
+pub(crate) fn rendered_output(output: &DocumenterOutput, span: SourceSpan) -> Block {
+    match output {
+        DocumenterOutput::Text { text } => Block::CodeBlock {
+            language: None,
+            source: text.clone(),
+            source_segments: Vec::new(),
+            span,
+        },
+        DocumenterOutput::Image { asset, .. } => Block::Paragraph {
+            inlines: vec![Inline::Image {
+                alt: Vec::new(),
+                target: asset.path.as_str().into(),
+                title: None,
+                attributes: Attributes::default(),
+                span,
+            }],
+            span,
+        },
     }
 }
 

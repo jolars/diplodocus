@@ -591,6 +591,13 @@ impl Links<'_> {
                     require(workspace, "native R provenance placement")?;
                     super::r::provenance(self.0, record)?;
                 }
+                ProvenanceActivity::GuideExamples { input, examples } => {
+                    require(
+                        !workspace && !examples.is_empty(),
+                        "guide execution provenance",
+                    )?;
+                    self.source(&input.source)?;
+                }
                 ProvenanceActivity::DocumenterExamples {
                     collection,
                     policy,

@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use std::process::Stdio;
 use std::time::Duration;
 
-const MAX_OUTPUT: u64 = 32 * 1024 * 1024;
+pub(super) const MAX_OUTPUT: u64 = 32 * 1024 * 1024;
 
 #[derive(Serialize)]
 struct Request<'a> {
@@ -509,7 +509,11 @@ fn decode(
     Ok((outcomes, assets))
 }
 
-async fn progress(staging: &Path, count: usize, deadlines: ExecutionDeadlines) -> &'static str {
+pub(super) async fn progress(
+    staging: &Path,
+    count: usize,
+    deadlines: ExecutionDeadlines,
+) -> &'static str {
     let mut current = None;
     let mut deadline =
         tokio::time::Instant::now() + Duration::from_millis(deadlines.startup.max(1));

@@ -59,6 +59,13 @@ pub enum ProvenanceActivity {
         /// Maintained and native module inputs consumed by discovery.
         inputs: Vec<InputFingerprint>,
     },
+    /// Completed runnable Markdown blocks.
+    GuideExamples {
+        /// Fingerprint of the expanded authored page.
+        input: InputFingerprint,
+        /// Results in authored order.
+        examples: Vec<GuideExampleOutcome>,
+    },
     /// Completed native Documenter examples in a prepared Julia environment.
     DocumenterExamples {
         /// Owning authored collection.
@@ -490,4 +497,18 @@ pub enum ExecutionOrigin {
     Executed,
     /// Restoration of a previously executed result.
     Cache,
+}
+
+/// Completed execution of a runnable Markdown block.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct GuideExampleOutcome {
+    /// Source fence in the expanded page.
+    pub span: SourceSpan,
+    /// Selected workspace package.
+    pub package: String,
+    /// Version reported by the executing runtime.
+    pub runtime_version: String,
+    /// Validated text and figures.
+    pub outputs: Vec<DocumenterOutput>,
 }

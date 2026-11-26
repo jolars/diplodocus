@@ -39,7 +39,27 @@
 
 - [x] Update edited Markdown pages in place in `diplodocus serve`. Use
   filesystem events to detect saves. Start with edits that preserve the page
-  URL, title, and heading anchors. Validate and render the changed page, update
-  its search entry, and swap its HTML into the open tab. Use the full rebuild
-  for changes to shared inputs, routes, titles, or anchors. Keep the last good
-  preview on failure and measure save-to-visible latency with `npm run site-bench`.
+  URL, title, and heading anchors. Validate and render the changed page,
+  update its search entry, and swap its HTML into the open tab. Use the full
+  rebuild for changes to shared inputs, routes, titles, or anchors. Keep the
+  last good preview on failure and measure save-to-visible latency with
+  `npm run site-bench`.
+
+## Executable examples in authored guides
+
+- [ ] Support explicitly runnable blocks in Markdown and QMD. Default to the
+  owning package in package guides. In shared guides, infer the package when
+  the language identifies it uniquely, and allow a package ID per page or
+  block when needed.
+- [ ] Reuse the documented checkout and its prepared runtime or build settings
+  when executing guide blocks. Start with a shared guide that runs Python
+  and R blocks against two local packages and retains text and figures in
+  the snapshot.
+- [ ] Run Julia guide blocks in the selected package's project environment.
+- [ ] Compile and run Rust guide blocks with the Cargo features selected for
+  extraction, and capture their output for display.
+- [ ] Compile and link C++ guide blocks against a declared package build target,
+  and capture their output for display.
+- [ ] Reuse completed output in preview when the code, package, and other
+  execution inputs still match. Verify that a prose edit reuses output and
+  that a code or package change reruns the affected examples.

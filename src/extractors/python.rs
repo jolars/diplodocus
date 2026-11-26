@@ -369,7 +369,7 @@ fn discover(path: &Path, files: &mut Vec<PathBuf>, diagnostics: &mut Vec<Diagnos
     }
 }
 
-fn module_name(
+pub(crate) fn module_name(
     path: &Path,
     target: &Path,
     package: &Path,

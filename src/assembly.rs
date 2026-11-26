@@ -35,6 +35,7 @@ mod bundles;
 mod documenter;
 mod documenter_examples;
 mod doxygen_native;
+mod guide_examples;
 mod julia_environment;
 mod julia_runtime;
 mod native;
@@ -992,6 +993,7 @@ async fn assemble_with_native(
         bundle_export,
         native_assets: BTreeMap::new(),
     };
+    result.guide_plans()?;
     result.revalidate()?;
     verification.finish();
     Ok(result)

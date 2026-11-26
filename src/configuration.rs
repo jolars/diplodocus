@@ -1336,7 +1336,9 @@ impl ContentConfiguration {
             return Ok(());
         }
 
-        if self.format == AuthoredFormat::Gfm {
+        if self.format == AuthoredFormat::Gfm
+            && (execution.engine != Some(ExecutionEngine::Native) || execution.kernel.is_some())
+        {
             return Err(ExecutionConfigurationError::GfmExecution);
         }
         if self.format == AuthoredFormat::Documenter
@@ -1443,8 +1445,8 @@ pub enum ExecutionConfigurationError {
         /// The contradictory execution field.
         field: &'static str,
     },
-    /// A GFM collection requested execution.
-    #[error("`mode: execute` requires `format: qmd`")]
+    /// A GFM collection requested an incompatible execution engine.
+    #[error("GFM execution requires `engine: native` and no kernel")]
     GfmExecution,
     /// Documenter execution requires a prepared native Julia environment.
     #[error(
@@ -1541,6 +1543,8 @@ pub enum ExecutionMode {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum ExecutionEngine {
+    /// Native package environments for runnable Markdown fences.
+    Native,
     /// A page-scoped Jupyter kernel session.
     Jupyter,
     /// A native R session using knitr.

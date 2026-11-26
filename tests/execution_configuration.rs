@@ -168,7 +168,7 @@ fn gfm_cannot_select_execute_even_with_a_complete_jupyter_configuration() {
             "gfm",
             &execution("mode: \"execute\"\nengine: \"jupyter\"\nkernel: \"python3\"\n"),
         ),
-        "requires `format: qmd`",
+        "requires `engine: native`",
     );
 }
 

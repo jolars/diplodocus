@@ -235,6 +235,9 @@ async fn prepare_snapshot_inner(
     drop(resolved);
     complete_api(&mut sources, deadlines, &mut cancellation).await?;
     sources
+        .execute_guide_examples(deadlines, &mut cancellation)
+        .await?;
+    sources
         .execute_rmarkdown(deadlines, &mut cancellation)
         .await?;
     sources

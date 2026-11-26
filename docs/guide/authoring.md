@@ -31,10 +31,46 @@ broken links, then use `diplodocus serve` to preview edits.
 
 | `format` | Source | Use it for |
 | --- | --- | --- |
-| `gfm` | `.md` | Markdown guides with display-only code fences. |
+| `gfm` | `.md` | Markdown guides with optional native Python and R blocks. |
 | `qmd` | `.qmd` | Quarto Markdown callouts and optionally executable code cells. |
 | `rmd` | `.Rmd`, `.rmd` | [R Markdown articles](extraction/r.md#r-markdown-articles) evaluated with knitr. |
 | `documenter` | `.md` | [Julia Documenter pages](extraction/julia.md#documenter-pages) with API links and directives. |
+
+### Runnable Markdown blocks
+
+Enable native execution on the collection in `diplodocus.yaml`:
+
+```yaml
+content:
+  - path: docs
+    mount: guide
+    execution: { mode: execute, engine: native }
+```
+
+Add `run` to a Python or R fence to evaluate it. This shared guide selects
+two packages by their configured IDs:
+
+````markdown
+```python run package=stats-python
+from stats_example import fit
+print(fit([1, 2, 3]))
+```
+
+```r run package=stats-r
+library(statsexample)
+plot(fit(c(1, 2, 3)))
+```
+````
+
+A package guide defaults to its owning package. A shared guide can omit the
+package ID when exactly one local package has a matching native extraction
+target. Ordinary fences remain display-only.
+
+Prepare each package as you would for API extraction. Blocks for the same
+package share a fresh session within each page. Relative paths start at the
+guide's directory. Python and R text output and R plots appear below their
+blocks. `diplodocus check` validates package selection without running the
+blocks.
 
 ### QMD cells
 

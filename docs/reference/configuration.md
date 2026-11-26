@@ -255,7 +255,7 @@ Fields in a collection’s `execution` mapping:
 | Option | Type | Default | Purpose |
 | --- | --- | --- | --- |
 | `mode` | string | `execute` for `rmd`; `never` otherwise | `never` keeps code illustrative; `execute` requests evaluation. |
-| `engine` | string | `knitr` for `rmd`; unset otherwise | `jupyter`, `knitr`, or `julia`, as allowed by the format. |
+| `engine` | string | `knitr` for `rmd`; unset otherwise | `native`, `jupyter`, `knitr`, or `julia`, as allowed by the format. |
 | `kernel` | string | Unset | Required Jupyter kernelspec name for executable QMD. |
 | `julia-project` | path | Unset | Required prepared project file for executable Documenter pages, relative to the collection’s path base. |
 | `declared-environment-inputs` | list of paths | `[]` | Additional files recorded as execution inputs, relative to the collection’s path base. |
@@ -264,7 +264,8 @@ The supported combinations are:
 
 | Format | Mode | Engine | Additional requirements |
 | --- | --- | --- | --- |
-| `gfm` | `never` | Unset | Execution settings must be omitted. |
+| `gfm` | `never` | Unset | No engine or environment inputs. |
+| `gfm` | `execute` | `native` | A local Python or R package with a native extraction target. |
 | `qmd` | `never` | Unset | No kernel or environment inputs. |
 | `qmd` | `execute` | `jupyter` | An explicit `kernel`. |
 | `documenter` | `never` | Unset | No project, kernel, or environment inputs. |

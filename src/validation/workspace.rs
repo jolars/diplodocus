@@ -1075,7 +1075,23 @@ impl Resolver<'_> {
                             record.activity,
                             ProvenanceActivity::DocumenterExamples { .. }
                         )
-                    }));
+                    }))
+                || (spelling.starts_with("guide-assets/sha256/")
+                    && context
+                        .document
+                        .provenance
+                        .iter()
+                        .any(|record| match &record.activity {
+                            ProvenanceActivity::GuideExamples { examples, .. } => examples
+                                .iter()
+                                .flat_map(|example| &example.outputs)
+                                .any(|output| {
+                                    matches!(output,
+                                    crate::ir::DocumenterOutput::Image { asset, .. }
+                                        if asset.path.as_str() == spelling)
+                                }),
+                            _ => false,
+                        }));
         if (generated || rd_figure) && kind == ReferenceKind::Image {
             let path = DiagnosticPath::try_from(file.as_ref()).map_err(|_| invalid)?;
             let asset = self.generated.get(&path).ok_or(invalid)?;
