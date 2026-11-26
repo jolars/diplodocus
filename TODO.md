@@ -34,3 +34,12 @@
   cache-enabled build, Doxygen's package cache inventory sees two files the
   build itself changes. R discovery updates `qualpalr/DESCRIPTION` through
   roxygen2, and a Python API example writes `qualpal-py/palette.png`.
+
+## Preview performance
+
+- [ ] Update edited Markdown pages in place in `diplodocus serve`. Use
+  filesystem events to detect saves. Start with edits that preserve the page
+  URL, title, and heading anchors. Validate and render the changed page, update
+  its search entry, and swap its HTML into the open tab. Use the full rebuild
+  for changes to shared inputs, routes, titles, or anchors. Keep the last good
+  preview on failure and measure save-to-visible latency with `npm run site-bench`.
