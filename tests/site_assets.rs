@@ -62,6 +62,29 @@ fn public_bytes(snapshot: &Snapshot) -> BTreeMap<String, Vec<u8>> {
 }
 
 #[test]
+fn ask_ai_is_rendered_only_in_trusted_standalone_pages() {
+    let source = workspace("  ask-ai:\n    endpoint: '/api/ask?docs=rust&v=1'\n");
+    let snapshot = snapshot(&source);
+    let site = Site::new(&snapshot).unwrap();
+    let inactive = render_site(&site).unwrap();
+    let site = site.with_site_scripts(true);
+    let fragments = diplodocus::rendering::render_fragments(&site).unwrap();
+    for output in [&inactive, &fragments] {
+        assert!(!output.files().contains_key("assets/ask-ai.js"));
+        assert!(!String::from_utf8_lossy(&output.files()["index.html"].bytes).contains("ask-ai"));
+    }
+    let active = render_site(&site).unwrap();
+    assert_eq!(
+        active.files()["assets/ask-ai.js"].media_type,
+        "text/javascript; charset=utf-8"
+    );
+    let html = String::from_utf8_lossy(&active.files()["guide/start.html"].bytes);
+    assert!(html.contains("src=\"../assets/ask-ai.js\""));
+    assert!(html.contains("data-endpoint=\"/api/ask?docs=rust&amp;v=1\""));
+    assert!(html.contains("class=\"ask-ai-dialog\" aria-label=\"Ask AI\""));
+}
+
+#[test]
 fn build_and_relocated_snapshot_preserve_public_paths_bytes_and_icon_links() {
     let root = eunoia();
     let expected = public_bytes(&snapshot(&root));

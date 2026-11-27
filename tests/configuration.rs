@@ -13,6 +13,38 @@ const COMPLETE: &str = include_str!("fixtures/configuration/complete.yaml");
 const ACCEPTANCE: &str = include_str!("fixtures/acceptance/core/diplodocus.yaml");
 
 #[test]
+fn ask_ai_endpoint_round_trips_and_rejects_unsafe_url_forms() {
+    let config = |endpoint: &str| {
+        parse_configuration(&format!(
+            "project:\n  name: Docs\npresentation:\n  ask-ai:\n    endpoint: '{endpoint}'\n"
+        ))
+    };
+    for endpoint in ["/api/ask", "https://chat.example.test/ask?v=1&docs=rust"] {
+        let configuration = config(endpoint).unwrap();
+        assert_eq!(
+            configuration.presentation.ask_ai.as_ref().unwrap().endpoint,
+            endpoint
+        );
+        let serialized = serde_saphyr::to_string(&configuration).unwrap();
+        assert_eq!(parse_configuration(&serialized).unwrap(), configuration);
+    }
+    for endpoint in [
+        "",
+        "api/ask",
+        "//chat.example.test/ask",
+        r"/\chat.example.test/ask",
+        "/api/ask#fragment",
+        "/api/ask ",
+        "http://chat.example.test/ask",
+        "https:///chat.example.test/ask",
+        "https://key@chat.example.test/ask",
+        "javascript:alert(1)",
+    ] {
+        assert!(config(endpoint).is_err(), "{endpoint}");
+    }
+}
+
+#[test]
 fn header_api_navigation_defaults_to_dropdown_and_round_trips() {
     use diplodocus::configuration::ApiNavigation;
 

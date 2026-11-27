@@ -300,9 +300,43 @@ pub struct PresentationDefaults {
     /// Analytics providers for complete HTML pages.
     #[serde(skip_serializing_if = "AnalyticsDefaults::is_default")]
     pub analytics: AnalyticsDefaults,
+    /// Optional chat endpoint for the built-in Ask AI widget.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ask_ai: Option<AskAiConfiguration>,
     /// Optional notices and links shown at the bottom of every page.
     #[serde(skip_serializing_if = "FooterDefaults::is_default")]
     pub footer: FooterDefaults,
+}
+
+/// Browser endpoint for a site's documentation assistant.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+pub struct AskAiConfiguration {
+    /// Origin-relative path or absolute HTTPS URL serving AI SDK UI message streams.
+    #[serde(deserialize_with = "deserialize_ask_ai_endpoint")]
+    pub endpoint: String,
+}
+
+fn deserialize_ask_ai_endpoint<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<String, D::Error> {
+    let value = String::deserialize(deserializer)?;
+    let relative = value.starts_with('/') && !value.starts_with("//");
+    let https = value
+        .split_once("://")
+        .is_some_and(|(scheme, _)| scheme.eq_ignore_ascii_case("https"))
+        && validate_external_url(&value).is_ok();
+    if !(relative || https)
+        || value.contains(['\\', '#'])
+        || value
+            .chars()
+            .any(|ch| ch.is_whitespace() || ch.is_control())
+    {
+        return Err(D::Error::custom(
+            "Ask AI endpoint must be an origin-relative path or an absolute HTTPS URL without credentials, fragments, or whitespace",
+        ));
+    }
+    Ok(value)
 }
 
 /// Optional analytics providers for the site.

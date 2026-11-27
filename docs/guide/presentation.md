@@ -181,6 +181,48 @@ A script initializes when the browser loads the document. Listen for
 `diplodocus:page-change` on `document` to initialize content inserted by
 client-side navigation.
 
+## Ask AI {#ask-ai}
+
+Add `presentation.ask-ai` to put an **Ask AI** button beside keyword search.
+
+```yaml
+presentation:
+  ask-ai:
+    endpoint: /api/ask
+```
+
+Deploy the chat endpoint with your site. `/api/ask` is relative to the web
+origin, even when the documentation is published under a prefix such as
+`/manual/`. To use a separate host, set an absolute HTTPS URL and allow the
+documentation origin in the endpoint's CORS settings. Keep provider credentials
+on the server and apply your access controls and rate limits there.
+
+The widget sends a JSON `POST` with a conversation `id`, `trigger` set to
+`submit-message`, and a `messages` array. Each message has an `id`, a `role` of
+`user` or `assistant`, and a `parts` array containing a text part of the form
+`{"type":"text","text":"…"}`. The array includes up to five completed turns
+followed by the new question. **New chat** starts a conversation with a fresh ID.
+
+Respond with an [AI SDK UI message stream][ai-sdk-stream] (`text/event-stream`).
+Send `text-delta` parts for the answer, `source-url` parts with absolute HTTP or
+HTTPS links to the published docs, and a `[DONE]` marker at the end. The widget
+renders Markdown as the answer streams. Return an HTTP `429` to tell
+readers to try again after rate limiting.
+
+If you use Cloudflare AI Search, the [Cloudflare AI SDK guide][cloudflare-ai-sdk]
+shows how to connect a Worker to an index and stream the answer with
+`toUIMessageStreamResponse({ sendSources: true })`. Use `convertToModelMessages`
+from `ai` to convert the widget's `messages` before calling `streamText`. If the
+chunks use filenames as keys, map them to the published page URLs before sending
+them to the widget.
+
+`diplodocus build` and `diplodocus serve` include the widget when configured.
+For a trusted snapshot, pass `--allow-site-scripts` to `generate`. Fragment
+bundles leave chat to the frontend.
+
+[ai-sdk-stream]: https://ai-sdk.dev/v5/docs/ai-sdk-ui/stream-protocol
+[cloudflare-ai-sdk]: https://developers.cloudflare.com/ai-search/agent-sdks/ai-sdk/#stream-a-response
+
 ## Umami analytics {#umami-analytics}
 
 Open your website's tracking code in Umami and copy the script URL and website

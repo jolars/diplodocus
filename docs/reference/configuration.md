@@ -316,6 +316,7 @@ or HTML.
 | `icons` | list | `[]` | Icon and manifest links on every complete HTML page. |
 | `logo` | mapping | Unset | Homepage hero image and fallback navbar logo. |
 | `open-graph` | mapping | Unset | Shared social preview image. Requires `site-url`. |
+| `ask-ai` | mapping | Unset | Enables the Ask AI widget on complete HTML pages. |
 | `analytics` | mapping | Unset | Optional analytics for complete HTML pages. |
 | `redirects` | mapping | `{}` | Permanent redirects from old URL paths to generated pages. |
 | `fragment-aliases` | mapping | `{}` | Legacy fragment IDs attached to maintained headings and API targets, keyed by generated HTML path. |
@@ -326,6 +327,14 @@ parameters, fragments, or whitespace. Diplodocus treats it as a directory root.
 Clean URLs require hosting support; output filenames keep their `.html`
 extensions. Ambiguous clean routes fail generation. See
 [site appearance](../guide/presentation.md) for examples and deployment details.
+
+### Ask AI
+
+`presentation.ask-ai.endpoint` is required when you declare `ask-ai`. Supply
+an origin-relative path starting with one `/` or an absolute HTTPS URL. The URL
+can include query parameters. Credentials, fragments, whitespace, and
+backslashes are invalid. Detached generation requires `--allow-site-scripts`.
+See [Ask AI](../guide/presentation.md#ask-ai) for the endpoint contract.
 
 ### Analytics
 

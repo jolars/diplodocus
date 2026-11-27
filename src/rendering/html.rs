@@ -69,7 +69,23 @@ fn site_scripts<'a>(site: &Site<'a>) -> &'a [crate::diagnostics::DiagnosticPath]
     }
 }
 
+fn ask_ai_endpoint<'a>(site: &Site<'a>) -> Option<&'a str> {
+    site.presentation
+        .ask_ai
+        .as_ref()
+        .filter(|_| site.site_scripts_enabled)
+        .map(|chat| chat.endpoint.as_str())
+}
+
 fn render_site_resources(html: &mut String, site: &Site<'_>, route: &str) {
+    if ask_ai_endpoint(site).is_some() {
+        write!(
+            html,
+            "<script type=\"module\" src=\"{}\"></script>",
+            escape(&site.url(route, "assets/ask-ai.js"))
+        )
+        .unwrap();
+    }
     for path in &site.presentation.stylesheets {
         write!(
             html,
@@ -211,6 +227,19 @@ fn navigation_shell_fingerprint(
         shell.push('\0');
         shell.push_str(source);
     }
+    if let Some(endpoint) = ask_ai_endpoint(site) {
+        for source in [
+            endpoint,
+            ASK_AI_TRIGGER,
+            ASK_AI_DIALOG,
+            ASK_AI_STYLE,
+            ASK_AI_MARKDOWN,
+            ASK_AI,
+        ] {
+            shell.push('\0');
+            shell.push_str(source);
+        }
+    }
     Ok(crate::provenance::fingerprint_bytes(shell.as_bytes()).value)
 }
 
@@ -314,6 +343,20 @@ pub(crate) fn render_with_image_cache(
     style.push_str(&tab_icon_style);
     if site.logo_dark.is_some() || site.header_logo_dark.is_some() {
         style.push_str(include_str!("assets/styles/logo.css"));
+    }
+    if standalone && ask_ai_endpoint(site).is_some() {
+        style.push_str(ASK_AI_STYLE);
+        files.insert(
+            "assets/ask-ai.js".into(),
+            file(ASK_AI.as_bytes().to_vec(), "text/javascript; charset=utf-8"),
+        );
+        files.insert(
+            "assets/ask-ai-markdown.js".into(),
+            file(
+                ASK_AI_MARKDOWN.as_bytes().to_vec(),
+                "text/javascript; charset=utf-8",
+            ),
+        );
     }
     files.insert(
         if standalone {
@@ -609,6 +652,9 @@ impl PageRenderer<'_, '_> {
             super::navigation::sections(&mut html, site, route, "desktop-sections");
             html.push_str("<div class=\"header-actions\">");
             html.push_str(SEARCH_TRIGGER);
+            if ask_ai_endpoint(site).is_some() {
+                html.push_str(ASK_AI_TRIGGER);
+            }
             super::navigation::theme_control(&mut html);
             super::navigation::repositories(&mut html, site);
             html.push_str("<details class=\"mobile-menu\"><summary aria-label=\"Navigation menu\"><svg aria-hidden=\"true\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M4 6h16M4 12h16M4 18h16\"></path></svg></summary><div class=\"mobile-menu-panel\">");
@@ -1065,6 +1111,14 @@ impl PageRenderer<'_, '_> {
             }
             html.push_str("</div></div>");
             html.push_str(SEARCH_DIALOG);
+            if let Some(endpoint) = ask_ai_endpoint(site) {
+                write!(
+                    html,
+                    "<dialog class=\"ask-ai-dialog\" aria-label=\"Ask AI\" data-endpoint=\"{}\">{ASK_AI_DIALOG}</dialog>",
+                    escape(endpoint)
+                )
+                .unwrap();
+            }
             super::footer::render(&mut html, site);
             html.push_str("</body></html>\n");
         } else {
@@ -2540,3 +2594,41 @@ const SEARCH_DIALOG: &str = r#"<dialog class="search-dialog" aria-label="Search 
   <ul id="search-results"></ul>
 </dialog>"#;
 const SEARCH: &str = include_str!("search.js");
+const ASK_AI: &str = include_str!("ask_ai.js");
+const ASK_AI_MARKDOWN: &str = include_str!("assets/markdown-it/markdown-it.mjs");
+const ASK_AI_STYLE: &str = include_str!("assets/styles/ask-ai.css");
+const ASK_AI_TRIGGER: &str = concat!(
+    r#"<button type="button" class="site-ask-ai" aria-label="Ask AI" title="Ask AI" aria-haspopup="dialog" hidden>
+ "#,
+    include_str!("assets/ask-ai-icon.svg"),
+    r#"  <span>Ask AI</span>
+</button>"#
+);
+const ASK_AI_DIALOG: &str = concat!(
+    r#"
+  <div class="ask-ai-heading">
+    <h2>"#,
+    include_str!("assets/ask-ai-icon.svg"),
+    r#"<span>Ask AI</span></h2>
+    <button type="button" class="ask-ai-reset" hidden>New chat</button>
+    <button type="button" class="ask-ai-close" aria-label="Close Ask AI">×</button>
+  </div>
+  <div class="ask-ai-conversation" role="region" aria-label="Conversation" tabindex="0" hidden></div>
+  <div class="ask-ai-compose">
+    <p class="ask-ai-status" role="status"></p>
+    <form class="ask-ai-input">
+      <label class="visually-hidden" for="diplodocus-ask-ai-question">Question about the docs</label>
+      <textarea id="diplodocus-ask-ai-question" placeholder="Ask a question about the docs" rows="2" maxlength="2000" required autofocus></textarea>
+      <div class="ask-ai-actions">
+        <button type="submit" class="ask-ai-send" aria-label="Send question" title="Send question">
+          <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5m-7 7 7-7 7 7"/></svg>
+        </button>
+        <button type="button" class="ask-ai-stop" aria-label="Stop" title="Stop" hidden>
+          <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>
+        </button>
+      </div>
+    </form>
+    <p class="ask-ai-note">AI answers can be wrong. Check the linked sources.</p>
+  </div>
+"#
+);
