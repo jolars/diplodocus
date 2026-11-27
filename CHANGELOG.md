@@ -1,5 +1,36 @@
 # Changelog
 
+## [0.18.0](https://github.com/jolars/diplodocus/compare/v0.17.0...v0.18.0) (2026-11-27)
+
+### Breaking changes
+
+- run Python and R examples in Markdown guides ([`cb4ebd7`](https://github.com/jolars/diplodocus/commit/cb4ebd714b98085b5d2ba2958a7c9f45c6fecdf0))
+- **config:** simplify project and package documentation sources ([`9535876`](https://github.com/jolars/diplodocus/commit/953587678d50ab35c9ea9660d9215c7cda59fbc1))
+
+### Features
+
+- add an opt-in Ask AI widget to the built-in theme ([`360817b`](https://github.com/jolars/diplodocus/commit/360817b552136a1f7e7e447f4a184ffe6344f1d3))
+- run Python and R examples in Markdown guides ([`cb4ebd7`](https://github.com/jolars/diplodocus/commit/cb4ebd714b98085b5d2ba2958a7c9f45c6fecdf0))
+- support Markdown source paths in sidebar links ([`0204cba`](https://github.com/jolars/diplodocus/commit/0204cba2c7fe5fe4cbe17539b26af900418f067c))
+- infer sidebar labels from page titles ([`7c11285`](https://github.com/jolars/diplodocus/commit/7c112850dbd5388c99ec1fbeffdc850e8a936845))
+- support zero-config R package sites ([`9a34c98`](https://github.com/jolars/diplodocus/commit/9a34c98a51ac0df167a775c8724bdc9a650ec622))
+- **config:** simplify project and package documentation sources ([`9535876`](https://github.com/jolars/diplodocus/commit/953587678d50ab35c9ea9660d9215c7cda59fbc1))
+- **ui:** improve CLI progress reporting ([`4504e39`](https://github.com/jolars/diplodocus/commit/4504e39c4f21afe44e736f126b07c383832fd3aa))
+- **ui:** drop hardcoded spaces in CLI output ([`e17db59`](https://github.com/jolars/diplodocus/commit/e17db59a9c2fe72514e42f88f7239fe29e1e9499))
+
+### Bug Fixes
+
+- stop orphaned browser test servers and pace preview polling ([`aa47df5`](https://github.com/jolars/diplodocus/commit/aa47df59600748e584ec278ac3b28efab4574478))
+- distinguish nested sidebar groups visually ([`9735d5d`](https://github.com/jolars/diplodocus/commit/9735d5dbe3886e0ebcbe0b0b62ed51e2b36fa85d))
+- **ui:** remove gap beside search button ([`965eaf0`](https://github.com/jolars/diplodocus/commit/965eaf07456c3a0b69c8c1395d90369861ce07b0))
+
+### Performance Improvements
+
+- update Markdown previews in place ([`3a19a86`](https://github.com/jolars/diplodocus/commit/3a19a8680627de38070ae3358cb7bddd87e2cf3f))
+- reduce Markdown preview save latency ([`452b811`](https://github.com/jolars/diplodocus/commit/452b811ea935149b72fc50860993722caaa83127))
+- render `serve` previews without publishing snapshots ([`24bf310`](https://github.com/jolars/diplodocus/commit/24bf31055c8b7af70d89766576d4d56d1f64cfa0))
+- speed up preview ([`560957e`](https://github.com/jolars/diplodocus/commit/560957e48fa91d1bb4a356abd48b33eb88e30653))
+
 ## [0.17.0](https://github.com/jolars/diplodocus/compare/v0.16.0...v0.17.0) (2026-11-24)
 
 ### Features
